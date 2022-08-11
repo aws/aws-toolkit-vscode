@@ -1,8 +1,7 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>NoNameShadowing:DotNetDebuggerSupport.kt$DotNetDebuggerSupport${ future.complete( manager.startSessionAndShowTab( displayName, null, it ).runContentDescriptor ) }</ID>
     <ID>UnsafeCallOnNullableType:DotnetDebugUtils.kt$DotnetDebugUtils$promise.get()!!</ID>
   </CurrentIssues>
 </SmellBaseline>

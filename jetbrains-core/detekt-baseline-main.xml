@@ -1,60 +1,7 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>AbsentOrWrongFileLicense:AwsConnectionSettings.kt$software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettings.kt</ID>
-    <ID>AbsentOrWrongFileLicense:AwsSettingsConfigurable.kt$software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable.kt</ID>
-    <ID>AbsentOrWrongFileLicense:BuildSettingsPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.BuildSettingsPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:CodeStoragePanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CodeStoragePanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:ConfigureLambdaPanel.kt$software.aws.toolkits.jetbrains.services.sqs.ConfigureLambdaPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:CopyBucketNameAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:CreateBucketAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:CreateFunctionPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CreateFunctionPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:CreateQueuePanel.kt$software.aws.toolkits.jetbrains.services.sqs.CreateQueuePanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:DownloadObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:DynamicTableView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.DynamicTableView.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EditAttributesPanel.kt$software.aws.toolkits.jetbrains.services.sqs.EditAttributesPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EnterQueryName.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.EnterQueryName.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EventsFetcher.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsFetcher.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EventsTable.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsTable.kt</ID>
-    <ID>AbsentOrWrongFileLicense:FifoPanel.kt$software.aws.toolkits.jetbrains.services.sqs.toolwindow.FifoPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:IdBasedExtensionPoint.kt$software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint.kt</ID>
-    <ID>AbsentOrWrongFileLicense:LambdaConfigPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.LambdaConfigPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:LocalLambdaRunSettingsEditorPanel.kt$software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunSettingsEditorPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:LogGroupSelectorTable.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.LogGroupSelectorTable.kt</ID>
-    <ID>AbsentOrWrongFileLicense:OpenBucketViewerAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:OutputsTableView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.OutputsTableView.kt</ID>
-    <ID>AbsentOrWrongFileLicense:PageButtons.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.PageButtons.kt</ID>
-    <ID>AbsentOrWrongFileLicense:PerContainerSettings.kt$software.aws.toolkits.jetbrains.services.ecs.execution.PerContainerSettings.kt</ID>
-    <ID>AbsentOrWrongFileLicense:QueryEditor.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEditor.kt</ID>
-    <ID>AbsentOrWrongFileLicense:RenameObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:RetrieveSavedQueryDialog.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.RetrieveSavedQueryDialog.kt</ID>
-    <ID>AbsentOrWrongFileLicense:RuntimeGroup.kt$software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3ColumnInfo.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3ColumnInfo.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3TreeCellRenderer.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeCellRenderer.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3TreeTable.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3TreeTableModel.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTableModel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3ViewerProvider.kt$software.aws.toolkits.jetbrains.services.s3.S3ViewerProvider.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SamInitProjectBuilderCommon.kt$software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitProjectBuilderCommon.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SamInitSelectionPanel.kt$software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SamSchemaDownloadPostCreationAction.kt$software.aws.toolkits.jetbrains.services.lambda.sam.SamSchemaDownloadPostCreationAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SamSettingsEditorPanel.kt$software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettingsEditorPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SamTemplateUtils.kt$software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SelectSavedQuery.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.SelectSavedQuery.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SliderPanel.kt$software.aws.toolkits.jetbrains.ui.SliderPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SqsExplorerRootNode.kt$software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode.kt</ID>
-    <ID>AbsentOrWrongFileLicense:Stack.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Stack.kt</ID>
-    <ID>AbsentOrWrongFileLicense:SubscribeSnsPanel.kt$software.aws.toolkits.jetbrains.services.sqs.SubscribeSnsPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:TemplateSettings.kt$software.aws.toolkits.jetbrains.services.lambda.execution.local.TemplateSettings.kt</ID>
-    <ID>AbsentOrWrongFileLicense:TreeView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.TreeView.kt</ID>
-    <ID>AbsentOrWrongFileLicense:UiUtils.kt$software.aws.toolkits.jetbrains.utils.ui.UiUtils.kt</ID>
-    <ID>AbsentOrWrongFileLicense:UpdateFunctionCodePanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionCodePanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:UpdateFunctionConfigPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionConfigPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:Updater.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Updater.kt</ID>
-    <ID>AbsentOrWrongFileLicense:UploadObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction.kt</ID>
-    <ID>AbsentOrWrongFileLicense:View.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.View.kt</ID>
-    <ID>AbsentOrWrongFileLicense:ViewObjectVersionAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction.kt</ID>
-    <ID>MissingWhenCase:EventsFetcher.kt$EventsFetcher$when (pageToSwitchTo) { Page.NEXT -&gt; currentPage?.let { previousPages.add(it) } // Store current as prev Page.PREVIOUS -&gt; if (previousPages.isNotEmpty()) previousPages.removeAt(previousPages.size - 1) }</ID>
     <ID>NoNameShadowing:CloudControlApiResources.kt$CloudControlApiResources${ it.typeName() }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ it.repositoryName == ecrDialog.repoName }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ sourceBucket.reload(forceFetch = true) sourceBucket.selectedItem = it }</ID>
@@ -62,7 +9,6 @@
     <ID>NoNameShadowing:CreationPanel.kt$CreationPanel${ memory = it }</ID>
     <ID>NoNameShadowing:CredentialIdentifierSelector.kt$CredentialIdentifierSelector${ comboBoxModel.add(it) }</ID>
     <ID>NoNameShadowing:CredentialIdentifierSelector.kt$CredentialIdentifierSelector${ it.id == identifierId }</ID>
-    <ID>NoNameShadowing:DeployServerlessApplicationAction.kt$DeployServerlessApplicationAction${ it?.run { runInEdt { StackWindowManager.getInstance(project).openStack(stackName(), stackId()) } } }</ID>
     <ID>NoNameShadowing:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog${ it.repositoryName == ecrDialog.repoName }</ID>
     <ID>NoNameShadowing:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog${ s3BucketSelector.reload(forceFetch = true) s3BucketSelector.selectedItem = it }</ID>
     <ID>NoNameShadowing:DownloadCodeForSchemaDialog.kt$DownloadCodeForSchemaDialog${ val fileEditorManager = FileEditorManager.getInstance(project) fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true) }</ID>
@@ -73,7 +19,6 @@
     <ID>NoNameShadowing:LocalPathProjectBaseCellEditor.kt$LocalPathProjectBaseCellEditor${ LocalFileSystem.getInstance().findFileByPath(it) }</ID>
     <ID>NoNameShadowing:LocalPathProjectBaseCellEditor.kt$LocalPathProjectBaseCellEditor${ StringUtil.isNotEmpty(it) }</ID>
     <ID>NoNameShadowing:RuntimeGroup.kt$RuntimeGroup.Companion${ it.id == id }</ID>
-    <ID>NoNameShadowing:SdkSelectionPanel.kt$SdkSelectionPanel${ row(it.sdkSelectionLabel()) { it.sdkSelectionPanel()(grow) } }</ID>
     <ID>NoNameShadowing:SelectSavedQuery.kt$SelectSavedQuery${ logGroups.text = it.logGroupNames().joinToString("\n") queryString.text = it.queryString() // reset to the start, since setting the text moves the cursor to the end, // which results in scrolling to the bottom right corner if there's enough text logGroups.caretPosition = 0 queryString.caretPosition = 0 }</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
     <ID>UnsafeCallOnNullableType:CachingAsyncEvaluator.kt$CachingAsyncEvaluator$cachePromise.blockingGet(0)!!</ID>

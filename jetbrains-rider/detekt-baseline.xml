@@ -1,6 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>FunctionNaming:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$@Test( dataProvider = "handlerCompletionSupportedData", description = "Check completion in run configuration feature is enabled for DOTNET runtime." ) fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: LambdaRuntime)</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$// TODO this test only works on 2019.2. Which we don't support anymore. Fix the test // TODO: This test is failing due to handlers detection logic. I assume it need to be fixed if test is correct. @Test(enabled = false, description = "Check all handlers are show in completion lookup when multiple handlers are defined in a project.") @TestEnvironment(solution = "SamMultipleHandlersApp") fun testDetermineHandlers_MultipleHandlers()</ID>
@@ -12,15 +12,6 @@
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingMethodName()</ID>
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingTypeName()</ID>
     <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_ValidHandler()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAugmentStatement_NoDebugPort_Exception()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAugmentStatement_SingleDebugPort_Exception()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_InvalidPath()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_LeadingSingleQuote_Exception()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_NoDotnetInCommand_Exception()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_SingleCommand()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_ValidCommand()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandTest.kt$DotNetStartupCommandTest$@Test fun testUpdateCommand_AssemblyFound_UpdateStartupCommand()</ID>
-    <ID>FunctionNaming:DotNetStartupCommandTest.kt$DotNetStartupCommandTest$@Test(dataProvider = "artifactsMappingTestData") fun testUpdateStartupCommand_ReturnOriginalCommand(name: String, originalCommand: String, artifactsMap: ArtifactMapping)</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Suppress("UNUSED_PARAMETER") @Test(dataProvider = "singleParameterAmazonEventType") fun testParameters_SingleParameterAmazonEvent_Detected(name: String)</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionAbstractClass_NotDetected()</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionClass_Detected()</ID>

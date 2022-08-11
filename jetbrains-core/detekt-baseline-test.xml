@@ -1,16 +1,7 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>AbsentOrWrongFileLicense:DeleteBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.DeleteBucketTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EventsFetcherTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsFetcherTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:EventsTableTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsTableTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:Mocks.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Mocks.kt</ID>
-    <ID>AbsentOrWrongFileLicense:OutputsTableViewTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.OutputsTableViewTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:PageButtonsTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.PageButtonsTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3ServiceNodeTest.kt$software.aws.toolkits.jetbrains.services.s3.S3ServiceNodeTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:S3VirtualBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.S3VirtualBucketTest.kt</ID>
-    <ID>AbsentOrWrongFileLicense:UpdaterTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.UpdaterTest.kt</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
@@ -19,10 +10,6 @@
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setSamEmpty()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setValidSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test(expected = ConfigurationException::class) fun validate_fail_setBadSam()</ID>
-    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_canHandleMultiLineEvents()</ID>
-    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_colorCodesAreIgnored()</ID>
-    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_handlesDifferentLevels()</ID>
-    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_unexpectedStringIsHandled()</ID>
     <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyRemote()</ID>
     <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyTemplate()</ID>
     <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_withOverlap()</ID>
@@ -83,22 +70,19 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_InvalidOption()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
-    <ID>NoNameShadowing:CopyUrlActionTest.kt$CopyUrlActionTest${ // Actual format is implementation detail below S3VirtualBucket URL("https://s3/${it.getArgument&lt;String&gt;(0)}?version=${it.getArgument&lt;String&gt;(1)}") }</ID>
-    <ID>NoNameShadowing:CreateLambdaTest.kt$CreateLambdaTest${ it.functionArn("arn of ${details.name}") }</ID>
-    <ID>NoNameShadowing:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest${ it.getArgument&lt;File&gt;(0).writeText("hello") }</ID>
+    <ID>NoNameShadowing:CopyUrlActionTest.kt$CopyUrlActionTest${ // Actual format is implementation detail below S3VirtualBucket URL("https://s3/${it.getArgument&lt;String>(0)}?version=${it.getArgument&lt;String>(1)}") }</ID>
+    <ID>NoNameShadowing:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest${ it.getArgument&lt;File>(0).writeText("hello") }</ID>
     <ID>NoNameShadowing:CreateServiceRoleDialogTest.kt$CreateServiceRoleDialogTest${ it.roleName(name).arn("arn") }</ID>
     <ID>NoNameShadowing:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest${ it.message.contains(message("serverless.application.deploy.validation.new.stack.name.invalid")) }</ID>
-    <ID>NoNameShadowing:DownloadObjectActionTest.kt$DownloadObjectActionTest${ it.key == key }</ID>
-    <ID>NoNameShadowing:DownloadObjectActionTest.kt$DownloadObjectActionTest${ it.write(content) }</ID>
     <ID>NoNameShadowing:EcsExecUtilsTest.kt$EcsExecUtilsTest${ it.sessionId(sessionId) it.tokenValue(token) it.streamUrl(streamUrl) }</ID>
     <ID>NoNameShadowing:MockAwsConnectionManager.kt${ manager.changeCredentialProviderAndWait(it) }</ID>
     <ID>NoNameShadowing:S3ViewerPanelTest.kt$S3ViewerPanelTest${ it.prefix("folder/") }</ID>
-    <ID>NoNameShadowing:S3VirtualBucketTest.kt$S3VirtualBucketTest${ @Suppress("UNCHECKED_CAST") val transformer = it.arguments[1] as ResponseTransformer&lt;GetObjectResponse, GetObjectResponse&gt; val data = "hello".toByteArray() transformer.transform( GetObjectResponse.builder() .eTag("1111") .lastModified(Instant.parse("1995-10-23T10:12:35Z")) .contentLength(data.size.toLong()) .build(), AbortableInputStream.create(data.inputStream()) ) }</ID>
-    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultError&gt;(3).invoke(searchError) latch.countDown() }</ID>
-    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResults) latch.countDown() }</ID>
-    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultError&gt;(2).invoke(searchError) latch.countDown() }</ID>
-    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart2) latch.countDown() }</ID>
-    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(2).invoke(searchResults) latch.countDown() }</ID>
+    <ID>NoNameShadowing:S3VirtualBucketTest.kt$S3VirtualBucketTest${ @Suppress("UNCHECKED_CAST") val transformer = it.arguments[1] as ResponseTransformer&lt;GetObjectResponse, GetObjectResponse> val data = "hello".toByteArray() transformer.transform( GetObjectResponse.builder() .eTag("1111") .lastModified(Instant.parse("1995-10-23T10:12:35Z")) .contentLength(data.size.toLong()) .build(), AbortableInputStream.create(data.inputStream()) ) }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultError>(3).invoke(searchError) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned>(1).invoke(searchResults) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned>(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultError>(2).invoke(searchError) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned>(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultReturned>(1).invoke(searchResultsPart2) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned>(2).invoke(searchResults) latch.countDown() }</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
     <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ClearableLazy$_value!!</ID>
@@ -119,8 +103,6 @@
     <ID>UnsafeCallOnNullableType:LocalLambdaRunConfigurationTest.kt$LocalLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
     <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedCredentialIdentifier!!</ID>
     <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedRegion!!</ID>
-    <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!</ID>
-    <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().refreshAndFindFileByIoFile(this)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonCodeInsightTestFixtureRule.kt$PythonCodeInsightTestFixtureRule$newFixture.tempDirFixture.getFile(".")!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaBuilderTest.kt$PythonLambdaBuilderTest$psiFile.findTopLevelFunction("handle")!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!</ID>
