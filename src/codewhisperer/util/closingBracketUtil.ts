@@ -18,7 +18,7 @@ const bracketMap: bracketMapType = {
     '}': '{',
 }
 
-export const calculateBracketsLevel = (code: string) => {
+export const calculateBracketsLevel = (code: string, isRightContext: boolean = false) => {
     const bracketCounts: Map<string, number> = new Map([
         ['(', 0],
         ['[', 0],
@@ -47,6 +47,9 @@ export const calculateBracketsLevel = (code: string) => {
                 count: newCount,
                 idx: i,
             })
+        } else if (isRightContext && !(char in bracketMap) && !bracketCounts.has(char) && !/\s/.test(char)) {
+            // we can stop processing right context when we encounter a char that is not a bracket nor white space
+            break
         }
     }
     return bracketsIndexLevel
@@ -54,7 +57,7 @@ export const calculateBracketsLevel = (code: string) => {
 
 export const getBracketsToRemove = (recommendation: string, rightContext: string) => {
     const recommendationBrackets = calculateBracketsLevel(recommendation)
-    const rightContextBrackets = calculateBracketsLevel(rightContext)
+    const rightContextBrackets = calculateBracketsLevel(rightContext, true)
     let i = 0
     let j = 0
     const toBeRemoved = []
