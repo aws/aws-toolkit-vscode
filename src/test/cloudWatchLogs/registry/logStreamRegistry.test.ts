@@ -28,8 +28,6 @@ describe('LogStreamRegistry', async function () {
         registry.setLogData(registeredUri, testStreamData)
         registry.setLogData(newLineUri, newLineData)
         registry.setLogData(searchLogGroupUri, logGroupsStream)
-
-        registry.updateLog(searchLogGroupUri)
     })
 
     describe('hasLog', function () {
@@ -91,6 +89,7 @@ describe('LogStreamRegistry', async function () {
         })
 
         it('registers stream ids to map and clears it on document close', async function () {
+            await registry.updateLog(searchLogGroupUri)
             registry.getLogContent(searchLogGroupUri) // We run this to create the mappings
             const doc = await vscode.workspace.openTextDocument(searchLogGroupUri)
             let streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
