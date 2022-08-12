@@ -14,7 +14,7 @@ import {
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
-const newText = 'a little longer now\n'
+export const newText = 'a little longer now\n'
 
 export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
     return {

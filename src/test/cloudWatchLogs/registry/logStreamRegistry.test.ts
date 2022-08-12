@@ -10,15 +10,13 @@ import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/l
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { logGroupsStream, newLineData, testStreamData, testStreamNames, unregisteredData } from '../utils.test'
+import { logGroupsStream, newLineData, newText, testStreamData, testStreamNames, unregisteredData } from '../utils.test'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
     let map: Map<string, ActiveTab>
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
-
-    const newText = 'a little longer now\n'
 
     const registeredUri = createURIFromArgs(testStreamData.logGroupInfo, testStreamData.parameters)
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
