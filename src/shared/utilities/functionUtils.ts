@@ -35,8 +35,8 @@ export function shared<T, U extends any[]>(fn: (...args: U) => Promise<T>): (...
  * Special-case of `memoize`. Ensures a function is executed only once.
  */
 export function once<T>(fn: () => T): () => T {
-    let val: T,
-        ran = false
+    let val: T
+    let ran = false
 
     return () => (ran ? val : ((val = fn()), (ran = true), val))
 }
