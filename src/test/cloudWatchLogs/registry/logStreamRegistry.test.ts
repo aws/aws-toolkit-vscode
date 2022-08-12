@@ -6,11 +6,11 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { CloudWatchLogsData, LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData, testStreamNames } from '../utils.test'
+import { logGroupsStream, newLineData, testStreamData, testStreamNames, unregisteredData } from '../utils.test'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -19,46 +19,6 @@ describe('LogStreamRegistry', async function () {
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const newText = 'a little longer now\n'
-
-    const newLineData: CloudWatchLogsData = {
-        data: [
-            {
-                timestamp: 12745641600000,
-                message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
-            },
-        ],
-        parameters: {},
-        logGroupInfo: {
-            groupName: 'Not',
-            regionName: 'Here',
-            streamName: 'Dude',
-        },
-        retrieveLogsFunction: fakeGetLogEvents,
-        busy: false,
-    }
-
-    const unregisteredData: CloudWatchLogsData = {
-        data: [],
-        parameters: {},
-        logGroupInfo: {
-            groupName: 'ANOTHER',
-            regionName: 'LINE',
-            streamName: 'PIEEEECCCEEEEEE',
-        },
-        retrieveLogsFunction: fakeGetLogEvents,
-        busy: false,
-    }
-
-    const logGroupsStream: CloudWatchLogsData = {
-        data: [],
-        parameters: {},
-        logGroupInfo: {
-            groupName: 'thisIsAGroupName',
-            regionName: 'thisIsARegionCode',
-        },
-        retrieveLogsFunction: fakeSearchLogGroup,
-        busy: false,
-    }
 
     const registeredUri = createURIFromArgs(testStreamData.logGroupInfo, testStreamData.parameters)
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
