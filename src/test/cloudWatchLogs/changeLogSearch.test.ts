@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../shared/settings'
-import { fakeGetLogEvents, testComponents, testStreamData1 } from './utils.test'
+import { fakeGetLogEvents, testComponents, testStreamData } from './utils.test'
 
 describe('changeLogSearch', async function () {
     let testRegistry: LogStreamRegistry
@@ -39,7 +39,7 @@ describe('changeLogSearch', async function () {
     before(function () {
         testRegistry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
 
-        testRegistry.registerLog(oldUri, testStreamData1)
+        testRegistry.registerLog(oldUri, testStreamData)
     })
 
     it('unregisters old log and registers a new one', async function () {

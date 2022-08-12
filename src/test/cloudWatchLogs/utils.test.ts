@@ -50,7 +50,7 @@ export const testComponents = {
     parameters: { filterPattern: 'this is a bad filter!' },
 }
 
-export const testStreamData1: CloudWatchLogsData = {
+export const testStreamData: CloudWatchLogsData = {
     data: [
         {
             timestamp: 1,
