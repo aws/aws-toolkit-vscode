@@ -6,12 +6,7 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import {
-    CloudWatchLogsData,
-    LogStreamRegistry,
-    ActiveTab,
-    CloudWatchLogsEvent,
-} from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { CloudWatchLogsData, LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
@@ -24,22 +19,6 @@ describe('LogStreamRegistry', async function () {
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const newText = 'a little longer now\n'
-
-    // const testData: CloudWatchLogsData = {
-    //     data: [
-    //         {
-    //             message: 'short and sweet\n',
-    //         },
-    //     ],
-    //     parameters: {},
-    //     logGroupInfo: {
-    //         groupName: 'Less',
-    //         regionName: 'Is',
-    //         streamName: 'More',
-    //     },
-    //     retrieveLogsFunction: fakeGetLogEvents,
-    //     busy: false,
-    // }
 
     const newLineData: CloudWatchLogsData = {
         data: [
@@ -82,7 +61,6 @@ describe('LogStreamRegistry', async function () {
     }
 
     const registeredUri = createURIFromArgs(testStreamData.logGroupInfo, testStreamData.parameters)
-    // const testDataUri = createURIFromArgs(testData.logGroupInfo, testData.parameters)
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
     const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
     const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
@@ -90,7 +68,6 @@ describe('LogStreamRegistry', async function () {
     beforeEach(function () {
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
         registry.setLogData(registeredUri, testStreamData)
-        // registry.setLogData(testDataUri, testData)
         registry.setLogData(newLineUri, newLineData)
         registry.setLogData(searchLogGroupUri, logGroupsStream)
 
