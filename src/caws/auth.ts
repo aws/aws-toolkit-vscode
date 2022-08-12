@@ -18,6 +18,7 @@ import { getLogger } from '../shared/logger'
 import { UnknownError } from '../shared/errors'
 import { createSecretsCache, KeyedCache, mapCache } from '../shared/utilities/cacheUtils'
 import { assertHasProps, isNonNullable } from '../shared/utilities/tsUtils'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 const CAWS_SONO_PROFILE = {
     startUrl: 'https://d-9067642ac7.awsapps.com/start',
@@ -308,7 +309,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
     private static instance: CawsAuthenticationProvider
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        const secrets = ctx.secrets ?? new SecretMemento(ctx.globalState)
+        const secrets = isCloud9() ? new SecretMemento(ctx.globalState) : ctx.secrets
 
         return (this.instance ??= new this(new CawsAuthStorage(ctx.globalState, secrets)))
     }
