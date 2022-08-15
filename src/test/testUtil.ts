@@ -15,6 +15,7 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesyste
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
+import { Command, Commands } from '../shared/vscode/commands2'
 
 const testTempDirs: string[] = []
 
@@ -286,4 +287,15 @@ export async function closeAllEditors(): Promise<void> {
 
         throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
     }
+}
+
+export function testCommand<T extends (...args: any[]) => unknown, U extends any[]>(
+    command: ReturnType<typeof Commands.declare<T, U>>,
+    ...args: U
+): Command<T> {
+    const testCommands = new Commands()
+    const testId = `test.${command.id}`
+    const resource = (command as any).resource as { id: string; factory: (...args: U) => any }
+
+    return testCommands.register({ ...resource, id: testId }, resource.factory(...args))
 }

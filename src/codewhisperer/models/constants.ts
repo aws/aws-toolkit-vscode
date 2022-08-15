@@ -18,6 +18,11 @@ export const CodeWhispererConstants = {
     invocationKeyThreshold: 15,
     specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
     normalTextChangeRegex: /[A-Za-z0-9]/g,
+    AutoSuggestion: {
+        settingId: 'cwspr_autoSuggestionActivation',
+        activated: 'Activated',
+        deactivated: 'Deactivated',
+    },
 
     /**
      * EditorCon context

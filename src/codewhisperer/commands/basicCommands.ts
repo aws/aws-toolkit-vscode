@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { showView } from '../vue/backend'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
@@ -21,9 +22,17 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
     (context: ExtContext) => async () => {
-        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, context) || false
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, !autoTriggerEnabled, context)
+        const autoTriggerEnabled: boolean =
+            get(CodeWhispererConstants.autoTriggerEnabledKey, context.extensionContext.globalState) || false
+        const toSet: boolean = !autoTriggerEnabled
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, context.extensionContext.globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        telemetry.recordAwsModifySetting({
+            settingId: CodeWhispererConstants.AutoSuggestion.settingId,
+            settingState: toSet
+                ? CodeWhispererConstants.AutoSuggestion.activated
+                : CodeWhispererConstants.AutoSuggestion.deactivated,
+        })
     }
 )
 
@@ -64,16 +73,27 @@ export const requestAccess = Commands.declare('aws.codeWhisperer.requestAccess',
 export const requestAccessCloud9 = Commands.declare(
     'aws.codeWhisperer.requestAccessCloud9',
     (context: ExtContext) => async () => {
-        if (get(CodeWhispererConstants.cloud9AccessStateKey, context) === Cloud9AccessState.RequestedAccess) {
+        if (
+            get(CodeWhispererConstants.cloud9AccessStateKey, context.extensionContext.globalState) ===
+            Cloud9AccessState.RequestedAccess
+        ) {
             showTimedMessage(CodeWhispererConstants.cloud9AccessAlreadySent, 3000)
         } else {
             try {
                 await vscode.commands.executeCommand('cloud9.codeWhispererRequestAccess')
                 showTimedMessage(CodeWhispererConstants.cloud9AccessSent, 3000)
-                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, context)
+                await set(
+                    CodeWhispererConstants.cloud9AccessStateKey,
+                    Cloud9AccessState.RequestedAccess,
+                    context.extensionContext.globalState
+                )
             } catch (e) {
                 getLogger().error(`Encountered error when requesting cloud9 access ${e}`)
-                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, context)
+                await set(
+                    CodeWhispererConstants.cloud9AccessStateKey,
+                    Cloud9AccessState.NoAccess,
+                    context.extensionContext.globalState
+                )
             }
         }
     }
@@ -163,12 +183,12 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export function get(key: string, context: ExtContext): any {
-    return context.extensionContext.globalState.get(key)
+export function get(key: string, context: vscode.Memento): any {
+    return context.get(key)
 }
 
-export async function set(key: string, value: any, context: ExtContext): Promise<void> {
-    await context.extensionContext.globalState.update(key, value).then(
+export async function set(key: string, value: any, context: vscode.Memento): Promise<void> {
+    await context.update(key, value).then(
         () => {},
         error => {
             getLogger().verbose(`Failed to update global state: ${error}`)
