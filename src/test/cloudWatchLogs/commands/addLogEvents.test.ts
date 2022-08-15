@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
-import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
+import { LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { installFakeClock } from '../../testUtil'
 
@@ -58,10 +58,10 @@ describe('addLogEvents', async function () {
             uri: uri,
         } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = {
+        const fakeRegistry: LogDataRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any as LogStreamRegistry
+        } as any as LogDataRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -114,10 +114,10 @@ describe('addLogEvents', async function () {
             uri: uri,
         } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = {
+        const fakeRegistry: LogDataRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any as LogStreamRegistry
+        } as any as LogDataRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 

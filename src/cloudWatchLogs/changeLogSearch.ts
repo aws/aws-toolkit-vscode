@@ -7,7 +7,7 @@ import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logDataDocumentProvider'
-import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logDataRegistry'
+import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogDataRegistry } from './registry/logDataRegistry'
 import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
 /**
@@ -70,7 +70,7 @@ export async function getNewData(
 }
 
 export async function changeLogSearchParams(
-    registry: LogStreamRegistry,
+    registry: LogDataRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
     const oldUri = getActiveDocumentUri(registry)

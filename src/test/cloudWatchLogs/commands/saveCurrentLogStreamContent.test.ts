@@ -10,14 +10,14 @@ import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
-import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
+import { LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('saveCurrentLogDataContent', async function () {
     const logContent = 'shutdown is imminent'
     let filename: string
-    let fakeRegistry: LogStreamRegistry
+    let fakeRegistry: LogDataRegistry
     let tempDir: string
 
     beforeEach(async function () {
@@ -27,7 +27,7 @@ describe('saveCurrentLogDataContent', async function () {
             getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
                 return logContent
             },
-        } as any as LogStreamRegistry
+        } as any as LogDataRegistry
     })
 
     afterEach(async function () {

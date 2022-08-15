@@ -20,7 +20,7 @@ import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utili
 import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
-    LogStreamRegistry,
+    LogDataRegistry,
     getLogEventsFromUriComponents,
     getInitialLogData,
 } from '../registry/logDataRegistry'
@@ -33,7 +33,7 @@ export interface SelectLogStreamResponse {
     logStreamName: string
 }
 
-export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
+export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (!logStreamResponse) {

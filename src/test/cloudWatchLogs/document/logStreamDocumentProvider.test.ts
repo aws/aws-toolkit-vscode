@@ -6,9 +6,9 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings, createURIFromArgs, isLogStreamUri } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logDataDocumentProvider'
+import { LogDataDocumentProvider } from '../../../cloudWatchLogs/document/logDataDocumentProvider'
 import {
-    LogStreamRegistry,
+    LogDataRegistry,
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
@@ -16,7 +16,7 @@ import {
     ActiveTab,
 } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../../shared/settings'
-import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logDataCodeLensProvider'
+import { LogDataCodeLensProvider } from '../../../cloudWatchLogs/document/logDataCodeLensProvider'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
 function testGetLogEvents(
@@ -49,11 +49,11 @@ async function testFilterLogEvents(
 
 describe('LogStreamDocumentProvider', function () {
     const map = new Map<string, ActiveTab>()
-    let provider: LogStreamDocumentProvider
+    let provider: LogDataDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
-    const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
+    const registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
 
-    const codeLensProvider = new LogStreamCodeLensProvider(registry)
+    const codeLensProvider = new LogDataCodeLensProvider(registry)
 
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
@@ -90,7 +90,7 @@ describe('LogStreamDocumentProvider', function () {
     before(async function () {
         registry.setLogData(getLogsUri, getLogsStream)
         registry.setLogData(filterLogsUri, filterLogsStream)
-        provider = new LogStreamDocumentProvider(registry)
+        provider = new LogDataDocumentProvider(registry)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
-import { LogStreamRegistry } from '../registry/logDataRegistry'
+import { LogDataRegistry } from '../registry/logDataRegistry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from 'vscode-nls'
 
@@ -16,7 +16,7 @@ const lock = new AsyncLock({ maxPending: 1 })
 
 export async function addLogEvents(
     document: vscode.TextDocument,
-    registry: LogStreamRegistry,
+    registry: LogDataRegistry,
     headOrTail: 'head' | 'tail',
     onDidChangeCodeLensEvent: vscode.EventEmitter<void>
 ): Promise<void> {

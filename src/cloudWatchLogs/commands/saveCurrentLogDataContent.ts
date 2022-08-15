@@ -12,11 +12,11 @@ import { SystemUtilities } from '../../shared/systemUtilities'
 import { recordCloudwatchlogsDownload, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { LogStreamRegistry } from '../registry/logDataRegistry'
+import { LogDataRegistry } from '../registry/logDataRegistry'
 
 export async function saveCurrentLogDataContent(
     uri: vscode.Uri | undefined,
-    registry: LogStreamRegistry,
+    registry: LogDataRegistry,
     window = Window.vscode()
 ): Promise<void> {
     let result: Result = 'Succeeded'
