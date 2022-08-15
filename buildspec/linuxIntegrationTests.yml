@@ -23,9 +23,8 @@ phases:
             - 'apt-get install --reinstall ca-certificates'
             - 'add-apt-repository -y ppa:deadsnakes/ppa'
             # Install other needed dependencies
-            - 'apt-get -qq install -y jq python3.6 python3.7 python3.8 python3-pip'
+            - 'apt-get -qq install -y jq python3.7 python3.8 python3-pip'
             # Fail early if any of these not found.
-            - 'python3.6 --version'
             - 'python3.7 --version'
             - 'python3.8 --version'
             - 'python3.9 --version'
