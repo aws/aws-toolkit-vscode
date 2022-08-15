@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { toTitleCase } from '../../../shared/utilities/textUtilities'
 
 type EventEmitters<T> = {
     [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
@@ -16,10 +17,6 @@ type InterceptEmitters<T, K extends keyof T> = {
 } & T // prettier really wants to keep this T separate
 type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
 type NoNever<T> = Pick<T, FilteredKeys<T>>
-
-function capitalize<S extends string>(s: S): Capitalize<S> {
-    return `${s[0].toUpperCase()}${s.slice(1)}` as any
-}
 
 /**
  * Adds references to event emitters for all known public events as specified by the generic K type.
@@ -43,7 +40,7 @@ export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[])
         if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
             const targetEvent = key.slice(1).replace('Emitter', '')
             keys = keys.filter(k => k !== targetEvent)
-            Object.assign(obj, { [`fire${capitalize(targetEvent)}`]: value.fire.bind(value) })
+            Object.assign(obj, { [`fire${toTitleCase(targetEvent)}`]: value.fire.bind(value) })
         }
     })
 
