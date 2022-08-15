@@ -9,8 +9,8 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogStreamContent'
-import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
+import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 

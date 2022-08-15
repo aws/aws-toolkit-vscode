@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../cloudWatchLogs/cloudWatchLogsUtils'
-import { LogStreamRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../shared/settings'
 import { fakeGetLogEvents, testComponents, testStreamData } from './utils.test'
 

@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
-import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { installFakeClock } from '../../testUtil'
 

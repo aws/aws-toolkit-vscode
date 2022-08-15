@@ -12,7 +12,7 @@ import { SystemUtilities } from '../../shared/systemUtilities'
 import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { LogStreamRegistry } from '../registry/logDataRegistry'
 
 export async function saveCurrentLogStreamContent(
     uri: vscode.Uri | undefined,

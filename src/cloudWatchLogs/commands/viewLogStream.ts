@@ -23,7 +23,7 @@ import {
     LogStreamRegistry,
     getLogEventsFromUriComponents,
     getInitialLogData,
-} from '../registry/logStreamRegistry'
+} from '../registry/logDataRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument } from './searchLogGroup'
 

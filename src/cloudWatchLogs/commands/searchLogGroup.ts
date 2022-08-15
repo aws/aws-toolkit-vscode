@@ -13,7 +13,7 @@ import {
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
     getInitialLogData,
-} from '../registry/logStreamRegistry'
+} from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'

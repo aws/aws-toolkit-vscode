@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { LogStreamRegistry } from '../registry/logDataRegistry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from 'vscode-nls'
 

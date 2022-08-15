@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'

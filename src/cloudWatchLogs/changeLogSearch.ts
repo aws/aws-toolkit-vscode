@@ -6,8 +6,8 @@ import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
-import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
-import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
+import { getActiveDocumentUri } from './document/logDataDocumentProvider'
+import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logDataRegistry'
 import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
 /**

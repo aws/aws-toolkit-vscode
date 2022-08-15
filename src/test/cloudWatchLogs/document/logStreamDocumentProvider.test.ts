@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings, createURIFromArgs, isLogStreamUri } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
+import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logDataDocumentProvider'
 import {
     LogStreamRegistry,
     CloudWatchLogsData,
@@ -14,9 +14,9 @@ import {
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
     ActiveTab,
-} from '../../../cloudWatchLogs/registry/logStreamRegistry'
+} from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../../shared/settings'
-import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logStreamCodeLensProvider'
+import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logDataCodeLensProvider'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
 function testGetLogEvents(

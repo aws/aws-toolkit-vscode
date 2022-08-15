@@ -10,7 +10,7 @@ import {
     CloudWatchLogsParameters,
     CloudWatchLogsData,
     CloudWatchLogsResponse,
-} from '../../cloudWatchLogs/registry/logStreamRegistry'
+} from '../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 

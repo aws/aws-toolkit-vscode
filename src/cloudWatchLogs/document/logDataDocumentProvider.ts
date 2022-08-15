@@ -9,7 +9,7 @@ import {
     getLogEventsFromUriComponents,
     LogStreamRegistry,
     getInitialLogData,
-} from '../registry/logStreamRegistry'
+} from '../registry/logDataRegistry'
 import { getLogger } from '../../shared/logger'
 import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
 
