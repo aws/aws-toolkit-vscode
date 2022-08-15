@@ -20,7 +20,7 @@ export async function saveCurrentLogDataContent(
     window = Window.vscode()
 ): Promise<void> {
     let result: Result = 'Succeeded'
-    let resourceType: CloudWatchResourceType
+    let resourceType: CloudWatchResourceType = 'logStream' // Default to stream if it fails to find URI
 
     try {
         if (!uri) {
@@ -31,6 +31,7 @@ export async function saveCurrentLogDataContent(
                 throw new Error()
             }
         }
+        resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
         const content = registry.getLogContent(uri, { timestamps: true })
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
@@ -77,12 +78,6 @@ export async function saveCurrentLogDataContent(
                 vscode.window.activeTextEditor?.document.fileName
             )
         )
-    } finally {
-        if (uri) {
-            resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
-        } else {
-            resourceType = 'logStream' // Default to stream if it fails to find URI
-        }
     }
 
     recordCloudwatchlogsDownload({
