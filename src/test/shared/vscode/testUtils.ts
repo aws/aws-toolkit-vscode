@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { Command, Commands } from '../../../shared/vscode/commands2'
 
 type EventEmitters<T> = {
     [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
@@ -54,4 +55,31 @@ export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[])
     }
 
     return obj as any
+}
+
+/**
+ * Creates a copy of the target command, injecting dependencies and registering it with a new id.
+ *
+ * ### Example
+ * ```ts
+ * const foo = Commands.declare('aws.foo', (memento: vscode.Memento) => () => memento.get<string>('foo'))
+ * const testMemento = new FakeMemento()
+ * const testFoo = testCommand(foo, testMemento)
+ *
+ * // Test commands are always prefixed with 'test.'
+ * assert.strictEqual(testFoo.id, 'test.aws.foo')
+ *
+ * await testMemento.update('foo', 'bar')
+ * assert.strictEqual(await testFoo.execute(), 'bar')
+ * ```
+ */
+export function testCommand<T extends (...args: any[]) => unknown, U extends any[]>(
+    command: ReturnType<typeof Commands.declare<T, U>>,
+    ...args: U
+): Command<T> {
+    const testCommands = new Commands()
+    const testId = `test.${command.id}`
+    const resource = (command as any).resource as { id: string; factory: (...args: U) => any }
+
+    return testCommands.register({ ...resource, id: testId }, resource.factory(...args))
 }
