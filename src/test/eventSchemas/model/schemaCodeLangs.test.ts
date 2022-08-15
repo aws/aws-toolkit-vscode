@@ -27,7 +27,6 @@ describe('getApiValueForSchemasDownload', function () {
     it('should return api value for runtimes supported by eventBridge application', async function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
             switch (runtime) {
-                case 'python3.6':
                 case 'python3.7':
                 case 'python3.8':
                 case 'python3.9': {
