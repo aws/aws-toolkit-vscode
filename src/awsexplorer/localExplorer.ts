@@ -4,20 +4,43 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../shared/telemetry/telemetry'
-import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { once } from '../shared/utilities/functionUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { initNodes } from '../caws/explorer'
-import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 
-export interface RootNode extends TreeNode {
-    canShow?(): Promise<boolean> | boolean
+export interface RootNode<T = unknown> extends TreeNode<T> {
+    /**
+     * An optional event to signal that this node's visibility has changed.
+     */
     readonly onDidChangeVisibility?: vscode.Event<void>
+
+    /**
+     * Determines whether this node should be rendered in the tree view.
+     *
+     * If not implemented, it is assumed that the node is always visible.
+     */
+    canShow?(): Promise<boolean> | boolean
 }
 
-const roots: RootNode[] = [cdkNode, codewhispererNode]
+/**
+ * The 'local' explorer is represented as 'Developer Tools' in the UI. We use a different name within
+ * source code to differentiate between _Toolkit developers_ and _Toolkit users_.
+ *
+ * Components placed under this view do not strictly need to be 'local'. They just need to place greater
+ * emphasis on the developer's local development environment.
+ */
+export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<TreeNode> {
+    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(rootNodes) })
+    const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
+
+    rootNodes.forEach(node => node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
+
+    // Cloud9 will only refresh when refreshing the entire tree
+    if (isCloud9()) {
+        rootNodes.forEach(node => node.onDidChangeChildren?.(() => treeDataProvider.refresh(node)))
+    }
+
+    return view
+}
 
 async function getChildren(roots: RootNode[]) {
     const nodes: TreeNode[] = []
@@ -29,44 +52,4 @@ async function getChildren(roots: RootNode[]) {
     }
 
     return nodes
-}
-
-/**
- * The 'local' explorer is represented as 'Developer Tools' in the UI. We use a different name within
- * source code to differentiate between _Toolkit developers_ and _Toolkit users_.
- *
- * Components placed under this view do not strictly need to be 'local'. They just need to place greater
- * emphasis on the developer's local development environment.
- */
-export function createLocalExplorerView(ctx: vscode.ExtensionContext): vscode.TreeView<TreeNode> {
-    // CAWS/Sono are special cases at the moment and need to be created after the extension activates
-    // Will probably just add a `register` function to generalize this
-    roots.unshift(...initNodes(ctx))
-
-    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(roots) })
-    const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
-
-    roots.forEach(node => {
-        node.onDidChangeVisibility?.(() => treeDataProvider.refresh())
-    })
-
-    // Legacy CDK metric, remove this when we add something generic
-    const recordExpandCdkOnce = once(telemetry.recordCdkAppExpanded)
-    view.onDidExpandElement(e => {
-        if (e.element.resource instanceof CdkRootNode) {
-            recordExpandCdkOnce()
-        }
-    })
-
-    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-    view.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
-
-    // Cloud9 will only refresh when refreshing the entire tree
-    if (isCloud9()) {
-        roots.forEach(node => {
-            node.onDidChangeChildren?.(() => treeDataProvider.refresh())
-        })
-    }
-
-    return view
 }

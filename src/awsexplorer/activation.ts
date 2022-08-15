@@ -12,7 +12,12 @@ import globals from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
+import {
+    recordAwsRefreshExplorer,
+    recordAwsShowRegion,
+    recordCdkAppExpanded,
+    recordVscodeActiveRegions,
+} from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { Commands } from '../shared/vscode/commands2'
@@ -25,6 +30,10 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
+import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
+import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { once } from '../shared/utilities/functionUtils'
+import { initNodes } from '../caws/explorer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -69,6 +78,21 @@ export async function activate(args: {
             }
         })
     )
+
+    const nodes = [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
+    const developerTools = createLocalExplorerView(nodes)
+    args.context.extensionContext.subscriptions.push(developerTools)
+
+    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
+    // Legacy CDK metric, remove this when we add something generic
+    const recordExpandCdkOnce = once(recordCdkAppExpanded)
+    developerTools.onDidExpandElement(e => {
+        if (e.element.resource instanceof CdkRootNode) {
+            recordExpandCdkOnce()
+        }
+    })
 }
 
 async function registerAwsExplorerCommands(
@@ -131,7 +155,4 @@ async function registerAwsExplorerCommands(
         }),
         loadMoreChildrenCommand.register(awsExplorer)
     )
-
-    const developerTools = createLocalExplorerView(context.extensionContext)
-    context.extensionContext.subscriptions.push(developerTools)
 }

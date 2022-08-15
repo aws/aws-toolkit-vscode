@@ -103,6 +103,11 @@ export function getHostNameFromEnv(env: DevelopmentWorkspaceId): string {
 }
 
 export async function autoConnect(authProvider: CawsAuthenticationProvider) {
+    const currentSession = authProvider.getActiveSession()
+    if (currentSession !== undefined) {
+        return currentSession
+    }
+
     for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
         getLogger().info(`REMOVED.codes: trying to auto-connect with user: ${account.label}`)
 
@@ -120,7 +125,7 @@ export async function autoConnect(authProvider: CawsAuthenticationProvider) {
 export function createClientFactory(authProvider: CawsAuthenticationProvider): () => Promise<CawsClient> {
     return async () => {
         const client = await createClient()
-        const creds = authProvider.getActiveSession() ?? (await autoConnect(authProvider))
+        const creds = await autoConnect(authProvider)
 
         if (creds) {
             await client.setCredentials(creds.accessDetails, creds.accountDetails.metadata)

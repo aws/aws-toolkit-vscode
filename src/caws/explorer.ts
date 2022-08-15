@@ -11,7 +11,13 @@ import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { CawsAuthenticationProvider } from './auth'
 import { CawsCommands } from './commands'
-import { ConnectedWorkspace, createClientFactory, getConnectedWorkspace, getDevfileLocation } from './model'
+import {
+    autoConnect,
+    ConnectedWorkspace,
+    createClientFactory,
+    getConnectedWorkspace,
+    getDevfileLocation,
+} from './model'
 
 function getLocalCommands() {
     if (isCloud9()) {
@@ -65,9 +71,15 @@ export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
 export class AuthNode implements RootNode {
     public readonly id = 'auth'
 
-    public constructor(public readonly resource: CawsAuthenticationProvider) {}
+    private readonly onDidChangeTreeItemEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeTreeItemEmitter.event
 
-    public getTreeItem() {
+    public constructor(public readonly resource: CawsAuthenticationProvider) {
+        this.resource.onDidChangeSessions(() => this.onDidChangeTreeItemEmitter.fire())
+    }
+
+    public async getTreeItem() {
+        await autoConnect(this.resource)
         const session = this.resource.getActiveSession()
 
         if (session !== undefined) {
@@ -90,21 +102,16 @@ export class CawsRootNode implements RootNode {
     public readonly id = 'caws'
     public readonly resource = this.workspace
 
-    private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
-    public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+
+    public readonly onDidChangeVisibility = this.onDidChangeEmitter.event
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+    public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
     private workspace?: ConnectedWorkspace
 
     public constructor(private readonly authProvider: CawsAuthenticationProvider) {
-        this.authProvider.onDidChangeSessions(async () => {
-            this.workspace = await this.getWorkspace()
-            this.onDidChangeVisibilityEmitter.fire()
-        })
-
-        this.getWorkspace().then(workspace => {
-            this.workspace = workspace
-            this.onDidChangeVisibilityEmitter.fire()
-        })
+        this.authProvider.onDidChangeSessions(() => this.onDidChangeEmitter.fire())
     }
 
     public canShow(): boolean {
@@ -121,8 +128,9 @@ export class CawsRootNode implements RootNode {
         return getRemoteCommands(this.workspace.summary, devfileLocation)
     }
 
-    public getTreeItem() {
+    public async getTreeItem() {
         const item = new vscode.TreeItem('REMOVED.codes', vscode.TreeItemCollapsibleState.Collapsed)
+        this.workspace = await this.getWorkspace()
 
         if (this.workspace !== undefined) {
             item.description = 'Connected to Workspace'

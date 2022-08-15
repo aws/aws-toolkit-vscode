@@ -107,12 +107,17 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         return tracked
     }
 
-    public refresh(): void {
-        vscode.Disposable.from(...this.listeners.values()).dispose()
+    public refresh(node?: TreeNode): void {
+        if (node === undefined) {
+            vscode.Disposable.from(...this.listeners.values()).dispose()
 
-        this.items.clear()
-        this.children.clear()
-        this.listeners.clear()
+            this.items.clear()
+            this.children.clear()
+            this.listeners.clear()
+        } else {
+            this.clear(node)
+        }
+
         this.onDidChangeTreeDataEmitter.fire()
     }
 
