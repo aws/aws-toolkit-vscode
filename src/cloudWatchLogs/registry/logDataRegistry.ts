@@ -16,7 +16,7 @@ import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 // TODO: Add debug logging statements
 
 /**
- * Class which contains CRUD operations and persistence for CloudWatch Log Data.
+ * Class which contains CRUD operations and persistence for CloudWatch Log Data (events from a single logstream or events from log group search)
  */
 export class LogDataRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
