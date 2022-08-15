@@ -31,8 +31,10 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 
 interface LinkedResponse {
     readonly type: 'linked'
+    readonly branchType: 'existing' | 'new'
     readonly selectedProject: CawsProject
     readonly selectedBranch: CawsBranch
+    readonly newBranch: string
 }
 
 interface CloneResponse {
@@ -185,7 +187,19 @@ export class CawsCreateWebview extends VueWebview {
         })
     }
 
-    private createLinkedWorkspace(settings: WorkspaceSettings, source: LinkedResponse) {
+    private async createLinkedWorkspace(settings: WorkspaceSettings, source: LinkedResponse) {
+        if (source.branchType === 'new') {
+            await this.client.createSourceBranch({
+                branchName: source.newBranch,
+                organizationName: source.selectedProject.org.name,
+                projectName: source.selectedProject.name,
+                sourceRepositoryName: source.selectedBranch.repo.name,
+                commitSpecifier: source.selectedBranch.headCommitId,
+            })
+        }
+
+        const branchName =
+            source.branchType === 'new' ? source.newBranch : source.selectedBranch.name.replace('refs/heads/', '')
         return this.client.createDevelopmentWorkspace({
             ides: [{ name: 'VSCode' }],
             projectName: source.selectedProject.name,
@@ -193,7 +207,7 @@ export class CawsCreateWebview extends VueWebview {
             repositories: [
                 {
                     repositoryName: source.selectedBranch.repo.name,
-                    branchName: source.selectedBranch.name.replace('refs/heads/', ''),
+                    branchName,
                 },
             ],
             ...settings,

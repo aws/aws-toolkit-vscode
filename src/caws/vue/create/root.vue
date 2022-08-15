@@ -18,7 +18,7 @@
         title="Alias"
         description="Enter an alias to identify the workspace. This is optional but recommended."
     >
-        <label class="options-label soft" style="display: block" for="alias-input">Alias</label>
+        <label class="options-label soft mb-8" style="display: block" for="alias-input">Alias</label>
         <input id="alias-input" type="text" v-model="alias" />
     </settings-panel>
 
