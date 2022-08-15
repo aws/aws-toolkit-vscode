@@ -835,7 +835,7 @@
                     "when": "resourceScheme == aws-cwl"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
+                    "command": "aws.saveCurrentLogDataContent",
                     "when": "resourceScheme == aws-cwl"
                 },
                 {
@@ -1078,7 +1078,7 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
+                    "command": "aws.saveCurrentLogDataContent",
                     "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
@@ -2577,8 +2577,8 @@
                 }
             },
             {
-                "command": "aws.saveCurrentLogStreamContent",
-                "title": "%AWS.command.saveCurrentLogStreamContent%",
+                "command": "aws.saveCurrentLogDataContent",
+                "title": "%AWS.command.saveCurrentLogDataContent%",
                 "category": "%AWS.title%",
                 "icon": "$(save)",
                 "cloud9": {

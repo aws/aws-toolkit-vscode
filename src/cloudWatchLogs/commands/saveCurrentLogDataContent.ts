@@ -9,17 +9,18 @@ const localize = nls.loadMessageBundle()
 
 import * as fs from 'fs-extra'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
+import { recordCloudwatchlogsDownload, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
-import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogStreamRegistry } from '../registry/logDataRegistry'
 
-export async function saveCurrentLogStreamContent(
+export async function saveCurrentLogDataContent(
     uri: vscode.Uri | undefined,
     registry: LogStreamRegistry,
     window = Window.vscode()
 ): Promise<void> {
     let result: Result = 'Succeeded'
+    let resourceType: CloudWatchResourceType
 
     try {
         if (!uri) {
@@ -37,7 +38,7 @@ export async function saveCurrentLogStreamContent(
         const uriComponents = parseCloudWatchLogsUri(uri)
         const logGroupInfo = uriComponents.logGroupInfo
 
-        const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
+        const localizedLogFile = localize('AWS.command.saveCurrentLogDataContent.logfile', 'Log File')
         const selectedUri = await window.showSaveDialog({
             defaultUri: vscode.Uri.joinPath(
                 workspaceDir,
@@ -57,7 +58,7 @@ export async function saveCurrentLogStreamContent(
                 const err = e as Error
                 vscode.window.showErrorMessage(
                     localize(
-                        'AWS.command.saveCurrentLogStreamContent.error',
+                        'AWS.command.saveCurrentLogDataContent.error',
                         'Error saving current log to {0}: {1}',
                         selectedUri.fsPath,
                         err.message
@@ -72,13 +73,20 @@ export async function saveCurrentLogStreamContent(
         vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
-                'Not a Cloudwatch Log stream: {0}',
+                'Not a Cloudwatch Log data source: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )
         )
+    } finally {
+        if (uri) {
+            resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
+        } else {
+            resourceType = 'logStream' // Default to stream if it fails to find URI
+        }
     }
 
-    recordCloudwatchlogsDownloadStreamToFile({
+    recordCloudwatchlogsDownload({
         result: result,
+        cloudWatchResourceType: resourceType,
     })
 }

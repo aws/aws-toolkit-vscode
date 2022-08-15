@@ -9,7 +9,7 @@ import { Settings } from '../shared/settings'
 import { CloudWatchLogsSettings, isLogStreamUri } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
-import { saveCurrentLogStreamContent } from './commands/saveCurrentLogDataContent'
+import { saveCurrentLogDataContent } from './commands/saveCurrentLogDataContent'
 import { viewLogStream } from './commands/viewLogStream'
 import { LogStreamCodeLensProvider } from './document/logDataCodeLensProvider'
 import { LogStreamDocumentProvider } from './document/logDataDocumentProvider'
@@ -73,8 +73,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
         ),
         Commands.register(
-            'aws.saveCurrentLogStreamContent',
-            async (uri?: vscode.Uri) => await saveCurrentLogStreamContent(uri, registry)
+            'aws.saveCurrentLogDataContent',
+            async (uri?: vscode.Uri) => await saveCurrentLogDataContent(uri, registry)
         ),
         // AWS Explorer right-click action
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.

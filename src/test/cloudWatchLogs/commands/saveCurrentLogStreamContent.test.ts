@@ -9,12 +9,12 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
+import { saveCurrentLogDataContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('saveCurrentLogStreamContent', async function () {
+describe('saveCurrentLogDataContent', async function () {
     const logContent = 'shutdown is imminent'
     let filename: string
     let fakeRegistry: LogStreamRegistry
@@ -42,7 +42,7 @@ describe('saveCurrentLogStreamContent', async function () {
         }
         const uri = createURIFromArgs(logGroupInfo, {})
 
-        await saveCurrentLogStreamContent(
+        await saveCurrentLogDataContent(
             uri,
             fakeRegistry,
             new FakeWindow({
@@ -57,7 +57,7 @@ describe('saveCurrentLogStreamContent', async function () {
     })
 
     it('does not do anything if the URI is invalid', async function () {
-        await saveCurrentLogStreamContent(
+        await saveCurrentLogDataContent(
             vscode.Uri.parse(`notCloudWatch:hahahaha`),
             fakeRegistry,
             new FakeWindow({
