@@ -14,7 +14,7 @@ import {
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
-const newText = 'a little longer now\n'
+export const newText = 'a little longer now\n'
 
 export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
     return {
@@ -50,7 +50,7 @@ export const testComponents = {
     parameters: { filterPattern: 'this is a bad filter!' },
 }
 
-export const testStreamData1: CloudWatchLogsData = {
+export const testStreamData: CloudWatchLogsData = {
     data: [
         {
             timestamp: 1,
@@ -77,7 +77,47 @@ export const testStreamData1: CloudWatchLogsData = {
     retrieveLogsFunction: fakeGetLogEvents,
     busy: false,
 }
-const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
+
+export const newLineData: CloudWatchLogsData = {
+    data: [
+        {
+            timestamp: 12745641600000,
+            message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
+        },
+    ],
+    parameters: {},
+    logGroupInfo: {
+        groupName: 'Not',
+        regionName: 'Here',
+        streamName: 'Dude',
+    },
+    retrieveLogsFunction: fakeGetLogEvents,
+    busy: false,
+}
+
+export const unregisteredData: CloudWatchLogsData = {
+    data: [],
+    parameters: {},
+    logGroupInfo: {
+        groupName: 'ANOTHER',
+        regionName: 'LINE',
+        streamName: 'PIEEEECCCEEEEEE',
+    },
+    retrieveLogsFunction: fakeGetLogEvents,
+    busy: false,
+}
+
+export const logGroupsStream: CloudWatchLogsData = {
+    data: [],
+    parameters: {},
+    logGroupInfo: {
+        groupName: 'thisIsAGroupName',
+        regionName: 'thisIsARegionCode',
+    },
+    retrieveLogsFunction: fakeSearchLogGroup,
+    busy: false,
+}
+export const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
 
 describe('parseCloudWatchLogsUri', async function () {
     it('converts a valid URI to components', function () {
