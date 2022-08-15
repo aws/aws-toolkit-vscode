@@ -12,6 +12,8 @@ const localize = nls.loadMessageBundle()
 import * as AWS from 'aws-sdk'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
+import * as gql from 'graphql-request'
+import * as gqltypes from 'graphql-request/dist/types'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
@@ -30,24 +32,29 @@ interface CawsConfig {
     readonly endpoint: string
     readonly hostname: string
     readonly gitHostname: string
+    readonly gqlEndpoint: string
 }
 
 export function getCawsConfig(): CawsConfig {
     const stage = DevSettings.instance.get('cawsStage', 'prod')
 
     if (stage === 'gamma') {
+        const endpoint = 'https://public.api-gamma.REMOVED.codes'
         return {
             region: 'us-west-2',
-            endpoint: 'https://public.api-gamma.REMOVED.codes',
+            endpoint,
             hostname: 'integ.stage.REMOVED.codes',
             gitHostname: 'git.gamma.source.caws.REMOVED',
+            gqlEndpoint: endpoint + '/graphql',
         }
     } else {
+        const endpoint = 'https://public.api.REMOVED.codes'
         return {
             region: 'us-east-1',
-            endpoint: 'https://public.api.REMOVED.codes',
+            endpoint,
             hostname: 'REMOVED.codes',
             gitHostname: 'git.service.REMOVED.codes',
+            gqlEndpoint: endpoint + '/graphql',
         }
     }
 }
@@ -142,6 +149,45 @@ async function createCawsClient(
     return c
 }
 
+function createGqlClient(bearerToken: string = '', endpoint: string = getCawsConfig().gqlEndpoint) {
+    const client = new gql.GraphQLClient(endpoint, {
+        headers: {
+            ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
+        },
+    })
+    return client
+}
+
+/**
+ * Executes a graphql query/mutation and returns the result.
+ */
+async function gqlRequest<T>(
+    gqlClient: gql.GraphQLClient,
+    q: string,
+    args: gqltypes.Variables
+): Promise<T | undefined> {
+    try {
+        const resp = await gqlClient.rawRequest(q, { input: args })
+        const reqId = resp.headers.get('x-request-id')
+        logger.getLogger().verbose('graphql response (%d):\n  x-request-id: %s  \n  %O', resp.status, reqId, resp.data)
+        if (!resp.data) {
+            return undefined
+        }
+        // There is always one top-level key, we want the child object.
+        const r = resp.data[Object.keys(resp.data)[0]]
+        return r as T
+    } catch (e) {
+        const err = e as any
+        const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
+        delete err.request // Redundant, and may contain private info.
+        if (err.response) {
+            delete err.message // Redundant, and prints unwanted info.
+            delete err.response.headers // Noisy.
+        }
+        logger.getLogger().error('graphql request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
+    }
+}
+
 export type UserDetails = RequiredProps<
     caws.GetUserDetailsResponse,
     'userId' | 'userName' | 'displayName' | 'primaryEmail'
@@ -176,7 +222,8 @@ export async function createClient(
     endpoint = getCawsConfig().endpoint
 ): Promise<CawsClient> {
     const sdkClient = await createCawsClient(authCookie, regionCode, endpoint)
-    const c = new CawsClientInternal(regionCode, endpoint, sdkClient, authCookie)
+    const gqlClient = createGqlClient(authCookie)
+    const c = new CawsClientInternal(regionCode, endpoint, sdkClient, gqlClient, authCookie)
     return c
 }
 
@@ -189,6 +236,7 @@ class CawsClientInternal {
         public readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
+        private gqlClient: gql.GraphQLClient,
         private bearerToken?: string
     ) {
         this.log = logger.getLogger()
@@ -224,6 +272,7 @@ class CawsClientInternal {
     public async setCredentials(bearerToken: string, id?: string | UserDetails): Promise<ConnectedCawsClient> {
         this.bearerToken = bearerToken
         this.sdkClient = await createCawsClient(bearerToken, this.regionCode, this.endpoint)
+        this.gqlClient = createGqlClient(this.bearerToken)
 
         if (typeof id === 'string') {
             this.userId = id
@@ -418,8 +467,31 @@ class CawsClientInternal {
     }
 
     public listBranches(request: caws.ListSourceBranchesInput): AsyncCollection<CawsBranch[]> {
-        const requester = async (request: caws.ListSourceBranchesInput) =>
-            this.call(this.sdkClient.listSourceBranches(request), true, { items: [] })
+        const query = `{
+            listSourceBranches (input: {
+                projectName: "${request.projectName}",
+                organizationName: "${request.organizationName}",
+                sourceRepositoryName: "${request.sourceRepositoryName}",
+            }) {
+                items {
+                    id,
+                    sourceRepositoryName,
+                    branchName,
+                    headCommitId,
+                },
+                nextToken
+            }
+        }`
+        const requester = async (): Promise<caws.ListSourceBranchesOutput> => {
+            const request = await gqlRequest<caws.ListSourceBranchesOutput>(this.gqlClient, query, {})
+            if (!request) {
+                return {
+                    items: [],
+                    nextToken: undefined,
+                }
+            }
+            return request
+        }
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection
