@@ -47,7 +47,7 @@ async function testFilterLogEvents(
     })
 }
 
-describe('LogStreamDocumentProvider', function () {
+describe('LogDataDocumentProvider', function () {
     const map = new Map<string, ActiveTab>()
     let provider: LogDataDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)

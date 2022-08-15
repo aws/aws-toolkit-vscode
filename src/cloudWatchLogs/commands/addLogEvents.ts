@@ -21,7 +21,7 @@ export async function addLogEvents(
     onDidChangeCodeLensEvent: vscode.EventEmitter<void>
 ): Promise<void> {
     const uri = document.uri
-    const lockName = `${headOrTail === 'head' ? 'logStreamHeadLock' : 'logStreamTailLock'}:${uri.path}`
+    const lockName = `${headOrTail === 'head' ? 'logHeadLock' : 'logTailLock'}:${uri.path}`
 
     if (lock.isBusy(lockName)) {
         getLogger().debug(`addLogEvents already locked for lock: ${lockName}`)
