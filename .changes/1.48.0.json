@@ -1,0 +1,10 @@
+{
+	"date": "2022-08-15",
+	"version": "1.48.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "\"API proposal\" error on vscode 1.63 or older"
+		}
+	]
+}
