@@ -1,3 +1,7 @@
+## 1.48.0 2022-08-15
+
+- **Bug Fix** "API proposal" error on vscode 1.63 or older
+
 ## 1.47.0 2022-08-06
 
 - **Bug Fix** Delve debugger installation fails for Go Lambdas on MacOS
