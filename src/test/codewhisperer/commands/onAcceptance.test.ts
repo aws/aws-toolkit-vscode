@@ -41,7 +41,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                true,
                 extensionContext.globalState
             )
             assert.ok(commandSpy.calledWith('editor.action.format'))
@@ -75,7 +74,6 @@ describe('onAcceptance', function () {
                     language: 'javascript',
                     references: fakeReferences,
                 },
-                true,
                 extensionContext.globalState
             )
             assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
@@ -109,7 +107,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: fakeReferences,
                 },
-                true,
                 extensionContext.globalState
             )
             const actualArg = trackerSpy.getCall(0).args[0]
@@ -150,7 +147,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                true,
                 extensionContext.globalState
             )
             assertTelemetry({
