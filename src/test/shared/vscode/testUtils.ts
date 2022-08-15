@@ -71,6 +71,9 @@ export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[])
  *
  * await testMemento.update('foo', 'bar')
  * assert.strictEqual(await testFoo.execute(), 'bar')
+ *
+ * // Clean-up the command afterwards
+ * testFoo.dispose()
  * ```
  */
 export function testCommand<T extends (...args: any[]) => unknown, U extends any[]>(
