@@ -86,15 +86,6 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'python3.7',
         displayName: 'python3.7 (ZIP)',
         path: 'hello_world/app.py',
@@ -189,16 +180,6 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (Image)',
-        baseImage: `amazon/python3.6-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
     {
