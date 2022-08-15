@@ -82,7 +82,8 @@ export function testCommand<T extends (...args: any[]) => unknown, U extends any
 ): Command<T> {
     const testCommands = new Commands()
     const testId = `test.${command.id}`
-    const resource = (command as any).resource as { id: string; factory: (...args: U) => any }
+    // `command` refers to the hidden 'CommandResource' class in 'commands2.ts'
+    const resource = (command as any).resource as { id: string; factory: (...args: U) => any; info: any }
 
-    return testCommands.register({ ...resource, id: testId }, resource.factory(...args))
+    return testCommands.register({ ...resource.info, id: testId }, resource.factory(...args))
 }
