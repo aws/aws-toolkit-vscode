@@ -50,7 +50,7 @@ function getLabels(nodes: TreeNode[]): Promise<string[]> {
     return Promise.all(nodes.map(async n => (await n.getTreeItem()).label ?? 'not set'))
 }
 
-function intoTestNode(node: TreeNode): TestNode | never {
+function toTestNode(node: TreeNode): TestNode | never {
     if (!(node.resource instanceof TestNode)) {
         throw new TypeError(`Node "${node.id}" had an incorrect resource: ${node.resource}`)
     }
@@ -63,6 +63,11 @@ function setupChanged(provider: ResourceTreeDataProvider): TreeNode[] {
     provider.onDidChangeTreeData(node => node && changed.push(node))
 
     return changed
+}
+
+function assertNotCached(newItem: TreeItem, oldItem: TreeItem): void {
+    assert.notStrictEqual(newItem, oldItem)
+    assert.deepStrictEqual(newItem, oldItem)
 }
 
 describe('ResourceTreeDataProvider', function () {
@@ -80,7 +85,7 @@ describe('ResourceTreeDataProvider', function () {
         const provider = new ResourceTreeDataProvider(getRoot(flatTree))
         const changed = setupChanged(provider)
 
-        const nodes = (await provider.getChildren()).map(intoTestNode)
+        const nodes = (await provider.getChildren()).map(toTestNode)
         nodes[0].refreshChildren()
         nodes[1].refreshChildren()
         provider.refresh()
@@ -96,8 +101,20 @@ describe('ResourceTreeDataProvider', function () {
         provider.refresh()
 
         const newItem0 = await provider.getTreeItem(node0)
-        assert.notStrictEqual(newItem0, item0)
-        assert.deepStrictEqual(newItem0, item0)
+        assertNotCached(newItem0, item0)
+    })
+
+    it('can refresh a node independently of the rest of the tree', async function () {
+        const provider = new ResourceTreeDataProvider(getRoot(flatTree))
+        const [node0, node1] = await provider.getChildren()
+        const item0 = await provider.getTreeItem(node0)
+        const item1 = await provider.getTreeItem(node1)
+        provider.refresh(node1)
+
+        const newItem0 = await provider.getTreeItem(node0)
+        const newItem1 = await provider.getTreeItem(node1)
+        assert.strictEqual(newItem0, item0)
+        assertNotCached(newItem1, item1)
     })
 
     it("caches children, clearing the cache when a node's children change", async function () {
@@ -106,7 +123,7 @@ describe('ResourceTreeDataProvider', function () {
         const children = await provider.getChildren(node0)
 
         assert.strictEqual(await provider.getChildren(node0), children)
-        intoTestNode(node0).refreshChildren()
+        toTestNode(node0).refreshChildren()
         assert.notStrictEqual(await provider.getChildren(node0), children)
     })
 
@@ -116,19 +133,19 @@ describe('ResourceTreeDataProvider', function () {
         const treeItem = await provider.getTreeItem(node0)
 
         assert.strictEqual(await provider.getTreeItem(node0), treeItem)
-        intoTestNode(node0).refreshTreeItem()
-        assert.notStrictEqual(await provider.getTreeItem(node0), treeItem)
+        toTestNode(node0).refreshTreeItem()
+        assertNotCached(await provider.getTreeItem(node0), treeItem)
     })
 
     it('preserves event listeners of cached children after tree item changes', async function () {
         const provider = new ResourceTreeDataProvider(getRoot(tree))
         const [node0] = await provider.getChildren()
         await provider.getChildren(node0)
-        intoTestNode(node0).refreshTreeItem()
+        toTestNode(node0).refreshTreeItem()
 
         const [node1] = await provider.getChildren(node0)
         const changed = setupChanged(provider)
-        intoTestNode(node1).refreshTreeItem()
+        toTestNode(node1).refreshTreeItem()
         assert.deepStrictEqual(await getLabels(changed), ['node1'])
     })
 
@@ -160,8 +177,8 @@ describe('ResourceTreeDataProvider', function () {
             const children1 = await provider.getChildren()
             const children2 = await provider.getChildren(children1[0])
 
-            const nodes1 = children1.map(intoTestNode)
-            const nodes2 = children2.map(intoTestNode)
+            const nodes1 = children1.map(toTestNode)
+            const nodes2 = children2.map(toTestNode)
 
             nodes2[0].refreshChildren()
             nodes2[1].refreshChildren()
@@ -176,7 +193,7 @@ describe('ResourceTreeDataProvider', function () {
             const changed = setupChanged(provider)
 
             const [nested] = await provider.getChildren()
-            const testNode = intoTestNode(nested)
+            const testNode = toTestNode(nested)
             const children = await provider.getChildren(nested)
             testNode.refreshTreeItem()
 
@@ -191,11 +208,8 @@ describe('ResourceTreeDataProvider', function () {
 
             const item1 = await provider.getTreeItem(node1)
             assert.strictEqual(await provider.getTreeItem(node1), item1)
-            intoTestNode(node0).refreshChildren()
-
-            const newItem1 = await provider.getTreeItem(node1)
-            assert.notStrictEqual(newItem1, item1)
-            assert.deepStrictEqual(newItem1, item1)
+            toTestNode(node0).refreshChildren()
+            assertNotCached(await provider.getTreeItem(node1), item1)
         })
     })
 })
