@@ -79,7 +79,7 @@ export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[])
 export function testCommand<T extends (...args: any[]) => unknown, U extends any[]>(
     command: ReturnType<typeof Commands.declare<T, U>>,
     ...args: U
-): Command<T> {
+): Command<T> & vscode.Disposable {
     const testCommands = new Commands()
     const testId = `test.${command.id}`
     // `command` refers to the hidden 'CommandResource' class in 'commands2.ts'
