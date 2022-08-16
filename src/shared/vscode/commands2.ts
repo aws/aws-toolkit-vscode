@@ -45,7 +45,7 @@ export interface Command<T extends Callback = Callback> {
     execute(...parameters: Parameters<T>): Promise<ReturnType<T> | undefined>
 }
 
-export interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
+interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
     dispose(): void
 }
 
