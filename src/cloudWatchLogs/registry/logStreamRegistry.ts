@@ -23,6 +23,9 @@ export class LogStreamRegistry {
     private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
         backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
     })
+    // if no timestamp for some reason, entering a blank of equal length (29 characters long)
+    public readonly timestampSpaceEquivalent = '                             '
+
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
@@ -73,9 +76,6 @@ export class LogStreamRegistry {
     public getLogContent(uri: vscode.Uri, formatting?: { timestamps?: boolean }): string | undefined {
         const inlineNewLineRegex = /((\r\n)|\n|\r)(?!$)/g
 
-        // if no timestamp for some reason, entering a blank of equal length (29 characters long)
-        const timestampSpaceEquivalent = '                             '
-
         const currData = this.getLogData(uri)
 
         if (!currData) {
@@ -90,10 +90,10 @@ export class LogStreamRegistry {
                 // TODO: Handle different timezones and unix timestamps?
                 const timestamp = datum.timestamp
                     ? moment(datum.timestamp).format(INSIGHTS_TIMESTAMP_FORMAT)
-                    : timestampSpaceEquivalent
+                    : this.timestampSpaceEquivalent
                 line = timestamp.concat('\t', line)
                 // log entries containing newlines are indented to the same length as the timestamp.
-                line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
+                line = line.replace(inlineNewLineRegex, `\n${this.timestampSpaceEquivalent}\t`)
             }
 
             if (!line.endsWith('\n')) {
