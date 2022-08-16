@@ -86,7 +86,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             let repository = reference.repository?.length ? reference.repository : 'unknown'
             if (reference.url?.length) {
                 repository = `<a href=${reference.url}>${reference.repository}</a>`
-                license = reference.licenseName || 'unknown'
+                license = `<b>${reference.licenseName || 'unknown'}</b>`
             }
 
             text +=
