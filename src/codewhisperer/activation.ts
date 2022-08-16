@@ -173,8 +173,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 language: telemetry.CodewhispererLanguage,
                 references: codewhispererClient.References
             ) => {
-                const bracketConfiguration = vscode.workspace.getConfiguration('editor').get('autoClosingBrackets')
-                const isAutoClosingBracketsEnabled: boolean = bracketConfiguration !== 'never' ? true : false
                 const editor = vscode.window.activeTextEditor
                 await onAcceptance(
                     {
@@ -189,7 +187,6 @@ export async function activate(context: ExtContext): Promise<void> {
                         language,
                         references,
                     },
-                    isAutoClosingBracketsEnabled,
                     context.extensionContext.globalState
                 )
                 if (references != undefined && editor != undefined) {

@@ -9,12 +9,12 @@ import { Settings } from '../shared/settings'
 import { CloudWatchLogsSettings, isLogStreamUri } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
-import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
+import { saveCurrentLogDataContent } from './commands/saveCurrentLogDataContent'
 import { viewLogStream } from './commands/viewLogStream'
-import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
-import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
+import { LogDataCodeLensProvider } from './document/logDataCodeLensProvider'
+import { LogDataDocumentProvider } from './document/logDataDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
-import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { LogDataRegistry } from './registry/logDataRegistry'
 import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
@@ -22,9 +22,9 @@ import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
-    const registry = new LogStreamRegistry(settings)
+    const registry = new LogDataRegistry(settings)
 
-    const documentProvider = new LogStreamDocumentProvider(registry)
+    const documentProvider = new LogDataDocumentProvider(registry)
 
     vscode.languages.registerDefinitionProvider(
         // TODO: figure out how to only show "Jump to definition" for documents from searches
@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 language: 'log',
                 scheme: CLOUDWATCH_LOGS_SCHEME,
             },
-            new LogStreamCodeLensProvider(registry)
+            new LogDataCodeLensProvider(registry)
         )
     )
 
@@ -67,14 +67,14 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             'aws.addLogEvents',
             async (
                 document: vscode.TextDocument,
-                registry: LogStreamRegistry,
+                registry: LogDataRegistry,
                 headOrTail: 'head' | 'tail',
                 onDidChangeCodeLensEvent: vscode.EventEmitter<void>
             ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
         ),
         Commands.register(
-            'aws.saveCurrentLogStreamContent',
-            async (uri?: vscode.Uri) => await saveCurrentLogStreamContent(uri, registry)
+            'aws.saveCurrentLogDataContent',
+            async (uri?: vscode.Uri) => await saveCurrentLogDataContent(uri, registry)
         ),
         // AWS Explorer right-click action
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.

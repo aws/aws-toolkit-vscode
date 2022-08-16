@@ -5,12 +5,12 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../cloudWatchLogs/cloudWatchLogsUtils'
-import { LogStreamRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogDataRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../shared/settings'
-import { fakeGetLogEvents, testComponents, testStreamData } from './utils.test'
+import { fakeGetLogEvents, testComponents, testLogData } from './utils.test'
 
 describe('changeLogSearch', async function () {
-    let testRegistry: LogStreamRegistry
+    let testRegistry: LogDataRegistry
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const newText = 'this is a good filter!'
@@ -37,9 +37,9 @@ describe('changeLogSearch', async function () {
     const oldUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
 
     before(function () {
-        testRegistry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
+        testRegistry = new LogDataRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
 
-        testRegistry.registerLog(oldUri, testStreamData)
+        testRegistry.registerLog(oldUri, testLogData)
     })
 
     it('unregisters old log and registers a new one', async function () {

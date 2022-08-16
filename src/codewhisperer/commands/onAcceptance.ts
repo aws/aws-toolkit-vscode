@@ -13,19 +13,14 @@ import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { handleAutoClosingBrackets } from '../util/closingBracketUtil'
+import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletion } from '../service/inlineCompletion'
-import { KeyStrokeHandler } from '../service/keyStrokeHandler'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
  */
-export async function onAcceptance(
-    acceptanceEntry: OnRecommendationAcceptanceEntry,
-    isAutoClosingBracketsEnabled: boolean,
-    globalStorage: vscode.Memento
-) {
+export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry, globalStorage: vscode.Memento) {
     RecommendationHandler.instance.cancelPaginatedRequest()
     /**
      * Format document
@@ -45,15 +40,9 @@ export async function onAcceptance(
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
-        if (isAutoClosingBracketsEnabled && !InlineCompletion.instance.isTypeaheadInProgress) {
+        if (!InlineCompletion.instance.isTypeaheadInProgress) {
             try {
-                await handleAutoClosingBrackets(
-                    acceptanceEntry.triggerType,
-                    acceptanceEntry.editor,
-                    acceptanceEntry.recommendation,
-                    end.line,
-                    KeyStrokeHandler.instance.specialChar
-                )
+                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
             } catch (error) {
                 getLogger().error(`${error} in handleAutoClosingBrackets`)
             }

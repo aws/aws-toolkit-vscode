@@ -63,7 +63,6 @@ describe('getSamTemplateWizardOption', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
             const result = getSamTemplateWizardOption(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
             switch (runtime) {
-                case 'python3.6':
                 case 'python3.7':
                 case 'python3.8':
                 case 'python3.9':

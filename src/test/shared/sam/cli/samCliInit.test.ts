@@ -212,7 +212,7 @@ describe('runSamCliInit', async function () {
             samInitArgsWithExtraContent = {
                 name: 'qwerty',
                 location: '/some/path/to/code.js',
-                runtime: 'python3.6',
+                runtime: 'python3.9',
                 template: eventBridgeStarterAppTemplate,
                 extraContent: extraContent,
                 dependencyManager: sampleDependencyManager,

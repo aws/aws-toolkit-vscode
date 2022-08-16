@@ -147,7 +147,7 @@
     "AWS.command.stepFunctions.previewStateMachine": "Render state machine graph",
     "AWS.command.cdk.previewStateMachine": "Render state machine graph from CDK application",
     "AWS.command.copyLogStreamName": "Copy Log Stream Name",
-    "AWS.command.saveCurrentLogStreamContent": "Save Log to File",
+    "AWS.command.saveCurrentLogDataContent": "Save Log to File",
     "AWS.command.cwl.changeFilterPattern": "Search by Pattern...",
     "AWS.command.cwl.changeTimeFilter": "Search by Date...",
     "AWS.command.viewLogStream": "View Log Stream...",

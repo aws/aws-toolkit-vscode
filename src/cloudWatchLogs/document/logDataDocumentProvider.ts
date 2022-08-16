@@ -7,13 +7,13 @@ import * as vscode from 'vscode'
 import {
     CloudWatchLogsParameters,
     getLogEventsFromUriComponents,
-    LogStreamRegistry,
+    LogDataRegistry,
     getInitialLogData,
-} from '../registry/logStreamRegistry'
+} from '../registry/logDataRegistry'
 import { getLogger } from '../../shared/logger'
 import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
 
-export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
+export class LogDataDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -21,7 +21,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         return this._onDidChange.event
     }
 
-    public constructor(private readonly registry: LogStreamRegistry) {
+    public constructor(private readonly registry: LogDataRegistry) {
         this.registry.onDidChange(uri => {
             getLogger().debug(`Registry item changed: ${uri.path}`)
             this._onDidChange.fire(uri)
@@ -95,7 +95,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
     }
 }
 
-export function getActiveDocumentUri(registry: LogStreamRegistry) {
+export function getActiveDocumentUri(registry: LogDataRegistry) {
     const currentEditor = vscode.window.activeTextEditor
     if (!currentEditor) {
         throw new Error('cwl: Failed to identify active editor.')

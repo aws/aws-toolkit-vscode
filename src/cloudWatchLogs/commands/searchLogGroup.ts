@@ -9,11 +9,11 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import {
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
-    LogStreamRegistry,
+    LogDataRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
     getInitialLogData,
-} from '../registry/logStreamRegistry'
+} from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
@@ -30,7 +30,7 @@ import { createBackButton, createExitButton, createHelpButton } from '../../shar
 
 const localize = nls.loadMessageBundle()
 
-function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
+function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogDataRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
         groupName: response.submenuResponse.data,
         regionName: response.submenuResponse.region,
@@ -65,7 +65,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
 export async function prepareDocument(
     uri: vscode.Uri,
     initialLogData: CloudWatchLogsData,
-    registry: LogStreamRegistry
+    registry: LogDataRegistry
 ): Promise<telemetry.Result> {
     try {
         await registry.registerLog(uri, initialLogData)
@@ -97,7 +97,7 @@ export async function prepareDocument(
     }
 }
 
-export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
+export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogDataRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
     let result: telemetry.Result
     let source: 'Explorer' | 'Command'
