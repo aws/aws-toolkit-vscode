@@ -44,6 +44,12 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
+        const cutOffChar = this.registry.timestampSpaceEquivalent.length
+        if (position.character > cutOffChar) {
+            // This means we clicked past the timestamp.
+            return
+        }
+
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
             return
