@@ -4,7 +4,7 @@
  */
 
 // Sourced from:
-// https://github.com/microsoft/vscode/blob/104bc571e956e4af623905ef10dfcc8f0fdac625/extensions/git/src/api/git.d.ts
+// https://github.com/microsoft/vscode/blob/7ed4699079f647ef53807f511ac87ff06a7b37b5/extensions/git/src/api/git.d.ts
 // Note that this file should be imported as 'git.d' since it contains enums and thus must be compiled.
 
 /*---------------------------------------------------------------------------------------------
@@ -29,9 +29,9 @@ export const enum ForcePushMode {
 }
 
 export const enum RefType {
-    Head = 0,
-    RemoteHead = 1,
-    Tag = 2,
+    Head,
+    RemoteHead,
+    Tag,
 }
 
 export interface Ref {
@@ -179,6 +179,8 @@ export interface Repository {
     show(ref: string, path: string): Promise<string>
     getCommit(ref: string): Promise<Commit>
 
+    add(paths: string[]): Promise<void>
+    revert(paths: string[]): Promise<void>
     clean(paths: string[]): Promise<void>
 
     apply(patch: string, reverse?: boolean): Promise<void>
@@ -204,6 +206,9 @@ export interface Repository {
     setBranchUpstream(name: string, upstream: string): Promise<void>
 
     getMergeBase(ref1: string, ref2: string): Promise<string>
+
+    tag(name: string, upstream: string): Promise<void>
+    deleteTag(name: string): Promise<void>
 
     status(): Promise<void>
     checkout(treeish: string): Promise<void>
@@ -236,6 +241,12 @@ export interface RemoteSourceProvider {
     getRemoteSources(query?: string): ProviderResult<RemoteSource[]>
     getBranches?(url: string): ProviderResult<string[]>
     publishRepository?(repository: Repository): Promise<void>
+}
+
+export interface RemoteSourcePublisher {
+    readonly name: string
+    readonly icon?: string // codicon name
+    publishRepository(repository: Repository): Promise<void>
 }
 
 export interface Credentials {
@@ -277,6 +288,7 @@ export interface API {
     init(root: Uri): Promise<Repository | null>
     openRepository(root: Uri): Promise<Repository | null>
 
+    registerRemoteSourcePublisher(publisher: RemoteSourcePublisher): Disposable
     registerRemoteSourceProvider(provider: RemoteSourceProvider): Disposable
     registerCredentialsProvider(provider: CredentialsProvider): Disposable
     registerPushErrorHandler(handler: PushErrorHandler): Disposable

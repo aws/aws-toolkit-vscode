@@ -33,6 +33,7 @@ import { createLocalExplorerView } from './localExplorer'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
+import { initNodes } from '../caws/explorer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -78,7 +79,7 @@ export async function activate(args: {
         })
     )
 
-    const nodes = [cdkNode, codewhispererNode]
+    const nodes = [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 

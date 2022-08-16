@@ -15,6 +15,7 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesyste
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
+import { NameFromFunction } from '../shared/telemetry/metric'
 
 const testTempDirs: string[] = []
 
@@ -131,43 +132,6 @@ export function installFakeClock(): FakeTimers.InstalledClock {
 }
 
 type Telemetry = Omit<typeof telemetry, 'millisecondsSince'>
-// hard-coded, need significant updates to the codgen to make these kinds of things easier
-type Namespace =
-    | 'vpc'
-    | 'sns'
-    | 'sqs'
-    | 's3'
-    | 'session'
-    | 'schemas'
-    | 'sam'
-    | 'redshift'
-    | 'rds'
-    | 'lambda'
-    | 'aws'
-    | 'ecs'
-    | 'ecr'
-    | 'cdk'
-    | 'apprunner'
-    | 'dynamicresource'
-    | 'toolkit'
-    | 'cloudwatchinsights'
-    | 'iam'
-    | 'ec2'
-    | 'dynamodb'
-    | 'codecommit'
-    | 'cloudwatchlogs'
-    | 'beanstalk'
-    | 'cloudfront'
-    | 'apigateway'
-    | 'vscode'
-    | 'codewhisperer'
-type NameFromFunction<T extends keyof Telemetry> = T extends `record${infer P}`
-    ? Uncapitalize<P> extends `${Namespace}${infer L}`
-        ? Uncapitalize<P> extends `${infer N}${L}`
-            ? `${N}_${Uncapitalize<L>}`
-            : never
-        : never
-    : never
 type MetricName = NameFromFunction<keyof Telemetry>
 type FunctionNameFromName<S extends MetricName> = S extends `${infer N}_${infer M}`
     ? `record${Capitalize<N>}${Capitalize<M>}`

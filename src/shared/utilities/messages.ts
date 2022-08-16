@@ -4,8 +4,9 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import globals from '../extensionGlobals'
@@ -13,7 +14,8 @@ import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
-import * as localizedText from '../../shared/localizedText'
+
+export const localize = nls.loadMessageBundle()
 
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
@@ -105,14 +107,19 @@ export async function showViewLogsMessage(
  * @param window the window.
  */
 export async function showConfirmationMessage(
-    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
+    { prompt, confirm, cancel, type }: { prompt: string; confirm?: string; cancel?: string; type?: 'info' | 'warning' },
     window: Window = globals.window
 ): Promise<boolean> {
-    const confirmItem: vscode.MessageItem = { title: confirm }
-    const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }
+    const confirmItem: vscode.MessageItem = { title: confirm ?? localizedText.confirm }
+    const cancelItem: vscode.MessageItem = { title: cancel ?? localizedText.cancel, isCloseAffordance: true }
 
-    const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
-    return selection?.title === confirmItem.title
+    if (type === 'info') {
+        const selection = await window.showInformationMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        return selection?.title === confirmItem.title
+    } else {
+        const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        return selection?.title === confirmItem.title
+    }
 }
 
 /**

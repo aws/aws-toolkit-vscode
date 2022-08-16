@@ -326,7 +326,7 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
         params.id,
         params.title,
         {
-            viewColumn: isCloud9() ? vscode.ViewColumn.Two : params.viewColumn ?? vscode.ViewColumn.Beside,
+            viewColumn: params.viewColumn ?? (isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside),
         },
         {
             // The redundancy here is to correct a bug with Cloud9's Webview implementation

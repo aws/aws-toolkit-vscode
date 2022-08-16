@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// @ts-ignore
 import * as vscode from 'vscode'
 
 /**
