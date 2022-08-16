@@ -58,7 +58,7 @@ export const CodeWhispererConstants = {
     /**
      * Prompt
      */
-    pendingResponse: 'Pending CodeWhisperer response, please wait...',
+    pendingResponse: 'Waiting for CodeWhisperer...',
     runningSecurityScan: 'Running security scan...',
     noSuggestions: 'No suggestions from CodeWhisperer',
     licenseFilter: 'CodeWhisperer suggestions were filtered due to reference setting',

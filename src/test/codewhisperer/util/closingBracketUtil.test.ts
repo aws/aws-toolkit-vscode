@@ -5,71 +5,76 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { hasExtraClosingBracket, handleAutoClosingBrackets } from '../../../codewhisperer/util/closingBracketUtil'
-import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../testUtil'
+import {
+    calculateBracketsLevel,
+    getBracketsToRemove,
+    removeBracketsFromRightContext,
+} from '../../../codewhisperer/util/closingBracketUtil'
+import { createMockTextEditor } from '../testUtil'
 import { getLogger } from '../../../shared/logger/logger'
+import { Position } from 'vscode'
 
-describe('onAcceptance', function () {
-    describe('handleAutoClosingBrackets', function () {
-        beforeEach(function () {
-            resetCodeWhispererGlobalVariables()
-        })
-
-        afterEach(function () {
-            sinon.restore()
-        })
-
-        it('Should not edit current document if manual trigger', async function () {
-            const mockEditor = createMockTextEditor()
-            const previousText = mockEditor.document.getText()
-            await handleAutoClosingBrackets('OnDemand', mockEditor, '', 1, '(')
-            assert.strictEqual(previousText, mockEditor.document.getText())
-        })
-
-        it('Should not edit current document if special character in invocation context is not a open bracket', async function () {
-            const mockEditor = createMockTextEditor()
-            const previousText = mockEditor.document.getText()
-            await handleAutoClosingBrackets('AutoTrigger', mockEditor, '', 1, '*')
-            assert.strictEqual(previousText, mockEditor.document.getText())
-        })
-
-        it('Should not remove a closing bracket if recommendation has same number of closing bracket and open bracket', async function () {
-            const mockEditor = createMockTextEditor()
-            const previousText = mockEditor.document.getText()
-            await handleAutoClosingBrackets('AutoTrigger', mockEditor, "print('Hello')", 1, '(')
-            assert.strictEqual(previousText, mockEditor.document.getText())
-        })
-
-        it('Should remove one closing bracket at current document if recommendation has 1 closing bracket and 0 open bracket', async function () {
-            const mockEditor = createMockTextEditor('import math\ndef four_sum(nums, target):\n')
-            const loggerSpy = sinon.spy(getLogger(), 'info')
-            await handleAutoClosingBrackets('AutoTrigger', mockEditor, 'var)', 1, '(')
-            assert.ok(loggerSpy.called)
-            const actual = loggerSpy.getCall(0).args[0]
-            assert.strictEqual(actual, `delete [{"line":1,"character":25},{"line":1,"character":26}]`)
-        })
-
-        it('Should remove one closing bracket at current document if recommendation has 2 closing bracket and 1 open bracket', async function () {
-            const mockEditor = createMockTextEditor('def two_sum(nums, target):\n')
-            const loggerSpy = sinon.spy(getLogger(), 'info')
-            await handleAutoClosingBrackets('AutoTrigger', mockEditor, "print('Hello'))", 1, '(')
-            assert.ok(loggerSpy.called)
-            const actual = loggerSpy.getCall(0).args[0]
-            assert.strictEqual(actual, `delete [{"line":0,"character":24},{"line":0,"character":25}]`)
+describe('closingBracketUtil', function () {
+    describe('calculateBracketsLevel', function () {
+        it('Should return expected bracket level with index', function () {
+            const actual = calculateBracketsLevel('{{()')
+            const expected = [
+                {
+                    char: '{',
+                    count: 1,
+                    idx: 0,
+                },
+                {
+                    char: '{',
+                    count: 2,
+                    idx: 1,
+                },
+                {
+                    char: '(',
+                    count: 1,
+                    idx: 2,
+                },
+                {
+                    char: '(',
+                    count: 0,
+                    idx: 3,
+                },
+            ]
+            assert.deepStrictEqual(expected, actual)
         })
     })
 
-    describe('hasExtraClosingBracket', function () {
-        it('Should return true when a string has one more closing bracket than open bracket', function () {
-            assert.ok(!hasExtraClosingBracket('split(str){}', '{', '}'))
-            assert.ok(hasExtraClosingBracket('split(str){}}', '{', '}'))
-            assert.ok(hasExtraClosingBracket('split(str){{}}}', '{', '}'))
-            assert.ok(hasExtraClosingBracket('split(str)}', '{', '}'))
+    describe('removeBracketsFromRightContext', function () {
+        afterEach(function () {
+            sinon.restore()
         })
+        it('Should remove the brackets from corresponding index', async function () {
+            const mockEditor = createMockTextEditor()
+            const mockPosition = new Position(0, 0)
+            const mockIdx = [0, 1]
 
-        it('Should return result relevent to the open bracket in function argument when multiple brackets are present', function () {
-            assert.ok(!hasExtraClosingBracket('split(str){}', '(', ')'))
-            assert.ok(hasExtraClosingBracket('split(str)){}}', '(', ')'))
+            const loggerSpy = sinon.spy(getLogger(), 'info')
+            await removeBracketsFromRightContext(mockEditor, mockIdx, mockPosition)
+            assert.ok(loggerSpy.called)
+            const actual = loggerSpy.getCall(0).args[0]
+            assert.strictEqual(actual, `delete [{"line":0,"character":0},{"line":0,"character":1}]`)
+        })
+    })
+
+    describe('getBracketsToRemove', function () {
+        it('Should return an empty array if there is no extra bracket matched', function () {
+            const actual = getBracketsToRemove('return a+b}', '')
+            assert.ok(actual.length === 0)
+        })
+        it('Should return expected bracket to remove', function () {
+            const actual = getBracketsToRemove('return a+b}', '}')
+            const expected = [0]
+            assert.deepStrictEqual(actual, expected)
+        })
+        it('Should return expected bracket to remove if there are multiple matches', function () {
+            const actual = getBracketsToRemove(') {return a+b}', '){}')
+            const expected = [0, 1, 2]
+            assert.deepStrictEqual(actual, expected)
         })
     })
 })

@@ -80,7 +80,7 @@ export async function startSecurityScan(
         const uri = dependencyGraph.getRootFile(editor)
         if (dependencyGraph.reachSizeLimit(statSync(uri.fsPath).size)) {
             throw new Error(
-                `Selected file larger than ${dependencyGraph.getReadableSizeLimit()}. Please try with a different file.`
+                `Selected file larger than ${dependencyGraph.getReadableSizeLimit()}. Try a different file.`
             )
         }
         const projectPath = dependencyGraph.getProjectPath(uri)

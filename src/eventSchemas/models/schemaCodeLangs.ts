@@ -54,11 +54,12 @@ export function getLanguageDetails(language: SchemaCodeLangs): {
 }
 
 export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
-    return ['python3.6', 'python3.7', 'python3.8', 'python3.9', 'go1.x'].includes(runtime)
+    return ['python3.7', 'python3.8', 'python3.9', 'go1.x'].includes(runtime)
 }
 
 export function getApiValueForSchemasDownload(runtime: Runtime): string {
     if (supportsEventBridgeTemplates(runtime)) {
+        // Python36 really means python3.x for schema downloading
         return goRuntimes.has(runtime) ? 'Go1' : 'Python36'
     }
 
