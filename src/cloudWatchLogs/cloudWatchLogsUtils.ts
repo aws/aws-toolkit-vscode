@@ -6,8 +6,8 @@ import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
-import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
+import { CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
+import { CloudWatchLogsParameters } from './registry/logDataRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.

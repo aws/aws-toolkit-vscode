@@ -8,11 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { LogDataRegistry } from '../registry/logDataRegistry'
 import { isLogStreamUri } from '../cloudWatchLogsUtils'
 
-export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
-    public constructor(private readonly registry: LogStreamRegistry) {}
+export class LogDataCodeLensProvider implements vscode.CodeLensProvider {
+    public constructor(private readonly registry: LogDataRegistry) {}
 
     private _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
     public get onDidChangeCodeLenses(): vscode.Event<void> {

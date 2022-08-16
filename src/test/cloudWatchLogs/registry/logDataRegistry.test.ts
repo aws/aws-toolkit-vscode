@@ -6,28 +6,28 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogDataRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { logGroupsStream, newLineData, newText, testStreamData, testStreamNames, unregisteredData } from '../utils.test'
+import { logGroupsData, newLineData, newText, testLogData, testStreamNames, unregisteredData } from '../utils.test'
 
-describe('LogStreamRegistry', async function () {
-    let registry: LogStreamRegistry
+describe('LogDataRegistry', async function () {
+    let registry: LogDataRegistry
     let map: Map<string, ActiveTab>
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
-    const registeredUri = createURIFromArgs(testStreamData.logGroupInfo, testStreamData.parameters)
+    const registeredUri = createURIFromArgs(testLogData.logGroupInfo, testLogData.parameters)
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
     const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
-    const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
+    const searchLogGroupUri = createURIFromArgs(logGroupsData.logGroupInfo, logGroupsData.parameters)
 
     beforeEach(function () {
-        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
-        registry.setLogData(registeredUri, testStreamData)
+        registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
+        registry.setLogData(registeredUri, testLogData)
         registry.setLogData(newLineUri, newLineData)
-        registry.setLogData(searchLogGroupUri, logGroupsStream)
+        registry.setLogData(searchLogGroupUri, logGroupsData)
     })
 
     describe('hasLog', function () {
@@ -46,7 +46,7 @@ describe('LogStreamRegistry', async function () {
 
             const preregisteredLogData = registry.getLogData(registeredUri)
             assert(preregisteredLogData)
-            assert.strictEqual(preregisteredLogData.data[0].message, testStreamData.data[0].message)
+            assert.strictEqual(preregisteredLogData.data[0].message, testLogData.data[0].message)
         })
     })
 
@@ -56,7 +56,7 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${testStreamData.data[0].message}${testStreamData.data[1].message}${testStreamData.data[2].message}${testStreamData.data[3].message}`
+                `${testLogData.data[0].message}${testLogData.data[1].message}${testLogData.data[2].message}${testLogData.data[3].message}`
             )
         })
 
@@ -65,13 +65,11 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testStreamData.data[0].message}${moment(
-                    2
-                ).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testStreamData.data[1].message}${moment(3).format(
+                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testLogData.data[0].message}${moment(2).format(
                     INSIGHTS_TIMESTAMP_FORMAT
-                )}${'\t'}${testStreamData.data[2].message}                             ${'\t'}${
-                    testStreamData.data[3].message
-                }`
+                )}${'\t'}${testLogData.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
+                    testLogData.data[2].message
+                }                             ${'\t'}${testLogData.data[3].message}`
             )
         })
 
@@ -101,7 +99,7 @@ describe('LogStreamRegistry', async function () {
                 assert.deepStrictEqual(streamIDMap, expectedMap)
                 registry.disposeRegistryData(doc.uri)
                 // We want to re-register log here otherwise this returns undefined.
-                registry.setLogData(searchLogGroupUri, logGroupsStream)
+                registry.setLogData(searchLogGroupUri, logGroupsData)
                 streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
                 assert.deepStrictEqual(streamIDMap, new Map<number, string>())
             })
@@ -162,7 +160,7 @@ describe('LogStreamRegistry', async function () {
             const initialWithTail = registry.getLogData(registeredUri)
             assert(initialWithTail)
             // concat new message on the end to test tail functionality.
-            const testStreamDataTailData = testStreamData.data.concat({ message: newText })
+            const testStreamDataTailData = testLogData.data.concat({ message: newText })
             assert.deepStrictEqual(initialWithTail.data, testStreamDataTailData)
 
             await registry.updateLog(registeredUri, 'head')

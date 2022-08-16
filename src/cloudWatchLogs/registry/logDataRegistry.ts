@@ -16,9 +16,9 @@ import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 // TODO: Add debug logging statements
 
 /**
- * Class which contains CRUD operations and persistence for CloudWatch Logs streams.
+ * Operations and persistence for CloudWatch Log Data (events from a single logstream or events from log group search)
  */
-export class LogStreamRegistry {
+export class LogDataRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
     private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
         backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
@@ -38,13 +38,13 @@ export class LogStreamRegistry {
     /**
      * Adds an entry to the registry for the given URI.
      * @param uri Document URI
-     * @param initialStreamData Initial Data to populate the registry ActiveTab Data.
+     * @param initialLogData Initial Data to populate the registry ActiveTab Data.
      */
-    public async registerLog(uri: vscode.Uri, initialStreamData: CloudWatchLogsData): Promise<void> {
+    public async registerLog(uri: vscode.Uri, initialLogData: CloudWatchLogsData): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
-            this.setLogData(uri, initialStreamData)
+            this.setLogData(uri, initialLogData)
             await this.updateLog(uri, 'tail')
         }
     }
@@ -117,35 +117,35 @@ export class LogStreamRegistry {
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
     public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
-        const stream = this.getLogData(uri)
-        if (!stream) {
+        const logData = this.getLogData(uri)
+        if (!logData) {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
         }
-        const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
+        const nextToken = headOrTail === 'head' ? logData.previous?.token : logData.next?.token
 
         // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-        const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
+        const logEvents = await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken)
 
         const newData =
             headOrTail === 'head'
-                ? (logEvents.events ?? []).concat(stream.data)
-                : stream.data.concat(logEvents.events ?? [])
+                ? (logEvents.events ?? []).concat(logData.data)
+                : logData.data.concat(logEvents.events ?? [])
 
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
-        if (!stream.previous || headOrTail === 'head') {
+        if (!logData.previous || headOrTail === 'head') {
             tokens.previous = {
                 token: logEvents.nextBackwardToken ?? '',
             }
         }
-        if (!stream.next || headOrTail === 'tail') {
+        if (!logData.next || headOrTail === 'tail') {
             tokens.next = {
                 token: logEvents.nextForwardToken ?? '',
             }
         }
         this.setLogData(uri, {
-            ...stream,
+            ...logData,
             ...tokens,
             data: newData,
         })
