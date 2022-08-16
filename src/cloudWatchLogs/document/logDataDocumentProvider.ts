@@ -49,6 +49,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             // This means we clicked past the timestamp.
             return
         }
+
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
             return

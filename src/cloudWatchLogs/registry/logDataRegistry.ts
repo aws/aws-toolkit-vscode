@@ -25,7 +25,6 @@ export class LogDataRegistry {
     })
     // if no timestamp for some reason, entering a blank of equal length (29 characters long)
     public readonly timestampSpaceEquivalent = '                             '
-
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
@@ -75,7 +74,6 @@ export class LogDataRegistry {
      */
     public getLogContent(uri: vscode.Uri, formatting?: { timestamps?: boolean }): string | undefined {
         const inlineNewLineRegex = /((\r\n)|\n|\r)(?!$)/g
-
         const currData = this.getLogData(uri)
 
         if (!currData) {
