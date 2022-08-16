@@ -143,6 +143,9 @@ that is a net cost.
 
     -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
+-   Use [`testCommand`](../src/test/shared/vscode/testUtils.ts) for testing commands created by `Commands.declare`
+    -   Prefer executing the real command directly when possible
+
 ## Code guidelines
 
 -   Use maps to group variables, rather than ad-hoc/informal grouping.
