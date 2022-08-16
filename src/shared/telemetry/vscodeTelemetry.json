@@ -1,16 +1,6 @@
 {
     "types": [
         {
-            "name": "settingId",
-            "type": "string",
-            "description": "The id of the setting being changed. Consistent namespace should be used for the id, e.g. codewhisperer_autoSuggestionActivation"
-        },
-        {
-            "name": "settingState",
-            "type": "string",
-            "description": "The state of the setting being changed to. This should not be recorded for free-form settings like file-system paths. Instead, stick to things like flags, numbers, and enums."
-        },
-        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -50,19 +40,6 @@
                 { "type": "result" },
                 {
                     "type": "reason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "aws_modifySetting",
-            "description": "An setting was changed by users in the Toolkit. This metric can optionally provide the new state of the setting via settingState.",
-            "metadata": [
-                {
-                    "type": "settingId"
-                },
-                {
-                    "type": "settingState",
                     "required": false
                 }
             ]
