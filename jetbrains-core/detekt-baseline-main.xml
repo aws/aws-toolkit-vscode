@@ -2,6 +2,33 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>BannedImports:CodeWhispererConfigurable.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:CodeWhispererTermsOfServiceDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:CreateEcrRepoDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:CreateIamServiceRoleDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:CreationPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:DeleteResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:DeployServerlessApplicationDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:DynamicResourcesConfigurable.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:EnableDisableExecuteCommandWarning.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:ExperimentConfigurable.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:LambdaSettingsConfigurable.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:OpenShellInContainerDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:PauseServiceAction.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:PullFromRepositoryAction.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:PushToRepositoryAction.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:ResumeServiceAction.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:RunCommandDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:SamInitSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:SchemaSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:SdkSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:SearchPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:TaskRoleNotFoundWarningDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:TokenDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:ToolConfigurable.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:UploadFunctionContinueDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:ValidatingPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:ViewResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>NoNameShadowing:CloudControlApiResources.kt$CloudControlApiResources${ it.typeName() }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ it.repositoryName == ecrDialog.repoName }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ sourceBucket.reload(forceFetch = true) sourceBucket.selectedItem = it }</ID>

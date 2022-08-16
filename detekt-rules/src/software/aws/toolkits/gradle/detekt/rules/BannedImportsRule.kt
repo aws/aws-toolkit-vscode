@@ -17,7 +17,8 @@ class BannedImportsRule : Rule() {
     override fun visitImportList(importList: KtImportList) {
         super.visitImportList(importList)
         importList.imports.forEach { element ->
-            if (element.importedFqName?.asString() == "org.assertj.core.api.Assertions") {
+            val importedFqName = element.importedFqName?.asString()
+            if (importedFqName == "org.assertj.core.api.Assertions") {
                 report(
                     CodeSmell(
                         issue,
@@ -27,7 +28,7 @@ class BannedImportsRule : Rule() {
                 )
             }
 
-            if (element.importedFqName?.asString()?.startsWith("org.hamcrest") == true) {
+            if (importedFqName?.startsWith("org.hamcrest") == true) {
                 report(
                     CodeSmell(
                         issue,
@@ -37,8 +38,8 @@ class BannedImportsRule : Rule() {
                 )
             }
 
-            if (element.importedFqName?.asString()?.startsWith("kotlin.test.assert") == true &&
-                element.importedFqName?.asString()?.startsWith("kotlin.test.assertNotNull") == false
+            if (importedFqName?.startsWith("kotlin.test.assert") == true &&
+                importedFqName.startsWith("kotlin.test.assertNotNull") == false
             ) {
                 report(
                     CodeSmell(
@@ -49,12 +50,22 @@ class BannedImportsRule : Rule() {
                 )
             }
 
-            if (element.importedFqName?.asString()?.contains("kotlinx.coroutines.Dispatchers") == true) {
+            if (importedFqName?.contains("kotlinx.coroutines.Dispatchers") == true) {
                 report(
                     CodeSmell(
                         issue,
                         Entity.from(element),
                         message = "Use contexts from CoroutineUtils.kt instead of Dispatchers"
+                    )
+                )
+            }
+
+            if (importedFqName == "com.intellij.ui.layout.panel") {
+                report(
+                    CodeSmell(
+                        issue,
+                        Entity.from(element),
+                        message = "Use com.intellij.ui.dsl.builder.panel from Kotlin UI DSL Version 2"
                     )
                 )
             }
