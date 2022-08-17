@@ -339,16 +339,12 @@ class CodeWhispererService {
 
         if (CodeWhispererPopupManager.getInstance().hasConflictingPopups(requestContext.editor)) {
             LOG.debug { "Detect conflicting popup window with CodeWhisperer popup, not showing CodeWhisperer popup" }
+            sendDiscardedUserDecisionEventForAll(requestContext, responseContext, recommendations)
             return null
         }
         if (caretMovement == CaretMovement.MOVE_BACKWARD) {
             LOG.debug { "Caret moved backward, discarding all of the recommendations. Request ID: $requestId" }
-            val detailContexts = recommendations.map { DetailContext("", it, it, true) }
-            val recommendationContext = RecommendationContext(detailContexts, "", "", VisualPosition(0, 0))
-
-            CodeWhispererTelemetryService.getInstance().sendUserDecisionEventForAll(
-                requestContext, responseContext, recommendationContext, SessionContext(), false
-            )
+            sendDiscardedUserDecisionEventForAll(requestContext, responseContext, recommendations)
             return null
         }
         val userInputOriginal = CodeWhispererEditorManager.getInstance().getUserInputSinceInvocation(
@@ -430,6 +426,19 @@ class CodeWhispererService {
 
     private fun updateCodeWhisperer(states: InvocationContext, recommendationAdded: Boolean) {
         CodeWhispererPopupManager.getInstance().changeStates(states, 0, "", true, recommendationAdded)
+    }
+
+    private fun sendDiscardedUserDecisionEventForAll(
+        requestContext: RequestContext,
+        responseContext: ResponseContext,
+        recommendations: List<Recommendation>
+    ) {
+        val detailContexts = recommendations.map { DetailContext("", it, it, true) }
+        val recommendationContext = RecommendationContext(detailContexts, "", "", VisualPosition(0, 0))
+
+        CodeWhispererTelemetryService.getInstance().sendUserDecisionEventForAll(
+            requestContext, responseContext, recommendationContext, SessionContext(), false
+        )
     }
 
     fun getRequestContext(
