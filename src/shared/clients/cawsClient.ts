@@ -539,6 +539,10 @@ class CawsClientInternal {
         }
     }
 
+    public async createSourceBranch(args: caws.CreateSourceBranchInput): Promise<caws.CreateSourceBranchOutput> {
+        return this.call(this.sdkClient.createSourceBranch(args), false)
+    }
+
     public async createDevelopmentWorkspace(
         args: caws.CreateDevelopmentWorkspaceRequest
     ): Promise<DevelopmentWorkspace> {
