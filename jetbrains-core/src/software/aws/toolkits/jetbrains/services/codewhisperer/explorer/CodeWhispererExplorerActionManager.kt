@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.TokenDialog
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.telemetry.AwsTelemetry
 import java.net.URI
 
 @State(name = "codewhispererStates", storages = [Storage("aws.xml")])
@@ -120,6 +121,8 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
 
     private fun setAutoSuggestion(project: Project, isAutoEnabled: Boolean) {
         setAutoEnabled(isAutoEnabled)
+        val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED
+        AwsTelemetry.modifySetting(project, settingId = CodeWhispererConstants.AutoSuggestion.SETTING_ID, settingState = autoSuggestionState)
         refreshCodeWhispererNode(project)
     }
 

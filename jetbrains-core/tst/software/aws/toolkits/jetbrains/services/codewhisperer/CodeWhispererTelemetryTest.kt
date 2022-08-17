@@ -21,6 +21,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
@@ -45,6 +46,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testRequestIdForCodeWhispererException
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testSessionId
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_PAUSE_CODEWHISPERER
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_RESUME_CODEWHISPERER
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
@@ -52,6 +55,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.Accepted
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererCodeCoverageTracker
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -68,6 +72,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     private val userModification = "codewhisperer_userModification"
     private val serviceInvocation = "codewhisperer_serviceInvocation"
     private val codePercentage = "codewhisperer_codePercentage"
+    private val awsModifySetting = "aws_modifySetting"
     private val codewhispererSuggestionState = "codewhispererSuggestionState"
 
     private class TestTelemetryService(
@@ -549,6 +554,35 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     @Test
     fun `test a mix of empty and non-empty recommendations should send empty user decision events accordingly`() {
         testSendEmptyUserDecisionEventForEmptyRecommendations(listOfMixedEmptyAndNonEmptyRecommendationResponse)
+    }
+
+    @Test
+    fun `test toggle autoSugestion will emit autoSuggestionActivation telemetry`() {
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        doNothing().`when`(batcher).enqueue(metricCaptor.capture())
+
+        stateManager.performAction(projectRule.project, ACTION_PAUSE_CODEWHISPERER)
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            1,
+            "settingId" to CodeWhispererConstants.AutoSuggestion.SETTING_ID,
+            "settingState" to CodeWhispererConstants.AutoSuggestion.DEACTIVATED
+        )
+
+        stateManager.performAction(projectRule.project, ACTION_RESUME_CODEWHISPERER)
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            1,
+            "settingId" to CodeWhispererConstants.AutoSuggestion.SETTING_ID,
+            "settingState" to CodeWhispererConstants.AutoSuggestion.ACTIVATED
+        )
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            awsModifySetting,
+            2,
+        )
     }
 
     private fun testSendEmptyUserDecisionEventForEmptyRecommendations(response: ListRecommendationsResponse) {
