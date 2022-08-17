@@ -19,14 +19,6 @@ class PythonRuntimeGroupTest {
     private val sut = PythonRuntimeGroup()
 
     @Test
-    fun testRuntimeDetection36() {
-        val module = projectRule.module
-        ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("3.6.0"))
-
-        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_6)
-    }
-
-    @Test
     fun testRuntimeDetection37() {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("3.7.0"))

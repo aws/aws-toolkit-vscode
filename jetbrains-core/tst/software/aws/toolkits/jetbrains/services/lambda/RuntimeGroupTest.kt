@@ -40,14 +40,14 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingProject() {
-        val sdk = PyTestSdk("3.6.0")
+        val sdk = PyTestSdk("3.9.0")
 
         val project = projectRule.project
 
         runInEdtAndWait {
             runWriteAction {
                 ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
-                ProjectRootManager.getInstance(project).projectSdk = PyTestSdk("3.6.0")
+                ProjectRootManager.getInstance(project).projectSdk = PyTestSdk("3.9.0")
             }
 
             val event: AnActionEvent = mock {
@@ -56,7 +56,7 @@ class RuntimeGroupTest {
                 on { getData(LangDataKeys.PROJECT) }.thenReturn(projectRule.project)
             }
 
-            assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON3_6)
+            assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON3_9)
         }
     }
 

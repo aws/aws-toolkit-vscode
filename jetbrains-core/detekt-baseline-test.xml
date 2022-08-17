@@ -105,7 +105,7 @@
     <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedRegion!!</ID>
     <ID>UnsafeCallOnNullableType:PythonCodeInsightTestFixtureRule.kt$PythonCodeInsightTestFixtureRule$newFixture.tempDirFixture.getFile(".")!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaBuilderTest.kt$PythonLambdaBuilderTest$psiFile.findTopLevelFunction("handle")!!</ID>
-    <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!</ID>
+    <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$Runtime.PYTHON3_9.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$pyElement.identifyingElement!!</ID>
     <ID>UnsafeCallOnNullableType:RemoteLambdaRunConfigurationTest.kt$RemoteLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
     <ID>UnsafeCallOnNullableType:RunConfigTestUtils.kt$ExecutorRegistry.getInstance().getExecutorById(executorId)!!</ID>

@@ -240,7 +240,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
-      Runtime: python3.6
+      Runtime: python3.9
 """
         )
 
@@ -249,7 +249,7 @@ Resources:
             assertThat(functions).hasSize(1)
             val indexedFunction = functions.toList()[0]
             assertThat(indexedFunction.handler()).isEqualTo("bar")
-            assertThat(indexedFunction.runtime()).isEqualTo("python3.6")
+            assertThat(indexedFunction.runtime()).isEqualTo("python3.9")
         }
     }
 

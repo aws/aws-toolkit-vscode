@@ -25,7 +25,6 @@ enum class LambdaRuntime(
     JAVA8(Runtime.JAVA8),
     JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0", architectures = ARM_COMPATIBLE),
     JAVA11(Runtime.JAVA11, architectures = ARM_COMPATIBLE),
-    PYTHON3_6(Runtime.PYTHON3_6),
     PYTHON3_7(Runtime.PYTHON3_7),
     PYTHON3_8(Runtime.PYTHON3_8, architectures = ARM_COMPATIBLE),
     PYTHON3_9(Runtime.PYTHON3_9, minSamDebugging = "1.28.0", minSamInit = "1.28.0", architectures = ARM_COMPATIBLE),

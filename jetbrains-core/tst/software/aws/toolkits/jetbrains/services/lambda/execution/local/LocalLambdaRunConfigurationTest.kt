@@ -654,7 +654,7 @@ class LocalLambdaRunConfigurationTest {
               <option name="inputIsFile" value="false" />
               <option name="logicalFunctionName" />
               <option name="regionId" value="us-west-2" />
-              <option name="runtime" value="python3.6" />
+              <option name="runtime" value="python3.9" />
               <option name="templateFile" />
               <option name="useTemplate" value="false" />
               <method v="2" />
@@ -672,7 +672,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.logicalId()).isNull()
             assertThat(runConfiguration.handler()).isEqualTo("helloworld.App::handleRequest")
             assertThat(runConfiguration.architecture()).isEqualTo(LambdaArchitecture.ARM64.toString())
-            assertThat(runConfiguration.runtime()).isEqualTo(LambdaRuntime.PYTHON3_6)
+            assertThat(runConfiguration.runtime()).isEqualTo(LambdaRuntime.PYTHON3_9)
             assertThat(runConfiguration.environmentVariables()).containsAllEntriesOf(mapOf("Foo" to "Bar"))
             assertThat(runConfiguration.regionId()).isEqualTo("us-west-2")
             assertThat(runConfiguration.credentialProviderId()).isEqualTo("profile:default")
