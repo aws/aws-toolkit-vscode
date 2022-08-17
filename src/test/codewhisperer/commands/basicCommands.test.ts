@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
@@ -15,18 +16,23 @@ import { ExtContext } from '../../../shared/extensions'
 import { AwsContext } from '../../../shared/awsContext'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
-import { OutputChannel } from 'vscode'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 import { testCommand } from '../../shared/vscode/testUtils'
+import { Command } from '../../../shared/vscode/commands2'
 
 describe('CodeWhisperer-basicCommands', function () {
     describe('CodeWhisperer-basicCommands', function () {
+        let targetCommand: Command<any> & vscode.Disposable
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
         })
 
         afterEach(function () {
+            if (targetCommand) {
+                targetCommand.dispose()
+            }
             sinon.restore()
         })
 
@@ -55,7 +61,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), false)
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
+        it('test toggleCodeSuggestions: should emit aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
             const fakeExtContext: ExtContext = {
                 extensionContext: await FakeExtensionContext.create(),
                 awsContext: {} as AwsContext,
@@ -63,12 +69,12 @@ describe('CodeWhisperer-basicCommands', function () {
                     return {} as SamCliContext
                 },
                 regionProvider: {} as RegionProvider,
-                outputChannel: {} as OutputChannel,
+                outputChannel: {} as vscode.OutputChannel,
                 telemetryService: {} as TelemetryService,
                 credentialsStore: {} as CredentialsStore,
-                invokeOutputChannel: {} as OutputChannel,
+                invokeOutputChannel: {} as vscode.OutputChannel,
             }
-            const targetCommand = testCommand(toggleCodeSuggestions, fakeExtContext)
+            targetCommand = testCommand(toggleCodeSuggestions, fakeExtContext)
 
             assert.strictEqual(
                 fakeExtContext.extensionContext.globalState.get(CodeWhispererConstants.autoTriggerEnabledKey),
@@ -81,11 +87,9 @@ describe('CodeWhisperer-basicCommands', function () {
                 settingId: CodeWhispererConstants.AutoSuggestion.settingId,
                 settingState: CodeWhispererConstants.AutoSuggestion.activated,
             })
-
-            targetCommand.dispose()
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
+        it('test toggleCodeSuggestions: should emit aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
             const fakeExtContext: ExtContext = {
                 extensionContext: await FakeExtensionContext.create(),
                 awsContext: {} as AwsContext,
@@ -93,12 +97,12 @@ describe('CodeWhisperer-basicCommands', function () {
                     return {} as SamCliContext
                 },
                 regionProvider: {} as RegionProvider,
-                outputChannel: {} as OutputChannel,
+                outputChannel: {} as vscode.OutputChannel,
                 telemetryService: {} as TelemetryService,
                 credentialsStore: {} as CredentialsStore,
-                invokeOutputChannel: {} as OutputChannel,
+                invokeOutputChannel: {} as vscode.OutputChannel,
             }
-            const targetCommand = testCommand(toggleCodeSuggestions, fakeExtContext)
+            targetCommand = testCommand(toggleCodeSuggestions, fakeExtContext)
             fakeExtContext.extensionContext.globalState.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
             assert.strictEqual(
                 fakeExtContext.extensionContext.globalState.get(CodeWhispererConstants.autoTriggerEnabledKey),
@@ -112,8 +116,6 @@ describe('CodeWhisperer-basicCommands', function () {
                 settingId: CodeWhispererConstants.AutoSuggestion.settingId,
                 settingState: CodeWhispererConstants.AutoSuggestion.deactivated,
             })
-
-            targetCommand.dispose()
         })
     })
 })
