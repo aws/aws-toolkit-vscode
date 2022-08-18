@@ -14,9 +14,6 @@ import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
-import { request } from 'http'
-import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
-import { nextTick } from 'process'
 // TODO: Add debug logging statements
 
 /**
