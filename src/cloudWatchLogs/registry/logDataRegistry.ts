@@ -13,6 +13,10 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
+import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
+import { request } from 'http'
+import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
+import { nextTick } from 'process'
 // TODO: Add debug logging statements
 
 /**
@@ -123,25 +127,75 @@ export class LogDataRegistry {
             return
         }
         const nextToken = headOrTail === 'head' ? logData.previous?.token : logData.next?.token
-
+        const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
+            awsCall: async request =>
+                await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken),
+            nextTokenNames: {
+                request: 'nextForwardToken',
+                response: 'nextForwardToken',
+            },
+            request,
+        })
         // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-        const logEvents = await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken)
+        //let logDataGetter: AsyncIterator<CloudWatchLogsResponse>
+        // switch(logData.retrieveLogsFunction) {
+        //     case getLogEventsFromUriComponents:
+        //         logDataGetter = getPaginatedAwsCallIter({
+        //             awsCall: async request => await getLogEventsFromUriComponents(logData.logGroupInfo, logData.parameters, nextToken),
+        //             nextTokenNames: {
+        //                 request: 'nextForwardToken',
+        //                 response: 'nextForwardToken',
+        //             },
+        //             request,
+        //         })
+        //         break
+
+        //     case filterLogEventsFromUriComponents:
+        //         logDataGetter = getPaginatedAwsCallIter({
+        //         awsCall: async request => await filterLogEventsFromUriComponents(logData.logGroupInfo, logData.parameters, nextToken),
+        //         nextTokenNames: {
+        //             request: 'nextForwardToken',
+        //             response: 'nextForwardToken',
+        //         },
+        //         request,
+        //     })
+        //         break
+
+        //     default:
+        //         throw new Error(`cwl: unknown function passed into updateLog as retrieveLogsFunction`)
+        // }
+        let newLogEvents: CloudWatchLogs.FilteredLogEvents = []
+        let next: IteratorResult<CloudWatchLogsResponse> = await logDataGetter.next()
+        newLogEvents = newLogEvents.concat(next.value.events)
+
+        while (newLogEvents.length === 0 && !next.done) {
+            next = await logDataGetter.next()
+            newLogEvents = newLogEvents.concat(next.value.events)
+        }
+
+        const responseData: CloudWatchLogsResponse = {
+            events: newLogEvents,
+            nextForwardToken: next.value.nextForwardToken,
+            nextBackwardToken: next.value.nextBackwardToken,
+        }
+
+        //const logEvents = await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken)
 
         const newData =
             headOrTail === 'head'
-                ? (logEvents.events ?? []).concat(logData.data)
-                : logData.data.concat(logEvents.events ?? [])
+                ? (responseData.events ?? []).concat(logData.data)
+                : logData.data.concat(responseData.events ?? [])
 
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
         if (!logData.previous || headOrTail === 'head') {
             tokens.previous = {
-                token: logEvents.nextBackwardToken ?? '',
+                token: responseData.nextBackwardToken ?? '',
             }
         }
         if (!logData.next || headOrTail === 'tail') {
             tokens.next = {
-                token: logEvents.nextForwardToken ?? '',
+                token: responseData.nextForwardToken ?? '',
             }
         }
         this.setLogData(uri, {
@@ -370,6 +424,7 @@ export type CloudWatchLogsParameters = {
     endTime?: number
     limit?: number
     streamNameOptions?: string[]
+    nextForwardToken?: CloudWatchLogs.NextToken
 }
 
 export type CloudWatchLogsResponse = {
