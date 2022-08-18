@@ -10,7 +10,16 @@ import { LogDataRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/log
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { logGroupsData, newLineData, newText, testLogData, testStreamNames, unregisteredData } from '../utils.test'
+import {
+    fakeGetLogEvents,
+    logGroupsData,
+    newLineData,
+    newText,
+    paginatedData,
+    testLogData,
+    testStreamNames,
+    unregisteredData,
+} from '../utils.test'
 
 describe('LogDataRegistry', async function () {
     let registry: LogDataRegistry
@@ -22,12 +31,14 @@ describe('LogDataRegistry', async function () {
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
     const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
     const searchLogGroupUri = createURIFromArgs(logGroupsData.logGroupInfo, logGroupsData.parameters)
+    const paginatedUri = createURIFromArgs(paginatedData.logGroupInfo, paginatedData.parameters)
 
     beforeEach(function () {
         registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
         registry.setLogData(registeredUri, testLogData)
         registry.setLogData(newLineUri, newLineData)
         registry.setLogData(searchLogGroupUri, logGroupsData)
+        registry.setLogData(paginatedUri, paginatedData)
     })
 
     describe('hasLog', function () {
@@ -47,6 +58,22 @@ describe('LogDataRegistry', async function () {
             const preregisteredLogData = registry.getLogData(registeredUri)
             assert(preregisteredLogData)
             assert.strictEqual(preregisteredLogData.data[0].message, testLogData.data[0].message)
+        })
+    })
+
+    describe('updateLog', async function () {
+        it('properply paginates the results until it gets results', async () => {
+            const oldData = registry.getLogData(paginatedUri)
+            // check that oldData is unchanged.
+            assert(oldData)
+            assert.strictEqual(oldData.data, paginatedData.data)
+
+            await registry.updateLog(paginatedUri)
+
+            // check that newData is changed to what it should be.
+            const newData = registry.getLogData(paginatedUri)
+            assert(newData)
+            assert.strictEqual(newData.data, (await fakeGetLogEvents()).events)
         })
     })
 
