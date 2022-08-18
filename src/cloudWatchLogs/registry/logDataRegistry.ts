@@ -127,7 +127,7 @@ export class LogDataRegistry {
         const nextToken = headOrTail === 'head' ? logData.previous?.token : logData.next?.token
         const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
             awsCall: async request =>
-                await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken),
+                await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, request.nextForwardToken),
             nextTokenNames: {
                 request: 'nextForwardToken',
                 response: 'nextForwardToken',
