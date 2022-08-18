@@ -305,7 +305,10 @@ const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-        webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
+        webview.show({
+            title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+            viewColumn: vscode.ViewColumn.Beside,
+        })
         recordSamOpenConfigUi()
     })
 }

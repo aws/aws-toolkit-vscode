@@ -91,6 +91,7 @@ export async function executeStateMachine(context: ExtContext, node: StateMachin
     await wv.show({
         title: localize('AWS.executeStateMachine.title', 'Start Execution'),
         cssFiles: ['executeStateMachine.css'],
+        viewColumn: vscode.ViewColumn.Beside,
     })
     recordStepfunctionsExecuteStateMachineView()
 }
