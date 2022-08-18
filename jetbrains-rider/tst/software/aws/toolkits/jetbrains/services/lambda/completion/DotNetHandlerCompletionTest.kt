@@ -10,6 +10,7 @@ import base.setUpCustomToolset
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.IconLoader
 import com.jetbrains.rd.ide.model.IconModel
+import com.jetbrains.rd.ui.icons.toIdeaIcon
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
 import com.jetbrains.rider.test.protocol.testProtocolHost
@@ -70,7 +71,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Suppress("SameParameterValue")
     private fun assertIconPath(iconModel: IconModel?, expectedPath: String) {
         assertThat(iconModel).isNotNull
-        val ideaIconSecond = iconModel?.let { completionItemToIcon(project, iconModel) as? IconLoader.CachedImageIcon }
+        val ideaIconSecond = iconModel?.let { iconModel.toIdeaIcon(project) as? IconLoader.CachedImageIcon }
         assertThat(ideaIconSecond).isNotNull
         assertThat(ideaIconSecond?.url?.path).endsWith(expectedPath.trimStart('/'))
     }

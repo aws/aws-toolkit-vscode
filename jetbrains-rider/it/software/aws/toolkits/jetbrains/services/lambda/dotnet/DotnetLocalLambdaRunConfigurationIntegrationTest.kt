@@ -32,6 +32,11 @@ class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest :
 class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda5X", LambdaRuntime.DOTNET5_0)
 
+class Dotnet60LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda6X", LambdaRuntime.DOTNET6_0)
+
+class Dotnet60LocalLambdaImageRunConfigurationIntegrationTest :
+    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda6X", LambdaRuntime.DOTNET6_0)
+
 abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: LambdaRuntime) :
     AwsReuseSolutionTestBase() {
 

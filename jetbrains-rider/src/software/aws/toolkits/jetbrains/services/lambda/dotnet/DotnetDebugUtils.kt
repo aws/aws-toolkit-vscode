@@ -24,6 +24,7 @@ import com.jetbrains.rd.util.reactive.adviseUntil
 import com.jetbrains.rdclient.protocol.RdDispatcher
 import com.jetbrains.rider.debugger.DebuggerWorkerProcessHandler
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
+import com.jetbrains.rider.model.debuggerWorker.DotNetCoreAttachStartInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
@@ -43,7 +44,6 @@ import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindDockerContaine
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindPid.Companion.DOTNET_PID
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
-import software.aws.toolkits.jetbrains.utils.compatability.createNetCoreAttachStartInfo
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.resources.message
 import java.net.InetAddress
@@ -132,7 +132,9 @@ object DotnetDebugUtils {
                                 backendPort
                             )
 
-                            val startInfo = createNetCoreAttachStartInfo(pid)
+                            val startInfo = DotNetCoreAttachStartInfo(
+                                processId = pid
+                            )
 
                             val sessionModel = DotNetDebuggerSessionModel(startInfo)
                             sessionModel.sessionProperties.bindToSettings(debuggerLifetime, environment.project).apply {

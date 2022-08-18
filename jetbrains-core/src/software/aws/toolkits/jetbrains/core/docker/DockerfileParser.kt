@@ -3,17 +3,17 @@
 
 package software.aws.toolkits.jetbrains.core.docker
 
+import com.intellij.docker.dockerFile.parser.psi.DockerFileAddOrCopyCommand
+import com.intellij.docker.dockerFile.parser.psi.DockerFileCmdCommand
+import com.intellij.docker.dockerFile.parser.psi.DockerFileExposeCommand
+import com.intellij.docker.dockerFile.parser.psi.DockerFileFromCommand
+import com.intellij.docker.dockerFile.parser.psi.DockerFileWorkdirCommand
 import com.intellij.docker.dockerFile.parser.psi.DockerPsiCommand
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import software.aws.toolkits.jetbrains.core.docker.compatability.DockerFileAddOrCopyCommand
-import software.aws.toolkits.jetbrains.core.docker.compatability.DockerFileCmdCommand
-import software.aws.toolkits.jetbrains.core.docker.compatability.DockerFileExposeCommand
-import software.aws.toolkits.jetbrains.core.docker.compatability.DockerFileFromCommand
-import software.aws.toolkits.jetbrains.core.docker.compatability.DockerFileWorkdirCommand
 import java.io.File
 
 class DockerfileParser(private val project: Project) {

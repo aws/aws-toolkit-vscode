@@ -3,15 +3,20 @@
 
 package software.aws.toolkits.jetbrains.core.docker
 
+import com.intellij.docker.DockerAgentPathMapperImpl
 import com.intellij.docker.DockerDeploymentConfiguration
 import com.intellij.docker.DockerServerRuntimeInstance
+import com.intellij.docker.agent.DockerAgentLogProvider
 import com.intellij.docker.agent.DockerAgentProgressCallback
 import com.intellij.docker.agent.DockerAgentSourceType
 import com.intellij.docker.agent.progress.DockerResponseItem
+import com.intellij.docker.agent.terminal.pipe.DockerTerminalPipe
 import com.intellij.docker.registry.DockerAgentRepositoryConfigImpl
 import com.intellij.docker.registry.DockerRepositoryModel
+import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
 import com.intellij.docker.remote.run.runtime.DockerAgentDeploymentConfigImpl
 import com.intellij.docker.runtimes.DockerApplicationRuntime
+import com.intellij.docker.runtimes.DockerImageRuntime
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.runInEdt
@@ -32,6 +37,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.await
 import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.EcrUtils
@@ -217,6 +223,38 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
         const val NO_TAG_TAG = "<none>:<none>"
 
         val LOG = getLogger<AbstractToolkitDockerAdapter>()
+    }
+}
+
+// TODO: merge with abstract class
+class ToolkitDockerAdapter(project: Project, serverRuntime: DockerServerRuntimeInstance) : AbstractToolkitDockerAdapter(project, serverRuntime) {
+    override fun buildLocalImage(dockerfile: File): String? {
+        val deployment = serverRuntime.agent.createDeployment(
+            DockerAgentBuildImageConfig(System.currentTimeMillis().toString(), dockerfile, false),
+            DockerAgentPathMapperImpl(project)
+        )
+
+        val logger = DockerAgentLogProvider(
+            infoFunction = LOG::info,
+            traceFunction = LOG::trace,
+            warnFunction = LOG::warn,
+            errorFunction = LOG::error,
+            isTraceEnabled = false
+        )
+
+        return deployment.deploy("untagged test image", DockerTerminalPipe("AWS Toolkit build for $dockerfile", logger), null)?.imageId
+    }
+
+    override suspend fun hackyBuildDockerfileWithUi(project: Project, pushRequest: DockerfileEcrPushRequest) =
+        hackyBuildDockerfileUnderIndicator(project, pushRequest)
+
+    override suspend fun pushImage(localTag: String, config: DockerRepositoryModel) {
+        val physicalLocalRuntime = serverRuntime.findRuntimeLater(localTag, false).await()
+        (physicalLocalRuntime as? DockerImageRuntime)?.pushImage(project, config) ?: LOG.error { "couldn't map tag to appropriate docker runtime" }
+    }
+
+    companion object {
+        val LOG = getLogger<ToolkitDockerAdapter>()
     }
 }
 

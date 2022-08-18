@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.database.dataSource.DataSourceUiUtil
+import com.intellij.database.dataSource.DatabaseCredentialsAuthProviderUi
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.database.dataSource.url.template.UrlEditorModel
@@ -16,13 +17,12 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
-import software.aws.toolkits.jetbrains.ui.compatability.JBDBCredsAuthProviderUserWidget
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.JPanel
 
 @Deprecated("Use AwsAuthWidget shim instead") // FIX_WHEN_MIN_IS_221
-abstract class AwsAuthWidgetBase(private val userFieldEnabled: Boolean) : JBDBCredsAuthProviderUserWidget() {
+abstract class AwsAuthWidgetBase(private val userFieldEnabled: Boolean) : DatabaseCredentialsAuthProviderUi.UserWidget() {
     private val credentialSelector = CredentialProviderSelector()
     private val regionSelector = RegionSelector()
 

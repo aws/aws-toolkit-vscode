@@ -8,11 +8,10 @@ import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.io.Decompressor
+import com.intellij.util.system.CpuArch
 import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.getTextFromUrl
-import software.aws.toolkits.jetbrains.core.isArm64
-import software.aws.toolkits.jetbrains.core.isIntel64
 import software.aws.toolkits.jetbrains.core.saveFileFromUrl
 import software.aws.toolkits.jetbrains.core.tools.BaseToolType
 import software.aws.toolkits.jetbrains.core.tools.DocumentedToolType
@@ -39,14 +38,13 @@ object SsmPlugin : ManagedToolType<FourPartVersion>, DocumentedToolType<FourPart
     override fun supportedVersions(): VersionRange<FourPartVersion> = FourPartVersion(1, 2, 0, 0) until FourPartVersion(2, 0, 0, 0)
 
     override fun downloadVersion(version: FourPartVersion, destinationDir: Path, indicator: ProgressIndicator?): Path {
-        // TODO: Move to CpuArch, FIX_WHEN_MIN_IS_211
         val downloadUrl = when {
             SystemInfo.isWindows -> windowsUrl(version)
             SystemInfo.isMac -> macUrl(version)
-            SystemInfo.isLinux && hasDpkg && isArm64() -> ubuntuArm64Url(version)
-            SystemInfo.isLinux && hasDpkg && isIntel64() -> ubuntuI64Url(version)
-            SystemInfo.isLinux && hasRpm2Cpio && isArm64() -> linuxArm64Url(version)
-            SystemInfo.isLinux && hasRpm2Cpio && isIntel64() -> linuxI64Url(version)
+            SystemInfo.isLinux && hasDpkg && CpuArch.isArm64() -> ubuntuArm64Url(version)
+            SystemInfo.isLinux && hasDpkg && CpuArch.isIntel64() -> ubuntuI64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && CpuArch.isArm64() -> linuxArm64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && CpuArch.isIntel64() -> linuxI64Url(version)
             else -> throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")
         }
 
