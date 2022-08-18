@@ -74,7 +74,7 @@ export interface CawsProject extends caws.ProjectSummary {
     readonly org: Pick<CawsOrg, 'name'>
 }
 
-export interface CawsRepo extends caws.SourceRepositorySummary {
+export interface CawsRepo extends caws.ListSourceRepositoriesItem {
     readonly type: 'repo'
     readonly name: string
     readonly org: Pick<CawsOrg, 'name'>
@@ -401,8 +401,8 @@ class CawsClientInternal {
     /**
      * Gets a flat list of all repos for the given CAWS user.
      */
-    public listSourceRepositories(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
-        const requester = async (request: caws.ListSourceRepositoriesInput) =>
+    public listSourceRepositories(request: caws.ListSourceRepositoriesRequest): AsyncCollection<CawsRepo[]> {
+        const requester = async (request: caws.ListSourceRepositoriesRequest) =>
             this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
@@ -411,14 +411,13 @@ class CawsClientInternal {
                     type: 'repo',
                     org: { name: request.organizationName },
                     project: { name: request.projectName },
-                    name: s.name ?? 'unknown',
                     ...s,
                 })) ?? []
         )
     }
 
-    public listBranches(request: caws.ListSourceBranchesInput): AsyncCollection<CawsBranch[]> {
-        const requester = async (request: caws.ListSourceBranchesInput) =>
+    public listBranches(request: caws.ListSourceRepositoryBranchesRequest): AsyncCollection<CawsBranch[]> {
+        const requester = async (request: caws.ListSourceRepositoryBranchesRequest) =>
             this.call(this.sdkClient.listSourceBranches(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
