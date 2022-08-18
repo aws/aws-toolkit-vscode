@@ -4,17 +4,33 @@
  */
 
 import * as assert from 'assert'
+import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
     CloudWatchLogsParameters,
     CloudWatchLogsData,
     CloudWatchLogsResponse,
+    CloudWatchLogsGroupInfo,
 } from '../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
 export const newText = 'a little longer now\n'
+
+export async function returnPaginatedEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: CloudWatchLogs.NextToken
+) {
+    if (nextToken) {
+        return fakeGetLogEvents()
+    }
+    return {
+        events: [],
+        nextForwardToken: 'this-is-a-token',
+    }
+}
 
 export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
     return {
@@ -115,6 +131,17 @@ export const logGroupsData: CloudWatchLogsData = {
         regionName: 'thisIsARegionCode',
     },
     retrieveLogsFunction: fakeSearchLogGroup,
+    busy: false,
+}
+
+export const paginatedData: CloudWatchLogsData = {
+    data: [],
+    parameters: {},
+    logGroupInfo: {
+        groupName: 'g',
+        regionName: 'r',
+    },
+    retrieveLogsFunction: returnPaginatedEvents,
     busy: false,
 }
 export const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
