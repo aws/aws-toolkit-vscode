@@ -125,10 +125,15 @@ export class LogDataRegistry {
         const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
             awsCall: async request =>
                 await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, request.nextForwardToken),
-            nextTokenNames: {
-                request: 'nextForwardToken',
-                response: 'nextForwardToken',
-            },
+            nextTokenNames: headOrTail
+                ? {
+                      request: 'nextForwardToken',
+                      response: 'nextForwardToken',
+                  }
+                : {
+                      request: 'nextBackwardToken',
+                      response: 'nextForwardToken',
+                  },
             request,
         })
         // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
