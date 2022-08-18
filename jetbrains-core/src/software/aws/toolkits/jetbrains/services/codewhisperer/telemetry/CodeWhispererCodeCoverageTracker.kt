@@ -53,6 +53,8 @@ abstract class CodeWhispererCodeCoverageTracker(
     @Synchronized
     fun activateTrackerIfNotActive() {
         if (!isTelemetryEnabled() || isActive.get()) return
+
+        // tracker will only be activated if and only if IsTelemetryEnabled = true && isActive = false
         val conn = ApplicationManager.getApplication().messageBus.connect()
         conn.subscribe(
             CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,

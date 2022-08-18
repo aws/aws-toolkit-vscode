@@ -454,6 +454,24 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     }
 
     @Test
+    fun `test codePercentage tracker will not be initialized with unsupportedLanguage`() {
+        assertThat(CodeWhispererCodeCoverageTracker.getInstancesMap()).hasSize(0)
+        val project = projectRule.project
+        val fixture = projectRule.fixture
+        val plainTxtFile = fixture.addFileToProject("/notSupported.txt", "")
+
+        runInEdtAndWait {
+            fixture.openFileInEditor(plainTxtFile.virtualFile)
+            WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.appendString("random txt string")
+            }
+        }
+
+        // document changes in unsupported files will not trigger initialization of tracker
+        assertThat(CodeWhispererCodeCoverageTracker.getInstancesMap()).hasSize(0)
+    }
+
+    @Test
     fun `test codePercentage metric is correct - 1`() {
         val project = projectRule.project
         val fixture = projectRule.fixture
