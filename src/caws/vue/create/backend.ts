@@ -31,7 +31,6 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 
 interface LinkedResponse {
     readonly type: 'linked'
-    readonly branchType: 'existing' | 'new'
     readonly selectedProject: CawsProject
     readonly selectedBranch: CawsBranch
     readonly newBranch: string
@@ -188,7 +187,8 @@ export class CawsCreateWebview extends VueWebview {
     }
 
     private async createLinkedWorkspace(settings: WorkspaceSettings, source: LinkedResponse) {
-        if (source.branchType === 'new') {
+        const isNewBranch = !!source.newBranch
+        if (isNewBranch) {
             await this.client.createSourceBranch({
                 branchName: source.newBranch,
                 organizationName: source.selectedProject.org.name,
@@ -198,8 +198,7 @@ export class CawsCreateWebview extends VueWebview {
             })
         }
 
-        const branchName =
-            source.branchType === 'new' ? source.newBranch : source.selectedBranch.name.replace('refs/heads/', '')
+        const branchName = isNewBranch ? source.newBranch : source.selectedBranch.name.replace('refs/heads/', '')
         return this.client.createDevelopmentWorkspace({
             ides: [{ name: 'VSCode' }],
             projectName: source.selectedProject.name,
@@ -212,7 +211,8 @@ export class CawsCreateWebview extends VueWebview {
             ],
             ...settings,
             // XXX: Workspaces now require an alias. Need to change UX so we don't do this.
-            alias: settings.alias ?? 'Workspace',
+            // remove after Velox fixes model by setting min alias length to 0
+            alias: settings.alias === undefined || settings.alias === '' ? 'Workspace' : settings.alias,
         })
     }
 

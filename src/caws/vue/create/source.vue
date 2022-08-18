@@ -17,7 +17,7 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'linked'">
-        <span>
+        <span style="width: 100%">
             <label class="option-label soft">Project</label>
             <select class="picker" v-model="model.selectedProject" @change="update">
                 <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
@@ -27,53 +27,10 @@
             </select>
         </span>
 
-        <div class="branch-pickers mt-16">
-            <label class="option-label soft">Branch</label>
-            <div class="modes mb-16" style="width: 66%">
-                <label class="mode-container">
-                    <input
-                        class="radio"
-                        type="radio"
-                        id="existing-branch"
-                        checked="true"
-                        name="branch-configuration"
-                        v-model="model.branchType"
-                        value="existing"
-                    />
-                    <span class="ml-8 option-label" style="padding: 0px">Existing Branch</span>
-                </label>
-
-                <label class="mode-container">
-                    <input
-                        class="radio"
-                        type="radio"
-                        id="new-branch"
-                        name="branch-configuration"
-                        v-model="model.branchType"
-                        value="new"
-                    />
-                    <span class="ml-8 option-label" style="padding: 0px">New Branch</span>
-                </label>
-            </div>
-
-            <!-- New Branch -->
-            <div class="mb-16" v-if="model.branchType === 'new'">
-                <label class="options-label soft mb-8" style="display: block" for="branch-input">New Branch</label>
-                <input
-                    id="branch-input"
-                    type="text"
-                    placeholder="New branch name"
-                    v-model="model.newBranch"
-                    @change="update"
-                />
-                <p id="branch-error" class="input-validation" v-if="model.branchError">{{ model.branchError }}</p>
-            </div>
-
+        <div class="modes flex-sizing mt-16">
             <!-- Existing branch -->
-            <span>
-                <label class="options-label soft mb-8" style="display: block" for="branch-picker"
-                    >Existing Branch</label
-                >
+            <span class="flex-sizing">
+                <label class="options-label soft mb-8" style="display: block" for="branch-picker">Branch</label>
                 <select
                     id="branch-picker"
                     class="picker"
@@ -86,6 +43,20 @@
                         {{ branchName(branch) }}
                     </option>
                 </select>
+            </span>
+
+            <!-- New Branch -->
+            <span class="flex-sizing">
+                <label class="options-label soft mb-8" style="display: block" for="branch-input"
+                    >Optional - Create new branch from existing</label
+                >
+                <input
+                    id="branch-input"
+                    type="text"
+                    placeholder="New branch name"
+                    v-model="model.newBranch"
+                    @change="update"
+                />
             </span>
         </div>
     </div>
@@ -112,17 +83,14 @@ import { CawsCreateWebview, SourceResponse } from './backend'
 const client = WebviewClientFactory.create<CawsCreateWebview>()
 const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
 
-type SourceModel = Partial<SourceResponse> & { urlError?: string; branchError?: string }
+type SourceModel = Partial<SourceResponse> & { urlError?: string }
 
 export function isValidSource(source: SourceModel): source is SourceResponse {
-    if (source.urlError || source.branchError) {
+    if (source.urlError) {
         return false
     }
 
     if (source.type === 'linked') {
-        if (source.branchType === 'new' && !source.newBranch) {
-            return false
-        }
         return !!source.selectedProject && !!source.selectedBranch
     } else if (source.type === 'unlinked') {
         return !!source.repositoryUrl
@@ -186,15 +154,6 @@ export default defineComponent({
                 this.update()
             }
         },
-        'model.newBranch'(branch?: string) {
-            if (branch) {
-                this.modelValue.branchError = undefined
-                this.update()
-            } else {
-                this.modelValue.branchError = 'New branch name must not be empty'
-                this.update()
-            }
-        },
     },
     computed: {
         model() {
@@ -249,7 +208,7 @@ export default defineComponent({
 
 <style scope>
 .picker {
-    min-width: 200px;
+    min-width: 300px;
 }
 
 .source-pickers {
@@ -259,13 +218,13 @@ export default defineComponent({
     column-gap: 16px;
 }
 
-.branch-pickers {
-    width: 100%;
-}
-
 .modes {
     display: flex;
     column-gap: 16px;
+}
+
+.flex-sizing {
+    flex: 1;
 }
 
 .mode-container {
@@ -298,6 +257,6 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 }
 
 #branch-input {
-    min-width: 190px;
+    min-width: 300px;
 }
 </style>
