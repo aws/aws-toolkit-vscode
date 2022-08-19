@@ -12,13 +12,7 @@ import * as vscode from 'vscode'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getLogger } from '../shared/logger'
-import {
-    CredentialSourceId,
-    CredentialType,
-    recordAwsRefreshCredentials,
-    recordAwsValidateCredentials,
-    Result,
-} from '../shared/telemetry/telemetry'
+import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsSettings, notifyUserInvalidCredentials } from './credentialsUtilities'
 import {
@@ -38,6 +32,7 @@ import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
+import { telemetry } from '../shared/telemetry/spans'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -45,7 +40,9 @@ export class LoginManager {
     public constructor(
         private readonly awsContext: AwsContext,
         private readonly store: CredentialsStore,
-        public readonly recordAwsValidateCredentialsFn = recordAwsValidateCredentials
+        public readonly recordAwsValidateCredentialsFn = telemetry.aws_validateCredentials.emit.bind(
+            telemetry.aws_validateCredentials
+        )
     ) {}
 
     /**
@@ -340,7 +337,7 @@ function createCredentialsShim(
 
             throw error
         } finally {
-            recordAwsRefreshCredentials({
+            telemetry.aws_refreshCredentials.emit({
                 result,
                 passive: true,
                 credentialType,

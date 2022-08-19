@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { createHelpButton } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
 import * as nls from 'vscode-nls'
 import { isValidResponse } from '../../shared/wizards/wizard'
+import { telemetry } from '../../shared/telemetry/spans'
+import { AppRunnerServiceStatus, Result } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 function validateName(name: string) {
@@ -20,8 +21,8 @@ function validateName(name: string) {
 }
 
 export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
-    let telemetryResult: telemetry.Result = 'Failed'
-    const appRunnerServiceStatus = node.info.Status as telemetry.AppRunnerServiceStatus
+    let telemetryResult: Result = 'Failed'
+    const appRunnerServiceStatus = node.info.Status as AppRunnerServiceStatus
 
     try {
         const inputBox = createInputBox({
@@ -41,7 +42,7 @@ export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
         await node.delete()
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerDeleteService({
+        telemetry.apprunner_deleteService.emit({
             result: telemetryResult,
             appRunnerServiceStatus,
             passive: false,

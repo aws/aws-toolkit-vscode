@@ -7,11 +7,11 @@ import globals from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
 
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export interface FeedbackMessage {
     comment: string
@@ -42,14 +42,14 @@ export class FeedbackWebview extends VueWebview {
             const errorMessage = (err as Error).message || 'Failed to submit feedback'
             logger.error(`feedback failed: "${message.sentiment}": ${errorMessage}`)
 
-            telemetry.recordFeedbackResult({ result: 'Failed' })
+            telemetry.feedback_result.emit({ result: 'Failed' })
 
             return errorMessage
         }
 
         logger.info(`feedback sent: "${message.sentiment}"`)
 
-        telemetry.recordFeedbackResult({ result: 'Succeeded' })
+        telemetry.feedback_result.emit({ result: 'Succeeded' })
 
         this.dispose()
 

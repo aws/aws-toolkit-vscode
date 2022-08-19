@@ -15,9 +15,10 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { PublishSSMDocumentWizard, PublishSSMDocumentWizardResponse } from '../wizards/publishDocumentWizard'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { showConfirmationMessage } from '../util/util'
+import { telemetry } from '../../shared/telemetry/spans'
+import { Result, SsmOperation } from '../../shared/telemetry/telemetry'
 
 export async function publishSSMDocument(awsContext: AwsContext, regionProvider: RegionProvider): Promise<void> {
     const logger: Logger = getLogger()
@@ -66,8 +67,8 @@ export async function createDocument(
     textDocument: vscode.TextDocument,
     client: SsmDocumentClient = new DefaultSsmDocumentClient(wizardResponse.region)
 ) {
-    let result: telemetry.Result = 'Succeeded'
-    const ssmOperation = wizardResponse.action as telemetry.SsmOperation
+    let result: Result = 'Succeeded'
+    const ssmOperation = wizardResponse.action as SsmOperation
 
     const logger: Logger = getLogger()
     logger.info(`Creating Systems Manager Document '${wizardResponse.name}'`)
@@ -91,7 +92,7 @@ export async function createDocument(
             `Failed to create Systems Manager Document '${wizardResponse.name}'. \n${error.message}`
         )
     } finally {
-        telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
+        telemetry.ssm_publishDocument.emit({ result, ssmOperation })
     }
 }
 
@@ -101,8 +102,8 @@ export async function updateDocument(
     client: SsmDocumentClient = new DefaultSsmDocumentClient(wizardResponse.region),
     window = Window.vscode()
 ) {
-    let result: telemetry.Result = 'Succeeded'
-    const ssmOperation = wizardResponse.action as telemetry.SsmOperation
+    let result: Result = 'Succeeded'
+    const ssmOperation = wizardResponse.action as SsmOperation
 
     const logger: Logger = getLogger()
     logger.info(`Updating Systems Manager Document '${wizardResponse.name}'`)
@@ -163,6 +164,6 @@ export async function updateDocument(
             `Failed to update Systems Manager Document '${wizardResponse.name}'. \n${error.message}`
         )
     } finally {
-        telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
+        telemetry.ssm_publishDocument.emit({ result, ssmOperation })
     }
 }

@@ -9,12 +9,12 @@ import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
+import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 
 const testTempDirs: string[] = []
 
@@ -130,67 +130,18 @@ export function installFakeClock(): FakeTimers.InstalledClock {
     })
 }
 
-type Telemetry = Omit<typeof telemetry, 'millisecondsSince'>
-// hard-coded, need significant updates to the codgen to make these kinds of things easier
-type Namespace =
-    | 'vpc'
-    | 'sns'
-    | 'sqs'
-    | 's3'
-    | 'session'
-    | 'schemas'
-    | 'sam'
-    | 'redshift'
-    | 'rds'
-    | 'lambda'
-    | 'aws'
-    | 'ecs'
-    | 'ecr'
-    | 'cdk'
-    | 'apprunner'
-    | 'dynamicresource'
-    | 'toolkit'
-    | 'cloudwatchinsights'
-    | 'iam'
-    | 'ec2'
-    | 'dynamodb'
-    | 'codecommit'
-    | 'cloudwatchlogs'
-    | 'beanstalk'
-    | 'cloudfront'
-    | 'apigateway'
-    | 'vscode'
-    | 'codewhisperer'
-type NameFromFunction<T extends keyof Telemetry> = T extends `record${infer P}`
-    ? Uncapitalize<P> extends `${Namespace}${infer L}`
-        ? Uncapitalize<P> extends `${infer N}${L}`
-            ? `${N}_${Uncapitalize<L>}`
-            : never
-        : never
-    : never
-type MetricName = NameFromFunction<keyof Telemetry>
-type FunctionNameFromName<S extends MetricName> = S extends `${infer N}_${infer M}`
-    ? `record${Capitalize<N>}${Capitalize<M>}`
-    : never
-type FunctionFromName<S extends MetricName> = FunctionNameFromName<S> extends keyof Telemetry
-    ? Telemetry[FunctionNameFromName<S>]
-    : never
-type TelemetryMetric<K extends MetricName> = Omit<NonNullable<Parameters<FunctionFromName<K>>[0]>, 'duration'>
-
-/**
+/*
  * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
  * match the expected values.
  */
-export function assertTelemetry<K extends MetricName>(name: K, expected: TelemetryMetric<K>): void | never {
-    const expectedCopy = { ...(expected as Record<string, unknown>) } as NonNullable<
-        Parameters<Telemetry[keyof Telemetry]>[0]
-    >
+export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
+    const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
     const query = { metricName: name, filters: ['awsAccount'] }
     delete expectedCopy['passive']
 
     Object.keys(expectedCopy).forEach(
-        k => ((expectedCopy as Record<string, string>)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+        k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
     )
 
     const metadata = globals.telemetry.logger.query(query)
@@ -209,7 +160,7 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: Telemet
  */
 export const assertTelemetryCurried =
     <K extends MetricName>(name: K) =>
-    (expected: TelemetryMetric<K>) =>
+    (expected: MetricShapes[K]) =>
         assertTelemetry(name, expected)
 
 /**

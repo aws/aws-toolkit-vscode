@@ -17,7 +17,6 @@ import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
-import * as telemetry from '../shared/telemetry/telemetry'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
@@ -44,6 +43,11 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
+import {
+    CodewhispererCompletionType,
+    CodewhispererLanguage,
+    CodewhispererTriggerType,
+} from '../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -168,9 +172,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 recommendation: string,
                 requestId: string,
                 sessionId: string,
-                triggerType: telemetry.CodewhispererTriggerType,
-                completionType: telemetry.CodewhispererCompletionType,
-                language: telemetry.CodewhispererLanguage,
+                triggerType: CodewhispererTriggerType,
+                completionType: CodewhispererCompletionType,
+                language: CodewhispererLanguage,
                 references: codewhispererClient.References
             ) => {
                 const bracketConfiguration = vscode.workspace.getConfiguration('editor').get('autoClosingBrackets')

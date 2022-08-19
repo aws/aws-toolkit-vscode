@@ -2,24 +2,30 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
+import { telemetry } from '../../shared/telemetry/spans'
+import {
+    CodewhispererAutomatedTriggerType,
+    CodewhispererCompletionType,
+    CodewhispererSuggestionState,
+    CodewhispererTriggerType,
+} from '../../shared/telemetry/telemetry'
 
 export class TelemetryHelper {
     /**
      * Trigger type for getting CodeWhisperer recommendation
      */
-    public triggerType: telemetry.CodewhispererTriggerType
+    public triggerType: CodewhispererTriggerType
     /**
      * Auto Trigger Type for getting event of Automated Trigger
      */
-    public CodeWhispererAutomatedtriggerType: telemetry.CodewhispererAutomatedTriggerType
+    public CodeWhispererAutomatedtriggerType: CodewhispererAutomatedTriggerType
     /**
      * completion Type of the CodeWhisperer recommendation, line vs block
      */
-    public completionType: telemetry.CodewhispererCompletionType
+    public completionType: CodewhispererCompletionType
     /**
      * the cursor offset location at invocation time
      */
@@ -45,7 +51,7 @@ export class TelemetryHelper {
         languageId: string
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
-        telemetry.recordCodewhispererUserDecision({
+        telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestId,
             codewhispererSessionId: sessionId ? sessionId : undefined,
             codewhispererPaginationProgress: paginationIndex,
@@ -89,7 +95,7 @@ export class TelemetryHelper {
             if (_elem.content.length === 0) {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
-            telemetry.recordCodewhispererUserDecision({
+            telemetry.codewhisperer_userDecision.emit({
                 codewhispererRequestId: requestId,
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
@@ -108,10 +114,10 @@ export class TelemetryHelper {
         i: number,
         acceptIndex: number,
         recommendationSuggestionState?: Map<number, string>
-    ): telemetry.CodewhispererSuggestionState {
+    ): CodewhispererSuggestionState {
         const state = recommendationSuggestionState?.get(i)
         if (state && ['Empty', 'Filter', 'Discard'].includes(state)) {
-            return state as telemetry.CodewhispererSuggestionState
+            return state as CodewhispererSuggestionState
         } else if (recommendationSuggestionState !== undefined && recommendationSuggestionState.get(i) !== 'Showed') {
             return 'Unseen'
         }

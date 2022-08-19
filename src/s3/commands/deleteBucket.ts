@@ -5,13 +5,13 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/spans'
 
 /**
  * Deletes the bucket represented by the given node.
@@ -37,7 +37,7 @@ export async function deleteBucketCommand(
     const isConfirmed = await showConfirmationDialog(node.bucket.name, window)
     if (!isConfirmed) {
         getLogger().info('DeleteBucket cancelled')
-        telemetry.recordS3DeleteBucket({ result: 'Cancelled' })
+        telemetry.s3_deleteBucket.emit({ result: 'Cancelled' })
         return
     }
 
@@ -46,14 +46,14 @@ export async function deleteBucketCommand(
         await deleteWithProgress(node, window)
 
         getLogger().info(`Successfully deleted bucket ${node.bucket.name}`)
-        telemetry.recordS3DeleteBucket({ result: 'Succeeded' })
+        telemetry.s3_deleteBucket.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete bucket ${node.bucket.name}: %O`, e)
         showViewLogsMessage(
             localize('AWS.s3.deleteBucket.error.general', 'Failed to delete bucket {0}', node.bucket.name),
             window
         )
-        telemetry.recordS3DeleteBucket({ result: 'Failed' })
+        telemetry.s3_deleteBucket.emit({ result: 'Failed' })
     }
 
     await refreshNode(node.parent, commands)

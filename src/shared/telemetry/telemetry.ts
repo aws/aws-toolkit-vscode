@@ -5,3 +5,8 @@
 
 // This file makes it so you can import 'telemetry' and not 'telemetry.gen'
 export * from './telemetry.gen'
+export { telemetry } from './spans'
+
+export function millisecondsSince(date: Date): number {
+    return Date.now() - date.getTime()
+}

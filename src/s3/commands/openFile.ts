@@ -4,13 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { getTelemetryResult } from '../../shared/errors'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FileViewerManager, TabMode } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
+import { telemetry } from '../../shared/telemetry/spans'
+import { Result } from '../../shared/telemetry/telemetry'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
@@ -39,8 +40,8 @@ export async function editFileCommand(uriOrNode: vscode.Uri | S3FileNode, manage
 
 function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void> {
     // TODO: these metrics shouldn't be separate. A single one with a 'mode' field would work fine.
-    const recordMetric = (result: telemetry.Result) =>
-        mode === TabMode.Read ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
+    const recordMetric = (result: Result) =>
+        mode === TabMode.Read ? telemetry.s3_openEditor.emit({ result }) : telemetry.s3_editObject.emit({ result })
 
     return fn()
         .then(() => recordMetric('Succeeded'))

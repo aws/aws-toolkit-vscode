@@ -10,10 +10,11 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as YAML from 'yaml'
 import { getLogger, Logger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { promptUserForDocumentFormat } from '../util/util'
 import { readFileAsString } from '../../shared/filesystemUtilities'
+import { Result, DocumentFormat } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export interface SsmDocumentTemplateQuickPickItem {
     label: string
@@ -47,8 +48,8 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
 ]
 
 export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
-    let format: telemetry.DocumentFormat | undefined = undefined
+    let result: Result = 'Succeeded'
+    let format: DocumentFormat | undefined = undefined
     let templateName: string | undefined = undefined
     const logger: Logger = getLogger()
 
@@ -83,7 +84,7 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
                 step: 2,
                 totalSteps: 2,
             })
-            format = selectedDocumentFormat ? (selectedDocumentFormat as telemetry.DocumentFormat) : format
+            format = selectedDocumentFormat ? (selectedDocumentFormat as DocumentFormat) : format
             const textDocument: vscode.TextDocument | undefined = await openTextDocumentFromSelection(
                 selection,
                 extensionContext.extensionPath,
@@ -105,7 +106,7 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
             )
         )
     } finally {
-        telemetry.recordSsmCreateDocument({
+        telemetry.ssm_createDocument.emit({
             result: result,
             documentFormat: format,
             starterTemplate: templateName,

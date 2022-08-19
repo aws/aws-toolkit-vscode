@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl } from '../../shared/constants'
-import { recordAwsHelp } from '../../shared/telemetry/telemetry.gen'
+import { telemetry } from '../../shared/telemetry/spans'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -51,5 +51,5 @@ export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.r
 
 Commands.register('aws.cdk.viewDocs', () => {
     vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
-    recordAwsHelp({ name: 'cdk' })
+    telemetry.aws_help.emit({ name: 'cdk' })
 })

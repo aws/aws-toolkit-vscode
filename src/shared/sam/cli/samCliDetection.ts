@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { recordSamDetect } from '../../../shared/telemetry/telemetry'
 import { samAboutInstallUrl } from '../../constants'
+import { telemetry } from '../../telemetry/spans'
 import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
@@ -54,7 +54,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
     }
 
     if (!args.passive) {
-        recordSamDetect({ result: sam.path ? 'Succeeded' : 'Failed' })
+        telemetry.sam_detect.emit({ result: sam.path ? 'Succeeded' : 'Failed' })
     }
 }
 

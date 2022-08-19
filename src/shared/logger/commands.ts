@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { Logger } from '.'
-import { recordVscodeViewLogs } from '../telemetry/telemetry'
+import { telemetry } from '../telemetry/spans'
 import { Commands } from '../vscode/commands2'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
@@ -31,7 +31,7 @@ export class Logging {
     public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
 
     public async openLogUri(logUri = this.defaultLogUri): Promise<vscode.TextEditor | undefined> {
-        recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
+        telemetry.vscode_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
 
         return vscode.window.showTextDocument(logUri)
     }

@@ -12,7 +12,6 @@ import globals from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { Commands } from '../shared/vscode/commands2'
@@ -25,6 +24,7 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
+import { telemetry } from '../shared/telemetry/spans'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -53,7 +53,7 @@ export async function activate(args: {
         })
     )
 
-    recordVscodeActiveRegions({ value: args.regionProvider.getExplorerRegions().length })
+    telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
     args.context.extensionContext.subscriptions.push(
         args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
@@ -81,8 +81,8 @@ async function registerAwsExplorerCommands(
             try {
                 await globals.awsContextCommands.onCommandShowRegion()
             } finally {
-                recordAwsShowRegion()
-                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+                telemetry.aws_setRegion.emit()
+                telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
         Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
@@ -92,7 +92,7 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh()
 
             if (!passive) {
-                recordAwsRefreshExplorer()
+                telemetry.aws_refreshExplorer.emit()
             }
         }),
         Commands.register(

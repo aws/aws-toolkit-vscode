@@ -4,10 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
 import { CodeWhispererConstants } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/spans'
+import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
  * The current calculation method is (Levenshtein edit distance / acceptedSuggestion.length).
@@ -17,9 +18,9 @@ export class CodeWhispererCodeCoverageTracker {
     private _totalTokens: string[]
     private _timer?: NodeJS.Timer
     private _startTime: number
-    private _language: telemetry.CodewhispererLanguage
+    private _language: CodewhispererLanguage
 
-    private constructor(language: telemetry.CodewhispererLanguage, private readonly _globals: vscode.Memento) {
+    private constructor(language: CodewhispererLanguage, private readonly _globals: vscode.Memento) {
         this._acceptedTokens = []
         this._totalTokens = []
         this._startTime = 0
@@ -70,7 +71,7 @@ export class CodeWhispererCodeCoverageTracker {
         const percentCount = ((acceptedTokens.length / totalTokens.length) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const date = new globals.clock.Date(this._startTime)
-        telemetry.recordCodewhispererCodePercentage({
+        telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens.length ? totalTokens.length : 0,
             codewhispererStartTime: date.toString(),
             codewhispererLanguage: this._language,
@@ -117,9 +118,9 @@ export class CodeWhispererCodeCoverageTracker {
         }
     }
 
-    public static readonly instances = new Map<telemetry.CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
+    public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
     public static getTracker(
-        language: telemetry.CodewhispererLanguage = 'plaintext',
+        language: CodewhispererLanguage = 'plaintext',
         memento: vscode.Memento
     ): CodeWhispererCodeCoverageTracker {
         const instance = this.instances.get(language) ?? new this(language, memento)

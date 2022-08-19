@@ -6,7 +6,7 @@
 import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { recordDynamicresourceCopyIdentifier } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export async function copyIdentifier(
     typeName: string,
@@ -15,5 +15,5 @@ export async function copyIdentifier(
     env = Env.vscode()
 ) {
     copyToClipboard(identifier, 'identifier', window, env)
-    recordDynamicresourceCopyIdentifier({ resourceType: typeName })
+    telemetry.dynamicresource_copyIdentifier.emit({ resourceType: typeName })
 }

@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { memoizedGetResourceTypes } from '../model/resources'
 import { fromExtensionManifest } from '../../shared/settings'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export class ResourcesSettings extends fromExtensionManifest('aws.resources', {
     enabledResources: ArrayConstructor(String),
@@ -42,7 +42,7 @@ export async function configureResources(settings = new ResourcesSettings()): Pr
             'enabledResources',
             result.map(res => res.label)
         )
-        recordDynamicresourceSelectResources()
+        telemetry.dynamicresource_selectResources.emit()
         return true
     }
 

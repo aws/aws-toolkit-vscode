@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { AppRunnerServiceNode } from './explorer/apprunnerServiceNode'
@@ -16,6 +15,8 @@ import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
 import { copyToClipboard } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands2'
+import { telemetry } from '../shared/telemetry/spans'
+import { Result } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -38,30 +39,30 @@ const DELETE_SERVICE_FAILED = localize('aws.apprunner.deleteService.failed', 'Fa
 
 const copyUrl = async (node: AppRunnerServiceNode) => {
     copyToClipboard(node.url, 'URL')
-    telemetry.recordApprunnerCopyServiceUrl({ passive: false })
+    telemetry.apprunner_copyServiceUrl.emit({ passive: false })
 }
 const openUrl = async (node: AppRunnerServiceNode) => {
     await vscode.env.openExternal(vscode.Uri.parse(node.url))
-    telemetry.recordApprunnerOpenServiceUrl({ passive: false })
+    telemetry.apprunner_openServiceUrl.emit({ passive: false })
 }
 
 const resumeService = async (node: AppRunnerServiceNode) => {
-    let telemetryResult: telemetry.Result = 'Failed'
+    let telemetryResult: Result = 'Failed'
     try {
         await node.resume()
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerResumeService({ result: telemetryResult, passive: false })
+        telemetry.apprunner_resumeService.emit({ result: telemetryResult, passive: false })
     }
 }
 
 const deployService = async (node: AppRunnerServiceNode) => {
-    let telemetryResult: telemetry.Result = 'Failed'
+    let telemetryResult: Result = 'Failed'
     try {
         await node.deploy()
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerStartDeployment({ result: telemetryResult, passive: false })
+        telemetry.apprunner_startDeployment.emit({ result: telemetryResult, passive: false })
     }
 }
 

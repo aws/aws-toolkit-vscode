@@ -3,19 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { EcrRepositoryNode } from '../../ecr/explorer/ecrRepositoryNode'
 import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
 import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
+import { telemetry } from '../../shared/telemetry/spans'
+import { Result } from '../../shared/telemetry/telemetry'
 
 export async function createFromEcr(
     node: EcrTagNode | EcrRepositoryNode,
     client = new DefaultAppRunnerClient(node.regionCode)
 ): Promise<void> {
-    let telemetryResult: telemetry.Result = 'Failed'
+    let telemetryResult: Result = 'Failed'
 
     try {
         const ecrNode = (node as any).tag === undefined ? (node as EcrRepositoryNode) : (node as EcrTagNode).parent
@@ -40,7 +41,7 @@ export async function createFromEcr(
         vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerCreateService({
+        telemetry.apprunner_createService.emit({
             result: telemetryResult,
             appRunnerServiceSource: 'ecr',
             passive: false,

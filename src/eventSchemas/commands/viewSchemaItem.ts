@@ -8,9 +8,10 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasView, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export async function viewSchemaItem(node: SchemaItemNode) {
     const logger: Logger = getLogger()
@@ -31,7 +32,7 @@ export async function viewSchemaItem(node: SchemaItemNode) {
         )
         logger.error('Error on schema preview: %O', error)
     } finally {
-        recordSchemasView({ result: viewResult })
+        telemetry.schemas_view.emit({ result: viewResult })
     }
 }
 

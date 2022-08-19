@@ -14,9 +14,9 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
-import { getTelemetryResult } from '../shared/errors'
-import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
+import { Result } from '../shared/telemetry/telemetry'
 import { PromptSettings } from '../shared/settings'
+import { telemetry } from '../shared/telemetry/spans'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -60,22 +60,19 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async read(): Promise<Uint8Array> {
-        const result = downloadFile(this._file, {
-            client: this.client,
-            progressLocation:
-                (this._file.sizeBytes ?? 0) < SIZE_LIMIT
-                    ? vscode.ProgressLocation.Window
-                    : vscode.ProgressLocation.Notification,
+        return telemetry.s3_downloadObject.run(span => {
+            span.record({ component: 'viewer' })
+
+            const result = downloadFile(this._file, {
+                client: this.client,
+                progressLocation:
+                    (this._file.sizeBytes ?? 0) < SIZE_LIMIT
+                        ? vscode.ProgressLocation.Window
+                        : vscode.ProgressLocation.Notification,
+            })
+
+            return result
         })
-
-        result.then(() => recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' }))
-
-        // There's no way to 'silently' fail here which is why we let the error bubble up
-        result.catch(err => {
-            recordS3DownloadObject({ result: getTelemetryResult(err), component: 'viewer' })
-        })
-
-        return result
     }
 
     public async stat(): Promise<{ ctime: number; mtime: number; size: number }> {
@@ -89,7 +86,7 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async write(content: Uint8Array): Promise<void> {
-        const record = (result: Result) => recordS3UploadObject({ result, component: 'viewer' })
+        const record = (result: Result) => telemetry.s3_downloadObject.emit({ result, component: 'viewer' })
         const result = await this.client
             .uploadFile({
                 content,

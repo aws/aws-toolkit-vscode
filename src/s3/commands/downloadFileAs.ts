@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 
 import { downloadsDir } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
@@ -21,6 +20,7 @@ import { getTelemetryResult, ToolkitError } from '../../shared/errors'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/spans'
 
 interface DownloadFileOptions {
     /**
@@ -123,7 +123,7 @@ export async function downloadFileAsCommand(
     const saveLocation = await promptForSaveLocation(file.name, window)
     if (!saveLocation) {
         getLogger().info('DownloadFile cancelled')
-        telemetry.recordS3DownloadObject({ result: 'Cancelled' })
+        telemetry.s3_downloadObject.emit({ result: 'Cancelled' })
         return
     }
 
@@ -142,9 +142,9 @@ export async function downloadFileAsCommand(
         )
 
         showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
-        telemetry.recordS3DownloadObject({ result: 'Succeeded' })
+        telemetry.s3_downloadObject.emit({ result: 'Succeeded' })
     } catch (e) {
-        telemetry.recordS3DownloadObject({ result: getTelemetryResult(e) })
+        telemetry.s3_downloadObject.emit({ result: getTelemetryResult(e) })
         throw e
     }
 }

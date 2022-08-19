@@ -12,10 +12,11 @@ import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'
 import * as localizedText from '../../shared/localizedText'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/spans'
+import { Result } from '../../shared/telemetry/telemetry'
 
 export async function deleteDocument(
     node: DocumentItemNodeWriteable,
@@ -24,7 +25,7 @@ export async function deleteDocument(
 ) {
     const logger: Logger = getLogger()
 
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize(
@@ -39,7 +40,7 @@ export async function deleteDocument(
     )
     if (!isConfirmed) {
         logger.info('DeleteDocument cancelled')
-        telemetry.recordSsmDeleteDocument({ result: 'Cancelled' })
+        telemetry.ssm_deleteDocument.emit({ result: 'Cancelled' })
         return
     }
 
@@ -78,7 +79,7 @@ export async function deleteDocument(
             vscode.window
         )
     } finally {
-        telemetry.recordSsmDeleteDocument({ result: result })
+        telemetry.ssm_deleteDocument.emit({ result: result })
     }
 }
 

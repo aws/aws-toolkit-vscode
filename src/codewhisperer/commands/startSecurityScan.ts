@@ -18,12 +18,12 @@ import {
     pollScanJobStatus,
     listScanResults,
 } from '../service/securityScanHandler'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
+import { telemetry } from '../../shared/telemetry/spans'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -168,7 +168,7 @@ export async function startSecurityScan(
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        telemetry.recordCodewhispererSecurityScan(codeScanTelemetryEntry)
+        telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
     }
 }
 

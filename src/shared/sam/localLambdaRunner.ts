@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import * as telemetry from '../telemetry/telemetry'
 import * as nls from 'vscode-nls'
 import * as pathutil from '../utilities/pathUtils'
 import got, { OptionsOfTextResponseBody, RequestError } from 'got'
@@ -33,6 +32,8 @@ import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { showMessageWithCancel } from '../utilities/messages'
+import { telemetry } from '../telemetry/spans'
+import { Result, Runtime } from '../telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -212,10 +213,10 @@ async function invokeLambdaHandler(
             name: config.name,
         })
 
-        const recordApigwTelemetry = (result: telemetry.Result) => {
-            telemetry.recordApigatewayInvokeLocal({
+        const recordApigwTelemetry = (result: Result) => {
+            telemetry.apigateway_invokeLocal.emit({
                 result: result,
-                runtime: config.runtime as telemetry.Runtime,
+                runtime: config.runtime as Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
                 lambdaArchitecture: config.architecture,
@@ -283,7 +284,7 @@ async function invokeLambdaHandler(
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
         let samVersion: string | undefined
-        let invokeResult: telemetry.Result = 'Failed'
+        let invokeResult: Result = 'Failed'
 
         try {
             samVersion = await getSamCliVersion(getSamCliContext())
@@ -303,11 +304,11 @@ async function invokeLambdaHandler(
             if (config.sam?.buildDir === undefined) {
                 await remove(config.templatePath)
             }
-            telemetry.recordLambdaInvokeLocal({
+            telemetry.lambda_invokeLocal.emit({
                 lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                 lambdaArchitecture: config.architecture,
                 result: invokeResult,
-                runtime: config.runtime as telemetry.Runtime,
+                runtime: config.runtime as Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
             })
@@ -400,10 +401,10 @@ export async function runLambdaFunction(
             debugConfig: config,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                telemetry.recordSamAttachDebugger({
+                telemetry.sam_attachDebugger.emit({
                     lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                     lambdaArchitecture: config.architecture,
-                    runtime: config.runtime as telemetry.Runtime,
+                    runtime: config.runtime as Runtime,
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
                     duration: timer.elapsedTime,

@@ -4,7 +4,6 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -12,6 +11,7 @@ import { S3Node } from '../explorer/s3Nodes'
 import { validateBucketName } from '../util'
 import { ToolkitError } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { telemetry } from '../../shared/telemetry/spans'
 
 /**
  * Creates a bucket in the s3 region represented by the given node.
@@ -32,7 +32,7 @@ export async function createBucketCommand(
     })
 
     if (!bucketName) {
-        telemetry.recordS3CreateBucket({ result: 'Cancelled' })
+        telemetry.s3_createBucket.emit({ result: 'Cancelled' })
         throw new CancellationError('user')
     }
 
@@ -42,10 +42,10 @@ export async function createBucketCommand(
 
         getLogger().info('Created bucket: %O', bucket)
         window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
-        telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+        telemetry.s3_createBucket.emit({ result: 'Succeeded' })
     } catch (e) {
         const message = localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', bucketName)
-        telemetry.recordS3CreateBucket({ result: 'Failed' })
+        telemetry.s3_createBucket.emit({ result: 'Failed' })
         throw ToolkitError.chain(e, message)
     } finally {
         await refreshNode(node, commands)

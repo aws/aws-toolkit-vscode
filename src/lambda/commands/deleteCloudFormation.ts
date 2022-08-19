@@ -11,11 +11,12 @@ import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormation
 
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
@@ -71,6 +72,6 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             )
         )
     } finally {
-        recordCloudformationDelete({ result: deleteResult })
+        telemetry.cloudformation_delete.emit({ result: deleteResult })
     }
 }

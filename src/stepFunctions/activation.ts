@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
@@ -22,6 +21,7 @@ import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
 import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/spans'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -58,7 +58,7 @@ export const previewStateMachineCommand = Commands.declare(
             return await manager.visualizeStateMachine(globalState, input)
         } finally {
             // TODO: Consider making the metric reflect the success/failure of the above call
-            telemetry.recordStepfunctionsPreviewstatemachine()
+            telemetry.stepfunctions_previewstatemachine.emit()
         }
     }
 )
@@ -78,7 +78,7 @@ async function registerStepFunctionCommands(
             try {
                 await createStateMachineFromTemplate(extensionContext)
             } finally {
-                telemetry.recordStepfunctionsCreateStateMachineFromTemplate()
+                telemetry.stepfunctions_createStateMachineFromTemplate.emit()
             }
         }),
         Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {

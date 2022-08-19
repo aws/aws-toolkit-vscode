@@ -5,7 +5,6 @@
 
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
@@ -15,6 +14,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { readablePath } from '../util'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/spans'
 
 const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000
 
@@ -44,7 +44,7 @@ export async function deleteFileCommand(
     )
     if (!isConfirmed) {
         getLogger().info('DeleteFile cancelled')
-        telemetry.recordS3DeleteObject({ result: 'Cancelled' })
+        telemetry.s3_deleteObject.emit({ result: 'Cancelled' })
         return
     }
 
@@ -57,14 +57,14 @@ export async function deleteFileCommand(
             addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted {0}', node.file.name)),
             DELETE_FILE_DISPLAY_TIMEOUT_MS
         )
-        telemetry.recordS3DeleteObject({ result: 'Succeeded' })
+        telemetry.s3_deleteObject.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete file ${filePath}: %O`, e)
         showViewLogsMessage(
             localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name),
             window
         )
-        telemetry.recordS3DeleteObject({ result: 'Failed' })
+        telemetry.s3_deleteObject.emit({ result: 'Failed' })
     }
 
     await refreshNode(node.parent, commands)

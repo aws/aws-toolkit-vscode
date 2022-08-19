@@ -15,11 +15,12 @@ import { listRegistryItems, searchSchemas } from '../utils'
 import { DefaultSchemaClient, SchemaClient } from '../../shared/clients/schemaClient'
 
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { ExtContext } from '../../shared/extensions'
 import { VueWebview } from '../../webviews/main'
+import { telemetry } from '../../shared/telemetry/spans'
 
 interface InitialData {
     Header: string
@@ -48,7 +49,7 @@ export class SearchSchemasWebview extends VueWebview {
     }
 
     public init() {
-        recordSchemasView({ result: 'Succeeded' })
+        telemetry.schemas_view.emit({ result: 'Succeeded' })
 
         return this.data
     }
@@ -79,14 +80,14 @@ export class SearchSchemasWebview extends VueWebview {
     public async searchSchemas(keyword: string) {
         try {
             const results = await getSearchResults(this.client, this.data.RegistryNames, keyword)
-            recordSchemasSearch({ result: 'Succeeded' })
+            telemetry.schemas_search.emit({ result: 'Succeeded' })
 
             return {
                 results: results,
                 resultsNotFound: results.length === 0,
             }
         } catch (error) {
-            recordSchemasSearch({ result: 'Failed' })
+            telemetry.schemas_search.emit({ result: 'Failed' })
             throw error
         }
     }
@@ -138,8 +139,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
         const error = err as Error
         logger.error('Error searching schemas: %O', error)
     } finally {
-        // TODO make this telemetry actually record failures
-        recordSchemasSearch({ result: webviewResult })
+        telemetry.schemas_search.emit({ result: webviewResult })
     }
 }
 

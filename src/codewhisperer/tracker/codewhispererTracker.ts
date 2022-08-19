@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/spans'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -92,7 +92,7 @@ export class CodeWhispererTracker {
         } catch (e) {
             getLogger().verbose(`Exception Thrown from CodeWhispererTracker: ${e}`)
         } finally {
-            telemetry.recordCodewhispererUserModification({
+            telemetry.codewhisperer_userModification.emit({
                 codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',
                 codewhispererSessionId: suggestion.sessionId ? suggestion.sessionId : undefined,
                 codewhispererTriggerType: suggestion.triggerType,

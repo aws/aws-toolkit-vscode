@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { millisecondsSince, recordDynamicresourceMutateResource, Result } from '../../shared/telemetry/telemetry'
+import { millisecondsSince, Result } from '../../shared/telemetry/telemetry'
 import { compare, Operation } from 'fast-json-patch'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../explorer/nodes/resourceTypeNode'
@@ -16,6 +16,7 @@ import { AwsResourceManager } from '../awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/spans'
 
 const localize = nls.loadMessageBundle()
 
@@ -121,7 +122,7 @@ export async function createResource(
                     throw e
                 }
             } finally {
-                recordDynamicresourceMutateResource({
+                telemetry.dynamicresource_mutateResource.emit({
                     dynamicResourceOperation: 'Create',
                     duration: millisecondsSince(startTime),
                     resourceType: typeName,
@@ -217,7 +218,7 @@ export async function updateResource(
                     throw e
                 }
             } finally {
-                recordDynamicresourceMutateResource({
+                telemetry.dynamicresource_mutateResource.emit({
                     dynamicResourceOperation: 'Update',
                     duration: millisecondsSince(startTime),
                     resourceType: typeName,

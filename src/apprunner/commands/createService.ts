@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/spans'
+import { AppRunnerServiceSource, Result } from '../../shared/telemetry/telemetry'
 import { AppRunnerNode } from '../explorer/apprunnerNode'
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
 
 export async function createAppRunnerService(node: AppRunnerNode): Promise<void> {
-    let telemetryResult: telemetry.Result = 'Failed'
-    let source: telemetry.AppRunnerServiceSource | undefined = undefined
+    let telemetryResult: Result = 'Failed'
+    let source: AppRunnerServiceSource | undefined = undefined
 
     try {
         const wizard = new CreateAppRunnerServiceWizard(node.regionCode)
@@ -30,7 +31,7 @@ export async function createAppRunnerService(node: AppRunnerNode): Promise<void>
                 : undefined
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerCreateService({
+        telemetry.apprunner_createService.emit({
             result: telemetryResult,
             // If we cancel there is no source type (so this should be optional)
             appRunnerServiceSource: source as any,

@@ -10,10 +10,11 @@ const localize = nls.loadMessageBundle()
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export async function saveCurrentLogStreamContent(
     uri: vscode.Uri | undefined,
@@ -75,7 +76,7 @@ export async function saveCurrentLogStreamContent(
         )
     }
 
-    recordCloudwatchlogsDownloadStreamToFile({
+    telemetry.cloudwatchlogs_downloadStreamToFile.emit({
         result: result,
     })
 }

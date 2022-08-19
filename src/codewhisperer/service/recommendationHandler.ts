@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { extensionVersion } from '../../shared/vscode/env'
 import { RecommendationsList, DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
@@ -18,6 +17,13 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/spans'
+import {
+    CodewhispererAutomatedTriggerType,
+    CodewhispererCompletionType,
+    CodewhispererTriggerType,
+    Result,
+} from '../../shared/telemetry/telemetry'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -76,7 +82,7 @@ export class RecommendationHandler {
     }
 
     async getServerResponse(
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         isManualTriggerOn: boolean,
         isFirstPaginationCall: boolean,
         promise: Promise<any>
@@ -112,18 +118,18 @@ export class RecommendationHandler {
     async getRecommendations(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.CodewhispererAutomatedTriggerType,
+        autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0
     ) {
         let recommendation: RecommendationsList = []
         let requestId = ''
         let sessionId = ''
-        let invocationResult: telemetry.Result = 'Failed'
+        let invocationResult: Result = 'Failed'
         let reason = ''
-        let completionType: telemetry.CodewhispererCompletionType = 'Line'
+        let completionType: CodewhispererCompletionType = 'Line'
         let startTime = 0
         let latency = 0
         let nextToken = ''
@@ -228,7 +234,7 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                telemetry.recordCodewhispererServiceInvocation({
+                telemetry.codewhisperer_serviceInvocation.emit({
                     codewhispererRequestId: requestId ? requestId : undefined,
                     codewhispererSessionId: sessionId ? sessionId : undefined,
                     codewhispererLastSuggestionIndex: this.recommendations.length - 1,

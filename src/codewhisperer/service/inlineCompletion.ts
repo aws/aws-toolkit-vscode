@@ -11,10 +11,10 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
+import { CodewhispererAutomatedTriggerType, CodewhispererTriggerType } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -318,9 +318,9 @@ export class InlineCompletion {
     async getPaginatedRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.CodewhispererAutomatedTriggerType
+        autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
         RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()

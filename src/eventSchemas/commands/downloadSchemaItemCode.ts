@@ -13,7 +13,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
 
@@ -25,6 +25,7 @@ import {
 
 import * as admZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/spans'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',
@@ -91,7 +92,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
         vscode.window.showErrorMessage(errorMessage)
         logger.error('Error downloading schema: %O', error)
     } finally {
-        recordSchemasDownload({ result: downloadResult })
+        telemetry.schemas_download.emit({ result: downloadResult })
     }
 }
 

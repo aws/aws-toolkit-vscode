@@ -5,7 +5,6 @@
 
 import { DEFAULT_DELIMITER } from '../../shared/clients/s3Client'
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
@@ -13,6 +12,7 @@ import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { readablePath } from '../util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/spans'
 
 /**
  * Creates a subfolder in the bucket or folder represented by the given node.
@@ -40,7 +40,7 @@ export async function createFolderCommand(
 
     if (!folderName) {
         getLogger().info('CreateFolder cancelled')
-        telemetry.recordS3CreateFolder({ result: 'Cancelled' })
+        telemetry.s3_createFolder.emit({ result: 'Cancelled' })
         return
     }
 
@@ -52,14 +52,14 @@ export async function createFolderCommand(
 
         getLogger().info('Successfully created folder %O', folder)
         window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder {0}', folderName))
-        telemetry.recordS3CreateFolder({ result: 'Succeeded' })
+        telemetry.s3_createFolder.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create folder ${path} in bucket '${node.bucket.name}': %O`, e)
         showViewLogsMessage(
             localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName),
             window
         )
-        telemetry.recordS3CreateFolder({ result: 'Failed' })
+        telemetry.s3_createFolder.emit({ result: 'Failed' })
     }
 
     await refreshNode(node, commands)

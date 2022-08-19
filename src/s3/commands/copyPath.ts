@@ -8,7 +8,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3FileNode } from '../explorer/s3FileNode'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/spans'
 
 /**
  * Copies the path to the folder or file represented by the given node.
@@ -21,5 +21,5 @@ export async function copyPathCommand(
     env = Env.vscode()
 ): Promise<void> {
     copyToClipboard(node.path, 'path', window, env)
-    telemetry.recordS3CopyPath()
+    telemetry.s3_copyPath.emit()
 }

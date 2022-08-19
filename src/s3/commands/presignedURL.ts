@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
@@ -12,6 +11,7 @@ import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { invalidNumberWarning } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/spans'
 
 export async function presignedURLCommand(
     node: S3FileNode,
@@ -23,7 +23,7 @@ export async function presignedURLCommand(
         validTime = await promptTime(node.file.key, window)
     } catch (e) {
         getLogger().error(e as Error)
-        telemetry.recordS3CopyUrl({ result: 'Cancelled', presigned: true })
+        telemetry.s3_copyUrl.emit({ result: 'Cancelled', presigned: true })
         return
     }
 
@@ -41,12 +41,12 @@ export async function presignedURLCommand(
         url = await s3Client.getSignedUrl(request)
     } catch (e) {
         window.showErrorMessage('Error creating the presigned URL. Make sure you have access to the requested file.')
-        telemetry.recordS3CopyUrl({ result: 'Failed', presigned: true })
+        telemetry.s3_copyUrl.emit({ result: 'Failed', presigned: true })
         return
     }
 
     await copyToClipboard(url, 'URL', window, env)
-    telemetry.recordS3CopyUrl({ result: 'Succeeded', presigned: true })
+    telemetry.s3_copyUrl.emit({ result: 'Succeeded', presigned: true })
 }
 
 export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {

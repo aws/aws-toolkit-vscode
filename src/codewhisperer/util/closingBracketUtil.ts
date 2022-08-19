@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import { TextEdit, workspace, WorkspaceEdit } from 'vscode'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { CodewhispererTriggerType } from '../../shared/telemetry/telemetry'
 
 export async function handleAutoClosingBrackets(
-    triggerType: telemetry.CodewhispererTriggerType,
+    triggerType: CodewhispererTriggerType,
     editor: vscode.TextEditor,
     recommendation: string,
     line: number,
