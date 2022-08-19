@@ -71,7 +71,6 @@ describe('codewhispererCodecoverageTracker', function () {
             tracker.emitCodeWhispererCodeContribution()
             assertTelemetry({
                 codewhispererTotalTokens: 20,
-                codewhispererStartTime: 'Thu Jan 01 1970 00:00:00 GMT+0000 (Coordinated Universal Time)',
                 codewhispererLanguage: language,
                 codewhispererAcceptedTokens: 20,
                 codewhispererPercentage: 100,
