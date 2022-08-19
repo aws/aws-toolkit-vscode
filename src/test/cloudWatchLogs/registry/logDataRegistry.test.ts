@@ -11,6 +11,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
+    fakeGetLogEvents,
     fakeSearchLogGroup,
     logGroupsData,
     newLineData,
@@ -37,14 +38,15 @@ describe('LogDataRegistry', async function () {
         const oldData = registry.getLogData(paginatedUri)
         // check that oldData is unchanged.
         assert(oldData)
-        assert.strictEqual(oldData.data, paginatedData.data)
+        assert.deepStrictEqual(oldData.data, paginatedData.data)
 
         await registry.updateLog(paginatedUri, headOrTail)
 
         // check that newData is changed to what it should be.
         const newData = registry.getLogData(paginatedUri)
         assert(newData)
-        assert.deepStrictEqual(newData.data, (await fakeSearchLogGroup()).events)
+        const expected = headOrTail === 'head' ? (await fakeGetLogEvents()).events : (await fakeSearchLogGroup()).events
+        assert.deepStrictEqual(newData.data, expected)
     }
 
     beforeEach(function () {
