@@ -128,19 +128,24 @@ export class LogDataRegistry {
             nextForwardToken: logData.next?.token,
             nextBackwardToken: logData.previous?.token,
         }
+
+        const isHead = headOrTail === 'head'
         const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
             awsCall: async request =>
-                await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, request.nextForwardToken),
-            nextTokenNames:
-                headOrTail === 'head'
-                    ? {
-                          request: 'nextForwardToken',
-                          response: 'nextForwardToken',
-                      }
-                    : {
-                          request: 'nextBackwardToken',
-                          response: 'nextBackwardToken',
-                      },
+                await logData.retrieveLogsFunction(
+                    logData.logGroupInfo,
+                    logData.parameters,
+                    isHead ? request.nextForwardToken : request.nextBackwardToken
+                ),
+            nextTokenNames: isHead
+                ? {
+                      request: 'nextForwardToken',
+                      response: 'nextForwardToken',
+                  }
+                : {
+                      request: 'nextBackwardToken',
+                      response: 'nextBackwardToken',
+                  },
             request,
         })
         let newLogEvents: CloudWatchLogs.FilteredLogEvents = []
