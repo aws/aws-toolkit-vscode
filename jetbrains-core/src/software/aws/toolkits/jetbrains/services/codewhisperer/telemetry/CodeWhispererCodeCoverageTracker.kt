@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.util.Key
@@ -33,16 +34,23 @@ import kotlin.math.roundToInt
 abstract class CodeWhispererCodeCoverageTracker(
     private val timeWindowInSec: Long,
     private val language: CodewhispererLanguage,
-    private val acceptedTokens: AtomicInteger,
-    private val totalTokens: AtomicInteger,
-    private val rangeMarkers: MutableList<RangeMarker>
+    private val rangeMarkers: MutableList<RangeMarker>,
+    private val fileToTokens: MutableMap<Document, CodeCoverageTokens>
 ) : Disposable {
     val percentage: Int?
         get() = if (totalTokensSize != 0) calculatePercentage(acceptedTokensSize, totalTokensSize) else null
     val acceptedTokensSize: Int
-        get() = acceptedTokens.get()
+        get() = fileToTokens.map {
+            it.value.acceptedTokens.get()
+        }.fold(0) { acc, next ->
+            acc + next
+        }
     val totalTokensSize: Int
-        get() = totalTokens.get()
+        get() = fileToTokens.map {
+            it.value.totalTokens.get()
+        }.fold(0) { acc, next ->
+            acc + next
+        }
     val acceptedRecommendationsCount: Int
         get() = rangeMarkers.size
     private val isActive: AtomicBoolean = AtomicBoolean(false)
@@ -81,7 +89,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             LOG.debug { "event with isWholeTextReplaced flag: $event" }
             if (event.oldTimeStamp == 0L) return
         }
-        addAndGetTotalTokens(event.newLength - event.oldLength)
+        incrementTotalTokens(event.document, event.newLength - event.oldLength)
     }
 
     internal fun extractRangeMarkerString(rangeMarker: RangeMarker): String? = runReadAction {
@@ -116,26 +124,36 @@ abstract class CodeWhispererCodeCoverageTracker(
         }
     }
 
-    private fun addAndGetAcceptedTokens(delta: Int): Int =
-        if (!isTelemetryEnabled()) acceptedTokensSize
-        else acceptedTokens.addAndGet(delta)
-
-    private fun addAndGetTotalTokens(delta: Int): Int =
-        if (!isTelemetryEnabled()) totalTokensSize
-        else {
-            val result = totalTokens.addAndGet(delta)
-            if (result < 0) totalTokens.set(0)
-            result
+    private fun incrementAcceptedTokens(document: Document, delta: Int) {
+        var tokens = fileToTokens[document]
+        if (tokens == null) {
+            tokens = CodeCoverageTokens()
+            fileToTokens[document] = tokens
         }
+        tokens.apply {
+            acceptedTokens.addAndGet(delta)
+        }
+    }
+
+    private fun incrementTotalTokens(document: Document, delta: Int) {
+        var tokens = fileToTokens[document]
+        if (tokens == null) {
+            tokens = CodeCoverageTokens()
+            fileToTokens[document] = tokens
+        }
+        tokens.apply {
+            totalTokens.addAndGet(delta)
+            if (totalTokens.get() < 0) totalTokens.set(0)
+        }
+    }
 
     private fun reset() {
         startTime = Instant.now()
-        totalTokens.set(0)
-        acceptedTokens.set(0)
         rangeMarkers.clear()
+        fileToTokens.clear()
     }
 
-    private fun emitCodeWhispererCodeContribution() {
+    internal fun emitCodeWhispererCodeContribution() {
         rangeMarkers.forEach { rangeMarker ->
             if (!rangeMarker.isValid) return@forEach
             // if users add more code upon the recommendation generated from CodeWhisperer, we consider those added part as userToken but not CwsprTokens
@@ -150,7 +168,9 @@ abstract class CodeWhispererCodeCoverageTracker(
                 return@forEach
             }
             val delta = getAcceptedTokensDelta(originalRecommendation, modifiedRecommendation)
-            addAndGetAcceptedTokens(delta)
+            runReadAction {
+                incrementAcceptedTokens(rangeMarker.document, delta)
+            }
         }
 
         // percentage == null means totalTokens == 0 and users are not editing the document, thus we shouldn't emit telemetry for this
@@ -210,7 +230,15 @@ abstract class CodeWhispererCodeCoverageTracker(
 class DefaultCodeWhispererCodeCoverageTracker(language: CodewhispererLanguage) : CodeWhispererCodeCoverageTracker(
     5 * TOTAL_SECONDS_IN_MINUTE,
     language,
-    acceptedTokens = AtomicInteger(0),
-    totalTokens = AtomicInteger(0),
-    mutableListOf()
+    mutableListOf(),
+    mutableMapOf()
 )
+
+class CodeCoverageTokens(totalTokens: Int = 0, acceptedTokens: Int = 0) {
+    val totalTokens: AtomicInteger
+    val acceptedTokens: AtomicInteger
+    init {
+        this.totalTokens = AtomicInteger(totalTokens)
+        this.acceptedTokens = AtomicInteger(acceptedTokens)
+    }
+}

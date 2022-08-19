@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 
 import com.google.gson.Gson
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
@@ -540,7 +541,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     // delete 1 char
                     fixture.editor.document.deleteString(currentOffset - 1, currentOffset)
                 }
-                // use dispose() to froce tracker to emit telemetry
+                // use dispose() to force tracker to emit telemetry
                 CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
             }
         }
@@ -557,6 +558,50 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             "codewhispererAcceptedTokens" to acceptedTokensSize.toString(),
             "codewhispererTotalTokens" to totalTokensSize.toString(),
             "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString()
+        )
+    }
+
+    /**
+     * When user accept recommendation in file1, then switch and delete code in file2, if the deletion code in file2 is on pre-existing code,
+     * we should not decrement totalTokens by the length of the code deleted
+     */
+    @Test
+    fun `test codePercentage metric - switching files and delete tokens`() {
+        val project = projectRule.project
+        val fixture = projectRule.fixture
+        val file1 = fixture.configureByText("/file1.py", pythonTestLeftContext)
+        runInEdt {
+            fixture.editor.caretModel.moveToOffset(fixture.editor.document.textLength)
+        }
+        val file2 = fixture.addFileToProject("./file2.py", "Pre-existing string")
+
+        // accept recommendation in file1.py
+        withCodeWhispererServiceInvokedAndWait {
+            runInEdtAndWait {
+                popupManagerSpy.popupComponents.acceptButton.doClick()
+            }
+        }
+
+        // switch to file2.py and delete code there
+        runInEdtAndWait {
+            fixture.openFileInEditor(file2.virtualFile)
+            WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.document.deleteString(0, file2.textLength)
+            }
+        }
+
+        // use dispose() to force tracker to emit telemetry
+        CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
+
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
+        assertEventsContainsFieldsAndCount(
+            metricCaptor.allValues,
+            codePercentage,
+            1,
+            "codewhispererAcceptedTokens" to pythonResponse.recommendations()[0].content().length.toString(),
+            "codewhispererTotalTokens" to pythonResponse.recommendations()[0].content().length.toString(),
+            "codewhispererPercentage" to "100"
         )
     }
 
