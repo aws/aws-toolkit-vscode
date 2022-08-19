@@ -138,34 +138,6 @@ export class LogDataRegistry {
                   },
             request,
         })
-        // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-        //let logDataGetter: AsyncIterator<CloudWatchLogsResponse>
-        // switch(logData.retrieveLogsFunction) {
-        //     case getLogEventsFromUriComponents:
-        //         logDataGetter = getPaginatedAwsCallIter({
-        //             awsCall: async request => await getLogEventsFromUriComponents(logData.logGroupInfo, logData.parameters, nextToken),
-        //             nextTokenNames: {
-        //                 request: 'nextForwardToken',
-        //                 response: 'nextForwardToken',
-        //             },
-        //             request,
-        //         })
-        //         break
-
-        //     case filterLogEventsFromUriComponents:
-        //         logDataGetter = getPaginatedAwsCallIter({
-        //         awsCall: async request => await filterLogEventsFromUriComponents(logData.logGroupInfo, logData.parameters, nextToken),
-        //         nextTokenNames: {
-        //             request: 'nextForwardToken',
-        //             response: 'nextForwardToken',
-        //         },
-        //         request,
-        //     })
-        //         break
-
-        //     default:
-        //         throw new Error(`cwl: unknown function passed into updateLog as retrieveLogsFunction`)
-        // }
         let newLogEvents: CloudWatchLogs.FilteredLogEvents = []
         let next: IteratorResult<CloudWatchLogsResponse> = await logDataGetter.next()
         newLogEvents = newLogEvents.concat(next.value.events)
