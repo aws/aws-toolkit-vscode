@@ -123,7 +123,11 @@ export class LogDataRegistry {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
         }
-        const nextToken = headOrTail === 'head' ? logData.previous?.token : logData.next?.token
+        const request: CloudWatchLogsResponse = {
+            events: [],
+            nextForwardToken: logData.next?.token,
+            nextBackwardToken: logData.previous?.token,
+        }
         const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
             awsCall: async request =>
                 await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, request.nextForwardToken),
@@ -152,8 +156,6 @@ export class LogDataRegistry {
             nextForwardToken: next.value.nextForwardToken,
             nextBackwardToken: next.value.nextBackwardToken,
         }
-
-        //const logEvents = await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken)
 
         const newData =
             headOrTail === 'head'
