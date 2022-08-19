@@ -77,11 +77,11 @@ describe('LogDataRegistry', async function () {
 
     describe('updateLog', async function () {
         it("properply paginates the results with 'head'", async () => {
-            testUpdateLog('head')
+            await testUpdateLog('head')
         })
 
         it("properply paginates the results with 'tail'", async () => {
-            testUpdateLog('tail')
+            await testUpdateLog('tail')
         })
     })
 
