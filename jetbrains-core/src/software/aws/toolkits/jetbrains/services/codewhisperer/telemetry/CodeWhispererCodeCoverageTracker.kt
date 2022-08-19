@@ -180,7 +180,6 @@ abstract class CodeWhispererCodeCoverageTracker(
                 acceptedTokensSize,
                 language,
                 percentage,
-                startTime.toString(),
                 totalTokensSize
             )
         }
