@@ -785,7 +785,7 @@
                 },
                 {
                     "command": "aws.caws.listCommands",
-                    "when": "!isCloud9"
+                    "when": "false"
                 },
                 {
                     "command": "aws.caws.openWorkspace",

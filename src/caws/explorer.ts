@@ -38,7 +38,7 @@ function getLocalCommands() {
             iconPath: getIcon('vscode-add'),
         }),
         CawsCommands.declared.listCommands.build().asTreeNode({
-            label: 'View Additional REMOVED.codes Commands',
+            label: 'Show REMOVED.codes Commands',
             iconPath: getIcon('vscode-list-flat'), // TODO(sijaden): use better icon
         }),
     ]
