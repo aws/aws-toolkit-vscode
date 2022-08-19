@@ -69,10 +69,8 @@ export class CodeWhispererCodeCoverageTracker {
         const acceptedTokens = this._acceptedTokens
         const percentCount = ((acceptedTokens.length / totalTokens.length) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
-        const date = new globals.clock.Date(this._startTime)
         telemetry.recordCodewhispererCodePercentage({
             codewhispererTotalTokens: totalTokens.length ? totalTokens.length : 0,
-            codewhispererStartTime: date.toString(),
             codewhispererLanguage: this._language,
             codewhispererAcceptedTokens: acceptedTokens.length ? acceptedTokens.length : 0,
             codewhispererPercentage: percentage ? percentage : 0,
