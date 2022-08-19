@@ -11,7 +11,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
-    fakeGetLogEvents,
+    fakeSearchLogGroup,
     logGroupsData,
     newLineData,
     newText,
@@ -32,6 +32,20 @@ describe('LogDataRegistry', async function () {
     const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
     const searchLogGroupUri = createURIFromArgs(logGroupsData.logGroupInfo, logGroupsData.parameters)
     const paginatedUri = createURIFromArgs(paginatedData.logGroupInfo, paginatedData.parameters)
+
+    async function testUpdateLog(headOrTail: 'head' | 'tail') {
+        const oldData = registry.getLogData(paginatedUri)
+        // check that oldData is unchanged.
+        assert(oldData)
+        assert.strictEqual(oldData.data, paginatedData.data)
+
+        await registry.updateLog(paginatedUri, headOrTail)
+
+        // check that newData is changed to what it should be.
+        const newData = registry.getLogData(paginatedUri)
+        assert(newData)
+        assert.deepStrictEqual(newData.data, (await fakeSearchLogGroup()).events)
+    }
 
     beforeEach(function () {
         registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
@@ -62,18 +76,12 @@ describe('LogDataRegistry', async function () {
     })
 
     describe('updateLog', async function () {
-        it('properply paginates the results until it gets results', async () => {
-            const oldData = registry.getLogData(paginatedUri)
-            // check that oldData is unchanged.
-            assert(oldData)
-            assert.strictEqual(oldData.data, paginatedData.data)
+        it("properply paginates the results with 'head'", async () => {
+            testUpdateLog('head')
+        })
 
-            await registry.updateLog(paginatedUri)
-
-            // check that newData is changed to what it should be.
-            const newData = registry.getLogData(paginatedUri)
-            assert(newData)
-            assert.deepStrictEqual(newData.data, (await fakeGetLogEvents()).events)
+        it("properply paginates the results with 'tail'", async () => {
+            testUpdateLog('tail')
         })
     })
 

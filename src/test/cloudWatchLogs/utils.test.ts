@@ -23,12 +23,17 @@ export async function returnPaginatedEvents(
     parameters: CloudWatchLogsParameters,
     nextToken?: CloudWatchLogs.NextToken
 ) {
-    if (nextToken) {
-        return fakeGetLogEvents()
-    }
-    return {
-        events: [],
-        nextForwardToken: 'this-is-a-token',
+    switch (nextToken) {
+        case 'forward':
+            return fakeGetLogEvents()
+        case 'backward':
+            return fakeSearchLogGroup()
+        default:
+            return {
+                events: [],
+                nextForwardToken: 'forward',
+                nextBackwardToken: 'backward',
+            }
     }
 }
 
