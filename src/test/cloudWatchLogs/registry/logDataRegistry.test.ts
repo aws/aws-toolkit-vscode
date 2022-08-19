@@ -11,12 +11,16 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
+    addedEvent,
+    backwardToken,
     fakeGetLogEvents,
     fakeSearchLogGroup,
+    forwardToken,
     logGroupsData,
     newLineData,
     newText,
     paginatedData,
+    returnNonEmptyPaginatedEvents,
     testLogData,
     testStreamNames,
     unregisteredData,
@@ -84,6 +88,53 @@ describe('LogDataRegistry', async function () {
 
         it("properply paginates the results with 'tail'", async () => {
             await testUpdateLog('tail')
+        })
+
+        it('handles case of updating multiple times with new tokens', async () => {
+            const oldData = registry.getLogData(paginatedUri)
+            // check that oldData is unchanged.
+            assert(oldData)
+            assert.deepStrictEqual(oldData.data, paginatedData.data)
+
+            // Swap to use other paginate testing function
+            paginatedData.retrieveLogsFunction = returnNonEmptyPaginatedEvents
+
+            // Make first call.
+            await registry.updateLog(paginatedUri)
+            const firstUpdatedData = registry.getLogData(paginatedUri)
+            assert(firstUpdatedData)
+
+            const firstExpected = {
+                events: [addedEvent],
+                nextForwardToken: forwardToken,
+                nextBackwardToken: backwardToken,
+            }
+
+            const firstActual = {
+                events: firstUpdatedData.data,
+                nextForwardToken: firstUpdatedData.next?.token,
+                nextBackwardToken: firstUpdatedData.previous?.token,
+            }
+
+            assert.deepStrictEqual(firstActual, firstExpected)
+
+            // Make second call.
+            await registry.updateLog(paginatedUri)
+            const secondUpdatedData = registry.getLogData(paginatedUri)
+            assert(secondUpdatedData)
+
+            const secondExpected = {
+                events: firstUpdatedData.data.concat((await fakeGetLogEvents()).events),
+                nextForwardToken: '',
+                nextBackwardToken: '',
+            }
+            const secondActual = {
+                events: secondUpdatedData.data,
+                nextForwardToken: secondUpdatedData.next?.token,
+                nextBackwardToken: secondUpdatedData.previous?.token,
+            }
+
+            assert.deepStrictEqual(secondActual, secondExpected)
         })
     })
 

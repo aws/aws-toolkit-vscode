@@ -17,6 +17,11 @@ import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
 export const newText = 'a little longer now\n'
+export const addedEvent = {
+    message: 'this is an additional event',
+}
+export const forwardToken = 'forward'
+export const backwardToken = 'backward'
 
 export async function returnPaginatedEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
@@ -24,17 +29,29 @@ export async function returnPaginatedEvents(
     nextToken?: CloudWatchLogs.NextToken
 ) {
     switch (nextToken) {
-        case 'forward':
+        case forwardToken:
             return fakeGetLogEvents()
-        case 'backward':
+        case backwardToken:
             return fakeSearchLogGroup()
         default:
             return {
                 events: [],
-                nextForwardToken: 'forward',
-                nextBackwardToken: 'backward',
+                nextForwardToken: forwardToken,
+                nextBackwardToken: backwardToken,
             }
     }
+}
+
+export async function returnNonEmptyPaginatedEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: CloudWatchLogs.NextToken
+) {
+    const result = await returnPaginatedEvents(logGroupInfo, parameters, nextToken)
+    if (result.events.length === 0) {
+        result.events = [addedEvent]
+    }
+    return result
 }
 
 export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
