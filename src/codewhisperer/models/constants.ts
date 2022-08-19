@@ -19,7 +19,7 @@ export const CodeWhispererConstants = {
     specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
     normalTextChangeRegex: /[A-Za-z0-9]/g,
     AutoSuggestion: {
-        settingId: 'cwspr_autoSuggestionActivation',
+        settingId: 'codewhisperer_autoSuggestionActivation',
         activated: 'Activated',
         deactivated: 'Deactivated',
     },

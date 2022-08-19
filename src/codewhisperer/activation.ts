@@ -142,15 +142,15 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         // show introduction
-        showIntroduction.register(context),
+        showIntroduction.register(),
         // toggle code suggestions
-        toggleCodeSuggestions.register(context),
+        toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
         enableCodeSuggestions.register(context),
         // enter access token
-        enterAccessToken.register(context, client),
+        enterAccessToken.register(context.extensionContext.globalState, client),
         // request access
-        requestAccess.register(context),
+        requestAccess.register(),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
         // manual trigger
@@ -375,8 +375,8 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             // request access C9
-            requestAccessCloud9.register(context),
-            updateCloud9TreeNodes.register(context),
+            requestAccessCloud9.register(context.extensionContext.globalState),
+            updateCloud9TreeNodes.register(context.extensionContext.globalState),
             vscode.languages.registerCompletionItemProvider(CodeWhispererConstants.supportedLanguages, {
                 async provideCompletionItems(
                     document: vscode.TextDocument,

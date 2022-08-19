@@ -21,11 +21,10 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
-    (context: ExtContext) => async () => {
-        const autoTriggerEnabled: boolean =
-            get(CodeWhispererConstants.autoTriggerEnabledKey, context.extensionContext.globalState) || false
+    (globalState: vscode.Memento) => async () => {
+        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
         const toSet: boolean = !autoTriggerEnabled
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, context.extensionContext.globalState)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         telemetry.recordAwsModifySetting({
             settingId: CodeWhispererConstants.AutoSuggestion.settingId,
@@ -43,19 +42,16 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
-export const showIntroduction = Commands.declare(
-    'aws.codeWhisperer.introduction',
-    (context: ExtContext) => async () => {
-        vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-    }
-)
+export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+})
 
 export const enterAccessToken = Commands.declare(
     'aws.codeWhisperer.enterAccessToken',
-    (context: ExtContext, client: DefaultCodeWhispererClient) => async () => {
+    (globalState: vscode.Memento, client: DefaultCodeWhispererClient) => async () => {
         const setToken = async (token: string) => {
             try {
-                await context.extensionContext.globalState.update(CodeWhispererConstants.accessToken, token)
+                await globalState.update(CodeWhispererConstants.accessToken, token)
             } catch (error) {
                 getLogger().error(`Failed to save access token: ${error}`)
             }
@@ -66,34 +62,23 @@ export const enterAccessToken = Commands.declare(
     }
 )
 
-export const requestAccess = Commands.declare('aws.codeWhisperer.requestAccess', (context: ExtContext) => async () => {
+export const requestAccess = Commands.declare('aws.codeWhisperer.requestAccess', () => async () => {
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.previewSignupPortal))
 })
 
 export const requestAccessCloud9 = Commands.declare(
     'aws.codeWhisperer.requestAccessCloud9',
-    (context: ExtContext) => async () => {
-        if (
-            get(CodeWhispererConstants.cloud9AccessStateKey, context.extensionContext.globalState) ===
-            Cloud9AccessState.RequestedAccess
-        ) {
+    (globalState: vscode.Memento) => async () => {
+        if (get(CodeWhispererConstants.cloud9AccessStateKey, globalState) === Cloud9AccessState.RequestedAccess) {
             showTimedMessage(CodeWhispererConstants.cloud9AccessAlreadySent, 3000)
         } else {
             try {
                 await vscode.commands.executeCommand('cloud9.codeWhispererRequestAccess')
                 showTimedMessage(CodeWhispererConstants.cloud9AccessSent, 3000)
-                await set(
-                    CodeWhispererConstants.cloud9AccessStateKey,
-                    Cloud9AccessState.RequestedAccess,
-                    context.extensionContext.globalState
-                )
+                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, globalState)
             } catch (e) {
                 getLogger().error(`Encountered error when requesting cloud9 access ${e}`)
-                await set(
-                    CodeWhispererConstants.cloud9AccessStateKey,
-                    Cloud9AccessState.NoAccess,
-                    context.extensionContext.globalState
-                )
+                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, globalState)
             }
         }
     }
@@ -101,11 +86,9 @@ export const requestAccessCloud9 = Commands.declare(
 
 export const updateCloud9TreeNodes = Commands.declare(
     { id: 'aws.codeWhisperer.updateCloud9TreeNodes', autoconnect: true },
-    (context: ExtContext) => async () => {
+    (globalState: vscode.Memento) => async () => {
         const client = new codewhispererClient.DefaultCodeWhispererClient()
-        const state = context.extensionContext.globalState.get<number | undefined>(
-            CodeWhispererConstants.cloud9AccessStateKey
-        )
+        const state = globalState.get<number | undefined>(CodeWhispererConstants.cloud9AccessStateKey)
         if (state === Cloud9AccessState.HasAccess) {
             return
         }
@@ -133,27 +116,18 @@ export const updateCloud9TreeNodes = Commands.declare(
             for (let i = 0; i < 3; i++) {
                 const result = await testApiCall()
                 if (result) {
-                    await context.extensionContext.globalState.update(
-                        CodeWhispererConstants.cloud9AccessStateKey,
-                        Cloud9AccessState.HasAccess
-                    )
+                    await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.HasAccess)
                     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                     return
                 }
                 sleep(1000)
             }
             if (state !== Cloud9AccessState.RequestedAccess) {
-                await context.extensionContext.globalState.update(
-                    CodeWhispererConstants.cloud9AccessStateKey,
-                    Cloud9AccessState.NoAccess
-                )
+                await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess)
             }
         } catch (e) {
             getLogger().error(`Error when updateCloud9TreeNodes ${e}`)
-            await context.extensionContext.globalState.update(
-                CodeWhispererConstants.cloud9AccessStateKey,
-                Cloud9AccessState.NoAccess
-            )
+            await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess)
         }
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     }
