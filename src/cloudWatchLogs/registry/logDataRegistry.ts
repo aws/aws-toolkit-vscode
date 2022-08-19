@@ -133,16 +133,16 @@ export class LogDataRegistry {
                 await logData.retrieveLogsFunction(
                     logData.logGroupInfo,
                     logData.parameters,
-                    isHead ? request.nextForwardToken : request.nextBackwardToken
+                    isHead ? request.nextBackwardToken : request.nextForwardToken
                 ),
             nextTokenNames: isHead
                 ? {
-                      request: 'nextForwardToken',
-                      response: 'nextForwardToken',
-                  }
-                : {
                       request: 'nextBackwardToken',
                       response: 'nextBackwardToken',
+                  }
+                : {
+                      request: 'nextForwardToken',
+                      response: 'nextForwardToken',
                   },
             request,
         })

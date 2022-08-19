@@ -45,7 +45,7 @@ describe('LogDataRegistry', async function () {
         // check that newData is changed to what it should be.
         const newData = registry.getLogData(paginatedUri)
         assert(newData)
-        const expected = headOrTail === 'head' ? (await fakeGetLogEvents()).events : (await fakeSearchLogGroup()).events
+        const expected = headOrTail === 'head' ? (await fakeSearchLogGroup()).events : (await fakeGetLogEvents()).events
         assert.deepStrictEqual(newData.data, expected)
     }
 
