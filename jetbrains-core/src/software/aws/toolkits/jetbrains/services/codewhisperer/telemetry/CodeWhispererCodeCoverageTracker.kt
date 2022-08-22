@@ -60,9 +60,9 @@ abstract class CodeWhispererCodeCoverageTracker(
 
     @Synchronized
     fun activateTrackerIfNotActive() {
-        if (!isTelemetryEnabled() || isActive.get()) return
-
         // tracker will only be activated if and only if IsTelemetryEnabled = true && isActive = false
+        if (!isTelemetryEnabled() || isTrackerActive()) return
+
         val conn = ApplicationManager.getApplication().messageBus.connect()
         conn.subscribe(
             CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,
@@ -81,6 +81,8 @@ abstract class CodeWhispererCodeCoverageTracker(
         isActive.set(true)
         scheduleCodeWhispererCodeCoverageTracker()
     }
+
+    fun isTrackerActive() = isActive.get()
 
     internal fun documentChanged(event: DocumentEvent) {
         // When open a file for the first time, IDE will also emit DocumentEvent for loading with `isWholeTextReplaced = true`

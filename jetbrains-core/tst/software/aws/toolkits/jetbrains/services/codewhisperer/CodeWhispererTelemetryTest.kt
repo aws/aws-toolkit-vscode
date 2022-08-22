@@ -23,6 +23,7 @@ import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
@@ -47,6 +48,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testRequestIdForCodeWhispererException
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testSessionId
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_PAUSE_CODEWHISPERER
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_RESUME_CODEWHISPERER
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
@@ -85,6 +87,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     private lateinit var batcher: TelemetryBatcher
     private lateinit var telemetryServiceSpy: TelemetryService
     private var isTelemetryEnabledDefault: Boolean = false
+
     @Before
     override fun setUp() {
         super.setUp()
@@ -452,6 +455,24 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString(),
             )
         }
+    }
+
+    @Test
+    fun `test codePercentage tracker will not be activated if CWSPR terms of service is not accepted`() {
+        val exploreManagerMock = mock<CodeWhispererExplorerActionManager> {
+            on { hasAcceptedTermsOfService() } doReturn false
+        }
+        ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreManagerMock, disposableRule.disposable)
+        val project = projectRule.project
+        val fixture = projectRule.fixture
+        val tracker = CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python)
+        assertThat(tracker.isTrackerActive()).isFalse
+        runInEdtAndWait {
+            WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.appendString("arbitrary string to trigger documentChanged")
+            }
+        }
+        assertThat(tracker.isTrackerActive()).isFalse
     }
 
     @Test

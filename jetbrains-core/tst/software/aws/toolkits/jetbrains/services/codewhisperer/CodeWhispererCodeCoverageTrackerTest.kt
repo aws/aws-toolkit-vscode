@@ -39,6 +39,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
@@ -88,6 +89,7 @@ class CodeWhispererCodeCoverageTrackerTest {
     private lateinit var fixture: CodeInsightTestFixture
     private lateinit var telemetryServiceSpy: TelemetryService
     private lateinit var batcher: TelemetryBatcher
+    private lateinit var exploreActionManagerMock: CodeWhispererExplorerActionManager
 
     private lateinit var invocationContext: InvocationContext
     private lateinit var sessionContext: SessionContext
@@ -104,7 +106,11 @@ class CodeWhispererCodeCoverageTrackerTest {
 
         batcher = mock()
         telemetryServiceSpy = spy(TestTelemetryService(batcher = batcher))
+        exploreActionManagerMock = mock {
+            on { hasAcceptedTermsOfService() } doReturn true
+        }
 
+        ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreActionManagerMock, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryServiceSpy, disposableRule.disposable)
         project.replaceService(CodeWhispererCodeReferenceManager::class.java, mock(), disposableRule.disposable)
 
