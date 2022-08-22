@@ -44,6 +44,7 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
+import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -282,6 +283,10 @@ export async function activate(context: ExtContext): Promise<void> {
                     }
                 }
 
+                CodeWhispererCodeCoverageTracker.getTracker(
+                    e.document.languageId,
+                    context.extensionContext.globalState
+                )?.countTotalTokens(e)
                 /**
                  * Handle this keystroke event only when
                  * 1. It is in current non plaintext active editor
@@ -325,6 +330,12 @@ export async function activate(context: ExtContext): Promise<void> {
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
                 await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor) {
+                    CodeWhispererCodeCoverageTracker.getTracker(
+                        vscode.window.activeTextEditor.document.languageId,
+                        context.extensionContext.globalState
+                    )?.updateAcceptedTokensCount(vscode.window.activeTextEditor)
+                }
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse && vscode.window.activeTextEditor) {
@@ -402,6 +413,11 @@ export async function activate(context: ExtContext): Promise<void> {
                         disposeSecurityDiagnostic(e)
                     }
                 }
+
+                CodeWhispererCodeCoverageTracker.getTracker(
+                    e.document.languageId,
+                    context.extensionContext.globalState
+                )?.countTotalTokens(e)
 
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
