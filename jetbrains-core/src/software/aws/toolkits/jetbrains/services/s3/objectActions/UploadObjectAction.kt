@@ -35,7 +35,7 @@ class UploadObjectAction : S3ObjectAction(message("s3.upload.object.action"), Al
 
         // If there are no files chosen, the user has cancelled upload
         if (filesChosen.isEmpty()) {
-            S3Telemetry.uploadObjects(project, Result.Cancelled)
+            S3Telemetry.uploadObject(project, Result.Cancelled)
             return
         }
 
@@ -72,9 +72,9 @@ fun uploadObjects(project: Project, treeTable: S3TreeTable, files: List<Path>, p
                 }
             }
 
-            S3Telemetry.uploadObjects(project = project, result = Result.Succeeded, value = files.size.toDouble())
+            S3Telemetry.uploadObject(project = project, result = Result.Succeeded, value = files.size.toDouble())
         } catch (e: Exception) {
-            S3Telemetry.uploadObjects(project = project, result = Result.Failed, value = files.size.toDouble())
+            S3Telemetry.uploadObject(project = project, result = Result.Failed, value = files.size.toDouble())
         } finally {
             if (changeMade) {
                 treeTable.invalidateLevel(parentNode)
