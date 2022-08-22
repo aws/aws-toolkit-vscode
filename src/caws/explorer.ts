@@ -9,6 +9,7 @@ import { DevelopmentWorkspace } from '../shared/clients/cawsClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { getCawsWorkspaceArn } from '../shared/vscode/env'
 import { CawsAuthenticationProvider } from './auth'
 import { CawsCommands } from './commands'
 import {
@@ -20,15 +21,19 @@ import {
 } from './model'
 
 function getLocalCommands() {
-    if (isCloud9()) {
-        return []
-    }
-
-    return [
+    const cmds = [
         CawsCommands.declared.cloneRepo.build().asTreeNode({
             label: 'Clone Repository',
             iconPath: getIcon('vscode-symbol-namespace'),
         }),
+    ]
+
+    if (isCloud9()) {
+        return cmds
+    }
+
+    return [
+        ...cmds,
         CawsCommands.declared.openWorkspace.build().asTreeNode({
             label: 'Open Workspace',
             iconPath: getIcon('vscode-vm-connect'),
@@ -63,6 +68,10 @@ function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devfileLocati
 }
 
 export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
+    if (isCloud9() && !getCawsWorkspaceArn()) {
+        return []
+    }
+
     const authProvider = CawsAuthenticationProvider.fromContext(ctx)
 
     return [new AuthNode(authProvider), new CawsRootNode(authProvider)]
