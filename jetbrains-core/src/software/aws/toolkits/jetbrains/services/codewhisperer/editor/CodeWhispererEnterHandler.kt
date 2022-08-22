@@ -12,11 +12,11 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 
-class CodeWhispererEnterHandler(originalHandler: EditorActionHandler) :
+class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler) :
     EnterHandler(originalHandler),
     CodeWhispererAutoTriggerHandler {
     override fun executeWriteAction(editor: Editor, caret: Caret?, dataContext: DataContext?) {
-        super.executeWriteAction(editor, caret, dataContext)
+        originalHandler.execute(editor, caret, dataContext)
         if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.AutoTrigger)) {
             return
         }

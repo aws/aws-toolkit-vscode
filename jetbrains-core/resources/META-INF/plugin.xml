@@ -320,7 +320,7 @@ with what features/services are supported.
         <registryKey key="aws.toolkit.developerMode" description="Enables features to facilitate development of the toolkit" restartRequired="false" defaultValue="false"/>
         <typedHandler implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererTypedHandler"/>
         <editorFactoryListener implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorListener"/>
-        <editorActionHandler action="EditorEnter" implementationClass="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEnterHandler"/>
+        <editorActionHandler action="EditorEnter" implementationClass="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEnterHandler" order="first, before editorEnter"/>
         <actionPromoter order="last" implementation="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter"/>
     </extensions>
 

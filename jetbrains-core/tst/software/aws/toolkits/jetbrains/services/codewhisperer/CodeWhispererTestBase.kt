@@ -122,7 +122,7 @@ open class CodeWhispererTestBase {
         editorManager = CodeWhispererEditorManager.getInstance()
         settingsManager = CodeWhispererSettings.getInstance()
 
-        setPrompt(pythonFileName, pythonTestLeftContext)
+        setFileContext(pythonFileName, pythonTestLeftContext, "")
 
         originalExplorerActionState = stateManager.state
         originalSettings = settingsManager.state
@@ -178,10 +178,10 @@ open class CodeWhispererTestBase {
         assertThat(actual).isEqualTo(expected)
     }
 
-    fun setPrompt(filename: String, prompt: String) {
-        projectRule.fixture.configureByText(filename, prompt)
+    fun setFileContext(filename: String, leftContext: String, rightContext: String) {
+        projectRule.fixture.configureByText(filename, leftContext + rightContext)
         runInEdtAndWait {
-            projectRule.fixture.editor.caretModel.primaryCaret.moveToOffset(projectRule.fixture.editor.document.textLength)
+            projectRule.fixture.editor.caretModel.primaryCaret.moveToOffset(leftContext.length)
         }
     }
 }

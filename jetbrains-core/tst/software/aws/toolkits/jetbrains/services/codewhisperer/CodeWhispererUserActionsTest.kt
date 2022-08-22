@@ -15,13 +15,14 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_START_WIT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.timeout
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -104,9 +105,26 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
         testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer("$pythonTestLeftContext\n", 3)
     }
 
+    @Test
+    fun `test hitting enter inside braces in Java file should auto-trigger CodeWhisperer and keep the formatting correct`() {
+        val testLeftContext = "public class Test {\n    public static void main() {"
+        val testRightContext = "}\n}"
+        setFileContext(javaFileName, testLeftContext, testRightContext)
+        CodeWhispererExplorerActionManager.getInstance().setAutoEnabled(true)
+        projectRule.fixture.type('\n')
+        val expectedFileContext = "$testLeftContext\n        \n    $testRightContext"
+        assertThat(projectRule.fixture.editor.document.text).isEqualTo(expectedFileContext)
+        val popupCaptor = argumentCaptor<JBPopup>()
+        verify(popupManagerSpy, timeout(5000))
+            .showPopup(any(), any(), any(), any(), any(), popupCaptor.capture(), any(), any())
+        runInEdtAndWait {
+            popupManagerSpy.closePopup(popupCaptor.lastValue)
+        }
+    }
+
     private fun testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer(prompt: String, times: Int) {
         CodeWhispererExplorerActionManager.getInstance().setAutoEnabled(true)
-        setPrompt(pythonFileName, prompt)
+        setFileContext(pythonFileName, prompt, "")
         projectRule.fixture.type('\n')
         val popupCaptor = argumentCaptor<JBPopup>()
         verify(popupManagerSpy, timeout(5000).atLeast(times))
