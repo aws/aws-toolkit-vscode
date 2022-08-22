@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>UseCheckOrError:RiderTestUtils.kt$throw IllegalStateException("Took too long to execute Rider run configuration!")</ID>
+  </CurrentIssues>
+</SmellBaseline>

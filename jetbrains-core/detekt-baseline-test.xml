@@ -2,6 +2,10 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererJavaCodeScanTest.kt$CodeWhispererJavaCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPythonCodeScanTest.kt$CodeWhispererPythonCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
@@ -70,6 +74,7 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_InvalidOption()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
+    <ID>FunctionOnlyReturningConstant:CodeWhispererCodeScanTestBase.kt$CodeWhispererCodeScanTestBase$protected fun getFakeRecommendationsOnNonExistentFile()</ID>
     <ID>NoNameShadowing:CopyUrlActionTest.kt$CopyUrlActionTest${ // Actual format is implementation detail below S3VirtualBucket URL("https://s3/${it.getArgument&lt;String>(0)}?version=${it.getArgument&lt;String>(1)}") }</ID>
     <ID>NoNameShadowing:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest${ it.getArgument&lt;File>(0).writeText("hello") }</ID>
     <ID>NoNameShadowing:CreateServiceRoleDialogTest.kt$CreateServiceRoleDialogTest${ it.roleName(name).arn("arn") }</ID>
@@ -85,6 +90,14 @@
     <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned>(2).invoke(searchResults) latch.countDown() }</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
+    <ID>UnnecessaryApply:ConfigureLambdaDialogTest.kt$ConfigureLambdaDialogTest$apply { configureLambda(TEST_FUNCTION_NAME) }</ID>
+    <ID>UnnecessaryApply:EventsFetcherTest.kt$EventsFetcherTest$apply { Assert.assertTrue(nonEmptyMessage, first.isEmpty()) }</ID>
+    <ID>UnnecessaryApply:EventsFetcherTest.kt$EventsFetcherTest$apply { expectRange("4096", "3073", first) }</ID>
+    <ID>UnnecessaryApply:EventsFetcherTest.kt$EventsFetcherTest$apply { expectRange("4097", "4097", first, expectedSize = 1) }</ID>
+    <ID>UnnecessaryApply:SendMessagePaneTest.kt$SendMessagePaneTest$apply { inputText.text = "" }</ID>
+    <ID>UnnecessaryApply:SendMessagePaneTest.kt$SendMessagePaneTest$apply { inputText.text = MESSAGE }</ID>
+    <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { !it.content().startsWith(typeahead) }</ID>
+    <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { it.content().isEmpty() }</ID>
     <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ClearableLazy$_value!!</ID>
     <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$PsiManager.getInstance(project).findFile(file)!!</ID>
     <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ref!!</ID>
@@ -116,5 +129,15 @@
     <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager!!</ID>
     <ID>UnsafeCallOnNullableType:WrapLogsActionTest.kt$WrapLogsActionTest$model.columnInfos[1].getRenderer(null)!!</ID>
     <ID>UnsafeCallOnNullableType:YamlCloudFormationTemplateTest.kt$YamlCloudFormationTemplateTest$resource!!</ID>
+    <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
+    <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate $it")</ID>
+    <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate gradlew")</ID>
+    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
+    <ID>UseCheckOrError:MockRegionProvider.kt$MockRegionProviderRule$throw IllegalStateException("Failed to generate a unique region ID")</ID>
+    <ID>UseCheckOrError:MockToolManager.kt$MockToolManager$throw IllegalStateException("Must register ManagedToolType via a MockMockToolManagerRule before using it in a test")</ID>
+    <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("Can't locate us-west-2")</ID>
+    <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("RunWithRealCredentials requires a default AWS profile!")</ID>
+    <ID>UseOrEmpty:EditAttributesDialogTest.kt$EditAttributesDialogTest$testMessageSize?.toString() ?: ""</ID>
+    <ID>UseOrEmpty:EditAttributesDialogTest.kt$EditAttributesDialogTest$testRetentionPeriod?.toString() ?: ""</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -115,6 +115,7 @@ class ValidatingPanelTest {
         lateinit var normalButton: JButton
             private set
 
+        @Suppress("UnusedPrivateMember")
         private val panel = validatingPanel(disposableRule.disposable) {
             row {
                 validatingButton(validatingButtonName) {

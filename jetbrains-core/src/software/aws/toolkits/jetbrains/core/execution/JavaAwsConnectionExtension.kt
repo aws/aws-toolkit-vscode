@@ -42,7 +42,7 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
     override fun <T : RunConfigurationBase<*>?> createEditor(configuration: T): SettingsEditor<T>? = connectionSettingsEditor(configuration)
 
     override fun validateConfiguration(configuration: RunConfigurationBase<*>, isExecution: Boolean) {
-        delegate.validateConfiguration(configuration, isExecution)
+        delegate.validateConfiguration(configuration)
     }
 
     override fun readExternal(runConfiguration: RunConfigurationBase<*>, element: Element) = delegate.readExternal(runConfiguration, element)

@@ -498,7 +498,7 @@ class CodeWhispererService {
         recommendationContext: RecommendationContext,
         popup: JBPopup
     ): InvocationContext {
-        addPopupChildDisposables(popup, requestContext.editor)
+        addPopupChildDisposables(popup)
 
         // Creating a disposable for managing all listeners lifecycle attached to the popup.
         // previously(before pagination) we use popup as the parent disposable.
@@ -511,7 +511,7 @@ class CodeWhispererService {
         return states
     }
 
-    private fun addPopupChildDisposables(popup: JBPopup, editor: Editor) {
+    private fun addPopupChildDisposables(popup: JBPopup) {
         val originalTabExitsBracketsAndQuotes = CodeInsightSettings.getInstance().TAB_EXITS_BRACKETS_AND_QUOTES
         CodeInsightSettings.getInstance().TAB_EXITS_BRACKETS_AND_QUOTES = false
         Disposer.register(popup) {

@@ -1,8 +1,14 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>AbsentOrWrongFileLicense:build.gradle.kts$.build.gradle.kts</ID>
+    <ID>UseCheckOrError:IdeExtension.kt$GradleProcess$throw IllegalStateException("Failed to locate build.gradle.kts in $cwd}")</ID>
+    <ID>UseCheckOrError:IdeExtension.kt$Ide$throw IllegalStateException("Gradle task has ended, check log")</ID>
+    <ID>UseCheckOrError:IdeExtension.kt$Ide$throw java.lang.IllegalStateException("GRADLE_PROJECT not set")</ID>
+    <ID>UseCheckOrError:IdeExtension.kt$throw IllegalStateException("System Property 'robot-server.port' is not set")</ID>
+    <ID>UseCheckOrError:InsightsQueryTest.kt$InsightsQueryTest$throw IllegalStateException( "Reached terminal condition while waiting for log propagation: queryId: $queryId, status: ${result.statusAsString()}" )</ID>
+    <ID>UseCheckOrError:Preferences.kt$PreferencesDialog$throw IllegalStateException("Could not save settings: ${invalidSettingsLabel.first().value}")</ID>
     <ID>VariableNaming:InsightsQueryTest.kt$InsightsQueryTest$/** * We can't reach into jetbrains-core by design, so copy the default string out of * QueryEditorUtils.kt . If the string changes it needs to change in both places */ private val DEFAULT_INSIGHTS_QUERY_STRING = """fields @timestamp, @message | sort @timestamp desc | limit 20 """</ID>
     <ID>VariableNaming:S3BrowserTest.kt$S3BrowserTest$private val S3 = "S3"</ID>
   </CurrentIssues>

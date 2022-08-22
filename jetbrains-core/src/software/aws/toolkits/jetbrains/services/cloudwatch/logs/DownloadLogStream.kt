@@ -59,15 +59,15 @@ class LogStreamDownloadTask(
             .logStreamName(logStream)
             .endTime(startTime.toEpochMilli())
         val getRequest = client.getLogEventsPaginator(request.build())
-        getRequest.stream().asSequence().forEachIndexed { index, it ->
+        getRequest.stream().asSequence().forEachIndexed { index, value ->
             indicator.checkCanceled()
-            buffer.append(it.events().buildStringFromLogsOutput())
+            buffer.append(value.events().buildStringFromLogsOutput())
             // This might look off by 1 because for example if we are at index 20, it's the
             // 21st iteration, but at this point we won't try to open in a file so we bail from
             // streaming at the correct time
             if (index >= maxPages) {
                 runBlocking {
-                    request.nextToken(it.nextForwardToken())
+                    request.nextToken(value.nextForwardToken())
                     if (promptWriteToFile() == Messages.OK) {
                         ProgressManager.getInstance().run(
                             LogStreamDownloadToFileTask(

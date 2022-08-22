@@ -27,7 +27,7 @@ class LogStreamsStreamColumn(private val sortable: Boolean) : ColumnInfo<LogStre
     override fun getComparator(): Comparator<LogStream>? = if (sortable) Comparator.comparing { it.logStreamName() } else null
 }
 
-class LogStreamsStreamColumnRenderer() : TableCellRenderer {
+class LogStreamsStreamColumnRenderer : TableCellRenderer {
     override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         val component = SimpleColoredComponent()
         component.append((value as? String)?.trim() ?: "")

@@ -71,20 +71,18 @@ class SchemaCodeGenUtils {
         override fun toString(): String = builder.toString()
     }
 
-    class IdentifierFormatter {
-        companion object {
-            private const val POTENTIAL_PACKAGE_SEPARATOR = "@"
+    object IdentifierFormatter {
+        private const val POTENTIAL_PACKAGE_SEPARATOR = "@"
 
-            private const val NOT_VALID_IDENTIFIER_CHARACTER = "[^a-zA-Z0-9_$POTENTIAL_PACKAGE_SEPARATOR]"
-            private val NOT_VALID_IDENTIFIER_REGEX = Regex(NOT_VALID_IDENTIFIER_CHARACTER)
+        private const val NOT_VALID_IDENTIFIER_CHARACTER = "[^a-zA-Z0-9_$POTENTIAL_PACKAGE_SEPARATOR]"
+        private val NOT_VALID_IDENTIFIER_REGEX = Regex(NOT_VALID_IDENTIFIER_CHARACTER)
 
-            const val PACKAGE_SEPARATOR = "."
+        const val PACKAGE_SEPARATOR = "."
 
-            private const val UNDERSCORE = "_"
+        private const val UNDERSCORE = "_"
 
-            fun toValidIdentifier(name: String): String = name
-                .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
-                .replace(POTENTIAL_PACKAGE_SEPARATOR, PACKAGE_SEPARATOR)
-        }
+        fun toValidIdentifier(name: String): String = name
+            .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
+            .replace(POTENTIAL_PACKAGE_SEPARATOR, PACKAGE_SEPARATOR)
     }
 }

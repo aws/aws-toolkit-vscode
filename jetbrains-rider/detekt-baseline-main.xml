@@ -2,6 +2,10 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>UnnecessaryApply:DotnetDebugUtils.kt$DotnetDebugUtils$apply { enableHeuristicPathResolve.set(true) }</ID>
     <ID>UnsafeCallOnNullableType:DotnetDebugUtils.kt$DotnetDebugUtils$promise.get()!!</ID>
+    <ID>UseCheckOrError:DebuggingSteps.kt$throw IllegalStateException( "Command did not return expected result within $duration, last attempt; cmd: '${cmd.commandLineString}', " + "exitCode: ${lastAttemptOutput?.exitCode}, stdOut: '${lastAttemptOutput?.stdout?.trim()}', stdErr: '${lastAttemptOutput?.stderr?.trim()}'" )</ID>
+    <ID>UseCheckOrError:DotNetLambdaBuilder.kt$DotNetLambdaBuilder$throw IllegalStateException(message("lambda.run.configuration.handler_root_not_found"))</ID>
+    <ID>UseOrEmpty:DotNetSamProjectGenerator.kt$DotNetSamProjectGenerator$solutionDirectory.listFiles()?.filter { it.isFile }?.toList() ?: emptyList()</ID>
   </CurrentIssues>
 </SmellBaseline>

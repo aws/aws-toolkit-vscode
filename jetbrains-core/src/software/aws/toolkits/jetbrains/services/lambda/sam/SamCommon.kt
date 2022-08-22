@@ -18,49 +18,47 @@ import software.aws.toolkits.resources.message
 import java.io.FileFilter
 import java.nio.file.Paths
 
-class SamCommon {
-    companion object {
-        val mapper = jacksonObjectMapper()
-        const val SAM_BUILD_DIR = ".aws-sam"
-        const val SAM_INFO_VERSION_KEY = "version"
-        const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
-        const val SAM_NAME = "SAM CLI"
+object SamCommon {
+    val mapper = jacksonObjectMapper()
+    const val SAM_BUILD_DIR = ".aws-sam"
+    const val SAM_INFO_VERSION_KEY = "version"
+    const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
+    const val SAM_NAME = "SAM CLI"
 
-        // The minimum SAM CLI version required for images. TODO remove when sam min > 1.13.0
-        val minImageVersion = SemVer("1.13.0", 1, 13, 0)
+    // The minimum SAM CLI version required for images. TODO remove when sam min > 1.13.0
+    val minImageVersion = SemVer("1.13.0", 1, 13, 0)
 
-        /**
-         * @return The string representation of the SAM version else "UNKNOWN"
-         */
-        fun getVersionString(): String = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version ?: "UNKNOWN"
+    /**
+     * @return The string representation of the SAM version else "UNKNOWN"
+     */
+    fun getVersionString(): String = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version ?: "UNKNOWN"
 
-        fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
-            // Use Java File so we don't need to do a full VFS refresh
-            val projectRootFile = VfsUtil.virtualToIoFile(projectRoot)
-            val yamlFiles = projectRootFile.listFiles(
-                FileFilter {
-                    it.isFile && it.name.endsWith("yaml") || it.name.endsWith("yml")
-                }
-            )?.toList() ?: emptyList()
-            assert(yamlFiles.size == 1) { message("cloudformation.yaml.too_many_files", yamlFiles.size) }
-            return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(yamlFiles.first())
-        }
-
-        fun getCodeUrisFromTemplate(project: Project, template: VirtualFile): List<VirtualFile> {
-            val templatePath = Paths.get(template.parent.path)
-
-            val codeDirs = runReadAction {
-                val cfTemplate = CloudFormationTemplate.parse(project, template)
-
-                cfTemplate.resources()
-                    .filter { it.isType(SERVERLESS_FUNCTION_TYPE) }
-                    .map { templatePath.resolve(it.getScalarProperty("CodeUri")) }
-                    .toList()
+    fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
+        // Use Java File so we don't need to do a full VFS refresh
+        val projectRootFile = VfsUtil.virtualToIoFile(projectRoot)
+        val yamlFiles = projectRootFile.listFiles(
+            FileFilter {
+                it.isFile && it.name.endsWith("yaml") || it.name.endsWith("yml")
             }
+        )?.toList() ?: emptyList()
+        assert(yamlFiles.size == 1) { message("cloudformation.yaml.too_many_files", yamlFiles.size) }
+        return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(yamlFiles.first())
+    }
 
-            val localFileSystem = LocalFileSystem.getInstance()
-            return codeDirs.mapNotNull { localFileSystem.refreshAndFindFileByIoFile(it.toFile()) }
-                .filter { it.isDirectory }
+    fun getCodeUrisFromTemplate(project: Project, template: VirtualFile): List<VirtualFile> {
+        val templatePath = Paths.get(template.parent.path)
+
+        val codeDirs = runReadAction {
+            val cfTemplate = CloudFormationTemplate.parse(project, template)
+
+            cfTemplate.resources()
+                .filter { it.isType(SERVERLESS_FUNCTION_TYPE) }
+                .map { templatePath.resolve(it.getScalarProperty("CodeUri")) }
+                .toList()
         }
+
+        val localFileSystem = LocalFileSystem.getInstance()
+        return codeDirs.mapNotNull { localFileSystem.refreshAndFindFileByIoFile(it.toFile()) }
+            .filter { it.isDirectory }
     }
 }

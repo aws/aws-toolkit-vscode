@@ -12,10 +12,8 @@ import software.amazon.awssdk.core.interceptor.ExecutionInterceptor
 import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClientBuilder
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsClientCustomizer
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -63,7 +61,6 @@ class CodeWhispererEndpointCustomizer : AwsClientCustomizer {
     }
 
     companion object {
-        private val LOGGER = getLogger<CodeWhispererClient>()
         internal const val TOKEN_KEY_NAME = "x-amzn-codewhisperer-token"
         internal const val OPTOUT_KEY_NAME = "x-amzn-codewhisperer-optout"
     }

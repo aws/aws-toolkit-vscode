@@ -307,7 +307,7 @@ class SqsTest {
                         getQueueUrl { it.queueName(queueName) }
                     } catch (e: QueueDoesNotExistException) {
                         return@withTimeout
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                     }
                 }
             }
@@ -329,7 +329,7 @@ class SqsTest {
                         if (listQueuesPaginator().queueUrls().toList().any { it.contains(queueName) }) {
                             return@withTimeout
                         }
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                     }
                 }
             }

@@ -12,7 +12,7 @@ import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.resources.message
 
-class ViewSchemaAction() : SingleResourceNodeAction<SchemaNode>(message("schemas.schema.view.action"), null, AwsIcons.Actions.SCHEMA_VIEW), DumbAware {
+class ViewSchemaAction : SingleResourceNodeAction<SchemaNode>(message("schemas.schema.view.action"), null, AwsIcons.Actions.SCHEMA_VIEW), DumbAware {
     override fun actionPerformed(selected: SchemaNode, e: AnActionEvent) {
         SchemaViewer(selected.nodeProject).downloadAndViewSchema(
             selected.value.name,

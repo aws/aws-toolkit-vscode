@@ -33,7 +33,7 @@ class DownloadCodeForSchemaPanel(project: Project) {
     private fun createUIComponents() {
         versionModel = DefaultComboBoxModel()
         version = ComboBox(versionModel)
-        languageModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: SchemaCodeLangs -> it.toString() })
+        languageModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it.toString() })
         language = ComboBox(languageModel)
     }
 

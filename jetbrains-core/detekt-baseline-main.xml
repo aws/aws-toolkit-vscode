@@ -29,6 +29,30 @@
     <ID>BannedImports:UploadFunctionContinueDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:ValidatingPanel.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:ViewResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeScanSessionConfig.kt$CodeScanSessionConfig$val (includedSourceFiles, payloadSize, totalLines, _) = includeDependencies()</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (project, _, triggerTypeInfo, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (requestId, detail, _, isDiscarded) = detailContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()</ID>
+    <ID>ForbiddenVoid:DownloadCodeForSchemaDialog.kt$DownloadCodeForSchemaDialog$Void</ID>
+    <ID>ForbiddenVoid:SchemaViewer.kt$SchemaPreviewer$Void</ID>
+    <ID>ForbiddenVoid:SchemaViewer.kt$SchemaViewer$Void</ID>
+    <ID>ImplicitDefaultLocale:CloudFormationTemplate.kt$CloudFormationTemplate.Companion$templateFile.extension?.toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
+    <ID>ImplicitDefaultLocale:DynamicResourceStateChangedNotificationHandler.kt$DynamicResourceStateChangedNotificationHandler$state.operation.name.toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:DynamicResourcesUpdateManager.kt$DynamicResourceUpdateManager$message("dynamic_resources.editor.submitResourceUpdateRequest_text").toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:DynamicResourcesUpdateManager.kt$DynamicResourceUpdateManager$message("general.delete").toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:DynamicResourcesUpdateManager.kt$DynamicResourceUpdateManager$mutation.operation.name.toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:PathMapper.kt$PathMapper.Companion$localPath.toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:ResourceSelector.kt$ResourceSelector$it.toString().toLowerCase()</ID>
+    <ID>ImplicitDefaultLocale:SchemaCodeGenUtils.kt$SchemaCodeGenUtils.CodeGenPackageBuilder$segment.toLowerCase()</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeScanSessionConfig.kt$CodeScanSessionConfig$while (queue.isNotEmpty()) { if (currentTotalFileSize.equals(getPayloadLimitInBytes())) { return PayloadMetadata(includedSourceFiles, currentTotalFileSize, currentTotalLines) } val currentFilePath = queue.removeFirst() val currentFile = File(currentFilePath).toVirtualFile() if (includedSourceFiles.contains(currentFilePath) || currentFile == null) continue val currentFileSize = currentFile.length // Ignore file if including it exceeds the payload limit. if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue currentTotalFileSize += currentFileSize currentTotalLines += Files.lines(currentFile.toNioPath()).count() includedSourceFiles.add(currentFilePath) getImportedFiles(currentFile, includedSourceFiles).forEach { if (!includedSourceFiles.contains(it)) queue.addLast(it) } }</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while (current &lt; recommendation.length) { val char = recommendation[current] current++ // if char isn't a paired symbol, or it is, but it's not the matching currentDocChar or // the opening version of it, then we're done if (!isMatchingSymbol(char) || (char != currentDocChar &amp;&amp; PAIRED_BRACKETS[char] != currentDocChar)) { continue } // if char is an opening bracket, push it to the stack if (PAIRED_BRACKETS[char] == currentDocChar) { bracketsStack.push(char) continue } // char is currentDocChar, it's one of a bracket, a quote, or a whitespace character. // If it's a whitespace character, directly add it to the result, // if it's a bracket or a quote, check if this char is already having a matching opening symbol // on the stack if (char.isWhitespace()) { result.add(current to caretOffset + totalDocLengthChecked) break } else if (bracketsStack.isNotEmpty() &amp;&amp; PAIRED_BRACKETS[bracketsStack.peek()] == char) { bracketsStack.pop() } else if (quotesStack.isNotEmpty() &amp;&amp; quotesStack.peek().first == char) { result.add(quotesStack.pop().second) result.add(current to caretOffset + totalDocLengthChecked) break } else { // char does not have a matching opening symbol in the stack, if it's a (opening) bracket, // immediately add it to the result; if it's a quote, push it to the stack if (PAIRED_QUOTES.contains(char)) { quotesStack.push(char to (current to caretOffset + totalDocLengthChecked)) } else { result.add(current to caretOffset + totalDocLengthChecked) } break } }</ID>
+    <ID>LoopWithTooManyJumpStatements:DownloadObjectAction.kt$DownloadObjectAction$for ((index, download) in downloads.withIndex()) { if (!download.diskLocation.exists()) { finalDownloads.add(download) continue } if (skipAll) { continue } val resolution = promptForConflictResolution(project, targetDirectory, download, downloads) if (resolution == SKIP) { LOG.info { "User requested skipping $download" } } else if (resolution == OVERWRITE) { finalDownloads.add(download) } else if (resolution == SKIP_ALL) { LOG.info { "User requested skipping rest of the files" } skipAll = true } else if (resolution == OVERWRITE_ALL) { finalDownloads.addAll(downloads.drop(index)) break } }</ID>
+    <ID>LoopWithTooManyJumpStatements:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$while (queue.isNotEmpty()) { if (currentTotalFileSize.equals(getPayloadLimitInBytes())) { return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet()) } val currentFile = queue.removeFirst() if (!currentFile.path.startsWith(projectRoot.path)) { LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" } continue } if (sourceFiles.contains(currentFile)) continue val currentFileSize = currentFile.length // Ignore file if including it exceeds the payload limit. if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue currentTotalFileSize += currentFileSize currentTotalLines += Files.lines(currentFile.toNioPath()).count() sourceFiles.add(currentFile) // Get all imports from the file val importsInfo = parseImports(currentFile) importsInfo.imports.forEach { importPath -> val importedFiles = getSourceFilesForImport(currentFile, importPath) importedFiles.forEach { importedFile -> if (!sourceFiles.contains(importedFile)) queue.addLast(importedFile) } } buildPaths.add(getRelativeBuildPath(currentFile, importsInfo.packagePath)) }</ID>
     <ID>NoNameShadowing:CloudControlApiResources.kt$CloudControlApiResources${ it.typeName() }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ it.repositoryName == ecrDialog.repoName }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ sourceBucket.reload(forceFetch = true) sourceBucket.selectedItem = it }</ID>
@@ -47,7 +71,17 @@
     <ID>NoNameShadowing:LocalPathProjectBaseCellEditor.kt$LocalPathProjectBaseCellEditor${ StringUtil.isNotEmpty(it) }</ID>
     <ID>NoNameShadowing:RuntimeGroup.kt$RuntimeGroup.Companion${ it.id == id }</ID>
     <ID>NoNameShadowing:SelectSavedQuery.kt$SelectSavedQuery${ logGroups.text = it.logGroupNames().joinToString("\n") queryString.text = it.queryString() // reset to the start, since setting the text moves the cursor to the end, // which results in scrolling to the bottom right corner if there's enough text logGroups.caretPosition = 0 queryString.caretPosition = 0 }</ID>
+    <ID>ObjectLiteralToLambda:CodeWhispererExperiment.kt$CodeWhispererExperiment$object : ToolkitExperimentStateChangedListener { override fun enableSettingsStateChanged(toolkitExperiment: ToolkitExperiment) { if (toolkitExperiment is CodeWhispererExperiment) { DataManager.getInstance().dataContextFromFocusAsync.onSuccess { dataContext -> val project = dataContext.getData(CommonDataKeys.PROJECT) ?: return@onSuccess CodeWhispererExplorerActionManager.getInstance().reset() project.refreshDevToolTree() AwsToolkitExplorerToolWindow.getInstance(project).setDevToolsTabVisible(toolkitExperiment.isEnabled()) } } } }</ID>
+    <ID>ObjectLiteralToLambda:CodeWhispererProjectStartupActivity.kt$CodeWhispererProjectStartupActivity$object : LookupManagerListener { override fun activeLookupChanged(oldLookup: Lookup?, newLookup: Lookup?) { if (oldLookup != null || newLookup == null) return newLookup.addLookupListener(object : LookupListener { override fun itemSelected(event: LookupEvent) { val editor = event.lookup.editor val triggerType = CodewhispererTriggerType.AutoTrigger if (!(event.lookup as LookupImpl).isShown || !CodeWhispererService.getInstance().canDoInvocation(editor, triggerType) ) { cleanup() return } val triggerTypeInfo = TriggerTypeInfo( triggerType, CodewhispererAutomatedTriggerType.IntelliSenseAcceptance ) CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerTypeInfo) cleanup() } override fun lookupCanceled(event: LookupEvent) { cleanup() } private fun cleanup() { newLookup.removeLookupListener(this) } }) } }</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
+    <ID>UnnecessaryApply:CodeWhispererCodeScanEditorMouseMotionListener.kt$CodeWhispererCodeScanEditorMouseMotionListener$apply { size = preferredSize }</ID>
+    <ID>UnnecessaryApply:CreateIamServiceRoleDialog.kt$CreateIamServiceRoleDialog$apply { component.isEditable = false }</ID>
+    <ID>UnnecessaryApply:CreateQueuePanel.kt$CreateQueuePanel$apply { border = IdeBorderFactory.createBorder(SideBorder.TOP or SideBorder.BOTTOM or SideBorder.LEFT) }</ID>
+    <ID>UnnecessaryApply:CreationPanel.kt$CreationPanel$apply { component.toolTipText = message("apprunner.creation.panel.repository.url.tooltip") }</ID>
+    <ID>UnnecessaryApply:ExperimentConfigurable.kt$ExperimentConfigurable$apply { component.icon = AllIcons.General.Warning }</ID>
+    <ID>UnnecessaryApply:SendMessagePane.kt$SendMessagePane$apply { border = IdeBorderFactory.createBorder() }</ID>
+    <ID>UnnecessaryApply:SendMessagePane.kt$SendMessagePane$apply { emptyText.text = message("sqs.send.message.body.empty.text") }</ID>
+    <ID>UnnecessaryFilter:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$filter { isValidRecommendation(it, userInput, typeahead) }</ID>
     <ID>UnsafeCallOnNullableType:CachingAsyncEvaluator.kt$CachingAsyncEvaluator$cachePromise.blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:CachingAsyncEvaluator.kt$CachingAsyncEvaluator$promise.blockingGet(blockingTime, blockingUnit)!!</ID>
     <ID>UnsafeCallOnNullableType:CreateFunctionDialog.kt$CreateFunctionDialog$view.configSettings.iamRole.selected()!!</ID>
@@ -62,5 +96,160 @@
     <ID>UnsafeCallOnNullableType:SchemaResourceSelector.kt$SchemaResourceSelector$awsConnection!!</ID>
     <ID>UnsafeCallOnNullableType:TreeView.kt$TreeViewImpl$(userObject as StackNodeDescriptor).icon!!</ID>
     <ID>UnsafeCallOnNullableType:UpdateFunctionConfigDialog.kt$UpdateFunctionConfigDialog$view.configSettings.iamRole.selected()!!</ID>
+    <ID>UnusedPrivateMember:AwsLocalTerminalRunner.kt$AwsLocalTerminalRunner$private val termName: String</ID>
+    <ID>UseAnyOrNoneInsteadOfFind:ToolkitDockerAdapter.kt$AbstractToolkitDockerAdapter$firstOrNull { it.name == expectedDeploymentName &amp;&amp; it.status == DeploymentStatus.DEPLOYING }</ID>
+    <ID>UseCheckOrError:AwsConnectionExtension.kt$AwsConnectionRunConfigurationExtension$throw IllegalStateException(message("aws.notification.credentials_missing"))</ID>
+    <ID>UseCheckOrError:AwsConnectionExtension.kt$AwsConnectionRunConfigurationExtension$throw IllegalStateException(message("configure.validate.no_region_specified"))</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
+    <ID>UseCheckOrError:AwsConsoleUrlFactory.kt$AwsConsoleUrlFactory$throw IllegalStateException("Partition '${region.partitionId}' is not supported")</ID>
+    <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
+    <ID>UseCheckOrError:AwsResourceCache.kt$ExecutableBackedCacheResource$throw IllegalStateException((it as ExecutableInstance.BadExecutable).validationError)</ID>
+    <ID>UseCheckOrError:CliBasedStep.kt$CliBasedStep$throw IllegalStateException(message("general.execution.cli_error", exitCode))</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitial")</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialFilter")</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialRange")</ID>
+    <ID>UseCheckOrError:CloudWatchLogGroup.kt$CloudWatchLogGroup$throw IllegalStateException(state.shortMessage)</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Failed to locate module for $element")</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("LambdaBuilder for $runtime not found")</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Runtime is missing when package type is Zip")</ID>
+    <ID>UseCheckOrError:CreationDialog.kt$CreationDialog$throw IllegalStateException("AppRunner creation dialog had no type selected!")</ID>
+    <ID>UseCheckOrError:DataContextUtils.kt$throw IllegalStateException("Required dataId '${dataId.name}` was missing")</ID>
+    <ID>UseCheckOrError:DefaultToolManager.kt$DefaultToolManager$throw IllegalStateException( message( "executableCommon.latest_not_compatible", type.displayName, it.displayValue() ) )</ID>
+    <ID>UseCheckOrError:DetailedLogRecord.kt$DetailedLogRecord.Companion$throw IllegalStateException("$log format does not appear to be in a valid format (&lt;account-id>:&lt;log-group-name>)")</ID>
+    <ID>UseCheckOrError:DownloadLogStream.kt$LogStreamDownloadToFileTask.&lt;no name provided>$throw IllegalStateException("Log Stream was downloaded but does not exist on disk!")</ID>
+    <ID>UseCheckOrError:FeedbackDialog.kt$FeedbackDialog$throw IllegalStateException("comment was null after validation")</ID>
+    <ID>UseCheckOrError:FeedbackDialog.kt$FeedbackDialog$throw IllegalStateException("sentiment was null after validation")</ID>
+    <ID>UseCheckOrError:FileInfoCache.kt$FileInfoCache$throw IllegalStateException(message("general.file_not_found", entry))</ID>
+    <ID>UseCheckOrError:FileInfoCache.kt$FileInfoCache$throw IllegalStateException(message("general.file_not_found", path))</ID>
+    <ID>UseCheckOrError:HandlerCompletionProvider.kt$HandlerCompletionProvider$throw IllegalStateException("handlerCompletion must be defined if completion is enabled.")</ID>
+    <ID>UseCheckOrError:HandlerPanel.kt$HandlerPanel$throw IllegalStateException("Runtime was not set in the HandlerPanel")</ID>
+    <ID>UseCheckOrError:InsightsUtils.kt$throw IllegalStateException("CWL GetQueryResults returned record without @ptr field")</ID>
+    <ID>UseCheckOrError:JavaDebugSupport.kt$throw IllegalStateException("Attaching to the JVM failed! $debugHost:${debugPorts.first()}")</ID>
+    <ID>UseCheckOrError:JavaLambdaBuilder.kt$JavaLambdaBuilder$throw IllegalStateException(message("lambda.build.java.unsupported_build_system", module.name))</ID>
+    <ID>UseCheckOrError:JavaLambdaBuilder.kt$JavaLambdaBuilder$throw IllegalStateException(message("lambda.build.unable_to_locate_project_root", module))</ID>
+    <ID>UseCheckOrError:LambdaBuilder.kt$LambdaBuilder$throw IllegalStateException("Cannot map runtime $runtime to SDK runtime.")</ID>
+    <ID>UseCheckOrError:LambdaBuilder.kt$LambdaBuilder$throw IllegalStateException(message("lambda.build.module_with_no_content_root", module.name))</ID>
+    <ID>UseCheckOrError:LambdaBuilder.kt$LambdaBuilder.Companion$throw IllegalStateException("Failed to locate module for ${psiFile.virtualFile}")</ID>
+    <ID>UseCheckOrError:LambdaConfigPanel.kt$LambdaConfigPanel$throw IllegalStateException("Unsupported package type ${packageType()}")</ID>
+    <ID>UseCheckOrError:LambdaUtils.kt$throw IllegalStateException("$this has bad minSamDebuggingVersion! It should be a semver string!")</ID>
+    <ID>UseCheckOrError:LambdaUtils.kt$throw IllegalStateException("$this has bad minSamInitVersion! It should be a semver string!")</ID>
+    <ID>UseCheckOrError:LambdaWorkflows.kt$throw IllegalStateException("Tried to update a lambda without valid AWS connection")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Cannot map runtime $runtime to SDK runtime.")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Function ${logicalId()} not found in template!")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Image functions must be a SAM function")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("No image debugger with ID ${rawImageDebugger()}")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Unable to get virtual file for path $dockerFilePath")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$HandlerRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$ImageTemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported language ${imageDebugger.languageId}")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$TemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$throw IllegalStateException("Can't find debugger support for $this")</ID>
+    <ID>UseCheckOrError:OpenShellInContainerDialog.kt$OpenShellInContainerDialog$throw IllegalStateException("Task not Selected")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("image id was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("repository uri was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("run configuration was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:PythonLambdaBuilder.kt$PythonLambdaBuilder.Companion$throw IllegalStateException("Cannot locate requirements.txt in a parent directory of ${startLocation.path}")</ID>
+    <ID>UseCheckOrError:PythonLambdaHandlerResolver.kt$PythonLambdaHandlerResolver$throw IllegalStateException("Failed to locate requirements.txt")</ID>
+    <ID>UseCheckOrError:RemoteLambdaRunSettingsEditor.kt$RemoteLambdaRunSettingsEditor$throw IllegalStateException("functionSelector.reload() called before region/credentials set")</ID>
+    <ID>UseCheckOrError:Resources.kt$Function$throw IllegalStateException(message("cloudformation.invalid_property", key, type))</ID>
+    <ID>UseCheckOrError:Resources.kt$SamFunction$throw IllegalStateException("Bad packageType somehow returned to code location: ${packageType()}")</ID>
+    <ID>UseCheckOrError:Resources.kt$SamFunction$throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))</ID>
+    <ID>UseCheckOrError:RetrieveSavedQueryDialog.kt$RetrieveSavedQueryDialog.&lt;no name provided>$throw IllegalStateException("No query definition was selected")</ID>
+    <ID>UseCheckOrError:RunCommandDialog.kt$RunCommandDialog$throw IllegalStateException("Task not Selected")</ID>
+    <ID>UseCheckOrError:RuntimeGroup.kt$RuntimeGroup.Companion$throw IllegalStateException("No RuntimeGroup with id '$id' is registered")</ID>
+    <ID>UseCheckOrError:RuntimeGroup.kt$RuntimeGroupExtensionPointObject$throw IllegalStateException("Attempted to retrieve feature for unsupported runtime group $runtimeGroup")</ID>
+    <ID>UseCheckOrError:S3TreeNode.kt$S3TreeNode$throw IllegalStateException("$key has no parent!")</ID>
+    <ID>UseCheckOrError:SamInitSelectionPanel.kt$SamInitSelectionPanel$throw IllegalStateException("SemVer is invalid even with valid SAM executable")</ID>
+    <ID>UseCheckOrError:SamProjectWizard.kt$SamAppTemplateBased$throw IllegalStateException("Unknown packaging type: $packagingType")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("$codeUri does not follow the format $S3_URI_PREFIX&lt;bucket>/&lt;key>")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("$codeUri does not start with $S3_URI_PREFIX")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("Unable to parse codeUri $codeUri")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException(message("cloudformation.invalid_property", "PackageType", type))</ID>
+    <ID>UseCheckOrError:SamVersionCache.kt$SamVersionCache$throw IllegalStateException(message("executableCommon.empty_info", SamCommon.SAM_NAME))</ID>
+    <ID>UseCheckOrError:SamVersionCache.kt$SamVersionCache$throw IllegalStateException(message("executableCommon.unexpected_output", SamCommon.SAM_NAME, output))</ID>
+    <ID>UseCheckOrError:SamVersionCache.kt$SamVersionCache$throw IllegalStateException(message("executableCommon.version_parse_error", SamCommon.SAM_NAME, version))</ID>
+    <ID>UseCheckOrError:SamVersionCache.kt$SamVersionCache$throw IllegalStateException(output)</ID>
+    <ID>UseCheckOrError:SchemaCodeDownloader.kt$SchemaCodeDownloader.Companion$throw IllegalStateException("Attempting to use SchemaCodeDownload without valid AWS connection")</ID>
+    <ID>UseCheckOrError:SchemaSelectionPanel.kt$SchemaSelectionPanel$throw IllegalStateException("Schemas is not supported by $this")</ID>
+    <ID>UseCheckOrError:SingleS3ObjectAction.kt$SingleS3ObjectAction$throw IllegalStateException("SingleActionNode should only have a single node, got $nodes")</ID>
+    <ID>UseCheckOrError:SpinUtils.kt$throw IllegalStateException("Condition not reached within $duration")</ID>
+    <ID>UseCheckOrError:SqsWindowFactory.kt$SqsWindowFactory.Companion$throw IllegalStateException("Can't find tool window $TOOL_WINDOW_ID")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to extract $displayName\nSTDOUT:${processOutput.stdout}\nSTDERR:${processOutput.stderr}")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to locate $executableName under $installDir")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Unknown extension $extension")</ID>
+    <ID>UseCheckOrError:ToolType.kt$BaseToolType$throw IllegalStateException("Failed to determine version of ${SsmPlugin.displayName}")</ID>
+    <ID>UseCheckOrError:ToolkitToolWindow.kt$ToolkitToolWindow$throw IllegalStateException("Can't find tool window $toolWindowId")</ID>
+    <ID>UseCheckOrError:ToolkitToolWindowListener.kt$ToolkitToolWindowListener$throw IllegalStateException("Can't find tool window $toolWindowId")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("Failed to locate module for $element")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("LambdaBuilder for ${initialSettings.runtime} not found")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("Runtime is missing when package type is Zip")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodePanel.kt$UpdateFunctionCodePanel$throw IllegalStateException("Unsupported package type $packageType")</ID>
+    <ID>UseCheckOrError:YamlCloudFormationTemplate.kt$YamlCloudFormationTemplate.YamlCloudFormationParameter$throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))</ID>
+    <ID>UseCheckOrError:YamlCloudFormationTemplate.kt$YamlCloudFormationTemplate.YamlGlobal$throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))</ID>
+    <ID>UseCheckOrError:YamlCloudFormationTemplate.kt$YamlCloudFormationTemplate.YamlResource$throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))</ID>
+    <ID>UseIsNullOrEmpty:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog$name == null || name.isEmpty()</ID>
+    <ID>UseOrEmpty:AbstractActions.kt$SingleExplorerNodeActionGroup$e?.selectedNodes&lt;T>()?.takeIf { it.size == 1 }?.first()?.let { getChildren(it, e) }?.toTypedArray() ?: emptyArray()</ID>
+    <ID>UseOrEmpty:AbstractActions.kt$this?.getData(ExplorerDataKeys.SELECTED_NODES)?.mapNotNull { it as? T } ?: emptyList()</ID>
+    <ID>UseOrEmpty:CodeScanSessionConfig.kt$CodeScanSessionConfig.Companion$file.extension ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeReferenceComponents.kt$CodeWhispererCodeReferenceComponents$path ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeScanException.kt$file ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeScanManager.kt$CodeWhispererCodeScanManager$scanNodesLookup[file]?.mapNotNull { node -> val issue = node.userObject as CodeWhispererCodeScanIssue if (issue.textRange?.overlaps(range) == true) node else null } ?: listOf()</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$e.requestId() ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$exceptionType?.let { "Exception Type: $it, " } ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$latency?.let { "Latency: $latency, " } ?: ""</ID>
+    <ID>UseOrEmpty:ConfigureLambdaDialog.kt$ConfigureLambdaDialog$view.lambdaFunction.selected()?.functionName() ?: ""</ID>
+    <ID>UseOrEmpty:CreationPanel.kt$CreationPanel$ecrUri ?: ""</ID>
+    <ID>UseOrEmpty:CreationPanel.kt$CreationPanel$startCommand ?: ""</ID>
+    <ID>UseOrEmpty:CredentialIdentifierSelector.kt$CredentialIdentifierSelector.&lt;no name provided>$value?.displayName ?: ""</ID>
+    <ID>UseOrEmpty:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog$it.defaultValue() ?: ""</ID>
+    <ID>UseOrEmpty:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog$stackName ?: ""</ID>
+    <ID>UseOrEmpty:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog.Companion$providedValue ?: ""</ID>
+    <ID>UseOrEmpty:DeployServerlessApplicationDialog.kt$DeployServerlessApplicationDialog.Companion$value ?: ""</ID>
+    <ID>UseOrEmpty:DevToolsToolWindow.kt$DevToolsToolWindow$tree.selectionPaths?.let { treePaths -> treePaths.map { it.lastPathComponent } .filterIsInstance&lt;DefaultMutableTreeNode>() .map { it.userObject } .filterIsInstance&lt;T>() .toList() } ?: emptyList&lt;T>()</ID>
+    <ID>UseOrEmpty:DownloadCodeForSchemaDialog.kt$DownloadCodeForSchemaDialog$getContentRootOfCurrentFile() ?: ""</ID>
+    <ID>UseOrEmpty:DownloadCodeForSchemaDialog.kt$DownloadCodeForSchemaDialog$rootError.message ?: ""</ID>
+    <ID>UseOrEmpty:DynamoDbExplorerNodes.kt$DynamoDbTableNode$tryOrNull { nodeProject.getResourceIfPresent(StsResources.ACCOUNT) } ?: ""</ID>
+    <ID>UseOrEmpty:EventsTable.kt$EventsTableImpl$e.resourceStatusReason() ?: ""</ID>
+    <ID>UseOrEmpty:ExplorerToolWindow.kt$ExplorerToolWindow$awsTree.selectionPaths?.let { it.map { it.lastPathComponent } .filterIsInstance&lt;DefaultMutableTreeNode>() .map { it.userObject } .filterIsInstance&lt;T>() .toList() } ?: emptyList&lt;T>()</ID>
+    <ID>UseOrEmpty:InsightsColumnInfo.kt$LogResultColumnRenderer$(value as? String)?.trim() ?: ""</ID>
+    <ID>UseOrEmpty:LocalLambdaRunSettingsEditor.kt$LocalLambdaRunSettingsEditor$configuration.handler() ?: ""</ID>
+    <ID>UseOrEmpty:LogGroupSelectorTable.kt$LogGroupSelectorTable.Companion.LogGroupNameColumnInfo$value ?: ""</ID>
+    <ID>UseOrEmpty:LogStreamEntry.kt$message()?.trim() ?: ""</ID>
+    <ID>UseOrEmpty:NotificationUtils.kt$&lt;no name provided>$title ?: ""</ID>
+    <ID>UseOrEmpty:PauseServiceAction.kt$PauseServiceAction$e.awsErrorDetails()?.errorMessage() ?: ""</ID>
+    <ID>UseOrEmpty:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$e.message?.let { ": $it" } ?: ""</ID>
+    <ID>UseOrEmpty:PythonCodeScanSessionConfig.kt$PythonCodeScanSessionConfig$importMatcher.group(1)?.plus(FILE_SEPARATOR) ?: ""</ID>
+    <ID>UseOrEmpty:PythonLambdaHandlerResolver.kt$PythonLambdaHandlerResolver$handler.substringBeforeLast('/', "").nullize(true)?.split("/") ?: emptyList()</ID>
+    <ID>UseOrEmpty:ResumeServiceAction.kt$ResumeServiceAction$e.awsErrorDetails()?.errorMessage() ?: ""</ID>
+    <ID>UseOrEmpty:S3ObjectAction.kt$S3ObjectAction$dataContext.getData(S3EditorDataKeys.SELECTED_NODES) ?: emptyList()</ID>
+    <ID>UseOrEmpty:S3TreeNode.kt$S3TreeDirectoryNode$response .contents() ?.filterNotNull() // filter out the directory root // if the root was a non-delimited prefix, it should not be filtered out ?.filterNot { it.key() == key &amp;&amp; (this as? S3TreePrefixedDirectoryNode)?.isDelimited() != true } ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) } ?: emptyList()</ID>
+    <ID>UseOrEmpty:S3TreeNode.kt$S3TreeDirectoryNode$response.commonPrefixes()?.map { S3TreeDirectoryNode(bucket, this, it.prefix()) } ?: emptyList()</ID>
+    <ID>UseOrEmpty:S3ViewerPanel.kt$S3ViewerPanel$filterComponent.text.nullize(nullizeSpaces = true) ?: ""</ID>
+    <ID>UseOrEmpty:SamCliStep.kt$SamCliStep$(executable as? ExecutableInstance.BadExecutable)?.validationError ?: ""</ID>
+    <ID>UseOrEmpty:SamCommon.kt$SamCommon$projectRootFile.listFiles( FileFilter { it.isFile &amp;&amp; it.name.endsWith("yaml") || it.name.endsWith("yml") } )?.toList() ?: emptyList()</ID>
+    <ID>UseOrEmpty:SamInitRunner.kt$SamInitRunner$tempDir.listFiles()?.toList() ?: emptyList()</ID>
+    <ID>UseOrEmpty:SamTemplateUtils.kt$SamTemplateUtils$MAPPER.convertValue&lt;Map&lt;String, String>?>(globals) ?: emptyMap()</ID>
+    <ID>UseOrEmpty:SamTemplateUtils.kt$SamTemplateUtils$MAPPER.convertValue&lt;Map&lt;String, String>?>(variables) ?: emptyMap()</ID>
+    <ID>UseOrEmpty:SchemaSearchExecutor.kt$SchemaSearchExecutor$e.message ?: ""</ID>
+    <ID>UseOrEmpty:SubmitFeedbackPanel.kt$SubmitFeedbackPanel$comment ?: ""</ID>
+    <ID>UseOrEmpty:SubscribeSnsDialog.kt$SubscribeSnsDialog$view.topicSelector.selected()?.topicArn() ?: ""</ID>
+    <ID>UseOrEmpty:TableResults.kt$TableModel$columns.getKeysByValue(column)?.firstOrNull() ?: ""</ID>
+    <ID>UseOrEmpty:TableUtils.kt$LogStreamsStreamColumnRenderer$(value as? String)?.trim() ?: ""</ID>
+    <ID>UseOrEmpty:TemplateSettings.kt$TemplateSettings$it.canonicalPath ?: ""</ID>
+    <ID>UseOrEmpty:TemplateSettings.kt$TemplateSettings$path ?: ""</ID>
+    <ID>UseOrEmpty:ToolConfigurable.kt$ToolConfigurable$settings.getExecutablePath(toolType) ?: ""</ID>
+    <ID>UseOrEmpty:ToolkitCredentialProcessProvider.kt$ToolkitCredentialProcessProvider$errorOutput?.let { ": $it" } ?: ""</ID>
+    <ID>UseOrEmpty:ToolkitDockerAdapter.kt$AbstractToolkitDockerAdapter$@Suppress("UNNECESSARY_SAFE_CALL") agent.getImages(null)?.flatMap { image -> image.imageRepoTags?.map { localTag -> val tag = localTag.takeUnless { it == NO_TAG_TAG } LocalImage(image.imageId, tag) } ?: listOf(LocalImage(image.imageId, null)) }?.toList() ?: emptyList()</ID>
+    <ID>UseOrEmpty:ToolkitToolWindow.kt$ToolkitToolWindow$it.getUserData(AWS_TOOLKIT_TAB_ID_KEY) ?: ""</ID>
+    <ID>UseOrEmpty:UiUtils.kt$WrappingCellRenderer$(value as? String) ?: ""</ID>
+    <ID>UseOrEmpty:UpdateFunctionConfigDialog.kt$UpdateFunctionConfigDialog$initialSettings.envVariables ?: emptyMap()</ID>
+    <ID>UseOrEmpty:Updater.kt$Updater$eventsAndButtonStates?.first ?: emptyList()</ID>
+    <ID>UseOrEmpty:Updater.kt$Updater$stack?.outputs() ?: emptyList()</ID>
+    <ID>UselessCallOnNotNull:DeleteResourceDialog.kt$DeleteResourceDialog$comment.isNullOrEmpty()</ID>
   </CurrentIssues>
 </SmellBaseline>

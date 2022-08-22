@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>UnusedPrivateMember:VgoCompatShims.kt$VgoCompatShims$goVersion: String?</ID>
+    <ID>UseCheckOrError:CreateIamDataSourceAction.kt$throw IllegalStateException("Newly inserted data source is not in the data source registry!")</ID>
+    <ID>UseCheckOrError:GoCodeInsightTestFixtureRule.kt$throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")</ID>
+    <ID>UseCheckOrError:GoHelper.kt$GoDebugHelper$throw IllegalStateException("Packaged Devle debugger is not found!")</ID>
+    <ID>UseCheckOrError:GoLambdaBuilder.kt$GoLambdaBuilder$throw IllegalStateException("Cannot locate go.mod for $handlerVirtualFile")</ID>
+    <ID>UseCheckOrError:NodeJsLambdaBuilder.kt$NodeJsLambdaBuilder.Companion$throw IllegalStateException("Cannot locate package.json for $handlerVirtualFile")</ID>
+    <ID>UseCheckOrError:RedshiftUtils.kt$throw IllegalStateException("Newly inserted data source is not in the data source registry!")</ID>
+  </CurrentIssues>
+</SmellBaseline>

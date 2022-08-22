@@ -43,7 +43,7 @@ class RawSettings(private val project: Project) {
     var lastSelectedRuntime: LambdaRuntime? = null
 
     private fun createUIComponents() {
-        runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: LambdaRuntime -> it.toString() })
+        runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it.toString() })
         architectureModel = CollectionComboBoxModel(LambdaArchitecture.values().toList())
         runtime = ComboBox(runtimeModel)
         architecture = ComboBox(architectureModel)

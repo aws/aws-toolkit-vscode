@@ -1,11 +1,10 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>ImplicitDefaultLocale:GoLocalRunConfigurationIntegrationTest.kt$GoLocalRunConfigurationIntegrationTest$input.toUpperCase()</ID>
     <ID>UnsafeCallOnNullableType:GoLocalRunConfigurationIntegrationTest.kt$GoLocalRunConfigurationIntegrationTest$GoSdkUtil.suggestSdkDirectory()!!</ID>
     <ID>UnsafeCallOnNullableType:GoLocalRunConfigurationIntegrationTest.kt$GoLocalRunConfigurationIntegrationTest$GoSdkUtil.suggestSdkDirectory()!!.children.sortedByDescending { it.name }.first().canonicalPath!!</ID>
-    <ID>UnsafeCallOnNullableType:GoLocalRunConfigurationIntegrationTest.kt$GoLocalRunConfigurationIntegrationTest$projectRule.fixture.tempDirFixture.createFile("tmp", "\"${input}\"").canonicalPath!!</ID>
     <ID>UnsafeCallOnNullableType:NodeJsLocalLambdaRunConfigurationIntegrationTest.kt$NodeJsLocalLambdaRunConfigurationIntegrationTest$LambdaRuntime.fromValue(runtime)!!</ID>
-    <ID>UnsafeCallOnNullableType:NodeJsLocalLambdaRunConfigurationIntegrationTest.kt$NodeJsLocalLambdaRunConfigurationIntegrationTest$projectRule.fixture.tempDirFixture.createFile("tmp", "\"Hello World\"").canonicalPath!!</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -62,7 +62,7 @@ class DeployAction : SingleResourceNodeAction<AppRunnerServiceNode>(message("app
         val logStream = "deployment/${deployment.operationId()}"
         val logWindow = CloudWatchLogWindow.getInstance(project)
         // Try 15 times. If it's not made by 15 seconds, there is probably another issue, so show an error message
-        (1..15).forEach { _ ->
+        repeat(15) { _ ->
             if (runCatching { cloudwatchClient.checkIfLogStreamExists(logGroup, logStream) }.getOrNull() == true) {
                 LOG.info { "Found log stream for deployment $logStream" }
                 logWindow.showLogStream(logGroup, logStream, streamLogs = true)

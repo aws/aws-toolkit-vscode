@@ -58,7 +58,7 @@ class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
         }
     }
 
-    fun validateConfiguration(runConfiguration: T, isExecution: Boolean) {
+    fun validateConfiguration(runConfiguration: T) {
         val credentialConfiguration = runConfiguration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY) ?: return
         if (credentialConfiguration == DEFAULT_OPTIONS) return
 

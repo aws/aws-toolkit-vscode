@@ -41,7 +41,7 @@ class PythonAwsConnectionExtension : PythonRunConfigurationExtension() {
     )
 
     override fun validateConfiguration(configuration: AbstractPythonRunConfiguration<*>, isExecution: Boolean) {
-        delegate.validateConfiguration(configuration, isExecution)
+        delegate.validateConfiguration(configuration)
     }
 
     private fun isEnabled() = PythonAwsConnectionExperiment.isEnabled()

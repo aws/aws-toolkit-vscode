@@ -14,18 +14,18 @@ import com.intellij.util.LocalTimeCounter
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.amazon.awssdk.services.codewhisperer.model.Reference
 import software.amazon.awssdk.services.codewhisperer.model.Span
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationChunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 
 class CodeWhispererRecommendationManager {
     fun reformat(requestContext: RequestContext, recommendation: Recommendation): Recommendation {
-        val (project, editor, _, caretPosition) = requestContext
+        val project = requestContext.project
+        val editor = requestContext.editor
         val document = editor.document
 
         // startOffset is the offset at the start of user input since invocation
-        val invocationStartOffset = caretPosition.offset
+        val invocationStartOffset = requestContext.caretPosition.offset
         val startOffsetSinceUserInput = editor.caretModel.offset
 
         // Create a temp file for capturing reformatted text and updated content spans
@@ -110,7 +110,6 @@ class CodeWhispererRecommendationManager {
     }
 
     companion object {
-        private val LOG = getLogger<CodeWhispererRecommendationManager>()
         fun getInstance(): CodeWhispererRecommendationManager = service()
     }
 }

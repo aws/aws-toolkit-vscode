@@ -42,7 +42,7 @@ class CodeWhispererNavigationTest : CodeWhispererTestBase() {
             }
             if (isReverse) {
                 runInEdtAndWait {
-                    for (i in 0 until expectedCount - 1) {
+                    repeat(expectedCount - 1) {
                         oppositeButton.doClick()
                     }
                 }
@@ -51,7 +51,7 @@ class CodeWhispererNavigationTest : CodeWhispererTestBase() {
             assertThat(popupManagerSpy.sessionContext.selectedIndex).isEqualTo(expectedSelectedIndex)
             assertThat(oppositeButton.isEnabled).isEqualTo(false)
 
-            for (i in 0 until expectedCount - 1) {
+            repeat(expectedCount - 1) {
                 assertThat(navigationButton.isEnabled).isEqualTo(true)
                 runInEdtAndWait {
                     navigationButton.doClick()

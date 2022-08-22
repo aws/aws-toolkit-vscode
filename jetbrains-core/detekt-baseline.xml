@@ -29,6 +29,18 @@
     <ID>BannedImports:UploadFunctionContinueDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:ValidatingPanel.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:ViewResourceDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeScanSessionConfig.kt$CodeScanSessionConfig$val (includedSourceFiles, payloadSize, totalLines, _) = includeDependencies()</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererJavaCodeScanTest.kt$CodeWhispererJavaCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPythonCodeScanTest.kt$CodeWhispererPythonCodeScanTest$val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (project, _, triggerTypeInfo, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$val (requestId, detail, _, isDiscarded) = detailContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
@@ -97,8 +109,96 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_InvalidOption()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
+    <ID>FunctionOnlyReturningConstant:CodeWhispererCodeScanTestBase.kt$CodeWhispererCodeScanTestBase$protected fun getFakeRecommendationsOnNonExistentFile()</ID>
+    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeScanSessionConfig.kt$CodeScanSessionConfig$while (queue.isNotEmpty()) { if (currentTotalFileSize.equals(getPayloadLimitInBytes())) { return PayloadMetadata(includedSourceFiles, currentTotalFileSize, currentTotalLines) } val currentFilePath = queue.removeFirst() val currentFile = File(currentFilePath).toVirtualFile() if (includedSourceFiles.contains(currentFilePath) || currentFile == null) continue val currentFileSize = currentFile.length // Ignore file if including it exceeds the payload limit. if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue currentTotalFileSize += currentFileSize currentTotalLines += Files.lines(currentFile.toNioPath()).count() includedSourceFiles.add(currentFilePath) getImportedFiles(currentFile, includedSourceFiles).forEach { if (!includedSourceFiles.contains(it)) queue.addLast(it) } }</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while (current &lt; recommendation.length) { val char = recommendation[current] current++ // if char isn't a paired symbol, or it is, but it's not the matching currentDocChar or // the opening version of it, then we're done if (!isMatchingSymbol(char) || (char != currentDocChar &amp;&amp; PAIRED_BRACKETS[char] != currentDocChar)) { continue } // if char is an opening bracket, push it to the stack if (PAIRED_BRACKETS[char] == currentDocChar) { bracketsStack.push(char) continue } // char is currentDocChar, it's one of a bracket, a quote, or a whitespace character. // If it's a whitespace character, directly add it to the result, // if it's a bracket or a quote, check if this char is already having a matching opening symbol // on the stack if (char.isWhitespace()) { result.add(current to caretOffset + totalDocLengthChecked) break } else if (bracketsStack.isNotEmpty() &amp;&amp; PAIRED_BRACKETS[bracketsStack.peek()] == char) { bracketsStack.pop() } else if (quotesStack.isNotEmpty() &amp;&amp; quotesStack.peek().first == char) { result.add(quotesStack.pop().second) result.add(current to caretOffset + totalDocLengthChecked) break } else { // char does not have a matching opening symbol in the stack, if it's a (opening) bracket, // immediately add it to the result; if it's a quote, push it to the stack if (PAIRED_QUOTES.contains(char)) { quotesStack.push(char to (current to caretOffset + totalDocLengthChecked)) } else { result.add(current to caretOffset + totalDocLengthChecked) } break } }</ID>
+    <ID>LoopWithTooManyJumpStatements:DownloadObjectAction.kt$DownloadObjectAction$for ((index, download) in downloads.withIndex()) { if (!download.diskLocation.exists()) { finalDownloads.add(download) continue } if (skipAll) { continue } val resolution = promptForConflictResolution(project, targetDirectory, download, downloads) if (resolution == SKIP) { LOG.info { "User requested skipping $download" } } else if (resolution == OVERWRITE) { finalDownloads.add(download) } else if (resolution == SKIP_ALL) { LOG.info { "User requested skipping rest of the files" } skipAll = true } else if (resolution == OVERWRITE_ALL) { finalDownloads.addAll(downloads.drop(index)) break } }</ID>
+    <ID>LoopWithTooManyJumpStatements:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$while (queue.isNotEmpty()) { if (currentTotalFileSize.equals(getPayloadLimitInBytes())) { return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet()) } val currentFile = queue.removeFirst() if (!currentFile.path.startsWith(projectRoot.path)) { LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" } continue } if (sourceFiles.contains(currentFile)) continue val currentFileSize = currentFile.length // Ignore file if including it exceeds the payload limit. if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue currentTotalFileSize += currentFileSize currentTotalLines += Files.lines(currentFile.toNioPath()).count() sourceFiles.add(currentFile) // Get all imports from the file val importsInfo = parseImports(currentFile) importsInfo.imports.forEach { importPath -> val importedFiles = getSourceFilesForImport(currentFile, importPath) importedFiles.forEach { importedFile -> if (!sourceFiles.contains(importedFile)) queue.addLast(importedFile) } } buildPaths.add(getRelativeBuildPath(currentFile, importsInfo.packagePath)) }</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
+    <ID>UnusedPrivateMember:AwsLocalTerminalRunner.kt$AwsLocalTerminalRunner$private val termName: String</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
+    <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
+    <ID>UseCheckOrError:AwsConsoleUrlFactory.kt$AwsConsoleUrlFactory$throw IllegalStateException("Partition '${region.partitionId}' is not supported")</ID>
+    <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
+    <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitial")</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialFilter")</ID>
+    <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialRange")</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Failed to locate module for $element")</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("LambdaBuilder for $runtime not found")</ID>
+    <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Runtime is missing when package type is Zip")</ID>
+    <ID>UseCheckOrError:CreationDialog.kt$CreationDialog$throw IllegalStateException("AppRunner creation dialog had no type selected!")</ID>
+    <ID>UseCheckOrError:DataContextUtils.kt$throw IllegalStateException("Required dataId '${dataId.name}` was missing")</ID>
+    <ID>UseCheckOrError:DetailedLogRecord.kt$DetailedLogRecord.Companion$throw IllegalStateException("$log format does not appear to be in a valid format (&lt;account-id>:&lt;log-group-name>)")</ID>
+    <ID>UseCheckOrError:DownloadLogStream.kt$LogStreamDownloadToFileTask.&lt;no name provided>$throw IllegalStateException("Log Stream was downloaded but does not exist on disk!")</ID>
+    <ID>UseCheckOrError:FeedbackDialog.kt$FeedbackDialog$throw IllegalStateException("comment was null after validation")</ID>
+    <ID>UseCheckOrError:FeedbackDialog.kt$FeedbackDialog$throw IllegalStateException("sentiment was null after validation")</ID>
+    <ID>UseCheckOrError:HandlerCompletionProvider.kt$HandlerCompletionProvider$throw IllegalStateException("handlerCompletion must be defined if completion is enabled.")</ID>
+    <ID>UseCheckOrError:HandlerPanel.kt$HandlerPanel$throw IllegalStateException("Runtime was not set in the HandlerPanel")</ID>
+    <ID>UseCheckOrError:InsightsUtils.kt$throw IllegalStateException("CWL GetQueryResults returned record without @ptr field")</ID>
+    <ID>UseCheckOrError:JavaDebugSupport.kt$throw IllegalStateException("Attaching to the JVM failed! $debugHost:${debugPorts.first()}")</ID>
+    <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate $it")</ID>
+    <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate gradlew")</ID>
+    <ID>UseCheckOrError:LambdaBuilder.kt$LambdaBuilder$throw IllegalStateException("Cannot map runtime $runtime to SDK runtime.")</ID>
+    <ID>UseCheckOrError:LambdaBuilder.kt$LambdaBuilder.Companion$throw IllegalStateException("Failed to locate module for ${psiFile.virtualFile}")</ID>
+    <ID>UseCheckOrError:LambdaConfigPanel.kt$LambdaConfigPanel$throw IllegalStateException("Unsupported package type ${packageType()}")</ID>
+    <ID>UseCheckOrError:LambdaUtils.kt$throw IllegalStateException("$this has bad minSamDebuggingVersion! It should be a semver string!")</ID>
+    <ID>UseCheckOrError:LambdaUtils.kt$throw IllegalStateException("$this has bad minSamInitVersion! It should be a semver string!")</ID>
+    <ID>UseCheckOrError:LambdaWorkflows.kt$throw IllegalStateException("Tried to update a lambda without valid AWS connection")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Cannot map runtime $runtime to SDK runtime.")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Function ${logicalId()} not found in template!")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Image functions must be a SAM function")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("No image debugger with ID ${rawImageDebugger()}")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunConfiguration.kt$LocalLambdaRunConfiguration$throw IllegalStateException("Unable to get virtual file for path $dockerFilePath")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$HandlerRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$ImageTemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported language ${imageDebugger.languageId}")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$TemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
+    <ID>UseCheckOrError:LocalLambdaRunSettings.kt$throw IllegalStateException("Can't find debugger support for $this")</ID>
+    <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
+    <ID>UseCheckOrError:MockRegionProvider.kt$MockRegionProviderRule$throw IllegalStateException("Failed to generate a unique region ID")</ID>
+    <ID>UseCheckOrError:MockToolManager.kt$MockToolManager$throw IllegalStateException("Must register ManagedToolType via a MockMockToolManagerRule before using it in a test")</ID>
+    <ID>UseCheckOrError:OpenShellInContainerDialog.kt$OpenShellInContainerDialog$throw IllegalStateException("Task not Selected")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>
+    <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("image id was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("repository uri was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException("run configuration was null")</ID>
+    <ID>UseCheckOrError:PushToRepositoryAction.kt$PushToEcrDialog$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:PythonLambdaBuilder.kt$PythonLambdaBuilder.Companion$throw IllegalStateException("Cannot locate requirements.txt in a parent directory of ${startLocation.path}")</ID>
+    <ID>UseCheckOrError:PythonLambdaHandlerResolver.kt$PythonLambdaHandlerResolver$throw IllegalStateException("Failed to locate requirements.txt")</ID>
+    <ID>UseCheckOrError:RemoteLambdaRunSettingsEditor.kt$RemoteLambdaRunSettingsEditor$throw IllegalStateException("functionSelector.reload() called before region/credentials set")</ID>
+    <ID>UseCheckOrError:Resources.kt$SamFunction$throw IllegalStateException("Bad packageType somehow returned to code location: ${packageType()}")</ID>
+    <ID>UseCheckOrError:RetrieveSavedQueryDialog.kt$RetrieveSavedQueryDialog.&lt;no name provided>$throw IllegalStateException("No query definition was selected")</ID>
+    <ID>UseCheckOrError:RunCommandDialog.kt$RunCommandDialog$throw IllegalStateException("Task not Selected")</ID>
+    <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("Can't locate us-west-2")</ID>
+    <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("RunWithRealCredentials requires a default AWS profile!")</ID>
+    <ID>UseCheckOrError:RuntimeGroup.kt$RuntimeGroup.Companion$throw IllegalStateException("No RuntimeGroup with id '$id' is registered")</ID>
+    <ID>UseCheckOrError:RuntimeGroup.kt$RuntimeGroupExtensionPointObject$throw IllegalStateException("Attempted to retrieve feature for unsupported runtime group $runtimeGroup")</ID>
+    <ID>UseCheckOrError:S3TreeNode.kt$S3TreeNode$throw IllegalStateException("$key has no parent!")</ID>
+    <ID>UseCheckOrError:SamInitSelectionPanel.kt$SamInitSelectionPanel$throw IllegalStateException("SemVer is invalid even with valid SAM executable")</ID>
+    <ID>UseCheckOrError:SamProjectWizard.kt$SamAppTemplateBased$throw IllegalStateException("Unknown packaging type: $packagingType")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("$codeUri does not follow the format $S3_URI_PREFIX&lt;bucket>/&lt;key>")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("$codeUri does not start with $S3_URI_PREFIX")</ID>
+    <ID>UseCheckOrError:SamTemplateUtils.kt$SamTemplateUtils$throw IllegalStateException("Unable to parse codeUri $codeUri")</ID>
+    <ID>UseCheckOrError:SchemaCodeDownloader.kt$SchemaCodeDownloader.Companion$throw IllegalStateException("Attempting to use SchemaCodeDownload without valid AWS connection")</ID>
+    <ID>UseCheckOrError:SchemaSelectionPanel.kt$SchemaSelectionPanel$throw IllegalStateException("Schemas is not supported by $this")</ID>
+    <ID>UseCheckOrError:SingleS3ObjectAction.kt$SingleS3ObjectAction$throw IllegalStateException("SingleActionNode should only have a single node, got $nodes")</ID>
+    <ID>UseCheckOrError:SpinUtils.kt$throw IllegalStateException("Condition not reached within $duration")</ID>
+    <ID>UseCheckOrError:SqsWindowFactory.kt$SqsWindowFactory.Companion$throw IllegalStateException("Can't find tool window $TOOL_WINDOW_ID")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to extract $displayName\nSTDOUT:${processOutput.stdout}\nSTDERR:${processOutput.stderr}")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to locate $executableName under $installDir")</ID>
+    <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Unknown extension $extension")</ID>
+    <ID>UseCheckOrError:ToolType.kt$BaseToolType$throw IllegalStateException("Failed to determine version of ${SsmPlugin.displayName}")</ID>
+    <ID>UseCheckOrError:ToolkitToolWindow.kt$ToolkitToolWindow$throw IllegalStateException("Can't find tool window $toolWindowId")</ID>
+    <ID>UseCheckOrError:ToolkitToolWindowListener.kt$ToolkitToolWindowListener$throw IllegalStateException("Can't find tool window $toolWindowId")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("Failed to locate module for $element")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("LambdaBuilder for ${initialSettings.runtime} not found")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodeDialog.kt$UpdateFunctionCodeDialog$throw IllegalStateException("Runtime is missing when package type is Zip")</ID>
+    <ID>UseCheckOrError:UpdateFunctionCodePanel.kt$UpdateFunctionCodePanel$throw IllegalStateException("Unsupported package type $packageType")</ID>
   </CurrentIssues>
 </SmellBaseline>

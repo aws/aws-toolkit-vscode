@@ -175,5 +175,6 @@ class LogUtilsTest {
         "hello"
     }
 
+    @Suppress("FunctionOnlyReturningConstant")
     private fun willNeverBeNull(): String = "hello"
 }

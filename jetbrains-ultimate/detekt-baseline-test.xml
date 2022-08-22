@@ -1,6 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>NoNameShadowing:IamAuthWidgetTest.kt$IamAuthWidgetTest${ it[CREDENTIAL_ID_PROPERTY] = credentialId it[REGION_ID_PROPERTY] = defaultRegion if (hasCluster) { it[CLUSTER_ID_PROPERTY] = defaultClusterId } }</ID>
     <ID>NoNameShadowing:SecretsManagerAuthTest.kt$SecretsManagerAuthTest${ u = it.arguments[0] as String Unit }</ID>
@@ -11,5 +11,7 @@
     <ID>UnsafeCallOnNullableType:IamAuthTest.kt$IamAuthTest$connection!!</ID>
     <ID>UnsafeCallOnNullableType:NodeJsCodeInsightTestFixtureRule.kt$NodeJsCodeInsightTestFixtureRule$codeInsightFixture.tempDirFixture.getFile(".")!!</ID>
     <ID>UnsafeCallOnNullableType:NodeJsCodeInsightTestFixtureRule.kt$psiFile.findElementAt(fileContent.indexOf(handlerName))!!</ID>
+    <ID>UnusedPrivateMember:VgoCompatShims.kt$VgoCompatShims$goVersion: String?</ID>
+    <ID>UseCheckOrError:GoCodeInsightTestFixtureRule.kt$throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")</ID>
   </CurrentIssues>
 </SmellBaseline>

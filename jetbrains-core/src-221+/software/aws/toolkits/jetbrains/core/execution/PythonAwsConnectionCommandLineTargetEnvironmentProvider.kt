@@ -10,7 +10,6 @@ import com.jetbrains.python.run.PythonExecution
 import com.jetbrains.python.run.PythonRunParams
 import com.jetbrains.python.run.target.HelpersAwareTargetEnvironmentRequest
 import com.jetbrains.python.run.target.PythonCommandLineTargetEnvironmentProvider
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 
 class PythonAwsConnectionCommandLineTargetEnvironmentProvider : PythonCommandLineTargetEnvironmentProvider {
@@ -30,9 +29,5 @@ class PythonAwsConnectionCommandLineTargetEnvironmentProvider : PythonCommandLin
             ?: return
 
         delegate.addToTargetEnvironment(configuration, pythonExecution.envs, runtimeString = { configuration.getSdk()?.versionString })
-    }
-
-    companion object {
-        private val LOG = getLogger<PythonAwsConnectionCommandLineTargetEnvironmentProvider>()
     }
 }

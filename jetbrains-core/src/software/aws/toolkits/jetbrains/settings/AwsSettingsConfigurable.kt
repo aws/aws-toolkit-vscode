@@ -32,7 +32,7 @@ import java.util.concurrent.CompletionException
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class AwsSettingsConfigurable() : SearchableConfigurable {
+class AwsSettingsConfigurable : SearchableConfigurable {
     private lateinit var panel: JPanel
     private lateinit var samHelp: JComponent
     private lateinit var serverlessSettings: JPanel

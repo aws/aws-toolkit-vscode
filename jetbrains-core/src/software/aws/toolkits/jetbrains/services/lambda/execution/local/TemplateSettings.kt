@@ -93,7 +93,7 @@ class TemplateSettings(val project: Project) {
         functionModels = DefaultComboBoxModel()
         function = ComboBox(functionModels)
         environmentVariables = KeyValueTextField()
-        imageDebuggerModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: ImageDebugSupport -> it.displayName() })
+        imageDebuggerModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it.displayName() })
         imageDebugger = ComboBox(imageDebuggerModel)
         imageDebugger.renderer = SimpleListCellRenderer.create { label, value, _ -> label.text = value?.displayName() }
     }

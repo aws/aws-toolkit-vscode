@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.cloudformation.toolwindow
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 
 class CloudFormationToolWindow(override val project: Project) : ToolkitToolWindow {
@@ -13,6 +12,5 @@ class CloudFormationToolWindow(override val project: Project) : ToolkitToolWindo
 
     companion object {
         fun getInstance(project: Project) = ServiceManager.getService(project, CloudFormationToolWindow::class.java)
-        private val LOG = getLogger<CloudFormationToolWindow>()
     }
 }

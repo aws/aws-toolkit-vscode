@@ -27,6 +27,9 @@ comments:
     licenseTemplateFile: ./license.template
     licenseTemplateIsRegex: true
 
+complexity:
+  active: false
+
 coroutines:
   active: true
   GlobalCoroutineUsage:
@@ -37,6 +40,14 @@ coroutines:
     active: true
   SuspendFunWithFlowReturnType:
     active: true
+
+empty-blocks:
+  EmptyFunctionBlock:
+    active: false
+
+exceptions:
+  # there might actually be some useful rules in here
+  active: false
 
 # unfortunately, does not respect .editorconfig in the project folder
 # also needs to be manually updated if there are new rules upstream
@@ -201,6 +212,11 @@ naming:
     parameterPattern: '[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
     ignoreOverridden: true
+  # prefer rule provided by ktlint
+  MatchingDeclarationName:
+    active: false
+  MemberNameEqualsClassName:
+    active: false
   NoNameShadowing:
     active: true
   ObjectPropertyNaming:
@@ -222,6 +238,10 @@ naming:
     privateVariablePattern: '(_)?[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
     ignoreOverridden: true
+
+performance:
+  SpreadOperator:
+    active: false
 
 potential-bugs:
   active: true
@@ -287,22 +307,25 @@ potential-bugs:
     active: true
 
 style:
-  EqualsNullCall:
-    active: true
   ExpressionBodySyntax:
     active: true
     includeLineWrapping: true
-  MayBeConst:
-    active: true
-  ModifierOrder:
-    active: true
+  ForbiddenComment:
+    active: false
+  MagicNumber:
+    active: false
+  # prefer rule provided by ktlint in the formatting section
+  MaxLineLength:
+    active: false
   NoTabs:
     active: true
-  OptionalAbstractKeyword:
-    active: true
-  SafeCast:
-    active: true
-  UnusedPrivateClass:
-    active: true
+  ReturnCount:
+    active: false
+  ThrowsCount:
+    active: false
+  UnnecessaryAbstractClass:
+    active: false
+  UnusedPrivateMember:
+    allowedNames: '(_|ignored|expected|serialVersionUID|createUIComponents)'
   VarCouldBeVal:
     active: false

@@ -1,6 +1,6 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>UnsafeCallOnNullableType:CreateFunctionIntegrationTest.kt$CreateFunctionIntegrationTest$AwsRegionProvider.getInstance()[Region.US_WEST_2.id()]!!</ID>
     <ID>UnsafeCallOnNullableType:EcrPullIntegrationTest.kt$EcrPullIntegrationTest$dockerAdapter.buildLocalImage(dockerfile)!!</ID>
@@ -11,7 +11,6 @@
     <ID>UnsafeCallOnNullableType:JavaAwsConnectionExtensionIntegrationTest.kt$JavaAwsConnectionExtensionIntegrationTest$LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!</ID>
     <ID>UnsafeCallOnNullableType:JavaAwsConnectionExtensionIntegrationTest.kt$JavaAwsConnectionExtensionIntegrationTest$SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!</ID>
     <ID>UnsafeCallOnNullableType:JavaLocalLambdaRunConfigurationIntegrationTest.kt$JavaLocalLambdaRunConfigurationIntegrationTest$projectRule.fixture.tempDirFixture.createFile("tmp", "\"Hello World\"").canonicalPath!!</ID>
-    <ID>UnsafeCallOnNullableType:PythonAwsConnectionExtensionIntegrationTest.kt$PythonAwsConnectionExtensionIntegrationTest$detectSystemWideSdks(null, emptyList()).first().homePath!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$FileDocumentManager.getInstance().getDocument(lambdaClass.virtualFile)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$LambdaRuntime.fromValue(runtime)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$projectRule.fixture.tempDirFixture.createFile("tmp", "Hello World").canonicalPath!!</ID>

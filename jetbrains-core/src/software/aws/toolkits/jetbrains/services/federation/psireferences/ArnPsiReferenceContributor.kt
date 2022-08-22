@@ -9,7 +9,6 @@ import com.intellij.psi.PsiLiteralValue
 import com.intellij.psi.PsiReferenceContributor
 import com.intellij.psi.PsiReferenceRegistrar
 import com.intellij.util.ProcessingContext
-import software.aws.toolkits.core.utils.getLogger
 
 class ArnPsiReferenceContributor : PsiReferenceContributor() {
     override fun registerReferenceProviders(registrar: PsiReferenceRegistrar) {
@@ -24,9 +23,5 @@ class ArnPsiReferenceContributor : PsiReferenceContributor() {
             ArnPsiReferenceProvider(),
             PsiReferenceRegistrar.LOWER_PRIORITY
         )
-    }
-
-    companion object {
-        private val LOG = getLogger<ArnPsiReferenceContributor>()
     }
 }

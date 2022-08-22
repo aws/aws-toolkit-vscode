@@ -17,7 +17,7 @@ dependencies {
 detekt {
     val rulesProject = project(":detekt-rules").projectDir
     source.setFrom("$projectDir")
-    buildUponDefaultConfig = false
+    buildUponDefaultConfig = true
     parallel = true
     allRules = false
     config = files("$rulesProject/detekt.yml")

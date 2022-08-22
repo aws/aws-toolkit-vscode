@@ -168,7 +168,9 @@ open class CodeWhispererTestBase {
         runInEdtAndWait {
             projectRule.fixture.performEditorAction(codeWhispererRecommendationActionId)
         }
-        while (CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) {}
+        while (CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) {
+            Thread.sleep(10)
+        }
     }
 
     fun checkRecommendationInfoLabelText(selected: Int, total: Int) {

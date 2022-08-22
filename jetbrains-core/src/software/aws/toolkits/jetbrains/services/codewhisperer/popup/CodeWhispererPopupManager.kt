@@ -557,11 +557,11 @@ class CodeWhispererPopupManager {
         typeahead: String
     ): Int {
         var currIndexIgnoreInvalid = 0
-        detailContexts.forEachIndexed { index, it ->
+        detailContexts.forEachIndexed { index, value ->
             if (index == selectedIndex) {
                 return currIndexIgnoreInvalid
             }
-            if (isValidRecommendation(it, userInput, typeahead)) {
+            if (isValidRecommendation(value, userInput, typeahead)) {
                 currIndexIgnoreInvalid++
             }
         }
