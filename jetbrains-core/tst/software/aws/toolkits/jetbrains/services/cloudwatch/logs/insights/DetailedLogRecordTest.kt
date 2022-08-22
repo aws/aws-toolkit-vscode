@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.RuleChain
-import com.intellij.testFramework.RunsInEdt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -23,7 +22,6 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
 
-@RunsInEdt
 class DetailedLogRecordTest {
     val projectRule = JavaCodeInsightTestFixtureRule()
 
@@ -50,6 +48,7 @@ class DetailedLogRecordTest {
             )
         val sut = DetailedLogRecord(projectRule.project, client, "ptr")
         val model = sut.tableView.listTableModel
+
         runBlocking {
             model.waitForModelToBeAtLeast(1)
         }
