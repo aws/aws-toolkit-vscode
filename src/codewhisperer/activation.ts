@@ -90,8 +90,8 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
                 const codewhispererEnabled = await codewhispererSettings.isEnabled()
                 if (!codewhispererEnabled) {
-                    await set(CodeWhispererConstants.termsAcceptedKey, false, context)
-                    await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
+                    await set(CodeWhispererConstants.termsAcceptedKey, false, context.extensionContext.globalState)
+                    await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
                     if (!isCloud9()) {
                         InlineCompletion.instance.hideCodeWhispererStatusBar()
                     }
@@ -106,15 +106,15 @@ export async function activate(context: ExtContext): Promise<void> {
          * Accept terms of service
          */
         Commands.register('aws.codeWhisperer.acceptTermsOfService', async () => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context)
-            await set(CodeWhispererConstants.termsAcceptedKey, true, context)
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
+            await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
             await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-            const isShow = get(CodeWhispererConstants.welcomeMessageKey, context)
+            const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
             if (!isShow) {
                 showCodeWhispererWelcomeMessage()
-                await set(CodeWhispererConstants.welcomeMessageKey, true, context)
+                await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
             }
 
             if (!isCloud9()) {
@@ -125,7 +125,7 @@ export async function activate(context: ExtContext): Promise<void> {
          * Cancel terms of service
          */
         Commands.register('aws.codeWhisperer.cancelTermsOfService', async () => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         }),
         /**
@@ -142,15 +142,15 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         // show introduction
-        showIntroduction.register(context),
+        showIntroduction.register(),
         // toggle code suggestions
-        toggleCodeSuggestions.register(context),
+        toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
         enableCodeSuggestions.register(context),
         // enter access token
-        enterAccessToken.register(context, client),
+        enterAccessToken.register(context.extensionContext.globalState, client),
         // request access
-        requestAccess.register(context),
+        requestAccess.register(),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
         // manual trigger
@@ -375,8 +375,8 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             // request access C9
-            requestAccessCloud9.register(context),
-            updateCloud9TreeNodes.register(context),
+            requestAccessCloud9.register(context.extensionContext.globalState),
+            updateCloud9TreeNodes.register(context.extensionContext.globalState),
             vscode.languages.registerCompletionItemProvider(CodeWhispererConstants.supportedLanguages, {
                 async provideCompletionItems(
                     document: vscode.TextDocument,
