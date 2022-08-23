@@ -6,16 +6,7 @@
 import globals from '../extensionGlobals'
 
 import type { AsyncLocalStorage as AsyncLocalStorageClass } from 'async_hooks'
-import {
-    definitions,
-    Metadata,
-    Metric,
-    MetricBase,
-    MetricDefinition,
-    MetricName,
-    MetricShapes,
-    TelemetryBase,
-} from './telemetry'
+import { definitions, Metric, MetricBase, MetricDefinition, MetricName, MetricShapes, TelemetryBase } from './telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
@@ -246,9 +237,3 @@ export class TelemetryTracer extends TelemetryBase {
 }
 
 export const telemetry = new TelemetryTracer()
-
-export function metric<T extends MetricName>(name: T, data?: Metadata<MetricShapes[T]>) {
-    return function (_target: unknown, _name: string, desc: TypedPropertyDescriptor<(...args: any[]) => any>) {
-        desc.value = telemetry.instrument(name, desc.value!, data)
-    }
-}

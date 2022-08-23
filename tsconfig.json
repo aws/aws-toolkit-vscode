@@ -17,8 +17,7 @@
         "noUnusedLocals": true,
         "lib": ["dom", "es6", "esnext.asynciterable"],
         "skipLibCheck": true,
-        "jsx": "preserve",
-        "experimentalDecorators": true
+        "jsx": "preserve"
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }
