@@ -291,6 +291,7 @@ export class InlineCompletion {
                         })
                 }
             })
+
         vsCodeState.isCodeWhispererEditing = false
     }
 
@@ -378,20 +379,36 @@ export class InlineCompletion {
             if (delay < showSuggestionDelay) {
                 this._timer?.refresh()
             } else {
-                // do not show recommendation if cursor is before invocation position
-                // and cancel paginated request
-                if (editor.selection.active.isBefore(RecommendationHandler.instance.startPos)) {
+                // do not show recommendation if cursor is before invocation position or user opened another document
+                // mark suggestions as Discard and cancel paginated request
+                if (
+                    editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
+                    editor.document.uri.fsPath !== this.documentUri?.fsPath
+                ) {
+                    RecommendationHandler.instance.cancelPaginatedRequest()
+                    RecommendationHandler.instance.recommendations.forEach((r, i) => {
+                        RecommendationHandler.instance.setSuggestionState(i, 'Discard')
+                    })
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
                         this._timer = undefined
                     }
-                    RecommendationHandler.instance.cancelPaginatedRequest()
                     return
                 }
                 this.setCompletionItems(editor)
                 if (this.items.length > 0) {
                     this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
-                    await this.showRecommendation(editor)
+                    try {
+                        await this.showRecommendation(editor)
+                    } catch (error) {
+                        getLogger().error(`Failed to show suggestion ${error}`)
+                        RecommendationHandler.instance.cancelPaginatedRequest()
+                        RecommendationHandler.instance.recommendations.forEach((r, i) => {
+                            RecommendationHandler.instance.setSuggestionState(i, 'Discard')
+                        })
+                        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                        RecommendationHandler.instance.clearRecommendations()
+                    }
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
                         this._timer = undefined
@@ -403,13 +420,15 @@ export class InlineCompletion {
                         if (this._timer !== undefined) {
                             clearTimeout(this._timer)
                             this._timer = undefined
-                            if (isManualTrigger) {
+                            if (isManualTrigger && RecommendationHandler.instance.recommendations.length === 0) {
                                 if (RecommendationHandler.instance.errorMessagePrompt !== '') {
                                     showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
                                 } else {
                                     showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
                                 }
                             }
+                            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                            RecommendationHandler.instance.clearRecommendations()
                         }
                     }
                 }
