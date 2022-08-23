@@ -143,10 +143,7 @@ export async function invokeRemoteRestApi(
             context.outputChannel
         )
 
-        await wv.show({
-            title: localize('AWS.invokeApi.title', 'Invoke Remote API'),
-            viewColumn: vscode.ViewColumn.Beside,
-        })
+        await wv.show({ title: localize('AWS.invokeApi.title', 'Invoke Remote API') })
     } catch (err) {
         logger.error(err as Error)
     }

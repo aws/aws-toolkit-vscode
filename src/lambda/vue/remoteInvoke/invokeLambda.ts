@@ -136,8 +136,5 @@ export async function invokeRemoteLambda(
         InputSamples: inputs,
     })
 
-    await wv.show({
-        title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', params.functionNode.functionName),
-        viewColumn: vscode.ViewColumn.Beside,
-    })
+    await wv.show({ title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', params.functionNode.functionName) })
 }

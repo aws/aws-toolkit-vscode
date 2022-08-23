@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Most webviews now open in the active editor column by default. APIG, Lambda, SAM, and Execute State Machine webviews retain the previous behavior, opening beside the active editor."
+	"description": "All webviews except the SAM debug configuration editor now open in the active editor column."
 }
