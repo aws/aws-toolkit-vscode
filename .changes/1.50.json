@@ -1,0 +1,17 @@
+{
+  "date" : "2022-08-23",
+  "version" : "1.50",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix opening toolwindow tabs in incorrect thread in Cloudwatch Logs"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix hitting enter inside braces will produce an extra newline (#3270)"
+  }, {
+    "type" : "deprecation",
+    "description" : "Remove support for deprecated Lambda runtime Python 3.6"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2021.2.x IDEs"
+  } ]
+}

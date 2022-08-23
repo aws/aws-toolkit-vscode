@@ -1,3 +1,9 @@
+# _1.50_ (2022-08-23)
+- **(Bug Fix)** Fix opening toolwindow tabs in incorrect thread in Cloudwatch Logs
+- **(Bug Fix)** Fix hitting enter inside braces will produce an extra newline ([#3270](https://github.com/aws/aws-toolkit-jetbrains/issues/3270))
+- **(Deprecation)** Remove support for deprecated Lambda runtime Python 3.6
+- **(Removal)** Removed support for 2021.2.x IDEs
+
 # _1.49_ (2022-08-11)
 - **(Bug Fix)** Fix IllegalCallableAccessException thrown in several UI panels ([#3228](https://github.com/aws/aws-toolkit-jetbrains/issues/3228))
 - **(Bug Fix)** Fix to stop showing CodeWhisperer's welcome page every time on project start

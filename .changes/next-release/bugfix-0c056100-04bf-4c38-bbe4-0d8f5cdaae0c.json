@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix opening toolwindow tabs in incorrect thread in Cloudwatch Logs"
-}

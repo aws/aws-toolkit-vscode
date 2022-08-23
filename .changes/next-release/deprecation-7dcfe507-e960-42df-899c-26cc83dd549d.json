@@ -1,4 +1,0 @@
-{
-  "type" : "deprecation",
-  "description" : "Remove support for deprecated Lambda runtime Python 3.6"
-}
