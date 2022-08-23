@@ -307,6 +307,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
         webview.show({
             title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+            // TODO: make this only open `Beside` when executed via CodeLens
             viewColumn: vscode.ViewColumn.Beside,
         })
         recordSamOpenConfigUi()
