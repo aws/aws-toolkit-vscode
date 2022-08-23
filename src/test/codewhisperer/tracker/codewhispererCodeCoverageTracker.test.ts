@@ -26,16 +26,16 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should compute edit distance to update the accepted tokens', function () {
-            const editor = createMockTextEditor('import math\ndef addTwoNumbers(a, b):\n')
+            const editor = createMockTextEditor('def addTwoNumbers(a, b):\n')
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
             tracker?.addAcceptedTokens(editor.document.fileName, {
-                range: new vscode.Range(0, 0, 0, 37),
-                text: `import math\ndef two_sum(nums, target):\n`,
-                accepted: 37,
+                range: new vscode.Range(0, 0, 0, 25),
+                text: `def addTwoNumbers(x, y):\n`,
+                accepted: 25,
             })
             tracker?.addTotalTokens(editor.document.fileName, 100)
             tracker?.updateAcceptedTokensCount(editor)
-            assert.strictEqual(tracker?.acceptedTokens[editor.document.fileName][0].accepted, 12)
+            assert.strictEqual(tracker?.acceptedTokens[editor.document.fileName][0].accepted, 23)
         })
 
         afterEach(function () {
