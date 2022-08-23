@@ -590,7 +590,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test codePercentage metric - switching files and delete tokens`() {
         val project = projectRule.project
         val fixture = projectRule.fixture
-        val file1 = fixture.configureByText("/file1.py", pythonTestLeftContext)
+        fixture.configureByText("/file1.py", pythonTestLeftContext)
         runInEdt {
             fixture.editor.caretModel.moveToOffset(fixture.editor.document.textLength)
         }

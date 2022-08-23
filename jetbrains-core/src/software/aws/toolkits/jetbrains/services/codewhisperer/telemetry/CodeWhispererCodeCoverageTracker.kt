@@ -132,9 +132,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             tokens = CodeCoverageTokens()
             fileToTokens[document] = tokens
         }
-        tokens.apply {
-            acceptedTokens.addAndGet(delta)
-        }
+        tokens.acceptedTokens.addAndGet(delta)
     }
 
     private fun incrementTotalTokens(document: Document, delta: Int) {
