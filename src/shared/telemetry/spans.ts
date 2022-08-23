@@ -88,6 +88,12 @@ export class TelemetrySpan {
         requiredMetadata: [],
     }
 
+    /**
+     * These fields appear on the base metric instead of the 'metadata' and
+     * so they should be filtered out from the metadata.
+     */
+    static readonly #excludedFields = ['passive', 'value']
+
     public constructor(public readonly name: string) {}
 
     public get startTime(): Date | undefined {
@@ -102,7 +108,7 @@ export class TelemetrySpan {
     public emit(data?: MetricBase): void {
         const state = Object.assign(getValidatedState(this.state, this.definition), data)
         const metadata = Object.entries(state)
-            .filter(([k, v]) => v !== undefined && !['passive', 'value'].includes(k))
+            .filter(([k, v]) => v !== undefined && !TelemetrySpan.#excludedFields.includes(k))
             .map(([k, v]) => ({ Key: k, Value: String(v) }))
 
         globals.telemetry.record({
@@ -131,6 +137,10 @@ export class TelemetrySpan {
 
         this.#startTime = undefined
     }
+
+    public clone(): TelemetrySpan {
+        return new TelemetrySpan(this.name).record(this.state)
+    }
 }
 
 interface TelemetryContext {
@@ -143,30 +153,47 @@ interface TelemetryContext {
 export class TelemetryTracer extends TelemetryBase {
     readonly #context = new AsyncLocalStorage<TelemetryContext>()
 
-    public get context() {
-        return this.#context
-    }
-
+    /**
+     * Returns all spans present in the current execution context.
+     */
     public get spans(): readonly TelemetrySpan[] {
         return this.#context.getStore()?.spans ?? []
     }
 
+    /**
+     * Returns the most recently used span in the current execution context.
+     *
+     * Note that only {@link run} will change the active span. Recording information
+     * on existing spans has no effect on the active span.
+     */
     public get activeSpan(): TelemetrySpan | undefined {
         return this.#context.getStore()?.activeSpan
     }
 
+    /**
+     * Records information on all spans in the current execution context.
+     *
+     * This is merged in with the current state present in each span, **overwriting**
+     * any existing values for a given key.
+     */
     public record(data: Partial<MetricShapes[MetricName]>): void {
-        this.activeSpan?.record(data)
-    }
-
-    public recordThrough(data: Partial<MetricShapes[MetricName]>): void {
         for (const span of this.spans) {
             span.record(data)
         }
     }
 
+    /**
+     * Executes the provided callback function with a named span.
+     *
+     * Spans that already exist in the current context are re-used and brought
+     * forward, becoming the active span. A new span is created if none exist.
+     *
+     * On completion of the callback, the span is emitted and the context reverts
+     * to how it was prior to calling `run`. Any modifications made to pre-existing
+     * spans are not preserved.
+     */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, data: MetricBase = {}): T {
-        const span = this.getSpan(name).start().record(data)
+        const span = this.getClonedSpan(name).start().record(data)
         const frame = this.switchContext(span)
 
         try {
@@ -189,6 +216,11 @@ export class TelemetryTracer extends TelemetryBase {
         }
     }
 
+    /**
+     * Wraps a function with {@link run}.
+     *
+     * This can be used when immediate execution of the function is not desirable.
+     */
     public instrument<T extends any[], U, R>(
         name: string,
         fn: (this: U, ...args: T) => R,
@@ -214,21 +246,27 @@ export class TelemetryTracer extends TelemetryBase {
 
         return {
             name,
-            emit: data => void getSpan().emit(data),
+            emit: data => this.getSpan(name).emit(data),
             record: data => void getSpan().record(data),
             run: fn => this.run(name as MetricName, fn),
         }
     }
 
     private getSpan(name: string): TelemetrySpan {
-        const span = this.#context.getStore()?.spans.find(s => s.name === name)
+        return this.spans.find(s => s.name === name) ?? new TelemetrySpan(name)
+    }
 
-        return span ?? new TelemetrySpan(name)
+    private getClonedSpan(name: string): TelemetrySpan {
+        return this.spans.find(s => s.name === name)?.clone() ?? new TelemetrySpan(name)
     }
 
     private switchContext(span: TelemetrySpan): TelemetryContext {
-        const spans = [...(this.spans ?? [])]
-        if (!spans.includes(span)) {
+        const spans = [...this.spans]
+        const previousSpan = spans.find(s => s.name === span.name)
+
+        if (previousSpan) {
+            spans.splice(spans.indexOf(previousSpan), 1, span)
+        } else {
             spans.unshift(span)
         }
 

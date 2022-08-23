@@ -130,6 +130,18 @@ export function installFakeClock(): FakeTimers.InstalledClock {
     })
 }
 
+/**
+ * Gets all recorded metrics with the corresponding name.
+ *
+ * Unlike {@link assertTelemetry}, this function does not do any transformations to
+ * handle fields being converted into strings.
+ */
+export function getMetrics<K extends MetricName>(name: K): readonly MetricShapes[K][] {
+    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
+
+    return globals.telemetry.logger.query(query) as unknown as MetricShapes[K][]
+}
+
 /*
  * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
  * match the expected values.
@@ -137,7 +149,7 @@ export function installFakeClock(): FakeTimers.InstalledClock {
 export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
     const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
-    const query = { metricName: name, filters: ['awsAccount'] }
+    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
     delete expectedCopy['passive']
 
     Object.keys(expectedCopy).forEach(
@@ -146,8 +158,7 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: MetricS
 
     const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    // TODO: `duration` should not be in metadata and very little logic should be testing it
-    assert.deepStrictEqual({ ...metadata[0], duration: 0 }, { ...expectedCopy, duration: 0 })
+    assert.deepStrictEqual(metadata[0], expectedCopy)
 
     if (passive !== undefined) {
         const metric = globals.telemetry.logger.queryFull(query)
