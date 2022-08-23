@@ -103,37 +103,36 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     private tryStartTimer() {
-        if (this._timer === undefined) {
-            const currentDate = new globals.clock.Date()
-            this._startTime = currentDate.getTime()
-            this._timer = setTimeout(() => {
-                try {
-                    const currentTime = new globals.clock.Date().getTime()
-                    const delay: number = CodeWhispererConstants.defaultCheckPeriodMillis
-                    const diffTime: number = this._startTime + delay
-                    if (diffTime <= currentTime) {
-                        let totalTokens = 0
-                        for (const filename in this._totalTokens) {
-                            totalTokens += this._totalTokens[filename]
-                        }
-                        if (totalTokens > 0) {
-                            this.flush()
-                        } else {
-                            getLogger().debug(
-                                `CodeWhispererCodeCoverageTracker: skipped telemetry due to empty tokens array`
-                            )
-                        }
+        if (this._timer !== undefined) return
+        const currentDate = new globals.clock.Date()
+        this._startTime = currentDate.getTime()
+        this._timer = setTimeout(() => {
+            try {
+                const currentTime = new globals.clock.Date().getTime()
+                const delay: number = CodeWhispererConstants.defaultCheckPeriodMillis
+                const diffTime: number = this._startTime + delay
+                if (diffTime <= currentTime) {
+                    let totalTokens = 0
+                    for (const filename in this._totalTokens) {
+                        totalTokens += this._totalTokens[filename]
                     }
-                } catch (e) {
-                    getLogger().verbose(`Exception Thrown from CodeWhispererCodeCoverageTracker: ${e}`)
-                } finally {
-                    this._totalTokens = {}
-                    this._acceptedTokens = {}
-                    this._startTime = 0
-                    this.closeTimer()
+                    if (totalTokens > 0) {
+                        this.flush()
+                    } else {
+                        getLogger().debug(
+                            `CodeWhispererCodeCoverageTracker: skipped telemetry due to empty tokens array`
+                        )
+                    }
                 }
-            }, CodeWhispererConstants.defaultCheckPeriodMillis)
-        }
+            } catch (e) {
+                getLogger().verbose(`Exception Thrown from CodeWhispererCodeCoverageTracker: ${e}`)
+            } finally {
+                this._totalTokens = {}
+                this._acceptedTokens = {}
+                this._startTime = 0
+                this.closeTimer()
+            }
+        }, CodeWhispererConstants.defaultCheckPeriodMillis)
     }
 
     private closeTimer() {

@@ -119,8 +119,9 @@ describe('codewhispererCodecoverageTracker', function () {
 
         it('Should reduce tokens when delete', function () {
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
+            const doc = createMockDocument('import math', 'test.py', 'python')
             tracker?.countTotalTokens({
-                document: createMockDocument(),
+                document: doc,
                 contentChanges: [
                     {
                         range: new vscode.Range(0, 0, 0, 3),
@@ -131,7 +132,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 ],
             })
             tracker?.countTotalTokens({
-                document: createMockDocument(),
+                document: doc,
                 contentChanges: [
                     {
                         range: new vscode.Range(0, 0, 0, 1),
@@ -141,13 +142,14 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens['/test.py'], 2)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
         })
 
         it('Should add tokens when type', function () {
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
+            const doc = createMockDocument('import math', 'test.py', 'python')
             tracker?.countTotalTokens({
-                document: createMockDocument(),
+                document: doc,
                 contentChanges: [
                     {
                         range: new vscode.Range(0, 0, 0, 1),
@@ -157,7 +159,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens['/test.py'], 1)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
     })
 
