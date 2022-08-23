@@ -29,16 +29,39 @@ describe('codewhispererCodecoverageTracker', function () {
             const editor = createMockTextEditor('import math\ndef addTwoNumbers(a, b):\n')
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
             tracker?.addAcceptedTokens(editor.document.fileName, {
-                range: new vscode.Range(0, 0, 0, 39),
+                range: new vscode.Range(0, 0, 0, 37),
                 text: `import math\ndef two_sum(nums, target):\n`,
-                accepted: 39,
+                accepted: 37,
             })
             tracker?.addTotalTokens(editor.document.fileName, 100)
             tracker?.updateAcceptedTokensCount(editor)
             assert.strictEqual(tracker?.acceptedTokens[editor.document.fileName][0].accepted, 12)
         })
+
         afterEach(function () {
             sinon.restore()
+        })
+    })
+
+    describe('getUnmodifiedAcceptedTokens', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+            CodeWhispererCodeCoverageTracker.instances.delete(language)
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('Should return correct unmodified accepted tokens count', function () {
+            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
         })
     })
 
@@ -196,7 +219,7 @@ describe('codewhispererCodecoverageTracker', function () {
         afterEach(function () {
             sinon.restore()
         })
-        it(' emits codecoverage telemetry ', function () {
+        it('should emit correct code coverage telemetry in python file', function () {
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
             tracker?.addAcceptedTokens(`test.py`, { range: new vscode.Range(0, 0, 0, 7), text: `print()`, accepted: 7 })
@@ -207,6 +230,24 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererLanguage: language,
                 codewhispererAcceptedTokens: 7,
                 codewhispererPercentage: 7,
+            })
+        })
+
+        it('should emit correct code coverage telemetry in java file', function () {
+            const tracker = CodeWhispererCodeCoverageTracker.getTracker('java', mockGlobalStorage)
+            const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
+            tracker?.addAcceptedTokens(`test.java`, {
+                range: new vscode.Range(0, 0, 0, 18),
+                text: `public static main`,
+                accepted: 18,
+            })
+            tracker?.addTotalTokens(`test.java`, 30)
+            tracker?.emitCodeWhispererCodeContribution()
+            assertTelemetry({
+                codewhispererTotalTokens: 30,
+                codewhispererLanguage: 'java',
+                codewhispererAcceptedTokens: 18,
+                codewhispererPercentage: 60,
             })
         })
     })

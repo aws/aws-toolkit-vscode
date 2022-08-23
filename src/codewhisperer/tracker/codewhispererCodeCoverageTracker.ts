@@ -70,10 +70,17 @@ export class CodeWhispererCodeCoverageTracker {
             for (let i = 0; i < this._acceptedTokens[filename].length; i++) {
                 const oldText = this._acceptedTokens[filename][i].text
                 const newText = editor.document.getText(this._acceptedTokens[filename][i].range)
-                this._acceptedTokens[filename][i].accepted =
-                    Math.max(oldText.length, newText.length) - distance(oldText, newText)
+                this._acceptedTokens[filename][i].accepted = this.getUnmodifiedAcceptedTokens(oldText, newText)
             }
         }
+    }
+    // With edit distance, complicate usermodification can be considered as simple edit(add, delete, replace),
+    // and thus the unmodified part of recommendation length can be deducted/approximated
+    // ex. (modified > original): originalRecom: foo -> modifiedRecom: fobarbarbaro, distance = 9, delta = 12 - 9 = 3
+    // ex. (modified == original): originalRecom: helloworld -> modifiedRecom: HelloWorld, distance = 2, delta = 10 - 2 = 8
+    // ex. (modified < original): originalRecom: CodeWhisperer -> modifiedRecom: CODE, distance = 12, delta = 13 - 12 = 1
+    public getUnmodifiedAcceptedTokens(origin: string, after: string) {
+        return Math.max(origin.length, after.length) - distance(origin, after)
     }
 
     public emitCodeWhispererCodeContribution() {
@@ -172,6 +179,7 @@ export class CodeWhispererCodeCoverageTracker {
         // do not count user tokens if user copies large chunk of code
         if (content.text.length > 20) return
         this.tryStartTimer()
+        // deletion events has no text.
         if (content.text.length === 0) {
             this.addTotalTokens(e.document.fileName, -content.rangeLength)
         } else {
