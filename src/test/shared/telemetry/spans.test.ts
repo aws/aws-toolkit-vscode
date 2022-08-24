@@ -4,9 +4,68 @@
  */
 
 import * as assert from 'assert'
-import { TelemetryTracer } from '../../../shared/telemetry/spans'
+import { ToolkitError } from '../../../shared/errors'
+import { TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes } from '../../../shared/telemetry/telemetry'
-import { assertTelemetry, getMetrics } from '../../testUtil'
+import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
+
+describe('TelemetrySpan', function () {
+    let clock: ReturnType<typeof installFakeClock>
+
+    beforeEach(function () {
+        clock = installFakeClock()
+    })
+
+    afterEach(function () {
+        clock.uninstall()
+    })
+
+    it('removes passive and value from the metadata', function () {
+        new TelemetrySpan('foo').emit({ passive: false, value: 100, reason: 'bar' })
+
+        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], { reason: 'bar' })
+    })
+
+    it('records duration if a start time is available', function () {
+        const span = new TelemetrySpan('foo').start()
+        clock.tick(100)
+        span.stop()
+
+        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], {
+            result: 'Succeeded',
+            duration: '100',
+        })
+    })
+
+    it('records failure reason if available', function () {
+        new TelemetrySpan('foo').start().stop(new ToolkitError('', { code: 'Foo' }))
+
+        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], {
+            result: 'Failed',
+            reason: 'Foo',
+            duration: '0',
+        })
+    })
+
+    it('reports missing required fields', function () {
+        new TelemetrySpan('vscode_executeCommand').emit()
+
+        assert.deepStrictEqual(getMetrics('vscode_executeCommand')[0], {
+            missingFields: String(['command', 'debounceCount']),
+        })
+    })
+
+    it('can create clones that do not copy the start time', function () {
+        const span = new TelemetrySpan('foo').record({ reason: 'bar' }).start()
+        clock.tick(100)
+        span.clone().emit({ result: 'Failed' })
+        span.stop()
+
+        const metrics = getMetrics('foo' as MetricName)
+        assert.deepStrictEqual(metrics[0], { result: 'Failed', reason: 'bar' })
+        assert.deepStrictEqual(metrics[1], { result: 'Succeeded', duration: '100' })
+    })
+})
 
 describe('TelemetryTracer', function () {
     const metricName = 'test_metric' as MetricName
@@ -94,9 +153,9 @@ describe('TelemetryTracer', function () {
             tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
             tracer.spans[0]?.emit()
 
-            const metrics = getMetrics('vscode_executeCommand')
+            const metrics = getMetrics('vscode_executeCommand', 'duration', 'result', 'missingFields')
             assert.deepStrictEqual(metrics[1], { command: 'foo' })
-            assert.deepStrictEqual(metrics[0], { result: 'Succeeded', command: 'foo', debounceCount: '100' })
+            assert.deepStrictEqual(metrics[0], { command: 'foo', debounceCount: '100' })
         })
     })
 

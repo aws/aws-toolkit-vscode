@@ -24,6 +24,8 @@ describe('tech debt', function () {
         )
 
         assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
+
+        assert.ok(semver.lt(minVscode, '1.56.0'), 'remove AsyncLocalStorage polyfill used in `spans.ts`')
     })
 
     it('nodejs minimum version', async function () {

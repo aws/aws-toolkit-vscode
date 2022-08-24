@@ -134,12 +134,12 @@ export function installFakeClock(): FakeTimers.InstalledClock {
  * Gets all recorded metrics with the corresponding name.
  *
  * Unlike {@link assertTelemetry}, this function does not do any transformations to
- * handle fields being converted into strings.
+ * handle fields being converted into strings. It will also not return `passive` or `value`.
  */
-export function getMetrics<K extends MetricName>(name: K): readonly MetricShapes[K][] {
-    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
+export function getMetrics<K extends MetricName>(name: K, ...filters: string[]): readonly Partial<MetricShapes[K]>[] {
+    const query = { metricName: name, filters: ['awsAccount', ...filters] }
 
-    return globals.telemetry.logger.query(query) as unknown as MetricShapes[K][]
+    return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
 
 /*

@@ -66,9 +66,9 @@ const AsyncLocalStorage: typeof AsyncLocalStorageClass =
 function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinition) {
     const missingFields: string[] = []
 
-    for (const [k, v] of Object.entries(state)) {
-        if (definition.requiredMetadata.includes(k) && v === undefined) {
-            missingFields.push(k)
+    for (const key of definition.requiredMetadata) {
+        if (state[key as keyof typeof state] === undefined) {
+            missingFields.push(key)
         }
     }
 
@@ -121,11 +121,19 @@ export class TelemetrySpan {
         })
     }
 
+    /**
+     * Puts the span in a 'running' state.
+     */
     public start(): this {
         this.#startTime = new globals.clock.Date()
         return this
     }
 
+    /**
+     * Immediately emits the span, adding a duration/result/reason to the final output if applicable.
+     *
+     * This places the span in a 'stopped' state but does not mutate the information held by the span.
+     */
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
 
@@ -138,6 +146,9 @@ export class TelemetrySpan {
         this.#startTime = undefined
     }
 
+    /**
+     * Creates a copy of the span with an uninitialized start time.
+     */
     public clone(): TelemetrySpan {
         return new TelemetrySpan(this.name).record(this.state)
     }
@@ -189,11 +200,11 @@ export class TelemetryTracer extends TelemetryBase {
      * forward, becoming the active span. A new span is created if none exist.
      *
      * On completion of the callback, the span is emitted and the context reverts
-     * to how it was prior to calling `run`. Any modifications made to pre-existing
-     * spans are not preserved.
+     * to how it was prior to calling `run`. Modifications made to pre-existing
+     * spans within the execution are not preserved.
      */
-    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, data: MetricBase = {}): T {
-        const span = this.getClonedSpan(name).start().record(data)
+    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
+        const span = this.getClonedSpan(name).start()
         const frame = this.switchContext(span)
 
         try {
@@ -221,16 +232,12 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * This can be used when immediate execution of the function is not desirable.
      */
-    public instrument<T extends any[], U, R>(
-        name: string,
-        fn: (this: U, ...args: T) => R,
-        data?: MetricBase
-    ): (this: U, ...args: T) => R {
+    public instrument<T extends any[], U, R>(name: string, fn: (this: U, ...args: T) => R): (this: U, ...args: T) => R {
         const run = this.run.bind(this)
 
         return function (...args) {
             // Typescript's `bind` overloading doesn't work well for parameter types
-            return run(name as MetricName, (fn as (this: U, ...args: any[]) => R).bind(this, ...args), data)
+            return run(name as MetricName, (fn as (this: U, ...args: any[]) => R).bind(this, ...args))
         }
     }
 
@@ -262,10 +269,10 @@ export class TelemetryTracer extends TelemetryBase {
 
     private switchContext(span: TelemetrySpan): TelemetryContext {
         const spans = [...this.spans]
-        const previousSpan = spans.find(s => s.name === span.name)
+        const previousSpanIndex = spans.findIndex(s => s.name === span.name)
 
-        if (previousSpan) {
-            spans.splice(spans.indexOf(previousSpan), 1, span)
+        if (previousSpanIndex !== -1) {
+            spans.splice(previousSpanIndex, 1, span)
         } else {
             spans.unshift(span)
         }
