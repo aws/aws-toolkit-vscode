@@ -291,7 +291,6 @@ export class InlineCompletion {
                         })
                 }
             })
-
         vsCodeState.isCodeWhispererEditing = false
     }
 
@@ -389,6 +388,8 @@ export class InlineCompletion {
                     RecommendationHandler.instance.recommendations.forEach((r, i) => {
                         RecommendationHandler.instance.setSuggestionState(i, 'Discard')
                     })
+                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.clearRecommendations()
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
                         this._timer = undefined
