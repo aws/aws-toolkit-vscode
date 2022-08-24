@@ -115,8 +115,8 @@ fun <T : RunConfigurationBase<*>> AwsConnectionRunConfigurationExtension<T>.addE
     runtimeString: () -> String? = { null }
 ) = addEnvironmentVariables(configuration, cmdLine.environment, runtimeString)
 
-fun <T : RunConfigurationBase<*>?> connectionSettingsEditor(configuration: T): AwsConnectionExtensionSettingsEditor<T>? =
-    configuration?.getProject()?.let { AwsConnectionExtensionSettingsEditor(it) }
+fun <T : RunConfigurationBase<*>> connectionSettingsEditor(configuration: T): AwsConnectionExtensionSettingsEditor<T>? =
+    configuration.getProject().let { AwsConnectionExtensionSettingsEditor(it, false) }
 
 val AWS_CONNECTION_RUN_CONFIGURATION_KEY =
     Key.create<AwsCredentialInjectionOptions>(

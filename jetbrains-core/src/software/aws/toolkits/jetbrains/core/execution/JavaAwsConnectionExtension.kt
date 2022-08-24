@@ -8,6 +8,7 @@ import com.intellij.execution.application.ApplicationConfiguration
 import com.intellij.execution.configurations.JavaParameters
 import com.intellij.execution.configurations.RunConfigurationBase
 import com.intellij.execution.configurations.RunnerSettings
+import com.intellij.execution.ui.SettingsEditorFragment
 import com.intellij.openapi.externalSystem.service.execution.ExternalSystemRunConfiguration
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.projectRoots.JavaSdk
@@ -28,9 +29,8 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
     override fun isApplicableFor(configuration: RunConfigurationBase<*>): Boolean =
         JavaAwsConnectionExperiment.isEnabled() && configuration !is ExternalSystemRunConfiguration
 
-    override fun <T : RunConfigurationBase<*>?> updateJavaParameters(configuration: T, params: JavaParameters, runnerSettings: RunnerSettings?) {
+    override fun <T : RunConfigurationBase<*>> updateJavaParameters(configuration: T, params: JavaParameters, runnerSettings: RunnerSettings?) {
         if (JavaAwsConnectionExperiment.isEnabled()) {
-            configuration ?: return
             val environment = params.env
 
             delegate.addEnvironmentVariables(configuration, environment, runtimeString = { determineVersion(configuration) })
@@ -39,7 +39,18 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
 
     override fun getEditorTitle() = message("aws_connection.tab.label")
 
-    override fun <T : RunConfigurationBase<*>?> createEditor(configuration: T): SettingsEditor<T>? = connectionSettingsEditor(configuration)
+    override fun <T : RunConfigurationBase<*>> createEditor(configuration: T): SettingsEditor<T>? = connectionSettingsEditor(configuration)
+
+    override fun <T : RunConfigurationBase<*>> createFragments(configuration: T): List<SettingsEditor<T>>? =
+        listOf(
+            SettingsEditorFragment.createWrapper(
+                serializationId,
+                editorTitle,
+                null,
+                AwsConnectionExtensionSettingsEditor(configuration.project, true),
+                ::isApplicableFor
+            )
+        )
 
     override fun validateConfiguration(configuration: RunConfigurationBase<*>, isExecution: Boolean) {
         delegate.validateConfiguration(configuration)

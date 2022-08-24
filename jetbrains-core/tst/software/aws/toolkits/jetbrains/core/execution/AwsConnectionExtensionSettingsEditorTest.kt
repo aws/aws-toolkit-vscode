@@ -25,7 +25,7 @@ class AwsConnectionExtensionSettingsEditorTest {
 
     @Test
     fun baseState() {
-        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project)
+        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project, false)
 
         assertThat(editor.view.none.isSelected).isTrue()
 
@@ -42,7 +42,7 @@ class AwsConnectionExtensionSettingsEditorTest {
             useCurrentConnection = true
         }
 
-        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project)
+        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project, false)
 
         editor.resetFrom(configuration)
 
@@ -68,7 +68,7 @@ class AwsConnectionExtensionSettingsEditorTest {
             credential = "DUMMY"
         }
 
-        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project)
+        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project, false)
 
         editor.resetFrom(configuration)
 
@@ -89,7 +89,7 @@ class AwsConnectionExtensionSettingsEditorTest {
     fun canLoadNone() {
         val configuration = createConfiguration { }
 
-        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project)
+        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project, false)
 
         editor.resetFrom(configuration)
 
@@ -110,7 +110,7 @@ class AwsConnectionExtensionSettingsEditorTest {
 
     @Test
     fun manualConnectionEnablesDropDowns() {
-        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project)
+        val editor = AwsConnectionExtensionSettingsEditor<ApplicationConfiguration>(projectRule.project, false)
         editor.view.manuallyConfiguredConnection.doClick()
 
         assertThat(editor.view.region.isEnabled).isTrue()
