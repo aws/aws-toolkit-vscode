@@ -32,7 +32,7 @@ export async function deleteTag(
     )
     if (!ok) {
         getLogger().info(`Cancelled delete tag ${node.tag} from repository ${node.repository.repositoryName}`)
-        telemetry.ecr_deleteTags.emit({ result: 'Cancelled' })
+        telemetry.ecr_deleteTags.emit({ result: 'Cancelled', value: 1 })
         return
     }
     try {
@@ -48,7 +48,7 @@ export async function deleteTag(
                 node.repository.repositoryName
             )
         )
-        telemetry.ecr_deleteTags.emit({ result: 'Succeeded' })
+        telemetry.ecr_deleteTags.emit({ result: 'Succeeded', value: 1 })
     } catch (e) {
         getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %O`, e)
         showViewLogsMessage(
@@ -60,7 +60,7 @@ export async function deleteTag(
             ),
             window
         )
-        telemetry.ecr_deleteTags.emit({ result: 'Failed' })
+        telemetry.ecr_deleteTags.emit({ result: 'Failed', value: 1 })
     } finally {
         await commands.execute('aws.refreshAwsExplorerNode', node.parent)
     }

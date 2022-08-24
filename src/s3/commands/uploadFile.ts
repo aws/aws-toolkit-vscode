@@ -334,6 +334,7 @@ async function uploadBatchOfFiles(
 
     telemetry.s3_uploadObject.emit({
         result: response.length > 0 ? 'Failed' : 'Succeeded',
+        value: uploadRequests.length,
         failedCount: response.length,
         successCount: uploadRequests.length - response.length,
     })

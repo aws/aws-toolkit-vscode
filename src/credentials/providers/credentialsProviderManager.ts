@@ -30,7 +30,7 @@ export class CredentialsProviderManager {
         for (const provider of this.providers) {
             if (await provider.isAvailable()) {
                 const telemType = credentialsProviderToTelemetryType(provider.getCredentialsId().credentialSource)
-                telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType })
+                telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: 1 })
                 providers = providers.concat(provider)
             } else {
                 getLogger().verbose(
@@ -47,7 +47,7 @@ export class CredentialsProviderManager {
                 continue
             }
             const telemType = credentialsProviderToTelemetryType(providerType)
-            telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType })
+            telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: refreshed.length })
             providers = providers.concat(refreshed)
         }
 

@@ -114,7 +114,7 @@ export class TelemetrySpan {
         globals.telemetry.record({
             Metadata: metadata,
             MetricName: this.name,
-            Value: state.value ?? 1,
+            Value: state.value ?? 0,
             Unit: this.definition.unit,
             Passive: state.passive ?? this.definition.passive,
             EpochTimestamp: (this.startTime ?? new globals.clock.Date()).getTime(),
