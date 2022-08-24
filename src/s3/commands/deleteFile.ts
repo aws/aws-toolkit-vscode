@@ -13,8 +13,10 @@ import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { readablePath } from '../util'
-import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/spans'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../shared/errors'
 
 const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000
 
@@ -31,43 +33,38 @@ export async function deleteFileCommand(
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
+    const filePath = readablePath(node)
     getLogger().debug('DeleteFile called for %O', node)
 
-    const filePath = readablePath(node)
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
-    if (!isConfirmed) {
-        getLogger().info('DeleteFile cancelled')
-        telemetry.s3_deleteObject.emit({ result: 'Cancelled' })
-        return
-    }
+    await telemetry.s3_deleteObject.run(async () => {
+        const isConfirmed = await showConfirmationMessage(
+            {
+                prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
+                confirm: localizedText.localizedDelete,
+                cancel: localizedText.cancel,
+            },
+            window
+        )
+        if (!isConfirmed) {
+            throw new CancellationError('user')
+        }
 
-    getLogger().info(`Deleting file ${filePath}`)
-    try {
-        await node.deleteFile()
+        getLogger().info(`Deleting file ${filePath}`)
+
+        await node
+            .deleteFile()
+            .catch(e => {
+                const message = localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name)
+                throw ToolkitError.chain(e, message)
+            })
+            .finally(() => refreshNode(node.parent, commands))
 
         getLogger().info(`Successfully deleted file ${filePath}`)
         window.setStatusBarMessage(
             addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted {0}', node.file.name)),
             DELETE_FILE_DISPLAY_TIMEOUT_MS
         )
-        telemetry.s3_deleteObject.emit({ result: 'Succeeded' })
-    } catch (e) {
-        getLogger().error(`Failed to delete file ${filePath}: %O`, e)
-        showViewLogsMessage(
-            localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name),
-            window
-        )
-        telemetry.s3_deleteObject.emit({ result: 'Failed' })
-    }
-
-    await refreshNode(node.parent, commands)
+    })
 }
 
 async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {

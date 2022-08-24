@@ -14,7 +14,6 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
-import { Result } from '../shared/telemetry/telemetry'
 import { PromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/spans'
 
@@ -86,24 +85,22 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async write(content: Uint8Array): Promise<void> {
-        const record = (result: Result) => telemetry.s3_downloadObject.emit({ result, component: 'viewer' })
-        const result = await this.client
-            .uploadFile({
-                content,
-                key: this._file.key,
-                bucketName: this._file.bucket.name,
-                contentType: mime.contentType(path.extname(this._file.name)) || undefined,
-            })
-            .then(u => u.promise())
-            .catch(err => {
-                record('Failed')
-                throw err
-            })
+        return telemetry.s3_uploadObject.run(async span => {
+            span.record({ component: 'viewer' })
 
-        record('Succeeded')
-        this.updateETag(result.ETag)
-        this._file.lastModified = new Date()
-        this._file.sizeBytes = content.byteLength
+            const result = await this.client
+                .uploadFile({
+                    content,
+                    key: this._file.key,
+                    bucketName: this._file.bucket.name,
+                    contentType: mime.contentType(path.extname(this._file.name)) || undefined,
+                })
+                .then(u => u.promise())
+
+            this.updateETag(result.ETag)
+            this._file.lastModified = new Date()
+            this._file.sizeBytes = content.byteLength
+        })
     }
 
     private updateETag(newTag: string | undefined): void {

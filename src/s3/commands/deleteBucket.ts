@@ -10,8 +10,9 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/spans'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../shared/errors'
 
 /**
  * Deletes the bucket represented by the given node.
@@ -34,29 +35,25 @@ export async function deleteBucketCommand(
 ): Promise<void> {
     getLogger().debug('DeleteBucket called for %O', node)
 
-    const isConfirmed = await showConfirmationDialog(node.bucket.name, window)
-    if (!isConfirmed) {
-        getLogger().info('DeleteBucket cancelled')
-        telemetry.s3_deleteBucket.emit({ result: 'Cancelled' })
-        return
-    }
+    await telemetry.s3_deleteBucket.run(async () => {
+        const isConfirmed = await showConfirmationDialog(node.bucket.name, window)
+        if (!isConfirmed) {
+            throw new CancellationError('user')
+        }
 
-    getLogger().info(`Deleting bucket ${node.bucket.name}`)
-    try {
+        getLogger().info(`Deleting bucket ${node.bucket.name}`)
         await deleteWithProgress(node, window)
-
+            .catch(e => {
+                const message = localize(
+                    'AWS.s3.deleteBucket.error.general',
+                    'Failed to delete bucket {0}',
+                    node.bucket.name
+                )
+                throw ToolkitError.chain(e, message)
+            })
+            .finally(() => refreshNode(node.parent, commands))
         getLogger().info(`Successfully deleted bucket ${node.bucket.name}`)
-        telemetry.s3_deleteBucket.emit({ result: 'Succeeded' })
-    } catch (e) {
-        getLogger().error(`Failed to delete bucket ${node.bucket.name}: %O`, e)
-        showViewLogsMessage(
-            localize('AWS.s3.deleteBucket.error.general', 'Failed to delete bucket {0}', node.bucket.name),
-            window
-        )
-        telemetry.s3_deleteBucket.emit({ result: 'Failed' })
-    }
-
-    await refreshNode(node.parent, commands)
+    })
 }
 
 async function showConfirmationDialog(bucketName: string, window: Window): Promise<boolean> {
