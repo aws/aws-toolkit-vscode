@@ -246,31 +246,6 @@ export const cawsConnectCommand = Commands.register(
     openDevelopmentWorkspace
 )
 
-export async function cloneToWorkspace(
-    client: ConnectedCawsClient,
-    workspace: DevelopmentWorkspaceId,
-    repository: { name: string; location: vscode.Uri },
-    projectDir = '/projects'
-): Promise<void> {
-    const { sshPath, SessionProcess } = await prepareWorkpaceConnection(client, workspace, { topic: 'clone' })
-
-    // `git` treats scheme-less URLs as `ssh` and explicitly rejects the `ssh` scheme for some reason
-    const target =
-        repository.location.scheme === 'ssh'
-            ? `${repository.location.authority}${repository.location.path}`
-            : repository.location.toString()
-
-    const cloneCommand = [
-        'mkdir -p ~/.ssh',
-        `mkdir -p ${projectDir}`,
-        'touch ~/.ssh/known_hosts',
-        'ssh-keyscan github.com >> ~/.ssh/known_hosts',
-        `git clone '${target}' '${projectDir}/${repository.name}'`,
-    ].join(' && ')
-
-    await new SessionProcess(sshPath, [getHostNameFromEnv(workspace), '-v', cloneCommand]).run()
-}
-
 export async function getDevfileLocation(client: DevelopmentWorkspaceClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {

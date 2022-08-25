@@ -5,11 +5,6 @@
             <span class="ml-8 option-label" style="padding: 0px">Select a REMOVED.codes Repository</span>
         </label>
 
-        <label class="mode-container" :data-disabled="model.type !== 'unlinked'">
-            <input class="radio" type="radio" name="mode" id="from-unlinked" v-model="model.type" value="unlinked" />
-            <span class="ml-8 option-label" style="padding: 0px">Provide a Repository URL</span>
-        </label>
-
         <label class="mode-container" :data-disabled="model.type !== 'none'">
             <input class="radio" type="radio" name="mode" id="from-none" v-model="model.type" value="none" />
             <span class="ml-8 option-label" style="padding: 0px">Create an Empty Workspace</span>
@@ -60,17 +55,6 @@
             </span>
         </div>
     </div>
-    <div v-else-if="model.type === 'unlinked'">
-        <label class="options-label soft mb-2" style="display: block" for="repository-url">Repository URL</label>
-        <input id="repository-url" class="mb-8" type="text" v-model="model.repositoryUrl" />
-
-        <p class="no-spacing soft" style="font-size: smaller">
-            The repo will be cloned in the workspace directly from the repo URL. Your SSH agent will be forwarded to the
-            workspace for authentication to the repository.
-        </p>
-
-        <p id="repository-error" class="input-validation mb-0" v-if="model.urlError">{{ model.urlError }}</p>
-    </div>
 </template>
 
 <script lang="ts">
@@ -81,19 +65,12 @@ import { createClass, createType } from '../../../webviews/util'
 import { CawsCreateWebview, SourceResponse } from './backend'
 
 const client = WebviewClientFactory.create<CawsCreateWebview>()
-const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
 
-type SourceModel = Partial<SourceResponse> & { urlError?: string }
+type SourceModel = Partial<SourceResponse>
 
 export function isValidSource(source: SourceModel): source is SourceResponse {
-    if (source.urlError) {
-        return false
-    }
-
     if (source.type === 'linked') {
         return !!source.selectedProject && !!source.selectedBranch
-    } else if (source.type === 'unlinked') {
-        return !!source.repositoryUrl
     } else {
         return source.type === 'none'
     }
@@ -135,25 +112,6 @@ export default defineComponent({
                 })
             }
         },
-        'model.repositoryUrl'(url?: string) {
-            clearTimeout(this.urlValidationTimer)
-            this.urlValidationTimer = undefined
-
-            if (url && !this.urlError) {
-                this.urlValidationTimer = setTimeout(async () => {
-                    try {
-                        this.modelValue.urlError = await client.validateRepositoryUrl(url)
-                    } catch (err) {
-                        this.modelValue.urlError = (err as Error).message
-                    }
-
-                    this.update()
-                }, 100)
-            } else {
-                this.modelValue.urlError = this.urlError
-                this.update()
-            }
-        },
     },
     computed: {
         model() {
@@ -172,24 +130,6 @@ export default defineComponent({
             }
 
             return this.branches[this.model.selectedProject.name]
-        },
-        urlError() {
-            if (this.model.type !== 'unlinked') {
-                return
-            }
-
-            const url = this.model.repositoryUrl
-            if (
-                url &&
-                (url.match(/^https?:\/\/REMOVED\.codes/) !== null ||
-                    url.match(/^https?:\/\/[^:]*@git\.service\.REMOVED\.codes/) !== null)
-            ) {
-                return 'URL is from REMOVED.codes. Use `Select a REMOVED.codes Repository` instead.'
-            } else if (!url || url?.match(/^[\w]+@/)) {
-                return
-            } else if (!VALID_SCHEMES.some(scheme => url?.startsWith(scheme))) {
-                return `URL must use one of the following schemes: ${VALID_SCHEMES.join(', ')}`
-            }
         },
     },
     methods: {

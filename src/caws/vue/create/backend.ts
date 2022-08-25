@@ -20,13 +20,9 @@ import {
 } from '../../wizards/workspaceSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { CawsBranch, CawsProject, ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
-import { cloneToWorkspace } from '../../model'
 import { selectCawsResource } from '../../wizards/selectResource'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Metric } from '../../../shared/telemetry/metric'
-import { GitExtension } from '../../../shared/extensions/git'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
-import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../../../shared/extensions/ssh'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 
 interface LinkedResponse {
@@ -36,16 +32,11 @@ interface LinkedResponse {
     readonly newBranch: string
 }
 
-interface CloneResponse {
-    readonly type: 'unlinked'
-    readonly repositoryUrl: string
-}
-
 interface EmptyResponse {
     readonly type: 'none'
 }
 
-export type SourceResponse = LinkedResponse | CloneResponse | EmptyResponse
+export type SourceResponse = LinkedResponse | EmptyResponse
 
 export class CawsCreateWebview extends VueWebview {
     public readonly id = 'createCaws'
@@ -98,37 +89,6 @@ export class CawsCreateWebview extends VueWebview {
         return showViewLogsMessage(title)
     }
 
-    public async validateRepositoryUrl(url: string): Promise<string | undefined> {
-        const gitPath = GitExtension.instance?.gitPath
-        if (!gitPath) {
-            return localize(
-                'aws.caws.create.noGit',
-                'No `git` executable found. Verify that the Git extension is enabled.'
-            )
-        }
-
-        const uri = toStictUri(url)
-        const spawnOptions =
-            uri.scheme === 'ssh' ? { env: { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent() } } : undefined
-
-        const command = new ChildProcess(gitPath, ['ls-remote', '--', url, 'HEAD'])
-        const { exitCode } = await command.run({ spawnOptions, rejectOnError: true })
-
-        if (exitCode !== 0) {
-            if (uri.scheme === 'ssh') {
-                return localize(
-                    'aws.caws.create.gitFailedSsh',
-                    'Invalid URL. Check that the repository exists and you have added an SSH key to your agent.'
-                )
-            } else {
-                return localize(
-                    'aws.caws.create.gitFailed',
-                    'Invalid URL. Check that the repository exists and you have access to it.'
-                )
-            }
-        }
-    }
-
     public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
         async function prompt(prompter: Prompter<any>) {
             prompter.recentItem = settings[key]
@@ -160,8 +120,6 @@ export class CawsCreateWebview extends VueWebview {
                     return this.createEmptyWorkpace(settings, source)
                 case 'linked':
                     return this.createLinkedWorkspace(settings, source)
-                case 'unlinked':
-                    return this.cloneRepository(settings, source)
             }
         })()
 
@@ -215,62 +173,6 @@ export class CawsCreateWebview extends VueWebview {
             alias: settings.alias === undefined || settings.alias === '' ? 'Workspace' : settings.alias,
         })
     }
-
-    private async cloneRepository(settings: WorkspaceSettings, source: CloneResponse) {
-        const repoUri = toStictUri(source.repositoryUrl)
-        const repoName = repoUri.path
-            .split('/')
-            .pop()
-            ?.replace(/\.git$/, '')
-
-        if (!repoName) {
-            throw new TypeError('No repository name found')
-        }
-
-        const org = await selectCawsResource(this.client, 'org')
-        if (!org) {
-            throw new CancellationError('user')
-        }
-
-        const existingProject = await this.getUnlinkedProject(org.name, repoName)
-        const workspace = await this.client.createDevelopmentWorkspace({
-            ides: [{ name: 'VSCode' }],
-            projectName: existingProject.name,
-            organizationName: existingProject.org.name,
-            ...settings,
-        })
-
-        await cloneToWorkspace(this.client, workspace, { name: repoName, location: repoUri })
-
-        return workspace
-    }
-
-    private async getUnlinkedProject(organizationName: string, repoName: string): Promise<CawsProject> {
-        const existingProject = await this.client.getProject({ name: repoName, organizationName }).catch(err => {
-            if ((err as any).statusCode === 404) {
-                return undefined
-            } else {
-                throw err
-            }
-        })
-
-        return (
-            existingProject ??
-            this.client.createProject({
-                name: repoName,
-                organizationName,
-                displayName: repoName,
-                description: localize('aws.caws.createProject.description', 'Created by AWS Toolkit for Workspaces'),
-            })
-        )
-    }
-}
-
-function toStictUri(url: string): vscode.Uri {
-    const isSchemeless = /^[\w]+@/.test(url)
-    const withScheme = isSchemeless ? `ssh://${url}` : url
-
-    return vscode.Uri.parse(withScheme, true)
 }
 
 // TODO(sijaden): de-dupe this basic init pattern for webviews

@@ -36,7 +36,7 @@
             "name": "caws_createWorkspaceRepoType",
             "type": "string",
             "description": "Type of Git repository provided to the CAWS workspace create wizard",
-            "allowedValues": ["linked", "unlinked", "none"]
+            "allowedValues": ["linked", "none"]
         },
         {
             "name": "caws_updateWorkspaceLocationType",
