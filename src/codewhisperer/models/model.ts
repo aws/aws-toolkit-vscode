@@ -83,6 +83,7 @@ export const codeScanState: CodeScanState = {
 export interface CodeScanTelemetryEntry {
     codewhispererCodeScanJobId?: string
     codewhispererLanguage: telemetry.CodewhispererLanguage
+    codewhispererCodeScanProjectBytes?: number
     codewhispererCodeScanSrcPayloadBytes: number
     codewhispererCodeScanBuildPayloadBytes?: number
     codewhispererCodeScanSrcZipFileBytes: number
