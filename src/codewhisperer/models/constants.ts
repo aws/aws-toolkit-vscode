@@ -18,6 +18,11 @@ export const CodeWhispererConstants = {
     invocationKeyThreshold: 15,
     specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
     normalTextChangeRegex: /[A-Za-z0-9]/g,
+    AutoSuggestion: {
+        settingId: 'codewhisperer_autoSuggestionActivation',
+        activated: 'Activated',
+        deactivated: 'Deactivated',
+    },
 
     /**
      * EditorCon context
@@ -122,6 +127,7 @@ export const CodeWhispererConstants = {
     codeScanZipExt: '.zip',
     contextTruncationTimeoutSeconds: 10,
     codeScanJobTimeoutSeconds: 50,
+    projectSizeCalculateTimeoutSeconds: 10,
     codeScanJobPollingIntervalSeconds: 5,
     artifactTypeSource: 'SourceCode',
     artifactTypeBuild: 'BuiltJars',

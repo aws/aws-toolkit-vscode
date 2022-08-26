@@ -322,12 +322,16 @@ export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & 
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
  */
 function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelParams): vscode.WebviewPanel {
+    // C9 doesn't support 'Beside'. The next best thing is always using the second column.
+    const viewColumn =
+        isCloud9() && params.viewColumn === vscode.ViewColumn.Beside
+            ? vscode.ViewColumn.Two
+            : params.viewColumn ?? vscode.ViewColumn.Active
+
     const panel = vscode.window.createWebviewPanel(
         params.id,
         params.title,
-        {
-            viewColumn: params.viewColumn ?? (isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside),
-        },
+        { viewColumn },
         {
             // The redundancy here is to correct a bug with Cloud9's Webview implementation
             // We need to assign certain things on instantiation, otherwise they'll never be applied to the view

@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "All webviews except the SAM debug configuration editor now open in the active editor column."
+}
