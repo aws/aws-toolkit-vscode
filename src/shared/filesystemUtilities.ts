@@ -6,6 +6,7 @@
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
+import * as fsExtra from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -19,6 +20,30 @@ export const tempDirPath = path.join(
     os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
     'aws-toolkit-vscode'
 )
+
+export async function getDirSize(
+    dirPath: string,
+    startTime: number,
+    duration: number,
+    fileExt: string
+): Promise<number> {
+    if (performance.now() - startTime > duration) {
+        getLogger().warn('getDirSize: exceeds time limit')
+        return 0
+    }
+    const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
+    const fileSizes = files.map(async file => {
+        const filePath = path.join(dirPath, file.name)
+        if (file.isSymbolicLink()) return 0
+        if (file.isDirectory()) return getDirSize(filePath, startTime, duration, fileExt)
+        if (file.isFile() && file.name.endsWith(fileExt)) {
+            const { size } = await fsExtra.stat(filePath)
+            return size
+        }
+        return 0
+    })
+    return (await Promise.all(fileSizes)).reduce((accumulator, size) => accumulator + size, 0)
+}
 
 export function downloadsDir(): string {
     const downloadPath = path.join(os.homedir(), 'Downloads')
