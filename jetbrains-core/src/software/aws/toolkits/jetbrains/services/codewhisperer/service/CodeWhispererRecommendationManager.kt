@@ -66,25 +66,35 @@ class CodeWhispererRecommendationManager {
 
         val reformattedRecommendation = tempDocument.getText(TextRange(tempRangeMarker.startOffset, tempRangeMarker.endOffset))
 
-        // Build new reference with updated contentSpan(start and end). Since it's reformatted, take the new
-        // start and end from the rangeMarker which automatically tracks the range after reformatting
-        val reformattedReferences = rangeMarkers.map {
-            val currentRange = it.key
-            val originalReference = it.value
-            originalReference
-                .toBuilder()
-                .recommendationContentSpan(
-                    Span.builder()
-                        .start(currentRange.startOffset - invocationStartOffset)
-                        .end(currentRange.endOffset - invocationStartOffset)
-                        .build()
-                )
-                .build()
+        val reformattedReferences = rangeMarkers.map { (rangeMarker, reference) ->
+            reformatReference(reference, rangeMarker, invocationStartOffset)
         }
         return Recommendation.builder()
             .content(reformattedRecommendation)
             .references(reformattedReferences)
             .build()
+    }
+
+    /**
+     * Build new reference with updated contentSpan(start and end). Since it's reformatted, take the new start and
+     * end from the rangeMarker which automatically tracks the range after reformatting
+     */
+    fun reformatReference(originalReference: Reference, rangeMarker: RangeMarker, invocationStartOffset: Int): Reference {
+        rangeMarker.apply {
+            val documentContent = document.charsSequence
+
+            // has to plus 1 because right boundary is exclusive
+            val spanEndOffset = documentContent.subSequence(0, endOffset).indexOfLast { char -> char != '\n' } + 1
+            return originalReference
+                .toBuilder()
+                .recommendationContentSpan(
+                    Span.builder()
+                        .start(startOffset - invocationStartOffset)
+                        .end(spanEndOffset - invocationStartOffset)
+                        .build()
+                )
+                .build()
+        }
     }
 
     fun buildRecommendationChunks(
