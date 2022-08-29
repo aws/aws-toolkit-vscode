@@ -284,7 +284,7 @@ async function getProxyCommand(iswin: boolean, script: string): Promise<Result<s
         if (r.exitCode !== 0) {
             return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
         }
-        return Result.ok(`"${r.stdout}" -ExecutionPolicy Bypass -File "${script}" %h`)
+        return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${script}" %h`)
     } else {
         return Result.ok(`'${script}' '%h'`)
     }
