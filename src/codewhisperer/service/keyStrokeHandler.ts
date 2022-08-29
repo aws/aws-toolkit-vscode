@@ -9,11 +9,8 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import { CodeWhispererConstants } from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'
-import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 
@@ -50,12 +47,6 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         try {
-            const content = event.contentChanges[0].text
-            const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
-            CodeWhispererCodeCoverageTracker.getTracker(
-                languageContext.language,
-                globals.context.globalState
-            ).setTotalTokens(content)
             const changedText = this.getChangedText(event, config.isAutomatedTriggerEnabled, editor)
             if (changedText === '') {
                 return
