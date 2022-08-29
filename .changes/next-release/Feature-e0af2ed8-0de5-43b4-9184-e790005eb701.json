@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Don't open webviews in a split window (except SAM debug configuration editor)."
-}
