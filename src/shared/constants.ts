@@ -96,7 +96,6 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
 /**
  * URI scheme for CloudWatch Logs Virtual Documents
  */
-// TODO: change to a more conventional format like `aws-cloud-watch-logs` or `aws-cwl`
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
 export const AWS_SCHEME = 'aws'
 

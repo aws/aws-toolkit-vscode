@@ -221,7 +221,9 @@ export async function updateSchemaFromRemote(params: {
     } catch (err) {
         if (cachedContent) {
             getLogger().warn(
-                `schemas: failed to fetch the latest version for "${params.title}": ${(err as Error).message}`
+                `schemas: failed to fetch the latest version for "${params.title}": ${
+                    (err as Error).message
+                }. Using cached schema instead.`
             )
         } else {
             throw err
