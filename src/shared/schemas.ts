@@ -19,7 +19,7 @@ import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
-const SCHEMA_PREFIX = `${AWS_SCHEME}://aws-toolkit-vscode/`
+const SCHEMA_PREFIX = `${AWS_SCHEME}://`
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
