@@ -1,3 +1,9 @@
+## 1.49.0 2022-08-29
+
+- **Bug Fix** CodeWhisperer adds redundant closing brackets/parens/braces
+- **Feature** Don't open webviews in a split window (except SAM debug configuration editor).
+- **Removal** Python 3.6 is no longer supported
+
 ## 1.48.0 2022-08-15
 
 - **Bug Fix** "API proposal" error on vscode 1.63 or older
