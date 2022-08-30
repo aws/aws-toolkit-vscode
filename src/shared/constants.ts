@@ -97,6 +97,7 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
  * URI scheme for CloudWatch Logs Virtual Documents
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl'
+export const AWS_SCHEME = 'aws'
 
 export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'
 
