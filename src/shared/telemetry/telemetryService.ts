@@ -20,7 +20,7 @@ import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId } from './util'
-import { telemetry } from './spans'
+import { telemetry } from './telemetry'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
