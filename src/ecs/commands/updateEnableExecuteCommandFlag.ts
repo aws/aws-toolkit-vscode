@@ -6,7 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { PromptSettings } from '../../shared/settings'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { EcsServiceNode } from '../explorer/ecsServiceNode'

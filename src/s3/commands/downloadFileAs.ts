@@ -19,7 +19,7 @@ import { ToolkitError } from '../../shared/errors'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface DownloadFileOptions {
     /**

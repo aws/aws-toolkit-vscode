@@ -16,7 +16,7 @@ import { AwsResourceManager } from '../awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 

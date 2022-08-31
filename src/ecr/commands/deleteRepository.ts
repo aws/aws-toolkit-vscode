@@ -9,7 +9,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function deleteRepository(
     node: EcrRepositoryNode,

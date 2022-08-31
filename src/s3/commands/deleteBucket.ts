@@ -10,7 +10,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 

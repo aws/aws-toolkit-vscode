@@ -14,7 +14,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { readablePath } from '../util'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 

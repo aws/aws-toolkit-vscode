@@ -25,7 +25,7 @@ import { promptUserForLocation, WizardContext } from '../../shared/wizards/multi
 import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {

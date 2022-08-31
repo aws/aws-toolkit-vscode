@@ -20,7 +20,7 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { ExtContext } from '../../shared/extensions'
 import { VueWebview } from '../../webviews/main'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface InitialData {
     Header: string

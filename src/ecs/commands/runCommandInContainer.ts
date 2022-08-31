@@ -26,7 +26,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { PromptSettings } from '../../shared/settings'
 import { viewDocs } from '../../shared/localizedText'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [

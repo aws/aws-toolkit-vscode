@@ -10,7 +10,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { invalidNumberWarning } from '../../shared/localizedText'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 
 export async function presignedURLCommand(

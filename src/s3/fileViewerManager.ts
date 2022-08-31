@@ -15,7 +15,7 @@ import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { PromptSettings } from '../shared/settings'
-import { telemetry } from '../shared/telemetry/spans'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'

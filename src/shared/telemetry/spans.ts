@@ -276,5 +276,3 @@ export class TelemetryTracer extends TelemetryBase {
         return { spans, activeSpan: span }
     }
 }
-
-export const telemetry = new TelemetryTracer()

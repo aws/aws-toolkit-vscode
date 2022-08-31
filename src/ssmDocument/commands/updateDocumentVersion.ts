@@ -13,7 +13,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
 export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext) {

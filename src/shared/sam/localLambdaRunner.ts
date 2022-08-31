@@ -32,7 +32,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { showMessageWithCancel } from '../utilities/messages'
-import { telemetry } from '../telemetry/spans'
+import { telemetry } from '../telemetry/telemetry'
 import { Result, Runtime } from '../telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()

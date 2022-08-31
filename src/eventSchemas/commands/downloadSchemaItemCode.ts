@@ -25,7 +25,7 @@ import {
 
 import * as admZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',

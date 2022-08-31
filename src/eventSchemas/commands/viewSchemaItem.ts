@@ -11,7 +11,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function viewSchemaItem(node: SchemaItemNode) {
     const logger: Logger = getLogger()

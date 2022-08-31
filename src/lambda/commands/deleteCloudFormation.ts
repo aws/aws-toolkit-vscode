@@ -16,7 +16,7 @@ import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { getIdeProperties } from '../../shared/extensionUtilities'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()

@@ -7,7 +7,7 @@ import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function copyRepositoryUri(
     node: EcrRepositoryNode,

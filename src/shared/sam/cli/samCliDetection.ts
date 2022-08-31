@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { samAboutInstallUrl } from '../../constants'
-import { telemetry } from '../../telemetry/spans'
+import { telemetry } from '../../telemetry/telemetry'
 import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()

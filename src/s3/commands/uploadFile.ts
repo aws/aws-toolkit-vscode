@@ -25,7 +25,7 @@ import * as localizedText from '../../shared/localizedText'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export interface FileSizeBytes {
     /**

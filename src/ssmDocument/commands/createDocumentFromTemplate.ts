@@ -14,7 +14,7 @@ import * as picker from '../../shared/ui/picker'
 import { promptUserForDocumentFormat } from '../util/util'
 import { readFileAsString } from '../../shared/filesystemUtilities'
 import { Result, DocumentFormat } from '../../shared/telemetry/telemetry'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export interface SsmDocumentTemplateQuickPickItem {
     label: string

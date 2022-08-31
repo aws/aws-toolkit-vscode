@@ -32,7 +32,7 @@ import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
-import { telemetry } from '../shared/telemetry/spans'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'

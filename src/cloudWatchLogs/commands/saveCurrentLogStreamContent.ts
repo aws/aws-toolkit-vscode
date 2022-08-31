@@ -14,7 +14,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function saveCurrentLogStreamContent(
     uri: vscode.Uri | undefined,

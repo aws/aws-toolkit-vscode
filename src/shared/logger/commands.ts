@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { Logger } from '.'
-import { telemetry } from '../telemetry/spans'
+import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {

@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     asString,
     CredentialsProvider,

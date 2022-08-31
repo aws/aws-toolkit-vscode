@@ -8,7 +8,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
 import * as nls from 'vscode-nls'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { AppRunnerServiceStatus, Result } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 

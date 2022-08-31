@@ -20,7 +20,7 @@ import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
-import { telemetry } from '../telemetry/spans'
+import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 

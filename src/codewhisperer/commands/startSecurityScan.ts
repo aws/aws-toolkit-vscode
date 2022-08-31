@@ -25,7 +25,7 @@ import { ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 

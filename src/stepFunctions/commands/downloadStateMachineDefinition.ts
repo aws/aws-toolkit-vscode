@@ -17,7 +17,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { previewStateMachineCommand } from '../activation'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel

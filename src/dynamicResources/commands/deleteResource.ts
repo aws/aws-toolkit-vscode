@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { millisecondsSince, Result } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 

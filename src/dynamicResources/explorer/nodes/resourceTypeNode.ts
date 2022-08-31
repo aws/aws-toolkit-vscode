@@ -18,7 +18,7 @@ import { Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
-import { telemetry } from '../../../shared/telemetry/spans'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
     CREATE: 'Creatable',

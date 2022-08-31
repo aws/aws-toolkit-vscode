@@ -16,7 +16,7 @@ import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { DEFAULT_DNS_SUFFIX, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined

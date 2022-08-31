@@ -18,7 +18,7 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { telemetry } from '../../../shared/telemetry/spans'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { Result } from '../../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()

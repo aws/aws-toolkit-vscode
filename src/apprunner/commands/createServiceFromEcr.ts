@@ -9,7 +9,7 @@ import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
 import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
 export async function createFromEcr(

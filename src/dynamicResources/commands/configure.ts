@@ -8,7 +8,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { memoizedGetResourceTypes } from '../model/resources'
 import { fromExtensionManifest } from '../../shared/settings'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class ResourcesSettings extends fromExtensionManifest('aws.resources', {
     enabledResources: ArrayConstructor(String),

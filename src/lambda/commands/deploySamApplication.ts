@@ -24,7 +24,7 @@ import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUt
 import { Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 

@@ -6,7 +6,7 @@
 import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function copyIdentifier(
     typeName: string,

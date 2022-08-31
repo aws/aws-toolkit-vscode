@@ -39,7 +39,7 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
 
 interface SavedLambdas {

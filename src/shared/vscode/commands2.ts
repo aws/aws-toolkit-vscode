@@ -12,7 +12,7 @@ import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
-import { telemetry } from '../telemetry/spans'
+import { telemetry } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T

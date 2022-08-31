@@ -21,7 +21,7 @@ import { RootNode } from '../../awsexplorer/localExplorer'
 import { Experiments } from '../../shared/settings'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { Cloud9AccessState } from '../models/model'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
     public readonly resource = this

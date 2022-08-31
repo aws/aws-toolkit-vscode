@@ -9,7 +9,7 @@ import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FileViewerManager } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 

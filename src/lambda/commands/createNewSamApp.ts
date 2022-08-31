@@ -45,7 +45,7 @@ import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'

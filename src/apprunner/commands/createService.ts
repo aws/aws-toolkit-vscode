@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { AppRunnerServiceSource, Result } from '../../shared/telemetry/telemetry'
 import { AppRunnerNode } from '../explorer/apprunnerNode'
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'

@@ -65,7 +65,7 @@ import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
-import { telemetry } from './shared/telemetry/spans'
+import { telemetry } from './shared/telemetry/telemetry'
 
 let localize: nls.LocalizeFunc
 

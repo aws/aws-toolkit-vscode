@@ -8,7 +8,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 /**
  * Copies the path to the folder or file represented by the given node.

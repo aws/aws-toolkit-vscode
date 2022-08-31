@@ -41,7 +41,7 @@ import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')

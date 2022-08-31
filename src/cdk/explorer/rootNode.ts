@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl } from '../../shared/constants'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'

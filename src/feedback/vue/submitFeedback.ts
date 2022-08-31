@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export interface FeedbackMessage {
     comment: string

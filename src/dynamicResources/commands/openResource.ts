@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
 import { AwsResourceManager, TypeSchema } from '../awsResourceManager'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 export async function openResource(

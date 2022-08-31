@@ -35,7 +35,7 @@ import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
-import { telemetry } from '../../../shared/telemetry/spans'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 

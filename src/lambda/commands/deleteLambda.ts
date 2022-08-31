@@ -13,7 +13,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import { getLogger } from '../../shared/logger/logger'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 async function confirmDeletion(functionName: string, window = vscode.window): Promise<boolean> {
     return showConfirmationMessage(

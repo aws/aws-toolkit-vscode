@@ -21,7 +21,7 @@ import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
 import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
-import { telemetry } from '../shared/telemetry/spans'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 /**
  * Activate Step Functions related functionality for the extension.

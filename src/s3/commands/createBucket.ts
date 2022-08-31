@@ -11,7 +11,7 @@ import { S3Node } from '../explorer/s3Nodes'
 import { validateBucketName } from '../util'
 import { ToolkitError } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 /**
  * Creates a bucket in the s3 region represented by the given node.

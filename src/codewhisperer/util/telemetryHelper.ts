@@ -5,7 +5,7 @@
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,

@@ -12,7 +12,7 @@ import * as fsutil from '../shared/filesystemUtilities'
 import * as sysutil from '../shared/systemUtilities'
 import * as collectionUtil from '../shared/utilities/collectionUtils'
 import globals from './extensionGlobals'
-import { telemetry } from './telemetry/spans'
+import { telemetry } from './telemetry/telemetry'
 import { AwsFiletype } from './telemetry/telemetry'
 
 /** AWS filetypes: vscode language ids */

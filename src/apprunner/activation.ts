@@ -15,7 +15,7 @@ import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
 import { copyToClipboard } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands2'
-import { telemetry } from '../shared/telemetry/spans'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { Result } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()

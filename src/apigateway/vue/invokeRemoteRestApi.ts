@@ -14,7 +14,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { telemetry } from '../../shared/telemetry/spans'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface InvokeApiMessage {
     region: string
