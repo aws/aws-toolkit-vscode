@@ -6,7 +6,15 @@
 import globals from '../extensionGlobals'
 
 import type { AsyncLocalStorage as AsyncLocalStorageClass } from 'async_hooks'
-import { definitions, Metric, MetricBase, MetricDefinition, MetricName, MetricShapes, TelemetryBase } from './telemetry'
+import {
+    definitions,
+    Metric,
+    MetricBase,
+    MetricDefinition,
+    MetricName,
+    MetricShapes,
+    TelemetryBase,
+} from './telemetry.gen'
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
