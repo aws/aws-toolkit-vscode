@@ -72,11 +72,7 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
         }
     }
 
-    if (missingFields.length !== 0) {
-        return Object.assign({ missingFields }, state)
-    }
-
-    return { ...state }
+    return missingFields.length !== 0 ? Object.assign({ missingFields }, state) : state
 }
 
 export class TelemetrySpan {
@@ -106,7 +102,7 @@ export class TelemetrySpan {
     }
 
     public emit(data?: MetricBase): void {
-        const state = Object.assign(getValidatedState(this.state, this.definition), data)
+        const state = getValidatedState({ ...this.state, ...data }, this.definition)
         const metadata = Object.entries(state)
             .filter(([k, v]) => v !== undefined && !TelemetrySpan.#excludedFields.includes(k))
             .map(([k, v]) => ({ Key: k, Value: String(v) }))
