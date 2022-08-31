@@ -23,6 +23,8 @@ import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
+import { getFileExt } from '../util/commonUtil'
+import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/spans'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -80,7 +82,7 @@ export async function startSecurityScan(
         const uri = dependencyGraph.getRootFile(editor)
         if (dependencyGraph.reachSizeLimit(statSync(uri.fsPath).size)) {
             throw new Error(
-                `Selected file larger than ${dependencyGraph.getReadableSizeLimit()}. Please try with a different file.`
+                `Selected file larger than ${dependencyGraph.getReadableSizeLimit()}. Try a different file.`
             )
         }
         const projectPath = dependencyGraph.getProjectPath(uri)
@@ -168,8 +170,24 @@ export async function startSecurityScan(
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
+        emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
     }
+}
+
+export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanTelemetryEntry: CodeScanTelemetryEntry) {
+    const uri = editor.document.uri
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+    const fileExt = getFileExt(editor.document.languageId)
+    if (workspaceFolder !== undefined && fileExt !== undefined) {
+        const projectSize = await getDirSize(
+            workspaceFolder.uri.fsPath,
+            performance.now(),
+            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000,
+            fileExt
+        )
+        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
+    }
+    telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
 }
 
 export function errorPromptHelper(error: Error) {

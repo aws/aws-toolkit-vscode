@@ -25,6 +25,9 @@ import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
 import { telemetry } from '../shared/telemetry/spans'
+import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
+import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { once } from '../shared/utilities/functionUtils'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -69,6 +72,21 @@ export async function activate(args: {
             }
         })
     )
+
+    const nodes = [cdkNode, codewhispererNode]
+    const developerTools = createLocalExplorerView(nodes)
+    args.context.extensionContext.subscriptions.push(developerTools)
+
+    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
+    // Legacy CDK metric, remove this when we add something generic
+    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+    developerTools.onDidExpandElement(e => {
+        if (e.element.resource instanceof CdkRootNode) {
+            recordExpandCdkOnce()
+        }
+    })
 }
 
 async function registerAwsExplorerCommands(
@@ -131,7 +149,4 @@ async function registerAwsExplorerCommands(
         }),
         loadMoreChildrenCommand.register(awsExplorer)
     )
-
-    const developerTools = createLocalExplorerView()
-    context.extensionContext.subscriptions.push(developerTools)
 }

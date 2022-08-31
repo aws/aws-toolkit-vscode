@@ -4,30 +4,21 @@
  */
 
 import * as vscode from 'vscode'
-import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { once } from '../shared/utilities/functionUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
-import { telemetry } from '../shared/telemetry/spans'
 
-export interface RootNode extends TreeNode {
-    canShow?(): Promise<boolean> | boolean
+export interface RootNode<T = unknown> extends TreeNode<T> {
+    /**
+     * An optional event to signal that this node's visibility has changed.
+     */
     readonly onDidChangeVisibility?: vscode.Event<void>
-}
 
-const roots: readonly RootNode[] = [cdkNode, codewhispererNode]
-
-async function getChildren(roots: readonly RootNode[]) {
-    const nodes: TreeNode[] = []
-
-    for (const node of roots) {
-        if (!node.canShow || (await node.canShow())) {
-            nodes.push(node)
-        }
-    }
-
-    return nodes
+    /**
+     * Determines whether this node should be rendered in the tree view.
+     *
+     * If not implemented, it is assumed that the node is always visible.
+     */
+    canShow?(): Promise<boolean> | boolean
 }
 
 /**
@@ -37,31 +28,28 @@ async function getChildren(roots: readonly RootNode[]) {
  * Components placed under this view do not strictly need to be 'local'. They just need to place greater
  * emphasis on the developer's local development environment.
  */
-export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
-    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(roots) })
+export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<TreeNode> {
+    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(rootNodes) })
     const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
 
-    roots.forEach(node => {
-        node.onDidChangeVisibility?.(() => treeDataProvider.refresh())
-    })
-
-    // Legacy CDK metric, remove this when we add something generic
-    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
-    view.onDidExpandElement(e => {
-        if (e.element.resource instanceof CdkRootNode) {
-            recordExpandCdkOnce()
-        }
-    })
-
-    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-    view.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+    rootNodes.forEach(node => node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
 
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
-        roots.forEach(node => {
-            node.onDidChangeChildren?.(() => treeDataProvider.refresh())
-        })
+        rootNodes.forEach(node => node.onDidChangeChildren?.(() => treeDataProvider.refresh(node)))
     }
 
     return view
+}
+
+async function getChildren(roots: RootNode[]) {
+    const nodes: TreeNode[] = []
+
+    for (const node of roots) {
+        if (!node.canShow || (await node.canShow())) {
+            nodes.push(node)
+        }
+    }
+
+    return nodes
 }

@@ -271,8 +271,9 @@ export class RecommendationHandler {
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
                 if (
-                    !r.content.startsWith(typedPrefix) &&
-                    this.getSuggestionState(i + this.recommendations.length) === undefined
+                    (!r.content.startsWith(typedPrefix) &&
+                        this.getSuggestionState(i + this.recommendations.length) === undefined) ||
+                    this.cancellationToken.token.isCancellationRequested
                 ) {
                     this.setSuggestionState(i + this.recommendations.length, 'Discard')
                 }
@@ -350,12 +351,17 @@ export class RecommendationHandler {
             return false
         }
         // do not show recommendation if cursor is before invocation position
+        // also mark as Discard
         if (editor.selection.active.isBefore(this.startPos)) {
+            this.recommendations.forEach((r, i) => {
+                this.setSuggestionState(i, 'Discard')
+            })
             reject()
             return false
         }
 
         // do not show recommendation if typeahead does not match
+        // also mark as Discard
         const typedPrefix = editor.document.getText(
             new vscode.Range(
                 this.startPos.line,
@@ -365,6 +371,9 @@ export class RecommendationHandler {
             )
         )
         if (!this.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
+            this.recommendations.forEach((r, i) => {
+                this.setSuggestionState(i, 'Discard')
+            })
             reject()
             return false
         }

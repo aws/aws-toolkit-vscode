@@ -2,7 +2,6 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     return new Date().toLocaleString([], { timeZone: timezone })
@@ -26,4 +25,16 @@ export function isAwsError(error: any): boolean {
         typeof error.code === 'string' &&
         error.time instanceof Date
     )
+}
+
+export function getFileExt(languageId: string) {
+    switch (languageId) {
+        case 'java':
+            return '.java'
+        case 'python':
+            return '.py'
+        default:
+            break
+    }
+    return undefined
 }

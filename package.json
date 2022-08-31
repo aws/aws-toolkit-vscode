@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.48.0-SNAPSHOT",
+    "version": "1.50.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3196,7 +3196,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.61",
+        "@aws-toolkits/telemetry": "^1.0.67",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
