@@ -28,6 +28,7 @@ import {
 import { normalize } from '../../../shared/utilities/pathUtils'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
+import { Runtime } from '../../../shared/telemetry/telemetry'
 
 const TEMPLATE_YAML = 'template.yaml'
 
@@ -148,7 +149,7 @@ describe('createNewSamApp', function () {
                 fakeContext,
                 fakeWorkspaceFolder,
                 tempTemplate,
-                'someruntime',
+                'someruntime' as Runtime,
                 instance(mockLaunchConfiguration)
             )) as AwsSamDebuggerConfiguration[]
 

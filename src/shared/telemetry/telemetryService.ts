@@ -13,7 +13,6 @@ import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { DefaultTelemetryPublisher } from './telemetryPublisher'
-import { recordSessionEnd, recordSessionStart } from './telemetry'
 import { TelemetryFeedback } from './telemetryClient'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryClient'
@@ -21,6 +20,7 @@ import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId } from './util'
+import { telemetry } from './telemetry'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -77,7 +77,7 @@ export class DefaultTelemetryService {
         // TODO: `readEventsFromCache` should be async
         this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
-        recordSessionStart()
+        telemetry.session_start.emit()
         this.startTimer()
     }
 
@@ -93,7 +93,7 @@ export class DefaultTelemetryService {
         if (this.telemetryEnabled && !isAutomation()) {
             const currTime = new globals.clock.Date()
             // This is noisy when running tests in vscode.
-            recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
+            telemetry.session_end.emit({ value: currTime.getTime() - this.startTime.getTime() })
 
             try {
                 await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))

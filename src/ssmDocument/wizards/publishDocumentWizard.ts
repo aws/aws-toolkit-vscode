@@ -135,6 +135,8 @@ export class PublishSSMDocumentWizard extends Wizard<PublishSSMDocumentWizardRes
                     return createNamePrompter()
                 case PublishSSMDocumentAction.QuickUpdate:
                     return createUpdateDocumentPrompter(state.region!, state.documentType)
+                default:
+                    throw new Error(`Invalid publish action: ${state.action}`)
             }
         })
     }

@@ -10,5 +10,6 @@
         "**/src/testFixtures": true
     },
     "typescript.preferences.importModuleSpecifier": "relative",
-    "javascript.preferences.importModuleSpecifier": "relative"
+    "javascript.preferences.importModuleSpecifier": "relative",
+    "typescript.tsdk": "node_modules/typescript/lib"
 }

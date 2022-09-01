@@ -14,10 +14,11 @@ import { createErrorItem, makeChildrenNodes, TreeShim } from '../../../shared/tr
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
-import { recordDynamicresourceListResource, Result } from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
     CREATE: 'Creatable',
@@ -87,7 +88,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                 return 0
             },
         })
-        recordDynamicresourceListResource({
+        telemetry.dynamicresource_listResource.emit({
             resourceType: this.typeName,
             result: result,
         })

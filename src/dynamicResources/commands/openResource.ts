@@ -7,9 +7,10 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
-import { recordDynamicresourceGetResource, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
 import { AwsResourceManager, TypeSchema } from '../awsResourceManager'
+import { telemetry } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 export async function openResource(
@@ -67,7 +68,7 @@ export async function openResource(
                 getLogger().error('Error opening resource: %O', error)
                 result = 'Failed'
             } finally {
-                recordDynamicresourceGetResource({
+                telemetry.dynamicresource_getResource.emit({
                     resourceType: resource.parent.typeName,
                     result: result,
                 })
