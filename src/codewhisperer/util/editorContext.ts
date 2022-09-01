@@ -8,20 +8,11 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import { CodeWhispererConstants } from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 
 let tabSize: number = getTabSizeSetting()
 export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
-    let editorFileContext: codewhispererClient.FileContext = {
-        filename: getFileName(editor),
-        programmingLanguage: {
-            languageName: editor.document.languageId,
-        },
-        leftFileContent: '',
-        rightFileContent: '',
-    }
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
@@ -40,18 +31,13 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
-    editorFileContext = {
+
+    return {
         filename: getFileName(editor),
-        programmingLanguage: {
-            languageName:
-                editor.document.languageId === CodeWhispererConstants.typescript
-                    ? CodeWhispererConstants.javascript
-                    : editor.document.languageId,
-        },
+        programmingLanguage: getProgrammingLanguage(editor),
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
-    }
-    return editorFileContext
+    } as codewhispererClient.FileContext
 }
 
 export function getFileName(editor: vscode.TextEditor): string {
@@ -59,18 +45,20 @@ export function getFileName(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export function getProgrammingLanguage(editor: vscode.TextEditor | undefined): codewhispererClient.ProgrammingLanguage {
-    let programmingLanguage: codewhispererClient.ProgrammingLanguage = {
-        languageName: '',
+export function getProgrammingLanguage(editor: vscode.TextEditor): codewhispererClient.ProgrammingLanguage {
+    let languageId = editor.document.languageId
+    switch (languageId) {
+        case CodeWhispererConstants.typescript:
+            languageId = CodeWhispererConstants.javascript
+            break
+        case CodeWhispererConstants.jsx:
+            languageId = CodeWhispererConstants.javascript
+            break
     }
-    if (editor !== undefined) {
-        const languageId = editor?.document?.languageId
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
-        programmingLanguage = {
-            languageName: languageContext.language,
-        }
+
+    return {
+        languageName: languageId,
     }
-    return programmingLanguage
 }
 
 export function buildListRecommendationRequest(

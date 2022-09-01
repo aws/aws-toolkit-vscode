@@ -64,23 +64,32 @@ describe('editorContext', function () {
         })
     })
 
-    describe('getProgrammingLanguage', function () {
-        it('Should return expected programming language and set invocationContext.language', function () {
-            const editor = createMockTextEditor('', 'test.py', 'python', 1, 17)
-            const actual = EditorContext.getProgrammingLanguage(editor)
-            const expected: codewhispererClient.ProgrammingLanguage = {
-                languageName: 'python',
-            }
-            assert.deepStrictEqual(actual, expected)
+    describe('getProgrammingLanguage should return expected programming language', function () {
+        it('python', function () {
+            testGetProgrammingLanguageUtil('test.py', 'python', 'python')
         })
 
-        it('Should return expected programming language and set invocationContext.language when editor is undefined', function () {
-            const actual = EditorContext.getProgrammingLanguage(undefined)
-            const expected: codewhispererClient.ProgrammingLanguage = {
-                languageName: '',
-            }
-            assert.deepStrictEqual(actual, expected)
+        it('java', function () {
+            testGetProgrammingLanguageUtil('test.java', 'java', 'java')
         })
+
+        it('javascript', function () {
+            testGetProgrammingLanguageUtil('test.js', 'javascript', 'javascript')
+        })
+
+        it('jsx', function () {
+            testGetProgrammingLanguageUtil('test.jsx', 'javascriptreact', 'javascript')
+        })
+
+        it('typescript', function () {
+            testGetProgrammingLanguageUtil('test.ts', 'typescript', 'javascript')
+        })
+
+        function testGetProgrammingLanguageUtil(fileName: string, language: string, expected: string) {
+            const editor = createMockTextEditor('', fileName, language)
+            const actual = EditorContext.getProgrammingLanguage(editor)
+            assert.deepStrictEqual(actual.languageName, expected)
+        }
     })
 
     describe('validateRequest', function () {

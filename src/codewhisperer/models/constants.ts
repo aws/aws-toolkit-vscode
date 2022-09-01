@@ -52,8 +52,9 @@ export const CodeWhispererConstants = {
     python: 'python',
     javascript: 'javascript',
     typescript: 'typescript',
+    jsx: 'javascriptreact',
 
-    supportedLanguages: ['java', 'python', 'javascript', 'typescript'],
+    supportedLanguages: ['java', 'python', 'javascript', 'typescript', 'jsx'],
 
     /**
      * Prompt
