@@ -64,7 +64,7 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
  * * `'channel'`: Channel Logger; default impl: logs to the `main` channels and the `AWS Toolkit` output channel
  * * `'debug'`: Debug Console Logger; default impl: logs to the `channel` channels and the currently-active VS Code Debug Console pane.
  */
-export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
+export function getLogger(type?: keyof typeof toolkitLoggers): Logger {
     const logger = toolkitLoggers[type ?? 'main']
     if (!logger) {
         return new ConsoleLogger()

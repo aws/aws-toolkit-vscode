@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import { CodeWhispererConstants } from '../models/constants'
@@ -13,6 +12,7 @@ import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
+import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -55,7 +55,7 @@ export class KeyStrokeHandler {
             if (autoTriggerType === '') {
                 return
             }
-            const triggerTtype = autoTriggerType as telemetry.CodewhispererAutomatedTriggerType
+            const triggerTtype = autoTriggerType as CodewhispererAutomatedTriggerType
             this.invokeAutomatedTrigger(triggerTtype, editor, client, config)
         } catch (error) {
             getLogger().error('Automated Trigger Exception : ', error)
@@ -157,7 +157,7 @@ export class KeyStrokeHandler {
         return changedText
     }
     async invokeAutomatedTrigger(
-        autoTriggerType: telemetry.CodewhispererAutomatedTriggerType,
+        autoTriggerType: CodewhispererAutomatedTriggerType,
         editor: vscode.TextEditor,
         client: DefaultCodeWhispererClient,
         config: ConfigurationEntry

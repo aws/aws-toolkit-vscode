@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import {
     CloudWatchLogsParameters,
@@ -78,14 +78,14 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
 
-            telemetry.recordCloudwatchlogsOpen({
+            telemetry.cloudwatchlogs_open.emit({
                 result: 'Succeeded',
                 cloudWatchResourceType: 'logStream',
                 source: 'GoTo',
             })
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
-            telemetry.recordCloudwatchlogsOpen({
+            telemetry.cloudwatchlogs_open.emit({
                 result: 'Failed',
                 cloudWatchResourceType: 'logStream',
                 source: 'GoTo',

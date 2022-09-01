@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../shared/telemetry/telemetry'
+import { telemetry, CloudWatchResourceType } from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
@@ -20,10 +20,10 @@ import { CloudWatchLogsParameters } from './registry/logDataRegistry'
  */
 export function recordTelemetryFilter(
     logData: CloudWatchLogsData,
-    resourceType: telemetry.CloudWatchResourceType,
+    resourceType: CloudWatchResourceType,
     source: 'EditorButton' | 'Command'
 ): void {
-    telemetry.recordCloudwatchlogsFilter({
+    telemetry.cloudwatchlogs_filter.emit({
         result: 'Succeeded',
         source: source,
         cloudWatchResourceType: resourceType,

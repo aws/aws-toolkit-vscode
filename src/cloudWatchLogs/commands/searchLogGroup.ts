@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { telemetry, Result } from '../../shared/telemetry/telemetry'
 import {
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
@@ -66,7 +66,7 @@ export async function prepareDocument(
     uri: vscode.Uri,
     initialLogData: CloudWatchLogsData,
     registry: LogDataRegistry
-): Promise<telemetry.Result> {
+): Promise<Result> {
     try {
         await registry.registerLog(uri, initialLogData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
@@ -99,7 +99,7 @@ export async function prepareDocument(
 
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogDataRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
-    let result: telemetry.Result
+    let result: Result
     let source: 'Explorer' | 'Command'
 
     if (node) {
@@ -119,7 +119,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
 
     if (!response) {
         result = 'Cancelled'
-        telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
+        telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
         return
     }
 
@@ -128,7 +128,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
     result = await prepareDocument(uri, initialLogData, registry)
-    telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
+    telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {

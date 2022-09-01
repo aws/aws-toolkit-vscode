@@ -8,9 +8,14 @@ import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
 
 export interface MetricQuery {
-    /** Metric name to look up in the log */
+    /**
+     * Metric name to look up in the log
+     */
     readonly metricName: string
-    /** Attributes to filter out of the metadata */
+
+    /**
+     * Attributes to filter out of the metadata
+     */
     readonly filters?: string[]
 }
 

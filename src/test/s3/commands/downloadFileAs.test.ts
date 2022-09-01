@@ -70,7 +70,7 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await downloadFileAsCommand(node, new FakeWindow())
+        await assert.rejects(() => downloadFileAsCommand(node, new FakeWindow()), /cancelled/i)
 
         verify(s3.downloadFileStream(anything(), anything())).never()
     })
