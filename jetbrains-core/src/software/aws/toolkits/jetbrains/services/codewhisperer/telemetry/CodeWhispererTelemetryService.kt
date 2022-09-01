@@ -121,6 +121,7 @@ class CodeWhispererTelemetryService {
                 "Uncompressed build payload size in bytes: ${payloadContext.buildPayloadSize}, \n" +
                 "Compressed source zip file size in bytes: ${payloadContext.srcZipFileSize}, \n" +
                 "Compressed build zip file size in bytes: ${payloadContext.buildZipFileSize}, \n" +
+                "Total project size in bytes: ${codeScanEvent.totalProjectSizeInBytes}, \n" +
                 "Total duration of the security scan job in milliseconds: ${codeScanEvent.duration}, \n" +
                 "Context truncation duration in milliseconds: ${payloadContext.totalTimeInMilliseconds}, \n" +
                 "Artifacts upload duration in milliseconds: ${serviceInvocationContext.artifactsUploadDuration}, \n" +
@@ -132,6 +133,7 @@ class CodeWhispererTelemetryService {
             project = project,
             codewhispererCodeScanLines = payloadContext.totalLines.toInt(),
             codewhispererCodeScanJobId = codeScanJobId,
+            codewhispererCodeScanProjectBytes = codeScanEvent.totalProjectSizeInBytes,
             codewhispererCodeScanSrcPayloadBytes = payloadContext.srcPayloadSize.toInt(),
             codewhispererCodeScanBuildPayloadBytes = payloadContext.buildPayloadSize?.toInt(),
             codewhispererCodeScanSrcZipFileBytes = payloadContext.srcZipFileSize.toInt(),

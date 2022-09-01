@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -89,6 +90,13 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
         assertThat(srcPayloadSize).isEqualTo(totalSize)
         assertThat(totalLines).isEqualTo(this.totalLines)
         assertThat(buildPaths).hasSize(0)
+    }
+
+    @Test
+    fun `test getTotalProjectSizeInBytes()`() {
+        runBlocking {
+            assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
+        }
     }
 
     @Test

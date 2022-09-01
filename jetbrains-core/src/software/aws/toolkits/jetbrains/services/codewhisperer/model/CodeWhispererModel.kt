@@ -75,7 +75,8 @@ data class WorkerContext(
 data class CodeScanTelemetryEvent(
     val codeScanResponseContext: CodeScanResponseContext,
     val duration: Double,
-    val result: Result
+    val result: Result,
+    val totalProjectSizeInBytes: Double?
 )
 
 data class CodeScanServiceInvocationContext(

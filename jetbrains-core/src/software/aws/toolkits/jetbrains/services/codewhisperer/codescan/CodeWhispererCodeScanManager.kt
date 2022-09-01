@@ -28,7 +28,9 @@ import com.intellij.refactoring.suggested.range
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import com.intellij.ui.treeStructure.Tree
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.withTimeout
 import kotlinx.coroutines.withContext
@@ -110,6 +112,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         var codeScanStatus: Result = Result.Failed
         val startTime = Instant.now().toEpochMilli()
         var codeScanResponseContext = defaultCodeScanResponseContext()
+        var getProjectSize: Deferred<Long?> = async { null }
         try {
             val file = FileEditorManager.getInstance(project).selectedEditor?.file
                 ?: noFileOpenError()
@@ -133,6 +136,9 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
                 }
                 LOG.info { "Security scan completed." }
             }
+            getProjectSize = async {
+                codeScanSessionConfig.getTotalProjectSizeInBytes()
+            }
         } catch (e: Exception) {
             isCodeScanInProgress.set(false)
             val errorMessage = handleException(e)
@@ -140,10 +146,12 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         } finally {
             // After code scan
             afterCodeScan()
-            val duration = (Instant.now().toEpochMilli() - startTime).toDouble()
-            CodeWhispererTelemetryService.getInstance().sendSecurityScanEvent(
-                CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus)
-            )
+            launch {
+                val duration = (Instant.now().toEpochMilli() - startTime).toDouble()
+                CodeWhispererTelemetryService.getInstance().sendSecurityScanEvent(
+                    CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus, getProjectSize.await()?.toDouble())
+                )
+            }
         }
     }
 
