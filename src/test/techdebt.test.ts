@@ -28,11 +28,6 @@ describe('tech debt', function () {
             'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
         )
 
-        assert.ok(
-            semver.lt(minVscode, '1.56.0'),
-            'remove AsyncLocalStorage polyfill added in https://github.com/aws/aws-toolkit-vscode-staging/pull/555'
-        )
-
         assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
 
         assert.ok(
