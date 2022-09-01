@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../shared/telemetry/telemetry'
+import { telemetry, CloudWatchResourceType } from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
@@ -55,7 +55,7 @@ export async function getNewData(
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
             break
     }
-    let resourceType: telemetry.CloudWatchResourceType = 'logGroup'
+    let resourceType: CloudWatchResourceType = 'logGroup'
 
     if (newData.logGroupInfo.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
@@ -77,7 +77,7 @@ export async function changeLogSearchParams(
 
     const oldData = registry.getLogData(oldUri)
     if (!oldData) {
-        telemetry.recordCloudwatchlogsFilter({
+        telemetry.cloudwatchlogs_filter.emit({
             result: 'Failed',
             source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
@@ -89,7 +89,7 @@ export async function changeLogSearchParams(
     const newData = await getNewData(param, oldData)
 
     if (!newData) {
-        telemetry.recordCloudwatchlogsFilter({
+        telemetry.cloudwatchlogs_filter.emit({
             result: 'Cancelled',
             source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
@@ -106,7 +106,7 @@ export async function changeLogSearchParams(
 
     const result = await prepareDocument(newUri, newData, registry)
     const typeOfResource = newData.parameters.streamNameOptions ? 'logStream' : 'logGroup'
-    telemetry.recordCloudwatchlogsOpen({
+    telemetry.cloudwatchlogs_open.emit({
         result: result,
         cloudWatchResourceType: typeOfResource,
         source: 'Editor',

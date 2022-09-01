@@ -3,18 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
-import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 async function confirmDeletion(functionName: string, window = vscode.window): Promise<boolean> {
     return showConfirmationMessage(
@@ -37,12 +36,11 @@ export async function deleteLambda(
     window = vscode.window
 ): Promise<void> {
     if (!lambda.FunctionName) {
-        recordLambdaDelete({ duration: 0, result: 'Failed' })
+        telemetry.lambda_delete.emit({ duration: 0, result: 'Failed' })
 
         throw new TypeError('Lambda does not have a function name')
     }
 
-    const startTime = new globals.clock.Date()
     let deleteResult: Result = 'Succeeded'
 
     try {
@@ -62,9 +60,7 @@ export async function deleteLambda(
 
         showViewLogsMessage(message, window)
     } finally {
-        recordLambdaDelete({
-            createTime: startTime,
-            duration: millisecondsSince(startTime),
+        telemetry.lambda_delete.emit({
             result: deleteResult,
         })
     }

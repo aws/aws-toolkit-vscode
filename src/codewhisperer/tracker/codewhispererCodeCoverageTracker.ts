@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
 import { CodeWhispererConstants } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
 import { distance } from 'fastest-levenshtein'
+import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -25,9 +25,9 @@ export class CodeWhispererCodeCoverageTracker {
     private _totalTokens: { [key: string]: number }
     private _timer?: NodeJS.Timer
     private _startTime: number
-    private _language: telemetry.CodewhispererLanguage
+    private _language: CodewhispererLanguage
 
-    private constructor(language: telemetry.CodewhispererLanguage, private readonly _globals: vscode.Memento) {
+    private constructor(language: CodewhispererLanguage, private readonly _globals: vscode.Memento) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
@@ -101,7 +101,7 @@ export class CodeWhispererCodeCoverageTracker {
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
-        telemetry.recordCodewhispererCodePercentage({
+        telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
             codewhispererAcceptedTokens: acceptedTokens,
@@ -190,8 +190,7 @@ export class CodeWhispererCodeCoverageTracker {
     public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
     public static getTracker(language: string, memento: vscode.Memento): CodeWhispererCodeCoverageTracker | undefined {
         if (CodeWhispererConstants.supportedLanguages.includes(language)) {
-            const instance =
-                this.instances.get(language) ?? new this(language as telemetry.CodewhispererLanguage, memento)
+            const instance = this.instances.get(language) ?? new this(language as CodewhispererLanguage, memento)
             this.instances.set(language, instance)
             return instance
         }
