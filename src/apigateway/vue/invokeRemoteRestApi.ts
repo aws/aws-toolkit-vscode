@@ -10,10 +10,11 @@ import { getLogger, Logger } from '../../shared/logger'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { Resource } from 'aws-sdk/clients/apigateway'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { recordApigatewayInvokeRemote, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface InvokeApiMessage {
     region: string
@@ -94,7 +95,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         } finally {
             // only set method if it is not empty or undefined
             const method = message.selectedMethod ? message.selectedMethod.toUpperCase() : undefined
-            recordApigatewayInvokeRemote({
+            telemetry.apigateway_invokeRemote.emit({
                 result: result,
                 httpMethod: method,
             })

@@ -12,7 +12,6 @@ import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { readablePath } from '../util'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
@@ -26,6 +25,7 @@ import * as localizedText from '../../shared/localizedText'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export interface FileSizeBytes {
     /**
@@ -96,7 +96,7 @@ export async function uploadFileCommand(
                 outputChannel
             )
             getLogger().info('UploadFile cancelled')
-            telemetry.recordS3UploadObject({ result: 'Cancelled' })
+            telemetry.s3_uploadObject.emit({ result: 'Cancelled' })
             return
         }
 
@@ -121,14 +121,14 @@ export async function uploadFileCommand(
                     outputChannel
                 )
                 getLogger().info('UploadFile cancelled')
-                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                telemetry.s3_uploadObject.emit({ result: 'Cancelled' })
                 return
             }
 
             const bucketResponse = await getBucket(s3Client).catch(e => {})
 
             if (!bucketResponse) {
-                telemetry.recordS3UploadObject({ result: 'Failed' })
+                telemetry.s3_uploadObject.emit({ result: 'Failed' })
                 return
             }
 
@@ -145,7 +145,7 @@ export async function uploadFileCommand(
                     outputChannel
                 )
                 getLogger().info('No bucket selected, cancelling upload')
-                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                telemetry.s3_uploadObject.emit({ result: 'Cancelled' })
                 return
             }
 
@@ -332,7 +332,7 @@ async function uploadBatchOfFiles(
         }
     )
 
-    telemetry.recordS3UploadObject({
+    telemetry.s3_uploadObject.emit({
         result: response.length > 0 ? 'Failed' : 'Succeeded',
         value: uploadRequests.length,
         failedCount: response.length,

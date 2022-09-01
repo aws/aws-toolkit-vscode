@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { showView } from '../vue/backend'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
@@ -26,7 +26,7 @@ export const toggleCodeSuggestions = Commands.declare(
         const toSet: boolean = !autoTriggerEnabled
         await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        telemetry.recordAwsModifySetting({
+        telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.AutoSuggestion.settingId,
             settingState: toSet
                 ? CodeWhispererConstants.AutoSuggestion.activated

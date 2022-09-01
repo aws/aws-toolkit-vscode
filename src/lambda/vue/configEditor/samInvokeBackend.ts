@@ -28,7 +28,6 @@ import { sampleRequestPath } from '../../constants'
 import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
-import { recordSamOpenConfigUi } from '../../../shared/telemetry/telemetry.gen'
 import { getSampleLambdaPayloads } from '../../utils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
@@ -36,6 +35,7 @@ import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -310,7 +310,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
             // TODO: make this only open `Beside` when executed via CodeLens
             viewColumn: vscode.ViewColumn.Beside,
         })
-        recordSamOpenConfigUi()
+        telemetry.sam_openConfigUi.emit()
     })
 }
 
