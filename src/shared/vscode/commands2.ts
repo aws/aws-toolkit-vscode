@@ -12,7 +12,7 @@ import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
-import { MetricName, telemetry } from '../telemetry/telemetry'
+import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -354,7 +354,8 @@ function endRecordCommand(id: string, token: number, name?: MetricName, err?: un
 
     emitInfo.set(id, { ...data, debounceCounter: 0 })
 
-    telemetry.vscode_executeCommand.emit({
+    const metric = name ? (telemetry[name] as Metric<VscodeExecuteCommand>) : telemetry.vscode_executeCommand
+    metric.emit({
         command: id,
         debounceCount: data.debounceCounter,
         result: getTelemetryResult(err),

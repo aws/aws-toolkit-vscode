@@ -17,7 +17,7 @@ interface InstanceDescription {
 
 const workspaceOptions = settings['environment']
 
-function entries<T, K extends keyof T = keyof T & string>(obj: T): [K, T[K]][] {
+function entries<T extends Record<string, any>, K extends keyof T = keyof T & string>(obj: T): [K, T[K]][] {
     return Object.entries(obj) as any
 }
 

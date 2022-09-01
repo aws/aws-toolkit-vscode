@@ -22,9 +22,9 @@ import {
 import { showConfigureWorkspace } from './vue/configure/backend'
 import { CreateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 import { showCreateWorkspace } from './vue/create/backend'
-import { Metric } from '../shared/telemetry/metric'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 async function login(authProvider: CawsAuthenticationProvider, client: CawsClient) {
     const wizard = new LoginWizard(authProvider)
@@ -226,8 +226,7 @@ export class CawsCommands {
     }
 
     public updateWorkspace(...args: WithClient<typeof updateWorkspace>) {
-        const metric = Metric.get('caws_updateWorkspaceSettings')
-        metric.record('caws_updateWorkspaceLocationType', 'remote')
+        telemetry.caws_updateWorkspaceSettings.record({ caws_updateWorkspaceLocationType: 'remote' })
 
         return this.withClient(updateWorkspace, ...args)
     }
@@ -263,7 +262,7 @@ export class CawsCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            Metric.get('caws_connect').record('source', 'CommandPalette')
+            telemetry.caws_connect.record({ source: 'CommandPalette' })
         }
 
         return this.withClient(openDevelopmentWorkspace, workspace, targetPath)

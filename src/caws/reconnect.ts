@@ -21,7 +21,7 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CawsAuthenticationProvider } from './auth'
 import { getCawsWorkspaceArn } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
-import { Metric } from '../shared/telemetry/metric'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -236,7 +236,7 @@ async function openReconnectedWorkspace(
         project: { name: workspace.projectName },
     }
 
-    Metric.get('caws_connect').record('source', 'Reconnect')
+    telemetry.caws_connect.record({ source: 'Reconnect' })
     await cawsConnectCommand.execute(client, identifier, workspace.previousOpenWorkspace)
 
     // When we only have 1 workspace to watch we might as well close the local vscode instance
