@@ -28,7 +28,6 @@ import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -41,12 +40,13 @@ import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugC
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -58,7 +58,7 @@ export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
-    let createResult: telemetry.Result = 'Succeeded'
+    let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'complete'
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
@@ -88,7 +88,7 @@ export async function resumeCreateNewSamApp(
             extContext,
             folder,
             templateUri,
-            samInitState?.isImage ? samInitState?.runtime : undefined
+            samInitState?.isImage ? (samInitState?.runtime as Runtime | undefined) : undefined
         )
         const tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, configs)
         if (tryOpenReadme) {
@@ -106,13 +106,13 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
-        const arch = samInitState?.architecture as telemetry.LambdaArchitecture
-        telemetry.recordSamInit({
+        const arch = samInitState?.architecture as LambdaArchitecture
+        telemetry.sam_init.emit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
             lambdaArchitecture: arch,
             result: createResult,
             reason: reason,
-            runtime: samInitState?.runtime as telemetry.Runtime,
+            runtime: samInitState?.runtime as Runtime,
             version: samVersion,
         })
     }
@@ -120,7 +120,7 @@ export async function resumeCreateNewSamApp(
 
 export interface CreateNewSamApplicationResults {
     runtime: string
-    result: telemetry.Result
+    result: Result
 }
 
 /**
@@ -133,7 +133,7 @@ export async function createNewSamApplication(
 ): Promise<void> {
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
-    let createResult: telemetry.Result = 'Succeeded'
+    let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
@@ -163,7 +163,7 @@ export async function createNewSamApplication(
             return
         }
 
-        createRuntime = config.runtimeAndPackage.runtime
+        createRuntime = config.runtimeAndPackage.runtime as Runtime
 
         initArguments = {
             name: config.name,
@@ -336,12 +336,12 @@ export async function createNewSamApplication(
         // An error occured, so do not try to continue during the next extension activation
         activationReloadState.clearSamInitState()
     } finally {
-        telemetry.recordSamInit({
+        telemetry.sam_init.emit({
             lambdaPackageType: lambdaPackageType,
             lambdaArchitecture: initArguments?.architecture,
             result: createResult,
             reason: reason,
-            runtime: createRuntime as telemetry.Runtime,
+            runtime: createRuntime,
             version: samVersion,
         })
     }

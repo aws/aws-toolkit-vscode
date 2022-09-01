@@ -158,7 +158,7 @@ async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
     if (isIterable<U>(item)) {
         yield* item
     } else {
-        yield item as U
+        yield item as unknown as U
     }
 }
 

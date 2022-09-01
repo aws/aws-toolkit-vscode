@@ -41,7 +41,6 @@ import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import * as telemetry from './shared/telemetry/telemetry'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
@@ -68,6 +67,7 @@ import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
+import { telemetry } from './shared/telemetry/telemetry'
 
 let localize: nls.LocalizeFunc
 
@@ -161,28 +161,28 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
-                    telemetry.recordAwsCreateCredentials()
+                    telemetry.aws_createCredentials.emit()
                 }
             }),
             Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials()),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-                telemetry.recordAwsHelp()
+                telemetry.aws_help.emit()
             }),
             Commands.register('aws.github', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-                telemetry.recordAwsShowExtensionSource()
+                telemetry.aws_showExtensionSource.emit()
             }),
             Commands.register('aws.createIssueOnGitHub', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
-                telemetry.recordAwsReportPluginIssue()
+                telemetry.aws_reportPluginIssue.emit()
             }),
             Commands.register('aws.quickStart', async () => {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
-                    telemetry.recordAwsHelpQuickstart({ result: 'Succeeded' })
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
                 }
             }),
             Commands.register('aws.aboutToolkit', async () => {
@@ -315,9 +315,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
         const activationFinishedOn = Date.now()
         const duration = activationFinishedOn - activationStartedOn
 
-        telemetry.recordToolkitInit({
-            duration: duration,
-        })
+        telemetry.toolkit_init.emit({ duration })
     } catch (err) {
         logger?.error(err as Error)
     }

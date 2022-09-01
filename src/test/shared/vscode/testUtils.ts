@@ -36,7 +36,10 @@ export type ExposeEmitters<T, K extends EventEmitters<T>> = NoNever<InterceptEmi
  * @returns The extended object with {@link ExposeEmitters exposed methods}
  * @throws Throws an error listing any events that did not have matching emitters
  */
-export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[]): ExposeEmitters<T, K> {
+export function exposeEmitters<T extends Record<string, any>, K extends EventEmitters<T>>(
+    obj: T,
+    keys: K[]
+): ExposeEmitters<T, K> {
     Object.entries(obj).forEach(([key, value]) => {
         if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
             const targetEvent = key.slice(1).replace('Emitter', '')

@@ -10,7 +10,7 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
-import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 
 describe('createFolderCommand', function () {
     const invalidFolderNames: { folderName: string; error: string }[] = [
@@ -53,9 +53,7 @@ describe('createFolderCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await createFolderCommand(node, new FakeWindow(), new FakeCommands())
-
-        verify(s3.createFolder(anything())).never()
+        await assert.rejects(() => createFolderCommand(node, new FakeWindow(), new FakeCommands()), /cancelled/i)
     })
 
     it('shows an error message and refreshes node when folder creation fails', async function () {
@@ -63,9 +61,7 @@ describe('createFolderCommand', function () {
 
         const window = new FakeWindow({ inputBox: { input: folderName } })
         const commands = new FakeCommands()
-        await createFolderCommand(node, window, commands)
-
-        assert.ok(window.message.error?.includes('Failed to create folder'))
+        await assert.rejects(() => createFolderCommand(node, window, commands), /failed to create folder/i)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
@@ -75,7 +71,7 @@ describe('createFolderCommand', function () {
         it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async () => {
             const window = new FakeWindow({ inputBox: { input: invalid.folderName } })
             const commands = new FakeCommands()
-            await createFolderCommand(node, window, commands)
+            await assert.rejects(() => createFolderCommand(node, window, commands))
 
             assert.strictEqual(window.inputBox.errorMessage, invalid.error)
         })

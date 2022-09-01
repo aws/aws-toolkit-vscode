@@ -9,13 +9,12 @@ import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
-import { NameFromFunction } from '../shared/telemetry/metric'
+import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 
 const testTempDirs: string[] = []
 
@@ -131,36 +130,35 @@ export function installFakeClock(): FakeTimers.InstalledClock {
     })
 }
 
-type Telemetry = Omit<typeof telemetry, 'millisecondsSince'>
-type MetricName = NameFromFunction<keyof Telemetry>
-type FunctionNameFromName<S extends MetricName> = S extends `${infer N}_${infer M}`
-    ? `record${Capitalize<N>}${Capitalize<M>}`
-    : never
-type FunctionFromName<S extends MetricName> = FunctionNameFromName<S> extends keyof Telemetry
-    ? Telemetry[FunctionNameFromName<S>]
-    : never
-type TelemetryMetric<K extends MetricName> = Omit<NonNullable<Parameters<FunctionFromName<K>>[0]>, 'duration'>
-
 /**
+ * Gets all recorded metrics with the corresponding name.
+ *
+ * Unlike {@link assertTelemetry}, this function does not do any transformations to
+ * handle fields being converted into strings. It will also not return `passive` or `value`.
+ */
+export function getMetrics<K extends MetricName>(name: K, ...filters: string[]): readonly Partial<MetricShapes[K]>[] {
+    const query = { metricName: name, filters: ['awsAccount', ...filters] }
+
+    return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
+}
+
+/*
  * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
  * match the expected values.
  */
-export function assertTelemetry<K extends MetricName>(name: K, expected: TelemetryMetric<K>): void | never {
-    const expectedCopy = { ...(expected as Record<string, unknown>) } as NonNullable<
-        Parameters<Telemetry[keyof Telemetry]>[0]
-    >
+export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
+    const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
-    const query = { metricName: name, filters: ['awsAccount'] }
+    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
     delete expectedCopy['passive']
 
     Object.keys(expectedCopy).forEach(
-        k => ((expectedCopy as Record<string, string>)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+        k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
     )
 
     const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    // TODO: `duration` should not be in metadata and very little logic should be testing it
-    assert.deepStrictEqual({ ...metadata[0], duration: 0 }, { ...expectedCopy, duration: 0 })
+    assert.deepStrictEqual(metadata[0], expectedCopy)
 
     if (passive !== undefined) {
         const metric = globals.telemetry.logger.queryFull(query)
@@ -173,7 +171,7 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: Telemet
  */
 export const assertTelemetryCurried =
     <K extends MetricName>(name: K) =>
-    (expected: TelemetryMetric<K>) =>
+    (expected: MetricShapes[K]) =>
         assertTelemetry(name, expected)
 
 /**

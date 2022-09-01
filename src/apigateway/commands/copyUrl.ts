@@ -16,7 +16,7 @@ import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { DEFAULT_DNS_SUFFIX, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
-import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -48,7 +48,7 @@ export async function copyUrlCommand(
         )
     } catch (e) {
         getLogger().error(`Failed to load stages: %O`, e)
-        recordApigatewayCopyUrl({ result: 'Failed' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Failed' })
         return
     }
 
@@ -61,12 +61,12 @@ export async function copyUrlCommand(
         window.showInformationMessage(
             localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
         )
-        recordApigatewayCopyUrl({ result: 'Failed' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Failed' })
         return
     } else if (quickPickItems.length === 1) {
         const url = quickPickItems[0].detail
         await copyToClipboard(url, 'URL')
-        recordApigatewayCopyUrl({ result: 'Succeeded' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Succeeded' })
         return
     }
 
@@ -89,13 +89,13 @@ export async function copyUrlCommand(
     const pickerResponse = picker.verifySinglePickerOutput<StageInvokeUrlQuickPick>(choices)
 
     if (!pickerResponse) {
-        recordApigatewayCopyUrl({ result: 'Cancelled' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Cancelled' })
         return
     }
 
     const url = pickerResponse.detail
     await copyToClipboard(url, 'URL')
-    recordApigatewayCopyUrl({ result: 'Succeeded' })
+    telemetry.apigateway_copyUrl.emit({ result: 'Succeeded' })
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {

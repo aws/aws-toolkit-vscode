@@ -22,8 +22,8 @@ import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { CawsBranch, CawsProject, ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
 import { selectCawsResource } from '../../wizards/selectResource'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { Metric } from '../../../shared/telemetry/metric'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -123,8 +123,8 @@ export class CawsCreateWebview extends VueWebview {
             }
         })()
 
-        Metric.get('caws_createWorkspace').record('caws_createWorkspaceRepoType', source.type)
-        Metric.get('caws_connect').record('source', 'Webview')
+        telemetry.caws_connect.record({ source: 'Webview' })
+        telemetry.caws_createWorkspace.record({ caws_createWorkspaceRepoType: source.type })
 
         this.onComplete(workspace)
         this.commands.openWorkspace.execute(workspace)

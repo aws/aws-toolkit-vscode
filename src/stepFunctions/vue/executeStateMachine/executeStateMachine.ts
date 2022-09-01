@@ -9,15 +9,12 @@ const localize = nls.loadMessageBundle()
 import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 
 import { getLogger } from '../../../shared/logger'
-import {
-    recordStepfunctionsExecuteStateMachine,
-    recordStepfunctionsExecuteStateMachineView,
-    Result,
-} from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
 import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface StateMachine {
     arn: string
@@ -74,7 +71,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
             )
             this.channel.appendLine('')
         } finally {
-            recordStepfunctionsExecuteStateMachine({ result: executeResult })
+            telemetry.stepfunctions_executeStateMachine.emit({ result: executeResult })
         }
     }
 }
@@ -92,5 +89,5 @@ export async function executeStateMachine(context: ExtContext, node: StateMachin
         title: localize('AWS.executeStateMachine.title', 'Start Execution'),
         cssFiles: ['executeStateMachine.css'],
     })
-    recordStepfunctionsExecuteStateMachineView()
+    telemetry.stepfunctions_executeStateMachineView.emit()
 }

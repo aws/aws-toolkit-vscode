@@ -18,7 +18,6 @@ import {
     pollScanJobStatus,
     listScanResults,
 } from '../service/securityScanHandler'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
@@ -26,6 +25,7 @@ import { ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -187,7 +187,7 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
         )
         codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
     }
-    telemetry.recordCodewhispererSecurityScan(codeScanTelemetryEntry)
+    telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
 }
 
 export function errorPromptHelper(error: Error) {

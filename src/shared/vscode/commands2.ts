@@ -12,7 +12,7 @@ import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
-import { Metric, MetricName } from '../telemetry/metric'
+import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -354,16 +354,14 @@ function endRecordCommand(id: string, token: number, name?: MetricName, err?: un
 
     emitInfo.set(id, { ...data, debounceCounter: 0 })
 
-    const metric = name ? (Metric.get(name) as Metric) : new Metric('vscode_executeCommand')
-
-    metric.record('command', id)
-    metric.record('result', getTelemetryResult(err))
-    metric.record('reason', getTelemetryReason(err))
-    metric.record('debounceCount', data.debounceCounter)
-    metric.record('duration', currentTime - data.startTime)
-    metric.record('passive', name === undefined)
-
-    metric.submit()
+    const metric = name ? (telemetry[name] as Metric<VscodeExecuteCommand>) : telemetry.vscode_executeCommand
+    metric.emit({
+        command: id,
+        debounceCount: data.debounceCounter,
+        result: getTelemetryResult(err),
+        reason: getTelemetryReason(err),
+        duration: currentTime - data.startTime,
+    })
 }
 
 async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
@@ -371,13 +369,6 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
     const telemetryToken = startRecordCommand(info.id)
-
-    // XXX: currently have to do this to enter with the correct asychronous context
-    // realistically much of the logic in `startRecordCommand` and `endRecordCommand`
-    // can be placed inside `Metric`, avoiding the need for this weird line
-    if (info.telemetryName) {
-        Metric.get(info.telemetryName)
-    }
 
     logger.debug(`command: running ${label}${withArgs}`)
 

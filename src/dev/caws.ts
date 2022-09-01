@@ -25,7 +25,7 @@ import { createCommonButtons } from '../shared/ui/buttons'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 
-function lazyProgress<T>(timeout: Timeout): LazyProgress<T> {
+function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProgress<T> {
     let dispose!: () => void
     let progress: vscode.Progress<T>
     const location = vscode.ProgressLocation.Notification

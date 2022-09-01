@@ -7,14 +7,14 @@ import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { getCawsConfig } from '../shared/clients/cawsClient'
 import { CawsCommands } from './commands'
-import { Metric } from '../shared/telemetry/metric'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export function register(
     handler: UriHandler,
     commands: Pick<typeof CawsCommands.declared, 'cloneRepo' | 'openWorkspace'>
 ) {
     async function cloneHandler(params: ReturnType<typeof parseCloneParams>) {
-        Metric.get('caws_localClone').record('source', 'UriHandler')
+        telemetry.caws_localClone.record({ source: 'UriHandler' })
 
         if (params.url.authority.endsWith(getCawsConfig().gitHostname)) {
             await commands.cloneRepo.execute(params.url)
@@ -24,7 +24,7 @@ export function register(
     }
 
     async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
-        Metric.get('caws_connect').record('source', 'UriHandler')
+        telemetry.caws_connect.record({ source: 'UriHandler' })
 
         await commands.openWorkspace.execute({
             id: params.developmentWorkspaceId,
