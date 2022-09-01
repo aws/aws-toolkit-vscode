@@ -21,9 +21,10 @@ import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -134,7 +135,7 @@ export async function deploySamApplication(
         )
     } finally {
         await tryRemoveFolder(deployFolder)
-        recordSamDeploy({ result: deployResult, version: samVersion })
+        telemetry.sam_deploy.emit({ result: deployResult, version: samVersion })
     }
 }
 

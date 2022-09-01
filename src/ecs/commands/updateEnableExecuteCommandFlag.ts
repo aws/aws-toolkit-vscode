@@ -6,7 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { PromptSettings } from '../../shared/settings'
-import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { EcsServiceNode } from '../explorer/ecsServiceNode'
@@ -50,7 +50,7 @@ export async function updateEnableExecuteCommandFlag(
     if (enable === hasExecEnabled) {
         result = 'Cancelled'
         window.showInformationMessage(redundantActionMessage)
-        recordEcsEnableExecuteCommand({ result: result, passive: false })
+        telemetry.ecs_enableExecuteCommand.emit({ result: result, passive: false })
         return
     }
     try {
@@ -72,9 +72,9 @@ export async function updateEnableExecuteCommandFlag(
         window.showErrorMessage((e as Error).message)
     } finally {
         if (enable) {
-            recordEcsEnableExecuteCommand({ result: result!, passive: false })
+            telemetry.ecs_enableExecuteCommand.emit({ result: result!, passive: false })
         } else {
-            recordEcsDisableExecuteCommand({ result: result!, passive: false })
+            telemetry.ecs_disableExecuteCommand.emit({ result: result!, passive: false })
         }
     }
 }

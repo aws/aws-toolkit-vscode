@@ -11,14 +11,15 @@ import * as vscode from 'vscode'
 import { DocumentItemNode } from '../explorer/documentItemNode'
 import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
 
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
 
     let documentVersion: string | undefined = undefined
 
@@ -53,7 +54,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
             vscode.window
         )
     } finally {
-        telemetry.recordSsmOpenDocument({ result: result })
+        telemetry.ssm_openDocument.emit({ result: result })
     }
 }
 

@@ -7,7 +7,7 @@ import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
-import { recordEcrCopyRepositoryUri } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function copyRepositoryUri(
     node: EcrRepositoryNode,
@@ -16,5 +16,5 @@ export async function copyRepositoryUri(
 ): Promise<void> {
     const uri = node.repository.repositoryUri
     copyToClipboard(uri, 'URI', window, env)
-    recordEcrCopyRepositoryUri()
+    telemetry.ecr_copyRepositoryUri.emit()
 }
