@@ -19,6 +19,7 @@ import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/t
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import globals from '../../../shared/extensionGlobals'
+import { Runtime } from '../../../shared/telemetry/telemetry'
 
 describe('makeCoreCLRDebugConfiguration', function () {
     let tempFolder: string
@@ -46,7 +47,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
             type: 'coreclr',
             request: 'attach',
             // cfnTemplate?: CloudFormation.Template
-            runtime: 'fakedotnet',
+            runtime: 'fakedotnet' as Runtime,
             handlerName: 'fakehandlername',
             noDebug: false,
             apiPort: 4242,
@@ -146,7 +147,7 @@ describe('isImageLambdaConfig', function () {
             runtimeFamily: RuntimeFamily.DotNetCore,
             request: 'launch',
             type: 'launch',
-            runtime: 'fakedotnet',
+            runtime: 'fakedotnet' as Runtime,
             handlerName: 'fakehandlername',
             envFile: '/fake/build/dir/env-vars.json',
             eventPayloadFile: '/fake/build/dir/event.json',
@@ -175,7 +176,7 @@ describe('isImageLambdaConfig', function () {
             runtimeFamily: RuntimeFamily.DotNetCore,
             request: 'launch',
             type: 'launch',
-            runtime: 'fakedotnet',
+            runtime: 'fakedotnet' as Runtime,
             handlerName: 'fakehandlername',
             envFile: '/fake/build/dir/env-vars.json',
             eventPayloadFile: '/fake/build/dir/event.json',
@@ -201,7 +202,7 @@ describe('isImageLambdaConfig', function () {
             runtimeFamily: RuntimeFamily.DotNetCore,
             request: 'launch',
             type: 'launch',
-            runtime: 'fakedotnet',
+            runtime: 'fakedotnet' as Runtime,
             handlerName: 'fakehandlername',
             envFile: '/fake/build/dir/env-vars.json',
             eventPayloadFile: '/fake/build/dir/event.json',
