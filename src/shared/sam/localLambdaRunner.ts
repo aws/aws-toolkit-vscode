@@ -317,7 +317,7 @@ export async function runLambdaFunction(
     // A failure from either is a failure for the whole invocation
     const [process] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
         err => {
-            timer.dispose()
+            timer.cancel()
             throw err
         }
     )
