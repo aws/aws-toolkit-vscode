@@ -27,7 +27,7 @@ export class UriHandler implements vscode.UriHandler {
                 'This version of {0} Toolkit does not handle vscode:// URLs. Check your AWS Toolkit version.',
                 getIdeProperties().company
             ),
-            'View AWS Toolkit version'
+            button
         )
         return p.then(selection => {
             if (selection === button) {
