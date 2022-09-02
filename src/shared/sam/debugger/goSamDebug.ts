@@ -21,9 +21,9 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
-import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { sleep } from '../../utilities/timeoutUtils'
 import globals from '../../extensionGlobals'
+import { ToolkitError } from '../../errors'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -56,12 +56,12 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
-        showViewLogsMessage(
-            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
+        throw new ToolkitError(
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.'),
+            {
+                code: 'NoDelveInstallation',
+            }
         )
-
-        // Terminates the debug session by sending up a dummy config
-        return {} as GoDebugConfiguration
     }
 
     const c = (await runLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
