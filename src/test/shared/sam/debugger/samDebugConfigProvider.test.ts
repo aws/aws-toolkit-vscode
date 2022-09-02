@@ -314,19 +314,16 @@ describe('SamDebugConfigurationProvider', async function () {
             )
 
             // No workspace folder:
-            assert.deepStrictEqual(await debugConfigProvider.makeConfig(undefined, config.config), undefined)
+            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, config.config))
 
             // No launch.json (vscode will pass an empty config.request):
-            assert.deepStrictEqual(
-                await debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }),
-                undefined
-            )
+            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }))
 
             // Unknown runtime:
             config.config.lambda = {
                 runtime: 'happy-runtime-42',
             }
-            assert.deepStrictEqual(await debugConfigProvider.makeConfig(config.folder, config.config), undefined)
+            await assert.rejects(() => debugConfigProvider.makeConfig(config.folder, config.config))
 
             // bad credentials
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
@@ -354,14 +351,14 @@ describe('SamDebugConfigurationProvider', async function () {
                 ...fakeContext,
                 credentialsStore: mockCredentialsStore,
             })
-            assert.deepStrictEqual(
-                await debugConfigProviderMockCredentials.makeConfig(config.folder, {
+
+            await assert.rejects(() =>
+                debugConfigProviderMockCredentials.makeConfig(config.folder, {
                     ...config.config,
                     aws: {
                         credentials: 'profile:error',
                     },
-                }),
-                undefined
+                })
             )
         })
 
@@ -399,92 +396,96 @@ describe('SamDebugConfigurationProvider', async function () {
             )
         })
 
-        it('returns undefined when resolving debug configurations with an invalid request type', async function () {
-            const resolved = await debugConfigProvider.makeConfig(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: 'not-direct-invoke',
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer',
-                },
-            })
-            assert.strictEqual(resolved, undefined)
-        })
-
-        it('returns undefined when resolving debug configurations with an invalid target type', async function () {
-            const tgt = 'not-code' as 'code'
-            const resolved = await debugConfigProvider.makeConfig(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: tgt,
-                    lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer',
-                },
-            })
-            assert.strictEqual(resolved, undefined)
-        })
-
-        it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
-            const resolved = await debugConfigProvider.makeConfig(undefined, createFakeConfig({}))
-            assert.strictEqual(resolved, undefined)
-        })
-
-        it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await createAndRegisterYaml({}, tempFile, globals.templateRegistry)
-            const resolved = await debugConfigProvider.makeConfig(
-                undefined,
-                createFakeConfig({ templatePath: tempFile.fsPath })
+        it('rejects when resolving debug configurations with an invalid request type', async function () {
+            await assert.rejects(() =>
+                debugConfigProvider.makeConfig(undefined, {
+                    type: AWS_SAM_DEBUG_TYPE,
+                    name: 'whats in a name',
+                    request: 'not-direct-invoke',
+                    invokeTarget: {
+                        target: CODE_TARGET_TYPE,
+                        lambdaHandler: 'sick handles',
+                        projectRoot: 'root as in beer',
+                    },
+                })
             )
-            assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
+        it('rejects when resolving debug configurations with an invalid target type', async function () {
+            const tgt = 'not-code' as 'code'
+            await assert.rejects(() =>
+                debugConfigProvider.makeConfig(undefined, {
+                    type: AWS_SAM_DEBUG_TYPE,
+                    name: 'whats in a name',
+                    request: DIRECT_INVOKE_TYPE,
+                    invokeTarget: {
+                        target: tgt,
+                        lambdaHandler: 'sick handles',
+                        projectRoot: 'root as in beer',
+                    },
+                })
+            )
+        })
+
+        it("rejects when resolving template debug configurations with a template that isn't in the registry", async () => {
+            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, createFakeConfig({})))
+        })
+
+        it("rejects when resolving template debug configurations with a template that doesn't have the set resource", async () => {
+            await createAndRegisterYaml({}, tempFile, globals.templateRegistry)
+            await assert.rejects(() =>
+                debugConfigProvider.makeConfig(undefined, createFakeConfig({ templatePath: tempFile.fsPath }))
+            )
+        })
+
+        it('rejects when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
             await createAndRegisterYaml(
                 { resourceName, runtime: 'moreLikeRanOutOfTime' },
                 tempFile,
                 globals.templateRegistry
             )
-            const resolved = await debugConfigProvider.makeConfig(
-                undefined,
-                createFakeConfig({
-                    templatePath: tempFile.fsPath,
-                    logicalId: resourceName,
-                })
+            await assert.rejects(
+                () =>
+                    debugConfigProvider.makeConfig(
+                        undefined,
+                        createFakeConfig({
+                            templatePath: tempFile.fsPath,
+                            logicalId: resourceName,
+                        })
+                    ),
+                /runtime/i
             )
-            assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
+        it('rejects when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
             testutil.toFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
             await globals.templateRegistry.addItemToRegistry(tempFile)
-            const resolved = await debugConfigProvider.makeConfig(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    templatePath: tempFile.fsPath,
-                    logicalId: resourceName,
-                },
-            })
-            assert.strictEqual(resolved, undefined)
+            await assert.rejects(() =>
+                debugConfigProvider.makeConfig(undefined, {
+                    type: AWS_SAM_DEBUG_TYPE,
+                    name: 'whats in a name',
+                    request: DIRECT_INVOKE_TYPE,
+                    invokeTarget: {
+                        target: TEMPLATE_TARGET_TYPE,
+                        templatePath: tempFile.fsPath,
+                        logicalId: resourceName,
+                    },
+                })
+            )
         })
 
-        it('returns undefined when resolving code debug configurations with invalid runtimes', async function () {
-            const resolved = await debugConfigProvider.makeConfig(undefined, {
-                ...createBaseCodeConfig({}),
-                lambda: {
-                    runtime: 'COBOL',
-                },
-            })
-            assert.strictEqual(resolved, undefined)
+        it('rejects when resolving code debug configurations with invalid runtimes', async function () {
+            await assert.rejects(() =>
+                debugConfigProvider.makeConfig(undefined, {
+                    ...createBaseCodeConfig({}),
+                    lambda: {
+                        runtime: 'COBOL',
+                    },
+                })
+            )
         })
 
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
