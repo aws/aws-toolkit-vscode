@@ -8,7 +8,7 @@ import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
 
-interface ErrorInformation {
+export interface ErrorInformation {
     /**
      * Error names are optional, but if provided they should be generic yet self-explanatory.
      *
