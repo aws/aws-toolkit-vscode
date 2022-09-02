@@ -112,6 +112,7 @@ export class TelemetrySpan {
     public emit(data?: MetricBase): void {
         const state = getValidatedState({ ...this.state, ...data }, this.definition)
         const metadata = Object.entries(state)
+            .filter(([_, v]) => v !== '') // XXX: the telemetry service currently rejects empty strings :/
             .filter(([k, v]) => v !== undefined && !TelemetrySpan.#excludedFields.includes(k))
             .map(([k, v]) => ({ Key: k, Value: String(v) }))
 
