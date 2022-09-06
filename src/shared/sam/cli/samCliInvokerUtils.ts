@@ -56,9 +56,5 @@ export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResul
         }
     }
 
-    if (!message) {
-        message = processResult.stderr || processResult.stdout || 'No message available'
-    }
-
-    throw makeUnexpectedExitCodeError(message)
+    throw makeUnexpectedExitCodeError(message ?? 'no message available')
 }
