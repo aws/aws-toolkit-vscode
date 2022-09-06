@@ -138,9 +138,14 @@ export async function makePythonDebugConfig(
             // --ikpdb-protocol=vscode:
             //           For https://github.com/cmorisse/vscode-ikp3db
             //           Requires ikp3db 1.5 (unreleased): https://github.com/cmorisse/ikp3db/pull/12
-            config.debugArgs = [
-                `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`,
-            ]
+            const debugArgs = `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`
+
+            if (isImageLambda) {
+                const params = getPythonExeAndBootstrap(config.runtime)
+                config.debugArgs = [`${params.python} ${debugArgs} ${params.bootstrap}`]
+            } else {
+                config.debugArgs = [debugArgs]
+            }
         }
 
         manifestPath = await makePythonDebugManifest({
