@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Debugging Python image-based lambdas fails with `Init failed error=exec: \"-m\": executable file not found`"
+}
