@@ -11,6 +11,7 @@ import { ChildProcess } from '../utilities/childProcess'
 import { SystemUtilities } from '../systemUtilities'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 const localize = nls.loadMessageBundle()
 
@@ -126,9 +127,10 @@ export async function startVscodeRemote(
 ): Promise<void> {
     const workspaceUri = `vscode-remote://ssh-remote+${hostname}${targetDirectory}`
 
-    if (process.platform === 'win32') {
-        const settings = new RemoteSshSettings()
+    const settings = new RemoteSshSettings()
+    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit)
 
+    if (process.platform === 'win32') {
         await Promise.all([
             // TODO(sijaden): we should periodically clean this setting up, maybe
             // by removing all hostnames that use the `aws-` prefix
