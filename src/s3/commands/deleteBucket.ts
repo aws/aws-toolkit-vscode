@@ -41,7 +41,7 @@ export async function deleteBucketCommand(
             throw new CancellationError('user')
         }
 
-        getLogger().info(`Deleting bucket ${node.bucket.name}`)
+        getLogger().info(`Deleting bucket: ${node.bucket.name}`)
         await deleteWithProgress(node, window)
             .catch(e => {
                 const message = localize(
@@ -52,7 +52,7 @@ export async function deleteBucketCommand(
                 throw ToolkitError.chain(e, message)
             })
             .finally(() => refreshNode(node.parent, commands))
-        getLogger().info(`Successfully deleted bucket ${node.bucket.name}`)
+        getLogger().info(`deleted bucket: ${node.bucket.name}`)
     })
 }
 
