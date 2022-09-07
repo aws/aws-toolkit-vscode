@@ -24,7 +24,7 @@ export async function updateEnableExecuteCommandFlag(
     settings = PromptSettings.instance
 ): Promise<void> {
     const yes = localize('AWS.generic.response.yes', 'Yes')
-    const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
+    const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
     const prompt = enable ? EcsRunCommandPrompt.Enable : EcsRunCommandPrompt.Disable

@@ -339,7 +339,7 @@ export class S3FileViewerManager {
             'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
         )
 
-        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
+        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show again")
         const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
         await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
