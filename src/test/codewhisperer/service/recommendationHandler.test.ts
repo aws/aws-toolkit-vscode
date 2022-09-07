@@ -37,7 +37,6 @@ describe('recommendationHandler', function () {
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
-            RecommendationHandler.instance.clearRecommendations()
         })
 
         afterEach(function () {
@@ -56,16 +55,10 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter',
-                false
-            )
-            const actual = RecommendationHandler.instance.recommendations
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            const actual = handler.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
         })
@@ -82,17 +75,11 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter',
-                false
-            )
-            assert.strictEqual(RecommendationHandler.instance.requestId, 'test_request')
-            assert.strictEqual(RecommendationHandler.instance.sessionId, 'test_request')
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            assert.strictEqual(handler.requestId, 'test_request')
+            assert.strictEqual(handler.sessionId, 'test_request')
             assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
         })
 
@@ -108,17 +95,12 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
-            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
+            handler.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter'
-            )
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
@@ -140,24 +122,27 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
         it('should return true if any response is not empty', function () {
-            RecommendationHandler.instance.recommendations = [
+            const handler = new RecommendationHandler()
+            handler.recommendations = [
                 {
                     content:
                         '\n    // Use the console to output debug info…n of the command with the "command" variable',
                 },
                 { content: '' },
             ]
-            assert.ok(RecommendationHandler.instance.isValidResponse())
+            assert.ok(handler.isValidResponse())
         })
 
         it('should return false if response is empty', function () {
-            RecommendationHandler.instance.recommendations = []
-            assert.ok(!RecommendationHandler.instance.isValidResponse())
+            const handler = new RecommendationHandler()
+            handler.recommendations = []
+            assert.ok(!handler.isValidResponse())
         })
 
         it('should return false if all response has no string length', function () {
-            RecommendationHandler.instance.recommendations = [{ content: '' }, { content: '' }]
-            assert.ok(!RecommendationHandler.instance.isValidResponse())
+            const handler = new RecommendationHandler()
+            handler.recommendations = [{ content: '' }, { content: '' }]
+            assert.ok(!handler.isValidResponse())
         })
     })
 })
