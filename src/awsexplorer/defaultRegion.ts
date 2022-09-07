@@ -16,10 +16,7 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 
 class RegionMissingUI {
     public static readonly add: string = localizedText.yes
-    public static readonly alwaysIgnore: string = localize(
-        'AWS.message.prompt.noDontAskAgain',
-        "No, and don't ask again"
-    )
+    public static readonly alwaysIgnore: string = localize('AWS.message.prompt.noDontAskAgain', "No, don't ask again")
     public static readonly ignore: string = localizedText.no
 }
 
