@@ -322,23 +322,21 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         }
         const settings = PromptSettings.instance
 
-        const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
-        const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
-        const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
+        const installBtn = localize('AWS.missingExtension.install', 'Install...')
+        const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Don't show again")
 
         const response = await vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.yaml.prompt',
-                'Install YAML extension for additional {0} features.',
+                'Install YAML extension for more {0} features in SAM template.yaml files.',
                 getIdeProperties().company
             ),
-            goToMarketplace,
-            dismiss,
+            installBtn,
             permanentlySuppress
         )
 
         switch (response) {
-            case goToMarketplace:
+            case installBtn:
                 // Available options are:
                 // extension.open: opens extension page in VS Code extension marketplace view
                 // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback

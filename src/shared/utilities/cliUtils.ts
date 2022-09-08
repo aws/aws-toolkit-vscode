@@ -13,7 +13,6 @@ import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import * as telemetry from '../telemetry/telemetry'
 import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
@@ -21,6 +20,8 @@ import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
+import { telemetry } from '../telemetry/telemetry'
+import { Result, ToolId } from '../telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -43,7 +44,7 @@ interface Cli {
     name: string
 }
 
-type AwsClis = Extract<telemetry.ToolId, 'session-manager-plugin'>
+type AwsClis = Extract<ToolId, 'session-manager-plugin'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
@@ -79,7 +80,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
     }
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
 
     let tempDir: string | undefined
     const manualInstall = localize('AWS.cli.manualInstall', 'Install manually...')
@@ -164,10 +165,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
             })
         }
 
-        telemetry.recordAwsToolInstallation({
-            result,
-            toolId: cli,
-        })
+        telemetry.aws_toolInstallation.emit({ result, toolId: cli })
     }
 }
 

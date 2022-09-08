@@ -5,7 +5,6 @@
 
 import * as nls from 'vscode-nls'
 import { showLogOutputChannel } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -26,7 +25,6 @@ export async function copyArnCommand(
 ): Promise<void> {
     try {
         copyToClipboard(node.arn, 'ARN', window, env)
-        recordCopyArn({ result: 'Succeeded' })
     } catch (e) {
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
         window
@@ -43,9 +41,5 @@ export async function copyArnCommand(
                     showLogOutputChannel()
                 }
             })
-        recordCopyArn({ result: 'Failed' })
     }
 }
-
-// TODO add telemetry for copy arn
-function recordCopyArn({ result }: { result: telemetry.Result }): void {}

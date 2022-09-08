@@ -4,7 +4,7 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import * as telemetry from '../../shared/telemetry/telemetry.gen'
+import { CredentialSourceId, CredentialType } from '../../shared/telemetry/telemetry'
 
 const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
 
@@ -73,7 +73,7 @@ export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId
  */
-export function credentialsProviderToTelemetryType(o: CredentialsProviderType): telemetry.CredentialSourceId {
+export function credentialsProviderToTelemetryType(o: CredentialsProviderType): CredentialSourceId {
     switch (o) {
         case 'ec2':
             return 'ec2'
@@ -104,7 +104,7 @@ export interface CredentialsProvider {
      *
      * Compare getCredentialsProviderType() which is type of the _provider_.
      */
-    getTelemetryType(): telemetry.CredentialType
+    getTelemetryType(): CredentialType
     getDefaultRegion(): string | undefined
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>

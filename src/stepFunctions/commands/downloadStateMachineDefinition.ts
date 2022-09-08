@@ -14,9 +14,10 @@ import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 import { getLogger, Logger } from '../../shared/logger'
-import { recordStepfunctionsDownloadStateMachineDefinition, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { previewStateMachineCommand } from '../activation'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -70,6 +71,6 @@ export async function downloadStateMachineDefinition(params: {
         params.outputChannel.appendLine(error.message)
         params.outputChannel.appendLine('')
     } finally {
-        recordStepfunctionsDownloadStateMachineDefinition({ result: downloadResult })
+        telemetry.stepfunctions_downloadStateMachineDefinition.emit({ result: downloadResult })
     }
 }
