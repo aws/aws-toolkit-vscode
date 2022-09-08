@@ -14,6 +14,7 @@ describe('runtimeLanguageContext', function () {
         const cases: [languageId: string | undefined, expected: string][] = [
             [undefined, 'plaintext'],
             ['typescript', 'javascript'],
+            ['jsx', 'jsx'],
             ['go', 'go'],
             ['java', 'java'],
             ['javascript', 'javascript'],
