@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'

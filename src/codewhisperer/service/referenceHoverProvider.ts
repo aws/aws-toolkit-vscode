@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { References } from '../client/codewhisperer'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 
 interface CodeReference {
     code: string

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { References } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from '../util/telemetryHelper'

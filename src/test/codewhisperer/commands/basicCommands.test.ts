@@ -9,7 +9,7 @@ import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
-import { CodeWhispererConstants } from '../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { toggleCodeSuggestions, get, set } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
@@ -63,8 +63,8 @@ describe('CodeWhisperer-basicCommands', function () {
             const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
             assert.strictEqual(res, false)
             assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.AutoSuggestion.settingId,
-                settingState: CodeWhispererConstants.AutoSuggestion.deactivated,
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+                settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
         })
 
@@ -77,8 +77,8 @@ describe('CodeWhisperer-basicCommands', function () {
             const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
             assert.strictEqual(res, true)
             assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.AutoSuggestion.settingId,
-                settingState: CodeWhispererConstants.AutoSuggestion.activated,
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+                settingState: CodeWhispererConstants.autoSuggestionConfig.activated,
             })
         })
     })

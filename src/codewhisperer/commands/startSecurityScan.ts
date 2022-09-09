@@ -9,7 +9,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { getLogger } from '../../shared/logger'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { DependencyGraphFactory } from '../util/dependencyGraph/dependencyGraphFactory'
 import { JavaDependencyGraphError } from '../util/dependencyGraph/javaDependencyGraph'
 import {

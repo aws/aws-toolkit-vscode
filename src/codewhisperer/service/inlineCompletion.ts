@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ConfigurationEntry, vsCodeState } from '../models/model'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceInlineProvider } from './referenceInlineProvider'

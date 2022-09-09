@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
 import { InlineCompletionItem } from '../models/model'
 import { References } from '../client/codewhisperer'
