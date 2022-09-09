@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'

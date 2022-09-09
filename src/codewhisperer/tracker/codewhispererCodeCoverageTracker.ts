@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
 import { distance } from 'fastest-levenshtein'

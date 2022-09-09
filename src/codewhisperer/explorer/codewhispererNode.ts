@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import {
     createEnableCodeSuggestionsNode,
     createEnterAccessCodeNode,

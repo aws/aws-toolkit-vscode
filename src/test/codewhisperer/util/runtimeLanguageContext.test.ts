@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
-import { CodeWhispererConstants } from '../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()

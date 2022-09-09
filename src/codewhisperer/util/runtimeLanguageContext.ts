@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CodeWhispererConstants } from '../models/constants'
 import * as codewhispererClient from '../client/codewhisperer'
+import * as CodeWhispererConstants from '../models/constants'
 
 interface RuntimeLanguageContextData {
     /**

@@ -8,7 +8,7 @@ import { DependencyGraph, TruncPaths } from './dependencyGraph'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import { getLogger } from '../../../shared/logger'
-import { CodeWhispererConstants } from '../../models/constants'
+import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
 
 export const IMPORT = 'import'
