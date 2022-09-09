@@ -20,7 +20,7 @@ describe('runtimeLanguageContext', function () {
         })
 
         cases.forEach(languageId => {
-            const expected = CodeWhispererConstants.supportedLanguages.includes(languageId)
+            const expected = languageContext.isLanguageSupported(languageId)
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
                 const language: codewhispererClient.ProgrammingLanguage = { languageName: languageId }
                 const actual = languageContext.isLanguageSupported(language.languageName)
@@ -48,7 +48,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [languageId, expected] of cases) {
             it(`should return ${expected} if languageId is ${languageId}`, function () {
-                const actual = languageContext.convertLanguage(languageId)
+                const actual = languageContext.mapVscLanguageToCodeWhispererLanguage(languageId)
                 assert.strictEqual(actual, expected)
             })
         }
@@ -93,7 +93,7 @@ describe('runtimeLanguageContext', function () {
                     maxResults: 1,
                     nextToken: 'token',
                 }
-                const actual = languageContext.covertCwsprRequest(originalRequest)
+                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
                 const expected: codewhispererClient.ListRecommendationsRequest = {
                     ...originalRequest,
                     fileContext: {
@@ -114,7 +114,7 @@ describe('runtimeLanguageContext', function () {
                     },
                     maxResults: 1,
                 }
-                const actual = languageContext.covertCwsprRequest(originalRequest)
+                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
                 const expected: codewhispererClient.GenerateRecommendationsRequest = {
                     ...originalRequest,
                     fileContext: {

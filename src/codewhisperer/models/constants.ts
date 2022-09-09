@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-
 /**
  * SDK Client
  */
@@ -63,6 +61,15 @@ export const codewhisperer = 'CodeWhisperer'
 /**
  * Supported languages
  */
+export const vscodeLanguageId = {
+    java: 'java',
+    python: 'python',
+    javascript: 'javascript',
+    typescript: 'typescript',
+    jsx: 'javascriptreact',
+    plaintext: 'plaintext',
+}
+
 export const java = 'java'
 
 export const python = 'python'
@@ -71,20 +78,12 @@ export const javascript = 'javascript'
 
 export const typescript = 'typescript'
 
-export const vscJsx = 'javascriptreact'
-
 export const plaintext = 'plaintext'
 
-export const supportedLanguages = ['java', 'python', 'javascript', 'typescript']
+// use vscode languageId here
+export type SupportedLanguage = 'java' | 'python' | 'javascript' | 'javascriptreact' | 'typescript'
 
-export const vscLanguageIdToCodeWhispererLanguage = new Map<string, CodewhispererLanguage>([
-    ['java', 'java'],
-    ['python', 'python'],
-    ['javascript', 'javascript'],
-    ['typescript', 'javascript'],
-    ['javascriptreact', 'jsx'],
-    ['plaintext', 'plaintext'],
-])
+export const supportedLanguages: SupportedLanguage[] = ['java', 'python', 'javascript', 'javascriptreact', 'typescript']
 
 /**
  * Prompt

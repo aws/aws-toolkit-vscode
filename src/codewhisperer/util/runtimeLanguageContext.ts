@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
+import { createConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
@@ -21,6 +22,14 @@ interface RuntimeLanguageContextData {
 }
 
 export class RuntimeLanguageContext {
+    private supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
+        java: 'java',
+        python: 'python',
+        javascriptreact: 'jsx',
+        typescript: 'javascript',
+        javascript: 'javascript',
+    })
+
     private runtimeLanguageContext: RuntimeLanguageContextData = {
         languageContexts: {
             ['plaintext']: {
@@ -39,7 +48,7 @@ export class RuntimeLanguageContext {
     }
 
     public getLanguageContext(languageId?: string) {
-        const languageName = this.convertLanguage(languageId)
+        const languageName = this.mapVscLanguageToCodeWhispererLanguage(languageId)
         if (languageName in this.runtimeLanguageContext.languageContexts) {
             return this.runtimeLanguageContext.languageContexts[languageName]
         }
@@ -48,32 +57,28 @@ export class RuntimeLanguageContext {
         }
     }
 
-    public convertLanguage(languageId?: string): string {
-        if (!languageId) return CodeWhispererConstants.plaintext
-        let mappedId = CodeWhispererConstants.vscLanguageIdToCodeWhispererLanguage.get(languageId) as string
-        if (!mappedId) {
-            mappedId = languageId
-        }
-
-        return mappedId
+    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): string {
+        if (!vscLanguageId) return CodeWhispererConstants.plaintext
+        return this.supportedLanguageMap.get(vscLanguageId) ?? vscLanguageId
     }
 
     /**
-     * This method should be called right before calling cwspr API to map some language dialet
-     * e.g. jsx(javascriptreact), typescript into javascript
-     * while keeping the source language name (jsx, typescript here) in client side as we send telemetry metrics with its source language name
+     * Mapping the field ProgrammingLanguage of codewhisperer generateRecommendationRequest | listRecommendationRequest to
+     * its cwspr runtime language e.g. jsx -> typescript, typescript -> typescript
+     * @param request : cwspr generateRecommendationRequest | ListRecommendationRequest
+     * @returns request with source language name mapped to cwspr runtime language
      */
-    public covertCwsprRequest<
+    public mapToRuntimeLanguage<
         T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
     >(request: T): T {
         const fileContext = request.fileContext
         const childLanguage = request.fileContext.programmingLanguage
         let parentLanguage: codewhispererClient.ProgrammingLanguage
         switch (childLanguage.languageName) {
-            case CodeWhispererConstants.typescript:
+            case CodeWhispererConstants.vscodeLanguageId.typescript:
                 parentLanguage = { languageName: CodeWhispererConstants.javascript }
                 break
-            case CodeWhispererConstants.vscJsx:
+            case CodeWhispererConstants.vscodeLanguageId.jsx:
                 parentLanguage = { languageName: CodeWhispererConstants.javascript }
                 break
             default:
@@ -90,8 +95,8 @@ export class RuntimeLanguageContext {
         }
     }
 
-    public isLanguageSupported(languageId: string): boolean {
-        return CodeWhispererConstants.supportedLanguages.includes(languageId)
+    public isLanguageSupported(vscLanguageId: string): boolean {
+        return this.supportedLanguageMap.has(vscLanguageId)
     }
 }
 

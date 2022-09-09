@@ -300,7 +300,8 @@ export async function activate(context: ExtContext): Promise<void> {
                  */
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(e.document.languageId) !==
+                        'plaintext' &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing &&
                     !JSON.stringify(e).includes('reason')
@@ -425,7 +426,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(e.document.languageId) !==
+                        'plaintext' &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing
                 ) {

@@ -153,7 +153,7 @@ export class RecommendationHandler {
              * Validate request
              */
             if (EditorContext.validateRequest(req)) {
-                const mappedReq = runtimeLanguageContext.covertCwsprRequest(req)
+                const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(req)
                 const codewhispererPromise = pagination
                     ? client.listRecommendations(mappedReq)
                     : client.generateRecommendations(mappedReq)
