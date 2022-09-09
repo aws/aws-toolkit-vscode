@@ -22,6 +22,7 @@ interface RuntimeLanguageContextData {
 }
 
 export class RuntimeLanguageContext {
+    // a map storing cwspr supporting programming language with key: vscLanguageId and value: cwsprLanguageId
     private supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
         java: 'java',
         python: 'python',
@@ -57,6 +58,11 @@ export class RuntimeLanguageContext {
         }
     }
 
+    /**
+     *
+     * @param vscLanguageId : official vscode languageId
+     * @returns corresponding cwspr languageId if any, otherwise fallback to vscLanguageId
+     */
     public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): string {
         if (!vscLanguageId) return CodeWhispererConstants.plaintext
         return this.supportedLanguageMap.get(vscLanguageId) ?? vscLanguageId
