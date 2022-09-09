@@ -48,22 +48,11 @@ export class RuntimeLanguageContext {
         }
     }
 
-    public convertLanguage(languageId?: string) {
-        let mappedId: string | undefined
-        switch (languageId) {
-            case CodeWhispererConstants.typescript:
-                mappedId = CodeWhispererConstants.javascript
-                break
-            case 'javascriptreact':
-                mappedId = CodeWhispererConstants.jsx
-                break
-            default:
-                mappedId = languageId
-                break
-        }
-
+    public convertLanguage(languageId?: string): string {
+        if (!languageId) return CodeWhispererConstants.plaintext
+        let mappedId = CodeWhispererConstants.vscLanguageIdToCodeWhispererLanguage.get(languageId) as string
         if (!mappedId) {
-            return 'plaintext'
+            mappedId = languageId
         }
 
         return mappedId
