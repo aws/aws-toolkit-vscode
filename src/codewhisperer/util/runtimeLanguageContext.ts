@@ -4,6 +4,7 @@
  */
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { CodeWhispererConstants } from '../models/constants'
+import * as codewhispererClient from '../client/codewhisperer'
 
 interface RuntimeLanguageContextData {
     /**
@@ -48,12 +49,61 @@ export class RuntimeLanguageContext {
     }
 
     public convertLanguage(languageId?: string) {
-        languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-        if (!languageId) {
+        // languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
+        let mappedId: string | undefined
+        switch (languageId) {
+            case CodeWhispererConstants.typescript:
+                mappedId = CodeWhispererConstants.javascript
+                break
+            case 'javascriptreact':
+                mappedId = CodeWhispererConstants.jsx
+                break
+            default:
+                mappedId = languageId
+                break
+        }
+
+        if (!mappedId) {
             return 'plaintext'
         }
 
-        return languageId
+        return mappedId
+    }
+
+    /**
+     * This method should be called right before calling cwspr API to map some language dialet
+     * e.g. jsx(javascriptreact), typescript into javascript
+     * while keeping the source language name (jsx, typescript here) in client side as we send telemetry metrics with its source language name
+     */
+    public covertCwsprRequest<
+        T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+    >(request: T): T {
+        const fileContext = request.fileContext
+        const childLanguage = request.fileContext.programmingLanguage
+        let parentLanguage: codewhispererClient.ProgrammingLanguage
+        switch (childLanguage.languageName) {
+            case CodeWhispererConstants.typescript:
+                parentLanguage = { languageName: CodeWhispererConstants.javascript }
+                break
+            case CodeWhispererConstants.vscJsx:
+                parentLanguage = { languageName: CodeWhispererConstants.javascript }
+                break
+            default:
+                parentLanguage = childLanguage
+                break
+        }
+
+        return {
+            ...request,
+            fileContext: {
+                ...fileContext,
+                programmingLanguage: parentLanguage,
+            },
+        }
+    }
+
+    public isLanguageSupported(languageId: string): boolean {
+        return CodeWhispererConstants.supportedLanguages.includes(languageId)
     }
 }
 

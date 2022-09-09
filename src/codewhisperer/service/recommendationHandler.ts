@@ -153,9 +153,10 @@ export class RecommendationHandler {
              * Validate request
              */
             if (EditorContext.validateRequest(req)) {
+                const mappedReq = runtimeLanguageContext.covertCwsprRequest(req)
                 const codewhispererPromise = pagination
-                    ? client.listRecommendations(req)
-                    : client.generateRecommendations(req)
+                    ? client.listRecommendations(mappedReq)
+                    : client.generateRecommendations(mappedReq)
                 shouldRecordServiceInvocation = true
                 const resp = await this.getServerResponse(
                     triggerType,
@@ -183,11 +184,7 @@ export class RecommendationHandler {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
                 errorCode = `Invalid Request`
-                if (
-                    !CodeWhispererConstants.supportedLanguages.includes(
-                        req.fileContext.programmingLanguage.languageName
-                    )
-                ) {
+                if (!runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)) {
                     this.errorMessagePrompt = `${req.fileContext.programmingLanguage.languageName} is currently not supported by CodeWhisperer`
                 }
             }

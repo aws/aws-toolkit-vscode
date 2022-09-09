@@ -52,9 +52,11 @@ export const CodeWhispererConstants = {
     python: 'python',
     javascript: 'javascript',
     typescript: 'typescript',
-    jsx: 'javascriptreact',
+    jsx: 'jsx',
+    vscJsx: 'javascriptreact',
 
-    supportedLanguages: ['java', 'python', 'javascript', 'typescript', 'jsx'],
+    // here VSC languageId should be used
+    supportedLanguages: ['java', 'python', 'javascript', 'typescript', 'javascriptreact'],
 
     /**
      * Prompt

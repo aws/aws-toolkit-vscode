@@ -64,34 +64,6 @@ describe('editorContext', function () {
         })
     })
 
-    describe('getProgrammingLanguage should return expected programming language', function () {
-        it('python', function () {
-            testGetProgrammingLanguageUtil('test.py', 'python', 'python')
-        })
-
-        it('java', function () {
-            testGetProgrammingLanguageUtil('test.java', 'java', 'java')
-        })
-
-        it('javascript', function () {
-            testGetProgrammingLanguageUtil('test.js', 'javascript', 'javascript')
-        })
-
-        it('jsx', function () {
-            testGetProgrammingLanguageUtil('test.jsx', 'javascriptreact', 'javascript')
-        })
-
-        it('typescript', function () {
-            testGetProgrammingLanguageUtil('test.ts', 'typescript', 'javascript')
-        })
-
-        function testGetProgrammingLanguageUtil(fileName: string, language: string, expected: string) {
-            const editor = createMockTextEditor('', fileName, language)
-            const actual = EditorContext.getProgrammingLanguage(editor)
-            assert.deepStrictEqual(actual.languageName, expected)
-        }
-    })
-
     describe('validateRequest', function () {
         it('Should return false if request filename.length is invalid', function () {
             const req = createMockClientRequest()

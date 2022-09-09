@@ -10,6 +10,7 @@ import { CodeWhispererConstants } from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
+import { runtimeLanguageContext } from './runtimeLanguageContext'
 
 let tabSize: number = getTabSizeSetting()
 export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
@@ -45,19 +46,10 @@ export function getFileName(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
+// get editor languageId
 export function getProgrammingLanguage(editor: vscode.TextEditor): codewhispererClient.ProgrammingLanguage {
-    let languageId = editor.document.languageId
-    switch (languageId) {
-        case CodeWhispererConstants.typescript:
-            languageId = CodeWhispererConstants.javascript
-            break
-        case CodeWhispererConstants.jsx:
-            languageId = CodeWhispererConstants.javascript
-            break
-    }
-
     return {
-        languageName: languageId,
+        languageName: editor.document.languageId,
     }
 }
 
@@ -117,7 +109,7 @@ export function validateRequest(
         req.fileContext.programmingLanguage.languageName == undefined ||
         req.fileContext.programmingLanguage.languageName.length < 1 ||
         req.fileContext.programmingLanguage.languageName.length > 128 ||
-        !CodeWhispererConstants.supportedLanguages.includes(req.fileContext.programmingLanguage.languageName)
+        !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
     )
     const isFileNameValid = !(req.fileContext.filename == undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
