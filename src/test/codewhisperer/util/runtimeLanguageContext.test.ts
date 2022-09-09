@@ -63,7 +63,9 @@ describe('runtimeLanguageContext', function () {
         const python = 'python'
         const javascript = 'javascript'
         const typescript = 'typescript'
-        const jsx = 'jsx'
+
+        // use javascriptreact here because it's jsx's VSC languageId
+        const jsx = 'javascriptreact'
         const plaintext = 'plaintext'
         const cases: [originalLanguage: string, mappedLanguage: string][] = [
             [java, java],
