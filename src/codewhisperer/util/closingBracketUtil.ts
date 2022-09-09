@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { workspace, WorkspaceEdit } from 'vscode'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 
 interface bracketMapType {
     [k: string]: string

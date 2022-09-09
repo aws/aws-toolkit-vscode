@@ -7,7 +7,7 @@ import { AWSError, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { invalidateAccessToken } from '../util/invalidateToken'
 import { isCloud9 } from '../../shared/extensionUtilities'

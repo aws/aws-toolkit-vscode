@@ -11,7 +11,7 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../test
 import { ConfigurationEntry, vsCodeState } from '../../../codewhisperer/models/model'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
-import { CodeWhispererConstants } from '../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import globals from '../../../shared/extensionGlobals'
 
 describe('inlineCompletion', function () {
