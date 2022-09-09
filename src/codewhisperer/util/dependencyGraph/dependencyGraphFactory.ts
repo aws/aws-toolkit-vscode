@@ -5,7 +5,7 @@
 
 import { JavaDependencyGraph } from './javaDependencyGraph'
 import { PythonDependencyGraph } from './pythonDependencyGraph'
-import { CodeWhispererConstants } from '../../models/constants'
+import * as CodeWhispererConstants from '../../models/constants'
 
 const languageMap = {
     java: JavaDependencyGraph,

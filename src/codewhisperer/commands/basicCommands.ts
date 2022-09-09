@@ -8,7 +8,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { showView } from '../vue/backend'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { showAccessTokenPrompt } from '../util/showAccessTokenPrompt'
@@ -27,10 +27,10 @@ export const toggleCodeSuggestions = Commands.declare(
         await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         telemetry.aws_modifySetting.emit({
-            settingId: CodeWhispererConstants.AutoSuggestion.settingId,
+            settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
             settingState: toSet
-                ? CodeWhispererConstants.AutoSuggestion.activated
-                : CodeWhispererConstants.AutoSuggestion.deactivated,
+                ? CodeWhispererConstants.autoSuggestionConfig.activated
+                : CodeWhispererConstants.autoSuggestionConfig.deactivated,
         })
     }
 )
