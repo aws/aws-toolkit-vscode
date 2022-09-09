@@ -49,7 +49,6 @@ export class RuntimeLanguageContext {
     }
 
     public convertLanguage(languageId?: string) {
-        // languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
         let mappedId: string | undefined
         switch (languageId) {
             case CodeWhispererConstants.typescript:
