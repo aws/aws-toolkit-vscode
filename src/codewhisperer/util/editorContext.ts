@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { TelemetryHelper } from './telemetryHelper'
