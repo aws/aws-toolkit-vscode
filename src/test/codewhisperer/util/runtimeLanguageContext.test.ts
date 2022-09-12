@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
+import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
@@ -29,17 +29,41 @@ describe('runtimeLanguageContext', function () {
         })
     })
 
-    describe('convertLanguage', function () {
-        const cases: [languageId: string | undefined, expected: string][] = [
-            [undefined, 'plaintext'],
+    describe('test getLanguageContext', function () {
+        const cases = [
+            ['java', 'java'],
+            ['python', 'python'],
+            ['javascript', 'javascript'],
             ['typescript', 'javascript'],
             ['javascriptreact', 'jsx'],
-            ['go', 'go'],
+            ['plaintext', 'plaintext'],
+            ['ruby', 'plaintext'],
+            ['cpp', 'plaintext'],
+            ['c', 'plaintext'],
+            [undefined, 'plaintext'],
+        ]
+
+        cases.forEach(tuple => {
+            const vscLanguageId = tuple[0]
+            const expectedCwsprLanguageId = tuple[1]
+            it(`given vscLanguage ${vscLanguageId} should return ${expectedCwsprLanguageId}`, function () {
+                const result = runtimeLanguageContext.getLanguageContext(vscLanguageId)
+                assert.strictEqual(result.language as string, expectedCwsprLanguageId)
+            })
+        })
+    })
+
+    describe('mapVscLanguageToCodeWhispererLanguage', function () {
+        const cases = [
+            [undefined, undefined],
+            ['typescript', 'javascript'],
+            ['javascriptreact', 'jsx'],
+            ['go', undefined],
             ['java', 'java'],
             ['javascript', 'javascript'],
             ['python', 'python'],
-            ['c', 'c'],
-            ['COBOL', 'COBOL'],
+            ['c', undefined],
+            ['cpp', undefined],
         ]
 
         beforeEach(function () {

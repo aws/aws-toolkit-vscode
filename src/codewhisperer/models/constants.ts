@@ -81,9 +81,9 @@ export const typescript = 'typescript'
 export const plaintext = 'plaintext'
 
 // use vscode languageId here
-export type SupportedLanguage = 'java' | 'python' | 'javascript' | 'javascriptreact' | 'typescript'
+export const supportedLanguages = ['java', 'python', 'javascript', 'javascriptreact', 'typescript'] as const
 
-export const supportedLanguages: SupportedLanguage[] = ['java', 'python', 'javascript', 'javascriptreact', 'typescript']
+export type SupportedLanguage = typeof supportedLanguages[number]
 
 /**
  * Prompt

@@ -31,30 +31,13 @@ export class RuntimeLanguageContext {
         javascript: 'javascript',
     })
 
-    private runtimeLanguageContext: RuntimeLanguageContextData = {
-        languageContexts: {
-            ['plaintext']: {
-                language: 'plaintext',
-            },
-            ['java']: {
-                language: 'java',
-            },
-            ['python']: {
-                language: 'python',
-            },
-            ['javascript']: {
-                language: 'javascript',
-            },
-        },
-    }
-
-    public getLanguageContext(languageId?: string) {
-        const languageName = this.mapVscLanguageToCodeWhispererLanguage(languageId)
-        if (languageName in this.runtimeLanguageContext.languageContexts) {
-            return this.runtimeLanguageContext.languageContexts[languageName]
-        }
-        return {
-            language: languageName as CodewhispererLanguage,
+    // transform a given vscLanguag into CodewhispererLanguage, if exists, otherwise fallback to plaintext
+    public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
+        const cwsprLanguage: CodewhispererLanguage | undefined = this.supportedLanguageMap.get(vscLanguageId)
+        if (!cwsprLanguage) {
+            return { language: 'plaintext' }
+        } else {
+            return { language: cwsprLanguage }
         }
     }
 
@@ -63,9 +46,8 @@ export class RuntimeLanguageContext {
      * @param vscLanguageId : official vscode languageId
      * @returns corresponding cwspr languageId if any, otherwise fallback to vscLanguageId
      */
-    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): string {
-        if (!vscLanguageId) return CodeWhispererConstants.plaintext
-        return this.supportedLanguageMap.get(vscLanguageId) ?? vscLanguageId
+    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): string | undefined {
+        return this.supportedLanguageMap.get(vscLanguageId) ?? undefined
     }
 
     /**

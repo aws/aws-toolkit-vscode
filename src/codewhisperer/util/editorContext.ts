@@ -13,6 +13,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 
 let tabSize: number = getTabSizeSetting()
+
 export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
     const document = editor.document
     const curPos = editor.selection.active
@@ -35,7 +36,10 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
 
     return {
         filename: getFileName(editor),
-        programmingLanguage: getProgrammingLanguage(editor),
+        programmingLanguage: {
+            languageName:
+                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId) ?? 'plaintext',
+        },
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
     } as codewhispererClient.FileContext
@@ -44,13 +48,6 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
 export function getFileName(editor: vscode.TextEditor): string {
     const fileName = path.basename(editor.document.fileName)
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
-}
-
-// get editor languageId
-export function getProgrammingLanguage(editor: vscode.TextEditor): codewhispererClient.ProgrammingLanguage {
-    return {
-        languageName: editor.document.languageId,
-    }
 }
 
 export function buildListRecommendationRequest(
