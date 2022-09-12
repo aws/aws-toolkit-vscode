@@ -124,7 +124,7 @@ export async function downloadFileAsCommand(
             throw new CancellationError('user')
         }
 
-        showOutputMessage(`Downloading file from ${sourcePath} to ${saveLocation}`, outputChannel)
+        showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
 
         await downloadFile(
             { ...file, bucket },
@@ -136,7 +136,7 @@ export async function downloadFileAsCommand(
             }
         )
 
-        showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
+        showOutputMessage(`Downloaded: ${saveLocation}`, outputChannel)
     })
 }
 

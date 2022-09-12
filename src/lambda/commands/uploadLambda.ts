@@ -484,7 +484,7 @@ async function uploadZipBuffer(
     })
 
     Window.vscode().showInformationMessage(
-        localize('AWS.lambda.upload.done', 'Successfully uploaded Lambda function {0}', lambda.name)
+        localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
     )
 }
 

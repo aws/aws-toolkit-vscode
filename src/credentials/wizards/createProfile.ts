@@ -15,7 +15,7 @@ import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { ProfileKey } from './templates'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { showMessageWithUrl } from '../../shared/utilities/messages'
+import { showLoginFailedMessage } from '../credentialsUtilities'
 
 function createProfileNamePrompter(profiles: ParsedIniData) {
     return createInputBox({
@@ -88,18 +88,7 @@ class ProfileChecker<T extends Profile> extends Prompter<string> {
 
             return (await stsClient.getCallerIdentity()).Account
         } catch (err) {
-            showMessageWithUrl(
-                localize(
-                    'AWS.message.prompt.credentials.invalid',
-                    'Profile {0} is invalid: {1}',
-                    this.name,
-                    (err as any).message
-                ),
-                credentialHelpUrl,
-                undefined,
-                'error'
-            )
-
+            showLoginFailedMessage(this.name, (err as any).message ?? '?')
             return WIZARD_BACK
         } finally {
             loadingBar.dispose()

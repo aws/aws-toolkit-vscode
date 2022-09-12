@@ -26,7 +26,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { credentialHelpUrl } from '../constants'
 import { createHelpButton } from '../ui/buttons'
 import { recentlyUsed } from '../localizedText'
-import { getIcon, codicon } from '../icons'
+import { messages } from '../utilities/messages'
 
 interface ProfileEntry {
     profileName: string
@@ -259,7 +259,7 @@ export async function credentialProfileSelector(
     ) {
         const actions = [
             {
-                label: localize('AWS.credentials.edit', '{0} Edit Credentials', codicon`${getIcon('vscode-edit')}`),
+                label: messages.editCredentials(true),
                 alwaysShow: true,
                 description: localize('AWS.credentials.edit.desc', 'open ~/.aws/credentials'),
             },

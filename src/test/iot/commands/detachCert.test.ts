@@ -59,7 +59,7 @@ describe('detachThingCertCommand', function () {
         const commands = new FakeCommands()
         await detachThingCertCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Failed to detach test-certificate'))
+        assert.ok(window.message.error?.includes('Failed to detach: test-certificate'))
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
