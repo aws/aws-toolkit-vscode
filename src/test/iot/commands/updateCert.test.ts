@@ -48,7 +48,7 @@ describe('updateCertificate', function () {
             await deactivateCertificateCommand(node, window, commands)
 
             assert.strictEqual(window.message.warning, 'Are you sure you want to deactivate certificate test-cert?')
-            assert.strictEqual(window.message.information, 'Deactivated test-cert')
+            assert.strictEqual(window.message.information, 'Deactivated: test-cert')
 
             verify(iot.updateCertificate(deepEqual({ certificateId, newStatus: 'INACTIVE' }))).once()
         })
@@ -66,7 +66,7 @@ describe('updateCertificate', function () {
             const commands = new FakeCommands()
             await deactivateCertificateCommand(node, window, commands)
 
-            assert.ok(window.message.error?.includes('Failed to deactivate test-cert'))
+            assert.ok(window.message.error?.includes('Failed to deactivate: test-cert'))
         })
     })
 
@@ -90,7 +90,7 @@ describe('updateCertificate', function () {
             await activateCertificateCommand(node, window, commands)
 
             assert.strictEqual(window.message.warning, 'Are you sure you want to activate certificate test-cert?')
-            assert.strictEqual(window.message.information, 'Activated test-cert')
+            assert.strictEqual(window.message.information, 'Activated: test-cert')
 
             verify(iot.updateCertificate(deepEqual({ certificateId, newStatus: 'ACTIVE' }))).once()
         })
@@ -108,7 +108,7 @@ describe('updateCertificate', function () {
             const commands = new FakeCommands()
             await activateCertificateCommand(node, window, commands)
 
-            assert.ok(window.message.error?.includes('Failed to activate test-cert'))
+            assert.ok(window.message.error?.includes('Failed to activate: test-cert'))
         })
     })
 
@@ -128,7 +128,7 @@ describe('updateCertificate', function () {
             await revokeCertificateCommand(node, window, commands)
 
             assert.strictEqual(window.message.warning, 'Are you sure you want to revoke certificate test-cert?')
-            assert.strictEqual(window.message.information, 'Revoked test-cert')
+            assert.strictEqual(window.message.information, 'Revoked: test-cert')
 
             verify(iot.updateCertificate(deepEqual({ certificateId, newStatus: 'REVOKED' }))).once()
         })
@@ -146,7 +146,7 @@ describe('updateCertificate', function () {
             const commands = new FakeCommands()
             await revokeCertificateCommand(node, window, commands)
 
-            assert.ok(window.message.error?.includes('Failed to revoke test-cert'))
+            assert.ok(window.message.error?.includes('Failed to revoke: test-cert'))
         })
     })
 })

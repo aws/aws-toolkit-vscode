@@ -31,16 +31,16 @@ export async function deleteRepository(
     try {
         await node.deleteRepository()
 
-        getLogger().info(`Successfully deleted repository ${repositoryName}`)
+        getLogger().info(`deleted repository: ${repositoryName}`)
 
         window.showInformationMessage(
-            localize('AWS.ecr.deleteRepository.success', 'Deleted repository {0}', repositoryName)
+            localize('AWS.ecr.deleteRepository.success', 'Deleted repository: {0}', repositoryName)
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete repository ${repositoryName}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository {0}', repositoryName),
+            localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository: {0}', repositoryName),
             window
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Failed' })

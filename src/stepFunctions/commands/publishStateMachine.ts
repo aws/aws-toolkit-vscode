@@ -97,12 +97,12 @@ async function createStateMachine(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.stepFunctions.publishStateMachine.createSuccess',
-                "Successfully created state machine '{0}'",
+                'Created state machine "{0}"',
                 wizardResponse.name
             )
         )
         outputChannel.appendLine(result.stateMachineArn)
-        logger.info(`Created '${result.stateMachineArn}' successfully`)
+        logger.info(`Created "${result.stateMachineArn}"`)
         outputChannel.appendLine('')
     } catch (err) {
         const msg = localize(
@@ -143,11 +143,11 @@ async function updateStateMachine(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.stepFunctions.publishStateMachine.updateSuccess',
-                "Successfully updated state machine '{0}'",
+                'Updated state machine: {0}',
                 wizardResponse.stateMachineArn
             )
         )
-        logger.info(`Updated ${wizardResponse.stateMachineArn} successfully`)
+        logger.info(`Updated ${wizardResponse.stateMachineArn}`)
         outputChannel.appendLine('')
     } catch (err) {
         const msg = localize(

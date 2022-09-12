@@ -46,7 +46,7 @@ describe('createFolderCommand', function () {
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter a folder to create in s3://bucket-name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Folder Name')
 
-        assert.strictEqual(window.message.information, 'Created folder foo')
+        assert.strictEqual(window.message.information, 'Created folder: foo')
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])

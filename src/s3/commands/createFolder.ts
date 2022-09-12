@@ -45,18 +45,22 @@ export async function createFolderCommand(
         }
 
         const path = node.path + folderName + DEFAULT_DELIMITER
-        getLogger().info(`Creating folder ${path} in bucket '${node.bucket.name}'`)
+        getLogger().info(`Creating folder "${path}" in bucket '${node.bucket.name}'`)
 
         const { folder } = await node
             .createFolder({ path, bucketName: node.bucket.name })
             .catch(e => {
-                const message = localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName)
+                const message = localize(
+                    'AWS.s3.createFolder.error.general',
+                    'Failed to create folder: {0}',
+                    folderName
+                )
                 throw ToolkitError.chain(e, message)
             })
             .finally(() => refreshNode(node, commands))
 
-        getLogger().info('Successfully created folder %O', folder)
-        window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder {0}', folderName))
+        getLogger().info('created folder: %O', folder)
+        window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName))
     })
 }
 

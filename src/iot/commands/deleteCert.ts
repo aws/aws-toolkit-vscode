@@ -106,14 +106,14 @@ export async function deleteCertCommand(
     try {
         await node.iot.deleteCertificate({ certificateId: node.certificate.id, forceDelete: forceDelete })
 
-        getLogger().info(`Successfully deleted Certificate ${node.certificate.id}`)
+        getLogger().info(`deleted certificate: ${node.certificate.id}`)
         window.showInformationMessage(
-            localize('AWS.iot.deleteCert.success', 'Deleted Certificate {0}', node.certificate.id)
+            localize('AWS.iot.deleteCert.success', 'Deleted certificate: {0}', node.certificate.id)
         )
     } catch (e) {
         getLogger().error(`Failed to delete Certificate ${node.certificate.id}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.iot.deleteCert.error', 'Failed to delete Certificate {0}', node.certificate.id),
+            localize('AWS.iot.deleteCert.error', 'Failed to delete certificate: {0}', node.certificate.id),
             window
         )
     }
