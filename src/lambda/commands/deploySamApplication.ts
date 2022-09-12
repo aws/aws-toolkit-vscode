@@ -282,7 +282,7 @@ async function deploy(params: {
     getLogger('channel').info(
         localize(
             'AWS.samcli.deploy.workflow.success',
-            'Successfully deployed SAM Application to CloudFormation Stack: {0}',
+            'Deployed SAM Application to CloudFormation Stack: {0}',
             params.deployParameters.destinationStackName
         )
     )
