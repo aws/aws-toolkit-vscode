@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Prompt users to install YAML plugin when AWSTemplateFormatVersion becomes available in their YAML document"
+}
