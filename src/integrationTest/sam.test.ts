@@ -489,11 +489,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(
-                        createSamApplication(testDir),
-                        /directory already exists/,
-                        'Promise was not rejected'
-                    )
+                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
