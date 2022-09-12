@@ -15,7 +15,7 @@ import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { ProfileKey } from './templates'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { showMessageWithUrl } from '../../shared/utilities/messages'
+import { messages, showMessageWithUrl } from '../../shared/utilities/messages'
 
 function createProfileNamePrompter(profiles: ParsedIniData) {
     return createInputBox({
@@ -88,17 +88,24 @@ class ProfileChecker<T extends Profile> extends Prompter<string> {
 
             return (await stsClient.getCallerIdentity()).Account
         } catch (err) {
+            const editCreds = messages.editCredentials(false)
             showMessageWithUrl(
                 localize(
                     'AWS.message.prompt.credentials.invalid',
-                    'Profile {0} is invalid: {1}',
+                    'Profile "{0}" is invalid: {1}',
                     this.name,
                     (err as any).message
                 ),
                 credentialHelpUrl,
                 undefined,
-                'error'
-            )
+                'error',
+                [editCreds]
+            ).then<string | undefined>(selection => {
+                if (selection === editCreds) {
+                    vscode.commands.executeCommand('aws.credentials.edit')
+                }
+                return selection
+            })
 
             return WIZARD_BACK
         } finally {
