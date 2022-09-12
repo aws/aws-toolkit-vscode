@@ -61,15 +61,6 @@ export const codewhisperer = 'CodeWhisperer'
 /**
  * Supported languages
  */
-export const vscodeLanguageId = {
-    java: 'java',
-    python: 'python',
-    javascript: 'javascript',
-    typescript: 'typescript',
-    jsx: 'javascriptreact',
-    plaintext: 'plaintext',
-}
-
 export const java = 'java'
 
 export const python = 'python'

@@ -7,23 +7,34 @@ import * as assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
-import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
 
     describe('test isLanguageSupported', function () {
-        const cases: string[] = [...CodeWhispererConstants.supportedLanguages, 'cpp', 'kotlin', 'ruby', 'plaintext']
+        const cases: [string, boolean][] = [
+            ['java', true],
+            ['javascript', true],
+            ['typescript', true],
+            ['jsx', true],
+            ['javascriptreact', true],
+            ['python', true],
+            ['ruby', false],
+            ['plaintext', false],
+            ['cpp', false],
+        ]
 
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach(languageId => {
-            const expected = languageContext.isLanguageSupported(languageId)
+        cases.forEach(tuple => {
+            const languageId = tuple[0]
+            const expected = tuple[1]
+
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
-                const language: codewhispererClient.ProgrammingLanguage = { languageName: languageId }
-                const actual = languageContext.isLanguageSupported(language.languageName)
+                // const language: codewhispererClient.ProgrammingLanguage = { languageName: languageId }
+                const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
         })
@@ -83,21 +94,13 @@ describe('runtimeLanguageContext', function () {
         const leftFileContent = 'left'
         const rightFileContent = 'right'
         const filename = 'test'
-        const java = 'java'
-        const python = 'python'
-        const javascript = 'javascript'
-        const typescript = 'typescript'
-
-        // use javascriptreact here because it's jsx's VSC languageId
-        const jsx = 'javascriptreact'
-        const plaintext = 'plaintext'
         const cases: [originalLanguage: string, mappedLanguage: string][] = [
-            [java, java],
-            [python, python],
-            [javascript, javascript],
-            [jsx, javascript],
-            [typescript, javascript],
-            [plaintext, plaintext],
+            ['java', 'java'],
+            ['python', 'python'],
+            ['javascript', 'javascript'],
+            ['jsx', 'javascript'],
+            ['typescript', 'javascript'],
+            ['plaintext', 'plaintext'],
             ['arbitrary string', 'arbitrary string'],
         ]
 

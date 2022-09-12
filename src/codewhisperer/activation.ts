@@ -429,8 +429,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(e.document.languageId) !==
-                        'plaintext' &&
+                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing
                 ) {

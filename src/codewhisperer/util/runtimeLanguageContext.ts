@@ -7,29 +7,29 @@ import { createConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
-interface RuntimeLanguageContextData {
-    /**
-     * collection of all language runtime versions
-     */
-    languageContexts: {
-        [language in CodewhispererLanguage as string]: {
-            /**
-             * the language of the current file
-             */
-            language: CodewhispererLanguage
-        }
-    }
-}
-
 export class RuntimeLanguageContext {
     // a map storing cwspr supporting programming language with key: vscLanguageId and value: cwsprLanguageId
-    private supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
-        java: 'java',
-        python: 'python',
-        javascriptreact: 'jsx',
-        typescript: 'javascript',
-        javascript: 'javascript',
-    })
+    /**
+     * Key: vscLanguageId
+     * Value: CodeWhispererLanguageId
+     */
+    private supportedLanguageMap
+    private supportedLanguageSet = new Set()
+
+    constructor() {
+        this.supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
+            java: 'java',
+            python: 'python',
+            javascriptreact: 'jsx',
+            typescript: 'javascript',
+            javascript: 'javascript',
+        })
+
+        const values = Array.from(this.supportedLanguageMap.values())
+        const keys = Array.from(this.supportedLanguageMap.keys())
+        values.forEach(item => this.supportedLanguageSet.add(item))
+        keys.forEach(item => this.supportedLanguageSet.add(item))
+    }
 
     // transform a given vscLanguag into CodewhispererLanguage, if exists, otherwise fallback to plaintext
     public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
@@ -63,10 +63,10 @@ export class RuntimeLanguageContext {
         const childLanguage = request.fileContext.programmingLanguage
         let parentLanguage: codewhispererClient.ProgrammingLanguage
         switch (childLanguage.languageName) {
-            case CodeWhispererConstants.vscodeLanguageId.typescript:
+            case 'typescript':
                 parentLanguage = { languageName: CodeWhispererConstants.javascript }
                 break
-            case CodeWhispererConstants.vscodeLanguageId.jsx:
+            case 'jsx':
                 parentLanguage = { languageName: CodeWhispererConstants.javascript }
                 break
             default:
@@ -83,8 +83,13 @@ export class RuntimeLanguageContext {
         }
     }
 
-    public isLanguageSupported(vscLanguageId: string): boolean {
-        return this.supportedLanguageMap.has(vscLanguageId)
+    /**
+     *
+     * @param languageId: either vscodeLanguageId or CodewhispererLanguageId
+     * @returns ture if the language is supported by CodeWhisperer otherwise false
+     */
+    public isLanguageSupported(languageId: string): boolean {
+        return this.supportedLanguageSet.has(languageId)
     }
 }
 
