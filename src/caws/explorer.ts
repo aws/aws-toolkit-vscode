@@ -51,7 +51,7 @@ function getLocalCommands() {
 
 function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devfileLocation: vscode.Uri) {
     return [
-        CawsCommands.declared.stopWorkspace.build(currentWorkspace).asTreeNode({
+        CawsCommands.declared.stopWorkspace.build(currentWorkspace, { showPrompt: true }).asTreeNode({
             label: 'Stop Workspace',
             iconPath: getIcon('vscode-stop-circle'),
         }),

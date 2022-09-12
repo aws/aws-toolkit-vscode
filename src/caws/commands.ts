@@ -5,6 +5,9 @@
 
 import globals from '../shared/extensionGlobals'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
@@ -25,6 +28,7 @@ import { showCreateWorkspace } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { showConfirmationMessage } from '../shared/utilities/messages'
 
 async function login(authProvider: CawsAuthenticationProvider, client: CawsClient) {
     const wizard = new LoginWizard(authProvider)
@@ -105,7 +109,24 @@ export async function openCawsResource(client: ConnectedCawsClient, kind: CawsRe
     openCawsUrl(resource)
 }
 
-export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevelopmentWorkspaceId): Promise<void> {
+export async function stopWorkspace(
+    client: ConnectedCawsClient,
+    workspace: DevelopmentWorkspaceId,
+    opts?: { readonly showPrompt?: boolean }
+): Promise<void> {
+    if (opts?.showPrompt) {
+        const confirmed = await showConfirmationMessage({
+            prompt: localize(
+                'aws.caws.stopWorkspace.confirm',
+                'Stopping the workspace will end all running processes. Continue?'
+            ),
+        })
+
+        if (!confirmed) {
+            throw new CancellationError('user')
+        }
+    }
+
     await client.stopDevelopmentWorkspace({
         id: workspace.id,
         projectName: workspace.project.name,
