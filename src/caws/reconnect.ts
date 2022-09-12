@@ -52,9 +52,9 @@ function handleRestart(client: ConnectedCawsClient, ctx: ExtContext, cawsArn: st
         if (workspaceId && workspaceId in pendingReconnects) {
             const workspace = pendingReconnects[workspaceId]
             const workspaceName = getWorkspaceName(workspace.alias, workspaceId)
-            getLogger().info(`REMOVED.codes: ssh session to ${workspaceName} has reconnected successfully`)
+            getLogger().info(`REMOVED.codes: ssh session reconnected to workspace: ${workspaceName}`)
             vscode.window.showInformationMessage(
-                localize('AWS.caws.reconnect.success', 'Successfully reconnected to: {0}', workspaceName)
+                localize('AWS.caws.reconnect.success', 'Reconnected to workspace: {0}', workspaceName)
             )
             delete pendingReconnects[workspaceId]
             memento.update(CAWS_RECONNECT_KEY, pendingReconnects)
