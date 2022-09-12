@@ -35,15 +35,15 @@ export async function createRepository(
     try {
         const repository = await node.createRepository(repositoryName)
 
-        getLogger().info('Successfully created repository %O', repository)
+        getLogger().info('created repository: %O', repository)
         window.showInformationMessage(
-            localize('AWS.ecr.createRepository.success', 'Created repository {0}', repositoryName)
+            localize('AWS.ecr.createRepository.success', 'Created repository: {0}', repositoryName)
         )
         telemetry.ecr_createRepository.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create repository ${repositoryName}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.ecr.createRepository.failure', 'Failed to create repository {0}', repositoryName),
+            localize('AWS.ecr.createRepository.failure', 'Failed to create repository: {0}', repositoryName),
             window
         )
         telemetry.ecr_createRepository.emit({ result: 'Failed' })

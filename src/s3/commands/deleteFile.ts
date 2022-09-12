@@ -59,9 +59,9 @@ export async function deleteFileCommand(
             })
             .finally(() => refreshNode(node.parent, commands))
 
-        getLogger().info(`Successfully deleted file ${filePath}`)
+        getLogger().info(`deleted file: ${filePath}`)
         window.setStatusBarMessage(
-            addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted {0}', node.file.name)),
+            addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted: {0}', node.file.name)),
             DELETE_FILE_DISPLAY_TIMEOUT_MS
         )
     })
