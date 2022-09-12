@@ -53,7 +53,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
         try {
             const client = new DefaultStepFunctionsClient(this.stateMachine.region)
             const startExecResponse = await client.executeStateMachine(this.stateMachine.arn, input)
-            this.logger.info('Successfully started execution for Step Functions State Machine')
+            this.logger.info('started execution for Step Functions State Machine')
             this.channel.appendLine(
                 localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
             )

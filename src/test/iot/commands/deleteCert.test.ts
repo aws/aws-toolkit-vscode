@@ -88,7 +88,7 @@ describe('deleteCertCommand', function () {
         const commands = new FakeCommands()
         await deleteCertCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Certificate test-cert'))
+        assert.ok(window.message.error?.includes('Failed to delete certificate: test-cert'))
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

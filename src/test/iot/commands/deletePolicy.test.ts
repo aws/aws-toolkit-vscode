@@ -96,7 +96,7 @@ describe('deletePolicyCommand', function () {
         const commands = new FakeCommands()
         await deletePolicyCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Policy test-policy'))
+        assert.ok(window.message.error?.includes('Failed to delete Policy: test-policy'))
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

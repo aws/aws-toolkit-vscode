@@ -56,11 +56,11 @@ export async function deleteDocument(
                 )
             )
         } else {
-            logger.info(`Deleted Systems Manager Document successfully ${node.documentName}`)
+            logger.info(`Deleted Systems Manager Document: ${node.documentName}`)
             vscode.window.showInformationMessage(
                 localize(
                     'AWS.message.info.ssmDocument.deleteDocument.delete_success',
-                    'Deleted document {0} successfully.',
+                    'Deleted document: {0}',
                     node.documentName
                 )
             )

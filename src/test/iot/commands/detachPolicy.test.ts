@@ -56,6 +56,6 @@ describe('detachPolicyCommand', function () {
         const commands = new FakeCommands()
         await detachPolicyCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Failed to detach test-policy'))
+        assert.ok(window.message.error?.includes('Failed to detach: test-policy'))
     })
 })
