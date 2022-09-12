@@ -55,14 +55,14 @@ export async function deactivateCertificateCommand(
     try {
         await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_INACTIVE })
 
-        getLogger().info(`Successfully deactivated certificate ${certId}`)
+        getLogger().info(`deactivated certificate: ${certId}`)
         window.showInformationMessage(
-            localize('AWS.iot.deactivateCert.success', 'Deactivated {0}', node.certificate.id)
+            localize('AWS.iot.deactivateCert.success', 'Deactivated: {0}', node.certificate.id)
         )
     } catch (e) {
         getLogger().error(`Failed to deactivate certificate ${certId}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.iot.deactivateCert.error', 'Failed to deactivate {0}', node.certificate.id),
+            localize('AWS.iot.deactivateCert.error', 'Failed to deactivate: {0}', node.certificate.id),
             window
         )
     }
@@ -111,12 +111,12 @@ export async function activateCertificateCommand(
     try {
         await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_ACTIVE })
 
-        getLogger().info(`Successfully activated certificate ${certId}`)
-        window.showInformationMessage(localize('AWS.iot.activateCert.success', 'Activated {0}', node.certificate.id))
+        getLogger().info(`activated certificate: ${certId}`)
+        window.showInformationMessage(localize('AWS.iot.activateCert.success', 'Activated: {0}', node.certificate.id))
     } catch (e) {
         getLogger().error(`Failed to activate certificate ${certId}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.iot.activateCert.error', 'Failed to activate {0}', node.certificate.id),
+            localize('AWS.iot.activateCert.error', 'Failed to activate: {0}', node.certificate.id),
             window
         )
     }
@@ -157,15 +157,15 @@ export async function revokeCertificateCommand(
         return
     }
 
-    getLogger().info(`Revoking certificate ${certId}`)
+    getLogger().info(`Revoking certificate: ${certId}`)
     try {
         await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_REVOKED })
 
-        getLogger().info(`Successfully revoked certificate ${certId}`)
-        window.showInformationMessage(localize('AWS.iot.revokeCert.success', 'Revoked {0}', node.certificate.id))
+        getLogger().info(`revoked certificate: ${certId}`)
+        window.showInformationMessage(localize('AWS.iot.revokeCert.success', 'Revoked: {0}', node.certificate.id))
     } catch (e) {
         getLogger().error(`Failed to revoke certificate ${certId}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.revokeCert.error', 'Failed to revoke {0}', node.certificate.id), window)
+        showViewLogsMessage(localize('AWS.iot.revokeCert.error', 'Failed to revoke: {0}', node.certificate.id), window)
     }
 
     /* Refresh both things and certificates nodes so the status is updated in

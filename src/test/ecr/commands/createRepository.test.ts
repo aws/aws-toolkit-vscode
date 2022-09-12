@@ -39,7 +39,7 @@ describe('createRepositoryCommand', function () {
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new repository name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Repository Name')
 
-        assert.strictEqual(window.message.information, `Created repository ${repoName}`)
+        assert.strictEqual(window.message.information, `Created repository: ${repoName}`)
         assert.ok(stub.calledOnce)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')

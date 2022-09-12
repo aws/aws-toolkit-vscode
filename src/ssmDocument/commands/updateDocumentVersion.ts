@@ -43,7 +43,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                     vscode.window.showInformationMessage(
                         localize(
                             'AWS.message.info.ssmDocument.updateDocumentVersion.success',
-                            'Updated document {0} default version to {1} successfully',
+                            'Updated document {0} default version to {1}',
                             node.documentName,
                             documentVersion
                         )
