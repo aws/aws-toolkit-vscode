@@ -296,15 +296,14 @@ export async function activate(context: ExtContext): Promise<void> {
                 )?.countTotalTokens(e)
                 /**
                  * Handle this keystroke event only when
-                 * 1. It is in current non plaintext active editor
+                 * 1. It is in current active editor with cwspr supported file types
                  * 2. It is not a backspace
                  * 3. It is not caused by CodeWhisperer editing
                  * 4. It is not from undo/redo.
                  */
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(e.document.languageId) !==
-                        'plaintext' &&
+                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing &&
                     !JSON.stringify(e).includes('reason')
