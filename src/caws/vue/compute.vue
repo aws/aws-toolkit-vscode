@@ -19,7 +19,7 @@
             </div>
             <div id="timeout" style="grid-area: timeout">
                 <div>
-                    <span class="label-context soft">Timeout length</span>
+                    <span class="label-context soft">Timeout Length</span>
                     <b>{{ timeout }}</b>
                 </div>
                 <button
@@ -63,7 +63,7 @@ const client = WebviewClientFactory.create<CawsConfigureWebview | CawsCreateWebv
 
 const DEFAULT_COMPUTE_SETTINGS = {
     inactivityTimeoutMinutes: 15,
-    instanceType: 'dev.standard1.medium',
+    instanceType: 'dev.standard1.small',
     persistentStorage: { sizeInGiB: 16 },
 }
 
@@ -84,9 +84,9 @@ export default defineComponent({
     data() {
         return {
             changed: {} as Record<keyof WorkspaceSettings, boolean>,
-            originalData: new VueModel(this.modelValue),
             readonlyText: "Can't be changed after creation.",
             descriptions: {} as Record<string, { name: string; specs: string } | undefined>,
+            originalData: undefined as typeof this.modelValue | undefined,
         }
     },
     mixins: [saveData],
@@ -95,11 +95,18 @@ export default defineComponent({
     },
     watch: {
         model(settings?: WorkspaceSettings) {
-            for (const [k, v] of Object.entries(settings ?? {})) {
+            if (settings === undefined || this.originalData === undefined) {
+                return
+            }
+
+            for (const [k, v] of Object.entries(settings)) {
                 // TODO: use deep compare instead of strict so storage size works
                 this.changed[k as keyof WorkspaceSettings] =
                     this.originalData[k as keyof typeof this.originalData] !== v
             }
+        },
+        modelValue() {
+            this.originalData ??= this.modelValue
         },
     },
     methods: {

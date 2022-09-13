@@ -43,12 +43,12 @@
             <!-- New Branch -->
             <span class="flex-sizing">
                 <label class="options-label soft mb-8" style="display: block" for="branch-input"
-                    >Optional - Create new branch from existing</label
+                    >Optional - Create a Branch from an Existing Branch</label
                 >
                 <input
                     id="branch-input"
                     type="text"
-                    placeholder="New branch name"
+                    placeholder="branch-name"
                     v-model="model.newBranch"
                     @input="update"
                 />
@@ -56,6 +56,18 @@
                 <div class="input-validation" v-if="branchError">{{ branchError }}</div>
             </span>
         </div>
+    </div>
+
+    <div class="source-pickers" v-if="model.type === 'none'">
+        <span style="width: 100%">
+            <label class="option-label soft">Project</label>
+            <select class="picker" v-model="model.selectedProject" @input="update">
+                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
+                <option v-for="project in projects" :key="project.name" :value="project">
+                    {{ `${project.org.name} / ${project.name}` }}
+                </option>
+            </select>
+        </span>
     </div>
 </template>
 

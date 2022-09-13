@@ -20,7 +20,6 @@ import {
 } from '../../wizards/workspaceSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { CawsBranch, CawsProject, ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
-import { selectCawsResource } from '../../wizards/selectResource'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -34,6 +33,7 @@ interface LinkedResponse {
 
 interface EmptyResponse {
     readonly type: 'none'
+    readonly selectedProject: CawsProject
 }
 
 export type SourceResponse = LinkedResponse | EmptyResponse
@@ -131,15 +131,10 @@ export class CawsCreateWebview extends VueWebview {
     }
 
     private async createEmptyWorkpace(settings: WorkspaceSettings, source: EmptyResponse) {
-        const project = await selectCawsResource(this.client, 'project')
-        if (!project) {
-            throw new CancellationError('user')
-        }
-
         return this.client.createDevelopmentWorkspace({
             ides: [{ name: 'VSCode' }],
-            projectName: project.name,
-            organizationName: project.org.name,
+            projectName: source.selectedProject.name,
+            organizationName: source.selectedProject.org.name,
             ...settings,
         })
     }
