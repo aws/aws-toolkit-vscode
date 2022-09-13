@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { createConstantMap } from '../../shared/utilities/tsUtils'
+import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
 export class RuntimeLanguageContext {
-    // a map storing cwspr supporting programming language with key: vscLanguageId and value: cwsprLanguageId
     /**
+     * A map storing cwspr supporting programming language with key: vscLanguageId and value: cwsprLanguageId
      * Key: vscLanguageId
      * Value: CodeWhispererLanguageId
      */
-    private supportedLanguageMap
-    private supportedLanguageSet = new Set()
+    private supportedLanguageMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>
+    private supportedLanguageSet = new Set<string>()
 
     constructor() {
         this.supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
@@ -31,7 +31,7 @@ export class RuntimeLanguageContext {
         keys.forEach(item => this.supportedLanguageSet.add(item))
     }
 
-    // transform a given vscLanguag into CodewhispererLanguage, if exists, otherwise fallback to plaintext
+    // transform a given vscodeLanguageId into CodewhispererLanguage if exists, otherwise fallback to plaintext
     public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
         const cwsprLanguage: CodewhispererLanguage | undefined = this.supportedLanguageMap.get(vscLanguageId)
         if (!cwsprLanguage) {
@@ -52,7 +52,7 @@ export class RuntimeLanguageContext {
 
     /**
      * Mapping the field ProgrammingLanguage of codewhisperer generateRecommendationRequest | listRecommendationRequest to
-     * its cwspr runtime language e.g. jsx -> typescript, typescript -> typescript
+     * its Codewhisperer runtime language e.g. jsx -> typescript, typescript -> typescript
      * @param request : cwspr generateRecommendationRequest | ListRecommendationRequest
      * @returns request with source language name mapped to cwspr runtime language
      */
@@ -85,7 +85,7 @@ export class RuntimeLanguageContext {
 
     /**
      *
-     * @param languageId: either vscodeLanguageId or CodewhispererLanguageId
+     * @param languageId: either vscodeLanguageId or CodewhispererLanguage
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {

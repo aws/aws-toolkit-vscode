@@ -33,7 +33,6 @@ describe('runtimeLanguageContext', function () {
             const expected = tuple[1]
 
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
-                // const language: codewhispererClient.ProgrammingLanguage = { languageName: languageId }
                 const actual = languageContext.isLanguageSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
