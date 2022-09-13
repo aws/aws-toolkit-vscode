@@ -184,7 +184,7 @@ function reportClosingMessage(): void {
     vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: 'VSCode will now close this session. When the workspace is available again it will re-open',
+            title: 'Session ended. Session will restore when the workspace is available again.',
         },
         async (progress, token) => {
             await sleep(2500)

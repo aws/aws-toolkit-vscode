@@ -35,7 +35,7 @@
     <settings-panel
         id="compute-settings-panel"
         title="Compute settings"
-        description="All settings except VPC Connections and EBS Volume can be changed after creation."
+        description="All settings except Storage can be changed after creation."
     >
         <compute-panel v-model="compute" type="configure" @edit-settings="editCompute"></compute-panel>
     </settings-panel>

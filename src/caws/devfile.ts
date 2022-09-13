@@ -25,11 +25,11 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
     // could also just parse the devfile...
     const location = path.relative('/projects', uri.fsPath)
 
-    const title = localize('AWS.caws.container.restart', 'Restarting container...')
+    const title = localize('AWS.caws.container.restart', 'Restarting workspace container...')
     await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, async () => {
         if (checkUnsavedChanges()) {
             // TODO: show confirmation prompt instead
-            throw new Error('Cannot stop workspace with unsaved changes')
+            throw new ToolkitError('Cannot update devfile with unsaved changes in the workspace')
         }
 
         try {

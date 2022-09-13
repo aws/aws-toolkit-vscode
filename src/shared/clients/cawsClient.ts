@@ -579,7 +579,7 @@ class CawsClientInternal {
                     })
                 } else {
                     progress.report({
-                        message: localize('AWS.caws.startMde.starting', 'waiting for workspace...'),
+                        message: localize('AWS.caws.startMde.starting', 'opening workspace...'),
                     })
                 }
 

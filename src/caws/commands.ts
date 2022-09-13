@@ -270,9 +270,12 @@ export class CawsCommands {
 
     public async openWorkspace(id?: DevelopmentWorkspaceId, targetPath?: string): Promise<void> {
         if (vscode.env.remoteName === 'ssh-remote') {
-            throw new ToolkitError('Cannot open workspace when connected to a remote environment', {
-                code: 'ConnectedToRemote',
-            })
+            throw new ToolkitError(
+                'Cannot open workspace from a remote environment. Try again from a local VS Code instance.',
+                {
+                    code: 'ConnectedToRemote',
+                }
+            )
         }
 
         const workspace = id ?? (await this.selectWorkspace())

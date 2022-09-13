@@ -32,7 +32,7 @@
                 </button>
             </div>
             <div id="volume" style="grid-area: volume">
-                <span class="label-context soft">EBS Volume</span>
+                <span class="label-context soft">Storage</span>
                 <b>{{ storage }}</b>
                 <p class="mt-0 mb-0" v-if="mode === 'update'">{{ readonlyText }}</p>
                 <div v-else>
@@ -83,6 +83,8 @@ export default defineComponent({
     },
     data() {
         return {
+            changed: {} as Record<keyof WorkspaceSettings, boolean>,
+            originalData: new VueModel(this.modelValue),
             readonlyText: "Can't be changed after creation.",
             descriptions: {} as Record<string, { name: string; specs: string } | undefined>,
         }
@@ -91,27 +93,50 @@ export default defineComponent({
     created() {
         client.getAllInstanceDescriptions().then(desc => (this.descriptions = desc))
     },
+    watch: {
+        model(settings?: WorkspaceSettings) {
+            for (const [k, v] of Object.entries(settings ?? {})) {
+                // TODO: use deep compare instead of strict so storage size works
+                this.changed[k as keyof WorkspaceSettings] =
+                    this.originalData[k as keyof typeof this.originalData] !== v
+            }
+        },
+    },
+    methods: {
+        getNeedsRestartText(key: keyof WorkspaceSettings) {
+            return this.mode === 'update' && this.changed[key] ? ' (needs restart)' : ''
+        },
+    },
     computed: {
-        value() {
+        model() {
             return this.modelValue
         },
         instance() {
-            const type = this.value.instanceType
+            const type = this.model.instanceType
             const desc = this.descriptions[type] ? { ...this.descriptions[type] } : { name: '', specs: '' }
-            desc.name = type === DEFAULT_COMPUTE_SETTINGS.instanceType ? `${desc.name} (default)` : desc.name
+            const suffix =
+                this.getNeedsRestartText('instanceType') ||
+                (type === DEFAULT_COMPUTE_SETTINGS.instanceType ? ' (default)' : '')
+
+            desc.name = `${desc.name}${suffix}`
+
             return desc
         },
         timeout() {
-            const time = this.value.inactivityTimeoutMinutes
-            const timeDesc = `${time} mins`
-            return time === DEFAULT_COMPUTE_SETTINGS.inactivityTimeoutMinutes ? `${timeDesc} (default)` : timeDesc
+            const time = this.model.inactivityTimeoutMinutes
+            const timeDesc = `${time} minutes`
+            const suffix =
+                this.getNeedsRestartText('inactivityTimeoutMinutes') ||
+                (time === DEFAULT_COMPUTE_SETTINGS.inactivityTimeoutMinutes ? ' (default)' : '')
+
+            return `${timeDesc}${suffix}`
         },
         storage() {
-            const storage = this.value.persistentStorage.sizeInGiB
+            const storage = this.model.persistentStorage.sizeInGiB
             const storageDesc = `${storage} GB`
-            return storage === DEFAULT_COMPUTE_SETTINGS.persistentStorage.sizeInGiB
-                ? `${storageDesc} (default)`
-                : storageDesc
+            const suffix = storage === DEFAULT_COMPUTE_SETTINGS.persistentStorage.sizeInGiB ? ' (default)' : ''
+
+            return `${storageDesc}${suffix}`
         },
     },
     emits: {
