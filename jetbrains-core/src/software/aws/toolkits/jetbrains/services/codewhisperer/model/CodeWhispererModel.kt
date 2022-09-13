@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
 
@@ -23,7 +24,18 @@ data class FileContextInfo(
     val programmingLanguage: ProgrammingLanguage
 )
 
-data class ProgrammingLanguage(val languageName: String)
+data class ProgrammingLanguage(private val myLanguageName: String) {
+    // case-insensitive
+    val languageName get() = myLanguageName.lowercase()
+    constructor(codewhispererLanguage: CodewhispererLanguage) : this(codewhispererLanguage.toString())
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is ProgrammingLanguage) return false
+        return other.languageName == this.languageName
+    }
+
+    override fun toString(): String = languageName
+}
 
 data class RecommendationContext(
     val details: List<DetailContext>,

@@ -11,7 +11,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.toCodeWhispererLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext

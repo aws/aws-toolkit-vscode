@@ -13,7 +13,7 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.ui.popup.AbstractPopup
-import software.amazon.awssdk.utils.StringUtils.lowerCase
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -36,24 +36,19 @@ object CodeWhispererEditorUtil {
         return FileContextInfo(caretContext, fileName, programmingLanguage)
     }
 
-    fun ProgrammingLanguage.toCodeWhispererLanguage() = when (languageName) {
-        CodewhispererLanguage.Python.toString() -> CodewhispererLanguage.Python
-        CodewhispererLanguage.Java.toString() -> CodewhispererLanguage.Java
-        CodewhispererLanguage.Javascript.toString() -> CodewhispererLanguage.Javascript
-        "plain_text" -> CodewhispererLanguage.Plaintext
-        else -> CodewhispererLanguage.Unknown
-    }
-
+    /**
+     * return IDE identifiable ProgrammingLanguage e.g. ProgrammingLanguage("java"), ProgrammingLanguage("jsx harmony") etc.
+     */
     val PsiFile.programmingLanguage: ProgrammingLanguage
-        get() = ProgrammingLanguage(lowerCase(this.fileType.name))
+        get() = ProgrammingLanguage(this.fileType.name)
 
     val PsiFile.codeWhispererLanguage: CodewhispererLanguage
         get() = this.programmingLanguage.toCodeWhispererLanguage()
 
     val VirtualFile.codeWhispererLanguage: CodewhispererLanguage
-        get() = ProgrammingLanguage(fileType.name.lowercase()).toCodeWhispererLanguage()
+        get() = ProgrammingLanguage(fileType.name).toCodeWhispererLanguage()
 
-    private fun extractCaretContext(editor: Editor): CaretContext {
+    fun extractCaretContext(editor: Editor): CaretContext {
         val document = editor.document
         val caretOffset = editor.caretModel.primaryCaret.offset
         val totalCharLength = editor.document.textLength
