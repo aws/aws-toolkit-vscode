@@ -207,8 +207,7 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            const languageId = editor?.document?.languageId
-            const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+            const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
             getLogger().verbose(
                 `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
                     [],
@@ -281,7 +280,7 @@ export class RecommendationHandler {
                 requestId,
                 sessionId,
                 page,
-                editor?.document.languageId
+                editor.document.languageId
             )
         }
         this.requestId = requestId

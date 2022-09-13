@@ -2,6 +2,7 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
@@ -14,6 +15,8 @@ export class RuntimeLanguageContext {
      * Value: CodeWhispererLanguageId
      */
     private supportedLanguageMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>
+
+    // A set contains vscode languageId and CodeWhispererLanguage
     private supportedLanguageSet = new Set<string>()
 
     constructor() {
@@ -31,23 +34,21 @@ export class RuntimeLanguageContext {
         keys.forEach(item => this.supportedLanguageSet.add(item))
     }
 
-    // transform a given vscodeLanguageId into CodewhispererLanguage if exists, otherwise fallback to plaintext
-    public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
-        const cwsprLanguage: CodewhispererLanguage | undefined = this.supportedLanguageMap.get(vscLanguageId)
-        if (!cwsprLanguage) {
-            return { language: 'plaintext' }
-        } else {
-            return { language: cwsprLanguage }
-        }
-    }
-
     /**
      *
      * @param vscLanguageId : official vscode languageId
-     * @returns corresponding cwspr languageId if any, otherwise fallback to vscLanguageId
+     * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
      */
-    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): string | undefined {
+    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): CodewhispererLanguage | undefined {
         return this.supportedLanguageMap.get(vscLanguageId) ?? undefined
+    }
+
+    /**
+     * @param vscLanguageId : official vscode languageId
+     * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
+     */
+    public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
+        return { language: this.mapVscLanguageToCodeWhispererLanguage(vscLanguageId) ?? 'plaintext' }
     }
 
     /**

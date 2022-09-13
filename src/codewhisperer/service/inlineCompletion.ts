@@ -110,10 +110,7 @@ export class InlineCompletion {
                 { undoStopAfter: false, undoStopBefore: false }
             )
             .then(async () => {
-                let languageId = editor?.document?.languageId
-                languageId =
-                    languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-                const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+                const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
                 const index = this.items[this.position].index
                 const acceptArguments = [
                     this._range,

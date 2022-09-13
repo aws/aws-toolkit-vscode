@@ -41,9 +41,7 @@ export function getCompletionItem(
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
-    let languageId = document.languageId
-    languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-    const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+    const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
     let references = undefined
     if (recommendationDetail.references != undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references
