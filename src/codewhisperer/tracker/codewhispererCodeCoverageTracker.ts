@@ -10,6 +10,7 @@ import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
 import { distance } from 'fastest-levenshtein'
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -170,7 +171,7 @@ export class CodeWhispererCodeCoverageTracker {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
         // only include contentChanges from user action
         if (
-            !CodeWhispererConstants.supportedLanguages.includes(e.document.languageId) ||
+            !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
             vsCodeState.isCodeWhispererEditing ||
             e.contentChanges.length !== 1
         )
@@ -189,7 +190,7 @@ export class CodeWhispererCodeCoverageTracker {
 
     public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
     public static getTracker(language: string, memento: vscode.Memento): CodeWhispererCodeCoverageTracker | undefined {
-        if (CodeWhispererConstants.supportedLanguages.includes(language)) {
+        if (runtimeLanguageContext.isLanguageSupported(language)) {
             const instance = this.instances.get(language) ?? new this(language as CodewhispererLanguage, memento)
             this.instances.set(language, instance)
             return instance

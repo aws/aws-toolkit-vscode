@@ -64,25 +64,6 @@ describe('editorContext', function () {
         })
     })
 
-    describe('getProgrammingLanguage', function () {
-        it('Should return expected programming language and set invocationContext.language', function () {
-            const editor = createMockTextEditor('', 'test.py', 'python', 1, 17)
-            const actual = EditorContext.getProgrammingLanguage(editor)
-            const expected: codewhispererClient.ProgrammingLanguage = {
-                languageName: 'python',
-            }
-            assert.deepStrictEqual(actual, expected)
-        })
-
-        it('Should return expected programming language and set invocationContext.language when editor is undefined', function () {
-            const actual = EditorContext.getProgrammingLanguage(undefined)
-            const expected: codewhispererClient.ProgrammingLanguage = {
-                languageName: '',
-            }
-            assert.deepStrictEqual(actual, expected)
-        })
-    })
-
     describe('validateRequest', function () {
         it('Should return false if request filename.length is invalid', function () {
             const req = createMockClientRequest()
