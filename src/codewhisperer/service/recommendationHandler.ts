@@ -153,9 +153,10 @@ export class RecommendationHandler {
              * Validate request
              */
             if (EditorContext.validateRequest(req)) {
+                const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(req)
                 const codewhispererPromise = pagination
-                    ? client.listRecommendations(req)
-                    : client.generateRecommendations(req)
+                    ? client.listRecommendations(mappedReq)
+                    : client.generateRecommendations(mappedReq)
                 shouldRecordServiceInvocation = true
                 const resp = await this.getServerResponse(
                     triggerType,
@@ -183,11 +184,7 @@ export class RecommendationHandler {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
                 errorCode = `Invalid Request`
-                if (
-                    !CodeWhispererConstants.supportedLanguages.includes(
-                        req.fileContext.programmingLanguage.languageName
-                    )
-                ) {
+                if (!runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)) {
                     this.errorMessagePrompt = `${req.fileContext.programmingLanguage.languageName} is currently not supported by CodeWhisperer`
                 }
             }
@@ -210,8 +207,7 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            const languageId = editor?.document?.languageId
-            const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+            const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
             getLogger().verbose(
                 `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
                     [],
@@ -284,7 +280,7 @@ export class RecommendationHandler {
                 requestId,
                 sessionId,
                 page,
-                editor?.document.languageId
+                editor.document.languageId
             )
         }
         this.requestId = requestId
