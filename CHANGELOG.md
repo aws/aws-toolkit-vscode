@@ -1,3 +1,10 @@
+## 1.50.0 2022-09-13
+
+- **Bug Fix** Debugging Python image-based lambdas fails with `Init failed error=exec: "-m": executable file not found`
+- **Feature** if "Create Credentials Profile" fails, error message now shows "Edit Credentials" button
+- **Feature** Decrease the amount of space SAM/CFN schemas take on the status bar
+- **Feature** CodeWhisperer now supports .jsx files
+
 ## 1.49.0 2022-08-29
 
 - **Bug Fix** CodeWhisperer adds redundant closing brackets/parens/braces
