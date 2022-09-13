@@ -66,7 +66,7 @@ const baseConfig = {
                 ],
             },
             {
-                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice)/,
+                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice|yaml-language-server)/,
                 use: { loader: 'umd-compat-loader' },
             },
         ],
