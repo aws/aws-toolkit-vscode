@@ -10,8 +10,7 @@ import {
     AuthenticationSessionsChangeEvent,
     Session,
 } from '../credentials/authentication'
-import { getRegistrationCache } from '../credentials/sso/cache'
-import { ClientRegistration, SsoToken } from '../credentials/sso/model'
+import { getRegistrationCache, SsoAccess } from '../credentials/sso/cache'
 import { SsoAccessTokenProvider } from '../credentials/sso/ssoAccessTokenProvider'
 import { ConnectedCawsClient, createClient, UserDetails } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
@@ -31,13 +30,6 @@ async function verifySession(token: string, id?: string | UserDetails) {
     await client.setCredentials(token, id)
 
     return client.verifySession()
-}
-
-interface SonoAccess {
-    readonly token: SsoToken
-    readonly registration: ClientRegistration
-    readonly region: typeof CAWS_SONO_PROFILE['region']
-    readonly startUrl: typeof CAWS_SONO_PROFILE['startUrl']
 }
 
 interface UserMetadata extends UserDetails {
@@ -82,8 +74,8 @@ export class CawsAuthStorage {
         }
     }
 
-    private getTokenCache(): KeyedCache<SonoAccess> {
-        function read(data: string): SonoAccess {
+    private getTokenCache(): KeyedCache<SsoAccess> {
+        function read(data: string): SsoAccess {
             return JSON.parse(data, (key, value) => {
                 if (key === 'expiresAt') {
                     return new Date(value)
@@ -93,7 +85,7 @@ export class CawsAuthStorage {
             })
         }
 
-        function write(data: SonoAccess): string {
+        function write(data: SsoAccess): string {
             return JSON.stringify(data, (key, value) => {
                 if (key === 'expiresAt' && value instanceof Date) {
                     return value.toISOString()
@@ -122,6 +114,28 @@ export class CawsAuthStorage {
         })
 
         return provider
+    }
+
+    public async getTokenFromDisk(): Promise<SsoAccess['token'] | undefined> {
+        const tokenProvider = new SsoAccessTokenProvider({
+            ...CAWS_SONO_PROFILE,
+            identifier: 'caws', // MDE has named the 'sso-session' as 'caws' in the `config` file
+        })
+
+        const token = await tokenProvider.getToken()
+        if (token !== undefined) {
+            const person = await verifySession(token.accessToken)
+            const accessDetails: SsoAccess = {
+                token: { ...token, identity: person.userId },
+                region: CAWS_SONO_PROFILE.region,
+                startUrl: CAWS_SONO_PROFILE.startUrl,
+            }
+
+            await this.updateUser(person.userId, { ...person, canAutoConnect: true })
+            await this.getTokenCache().save(person.userId, accessDetails)
+
+            return accessDetails.token
+        }
     }
 
     public async getPat(id: string): Promise<string | undefined> {
@@ -207,7 +221,6 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         const token = await tokenProvider.getToken()
 
         if (!token) {
-            // Prompter user to login again here?
             throw new Error('Account has no access token')
         }
 
@@ -243,7 +256,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
      * It's important to note that creating a session does not require knowledge of an account.
      * Usually with an SSO flow we won't know account details until after a session has been created.
      */
-    public async createSession(account: CawsAccount): Promise<CawsSession> {
+    public async createSession(account: Pick<CawsAccount, 'id'>): Promise<CawsSession> {
         const session = await this.login(account)
 
         this.sessions.set(session.id, session)
@@ -298,6 +311,14 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         await this.storage.storePat(client.identity.id, resp.secret)
 
         return resp.secret
+    }
+
+    public async tryLoginFromDisk(): Promise<CawsSession | undefined> {
+        const token = await this.storage.getTokenFromDisk()
+
+        if (token?.identity !== undefined) {
+            return this.createSession({ id: token.identity })
+        }
     }
 
     private isSessionExpired(session: Pick<CawsSession, 'id'>): boolean {

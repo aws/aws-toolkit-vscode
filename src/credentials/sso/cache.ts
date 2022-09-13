@@ -17,7 +17,7 @@ interface RegistrationKey {
     readonly scopes?: string[]
 }
 
-interface SsoAccess {
+export interface SsoAccess {
     readonly token: SsoToken
     readonly region: string
     readonly startUrl: string

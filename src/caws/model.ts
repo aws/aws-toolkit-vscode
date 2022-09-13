@@ -120,6 +120,8 @@ export async function autoConnect(authProvider: CawsAuthenticationProvider) {
             getLogger().debug(`REMOVED.codes: unable to auto-connect with user "${account.label}": %O`, err)
         }
     }
+
+    return authProvider.tryLoginFromDisk()
 }
 
 export function createClientFactory(authProvider: CawsAuthenticationProvider): () => Promise<CawsClient> {
