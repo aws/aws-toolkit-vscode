@@ -38,6 +38,7 @@ import { getLanguageModelCache } from '../../shared/languageServer/languageModel
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 import globals from '../../shared/extensionGlobals'
+import { TextDocumentValidator } from '../../shared/languageServer/utils/validator'
 
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
@@ -236,38 +237,21 @@ connection.onRequest(ForceValidateRequest.type, async uri => {
     })
 })
 
+const validator = new TextDocumentValidator(validateTextDocument)
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
     LimitExceededWarnings.cancel(change.document.uri)
-    triggerValidation(change.document)
+    validator.triggerValidation(change.document)
 })
 
 // a document has closed: clear all diagnostics
 documents.onDidClose(event => {
     LimitExceededWarnings.cancel(event.document.uri)
-    cleanPendingValidation(event.document)
+    validator.cleanPendingValidation(event.document)
     connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
 })
-
-const pendingValidationRequests: { [uri: string]: NodeJS.Timer } = {}
-const validationDelayMs = 500
-
-function cleanPendingValidation(textDocument: TextDocument): void {
-    const request = pendingValidationRequests[textDocument.uri]
-    if (request) {
-        globals.clock.clearTimeout(request)
-        delete pendingValidationRequests[textDocument.uri]
-    }
-}
-
-function triggerValidation(textDocument: TextDocument): void {
-    cleanPendingValidation(textDocument)
-    pendingValidationRequests[textDocument.uri] = globals.clock.setTimeout(() => {
-        delete pendingValidationRequests[textDocument.uri]
-        validateTextDocument(textDocument)
-    }, validationDelayMs)
-}
 
 // sets language service depending on document language
 function getLanguageService(langId: string): LanguageService {
@@ -320,7 +304,7 @@ connection.onDidChangeWatchedFiles(change => {
         }
     })
     if (hasChanges) {
-        documents.all().forEach(triggerValidation)
+        documents.all().forEach(doc => validator.triggerValidation(doc))
     }
 })
 

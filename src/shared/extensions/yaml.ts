@@ -7,9 +7,10 @@ import * as vscode from 'vscode'
 import { readFileSync } from 'fs-extra'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger } from '../logger/logger'
-import { getIdeProperties } from '../extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { AWS_SCHEME } from '../constants'
+import { activateYAMLLanguageService, configureLanguageService } from './yamlService'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -39,6 +40,21 @@ export interface YamlExtension {
 export async function activateYamlExtension(): Promise<YamlExtension | undefined> {
     const schemaMap = new Map<string, vscode.Uri>()
 
+    if (isCloud9()) {
+        const languageService = await activateYAMLLanguageService()
+        return {
+            assignSchema: async (path, schema) => {
+                schemaMap.set(path.toString(), evaluate(schema))
+                configureLanguageService(languageService, schemaMap)
+            },
+            removeSchema: path => {
+                schemaMap.delete(path.toString())
+                configureLanguageService(languageService, schemaMap)
+            },
+            getSchema: path => schemaMap.get(path.toString()),
+        }
+    }
+
     const yamlExt = await activateExtension<YamlExtensionApi>(VSCODE_EXTENSION_ID.yaml)
     if (!yamlExt) {
         return undefined
@@ -57,7 +73,6 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
             }
         }
     )
-
     return {
         assignSchema: (path, schema) => schemaMap.set(path.toString(), applyScheme(AWS_SCHEME, evaluate(schema))),
         removeSchema: path => schemaMap.delete(path.toString()),
