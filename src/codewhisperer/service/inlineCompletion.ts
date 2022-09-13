@@ -402,12 +402,7 @@ export class InlineCompletion {
                     this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
                     try {
                         await this.showRecommendation(editor)
-                        let languageId = editor?.document?.languageId
-                        languageId =
-                            languageId === CodeWhispererConstants.typescript
-                                ? CodeWhispererConstants.javascript
-                                : languageId
-                        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+                        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
                         telemetry.codewhisperer_perceivedLatency.emit({
                             codewhispererRequestId: RecommendationHandler.instance.requestId,
                             codewhispererSessionId: RecommendationHandler.instance.sessionId,
