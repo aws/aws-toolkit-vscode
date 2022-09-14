@@ -24,7 +24,7 @@
 
     <settings-panel
         id="configuration-panel"
-        title="Configuration"
+        title="Compute Settings"
         description="All settings except Storage can be changed in settings after creation."
     >
         <compute-panel v-model="compute" mode="create" @edit-settings="editCompute"></compute-panel>

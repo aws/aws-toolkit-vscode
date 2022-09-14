@@ -11,7 +11,7 @@
         style="grid-area: button"
         @click="preview"
     >
-        Open in editor
+        Open in Editor
     </button>
 </template>
 

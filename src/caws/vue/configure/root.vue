@@ -6,7 +6,7 @@
     <transition name="slide-down">
         <div id="restart-notification" class="notification" v-if="canRestart">
             <span id="notification-span">
-                <span id="info-notification-icon" class="icon icon-lg icon-vscode-info"></span>
+                <span id="info-notification-icon" class="icon icon-lg icon-vscode-info mr-8"></span>
                 <span>Restart your workspace to update with changes.</span>
             </span>
             <button
@@ -34,7 +34,7 @@
 
     <settings-panel
         id="compute-settings-panel"
-        title="Compute settings"
+        title="Compute Settings"
         description="All settings except Storage can be changed after creation."
     >
         <compute-panel v-model="compute" type="configure" @edit-settings="editCompute"></compute-panel>
@@ -83,7 +83,7 @@ export default defineComponent({
             const alias = this.details.alias
             const branch = this.details.repositories[0]?.branchName
 
-            return branch ? `${alias} (${branch})` : alias
+            return alias ?? branch ?? this.details.id
         },
         canRestart() {
             return (this.needsRestart || this.devfileStatus === 'CHANGED') && this.details.status === 'RUNNING'
@@ -149,8 +149,7 @@ body {
 }
 #configure-header {
     padding: 16px 0 0 0;
-    background-color: var(--vscode-editor-background);
-    z-index: 1;
+    background-color: none;
     position: relative;
 }
 .notification {
@@ -161,6 +160,9 @@ body {
     align-items: center;
     margin: 16px 0;
     padding: 12px;
+    box-shadow: 2px 2px 8px #111111;
+    position: sticky;
+    max-width: 500px;
 }
 #notification-span {
     display: flex;
@@ -186,18 +188,14 @@ body {
 .slide-down-enter-from {
     margin-bottom: -70px;
     transform: translateY(-70px);
+    top: -70px;
 }
 .slide-down-enter-to {
     margin-bottom: 0px;
+    top: 16px;
 }
 #restart-notification {
-    z-index: 0;
-    position: relative;
-}
-#configure-header {
-    padding: 16px 0 0 0;
-    background-color: var(--vscode-editor-background);
     z-index: 1;
-    position: relative;
+    top: 16px;
 }
 </style>
