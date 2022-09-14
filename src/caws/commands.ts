@@ -294,7 +294,7 @@ export class CawsCommands {
             throw new Error('No workspace available')
         }
 
-        return showConfigureWorkspace(globals.context, workspace, CawsCommands.declared)
+        return this.withClient(showConfigureWorkspace, globals.context, workspace, CawsCommands.declared)
     }
 
     private async selectWorkspace(): Promise<DevelopmentWorkspaceId> {

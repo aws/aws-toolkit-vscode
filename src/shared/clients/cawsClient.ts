@@ -319,6 +319,12 @@ class CawsClientInternal {
         return this.sdkClient.createAccessToken(args).promise()
     }
 
+    public async describeSubscription(
+        request: caws.DescribeSubscriptionRequest
+    ): Promise<caws.DescribeSubscriptionResponse> {
+        return this.call(this.sdkClient.describeSubscription(request), false)
+    }
+
     /**
      * Gets identity properties of the current authenticated principal, and
      * stores the id for use in later calls.

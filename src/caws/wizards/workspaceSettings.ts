@@ -10,6 +10,14 @@ import { Prompter } from '../../shared/ui/prompter'
 import { toTitleCase } from '../../shared/utilities/textUtilities'
 
 export type InstanceType = keyof typeof workspaceOptions['instanceType']
+export type SubscriptionType = typeof subscriptionTypes[number]
+
+const subscriptionTypes = ['FREE', 'STANDARD', 'STANDARD_PLUS_WORKSPACES'] as const
+
+export function isValidSubscriptionType(type = ''): type is SubscriptionType {
+    return (subscriptionTypes as readonly string[]).includes(type)
+}
+
 interface InstanceDescription {
     name: string
     specs: string
@@ -33,7 +41,6 @@ function abbreviateUnit(unit: string): string {
 }
 
 export function getInstanceDescription(type: InstanceType): InstanceDescription {
-    // TODO: add developer types?
     const desc = workspaceOptions.instanceType[type]
 
     return {
@@ -48,10 +55,13 @@ export function getAllInstanceDescriptions(): { [key: string]: InstanceDescripti
     return desc
 }
 
-export function createInstancePrompter(): QuickPickPrompter<InstanceType> {
+export function createInstancePrompter(subscriptionType: SubscriptionType): QuickPickPrompter<InstanceType> {
+    const isSupported = (name: string) => subscriptionType !== 'FREE' || name === 'dev.standard1.small'
     const items = entries(workspaceOptions.instanceType).map(([name, desc]) => ({
         data: name,
         label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
+        description: isSupported(name) ? '' : 'unavailable in current organization billing tier',
+        invalidSelection: !isSupported(name),
     }))
 
     return createQuickPick(items, {
@@ -78,10 +88,13 @@ export function createAliasPrompter(): InputBoxPrompter {
     })
 }
 
-export function createStoragePrompter(): QuickPickPrompter<{ sizeInGiB: number }> {
+export function createStoragePrompter(subscriptionType: SubscriptionType): QuickPickPrompter<{ sizeInGiB: number }> {
+    const isSupported = (v: number) => subscriptionType !== 'FREE' || v === 16
     const items = settings.environment.persistentStorageSize.map(v => ({
         data: { sizeInGiB: v },
         label: `${v} GB`,
+        description: isSupported(v) ? '' : 'unavailable in current organization billing tier',
+        invalidSelection: !isSupported(v),
     }))
 
     return createQuickPick(items, {

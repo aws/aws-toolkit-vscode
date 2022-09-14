@@ -17,12 +17,20 @@ import {
     createStoragePrompter,
     createTimeoutPrompter,
     getAllInstanceDescriptions,
+    isValidSubscriptionType,
 } from '../../wizards/workspaceSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
-import { CawsBranch, CawsProject, ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
+import {
+    CawsBranch,
+    CawsOrg,
+    CawsProject,
+    ConnectedCawsClient,
+    DevelopmentWorkspace,
+} from '../../../shared/clients/cawsClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { isNonNullable } from '../../../shared/utilities/tsUtils'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -89,7 +97,17 @@ export class CawsCreateWebview extends VueWebview {
         return showViewLogsMessage(title)
     }
 
-    public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
+    public async editSetting(
+        settings: WorkspaceSettings,
+        key: keyof WorkspaceSettings,
+        org?: Pick<CawsOrg, 'name'>
+    ): Promise<WorkspaceSettings> {
+        const subscriptionType = isNonNullable(org)
+            ? await this.client
+                  .describeSubscription({ organizationName: org.name })
+                  .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
+            : 'FREE'
+
         async function prompt(prompter: Prompter<any>) {
             prompter.recentItem = settings[key]
             const response = await prompter.prompt()
@@ -105,11 +123,11 @@ export class CawsCreateWebview extends VueWebview {
             case 'alias':
                 return prompt(createAliasPrompter())
             case 'instanceType':
-                return prompt(createInstancePrompter())
+                return prompt(createInstancePrompter(subscriptionType))
             case 'inactivityTimeoutMinutes':
                 return prompt(createTimeoutPrompter())
             case 'persistentStorage':
-                return prompt(createStoragePrompter())
+                return prompt(createStoragePrompter(subscriptionType))
         }
     }
 

@@ -19,11 +19,12 @@ import {
     createInstancePrompter,
     createTimeoutPrompter,
     getAllInstanceDescriptions,
+    isValidSubscriptionType,
 } from '../../wizards/workspaceSettings'
 import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
-import { DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
+import { ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -35,6 +36,7 @@ export class CawsConfigureWebview extends VueWebview {
     public readonly onDidChangeDevfile = new vscode.EventEmitter<GetStatusResponse>()
 
     public constructor(
+        private readonly client: ConnectedCawsClient,
         private readonly workspace: ConnectedWorkspace,
         private readonly commands: typeof CawsCommands.declared
     ) {
@@ -100,6 +102,11 @@ export class CawsConfigureWebview extends VueWebview {
     }
 
     public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
+        const organizationName = this.workspace.summary.org.name
+        const subscriptionType = await this.client
+            .describeSubscription({ organizationName })
+            .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
+
         async function prompt(prompter: Prompter<any>) {
             prompter.recentItem = settings[key]
             const response = await prompter.prompt()
@@ -115,7 +122,7 @@ export class CawsConfigureWebview extends VueWebview {
             case 'alias':
                 return prompt(createAliasPrompter())
             case 'instanceType':
-                return prompt(createInstancePrompter())
+                return prompt(createInstancePrompter(subscriptionType))
             case 'inactivityTimeoutMinutes':
                 return prompt(createTimeoutPrompter())
             case 'persistentStorage':
@@ -141,11 +148,12 @@ let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
 export async function showConfigureWorkspace(
+    client: ConnectedCawsClient,
     ctx: vscode.ExtensionContext,
     workspace: ConnectedWorkspace,
     commands: typeof CawsCommands.declared
 ): Promise<void> {
-    activePanel ??= new Panel(ctx, workspace, commands)
+    activePanel ??= new Panel(ctx, client, workspace, commands)
     const webview = await activePanel.show({
         title: localize('AWS.view.configureWorkspace.title', 'Workspace Settings'),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,

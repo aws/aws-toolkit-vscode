@@ -75,10 +75,15 @@ export default defineComponent({
         },
     },
     created() {},
+    watch: {
+        'source.selectedProject'() {
+            this.compute = new ComputeModel()
+        },
+    },
     methods: {
         async editCompute(key: keyof WorkspaceSettings) {
             const current = { ...this.compute, alias: this.alias }
-            const resp = await client.editSetting(current, key)
+            const resp = await client.editSetting(current, key, this.source.selectedProject?.org)
 
             if (key !== 'alias') {
                 this.compute = new ComputeModel(resp)
