@@ -314,7 +314,7 @@ interface CommandInfo<T extends Callback> {
      *
      * Metadata can be added during execution like so:
      * ```ts
-     * Metric.get('aws_foo').record('exampleMetadata', 'bar')
+     * telemetry.aws_foo.record({ exampleMetadata: 'bar' })
      * ```
      *
      * Any metadata is sent with the metric on completion.
@@ -371,6 +371,10 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     const telemetryToken = startRecordCommand(info.id)
 
     logger.debug(`command: running ${label}${withArgs}`)
+
+    if (info.telemetryName !== undefined) {
+        telemetry[info.telemetryName].record({ command: info.id })
+    }
 
     try {
         if (info.autoconnect === true) {

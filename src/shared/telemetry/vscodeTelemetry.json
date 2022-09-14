@@ -43,6 +43,11 @@
             "type": "string",
             "description": "Locality of the CAWS update workspace request (i.e., from the thin client or the local IDE instance)",
             "allowedValues": ["remote", "local"]
+        },
+        {
+            "name": "userId",
+            "type": "string",
+            "description": "Opaque AWS ID identifier"
         }
     ],
     "metrics": [
@@ -261,6 +266,7 @@
             "description": "Create a CAWS Development Workspace",
             "metadata": [
                 { "type": "result" },
+                { "type": "userId" },
                 {
                     "type": "caws_createWorkspaceRepoType",
                     "required": false
@@ -270,22 +276,22 @@
         {
             "name": "caws_updateWorkspaceSettings",
             "description": "Update properties of a CAWS development workspace",
-            "metadata": [{ "type": "result" }, { "type": "caws_updateWorkspaceLocationType" }]
+            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "caws_updateWorkspaceLocationType" }]
         },
         {
             "name": "caws_updateDevfile",
             "description": "Trigger a devfile update on a CAWS development workspace",
-            "metadata": [{ "type": "result" }]
+            "metadata": [{ "type": "result" }, { "type": "userId" }]
         },
         {
             "name": "caws_localClone",
             "description": "Clone a CAWS code repository locally",
-            "metadata": [{ "type": "result" }, { "type": "source", "required": false }]
+            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
         },
         {
             "name": "caws_connect",
             "description": "Connect to a CAWS development workspace",
-            "metadata": [{ "type": "result" }, { "type": "source", "required": false }]
+            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
         }
     ]
 }

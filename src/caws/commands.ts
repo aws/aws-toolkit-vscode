@@ -29,6 +29,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
+import { AccountStatus } from '../shared/telemetry/telemetryClient'
 
 async function login(authProvider: CawsAuthenticationProvider, client: CawsClient) {
     const wizard = new LoginWizard(authProvider)
@@ -153,11 +154,19 @@ function createClientInjector(
     return async (command, ...args) => {
         const client = await clientFactory()
 
-        if (!client.connected) {
-            return command(await login(authProvider, client), ...args)
-        }
+        try {
+            if (!client.connected) {
+                return await command(await login(authProvider, client), ...args)
+            }
 
-        return command(client, ...args)
+            return await command(client, ...args)
+        } finally {
+            const userId = client.connected ? `caws;${client.identity.id}` : AccountStatus.NotApplicable
+
+            // TODO(sijaden): should this mark only instantiated spans or future spans as well?
+            // right now it won't mark spans if they're created and emitted prior to the command finishing
+            telemetry.record({ userId })
+        }
     }
 }
 
