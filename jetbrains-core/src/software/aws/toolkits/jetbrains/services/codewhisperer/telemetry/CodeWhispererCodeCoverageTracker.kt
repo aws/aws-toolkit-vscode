@@ -91,6 +91,8 @@ abstract class CodeWhispererCodeCoverageTracker(
             LOG.debug { "event with isWholeTextReplaced flag: $event" }
             if (event.oldTimeStamp == 0L) return
         }
+        // This case capture IDE reformatting the document, which will be blank string
+        if (isDocumentEventFromReformatting(event)) return
         incrementTotalTokens(event.document, event.newLength - event.oldLength)
     }
 
@@ -146,6 +148,9 @@ abstract class CodeWhispererCodeCoverageTracker(
             if (totalTokens.get() < 0) totalTokens.set(0)
         }
     }
+
+    private fun isDocumentEventFromReformatting(event: DocumentEvent): Boolean =
+        (event.newFragment.toString().isBlank() && event.oldFragment.toString().isBlank()) && (event.oldLength == 0 || event.newLength == 0)
 
     private fun reset() {
         startTime = Instant.now()

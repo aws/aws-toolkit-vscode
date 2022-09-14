@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.editor
 
+import com.intellij.openapi.editor.event.BulkAwareDocumentListener
 import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.impl.EditorImpl
@@ -25,7 +25,7 @@ class CodeWhispererEditorListener : EditorFactoryListener {
                 if (!CodeWhispererLanguageManager.getInstance().isLanguageSupported(language)) return
                 // If language is supported, install document listener for CodeWhisperer service
                 editor.document.addDocumentListener(
-                    object : DocumentListener {
+                    object : BulkAwareDocumentListener {
                         override fun documentChanged(event: DocumentEvent) {
                             if (!CodeWhispererExplorerActionManager.getInstance().hasAcceptedTermsOfService()) return
                             CodeWhispererInvocationStatus.getInstance().documentChanged()
