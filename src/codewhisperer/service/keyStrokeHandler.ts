@@ -29,17 +29,38 @@ export class KeyStrokeHandler {
     /**
      * Key stroke count for automated trigger
      */
-    public keyStrokeCount: number
+
+    private idleTriggerTimer?: NodeJS.Timer
 
     constructor() {
         this.specialChar = ''
-        this.keyStrokeCount = 0
     }
 
     static #instance: KeyStrokeHandler
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    private startIdleTimeTriggerTimer(
+        event: vscode.TextDocumentChangeEvent,
+        editor: vscode.TextEditor,
+        client: DefaultCodeWhispererClient,
+        config: ConfigurationEntry
+    ) {
+        if (this.idleTriggerTimer) {
+            clearInterval(this.idleTriggerTimer)
+            this.idleTriggerTimer = undefined
+        }
+        this.idleTriggerTimer = setInterval(() => {
+            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
+            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
+            this.invokeAutomatedTrigger('IdleTime', editor, client, config)
+            if (this.idleTriggerTimer) {
+                clearInterval(this.idleTriggerTimer)
+                this.idleTriggerTimer = undefined
+            }
+        }, CodeWhispererConstants.idleTimerPollPeriod)
     }
 
     async processKeyStroke(
@@ -57,10 +78,7 @@ export class KeyStrokeHandler {
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
             if (InlineCompletion.instance.isTypeaheadInProgress) return
 
-            // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
+            this.startIdleTimeTriggerTimer(event, editor, client, config)
 
             // Skip Cloud9 IntelliSense acceptance event
             if (
@@ -77,22 +95,18 @@ export class KeyStrokeHandler {
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
-                    this.keyStrokeCount += 1
                     triggerType = 'Enter'
                     break
                 }
                 case DocumentChangedSource.SpecialCharsKey: {
-                    this.keyStrokeCount += 1
                     triggerType = 'SpecialCharacters'
                     break
                 }
                 case DocumentChangedSource.IntelliSense: {
-                    this.keyStrokeCount += 1
                     triggerType = 'IntelliSenseAcceptance'
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    this.keyStrokeCount += 1
                     break
                 }
                 default: {
@@ -115,7 +129,6 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         if (editor) {
-            this.keyStrokeCount = 0
             if (isCloud9()) {
                 if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
                 vsCodeState.isIntelliSenseActive = false
