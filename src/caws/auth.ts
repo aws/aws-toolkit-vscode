@@ -4,19 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    AccountDetails,
-    AuthenticationProvider,
-    AuthenticationSessionsChangeEvent,
-    Session,
-} from '../credentials/authentication'
+import { AccountDetails, Session } from '../credentials/authentication'
 import { getRegistrationCache, SsoAccess } from '../credentials/sso/cache'
 import { SsoAccessTokenProvider } from '../credentials/sso/ssoAccessTokenProvider'
 import { ConnectedCawsClient, createClient, UserDetails } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
-import { UnknownError } from '../shared/errors'
+import { ToolkitError, UnknownError } from '../shared/errors'
 import { createSecretsCache, KeyedCache, mapCache } from '../shared/utilities/cacheUtils'
-import { assertHasProps, isNonNullable } from '../shared/utilities/tsUtils'
+import { assertHasProps } from '../shared/utilities/tsUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 
 const CAWS_SONO_PROFILE = {
@@ -25,9 +20,9 @@ const CAWS_SONO_PROFILE = {
     scopes: ['sso:account:access'],
 }
 
-async function verifySession(token: string, id?: string | UserDetails) {
+async function verifySession(tokenProvider: () => Promise<string>, id?: string | UserDetails) {
     const client = await createClient()
-    await client.setCredentials(token, id)
+    await client.setCredentials(tokenProvider, id)
 
     return client.verifySession()
 }
@@ -124,7 +119,7 @@ export class CawsAuthStorage {
 
         const token = await tokenProvider.getToken()
         if (token !== undefined) {
-            const person = await verifySession(token.accessToken)
+            const person = await verifySession(async () => token.accessToken)
             const accessDetails: SsoAccess = {
                 token: { ...token, identity: person.userId },
                 region: CAWS_SONO_PROFILE.region,
@@ -152,15 +147,17 @@ export interface CawsAccount extends AccountDetails {
 }
 export type CawsSession = Session<string, CawsAccount>
 
-export class CawsAuthenticationProvider implements AuthenticationProvider<string, CawsAccount> {
-    private readonly _onDidChangeSessions = new vscode.EventEmitter<AuthenticationSessionsChangeEvent<CawsSession>>()
-    public readonly onDidChangeSessions = this._onDidChangeSessions.event
+export class CawsAuthenticationProvider {
+    #session: (CawsSession & { readonly expiresAt: Date }) | undefined
 
-    private readonly sessions = new Map<string, CawsSession>()
-    private readonly sessionExpiration = new Map<string, Date>()
-    private sessionCounter = 0
+    private readonly _onDidChangeSession = new vscode.EventEmitter<Omit<CawsSession, 'accessDetails'> | undefined>()
+    public readonly onDidChangeSession = this._onDidChangeSession.event
 
     public constructor(protected readonly storage: CawsAuthStorage, private readonly verify = verifySession) {}
+
+    public get activeAccount() {
+        return this.#session?.accountDetails
+    }
 
     public listAccounts(): CawsAccount[] {
         return Object.entries(this.storage.listUsers()).map(([id, data]) => ({
@@ -178,7 +175,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
     public async createAccount(): Promise<CawsAccount> {
         const tokenProvider = this.storage.getTokenProvider()
         const token = await tokenProvider.createToken(async token => {
-            const person = await this.verify(token.accessToken)
+            const person = await this.verify(async () => token.accessToken)
             await this.storage.updateUser(person.userId, { ...person, canAutoConnect: true })
 
             return person.userId
@@ -205,43 +202,63 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         }
     }
 
-    /**
-     * This method will largely go unused unless multi-tenant auth becomes a requirement.
-     */
-    public listSessions(): CawsSession[] {
-        const expired = Array.from(this.sessions.values()).filter(s => this.isSessionExpired(s))
-        expired.forEach(({ id }) => getLogger().debug(`REMOVED.codes: removing expired session: ${id}`))
+    public async getSession(): Promise<CawsSession | undefined> {
+        if (!this.#session) {
+            return
+        }
 
-        this.deleteSession(...expired)
-        return Array.from(this.sessions.values())
+        if (this.#session.expiresAt.getTime() < Date.now()) {
+            getLogger().debug(`REMOVED.codes: refreshing expired credentials`)
+            const tokenProvider = this.storage.getTokenProvider(this.#session.accountDetails.id)
+            const token = await tokenProvider.getToken()
+
+            if (token === undefined) {
+                throw new ToolkitError('Credentials are expired and could not be refreshed', {
+                    code: 'ExpiredCredentials',
+                })
+            }
+
+            this.#session = {
+                ...this.#session,
+                expiresAt: token.expiresAt,
+                accessDetails: token.accessToken,
+            }
+        }
+
+        return this.#session
     }
 
-    private async login(account: Pick<AccountDetails, 'id'>): Promise<CawsSession> {
+    public async login(account: Pick<AccountDetails, 'id'>): Promise<CawsSession> {
         const tokenProvider = this.storage.getTokenProvider(account.id)
         const token = await tokenProvider.getToken()
 
         if (!token) {
-            throw new Error('Account has no access token')
+            throw new ToolkitError('Account credentials are invalid or expired. Try logging in again.', {
+                code: 'MissingCredentials',
+            })
         }
 
         try {
             const stored = this.storage.getUser(account.id)
             // TODO(sijaden): we need to know exactly which errors CAWS returns for bad tokens
             // right now we invalidate on any error, even if it isn't directly related to the token
-            const person = await this.verify(token.accessToken, stored ?? account.id)
-            const sessionId = `session-${(this.sessionCounter += 1)}`
+            const person = await this.verify(async () => token.accessToken, stored ?? account.id)
             const updatedPerson = { ...person, canAutoConnect: true }
-            this.sessionExpiration.set(sessionId, token.expiresAt)
 
             if (!stored || JSON.stringify(stored) !== JSON.stringify(updatedPerson)) {
                 await this.storage.updateUser(person.userId, updatedPerson)
             }
 
-            return {
-                id: sessionId,
+            this.#session = {
+                id: person.userId,
+                expiresAt: token.expiresAt,
                 accessDetails: token.accessToken,
                 accountDetails: { id: person.userId, label: person.displayName, metadata: updatedPerson },
             }
+
+            this._onDidChangeSession.fire(this.#session)
+
+            return this.#session
         } catch (err) {
             getLogger().debug(`REMOVED.codes: failed to login (will clear existing secrets): ${(err as Error).message}`)
             tokenProvider.invalidate()
@@ -249,54 +266,22 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         }
     }
 
-    /**
-     * Creating a new session is the equivalent to logging into the selected account, which may involve
-     * some sort of auth flow
-     *
-     * It's important to note that creating a session does not require knowledge of an account.
-     * Usually with an SSO flow we won't know account details until after a session has been created.
-     */
-    public async createSession(account: Pick<CawsAccount, 'id'>): Promise<CawsSession> {
-        const session = await this.login(account)
+    public async logout(): Promise<void> {
+        if (this.#session) {
+            const removed = [this.#session]
+            this.#session = undefined
 
-        this.sessions.set(session.id, session)
-        this._onDidChangeSessions.fire({ added: [session] })
+            await this.storage.updateUser(removed[0].id, {
+                ...removed[0].accountDetails.metadata,
+                canAutoConnect: false,
+            })
 
-        return session
-    }
-
-    public async deleteSession(...sessions: CawsSession[]): Promise<void> {
-        const removed = (
-            await Promise.all(
-                sessions.map(async ({ id, accountDetails }) => {
-                    const previous = this.sessions.get(id)
-                    const isExpired = this.isSessionExpired({ id })
-                    this.sessions.delete(id)
-                    this.sessionExpiration.delete(id)
-
-                    if (previous && !isExpired) {
-                        await this.storage.updateUser(accountDetails.id, {
-                            ...previous.accountDetails.metadata,
-                            canAutoConnect: false,
-                        })
-                    }
-
-                    return previous
-                })
-            )
-        ).filter(isNonNullable)
-
-        if (removed.length > 0) {
-            this._onDidChangeSessions.fire({ removed })
+            this._onDidChangeSession.fire(undefined)
         }
     }
 
-    public async deleteAccount(account: CawsAccount): Promise<void> {
+    public async deleteAccount(account: Pick<CawsAccount, 'id'>): Promise<void> {
         await this.storage.deleteUser(account.id)
-    }
-
-    public getActiveSession(): CawsSession | undefined {
-        return this.listSessions()[0]
     }
 
     // Get rid of this? Not sure where to put PAT code.
@@ -314,17 +299,25 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
     }
 
     public async tryLoginFromDisk(): Promise<CawsSession | undefined> {
-        const token = await this.storage.getTokenFromDisk()
+        const token = await this.storage.getTokenFromDisk().catch(err => {
+            getLogger().warn('REMOVED.codes: failed to pull credentials from disk: %O', err)
+        })
 
         if (token?.identity !== undefined) {
-            return this.createSession({ id: token.identity })
+            return this.login({ id: token.identity })
         }
     }
 
-    private isSessionExpired(session: Pick<CawsSession, 'id'>): boolean {
-        const expiration = this.sessionExpiration.get(session.id)
+    public createCredentialsProvider(): () => Promise<string> {
+        return async () => {
+            const session = await this.getSession()
 
-        return !!expiration && expiration.getTime() - 60000 < Date.now()
+            if (session === undefined) {
+                throw new ToolkitError('Toolkit is not logged-in', { code: 'NotLoggedIn' })
+            }
+
+            return session.accessDetails
+        }
     }
 
     private static instance: CawsAuthenticationProvider

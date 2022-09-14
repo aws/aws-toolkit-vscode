@@ -20,6 +20,7 @@ import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { Credentials } from 'aws-sdk'
+import { ToolkitError } from '../errors'
 
 // XXX: remove signing from the CAWS model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
@@ -118,7 +119,6 @@ function intoBranch(org: string, project: string, branch: caws.SourceBranchSumma
 }
 
 async function createCawsClient(
-    bearerToken: string | undefined,
     regionCode = getCawsConfig().region,
     endpoint = getCawsConfig().endpoint
 ): Promise<caws> {
@@ -132,12 +132,6 @@ async function createCawsClient(
         // can be combined into one.
         credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
     } as ServiceConfigurationOptions)) as caws
-    c.setupRequestListeners = r => {
-        if (bearerToken) {
-            // TODO: remove this when using an SDK that supports bearer auth
-            r.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
-        }
-    }
 
     return c
 }
@@ -171,25 +165,25 @@ export type CawsClientFactory = () => Promise<CawsClient>
  * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
  */
 export async function createClient(
-    authCookie?: string,
     regionCode = getCawsConfig().region,
     endpoint = getCawsConfig().endpoint
 ): Promise<CawsClient> {
-    const sdkClient = await createCawsClient(authCookie, regionCode, endpoint)
-    const c = new CawsClientInternal(regionCode, endpoint, sdkClient, authCookie)
+    const sdkClient = await createCawsClient(regionCode, endpoint)
+    const c = new CawsClientInternal(regionCode, endpoint, sdkClient)
     return c
 }
 
 class CawsClientInternal {
     private userId: string | undefined
     private userDetails?: UserDetails
+    private bearerToken?: string
     private readonly log: logger.Logger
 
     public constructor(
         public readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
-        private bearerToken?: string
+        private bearerTokenProvider?: () => Promise<string>
     ) {
         this.log = logger.getLogger()
     }
@@ -221,15 +215,20 @@ class CawsClientInternal {
      * @param userId       CAWS account id
      * @returns
      */
-    public async setCredentials(bearerToken: string, id?: string | UserDetails): Promise<ConnectedCawsClient> {
-        this.bearerToken = bearerToken
-        this.sdkClient = await createCawsClient(bearerToken, this.regionCode, this.endpoint)
+    public async setCredentials(
+        bearerTokenProvider: () => Promise<string>,
+        id?: string | UserDetails
+    ): Promise<ConnectedCawsClient> {
+        this.bearerTokenProvider = bearerTokenProvider
+        this.sdkClient = await createCawsClient(this.regionCode, this.endpoint)
 
         if (typeof id === 'string') {
             this.userId = id
         } else {
             this.userDetails = id
         }
+
+        await this.verifySession()
 
         return this as ConnectedCawsClient
     }
@@ -238,6 +237,14 @@ class CawsClientInternal {
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
+
+        if (!this.bearerTokenProvider) {
+            throw new ToolkitError('REMOVED.codes client is not logged-in', { code: 'NotLoggedIn' })
+        }
+
+        const bearerToken = (this.bearerToken = await this.bearerTokenProvider())
+        req.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any

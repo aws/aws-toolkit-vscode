@@ -31,11 +31,11 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
 
     public constructor(
         private readonly commands: Pick<CawsCommands, 'withClient'>,
-        private readonly authProvider: Pick<CawsAuthenticationProvider, 'getPat' | 'getActiveSession'>
+        private readonly authProvider: Pick<CawsAuthenticationProvider, 'getPat' | 'activeAccount'>
     ) {}
 
     public get name(): string {
-        const username = this.authProvider.getActiveSession()?.accountDetails.label
+        const username = this.authProvider.activeAccount?.label
 
         return localize(
             'AWS.caws.cloneRepo.git',

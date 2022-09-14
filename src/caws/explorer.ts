@@ -84,15 +84,15 @@ export class AuthNode implements RootNode {
     public readonly onDidChangeTreeItem = this.onDidChangeTreeItemEmitter.event
 
     public constructor(public readonly resource: CawsAuthenticationProvider) {
-        this.resource.onDidChangeSessions(() => this.onDidChangeTreeItemEmitter.fire())
+        this.resource.onDidChangeSession(() => this.onDidChangeTreeItemEmitter.fire())
     }
 
     public async getTreeItem() {
         await autoConnect(this.resource)
-        const session = this.resource.getActiveSession()
+        const account = this.resource.activeAccount
 
-        if (session !== undefined) {
-            const item = new vscode.TreeItem(session.accountDetails.label)
+        if (account !== undefined) {
+            const item = new vscode.TreeItem(account.label)
             item.iconPath = getIcon('vscode-account')
 
             return item
@@ -120,11 +120,11 @@ export class CawsRootNode implements RootNode {
     private workspace?: ConnectedWorkspace
 
     public constructor(private readonly authProvider: CawsAuthenticationProvider) {
-        this.authProvider.onDidChangeSessions(() => this.onDidChangeEmitter.fire())
+        this.authProvider.onDidChangeSession(() => this.onDidChangeEmitter.fire())
     }
 
     public canShow(): boolean {
-        return !!this.authProvider.getActiveSession()
+        return !!this.authProvider.activeAccount
     }
 
     public async getChildren(): Promise<TreeNode[]> {

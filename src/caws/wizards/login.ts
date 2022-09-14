@@ -4,7 +4,7 @@
  */
 
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { createQuickPick } from '../../shared/ui/pickerPrompter'
+import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { StepEstimator, Wizard } from '../../shared/wizards/wizard'
 import { CawsAccount, CawsAuthenticationProvider, CawsSession } from '../auth'
@@ -12,25 +12,14 @@ import { window, ProgressLocation } from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 
 function createUserPrompter(auth: CawsAuthenticationProvider) {
-    const sessions = auth.listSessions()
     const items = auth.listAccounts().map(acc => {
-        const oldSession = sessions.find(s => s.accountDetails.id === acc.id)
+        const isLoggedIn = auth.activeAccount?.id === acc.id
 
         return {
             label: acc.label,
-            description: oldSession ? '(logged in)' : '',
+            description: isLoggedIn ? '(logged in)' : '',
             skipEstimate: true,
-            // TODO: just change this back to a promise for items
-            // or polish up the async callback flow to not be so jittery
-            data: async () => {
-                if (oldSession) {
-                    return { ...acc, session: oldSession, available: true }
-                }
-
-                // Try to login
-                const session = await auth.createSession(acc).catch(() => {})
-                return { ...acc, session, available: !!session }
-            },
+            data: acc,
         }
     })
 
@@ -39,17 +28,15 @@ function createUserPrompter(auth: CawsAuthenticationProvider) {
         data: newAccount,
     }
 
-    return createQuickPick<AccountSelection>(
-        [...items, addNewUserItem] as any, // :(
-        { title: 'Select a user', buttons: createCommonButtons() }
-    )
+    return createQuickPick<AccountSelection>([...items, addNewUserItem] as DataQuickPickItem<AccountSelection>[], {
+        title: 'Select a user',
+        buttons: createCommonButtons(),
+    })
 }
 
 // Using a symbol here is not great but it's the easiest path until I can factor the wizard code a bit further
-type AccountSelection =
-    | (CawsAccount & ({ available: true; session: CawsSession } | { available: false; session: void }))
-    | typeof newAccount
 const newAccount = Symbol('newAccount')
+type AccountSelection = CawsAccount | typeof newAccount
 interface LoginWizardState {
     readonly account: AccountSelection
     // It makes sense for the wizard to encompass the full flow
@@ -83,24 +70,21 @@ export class LoginWizard extends Wizard<LoginWizardState> {
                     protected async promptUser(): Promise<PromptResult<CawsSession>> {
                         const account = state.account!
 
-                        if (account !== newAccount && account.available) {
-                            return account.session
-                        }
-
                         return window.withProgress(
                             // XXX: the `cancel` button doesn't do anything right now
                             { location: ProgressLocation.Notification, cancellable: true },
                             async progress => {
                                 progress.report({ message: 'Logging in...' })
                                 if (account !== newAccount) {
-                                    return auth.createSession(account).catch(async error => {
+                                    return auth.login(account).catch(async error => {
                                         // Usually you'd only get to this point if the refresh token itself expired
                                         getLogger().error(`REMOVED.codes: failed to login: %O`, error)
                                         await auth.deleteAccount(account)
-                                        return auth.createSession(await auth.createAccount())
+
+                                        return auth.login(await auth.createAccount())
                                     })
                                 } else {
-                                    return auth.createSession(await auth.createAccount())
+                                    return auth.login(await auth.createAccount())
                                 }
                             }
                         )

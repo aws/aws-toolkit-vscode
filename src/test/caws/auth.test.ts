@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { CawsAuthenticationProvider, CawsAuthStorage } from '../../caws/auth'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { Session } from '../../credentials/authentication'
 import { UserDetails } from '../../shared/clients/cawsClient'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { SsoToken } from '../../credentials/sso/model'
@@ -18,8 +17,8 @@ describe('CawsAuthenticationProvider', function () {
     let secrets: string[]
     let authProvider: CawsAuthenticationProvider
 
-    async function getUser(secret: string, id?: string | UserDetails): Promise<UserDetails> {
-        const data = users.get(secret)
+    async function getUser(secret: () => Promise<string>, id?: string | UserDetails): Promise<UserDetails> {
+        const data = users.get(await secret())
 
         if (!data) {
             throw new Error('Invalid session')
@@ -45,6 +44,7 @@ describe('CawsAuthenticationProvider', function () {
 
     const secret1 = makeUser('123', 'myusername')
     makeUser('456', 'anothername')
+    const secret2 = makeUser('123', 'myusername')
 
     before(function () {
         // XXX: we call into UI flows in this service. Need to stub until we can do better dependency management.
@@ -79,6 +79,7 @@ describe('CawsAuthenticationProvider', function () {
 
     beforeEach(async function () {
         const ctx = await FakeExtensionContext.create()
+        // TODO: initialize secrets/memento directly instead of stubbing `SsoAccessTokenProvider`
         authProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets), getUser)
         users = new Map(savedUsers.entries())
         secrets = Array.from(users.keys())
@@ -98,50 +99,36 @@ describe('CawsAuthenticationProvider', function () {
     })
 
     it('can create a session', async function () {
-        const newSession = new Promise<Session>((resolve, reject) => {
-            authProvider.onDidChangeSessions(e => {
-                if (e.added && e.added[0]) {
-                    resolve(e.added[0])
-                } else {
-                    reject(new Error('Expected session to be added'))
-                }
-            })
-        })
-
         const account = await authProvider.createAccount()
-        const session = await authProvider.createSession(account)
+        const session = await authProvider.login(account)
 
-        assert.deepStrictEqual(session, await newSession)
+        assert.deepStrictEqual(authProvider.activeAccount, account)
+        assert.deepStrictEqual(session.accountDetails, account)
     })
 
-    it('can delete a session', async function () {
+    it('fires an event when logging out', async function () {
         const account = await authProvider.createAccount()
-        const session = await authProvider.createSession(account)
+        await authProvider.login(account)
 
-        assert.strictEqual(authProvider.listSessions().length, 1)
-
-        const removedSession = new Promise<Session>((resolve, reject) => {
-            authProvider.onDidChangeSessions(e => {
-                if (e.removed && e.removed[0]) {
-                    resolve(e.removed[0])
-                } else {
-                    reject(new Error('Expected session to be removed'))
-                }
+        const removedSession = new Promise<void>((resolve, reject) => {
+            authProvider.onDidChangeSession(e => {
+                e === undefined ? resolve() : reject(new Error('Expected session to be removed'))
             })
         })
 
-        await authProvider.deleteSession(session)
-        assert.strictEqual(authProvider.listSessions().length, 0)
-        assert.deepStrictEqual(session, await removedSession)
+        await authProvider.logout()
+        assert.strictEqual(authProvider.activeAccount, undefined)
+        assert.strictEqual(await removedSession, undefined)
     })
 
     it('evicts stored secrets on failure', async function () {
         const account = await authProvider.createAccount()
         users.set(secret1, undefined)
-        await assert.rejects(authProvider.createSession(account), /no access token/)
+        users.set(secret2, undefined)
+        await assert.rejects(authProvider.login(account), /credentials are invalid/i)
     })
 
-    it('can create multiple sessions from multiple accounts', async function () {
+    it('can switch accounts', async function () {
         const account1 = await authProvider.createAccount()
         const account2 = await authProvider.createAccount()
 
@@ -149,16 +136,35 @@ describe('CawsAuthenticationProvider', function () {
         assert.strictEqual(account2.label, 'anothername')
         assert.strictEqual(authProvider.listAccounts().length, 2)
 
-        const session1 = await authProvider.createSession(account1)
-        const session2 = await authProvider.createSession(account2)
-        const session3 = await authProvider.createSession(account2)
+        const session1 = await authProvider.login(account1)
+        const session2 = await authProvider.login(account2)
 
         assert.notStrictEqual(session1.id, session2.id)
-        assert.notStrictEqual(session1.id, session3.id)
-        assert.notStrictEqual(session2.id, session3.id)
-        assert.deepStrictEqual(session1.accountDetails, account1)
-        assert.deepStrictEqual(session2.accountDetails, account2)
-        assert.deepStrictEqual(session3.accountDetails, account2)
-        assert.strictEqual(authProvider.listSessions().length, 3)
+        assert.deepStrictEqual(authProvider.activeAccount, session2.accountDetails)
+    })
+
+    it('does not fire an event when refreshing', async function () {
+        sinon.restore()
+        sinon
+            .stub(SsoAccessTokenProvider.prototype, 'getToken')
+            .onFirstCall()
+            .resolves({ expiresAt: new Date(0), accessToken: secret1, identity: '123' })
+            .onSecondCall()
+            .resolves({ expiresAt: new Date(999999999999), accessToken: secret2, identity: '123' })
+        sinon.stub(SsoAccessTokenProvider.prototype, 'createToken').callsFake(async callback => {
+            const token = { expiresAt: new Date(0), accessToken: secret1 }
+            return { ...token, identity: await callback?.(token) }
+        })
+
+        const account = await authProvider.createAccount()
+        const session1 = await authProvider.login(account)
+
+        let eventCounter = 0
+        authProvider.onDidChangeSession(() => (eventCounter += 1))
+        const session2 = await authProvider.getSession()
+
+        assert.ok(session2)
+        assert.notStrictEqual(session1.accessDetails, session2.accessDetails)
+        assert.strictEqual(eventCounter, 0)
     })
 })

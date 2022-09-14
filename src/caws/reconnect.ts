@@ -30,7 +30,7 @@ const MAX_RECONNECT_TIME = 10 * 60 * 1000
 
 export function watchRestartingWorkspaces(ctx: ExtContext, authProvider: CawsAuthenticationProvider) {
     let restartHandled = false
-    authProvider.onDidChangeSessions(async () => {
+    authProvider.onDidChangeSession(async () => {
         if (restartHandled) {
             return
         }

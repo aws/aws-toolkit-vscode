@@ -32,7 +32,6 @@ import { showConfirmationMessage } from '../shared/utilities/messages'
 
 async function login(authProvider: CawsAuthenticationProvider, client: CawsClient) {
     const wizard = new LoginWizard(authProvider)
-    const lastSession = authProvider.getActiveSession()
     const response = await wizard.run()
 
     if (!response) {
@@ -40,24 +39,11 @@ async function login(authProvider: CawsAuthenticationProvider, client: CawsClien
     }
 
     try {
-        const { accountDetails, accessDetails } = response.session
-        const connectedClient = await client.setCredentials(accessDetails, accountDetails.metadata)
+        const { accountDetails } = response.session
 
-        if (lastSession && response.session.id !== lastSession.id) {
-            authProvider.deleteSession(lastSession)
-        }
-
-        return connectedClient
+        return client.setCredentials(authProvider.createCredentialsProvider(), accountDetails.metadata)
     } catch (err) {
         throw ToolkitError.chain(err, 'Failed to connect to REMOVED.codes', { code: 'NotConnected' })
-    }
-}
-
-export async function logout(authProvider: CawsAuthenticationProvider): Promise<void> {
-    const session = authProvider.getActiveSession()
-
-    if (session) {
-        return authProvider.deleteSession(session)
     }
 }
 
@@ -217,7 +203,7 @@ export class CawsCommands {
     }
 
     public logout() {
-        return logout(this.authProvider)
+        return this.authProvider.logout()
     }
 
     public listCommands() {
