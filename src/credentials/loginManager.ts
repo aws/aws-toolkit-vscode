@@ -14,7 +14,7 @@ import { AwsContext } from '../shared/awsContext'
 import { getLogger } from '../shared/logger'
 import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
-import { CredentialsSettings, notifyUserInvalidCredentials } from './credentialsUtilities'
+import { CredentialsSettings, showLoginFailedMessage } from './credentialsUtilities'
 import {
     asString,
     CredentialsProvider,
@@ -86,9 +86,10 @@ export class LoginManager {
         } catch (err) {
             const credentialsId = asString(args.providerId)
             if (!CancellationError.isUserCancelled(err)) {
-                const msg = `login: failed to connect with "${credentialsId}": ${(err as Error).message}`
+                const errMsg = (err as Error).message
+                const msg = `login: failed to connect with "${credentialsId}": ${errMsg}`
                 if (!args.passive) {
-                    notifyUserInvalidCredentials(credentialsId)
+                    showLoginFailedMessage(credentialsId, errMsg)
                     getLogger().error(msg)
                 }
             } else {

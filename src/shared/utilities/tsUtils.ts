@@ -53,6 +53,18 @@ export function isThenable<T>(obj: unknown): obj is Thenable<T> {
     return isNonNullable(obj) && typeof (obj as Thenable<T>).then === 'function'
 }
 
+export type ConstantMap<K, V> = Omit<ReadonlyMap<K, V>, 'get' | 'has'> & {
+    get(key: K): V
+    get(key: any): V | undefined
+    has(key: any): key is K
+}
+
+export function createConstantMap<T extends PropertyKey, U extends PropertyKey>(obj: {
+    readonly [P in T]: U
+}): ConstantMap<T, U> {
+    return new Map<T, U>(Object.entries(obj) as [T, U][]) as unknown as ConstantMap<T, U>
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**

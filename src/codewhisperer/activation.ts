@@ -207,10 +207,13 @@ export async function activate(context: ExtContext): Promise<void> {
             RecommendationHandler.instance.clearRecommendations()
         }),
 
-        vscode.languages.registerHoverProvider(CodeWhispererConstants.supportedLanguages, referenceHoverProvider),
+        vscode.languages.registerHoverProvider([...CodeWhispererConstants.supportedLanguages], referenceHoverProvider),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, referenceLogViewProvider),
         showReferenceLog.register(context),
-        vscode.languages.registerCodeLensProvider(CodeWhispererConstants.supportedLanguages, referenceCodeLensProvider)
+        vscode.languages.registerCodeLensProvider(
+            [...CodeWhispererConstants.supportedLanguages],
+            referenceCodeLensProvider
+        )
     )
 
     function activateSecurityScan() {
@@ -293,14 +296,14 @@ export async function activate(context: ExtContext): Promise<void> {
                 )?.countTotalTokens(e)
                 /**
                  * Handle this keystroke event only when
-                 * 1. It is in current non plaintext active editor
+                 * 1. It is in current active editor with cwspr supported file types
                  * 2. It is not a backspace
                  * 3. It is not caused by CodeWhisperer editing
                  * 4. It is not from undo/redo.
                  */
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing &&
                     !JSON.stringify(e).includes('reason')
@@ -392,7 +395,7 @@ export async function activate(context: ExtContext): Promise<void> {
             // request access C9
             requestAccessCloud9.register(context.extensionContext.globalState),
             updateCloud9TreeNodes.register(context.extensionContext.globalState),
-            vscode.languages.registerCompletionItemProvider(CodeWhispererConstants.supportedLanguages, {
+            vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.supportedLanguages], {
                 async provideCompletionItems(
                     document: vscode.TextDocument,
                     position: vscode.Position,
@@ -425,7 +428,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing
                 ) {

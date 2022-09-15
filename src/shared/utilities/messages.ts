@@ -14,8 +14,17 @@ import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
+import { getIcon, codicon } from '../icons'
 
-export const localize = nls.loadMessageBundle()
+export const messages = {
+    editCredentials(icon: boolean) {
+        // codicons are not supported in showInformationMessage. (vscode 1.71)
+        const icon_ = icon ? codicon`${getIcon('vscode-edit')}` + ' ' : ''
+        return localize('AWS.credentials.edit', '{0}Edit Credentials', icon_)
+    },
+}
+
+const localize = nls.loadMessageBundle()
 
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)

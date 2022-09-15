@@ -14,7 +14,11 @@ import { RecommendationHandler } from './recommendationHandler'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import { CodewhispererAutomatedTriggerType, CodewhispererTriggerType } from '../../shared/telemetry/telemetry'
+import {
+    telemetry,
+    CodewhispererAutomatedTriggerType,
+    CodewhispererTriggerType,
+} from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -110,10 +114,7 @@ export class InlineCompletion {
                 { undoStopAfter: false, undoStopBefore: false }
             )
             .then(async () => {
-                let languageId = editor?.document?.languageId
-                languageId =
-                    languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-                const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+                const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
                 const index = this.items[this.position].index
                 const acceptArguments = [
                     this._range,
@@ -401,6 +402,16 @@ export class InlineCompletion {
                     this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
                     try {
                         await this.showRecommendation(editor)
+                        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
+                        telemetry.codewhisperer_perceivedLatency.emit({
+                            codewhispererRequestId: RecommendationHandler.instance.requestId,
+                            codewhispererSessionId: RecommendationHandler.instance.sessionId,
+                            codewhispererTriggerType: TelemetryHelper.instance.triggerType,
+                            codewhispererCompletionType: TelemetryHelper.instance.completionType,
+                            codewhispererLanguage: languageContext.language,
+                            duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
+                            passive: true,
+                        })
                     } catch (error) {
                         getLogger().error(`Failed to show suggestion ${error}`)
                         RecommendationHandler.instance.cancelPaginatedRequest()
