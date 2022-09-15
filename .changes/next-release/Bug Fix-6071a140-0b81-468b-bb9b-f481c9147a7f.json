@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix CodeWhisperer get triggered by React plugin generated code snippets"
+	"description": "CodeWhisperer triggered by React plugin generated code snippets"
 }
