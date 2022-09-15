@@ -154,6 +154,9 @@ export class KeyStrokeHandler {
         if (!changedRange.isSingleLine || changedText === '') {
             return ''
         }
+        if (changedText.split('\n').length > 1) {
+            return ''
+        }
         return changedText
     }
     async invokeAutomatedTrigger(
