@@ -25,7 +25,7 @@ export interface TreeNode<T = unknown> {
     readonly resource: T
 
     /**
-     * An optional event to signal that this node's children has changed.
+     * Optional event to signal that this node's children has changed.
      */
     readonly onDidChangeChildren?: vscode.Event<void>
 

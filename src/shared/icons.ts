@@ -8,7 +8,7 @@ import globals from './extensionGlobals'
 import type * as packageJson from '../../package.json'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Uri, ThemeIcon } from 'vscode'
+import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
@@ -16,9 +16,6 @@ import { UnknownError } from './errors'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
-
-// Colors:
-// https://code.visualstudio.com/api/references/contribution-points#contributes.colors
 
 type ContributedIcon = keyof typeof packageJson.contributes.icons
 type IconPath = { light: Uri; dark: Uri } | Icon
@@ -64,13 +61,31 @@ export function codicon(parts: TemplateStringsArray, ...components: (string | Ic
  * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
-    public constructor(public readonly id: string, public readonly source?: Uri) {
+    public constructor(
+        public readonly id: string, 
+        public readonly source?: Uri,
+        public readonly color?: ThemeColor
+    ) {
         super(id)
     }
 
     public toString() {
         return `$(${this.id})`
     }
+}
+
+/**
+ * Adds a new {@link ThemeColor} to an existing icon.
+ *
+ * You can find theme color identifiers
+ * {@link https://code.visualstudio.com/api/references/contribution-points#contributes.colors here}
+ */
+export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
+    if (isCloud9() || !(icon instanceof Icon)) {
+        return icon
+    }
+
+    return new Icon(icon.id, icon.source, typeof color === 'string' ? new ThemeColor(color) : color)
 }
 
 function resolveIconId(

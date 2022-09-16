@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+# Usage:
+#   When connecting to a CAWS workspace
+#       AWS_REGION=… AWS_SSM_CLI=… CAWS_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… WORKSPACE_ID=… ./caws_connect
+
+set -e
+set -u
+
+_DATE_CMD=true
+
+if command > /dev/null 2>&1 -v date; then
+    _DATE_CMD=date
+elif command > /dev/null 2>&1 -v /bin/date; then
+    _DATE_CMD=/bin/date
+fi
+
+_log() {
+    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
+}
+
+_require_nolog() {
+    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+        _log "error: missing required arg: $1"
+        exit 1
+    fi
+}
+
+_require() {
+    _require_nolog "$@"
+    _log "$1=$2"
+}
+
+_parse_json_for_value() {
+    key=$1
+    json=$2
+    echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
+}
+
+# Note: A development workspace must have been previously started by VSCode Extension/CAWS
+_start_session_development_workspace() {
+    # Function inputs
+    local CAWS_ENDPOINT=$1
+    local BEARER_TOKEN=$2
+    local ORGANIZATION_NAME=$3
+    local PROJECT_NAME=$4
+    local WORKSPACE_ID=$5
+
+    # Local variables
+    local START_SESSION_QUERY
+
+    START_SESSION_QUERY=$(
+        cat << EOF
+{
+    "id": "$WORKSPACE_ID", 
+    "projectName": "$PROJECT_NAME", 
+    "organizationName": "$ORGANIZATION_NAME", 
+    "sessionConfiguration": { 
+        "sessionType": "SSH" 
+    }
+}
+EOF
+    )
+
+    curl -s -X POST \
+        -H "Content-Type: application/x-amz-json-1.0" \
+        -H "Authorization: Bearer $BEARER_TOKEN" \
+        -H "X-Amz-Target: CodeAws.StartSessionDevelopmentWorkspace" \
+        -d "$START_SESSION_QUERY" \
+        "$CAWS_ENDPOINT"
+}
+
+_caws() {
+    # Function inputs
+    local AWS_SSM_CLI=$1
+    local CAWS_ENDPOINT=$2
+    local BEARER_TOKEN=$3
+    local ORGANIZATION_NAME=$4
+    local PROJECT_NAME=$5
+    local WORKSPACE_ID=$6
+    local AWS_REGION=$7
+
+    # Local variables
+    local START_SESSION_RESPONSE
+    local STREAM_URL
+    local TOKEN
+    local SESSION
+
+    START_SESSION_RESPONSE=$(_start_session_development_workspace "$CAWS_ENDPOINT" "$BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID")
+
+    # Errors happen when you have invalid token etc
+    # ValidationExceptions happen when the Development workspace is not running
+    if [[ "$START_SESSION_RESPONSE" == *"errors"* || "$START_SESSION_RESPONSE" == *"ValidationException"* || "$START_SESSION_RESPONSE" == *"NotValidException"* ]]; then
+        _log "Failed to start the session with error:" "$START_SESSION_RESPONSE"
+        exit 1
+    fi
+
+    STREAM_URL=$(_parse_json_for_value "streamUrl" "$START_SESSION_RESPONSE")
+    TOKEN=$(_parse_json_for_value "tokenValue" "$START_SESSION_RESPONSE")
+    SESSION=$(_parse_json_for_value "sessionId" "$START_SESSION_RESPONSE")
+
+    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION\"}" "$AWS_REGION" "StartSession"
+}
+
+_main() {
+    _log "=============================================================================="
+
+    _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+    _require AWS_REGION "${AWS_REGION:-}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+
+    _require CAWS_ENDPOINT "${CAWS_ENDPOINT:-}"
+    _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
+    _require ORGANIZATION_NAME "${ORGANIZATION_NAME:-}"
+    _require PROJECT_NAME "${PROJECT_NAME:-}"
+    _require WORKSPACE_ID "${WORKSPACE_ID:-}"
+
+    CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
+
+    _caws "$AWS_SSM_CLI" "$CAWS_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID" "$AWS_REGION"
+}
+
+_main
