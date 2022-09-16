@@ -193,16 +193,13 @@ export class KeyStrokeHandler {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
             } else if (isInlineCompletionEnabled()) {
-                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletionService.instance.isPaginationRunning()) {
-                    await InlineCompletionService.instance.clearInlineCompletionStates(editor)
-                    InlineCompletionService.instance.getPaginatedRecommendation(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType
-                    )
-                }
+                InlineCompletionService.instance.getPaginatedRecommendation(
+                    client,
+                    editor,
+                    'AutoTrigger',
+                    config,
+                    autoTriggerType
+                )
             } else {
                 if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
                     await InlineCompletion.instance.resetInlineStates(editor)

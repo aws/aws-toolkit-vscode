@@ -44,31 +44,34 @@ export async function onInlineAcceptance(
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         try {
-            await restoreRightContext(acceptanceEntry.editor)
             await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
         } catch (error) {
             getLogger().error(`${error} in handling right contexts`)
         }
-        if (languageId === CodeWhispererConstants.python) {
-            await vscode.commands.executeCommand('editor.action.format')
-        } else {
-            const range = new vscode.Range(start, end)
-            const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
-                'vscode.executeFormatRangeProvider',
-                acceptanceEntry.editor.document.uri,
-                range,
-                {
-                    tabSize: getTabSizeSetting(),
-                    insertSpaces: true,
+        try {
+            if (languageId === CodeWhispererConstants.python) {
+                await vscode.commands.executeCommand('editor.action.format')
+            } else {
+                const range = new vscode.Range(start, end)
+                const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
+                    'vscode.executeFormatRangeProvider',
+                    acceptanceEntry.editor.document.uri,
+                    range,
+                    {
+                        tabSize: getTabSizeSetting(),
+                        insertSpaces: true,
+                    }
+                )
+                if (edits && acceptanceEntry.editor) {
+                    const wEdit = new WorkspaceEdit()
+                    wEdit.set(acceptanceEntry.editor.document.uri, edits)
+                    await workspace.applyEdit(wEdit)
                 }
-            )
-            if (edits && acceptanceEntry.editor) {
-                const wEdit = new WorkspaceEdit()
-                wEdit.set(acceptanceEntry.editor.document.uri, edits)
-                await workspace.applyEdit(wEdit)
             }
+        } finally {
+            vsCodeState.isCodeWhispererEditing = false
         }
-        vsCodeState.isCodeWhispererEditing = false
+
         CodeWhispererTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,
@@ -92,22 +95,4 @@ export async function onInlineAcceptance(
 
     // at the end of recommendation acceptance, clear recommendations.
     await InlineCompletionService.instance.clearInlineCompletionStates(acceptanceEntry.editor)
-}
-
-// Restore right context
-// to handle extra auto closing bracket/quote that were added in native inline completion typeahead
-async function restoreRightContext(editor: vscode.TextEditor) {
-    const rightContextWhenInvoke = RecommendationHandler.instance.invocationLineRightContext
-    const pos = editor.selection.active
-    const newRightRange = new vscode.Range(pos, editor.document.lineAt(pos).range.end)
-    const rightContextWhenAccept = editor.document.getText(newRightRange)
-    // replace with invocation right context
-    if (rightContextWhenInvoke !== undefined && rightContextWhenAccept !== rightContextWhenInvoke) {
-        await editor.edit(
-            editBuilder => {
-                editBuilder.replace(newRightRange, rightContextWhenInvoke)
-            },
-            { undoStopAfter: false, undoStopBefore: false }
-        )
-    }
 }

@@ -75,11 +75,7 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            if (!vsCodeState.isCodeWhispererEditing && !InlineCompletionService.instance.isPaginationRunning()) {
-                await InlineCompletionService.instance.clearInlineCompletionStates(editor)
-                InlineCompletionService.instance.setCodeWhispererStatusBarLoading()
-                InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
-            }
+            InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {
             if (
                 !vsCodeState.isCodeWhispererEditing &&

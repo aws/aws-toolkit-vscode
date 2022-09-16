@@ -161,7 +161,7 @@ export class InlineCompletionService {
     private statusBar: vscode.StatusBarItem
     private extContext?: ExtContext
     private _timer?: NodeJS.Timer
-    private documentUri: vscode.Uri | undefined
+    private documentUri: vscode.Uri | undefined = undefined
     private hide?: vscode.Disposable
     private next?: vscode.Disposable
     private prev?: vscode.Disposable
@@ -177,12 +177,13 @@ export class InlineCompletionService {
             await this.showRecommendation(1)
         }
     )
+
     private hideCommand = Commands.declare('editor.action.inlineSuggest.hide', (context: ExtContext) => async () => {
         await this.clearInlineCompletionStates(vscode.window.activeTextEditor)
     })
+
     constructor() {
         this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
-        this.documentUri = undefined
     }
 
     static #instance: InlineCompletionService
@@ -258,6 +259,7 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
+        if (vsCodeState.isCodeWhispererEditing || this.isPaginationRunning()) return
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         await HoverConfigUtil.instance.overwriteHoverConfig()
@@ -284,7 +286,7 @@ export class InlineCompletionService {
                     return
                 }
 
-                if (!this.isCurrentCompletionInProgress()) {
+                if (!this.isSuggestionVisible()) {
                     if (
                         editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
                         editor.document.uri.fsPath !== this.documentUri?.fsPath
@@ -297,7 +299,6 @@ export class InlineCompletionService {
                         RecommendationHandler.instance.clearRecommendations()
                     } else if (RecommendationHandler.instance.recommendations.length > 0) {
                         RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
-                        RecommendationHandler.instance.setInvocationLineRightContext(editor)
                         this.startRejectionTimer(editor)
                         await this.showRecommendation(0, true)
                     }
@@ -370,7 +371,7 @@ export class InlineCompletionService {
         this.statusBar.hide()
     }
 
-    isCurrentCompletionInProgress(): boolean {
+    isSuggestionVisible(): boolean {
         return this.inlineCompletionProvider?.getActiveItemIndex !== undefined
     }
 
@@ -443,7 +444,7 @@ export class InlineCompletionService {
             return
         }
         this._timer = globals.clock.setTimeout(async () => {
-            if (!this.isCurrentCompletionInProgress()) {
+            if (!this.isSuggestionVisible()) {
                 getLogger().info(`Clearing cached suggestion`)
                 await this.clearInlineCompletionStates(editor)
             }

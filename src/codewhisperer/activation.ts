@@ -344,7 +344,7 @@ export async function activate(context: ExtContext): Promise<void> {
                      * Then this event can be processed by our code.
                      */
                     await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    if (!InlineCompletionService.instance.isCurrentCompletionInProgress()) {
+                    if (!InlineCompletionService.instance.isSuggestionVisible()) {
                         await KeyStrokeHandler.instance.processKeyStroke(
                             e,
                             vscode.window.activeTextEditor,

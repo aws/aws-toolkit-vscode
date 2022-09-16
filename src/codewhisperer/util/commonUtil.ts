@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as semver from 'semver'
+import { isCloud9 } from '../../shared/extensionUtilities'
+
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     return new Date().toLocaleString([], { timeZone: timezone })
@@ -32,7 +34,9 @@ export function isAwsError(error: any): boolean {
 
 export function isInlineCompletionEnabled() {
     return (
-        semver.gte(vscode.version, '1.68.0') && vscode.workspace.getConfiguration('editor').get('inlineSuggest.enabled')
+        semver.gte(vscode.version, '1.68.0') &&
+        vscode.workspace.getConfiguration('editor').get('inlineSuggest.enabled') &&
+        !isCloud9()
     )
 }
 
