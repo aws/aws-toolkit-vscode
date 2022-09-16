@@ -158,7 +158,7 @@ export class InlineCompletionService {
     private inlineCompletionProvider?: CodeWhispererInlineCompletionItemProvider
     private inlineCompletionProviderDisposable?: vscode.Disposable
     private maxPage = 100
-    private statusBar: vscode.StatusBarItem
+    private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
     private extContext?: ExtContext
     private _timer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined = undefined
@@ -182,9 +182,7 @@ export class InlineCompletionService {
         await this.clearInlineCompletionStates(vscode.window.activeTextEditor)
     })
 
-    constructor() {
-        this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
-    }
+    constructor() {}
 
     static #instance: InlineCompletionService
 
