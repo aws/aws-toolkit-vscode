@@ -294,7 +294,6 @@ export async function activate(context: ExtContext): Promise<void> {
     } else if (isInlineCompletionEnabled()) {
         InlineCompletionService.instance.overrideKeybindings()
         InlineCompletionService.instance.setReferenceInlineProvider(referenceCodeLensProvider)
-        InlineCompletionService.instance.setExtContext(context)
         await setSubscriptionsforInlineCompletion()
     } else {
         InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)

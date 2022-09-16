@@ -21,7 +21,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
-import { ExtContext } from '../../shared/extensions'
 import { HoverConfigUtil } from '../util/hoverConfigUtil'
 import globals from '../../shared/extensionGlobals'
 
@@ -180,7 +179,6 @@ export class InlineCompletionService {
     private inlineCompletionProviderDisposable?: vscode.Disposable
     private maxPage = 100
     private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
-    private extContext?: ExtContext
     private _timer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined = undefined
     private hide: vscode.Disposable
@@ -199,16 +197,24 @@ export class InlineCompletionService {
         return (this.#instance ??= new this())
     }
 
-    registerCommandOverrides() {
-        if (this.extContext) {
-            this.disposeCommandOverrides()
-            this.extContext.extensionContext.subscriptions.push(this.prev)
-            this.extContext.extensionContext.subscriptions.push(this.next)
-            this.extContext.extensionContext.subscriptions.push(this.hide)
-        }
+    // These commands override the vs code inline completion commands
+    // They are subscribed when suggestion starts and disposed when suggestion is accepted/rejected
+    // to avoid impacting other plugins or user who uses this API
+    private registerCommandOverrides() {
+        this.prev = prevCommand.register(this)
+        this.next = nextCommand.register(this)
+        this.hide = hideCommand.register(this)
     }
 
-    disposeCommandOverrides() {
+    subscribeCommands() {
+        this.disposeCommandOverrides()
+        this.registerCommandOverrides()
+        globals.context.subscriptions.push(this.prev)
+        globals.context.subscriptions.push(this.next)
+        globals.context.subscriptions.push(this.hide)
+    }
+
+    private disposeCommandOverrides() {
         this.prev.dispose()
         this.hide.dispose()
         this.next.dispose()
@@ -252,10 +258,6 @@ export class InlineCompletionService {
         this.referenceProvider = provider
     }
 
-    setExtContext(context: ExtContext) {
-        this.extContext = context
-    }
-
     async getPaginatedRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -267,7 +269,7 @@ export class InlineCompletionService {
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         await HoverConfigUtil.instance.overwriteHoverConfig()
-        this.registerCommandOverrides()
+        this.subscribeCommands()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         this.documentUri = editor.document.uri
         try {
