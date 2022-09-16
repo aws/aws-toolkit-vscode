@@ -61,7 +61,11 @@ export function codicon(parts: TemplateStringsArray, ...components: (string | Ic
  * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
-    public constructor(public readonly id: string, public readonly color?: ThemeColor) {
+    public constructor(
+        public readonly id: string, 
+        public readonly source?: Uri,
+        public readonly color?: ThemeColor
+    ) {
         super(id)
     }
 
@@ -81,7 +85,7 @@ export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
         return icon
     }
 
-    return new Icon(icon.id, typeof color === 'string' ? new ThemeColor(color) : color)
+    return new Icon(icon.id, icon.source, typeof color === 'string' ? new ThemeColor(color) : color)
 }
 
 function resolveIconId(
@@ -109,7 +113,14 @@ function resolveIconId(
         }
     }
 
-    return new Icon(namespace === 'vscode' ? name.replace('codicons-', '') : id)
+    // TODO: potentially embed the icon source in `package.json` to avoid this messy mapping
+    // of course, doing that implies we must always bundle both the original icon files and the font file
+    const mappedId = namespace === 'vscode' ? name.replace('codicons-', '') : id
+    const source = !['cloud9', 'vscode'].includes(namespace)
+        ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
+        : undefined
+
+    return new Icon(mappedId, source)
 }
 
 function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
