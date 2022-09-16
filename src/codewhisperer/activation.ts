@@ -333,8 +333,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     e.document === vscode.window.activeTextEditor?.document &&
                     runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
                     e.contentChanges.length != 0 &&
-                    !vsCodeState.isCodeWhispererEditing &&
-                    !JSON.stringify(e).includes('reason')
+                    !vsCodeState.isCodeWhispererEditing
                 ) {
                     vsCodeState.lastUserModificationTime = performance.now()
                     /**
