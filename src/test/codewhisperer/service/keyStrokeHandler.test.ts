@@ -202,6 +202,7 @@ describe('keyStrokeHandler', function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new KeyStrokeHandler()
             InlineCompletion.instance.setCodeWhispererStatusBarOk()
+            vscode.workspace.getConfiguration('editor').update('inlineSuggest.enabled', false)
             const getRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
             assert.ok(getRecommendationsStub.calledOnce)

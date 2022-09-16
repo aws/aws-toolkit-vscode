@@ -44,6 +44,7 @@ export class RecommendationHandler {
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
     public isGenerateRecommendationInProgress: boolean
+    public invocationLineRightContext: string | undefined
 
     constructor() {
         this.requestId = ''
@@ -57,6 +58,7 @@ export class RecommendationHandler {
         this.errorMessagePrompt = ''
         this.recommendationSuggestionState = new Map<number, string>()
         this.isGenerateRecommendationInProgress = false
+        this.invocationLineRightContext = undefined
     }
 
     static #instance: RecommendationHandler
@@ -314,6 +316,7 @@ export class RecommendationHandler {
         this.sessionId = ''
         this.nextToken = ''
         this.errorMessagePrompt = ''
+        this.invocationLineRightContext = undefined
     }
     reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
         TelemetryHelper.instance.recordUserDecisionTelemetry(
@@ -374,5 +377,19 @@ export class RecommendationHandler {
             return false
         }
         return true
+    }
+
+    moveStartPositionToSkipSpaces(editor: vscode.TextEditor) {
+        const start = this.startPos
+        const prefix = editor.document.getText(new vscode.Range(start, editor.selection.active))
+        // skip space from invocation position
+        if (prefix.length > 0 && prefix.trimStart().length != prefix.length) {
+            this.startPos = start.translate(undefined, prefix.length - prefix.trimStart().length)
+        }
+    }
+
+    setInvocationLineRightContext(editor: vscode.TextEditor) {
+        const line = editor.document.lineAt(this.startPos)
+        this.invocationLineRightContext = editor.document.getText(new vscode.Range(this.startPos, line.range.end))
     }
 }

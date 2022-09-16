@@ -2,6 +2,9 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import * as vscode from 'vscode'
+import * as semver from 'semver'
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     return new Date().toLocaleString([], { timeZone: timezone })
@@ -24,6 +27,12 @@ export function isAwsError(error: any): boolean {
         typeof error.message === 'string' &&
         typeof error.code === 'string' &&
         error.time instanceof Date
+    )
+}
+
+export function isInlineCompletionEnabled() {
+    return (
+        semver.gte(vscode.version, '1.68.0') && vscode.workspace.getConfiguration('editor').get('inlineSuggest.enabled')
     )
 }
 

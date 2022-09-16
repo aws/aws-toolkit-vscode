@@ -11,6 +11,8 @@ import { InlineCompletion } from '../service/inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { KeyStrokeHandler } from '../service/keyStrokeHandler'
+import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { InlineCompletionService } from '../service/inlineCompletionService'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -71,6 +73,12 @@ export async function invokeRecommendation(
                 }
             } finally {
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+            }
+        } else if (isInlineCompletionEnabled()) {
+            if (!vsCodeState.isCodeWhispererEditing && !InlineCompletionService.instance.isPaginationRunning()) {
+                await InlineCompletionService.instance.clearInlineCompletionStates(editor)
+                InlineCompletionService.instance.setCodeWhispererStatusBarLoading()
+                InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
             }
         } else {
             if (

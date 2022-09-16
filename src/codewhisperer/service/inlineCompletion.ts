@@ -199,7 +199,7 @@ export class InlineCompletion {
             )
         }
 
-        return typedPrefix.substring(move)
+        return typedPrefix.substring(move).replace(/\r\n/g, '\n')
     }
 
     async setTypeAheadRecommendations(editor: vscode.TextEditor | undefined, event: vscode.TextDocumentChangeEvent) {
@@ -285,7 +285,7 @@ export class InlineCompletion {
                             const curItem = this.items[this.position]
                             this._referenceProvider.setInlineReference(
                                 RecommendationHandler.instance.startPos.line,
-                                curItem,
+                                curItem.content,
                                 this.origin[curItem.index].references
                             )
                             RecommendationHandler.instance.setSuggestionState(curItem.index, 'Showed')

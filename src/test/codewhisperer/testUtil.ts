@@ -9,6 +9,7 @@ import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { vsCodeState, AcceptedSuggestionEntry } from '../../codewhisperer/models/model'
 import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
+import { ReferenceInlineProvider } from '../../codewhisperer/service/referenceInlineProvider'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -131,4 +132,21 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
             },
         ],
     }
+}
+
+export function createReferenceProvider() {
+    const referenceProvider = new ReferenceInlineProvider()
+    const fakeReferences = [
+        {
+            message: '',
+            licenseName: 'TEST_LICENSE',
+            repository: 'TEST_REPO',
+            recommendationContentSpan: {
+                start: 0,
+                end: 10,
+            },
+        },
+    ]
+    referenceProvider.setInlineReference(1, 'test', fakeReferences)
+    return referenceProvider
 }

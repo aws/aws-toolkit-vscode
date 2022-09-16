@@ -12,6 +12,8 @@ import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
+import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { InlineCompletionService } from './inlineCompletionService'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -189,6 +191,17 @@ export class KeyStrokeHandler {
                     }
                 } finally {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+                }
+            } else if (isInlineCompletionEnabled()) {
+                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletionService.instance.isPaginationRunning()) {
+                    await InlineCompletionService.instance.clearInlineCompletionStates(editor)
+                    InlineCompletionService.instance.getPaginatedRecommendation(
+                        client,
+                        editor,
+                        'AutoTrigger',
+                        config,
+                        autoTriggerType
+                    )
                 }
             } else {
                 if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
