@@ -153,6 +153,27 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
     }
 }
 
+// below commands override VS Code inline completion commands
+const prevCommand = Commands.declare(
+    'editor.action.inlineSuggest.showPrevious',
+    (service: InlineCompletionService) => async () => {
+        await service.showRecommendation(-1)
+    }
+)
+const nextCommand = Commands.declare(
+    'editor.action.inlineSuggest.showNext',
+    (service: InlineCompletionService) => async () => {
+        await service.showRecommendation(1)
+    }
+)
+
+const hideCommand = Commands.declare(
+    'editor.action.inlineSuggest.hide',
+    (service: InlineCompletionService) => async () => {
+        await service.clearInlineCompletionStates(vscode.window.activeTextEditor)
+    }
+)
+
 export class InlineCompletionService {
     private referenceProvider?: ReferenceInlineProvider
     private inlineCompletionProvider?: CodeWhispererInlineCompletionItemProvider
@@ -162,27 +183,15 @@ export class InlineCompletionService {
     private extContext?: ExtContext
     private _timer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined = undefined
-    private hide?: vscode.Disposable
-    private next?: vscode.Disposable
-    private prev?: vscode.Disposable
-    private prevCommand = Commands.declare(
-        'editor.action.inlineSuggest.showPrevious',
-        (context: ExtContext) => async () => {
-            await this.showRecommendation(-1)
-        }
-    )
-    private nextCommand = Commands.declare(
-        'editor.action.inlineSuggest.showNext',
-        (context: ExtContext) => async () => {
-            await this.showRecommendation(1)
-        }
-    )
+    private hide: vscode.Disposable
+    private next: vscode.Disposable
+    private prev: vscode.Disposable
 
-    private hideCommand = Commands.declare('editor.action.inlineSuggest.hide', (context: ExtContext) => async () => {
-        await this.clearInlineCompletionStates(vscode.window.activeTextEditor)
-    })
-
-    constructor() {}
+    constructor() {
+        this.prev = prevCommand.register(this)
+        this.next = nextCommand.register(this)
+        this.hide = hideCommand.register(this)
+    }
 
     static #instance: InlineCompletionService
 
@@ -193,9 +202,6 @@ export class InlineCompletionService {
     registerCommandOverrides() {
         if (this.extContext) {
             this.disposeCommandOverrides()
-            this.prev = this.prevCommand.register(this.extContext)
-            this.next = this.nextCommand.register(this.extContext)
-            this.hide = this.hideCommand.register(this.extContext)
             this.extContext.extensionContext.subscriptions.push(this.prev)
             this.extContext.extensionContext.subscriptions.push(this.next)
             this.extContext.extensionContext.subscriptions.push(this.hide)
@@ -203,9 +209,9 @@ export class InlineCompletionService {
     }
 
     disposeCommandOverrides() {
-        this.prev?.dispose()
-        this.hide?.dispose()
-        this.next?.dispose()
+        this.prev.dispose()
+        this.hide.dispose()
+        this.next.dispose()
     }
 
     public disposeInlineCompletion() {
