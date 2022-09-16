@@ -40,7 +40,7 @@ export const calculateBracketsLevel = (code: string, isRightContext: boolean = f
         } else if (char in bracketMap) {
             const correspondingBracket = bracketMap[char as keyof bracketMapType]
             const count = bracketCounts.get(correspondingBracket) || 0
-            const newCount = count - 1
+            const newCount = count === 0 ? 0 : count - 1
             bracketCounts.set(bracketMap[char], newCount)
             bracketsIndexLevel.push({
                 char: correspondingBracket,
