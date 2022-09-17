@@ -2,10 +2,7 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as os from 'os'
-import * as fs from 'fs'
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { ConfigurationEntry, vsCodeState } from '../models/model'
 import * as CodeWhispererConstants from '../models/constants'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
@@ -383,55 +380,6 @@ export class InlineCompletionService {
 
     isPaginationRunning() {
         return this.statusBar.text === ` $(loading~spin)CodeWhisperer`
-    }
-
-    /**
-     * Override keybindings for next, previous suggestion
-     * only when user did not set those keybindings
-     */
-    overrideKeybindings() {
-        let origin = ''
-        let keybindingsPath = ''
-        try {
-            const home = os.homedir()
-            if (process.platform === 'win32') {
-                keybindingsPath = path.join(home, CodeWhispererConstants.keyBindingPathWin)
-            } else if (process.platform === 'darwin') {
-                keybindingsPath = path.join(home, CodeWhispererConstants.keyBindingPathMac)
-            } else {
-                keybindingsPath = path.join(home, CodeWhispererConstants.keyBindingPathLinux)
-            }
-            origin = fs.readFileSync(keybindingsPath, 'utf8')
-        } catch (error) {
-            getLogger().error(`Failed to read user keybinding file ${error}`)
-        }
-
-        try {
-            let overrides = ''
-            const sep = '        '
-            if (!origin.includes(`editor.action.inlineSuggest.showNext`)) {
-                overrides += `${sep}{\n${sep}${sep}"key": "right",\n${sep}${sep}"command": "editor.action.inlineSuggest.showNext",\n${sep}${sep}"when": "inlineSuggestionVisible && !editorReadonly"\n${sep}},\n`
-                overrides += `${sep}{\n${sep}${sep}"key": "alt+]",\n${sep}${sep}"command": "-editor.action.inlineSuggest.showNext",\n${sep}${sep}"when": "inlineSuggestionVisible && !editorReadonly"\n${sep}},\n`
-            }
-            if (!origin.includes(`editor.action.inlineSuggest.showPrevious`)) {
-                overrides += `${sep}{\n${sep}${sep}"key": "left",\n${sep}${sep}"command": "editor.action.inlineSuggest.showPrevious",\n${sep}${sep}"when": "inlineSuggestionVisible && !editorReadonly"\n${sep}},\n`
-                overrides += `${sep}{\n${sep}${sep}"key": "alt+[",\n${sep}${sep}"command": "-editor.action.inlineSuggest.showPrevious",\n${sep}${sep}"when": "inlineSuggestionVisible && !editorReadonly"\n${sep}},\n`
-            }
-            if (overrides.length > 0) {
-                let newKeybindings = ''
-                if (origin.includes('[') && origin.includes(']')) {
-                    newKeybindings = overrides + origin.substring(origin.indexOf('[') + 1, origin.lastIndexOf(']'))
-                } else {
-                    newKeybindings = overrides
-                }
-                fs.writeFileSync(
-                    keybindingsPath,
-                    `// Place your key bindings in this file to override the defaults\n[\n${newKeybindings}]`
-                )
-            }
-        } catch (error) {
-            getLogger().error(`Failed to update user keybindings, error ${error}`)
-        }
     }
 
     private clearRejectionTimer() {
