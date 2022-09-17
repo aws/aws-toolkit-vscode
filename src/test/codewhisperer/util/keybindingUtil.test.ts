@@ -3,12 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as assert from 'assert'
 import { overrideKeybindings, getKeybindingsPath } from '../../../codewhisperer/util/keybindingUtil'
 describe('keybindingUtil', function () {
-    beforeEach(function () {
-        fs.writeFileSync(getKeybindingsPath(), ``)
+    before(async function () {
+        try {
+            await fs.mkdirp(getKeybindingsPath().replace('/keybindings.json', ''))
+            fs.writeFileSync(getKeybindingsPath(), ``)
+        } catch (e) {}
     })
 
     it('Should override keybindings of inline completion commands if user has not overwritten it', function () {
