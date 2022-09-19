@@ -181,9 +181,6 @@ export class CawsCreateWebview extends VueWebview {
                 },
             ],
             ...settings,
-            // XXX: Workspaces now require an alias. Need to change UX so we don't do this.
-            // remove after Velox fixes model by setting min alias length to 0
-            alias: settings.alias === undefined || settings.alias === '' ? 'Workspace' : settings.alias,
         })
     }
 }

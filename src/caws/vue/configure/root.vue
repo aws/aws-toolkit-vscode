@@ -162,7 +162,6 @@ body {
     padding: 12px;
     box-shadow: 2px 2px 8px #111111;
     position: sticky;
-    max-width: 500px;
 }
 #notification-span {
     display: flex;

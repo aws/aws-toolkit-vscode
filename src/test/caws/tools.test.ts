@@ -68,17 +68,17 @@ describe('Connect Script', function () {
                 })
 
                 const body = JSON.parse(data)
-                const expected: StartSessionDevelopmentWorkspaceRequest = {
-                    id: testWorkspace.id,
-                    projectName: testWorkspace.project.name,
-                    organizationName: testWorkspace.org.name,
+                const expected: Pick<StartSessionDevelopmentWorkspaceRequest, 'sessionConfiguration'> = {
                     sessionConfiguration: { sessionType: 'SSH' },
                 }
 
+                const expectedPath = `/v1/organizations/${testWorkspace.org.name}/projects/${testWorkspace.project.name}/developmentWorkspaces/${testWorkspace.id}/session`
+
                 assert.deepStrictEqual(body, expected)
+                assert.strictEqual(req.url, expectedPath)
             } catch (e) {
                 resp.writeHead(400, { 'Content-Type': 'application/json' })
-                resp.end(JSON.stringify({ name: 'ValidationException' }))
+                resp.end(JSON.stringify({ name: 'ValidationException', message: (e as Error).message }))
 
                 return
             }

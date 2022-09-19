@@ -59,18 +59,16 @@ function StartSessionDevelopmentWorkspace {
         [string] $WorkspaceId
     )
 
+    $startSessionPath = "/v1/organizations/$Organization/projects/$Project/developmentWorkspaces/$WorkspaceId/session"
     $startSessionQuery = @"
 {
-    "id": "$WorkspaceId", 
-    "projectName": "$Project", 
-    "organizationName": "$Organization", 
     "sessionConfiguration": { 
         "sessionType": "SSH" 
     }
 }
 "@
 
-    $webRequest = Invoke-WebRequest -Method 'POST' -Uri $Endpoint -Headers @{"Content-Type" = "application/x-amz-json-1.0"; "Authorization" = "Bearer $Token"; "X-Amz-Target" = "CodeAws.StartSessionDevelopmentWorkspace" } -Body "$startSessionQuery"
+    $webRequest = Invoke-WebRequest -Method 'POST' -Uri "$Endpoint$startSessionPath" -Headers @{"Content-Type" = "application/json"; "Authorization" = "Bearer $Token" } -Body "$startSessionQuery"
     ConvertFrom-Json -InputObject $webRequest
 }
 

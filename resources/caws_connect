@@ -47,14 +47,10 @@ _start_session_development_workspace() {
     local WORKSPACE_ID=$5
 
     # Local variables
-    local START_SESSION_QUERY
-
-    START_SESSION_QUERY=$(
+    local START_SESSION_PATH="/v1/organizations/$ORGANIZATION_NAME/projects/$PROJECT_NAME/developmentWorkspaces/$WORKSPACE_ID/session"
+    local START_SESSION_QUERY=$(
         cat << EOF
 {
-    "id": "$WORKSPACE_ID", 
-    "projectName": "$PROJECT_NAME", 
-    "organizationName": "$ORGANIZATION_NAME", 
     "sessionConfiguration": { 
         "sessionType": "SSH" 
     }
@@ -63,11 +59,10 @@ EOF
     )
 
     curl -s -X POST \
-        -H "Content-Type: application/x-amz-json-1.0" \
+        -H "Content-Type: application/json" \
         -H "Authorization: Bearer $BEARER_TOKEN" \
-        -H "X-Amz-Target: CodeAws.StartSessionDevelopmentWorkspace" \
         -d "$START_SESSION_QUERY" \
-        "$CAWS_ENDPOINT"
+        "$CAWS_ENDPOINT$START_SESSION_PATH"
 }
 
 _caws() {

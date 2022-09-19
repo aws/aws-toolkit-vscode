@@ -173,6 +173,17 @@ export async function createClient(
     return c
 }
 
+// XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
+function fixAliasInRequest<T extends caws.CreateDevelopmentWorkspaceRequest | caws.UpdateDevelopmentWorkspaceRequest>(
+    request: T
+): T {
+    if (!request.alias) {
+        delete request.alias
+    }
+
+    return request
+}
+
 class CawsClientInternal {
     private userId: string | undefined
     private userDetails?: UserDetails
@@ -486,7 +497,7 @@ class CawsClientInternal {
     public async createDevelopmentWorkspace(
         args: caws.CreateDevelopmentWorkspaceRequest
     ): Promise<DevelopmentWorkspace> {
-        const { id } = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
+        const { id } = await this.call(this.sdkClient.createDevelopmentWorkspace(fixAliasInRequest(args)), false)
 
         return this.getDevelopmentWorkspace({
             id,
@@ -541,7 +552,7 @@ class CawsClientInternal {
     public updateDevelopmentWorkspace(
         args: caws.UpdateDevelopmentWorkspaceRequest
     ): Promise<caws.UpdateDevelopmentWorkspaceResponse> {
-        return this.call(this.sdkClient.updateDevelopmentWorkspace(args), false)
+        return this.call(this.sdkClient.updateDevelopmentWorkspace(fixAliasInRequest(args)), false)
     }
 
     /**
@@ -580,7 +591,7 @@ class CawsClientInternal {
 
                 const resp = await this.getDevelopmentWorkspace(args)
                 if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
-                    throw new Error('Workspace failed to start')
+                    throw new ToolkitError('Workspace failed to start', { code: 'BadWorkspaceState' })
                 }
 
                 if (resp.status === 'STOPPED') {
@@ -590,6 +601,8 @@ class CawsClientInternal {
                     progress.report({
                         message: localize('AWS.caws.startMde.resuming', 'waiting for workspace to stop...'),
                     })
+                } else if (resp.status === 'FAILED') {
+                    throw new ToolkitError('Workspace failed to start', { code: 'FailedWorkspace' })
                 } else {
                     progress.report({
                         message: localize('AWS.caws.startMde.starting', 'opening workspace...'),
@@ -605,7 +618,7 @@ class CawsClientInternal {
 
         const workspace = await waitTimeout(pollWorkspace, timeout)
         if (!workspace) {
-            throw new TypeError('Workspace could not be started')
+            throw new ToolkitError('Workspace failed to start', { code: 'Timeout' })
         }
 
         return workspace
