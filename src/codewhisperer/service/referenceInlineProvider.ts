@@ -24,6 +24,12 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
 
     constructor() {}
 
+    static #instance: ReferenceInlineProvider
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     public setInlineReference(line: number, suggestion: string, references: References | undefined) {
         const startTime = performance.now()
         this.ranges = []

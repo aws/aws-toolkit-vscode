@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables, createReferenceProvider } from '../testUtil'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
@@ -76,51 +77,68 @@ describe('inlineCompletionService', function () {
 
     describe('clearInlineCompletionStates', function () {
         it('should remove inline reference and recommendations', async function () {
-            const referenceProvider = createReferenceProvider()
-            InlineCompletionService.instance.setReferenceInlineProvider(referenceProvider)
+            const fakeReferences = [
+                {
+                    message: '',
+                    licenseName: 'MIT',
+                    repository: 'http://github.com/fake',
+                    recommendationContentSpan: {
+                        start: 0,
+                        end: 10,
+                    },
+                },
+            ]
+            ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
             RecommendationHandler.instance.recommendations = [
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '' },
             ]
             await InlineCompletionService.instance.clearInlineCompletionStates(createMockTextEditor())
-            assert.strictEqual(referenceProvider.refs.length, 0)
+            assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
             assert.strictEqual(RecommendationHandler.instance.recommendations.length, 0)
         })
     })
 
     describe('on event change', async function () {
+        beforeEach(function () {
+            const fakeReferences = [
+                {
+                    message: '',
+                    licenseName: 'MIT',
+                    repository: 'http://github.com/fake',
+                    recommendationContentSpan: {
+                        start: 0,
+                        end: 10,
+                    },
+                },
+            ]
+            ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
+        })
+
         it('should remove inline reference onEditorChange', async function () {
-            const referenceProvider = createReferenceProvider()
-            InlineCompletionService.instance.setReferenceInlineProvider(referenceProvider)
             await InlineCompletionService.instance.onEditorChange()
-            assert.strictEqual(referenceProvider.refs.length, 0)
+            assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
         it('should remove inline reference onFocusChange', async function () {
-            const referenceProvider = createReferenceProvider()
-            InlineCompletionService.instance.setReferenceInlineProvider(referenceProvider)
             await InlineCompletionService.instance.onFocusChange()
-            assert.strictEqual(referenceProvider.refs.length, 0)
+            assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
         it('should not remove inline reference on cursor change from typing', async function () {
-            const referenceProvider = createReferenceProvider()
-            InlineCompletionService.instance.setReferenceInlineProvider(referenceProvider)
             await InlineCompletionService.instance.onCursorChange({
                 textEditor: createMockTextEditor(),
                 selections: [],
                 kind: vscode.TextEditorSelectionChangeKind.Keyboard,
             })
-            assert.strictEqual(referenceProvider.refs.length, 1)
+            assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 1)
         })
 
         it('should remove inline reference on cursor change from mouse movement', async function () {
-            const referenceProvider = createReferenceProvider()
-            InlineCompletionService.instance.setReferenceInlineProvider(referenceProvider)
             await InlineCompletionService.instance.onCursorChange({
                 textEditor: vscode.window.activeTextEditor!,
                 selections: [],
                 kind: vscode.TextEditorSelectionChangeKind.Mouse,
             })
-            assert.strictEqual(referenceProvider.refs.length, 0)
+            assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
     })
 })

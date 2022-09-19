@@ -303,10 +303,8 @@ export async function activate(context: ExtContext): Promise<void> {
         updateCloud9TreeNodes.execute()
     } else if (isInlineCompletionEnabled()) {
         overrideKeybindings()
-        InlineCompletionService.instance.setReferenceInlineProvider(referenceCodeLensProvider)
         await setSubscriptionsforInlineCompletion()
     } else {
-        InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)
         await setSubscriptionsforVsCodeInline()
     }
 

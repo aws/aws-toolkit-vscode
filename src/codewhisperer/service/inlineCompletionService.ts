@@ -24,19 +24,13 @@ import globals from '../../shared/extensionGlobals'
 class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
-    private referenceInlineProvider?: ReferenceInlineProvider
 
     private _onDidShow: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidShow: vscode.Event<void> = this._onDidShow.event
 
-    public constructor(
-        itemIndex: number | undefined,
-        firstMove: number,
-        referenceInlineProvider?: ReferenceInlineProvider
-    ) {
+    public constructor(itemIndex: number | undefined, firstMove: number) {
         this.activeItemIndex = itemIndex
         this.nextMove = firstMove
-        this.referenceInlineProvider = referenceInlineProvider
     }
 
     get getActiveItemIndex() {
@@ -100,7 +94,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(RecommendationHandler.instance.startPos)) {
-            this.referenceInlineProvider?.removeInlineReference()
+            ReferenceInlineProvider.instance.removeInlineReference()
             this.activeItemIndex = undefined
             return
         }
@@ -133,7 +127,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
                     },
                 })
                 RecommendationHandler.instance.setSuggestionState(i, 'Showed')
-                this.referenceInlineProvider?.setInlineReference(
+                ReferenceInlineProvider.instance.setInlineReference(
                     RecommendationHandler.instance.startPos.line,
                     r.content,
                     r.references
@@ -143,7 +137,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
                 return [items[0]]
             }
         }
-        this.referenceInlineProvider?.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
         this.activeItemIndex = undefined
         return []
     }
@@ -171,7 +165,6 @@ const hideCommand = Commands.declare(
 )
 
 export class InlineCompletionService {
-    private referenceProvider?: ReferenceInlineProvider
     private inlineCompletionProvider?: CodeWhispererInlineCompletionItemProvider
     private inlineCompletionProviderDisposable?: vscode.Disposable
     private maxPage = 100
@@ -224,24 +217,24 @@ export class InlineCompletionService {
 
     async onEditorChange() {
         vsCodeState.isCodeWhispererEditing = false
-        this.referenceProvider?.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
     }
 
     async onFocusChange() {
         vsCodeState.isCodeWhispererEditing = false
-        this.referenceProvider?.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
-            this.referenceProvider?.removeInlineReference()
+            ReferenceInlineProvider.instance.removeInlineReference()
         }
     }
 
     async clearInlineCompletionStates(editor: vscode.TextEditor | undefined) {
         await HoverConfigUtil.instance.restoreHoverConfig()
         vsCodeState.isCodeWhispererEditing = false
-        this.referenceProvider?.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
         RecommendationHandler.instance.cancelPaginatedRequest()
         RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()
@@ -249,10 +242,6 @@ export class InlineCompletionService {
         this.setCodeWhispererStatusBarOk()
         this.disposeCommandOverrides()
         this.clearRejectionTimer()
-    }
-
-    setReferenceInlineProvider(provider: ReferenceInlineProvider) {
-        this.referenceProvider = provider
     }
 
     async getPaginatedRecommendation(
@@ -329,8 +318,7 @@ export class InlineCompletionService {
     async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
         this.inlineCompletionProvider = new CodeWhispererInlineCompletionItemProvider(
             this.inlineCompletionProvider?.getActiveItemIndex,
-            indexShift,
-            this.referenceProvider
+            indexShift
         )
         this.inlineCompletionProvider.onDidShow(e => {
             this._timer?.refresh()
