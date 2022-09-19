@@ -200,4 +200,4 @@ export const cloud9AccessAlreadySent = 'Access has already been requested, we ar
 export const reloadWindow = 'Reload Now'
 
 export const reloadWindowPrompt =
-    'Inline suggestion settings changed. The current window needs to be reloaded for this to take affect.'
+    'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
