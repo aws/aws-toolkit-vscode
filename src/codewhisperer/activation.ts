@@ -47,7 +47,6 @@ import { Commands } from '../shared/vscode/commands2'
 import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { HoverConfigUtil } from './util/hoverConfigUtil'
-import { overrideKeybindings } from './util/keybindingUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import {
     CodewhispererCompletionType,
@@ -302,7 +301,6 @@ export async function activate(context: ExtContext): Promise<void> {
         setSubscriptionsforCloud9()
         updateCloud9TreeNodes.execute()
     } else if (isInlineCompletionEnabled()) {
-        overrideKeybindings()
         await setSubscriptionsforInlineCompletion()
     } else {
         await setSubscriptionsforVsCodeInline()
