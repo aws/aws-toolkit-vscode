@@ -111,7 +111,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 referenceLogViewProvider.update()
             }
             if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
-                await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                await vscode.window
+                    .showInformationMessage(
+                        CodeWhispererConstants.reloadWindowPrompt,
+                        CodeWhispererConstants.reloadWindow
+                    )
+                    .then(selected => {
+                        if (selected === CodeWhispererConstants.reloadWindow) {
+                            vscode.commands.executeCommand('workbench.action.reloadWindow')
+                        }
+                    })
             }
         }),
         /**
