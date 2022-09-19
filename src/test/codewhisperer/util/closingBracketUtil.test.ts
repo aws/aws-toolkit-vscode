@@ -67,7 +67,7 @@ describe('closingBracketUtil', function () {
             assert.ok(actual.length === 0)
         })
         it('Should return expected bracket to remove', function () {
-            const actual = getBracketsToRemove('return a+b}', '}')
+            const actual = getBracketsToRemove('{return a+b}', '}')
             const expected = [0]
             assert.deepStrictEqual(actual, expected)
         })
