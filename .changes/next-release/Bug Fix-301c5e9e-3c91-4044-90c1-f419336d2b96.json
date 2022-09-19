@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer duplicate closing bracket when using recommendation inside brackets"
+}
