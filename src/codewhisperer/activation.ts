@@ -85,7 +85,6 @@ export async function activate(context: ExtContext): Promise<void> {
         context.extensionContext.extensionUri,
         codewhispererSettings
     )
-    const referenceCodeLensProvider = new ReferenceInlineProvider()
 
     context.extensionContext.subscriptions.push(
         /**
@@ -227,7 +226,7 @@ export async function activate(context: ExtContext): Promise<void> {
         showReferenceLog.register(context),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
-            referenceCodeLensProvider
+            ReferenceInlineProvider.instance
         )
     )
 
