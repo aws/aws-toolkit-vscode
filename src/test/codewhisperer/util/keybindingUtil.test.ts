@@ -9,7 +9,7 @@ import { overrideKeybindings, getKeybindingsPath } from '../../../codewhisperer/
 describe('keybindingUtil', function () {
     before(async function () {
         try {
-            await fs.mkdirp(getKeybindingsPath().replace('/keybindings.json', ''))
+            await fs.mkdirp(getKeybindingsPath().replace('keybindings.json', ''))
             fs.writeFileSync(getKeybindingsPath(), ``)
         } catch (e) {}
     })
