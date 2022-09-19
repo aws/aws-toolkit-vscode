@@ -81,6 +81,23 @@ describe('getIcon', function () {
             await tryRemoveFolder(tempDir)
         }
     })
+
+    it('provides the icon source if available', async function () {
+        const tempDir = await makeTemporaryToolkitFolder()
+        const logoPath = path.join(tempDir, 'aws', 'cdk', 'logo.svg')
+
+        try {
+            await fs.mkdirp(path.dirname(logoPath))
+            await fs.writeFile(logoPath, '<svg></svg>')
+
+            const icon = getIcon('aws-cdk-logo', false, tempDir)
+
+            assert.ok(icon instanceof ThemeIcon)
+            assert.strictEqual(icon.source?.fsPath, Uri.file(logoPath).fsPath)
+        } finally {
+            await tryRemoveFolder(tempDir)
+        }
+    })
 })
 
 describe('codicon', function () {
