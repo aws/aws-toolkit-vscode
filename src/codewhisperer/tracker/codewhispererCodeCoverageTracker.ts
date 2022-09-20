@@ -107,6 +107,7 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererLanguage: this._language,
             codewhispererAcceptedTokens: acceptedTokens,
             codewhispererPercentage: percentage ? percentage : 0,
+            successCount: 0,
         })
     }
 

@@ -230,6 +230,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererLanguage: language,
                 codewhispererAcceptedTokens: 7,
                 codewhispererPercentage: 7,
+                successCount: 0,
             })
         })
 
@@ -248,6 +249,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererLanguage: 'java',
                 codewhispererAcceptedTokens: 18,
                 codewhispererPercentage: 60,
+                successCount: 0,
             })
         })
     })
