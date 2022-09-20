@@ -12,8 +12,7 @@ import { getCompletionItems } from './service/completionProvider'
 import { vsCodeState, ConfigurationEntry } from './models/model'
 import { InlineCompletion } from './service/inlineCompletion'
 import { invokeRecommendation } from './commands/invokeRecommendation'
-import { onAcceptance } from './commands/onAcceptance'
-import { onInlineAcceptance } from './commands/onInlineAcceptance'
+import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
@@ -48,11 +47,6 @@ import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import {
-    CodewhispererCompletionType,
-    CodewhispererLanguage,
-    CodewhispererTriggerType,
-} from '../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -80,12 +74,6 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
-    const referenceHoverProvider = new ReferenceHoverProvider()
-    const referenceLogViewProvider = new ReferenceLogViewProvider(
-        context.extensionContext.extensionUri,
-        codewhispererSettings
-    )
-
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -106,7 +94,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             }
             if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer')) {
-                referenceLogViewProvider.update()
+                ReferenceLogViewProvider.instance.update()
             }
             if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
@@ -178,51 +166,18 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * On recommendation acceptance
          */
-        Commands.register(
-            'aws.codeWhisperer.accept',
-            async (
-                range: vscode.Range,
-                acceptIndex: number,
-                recommendation: string,
-                requestId: string,
-                sessionId: string,
-                triggerType: CodewhispererTriggerType,
-                completionType: CodewhispererCompletionType,
-                language: CodewhispererLanguage,
-                references: codewhispererClient.References
-            ) => {
-                const editor = vscode.window.activeTextEditor
-                const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
-                await onAcceptanceFunc(
-                    {
-                        editor,
-                        range,
-                        acceptIndex,
-                        recommendation,
-                        requestId,
-                        sessionId,
-                        triggerType,
-                        completionType,
-                        language,
-                        references,
-                    },
-                    context.extensionContext.globalState
-                )
-                if (references != undefined && editor != undefined) {
-                    const referenceLog = ReferenceLogViewProvider.getReferenceLog(recommendation, references, editor)
-                    referenceLogViewProvider.addReferenceLog(referenceLog)
-                    referenceHoverProvider.addCodeReferences(recommendation, references)
-                }
-            }
-        ),
+        acceptSuggestion.register(context),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
             RecommendationHandler.instance.clearRecommendations()
         }),
 
-        vscode.languages.registerHoverProvider([...CodeWhispererConstants.supportedLanguages], referenceHoverProvider),
-        vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, referenceLogViewProvider),
+        vscode.languages.registerHoverProvider(
+            [...CodeWhispererConstants.supportedLanguages],
+            ReferenceHoverProvider.instance
+        ),
+        vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
         showReferenceLog.register(context),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
