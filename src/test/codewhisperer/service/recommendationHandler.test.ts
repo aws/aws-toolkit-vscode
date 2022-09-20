@@ -14,6 +14,7 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../test
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { stub } from '../../utilities/stubber'
+import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -31,6 +32,7 @@ describe('recommendationHandler', function () {
     describe('getRecommendations', async function () {
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
+        const tracker = CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)
 
         beforeEach(function () {
             sinon.restore()
@@ -44,6 +46,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should assign correct recommendations given input', async function () {
+            assert.strictEqual(tracker?.serviceInvocationCount, 0)
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -61,6 +64,7 @@ describe('recommendationHandler', function () {
             const actual = handler.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
+            assert.strictEqual(tracker?.serviceInvocationCount, 1)
         })
 
         it('should assign request id correctly', async function () {
