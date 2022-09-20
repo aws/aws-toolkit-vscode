@@ -154,7 +154,7 @@ export class KeyStrokeHandler {
         if (!changedRange.isSingleLine || changedText === '') {
             return ''
         }
-        if (changedText.split('\n').length > 1) {
+        if (!this.isTextChangedHumanTyping(changedText)) {
             return ''
         }
         return changedText
@@ -203,5 +203,14 @@ export class KeyStrokeHandler {
                 }
             }
         }
+    }
+
+    /**
+     * Approximate logic to filter out code snippets added not by human typing
+     * and also filter in intelli sense acceptance, therefore not simply textChanged.length > 1
+     * e.g. extension generated code snippet / copy & paseted etc.
+     */
+    isTextChangedHumanTyping(textChanged: string): boolean {
+        return !(textChanged.length > 1 && textChanged.includes(' '))
     }
 }

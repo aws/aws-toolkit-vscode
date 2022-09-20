@@ -10,7 +10,12 @@ import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisp
 import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
-import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
+import {
+    createMockTextEditor,
+    createTextDocumentChangeEvent,
+    resetCodeWhispererGlobalVariables,
+    createMockDocument,
+} from '../testUtil'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 
@@ -216,5 +221,75 @@ describe('keyStrokeHandler', function () {
             await KeyStrokeHandler.instance.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
             assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
+    })
+
+    describe('test getTextChanged should return empty string', function () {
+        const keyStrokeHandler = new KeyStrokeHandler()
+        let fakeEditor = createMockTextEditor()
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('if isAutomatedTriggerEnabled is false', function () {
+            const actual = keyStrokeHandler.getChangedText(
+                createFakeDocumentChangedEvent('arbitrary string'),
+                false,
+                fakeEditor
+            )
+            assert.strictEqual(actual, '')
+        })
+
+        it('if languageId is LOG', function () {
+            fakeEditor = createMockTextEditor(undefined, undefined, 'LOG')
+            const actual = keyStrokeHandler.getChangedText(
+                createFakeDocumentChangedEvent('arbitrary string'),
+                true,
+                fakeEditor
+            )
+            assert.strictEqual(actual, '')
+        })
+
+        it('if isTypeaheadInProgress', function () {
+            sinon.replace(InlineCompletion.instance, 'isTypeaheadInProgress', false)
+            const actual = keyStrokeHandler.getChangedText(
+                createFakeDocumentChangedEvent('arbitrary string'),
+                true,
+                fakeEditor
+            )
+            assert.strictEqual(actual, '')
+        })
+
+        it('if not human typing', function () {
+            sinon.replace(keyStrokeHandler, 'isTextChangedHumanTyping', str => false)
+            const actual = keyStrokeHandler.getChangedText(
+                createFakeDocumentChangedEvent('arbitrary string'),
+                true,
+                fakeEditor
+            )
+            assert.strictEqual(actual, '')
+        })
+
+        it('', function () {
+            const actual = keyStrokeHandler.getChangedText(
+                createFakeDocumentChangedEvent('arbitrary string'),
+                true,
+                fakeEditor
+            )
+            assert.notStrictEqual(actual, '')
+        })
+
+        function createFakeDocumentChangedEvent(textChanged: string): vscode.TextDocumentChangeEvent {
+            const fakeContentChangeEvent: vscode.TextDocumentContentChangeEvent = {
+                range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 5)),
+                rangeOffset: 5,
+                rangeLength: 5,
+                text: textChanged,
+            }
+            return {
+                document: createMockDocument(),
+                contentChanges: [fakeContentChangeEvent],
+            }
+        }
     })
 })
