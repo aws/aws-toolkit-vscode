@@ -5,7 +5,6 @@
 import * as assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
-import { InlineCompletionItem } from '../../../codewhisperer/models/model'
 
 describe('referenceInlineProvider', function () {
     beforeEach(function () {
@@ -14,10 +13,6 @@ describe('referenceInlineProvider', function () {
     describe('setInlineReference', async function () {
         it('Reference codelens message should contain license name and CodeWhisperer reference log', function () {
             const referenceInlineProvider = new ReferenceInlineProvider()
-            const item: InlineCompletionItem = {
-                content: `def two_sum(nums, target):`,
-                index: 0,
-            }
             const fakeReferences = [
                 {
                     message: '',
@@ -29,7 +24,7 @@ describe('referenceInlineProvider', function () {
                     },
                 },
             ]
-            referenceInlineProvider.setInlineReference(1, item, fakeReferences)
+            referenceInlineProvider.setInlineReference(1, `def two_sum(nums, target):`, fakeReferences)
             assert.ok(referenceInlineProvider.refs[0].includes(`TEST_LICENSE`))
             assert.ok(referenceInlineProvider.refs[0].includes(`reference log`))
         })
