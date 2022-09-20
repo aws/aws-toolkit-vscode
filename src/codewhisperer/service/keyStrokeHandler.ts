@@ -206,11 +206,37 @@ export class KeyStrokeHandler {
     }
 
     /**
-     * Approximate logic to filter out code snippets added not by human typing
-     * and also filter in intelli sense acceptance, therefore not simply textChanged.length > 1
+     * Logic to determine if the code changes is done by human typing manually
+     * NOTE: we consider intelli sense recommendation is this type
      * e.g. extension generated code snippet / copy & paseted etc.
      */
     isTextChangedHumanTyping(textChanged: string): boolean {
-        return !(textChanged.length > 1 && textChanged.includes(' '))
+        if (textChanged.length == 1) {
+            return true
+        } else if (this.isTextChangedDoneByIntellisense(textChanged)) {
+            return true
+        } else if (this.isTextChangedDoneByFormatting(textChanged)) {
+            return true
+        } else {
+            return false
+        }
+    }
+
+    /**
+     * Single word matching to mimic intelli sense recommendation (usually is of one word and no spaces \t, \n, ' ')
+     * e.g. documentChanged, __str__, python_variable
+     */
+    isTextChangedDoneByIntellisense(textChanged: string): boolean {
+        const rExp: RegExp = /^[\S]+$/g
+        return rExp.test(textChanged)
+    }
+
+    /**
+     * Match cases when there is a new line char up front and followed with only space, \n, \t
+     * e.g. when users press an Enter key and IDE reformat the code by adding spaces or tabs(\t)
+     */
+    isTextChangedDoneByFormatting(textChanged: string): boolean {
+        const rExp: RegExp = /^\n[\s]*$/g
+        return rExp.test(textChanged)
     }
 }

@@ -270,15 +270,6 @@ describe('keyStrokeHandler', function () {
             assert.strictEqual(actual, '')
         })
 
-        it('', function () {
-            const actual = keyStrokeHandler.getChangedText(
-                createFakeDocumentChangedEvent('arbitrary string'),
-                true,
-                fakeEditor
-            )
-            assert.notStrictEqual(actual, '')
-        })
-
         function createFakeDocumentChangedEvent(textChanged: string): vscode.TextDocumentChangeEvent {
             const fakeContentChangeEvent: vscode.TextDocumentContentChangeEvent = {
                 range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 5)),
@@ -291,5 +282,73 @@ describe('keyStrokeHandler', function () {
                 contentChanges: [fakeContentChangeEvent],
             }
         }
+    })
+
+    describe('test isTextChangedHumanTyping', function () {
+        const keyStrokeHandler = new KeyStrokeHandler()
+        it('single char', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('a'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\n'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('1'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping(' '), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\t'), true)
+        })
+
+        it('multiple chars without space -- intelli sense behavior', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('variable'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('__str__'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('aVariable'), true)
+
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('  aVariable'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('Variable '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\nVariable'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('Variable\n'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\tVariable'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('Variable\t'), false)
+        })
+
+        it('when user press enter and get reformatted by IDE (adding spaces)', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\n\t'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\n\t \n\t\t'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\n\t \t\t\t'), true)
+
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping('\t \t\t\t'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedHumanTyping(' \t\t\t\t'), false)
+        })
+    })
+
+    describe('test isTextChangedDoneByIntellisense', function () {
+        const keyStrokeHandler = new KeyStrokeHandler()
+
+        it('single word matching', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('aVariable'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('a_variable'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('a__variable'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('__avariable__'), true)
+
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('  a_variable'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('__avariable      '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByIntellisense('aVariable\n'), false)
+        })
+    })
+
+    describe('test isTextChangedDoneByFormatting', function () {
+        const keyStrokeHandler = new KeyStrokeHandler()
+
+        it('should return true with prefixing new line char', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n           '), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n\t\t\t'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n\n\t\t\t        '), true)
+        })
+
+        it('should return false with chars not new line char', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\t\t\t        '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('    \t\t\t        '), false)
+        })
+
+        it('only space allowed', function () {
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\nshould return false  '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n \twrong'), false)
+        })
     })
 })
