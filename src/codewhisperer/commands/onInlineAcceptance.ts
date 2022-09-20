@@ -28,7 +28,7 @@ export async function onInlineAcceptance(
     InlineCompletionService.instance.disposeInlineCompletion()
 
     if (acceptanceEntry.editor) {
-        sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+        await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
         const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active

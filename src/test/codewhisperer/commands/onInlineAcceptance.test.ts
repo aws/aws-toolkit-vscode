@@ -9,9 +9,8 @@ import * as sinon from 'sinon'
 import { onInlineAcceptance } from '../../../codewhisperer/commands/onInlineAcceptance'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../testUtil'
-import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { assertTelemetryCurried } from '../../testUtil'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { FakeMemento } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 
@@ -28,7 +27,7 @@ describe('onInlineAcceptance', function () {
         it('Should dispose inline completion provider', async function () {
             const mockEditor = createMockTextEditor()
             const spy = sinon.spy(InlineCompletionService.instance, 'disposeInlineCompletion')
-            const extensionContext = await FakeExtensionContext.create()
+            const globalState = new FakeMemento()
             await onInlineAcceptance(
                 {
                     editor: mockEditor,
@@ -42,7 +41,7 @@ describe('onInlineAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                extensionContext.globalState
+                globalState
             )
             assert.ok(spy.calledWith())
         })
@@ -50,7 +49,7 @@ describe('onInlineAcceptance', function () {
         it('Should format python code with command editor.action.format when current active document is python', async function () {
             const mockEditor = createMockTextEditor()
             const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-            const extensionContext = await FakeExtensionContext.create()
+            const globalState = new FakeMemento()
             await onInlineAcceptance(
                 {
                     editor: mockEditor,
@@ -64,7 +63,7 @@ describe('onInlineAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                extensionContext.globalState
+                globalState
             )
             assert.ok(commandSpy.calledWith('editor.action.format'))
         })
@@ -72,7 +71,7 @@ describe('onInlineAcceptance', function () {
         it('Should format code selection with command vscode.executeFormatRangeProvider when current active document is not python', async function () {
             const mockEditor = createMockTextEditor("console.log('Hello')", 'test.js', 'javascript', 1, 0)
             const commandStub = sinon.stub(vscode.commands, 'executeCommand')
-            const extensionContext = await FakeExtensionContext.create()
+            const globalState = new FakeMemento()
             const fakeReferences = [
                 {
                     message: '',
@@ -97,52 +96,9 @@ describe('onInlineAcceptance', function () {
                     language: 'javascript',
                     references: fakeReferences,
                 },
-                extensionContext.globalState
+                globalState
             )
             assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
-        })
-
-        it('Should enqueue an event object to tracker', async function () {
-            const mockEditor = createMockTextEditor()
-            const trackerSpy = sinon.spy(CodeWhispererTracker.prototype, 'enqueue')
-            const extensionContext = await FakeExtensionContext.create()
-            const fakeReferences = [
-                {
-                    message: '',
-                    licenseName: 'MIT',
-                    repository: 'http://github.com/fake',
-                    recommendationContentSpan: {
-                        start: 0,
-                        end: 10,
-                    },
-                },
-            ]
-            await onInlineAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: fakeReferences,
-                },
-                extensionContext.globalState
-            )
-            const actualArg = trackerSpy.getCall(0).args[0]
-            assert.ok(trackerSpy.calledOnce)
-            assert.strictEqual(actualArg.originalString, 'def two_sum(nums, target):')
-            assert.strictEqual(actualArg.requestId, '')
-            assert.strictEqual(actualArg.sessionId, '')
-            assert.strictEqual(actualArg.triggerType, 'OnDemand')
-            assert.strictEqual(actualArg.completionType, 'Line')
-            assert.strictEqual(actualArg.language, 'python')
-            assert.deepStrictEqual(actualArg.startPosition, new vscode.Position(1, 0))
-            assert.deepStrictEqual(actualArg.endPosition, new vscode.Position(1, 26))
-            assert.strictEqual(actualArg.index, 0)
         })
 
         it('Should report telemetry that records this user decision event', async function () {
@@ -156,7 +112,7 @@ describe('onInlineAcceptance', function () {
             TelemetryHelper.instance.triggerType = 'OnDemand'
             TelemetryHelper.instance.completionType = 'Line'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
-            const extensionContext = await FakeExtensionContext.create()
+            const globalState = new FakeMemento()
             await onInlineAcceptance(
                 {
                     editor: mockEditor,
@@ -170,7 +126,7 @@ describe('onInlineAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                extensionContext.globalState
+                globalState
             )
             assertTelemetry({
                 codewhispererRequestId: 'test',
