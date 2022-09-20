@@ -108,7 +108,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     }
     private getHtml(webview: vscode.Webview, showPrompt: boolean): string {
         const styleVSCodeUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'css/codewhispererReferenceLog.css')
+            vscode.Uri.joinPath(this._extensionUri, 'src', 'codewhisperer', 'views/css/codewhispererReferenceLog.css')
         )
         const prompt = showPrompt ? CodeWhispererConstants.referenceLogPromptText : ''
         let csp = ''
