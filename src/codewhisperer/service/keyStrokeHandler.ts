@@ -118,6 +118,13 @@ export class KeyStrokeHandler {
         if (!isAutomatedTriggerEnabled) {
             return ''
         }
+
+        /**
+         * Skip when document is reformatted by other extension
+         */
+        if (event.contentChanges.length != 1) {
+            return ''
+        }
         /**
          * Skip when output channel gains focus and invoke
          */
@@ -215,7 +222,7 @@ export class KeyStrokeHandler {
             return true
         } else if (this.isTextChangedDoneByIntellisense(textChanged)) {
             return true
-        } else if (this.isTextChangedDoneByFormatting(textChanged)) {
+        } else if (this.isTextChangedDoneByEnterKey(textChanged)) {
             return true
         } else {
             return false
@@ -235,7 +242,7 @@ export class KeyStrokeHandler {
      * Match cases when there is a new line char up front and followed with only space, \n, \t
      * e.g. when users press an Enter key and IDE reformat the code by adding spaces or tabs(\t)
      */
-    isTextChangedDoneByFormatting(textChanged: string): boolean {
+    isTextChangedDoneByEnterKey(textChanged: string): boolean {
         const rExp: RegExp = /^\n[\s]*$/g
         return rExp.test(textChanged)
     }

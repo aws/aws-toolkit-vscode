@@ -336,19 +336,19 @@ describe('keyStrokeHandler', function () {
         const keyStrokeHandler = new KeyStrokeHandler()
 
         it('should return true with prefixing new line char', function () {
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n           '), true)
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n\t\t\t'), true)
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n\n\t\t\t        '), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\n           '), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\n\t\t\t'), true)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\n\n\t\t\t        '), true)
         })
 
         it('should return false with chars not new line char', function () {
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\t\t\t        '), false)
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('    \t\t\t        '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\t\t\t        '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('    \t\t\t        '), false)
         })
 
         it('only space allowed', function () {
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\nshould return false  '), false)
-            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByFormatting('\n \twrong'), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\nshould return false  '), false)
+            assert.strictEqual(keyStrokeHandler.isTextChangedDoneByEnterKey('\n \twrong'), false)
         })
     })
 })
