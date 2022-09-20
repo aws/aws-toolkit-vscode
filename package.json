@@ -2958,6 +2958,16 @@
                 "key": "tab",
                 "mac": "tab",
                 "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
+            },
+            {
+                "key": "right",
+                "command": "editor.action.inlineSuggest.showNext",
+                "when": "inlineSuggestionVisible && !editorReadonly"
+            },
+            {
+                "key": "left",
+                "command": "editor.action.inlineSuggest.showPrevious",
+                "when": "inlineSuggestionVisible && !editorReadonly"
             }
         ],
         "grammars": [
