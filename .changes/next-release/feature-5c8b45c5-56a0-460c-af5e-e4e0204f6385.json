@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services"
+}
