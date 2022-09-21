@@ -15,6 +15,7 @@ import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { stub } from '../../utilities/stubber'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
+import { FakeMemento } from '../../fakeExtensionContext'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -30,9 +31,10 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
+        const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
-        const tracker = CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)
+        const tracker = CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
 
         beforeEach(function () {
             sinon.restore()
