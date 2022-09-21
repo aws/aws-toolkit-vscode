@@ -15,7 +15,11 @@ interface CodeReference {
 
 export class ReferenceHoverProvider implements vscode.HoverProvider {
     private _codeReferenceCache: CodeReference[] = []
+    static #instance: ReferenceHoverProvider
 
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
     public provideHover(
         document: vscode.TextDocument,
         position: vscode.Position,
