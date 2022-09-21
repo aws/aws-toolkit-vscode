@@ -96,13 +96,11 @@ export class PageLoader<T> {
     }
 }
 
-export interface LoadMoreable<T extends Resource> {
+type LoadMoreable<T> = {
     loadMore(resource?: T): Promise<void> | void
 }
 
-function loadMore<T extends Resource>(controller: LoadMoreable<T>, target?: T) {
-    return controller.loadMore(target)
-}
+const loadMore = <T>(controller: LoadMoreable<T>, target?: T) => controller.loadMore(target)
 
 export const loadMoreCommand = Commands.instance.register('_aws.resources.loadMore', loadMore)
 
@@ -210,12 +208,16 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
     }
 
     private withLoadMoreNode(loader: PageLoader<TreeNode<U>>, result: TreeNode<U>[]): [...typeof result, TreeNode] {
+        // TODO: optimize this by making `loadMore` apart of the `ResourceTreeNode` prototype?
+        // but then we can't make the method private :/
         const controller = {
             loadMore: () => {
                 loader.load().finally(() => this.getChangedEmitter().fire())
             },
         }
-        const loadMoreNode = loadMoreCommand.build(controller).asTreeNode({ label: `${localizedText.loadMore}...` })
+        const loadMoreNode = loadMoreCommand
+            .build(controller, loader)
+            .asTreeNode({ label: `${localizedText.loadMore}...` })
 
         return [...result, loadMoreNode]
     }

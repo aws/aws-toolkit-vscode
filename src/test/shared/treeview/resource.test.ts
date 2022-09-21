@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { TreeItem, Command, TreeItemCollapsibleState } from 'vscode'
+import { TreeItem, Command, TreeItemCollapsibleState, EventEmitter } from 'vscode'
 import { loadMoreCommand, ResourceTreeNode } from '../../../shared/treeview/resource'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
@@ -13,6 +13,7 @@ type Replace<T, K extends keyof T, U> = Omit<T, K> & { [P in K]: U }
 type BoundCommand<T extends any[]> = Replace<Command, 'arguments', T>
 type LoadMoreBoundCommand = BoundCommand<Parameters<typeof loadMoreCommand['execute']>>
 type LoadMoreNode = Replace<TreeNode, 'getTreeItem', () => Replace<TreeItem, 'command', LoadMoreBoundCommand>>
+
 function isLoadMoreNode(node: TreeNode): node is LoadMoreNode {
     return (node.resource as any).id === loadMoreCommand.id
 }
@@ -43,6 +44,21 @@ describe('ResourceTreeNode', function () {
         assert.strictEqual(item.collapsibleState, TreeItemCollapsibleState.None)
     })
 
+    it('sorts the children nodes using the sort callback', async function () {
+        const node = new ResourceTreeNode(createResource('foo'), {
+            childrenProvider: {
+                listResources: () => [createResource('3'), createResource('1'), createResource('2')],
+            },
+            sort: (a, b) => Number(a.id) - Number(b.id),
+        })
+
+        const children = await node.getChildren()
+        assert.deepStrictEqual(
+            children.map(n => n.id),
+            ['1', '2', '3']
+        )
+    })
+
     describe('placeholders', function () {
         it('can use a custom placeholder message', async function () {
             const node = new ResourceTreeNode(createResource('foo'), {
@@ -70,17 +86,29 @@ describe('ResourceTreeNode', function () {
         })
     })
 
+    it('fires an event when the provider changes', async function () {
+        const emitter = new EventEmitter<void>()
+        const node = new ResourceTreeNode(createResource('foo'), {
+            childrenProvider: { listResources: () => [], onDidChange: emitter.event },
+        })
+
+        let counter = 0
+        node.onDidChangeChildren?.(() => counter++)
+        emitter.fire()
+        assert.strictEqual(counter, 1)
+    })
+
     describe('pagination', function () {
+        function listResources() {
+            return toCollection(async function* () {
+                yield [createResource('1')]
+                return [createResource('2')]
+            })
+        }
+
         it('uses a load more node to load pages', async function () {
             const node = new ResourceTreeNode(createResource('foo'), {
-                childrenProvider: {
-                    paginated: true,
-                    listResources: () =>
-                        toCollection(async function* () {
-                            yield [createResource('1')]
-                            return [createResource('2')]
-                        }),
-                },
+                childrenProvider: { listResources, paginated: true },
             })
 
             const states = await toCollection(runLoadMore.bind(undefined, node)).promise()
@@ -93,20 +121,53 @@ describe('ResourceTreeNode', function () {
             assert.strictEqual(states[1][0].id, '1')
             assert.strictEqual(states[1][1].id, '2')
         })
+
+        it('fires an event when loading more nodes', async function () {
+            const node = new ResourceTreeNode(createResource('foo'), {
+                childrenProvider: { listResources, paginated: true },
+            })
+
+            let counter = 0
+            node.onDidChangeChildren?.(() => counter++)
+
+            await toCollection(runLoadMore.bind(undefined, node)).promise()
+            assert.strictEqual(counter, 1)
+        })
+
+        it('does not forget the children nodes over multiple calls', async function () {
+            const node = new ResourceTreeNode(createResource('foo'), {
+                childrenProvider: { listResources, paginated: true },
+            })
+
+            const states1 = await toCollection(runLoadMore.bind(undefined, node)).promise()
+            const states2 = await toCollection(runLoadMore.bind(undefined, node)).promise()
+            assert.strictEqual(states1.length, 2)
+            assert.strictEqual(states2.length, 1)
+        })
+
+        it('clears the children nodes when the provider changes', async function () {
+            const emitter = new EventEmitter<void>()
+            const node = new ResourceTreeNode(createResource('foo'), {
+                childrenProvider: { listResources, paginated: true, onDidChange: emitter.event },
+            })
+
+            const states1 = await toCollection(runLoadMore.bind(undefined, node)).promise()
+            emitter.fire()
+            const states2 = await toCollection(runLoadMore.bind(undefined, node)).promise()
+            assert.strictEqual(states1.length, 2)
+            assert.strictEqual(states2.length, 2)
+        })
     })
 
     describe('errors', function () {
         it('uses an error node when failing to get children', async function () {
-            const node = new ResourceTreeNode(
-                { id: 'foo', getTreeItem: () => new TreeItem('') },
-                {
-                    childrenProvider: {
-                        listResources: () => {
-                            throw new Error()
-                        },
+            const node = new ResourceTreeNode(createResource('foo'), {
+                childrenProvider: {
+                    listResources: () => {
+                        throw new Error()
                     },
-                }
-            )
+                },
+            })
 
             const children = await node.getChildren()
             const firstItem = await children[0]?.getTreeItem()
@@ -114,19 +175,16 @@ describe('ResourceTreeNode', function () {
         })
 
         it('uses an error node when failing to get paginated children', async function () {
-            const node = new ResourceTreeNode(
-                { id: 'foo', getTreeItem: () => new TreeItem('') },
-                {
-                    childrenProvider: {
-                        paginated: true,
-                        listResources: () =>
-                            toCollection(async function* () {
-                                throw new Error()
-                                yield []
-                            }),
-                    },
-                }
-            )
+            const node = new ResourceTreeNode(createResource('foo'), {
+                childrenProvider: {
+                    paginated: true,
+                    listResources: () =>
+                        toCollection(async function* () {
+                            throw new Error()
+                            yield []
+                        }),
+                },
+            })
 
             const children = await node.getChildren()
             const firstItem = await children[0]?.getTreeItem()

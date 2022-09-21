@@ -70,6 +70,11 @@ export interface ErrorInformation {
      */
     readonly cancelled?: boolean
 
+    /**
+     * A link to documentation relevant to this error.
+     *
+     * TODO: implement this
+     */
     readonly documentationUri?: Uri
 }
 
