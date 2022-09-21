@@ -18,8 +18,8 @@ import globals from '../../shared/extensionGlobals'
  * @see CredentialsProviderType
  */
 export class EcsCredentialsProvider implements CredentialsProvider {
-    private credentials: Credentials | undefined
     private available: boolean | undefined
+    private readonly createTime = Date.now()
 
     public constructor(private provider: CredentialProvider = fromContainerMetadata()) {}
 
@@ -34,7 +34,7 @@ export class EcsCredentialsProvider implements CredentialsProvider {
         if (env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI || env.AWS_CONTAINER_CREDENTIALS_FULL_URI) {
             const start = globals.clock.Date.now()
             try {
-                this.credentials = await this.provider()
+                await this.provider()
                 getLogger().verbose(`credentials: retrieved ECS container credentials`)
 
                 this.available = true
@@ -73,7 +73,7 @@ export class EcsCredentialsProvider implements CredentialsProvider {
     }
 
     public getHashCode(): string {
-        return getStringHash(JSON.stringify(this.credentials))
+        return getStringHash(this.getProviderType() + `-${this.createTime}`)
     }
 
     public canAutoConnect(): boolean {
@@ -81,9 +81,6 @@ export class EcsCredentialsProvider implements CredentialsProvider {
     }
 
     public async getCredentials(): Promise<Credentials> {
-        if (!this.credentials) {
-            this.credentials = await this.provider()
-        }
-        return this.credentials
+        return this.provider()
     }
 }
