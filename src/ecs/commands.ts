@@ -19,7 +19,7 @@ import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { checkPermissionsForSsm } from './util'
 import { CommandWizard, CommandWizardState } from './wizards/executeCommand'
-import { ToolkitError } from '../shared/errors'
+import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Container, Service } from './model'
 import { Instance } from '../shared/utilities/typeConstructors'
@@ -107,7 +107,9 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
 
             await new ChildProcess(path, args, { logging: 'noparams' }).run({
                 timeout,
+                rejectOnError: true,
                 rejectOnErrorCode: true,
+                // TODO: `showOutputMessage` should not be writing to the logs...
                 onStdout: text => {
                     showOutputMessage(removeAnsi(text), globals.outputChannel)
                 },
@@ -116,6 +118,10 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
                 },
             })
         } catch (err) {
+            if (isUserCancelledError(err)) {
+                showOutputMessage('Cancelled command execution', globals.outputChannel)
+            }
+
             const failedMessage = localize(
                 'AWS.ecs.runCommandInContainer.error',
                 'Failed to execute command in container.'
