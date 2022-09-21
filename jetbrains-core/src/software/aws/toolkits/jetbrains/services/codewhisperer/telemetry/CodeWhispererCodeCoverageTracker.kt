@@ -185,7 +185,8 @@ abstract class CodeWhispererCodeCoverageTracker(
                 acceptedTokensSize,
                 language,
                 percentage,
-                totalTokensSize
+                totalTokensSize,
+                successCount = 0
             )
         }
     }
