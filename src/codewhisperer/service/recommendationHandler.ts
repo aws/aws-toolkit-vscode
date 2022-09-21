@@ -44,6 +44,8 @@ export class RecommendationHandler {
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
     public isGenerateRecommendationInProgress: boolean
+    private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
 
     constructor() {
         this.requestId = ''
@@ -275,6 +277,7 @@ export class RecommendationHandler {
                 }
             })
             this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
+            this._onDidReceiveRecommendation.fire()
         } else {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
                 requestId,
