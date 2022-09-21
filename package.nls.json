@@ -101,6 +101,7 @@
     "AWS.ecs.enableEcsExec": "Enable Command Execution",
     "AWS.ecs.disableEcsExec": "Disable Command Execution",
     "AWS.ecs.runCommandInContainer": "Run command in container",
+    "AWS.ecs.openTaskInTerminal": "Open interactive session in terminal",
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.command.viewSchemaItem": "View Schema",

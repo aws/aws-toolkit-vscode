@@ -1043,6 +1043,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.ecs.openTaskInTerminal",
+                    "when": "false"
+                },
+                {
                     "command": "aws.ecs.enableEcsExec",
                     "when": "false"
                 },
@@ -1568,8 +1572,13 @@
                     "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
                 },
                 {
+                    "command": "aws.ecs.openTaskInTerminal",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
+                },
+                {
                     "command": "aws.ecs.enableEcsExec",
-                    "group": "0@1",
+                    "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsEcsServiceNode.DISABLED"
                 },
                 {
@@ -2571,6 +2580,17 @@
             {
                 "command": "aws.ecs.runCommandInContainer",
                 "title": "%AWS.ecs.runCommandInContainer%",
+                "category": "%AWS.title%",
+                "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.openTaskInTerminal",
+                "title": "%AWS.ecs.openTaskInTerminal%",
                 "category": "%AWS.title%",
                 "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {

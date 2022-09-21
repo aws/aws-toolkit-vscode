@@ -4,6 +4,7 @@
  */
 
 import { AWSError } from 'aws-sdk'
+import { Uri } from 'vscode'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
@@ -68,6 +69,8 @@ export interface ErrorInformation {
      * Flag to determine if the error was from a user-initiated cancellation.
      */
     readonly cancelled?: boolean
+
+    readonly documentationUri?: Uri
 }
 
 /**

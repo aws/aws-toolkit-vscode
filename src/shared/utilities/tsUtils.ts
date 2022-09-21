@@ -80,3 +80,6 @@ export type AccumulableKeys<T> = NonNullable<
 
 /** Similar to the nullish coalescing operator, but for types that can never occur */
 export type Coalesce<T, U> = [T] extends [never] ? U : T
+
+/** Analagous to shifting an array but for tuples */
+export type Shift<T extends any[]> = T extends [infer _, ...infer U] ? U : []
