@@ -291,7 +291,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
 
                 const codeCoverageTracker = CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)
-                codeCoverageTracker?.activateTrackerIfNotActive(context.extensionContext.globalState)
                 codeCoverageTracker?.countTotalTokens(e)
 
                 /**

@@ -28,15 +28,13 @@ export class CodeWhispererCodeCoverageTracker {
     private _timer?: NodeJS.Timer
     private _startTime: number
     private _language: CodewhispererLanguage
-    private _isTrackerActive: boolean
     private _serviceInvocationCount: number
 
-    private constructor(language: CodewhispererLanguage) {
+    private constructor(language: CodewhispererLanguage, private readonly globals: vscode.Memento) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
         this._language = language
-        this._isTrackerActive = false
         this._serviceInvocationCount = 0
     }
 
@@ -52,12 +50,13 @@ export class CodeWhispererCodeCoverageTracker {
         return this._totalTokens
     }
 
-    public get isTrackerActive(): boolean {
-        return this._isTrackerActive
+    public isActive(): boolean {
+        const isTermsAccepted = this.globals.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
+        return TelemetryHelper.instance.isTelemetryEnabled() && isTermsAccepted
     }
 
     public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
-        if (!this._isTrackerActive) return
+        if (!this.isActive()) return
         // generate accepted recommendation token and stored in collection
         this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
         this.addTotalTokens(filename, text.length)
@@ -68,7 +67,7 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     public flush() {
-        if (!this._isTrackerActive) {
+        if (!this.isActive()) {
             this._totalTokens = {}
             this._acceptedTokens = {}
             this.closeTimer()
@@ -210,21 +209,21 @@ export class CodeWhispererCodeCoverageTracker {
         }
     }
 
-    public activateTrackerIfNotActive(globals: vscode.Memento) {
-        const isTermsAccepted = globals.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
-        if (this._isTrackerActive) return
-        if (!TelemetryHelper.instance.isTelemetryEnabled() || !isTermsAccepted) return
-        this._isTrackerActive = true
-    }
-
     public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
 
-    public static getTracker(language: string): CodeWhispererCodeCoverageTracker | undefined {
-        if (runtimeLanguageContext.isLanguageSupported(language)) {
-            const instance = this.instances.get(language) ?? new this(language as CodewhispererLanguage)
-            this.instances.set(language, instance)
-            return instance
+    public static getTracker(
+        language: string,
+        memeto: vscode.Memento = globals.context.globalState
+    ): CodeWhispererCodeCoverageTracker | undefined {
+        if (!runtimeLanguageContext.isLanguageSupported(language)) {
+            return undefined
         }
-        return undefined
+        const cwsprLanguage = runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(language)
+        if (!cwsprLanguage) {
+            return undefined
+        }
+        const instance = this.instances.get(language) ?? new this(cwsprLanguage, memeto)
+        this.instances.set(language, instance)
+        return instance
     }
 }
