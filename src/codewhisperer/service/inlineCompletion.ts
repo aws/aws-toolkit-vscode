@@ -32,7 +32,6 @@ interface InlineCompletionItem {
  */
 export class InlineCompletion {
     private _range!: vscode.Range
-    private _referenceProvider!: ReferenceInlineProvider
     private dimDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
         textDecoration: `none; opacity: ${50 / 100}`,
         light: {
@@ -89,10 +88,6 @@ export class InlineCompletion {
         this._range = range
     }
 
-    setReferenceInlineProvider(provider: ReferenceInlineProvider) {
-        this._referenceProvider = provider
-    }
-
     getCompletionItems() {
         const completionItems: Recommendation[] = []
         RecommendationHandler.instance.recommendations.forEach(r => {
@@ -128,7 +123,7 @@ export class InlineCompletion {
                     this.origin[index].references,
                 ] as const
                 vsCodeState.isCodeWhispererEditing = false
-                this._referenceProvider.removeInlineReference()
+                ReferenceInlineProvider.instance.removeInlineReference()
                 await vscode.commands.executeCommand('aws.codeWhisperer.accept', ...acceptArguments)
                 await this.resetInlineStates(editor)
             })
@@ -150,7 +145,7 @@ export class InlineCompletion {
         if (!editor || vsCodeState.isCodeWhispererEditing) return
         if (!isTypeAheadRejection && this.items.length === 0) return
         vsCodeState.isCodeWhispererEditing = true
-        this._referenceProvider.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
         if (onDidChangeVisibleTextEditors && this.documentUri && this.documentUri.fsPath.length > 0) {
             const workEdits = new vscode.WorkspaceEdit()
             workEdits.set(this.documentUri, [vscode.TextEdit.delete(this._range)])
@@ -199,7 +194,7 @@ export class InlineCompletion {
             )
         }
 
-        return typedPrefix.substring(move)
+        return typedPrefix.substring(move).replace(/\r\n/g, '\n')
     }
 
     async setTypeAheadRecommendations(editor: vscode.TextEditor | undefined, event: vscode.TextDocumentChangeEvent) {
@@ -283,9 +278,9 @@ export class InlineCompletion {
                             )
                             this.isInlineActive = true
                             const curItem = this.items[this.position]
-                            this._referenceProvider.setInlineReference(
+                            ReferenceInlineProvider.instance.setInlineReference(
                                 RecommendationHandler.instance.startPos.line,
-                                curItem,
+                                curItem.content,
                                 this.origin[curItem.index].references
                             )
                             RecommendationHandler.instance.setSuggestionState(curItem.index, 'Showed')

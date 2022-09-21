@@ -196,3 +196,8 @@ export const cloud9AccessStateKey = 'cloud9AccessStateKey'
 export const cloud9AccessSent = 'Access requested!'
 
 export const cloud9AccessAlreadySent = 'Access has already been requested, we are still processing it.'
+
+export const reloadWindow = 'Reload Now'
+
+export const reloadWindowPrompt =
+    'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'

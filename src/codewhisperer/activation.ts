@@ -13,6 +13,7 @@ import { vsCodeState, ConfigurationEntry } from './models/model'
 import { InlineCompletion } from './service/inlineCompletion'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { onAcceptance } from './commands/onAcceptance'
+import { onInlineAcceptance } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
@@ -43,6 +44,9 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
+import { InlineCompletionService } from './service/inlineCompletionService'
+import { isInlineCompletionEnabled } from './util/commonUtil'
+import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import {
     CodewhispererCompletionType,
@@ -53,6 +57,11 @@ import {
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
+    // No need to await. This can be removed once the 'hover.enabled' hack is no longer needed.
+    HoverConfigUtil.instance.restoreHoverConfig().catch(err => {
+        getLogger().warn('codewhisperer: failed to restore "editor.hover.enabled" setting: %O', err)
+    })
+
     const codewhispererSettings = CodeWhispererSettings.instance
     if (!codewhispererSettings.isEnabled()) {
         return
@@ -62,7 +71,7 @@ export async function activate(context: ExtContext): Promise<void> {
      * Enable essential intellisense default settings for AWS C9 IDE
      */
     if (isCloud9()) {
-        await enableDefaultConfig()
+        await enableDefaultConfigCloud9()
     }
 
     /**
@@ -81,8 +90,6 @@ export async function activate(context: ExtContext): Promise<void> {
         context.extensionContext.extensionUri,
         codewhispererSettings
     )
-    const referenceCodeLensProvider = new ReferenceInlineProvider()
-    InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)
 
     context.extensionContext.subscriptions.push(
         /**
@@ -98,13 +105,25 @@ export async function activate(context: ExtContext): Promise<void> {
                     await set(CodeWhispererConstants.termsAcceptedKey, false, context.extensionContext.globalState)
                     await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
                     if (!isCloud9()) {
-                        InlineCompletion.instance.hideCodeWhispererStatusBar()
+                        hideStatusBar()
                     }
                 }
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             }
             if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer')) {
                 referenceLogViewProvider.update()
+            }
+            if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
+                await vscode.window
+                    .showInformationMessage(
+                        CodeWhispererConstants.reloadWindowPrompt,
+                        CodeWhispererConstants.reloadWindow
+                    )
+                    .then(selected => {
+                        if (selected === CodeWhispererConstants.reloadWindow) {
+                            vscode.commands.executeCommand('workbench.action.reloadWindow')
+                        }
+                    })
             }
         }),
         /**
@@ -121,9 +140,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 showCodeWhispererWelcomeMessage()
                 await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
             }
-
             if (!isCloud9()) {
-                InlineCompletion.instance.setCodeWhispererStatusBarOk()
+                setStatusBarOK()
             }
         }),
         /**
@@ -179,7 +197,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 references: codewhispererClient.References
             ) => {
                 const editor = vscode.window.activeTextEditor
-                await onAcceptance(
+                const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
+                await onAcceptanceFunc(
                     {
                         editor,
                         range,
@@ -212,7 +231,7 @@ export async function activate(context: ExtContext): Promise<void> {
         showReferenceLog.register(context),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
-            referenceCodeLensProvider
+            ReferenceInlineProvider.instance
         )
     )
 
@@ -230,6 +249,22 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
+    }
+
+    function hideStatusBar() {
+        if (isInlineCompletionEnabled()) {
+            InlineCompletionService.instance.hideCodeWhispererStatusBar()
+        } else {
+            InlineCompletion.instance.hideCodeWhispererStatusBar()
+        }
+    }
+
+    function setStatusBarOK() {
+        if (isInlineCompletionEnabled()) {
+            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+        } else {
+            InlineCompletion.instance.setCodeWhispererStatusBarOk()
+        }
     }
 
     async function showCodeWhispererWelcomeMessage(): Promise<void> {
@@ -269,8 +304,65 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         setSubscriptionsforCloud9()
         updateCloud9TreeNodes.execute()
+    } else if (isInlineCompletionEnabled()) {
+        await setSubscriptionsforInlineCompletion()
     } else {
         await setSubscriptionsforVsCodeInline()
+    }
+
+    async function setSubscriptionsforInlineCompletion() {
+        /**
+         * Automated trigger
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(async editor => {
+                await InlineCompletionService.instance.onEditorChange()
+            }),
+            vscode.window.onDidChangeWindowState(async e => {
+                await InlineCompletionService.instance.onFocusChange()
+            }),
+            vscode.window.onDidChangeTextEditorSelection(async e => {
+                await InlineCompletionService.instance.onCursorChange(e)
+            }),
+            vscode.workspace.onDidChangeTextDocument(async e => {
+                /**
+                 * CodeWhisperer security panel dynamic handling
+                 */
+                if (e.document === vscode.window.activeTextEditor?.document) {
+                    disposeSecurityDiagnostic(e)
+                }
+                /**
+                 * Handle this keystroke event only when
+                 * 1. It is in current non plaintext active editor
+                 * 2. It is not a backspace
+                 * 3. It is not caused by CodeWhisperer editing
+                 * 4. It is not from undo/redo.
+                 */
+                if (
+                    e.document === vscode.window.activeTextEditor?.document &&
+                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
+                    e.contentChanges.length != 0 &&
+                    !vsCodeState.isCodeWhispererEditing
+                ) {
+                    vsCodeState.lastUserModificationTime = performance.now()
+                    /**
+                     * Important:  Doing this sleep(10) is to make sure
+                     * 1. this event is processed by vs code first
+                     * 2. editor.selection.active has been successfully updated by VS Code
+                     * Then this event can be processed by our code.
+                     */
+                    await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+                    if (!InlineCompletionService.instance.isSuggestionVisible()) {
+                        await KeyStrokeHandler.instance.processKeyStroke(
+                            e,
+                            vscode.window.activeTextEditor,
+                            client,
+                            await getConfigEntry()
+                        )
+                    }
+                }
+            })
+        )
     }
 
     async function setSubscriptionsforVsCodeInline() {
@@ -482,11 +574,21 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
+    if (isCloud9()) {
+        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
+        RecommendationHandler.instance.clearRecommendations()
+    }
+    if (isInlineCompletionEnabled()) {
+        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
+        await HoverConfigUtil.instance.restoreHoverConfig()
+    } else {
+        if (vscode.window.activeTextEditor)
+            await InlineCompletion.instance.resetInlineStates(vscode.window.activeTextEditor)
+    }
     CodeWhispererTracker.getTracker().shutdown()
 }
 
-export async function enableDefaultConfig() {
+export async function enableDefaultConfigCloud9() {
     const editorSettings = vscode.workspace.getConfiguration('editor')
     try {
         await editorSettings.update('suggest.showMethods', true, vscode.ConfigurationTarget.Global)

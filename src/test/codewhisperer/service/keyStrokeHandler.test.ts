@@ -10,6 +10,7 @@ import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisp
 import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
+import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
@@ -202,9 +203,10 @@ describe('keyStrokeHandler', function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new KeyStrokeHandler()
             InlineCompletion.instance.setCodeWhispererStatusBarOk()
-            const getRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            const oldGetRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.ok(getRecommendationsStub.calledOnce)
+            assert.ok(getRecommendationsStub.calledOnce || oldGetRecommendationsStub.calledOnce)
         })
 
         it('should reset invocationContext.keyStrokeCount to 0', async function () {
