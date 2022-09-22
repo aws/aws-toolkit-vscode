@@ -2,6 +2,8 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import globals from '../../shared/extensionGlobals'
+
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
@@ -125,5 +127,9 @@ export class TelemetryHelper {
             return 'Reject'
         }
         return i === acceptIndex ? 'Accept' : 'Ignore'
+    }
+
+    public isTelemetryEnabled(): boolean {
+        return globals.telemetry.telemetryEnabled
     }
 }
