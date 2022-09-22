@@ -14,6 +14,8 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../test
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { stub } from '../../utilities/stubber'
+import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
+import { FakeMemento } from '../../fakeExtensionContext'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -29,6 +31,7 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
+        const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
 
@@ -44,6 +47,13 @@ describe('recommendationHandler', function () {
         })
 
         it('should assign correct recommendations given input', async function () {
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
+            assert.strictEqual(
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
+                    ?.serviceInvocationCount,
+                0
+            )
+
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -61,6 +71,11 @@ describe('recommendationHandler', function () {
             const actual = handler.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
+            assert.strictEqual(
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
+                    ?.serviceInvocationCount,
+                1
+            )
         })
 
         it('should assign request id correctly', async function () {
