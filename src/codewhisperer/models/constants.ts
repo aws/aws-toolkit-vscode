@@ -19,7 +19,7 @@ export const promiseTimeoutLimit = 15 // seconds
 
 export const invocationKeyThreshold = 15
 
-export const idleTimerPollPeriod = 25
+export const idleTimerPollPeriod = 25 // milliseconds
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
 

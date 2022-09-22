@@ -55,11 +55,12 @@ export class KeyStrokeHandler {
         this.idleTriggerTimer = setInterval(() => {
             const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
             if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
+            if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+            if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) return
+            if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) return
             this.invokeAutomatedTrigger('IdleTime', editor, client, config)
-            if (this.idleTriggerTimer) {
-                clearInterval(this.idleTriggerTimer)
-                this.idleTriggerTimer = undefined
-            }
+            if (this.idleTriggerTimer) clearInterval(this.idleTriggerTimer)
+            this.idleTriggerTimer = undefined
         }, CodeWhispererConstants.idleTimerPollPeriod)
     }
 
