@@ -48,6 +48,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingL
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager.Companion.CODEWHISPERER_USER_ACTION_PERFORMED
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeCoverageTokens
@@ -62,6 +63,7 @@ import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRul
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererLanguage
+import java.util.concurrent.atomic.AtomicInteger
 
 internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: CodeInsightTestFixtureRule) {
     protected class TestCodePercentageTracker(
@@ -69,7 +71,7 @@ internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: 
         language: CodewhispererLanguage,
         rangeMarkers: MutableList<RangeMarker> = mutableListOf(),
         codeCoverageTokens: MutableMap<Document, CodeCoverageTokens> = mutableMapOf()
-    ) : CodeWhispererCodeCoverageTracker(timeWindowInSec, language, rangeMarkers, codeCoverageTokens)
+    ) : CodeWhispererCodeCoverageTracker(timeWindowInSec, language, rangeMarkers, codeCoverageTokens, AtomicInteger(0))
 
     protected class TestTelemetryService(
         publisher: TelemetryPublisher = NoOpPublisher(),
@@ -176,6 +178,22 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
 
         CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Javascript)
         assertThat(CodeWhispererCodeCoverageTracker.getInstancesMap()).hasSize(3)
+    }
+
+    @Test
+    fun `test tracker is listening to cwspr recommendation service invocation`() {
+        val pythonTracker = TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, CodewhispererLanguage.Python)
+        val jsxTracker = TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, CodewhispererLanguage.Jsx)
+        CodeWhispererCodeCoverageTracker.getInstancesMap()[CodewhispererLanguage.Python] = pythonTracker
+        CodeWhispererCodeCoverageTracker.getInstancesMap()[CodewhispererLanguage.Jsx] = jsxTracker
+        pythonTracker.activateTrackerIfNotActive()
+        assertThat(pythonTracker.serviceInvocationCount).isEqualTo(0)
+        assertThat(jsxTracker.serviceInvocationCount).isEqualTo(0)
+
+        val fileContextInfo = mock<FileContextInfo> { on { programmingLanguage } doReturn ProgrammingLanguage(CodewhispererLanguage.Python) }
+        ApplicationManager.getApplication().messageBus.syncPublisher(CodeWhispererService.CODEWHISPERER_CODE_COMPLETION_PERFORMED).onSuccess(fileContextInfo)
+        assertThat(pythonTracker.serviceInvocationCount).isEqualTo(1)
+        assertThat(jsxTracker.serviceInvocationCount).isEqualTo(0)
     }
 
     @Test
