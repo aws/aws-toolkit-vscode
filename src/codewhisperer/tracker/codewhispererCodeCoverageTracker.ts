@@ -30,7 +30,7 @@ export class CodeWhispererCodeCoverageTracker {
     private _language: CodewhispererLanguage
     private _serviceInvocationCount: number
 
-    constructor(language: CodewhispererLanguage, private readonly globals: vscode.Memento) {
+    private constructor(language: CodewhispererLanguage, private readonly globals: vscode.Memento) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
