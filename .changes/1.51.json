@@ -1,0 +1,14 @@
+{
+  "date" : "2022-09-22",
+  "version" : "1.51",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services"
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer now supports .jsx files"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer fixes"
+  } ]
+}

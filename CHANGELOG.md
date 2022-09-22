@@ -1,3 +1,8 @@
+# _1.51_ (2022-09-22)
+- **(Feature)** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services
+- **(Feature)** CodeWhisperer now supports .jsx files
+- **(Bug Fix)** CodeWhisperer fixes
+
 # _1.50_ (2022-08-23)
 - **(Bug Fix)** Fix opening toolwindow tabs in incorrect thread in Cloudwatch Logs
 - **(Bug Fix)** Fix hitting enter inside braces will produce an extra newline ([#3270](https://github.com/aws/aws-toolkit-jetbrains/issues/3270))
