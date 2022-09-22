@@ -10,7 +10,7 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { InlineCompletion } from '../service/inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { KeyStrokeHandler } from '../service/keyStrokeHandler'
+import { DocumentChangedHandler } from '../service/DocumentChangedHandler'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -48,7 +48,7 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isValidResponse()
             )
         }
-        KeyStrokeHandler.instance.keyStrokeCount = 0
+        DocumentChangedHandler.instance.keyStrokeCount = 0
         if (isCloud9()) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
             vsCodeState.isIntelliSenseActive = false

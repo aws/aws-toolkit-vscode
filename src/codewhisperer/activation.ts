@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
-import { KeyStrokeHandler } from './service/keyStrokeHandler'
+import { DocumentChangedHandler } from './service/DocumentChangedHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
@@ -319,7 +319,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     if (InlineCompletion.instance.getIsActive) {
                         await InlineCompletion.instance.setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
                     } else {
-                        await KeyStrokeHandler.instance.processKeyStroke(
+                        await DocumentChangedHandler.instance.documentChanged(
                             e,
                             vscode.window.activeTextEditor,
                             client,
@@ -439,7 +439,7 @@ export async function activate(context: ExtContext): Promise<void> {
                      * Then this event can be processed by our code.
                      */
                     await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    await KeyStrokeHandler.instance.processKeyStroke(
+                    await DocumentChangedHandler.instance.documentChanged(
                         e,
                         vscode.window.activeTextEditor,
                         client,
