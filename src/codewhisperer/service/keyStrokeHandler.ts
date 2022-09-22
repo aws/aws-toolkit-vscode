@@ -46,10 +46,6 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         try {
-            console.log(event)
-            console.log(event.contentChanges[0].text)
-            console.log(event.contentChanges.length)
-
             if (!config.isAutomatedTriggerEnabled) return
 
             // Skip when output channel gains focus and invoke
