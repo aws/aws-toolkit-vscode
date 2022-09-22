@@ -24,6 +24,7 @@ import {
     CodewhispererTriggerType,
     Result,
 } from '../../shared/telemetry/telemetry'
+import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -247,6 +248,9 @@ export class RecommendationHandler {
                     codewhispererLanguage: languageContext.language,
                     reason: reason ? reason.substring(0, 200) : undefined,
                 })
+            }
+            if (invocationResult == 'Succeeded') {
+                CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
             }
             if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
                 recommendation.forEach((r, index) => {
