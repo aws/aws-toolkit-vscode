@@ -16,6 +16,8 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletion } from '../service/inlineCompletion'
+import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
+import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
@@ -95,11 +97,23 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             language: languageContext.language,
         })
         const codeRangeAfterFormat = new vscode.Range(start, acceptanceEntry.editor.selection.active)
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language, globalStorage)?.countAcceptedTokens(
+        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
             codeRangeAfterFormat,
             acceptanceEntry.editor.document.getText(codeRangeAfterFormat),
             acceptanceEntry.editor.document.fileName
         )
+        if (acceptanceEntry.references !== undefined) {
+            const referenceLog = ReferenceLogViewProvider.getReferenceLog(
+                acceptanceEntry.recommendation,
+                acceptanceEntry.references,
+                acceptanceEntry.editor
+            )
+            ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
+            ReferenceHoverProvider.instance.addCodeReferences(
+                acceptanceEntry.recommendation,
+                acceptanceEntry.references
+            )
+        }
     }
 
     // at the end of recommendation acceptance, clear recommendations.

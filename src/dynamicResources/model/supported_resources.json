@@ -386,7 +386,7 @@
         "documentation": "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudfront-keygroup.html"
     },
     "AWS::CloudFront::OriginAccessControl": {
-        "operations": ["CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+        "operations": ["CREATE", "DELETE", "LIST", "READ", "UPDATE"]
     },
     "AWS::CloudFront::OriginRequestPolicy": {
         "operations": ["CREATE", "DELETE", "LIST", "READ", "UPDATE"],
@@ -1796,10 +1796,10 @@
         "documentation": "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lookoutvision-project.html"
     },
     "AWS::M2::Application": {
-        "operations": ["CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+        "operations": ["CREATE", "READ", "UPDATE", "DELETE", "LIST"]
     },
     "AWS::M2::Environment": {
-        "operations": ["CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+        "operations": ["CREATE", "READ", "UPDATE", "DELETE", "LIST"]
     },
     "AWS::MSK::BatchScramSecret": {
         "operations": ["CREATE", "DELETE", "READ", "UPDATE"],
