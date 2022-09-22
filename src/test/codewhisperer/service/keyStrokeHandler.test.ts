@@ -219,6 +219,4 @@ describe('keyStrokeHandler', function () {
             assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
     })
-
-    describe('test SingleChange.checkChangeSource')
 })
