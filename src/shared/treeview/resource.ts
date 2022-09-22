@@ -13,29 +13,19 @@ import { Commands } from '../vscode/commands2'
 import { TreeNode } from './resourceTreeDataProvider'
 import { createErrorItem, createPlaceholderItem } from './utils'
 
-export interface Resource {
-    /**
-     * The identifier associated with the resource.
-     *
-     * This should be considered _globally_ unique, trancending conventional references. Consumers of
-     * the interface can and most likely will treat this identifier as canonical.
-     */
-    readonly id: string
-}
-
-interface SimpleResourceProvider<T extends Resource = Resource> {
+interface SimpleResourceProvider<T = unknown> {
     readonly paginated?: false
-    readonly onDidChange?: vscode.Event<T | void>
+    readonly onDidChange?: vscode.Event<void>
     listResources(): Promise<T[]> | T[]
 }
 
-interface PaginatedResourceProvider<T extends Resource = Resource> {
+interface PaginatedResourceProvider<T = unknown> {
     readonly paginated: true
-    readonly onDidChange?: vscode.Event<T | void>
+    readonly onDidChange?: vscode.Event<void>
     listResources(): AsyncCollection<T | T[]>
 }
 
-export type ResourceProvider<T extends Resource> = SimpleResourceProvider<T> | PaginatedResourceProvider<T>
+export type ResourceProvider<T> = SimpleResourceProvider<T> | PaginatedResourceProvider<T>
 
 export class PageLoader<T> {
     private isDone = false
