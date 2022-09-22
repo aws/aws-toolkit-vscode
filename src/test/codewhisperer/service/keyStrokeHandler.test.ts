@@ -220,19 +220,25 @@ describe('keyStrokeHandler', function () {
         })
     })
 
-    describe('test class', function () {
+    describe('test checkChangeSource', function () {
+        const tabStr = ' '.repeat(EditorContext.getTabSize())
+
         const cases: [string, DocumentChangedSource][] = [
             ['\n          ', DocumentChangedSource.EnterKey],
             ['\n', DocumentChangedSource.EnterKey],
             ['(', DocumentChangedSource.SpecialCharsKey],
             ['()', DocumentChangedSource.SpecialCharsKey],
             ['{}', DocumentChangedSource.SpecialCharsKey],
+            ['(a, b):', DocumentChangedSource.Unknown],
             [':', DocumentChangedSource.SpecialCharsKey],
             ['a', DocumentChangedSource.RegularKey],
-            ['    ', DocumentChangedSource.TabKey],
-            ['export function() {', DocumentChangedSource.IntelliSense],
-            ['variableNameSuggested', DocumentChangedSource.IntelliSense],
+            [tabStr, DocumentChangedSource.TabKey],
+            ['__str__', DocumentChangedSource.IntelliSense],
+            ['toString()', DocumentChangedSource.IntelliSense],
+            ['</p>', DocumentChangedSource.IntelliSense],
+            ['   ', DocumentChangedSource.Reformatting],
             ['def add(a,b):\n    return a + b\n', DocumentChangedSource.Unknown],
+            ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],
         ]
 
         cases.forEach(tuple => {

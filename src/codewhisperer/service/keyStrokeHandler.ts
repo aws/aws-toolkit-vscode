@@ -110,6 +110,7 @@ export class KeyStrokeHandler {
         const contentChanges = event.contentChanges
         if (contentChanges.length == 1) return new SingleChange(contentChanges)
         if (contentChanges.length > 1) return new MultiChange(contentChanges)
+        return undefined
     }
 
     async invokeAutomatedTrigger(
@@ -159,7 +160,7 @@ export class KeyStrokeHandler {
     }
 }
 
-abstract class DocumentChangedType {
+export abstract class DocumentChangedType {
     protected contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>
 
     constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
@@ -168,10 +169,13 @@ abstract class DocumentChangedType {
 
     abstract checkChangeSource(): DocumentChangedSource
 
+    // Enter key should always start with ONE '\n' and potentially following spaces due to IDE reformat
     static isEnterKey(str: string): boolean {
+        if (str.length === 0) return false
         return str[0] === '\n' && str.substring(1).trim().length === 0
     }
 
+    // Tab should consist of space char only ' ' and the length % tabSize should be 0
     static isTabKey(str: string): boolean {
         const tabSize = getTabSizeSetting()
         if (str.length % tabSize === 0 && str.trim() === '') {
@@ -181,19 +185,7 @@ abstract class DocumentChangedType {
     }
 
     static isUserTypingSpecialChar(str: string): boolean {
-        const specialChars = new Map<string, string>([
-            ['(', ')'],
-            ['[', ']'],
-            ['{', '}'],
-            [':', ':'],
-        ])
-        if (specialChars.has(str[0])) {
-            const substr = str.substring(1)
-            // TODO: improve here with matching closing brackets
-            return substr.length === 0 || substr.length === 1
-        }
-
-        return false
+        return ['(', '()', '[', '[]', '{', '{}', ':'].includes(str)
     }
 
     static isSingleLine(str: string): boolean {
@@ -208,10 +200,8 @@ abstract class DocumentChangedType {
         return true
     }
 
-    static isFormatting(str: string): boolean {
-        const rExp: RegExp = /^[\s]+$/g
-        return rExp.test(str)
-    }
+    static singleWordRegex: RegExp = RegExp('^[\\S]+$')
+    static allSpaceRegex: RegExp = RegExp('^[ ]+$')
 }
 
 // Case when event.contentChanges.length === 1
@@ -234,11 +224,15 @@ export class SingleChange extends DocumentChangedType {
                 return DocumentChangedSource.SpecialCharsKey
             } else if (changedText.length === 1) {
                 return DocumentChangedSource.RegularKey
-            } else if (DocumentChangedType.isFormatting(changedText)) {
-                // this logic must be checked after EnterKey
+            } else if (DocumentChangedType.allSpaceRegex.test(changedText)) {
+                // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else {
+            } else if (DocumentChangedType.singleWordRegex.test(changedText)) {
+                // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
+                // multi-words code snippets
                 return DocumentChangedSource.IntelliSense
+            } else {
+                return DocumentChangedSource.Unknown
             }
         }
 
