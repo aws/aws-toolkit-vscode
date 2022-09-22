@@ -107,6 +107,11 @@
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
                 },
+                "aws.ecs.interactiveSessionCommand": {
+                    "type": "string",
+                    "default": "/usr/bin/env bash",
+                    "markdownDescription": "%AWS.configuration.description.ecs.interactiveSessionCommand%"
+                },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
                     "default": 100,

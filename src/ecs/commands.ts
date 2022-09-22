@@ -11,13 +11,13 @@ import * as vscode from 'vscode'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
-import { PromptSettings } from '../shared/settings'
+import { PromptSettings, Settings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
 import { removeAnsi } from '../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
-import { checkPermissionsForSsm } from './util'
+import { checkPermissionsForSsm, EcsSettings } from './util'
 import { CommandWizard, CommandWizardState } from './wizards/executeCommand'
 import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
@@ -97,7 +97,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
         showMessageWithCancel('Running command...', timeout)
 
         try {
-            const { path, args } = await container.prepareCommandForTask(command, task)
+            const { path, args, dispose } = await container.prepareCommandForTask(command, task)
             showOutputMessage(
                 `${moment().format(INSIGHTS_TIMESTAMP_FORMAT)}:  Container: "${
                     container.description.name
@@ -105,18 +105,21 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
                 globals.outputChannel
             )
 
-            await new ChildProcess(path, args, { logging: 'noparams' }).run({
-                timeout,
-                rejectOnError: true,
-                rejectOnErrorCode: true,
-                // TODO: `showOutputMessage` should not be writing to the logs...
-                onStdout: text => {
-                    showOutputMessage(removeAnsi(text), globals.outputChannel)
-                },
-                onStderr: text => {
-                    showOutputMessage(removeAnsi(text), globals.outputChannel)
-                },
-            })
+            const proc = new ChildProcess(path, args, { logging: 'noparams' })
+            await proc
+                .run({
+                    timeout,
+                    rejectOnError: true,
+                    rejectOnErrorCode: true,
+                    // TODO: `showOutputMessage` should not be writing to the logs...
+                    onStdout: text => {
+                        showOutputMessage(removeAnsi(text), globals.outputChannel)
+                    },
+                    onStderr: text => {
+                        showOutputMessage(removeAnsi(text), globals.outputChannel)
+                    },
+                })
+                .finally(dispose)
         } catch (err) {
             if (isUserCancelledError(err)) {
                 showOutputMessage('Cancelled command execution', globals.outputChannel)
@@ -133,21 +136,42 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
     })
 })
 
+// VSC is logging args to the PTY host log file if shell integration is enabled :(
+async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
+    const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
+
+    try {
+        await Settings.instance.update('terminal.integrated.shellIntegration.enabled', false)
+        return await cb()
+    } finally {
+        Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
+    }
+}
+
 export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal', (obj?: unknown) => {
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'shell' })
 
-        const { container, task, command } = await runCommandWizard(obj, '/usr/bin/env bash')
+        const startCommand = new EcsSettings().get('interactiveSessionCommand')
+        const { container, task, command } = await runCommandWizard(obj, startCommand)
 
         try {
-            const { path, args } = await container.prepareCommandForTask(command, task)
-            const terminal = vscode.window.createTerminal({
-                name: `${container.description.name}/${task}`,
-                shellPath: path,
-                shellArgs: args,
-            })
+            const session = await container.prepareCommandForTask(command, task)
+            await withoutShellIntegration(() => {
+                const terminal = vscode.window.createTerminal({
+                    name: `${container.description.name}/${task}`,
+                    shellPath: session.path,
+                    shellArgs: session.args,
+                })
 
-            terminal.show()
+                const listener = vscode.window.onDidCloseTerminal(t => {
+                    if (t.processId === terminal.processId) {
+                        vscode.Disposable.from(listener, session).dispose()
+                    }
+                })
+
+                terminal.show()
+            })
         } catch (err) {
             throw ToolkitError.chain(
                 err,
