@@ -5,15 +5,12 @@
 
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
-import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { InlineCompletionService } from './inlineCompletionService'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -49,118 +46,75 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         try {
-            const changedText = this.getChangedText(event, config.isAutomatedTriggerEnabled, editor)
-            if (changedText === '') {
-                return
+            console.log(event)
+            console.log(event.contentChanges[0].text)
+            console.log(event.contentChanges.length)
+
+            if (!config.isAutomatedTriggerEnabled) return
+
+            // Skip when output channel gains focus and invoke
+            if (editor.document.languageId === 'Log') return
+
+            // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
+            if (InlineCompletion.instance.isTypeaheadInProgress) return
+
+            // Time duration between 2 invocations should be greater than the threshold
+            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
+            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
+            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
+
+            // Skip Cloud9 IntelliSense acceptance event
+            if (
+                isCloud9() &&
+                event.contentChanges.length > 0 &&
+                RecommendationHandler.instance.recommendations.length > 0
+            ) {
+                if (event.contentChanges[0].text === RecommendationHandler.instance.recommendations[0].content) {
+                    return
+                }
             }
-            const autoTriggerType = this.getAutoTriggerReason(changedText)
-            if (autoTriggerType === '') {
-                return
+
+            let triggerType: CodewhispererAutomatedTriggerType | undefined
+            const changedSource = this.getDocumentChangedType(event)?.checkChangeSource()
+            switch (changedSource) {
+                case DocumentChangedSource.EnterKey: {
+                    this.keyStrokeCount += 1
+                    triggerType = 'Enter'
+                    break
+                }
+                case DocumentChangedSource.UserTypingSpecialChars: {
+                    this.keyStrokeCount += 1
+                    triggerType = 'SpecialCharacters'
+                    break
+                }
+                case DocumentChangedSource.IntelliSense: {
+                    this.keyStrokeCount += 1
+                    triggerType = 'IntelliSenseAcceptance'
+                    break
+                }
+                case DocumentChangedSource.UserTypingRegular: {
+                    this.keyStrokeCount += 1
+                    break
+                }
+                default: {
+                    break
+                }
             }
-            const triggerTtype = autoTriggerType as CodewhispererAutomatedTriggerType
-            this.invokeAutomatedTrigger(triggerTtype, editor, client, config)
+            if (triggerType) {
+                this.invokeAutomatedTrigger(triggerType, editor, client, config)
+            }
         } catch (error) {
             getLogger().error('Automated Trigger Exception : ', error)
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
         }
     }
 
-    getAutoTriggerReason(changedText: string): string {
-        for (const val of CodeWhispererConstants.specialCharactersList) {
-            if (changedText.includes(val)) {
-                this.specialChar = val
-                if (val === CodeWhispererConstants.lineBreak) {
-                    return 'Enter'
-                } else {
-                    return 'SpecialCharacters'
-                }
-            }
-        }
-        if (changedText.includes(CodeWhispererConstants.space)) {
-            let isTab = true
-            let space = 0
-            for (let i = 0; i < changedText.length; i++) {
-                if (changedText[i] !== ' ') {
-                    isTab = false
-                    break
-                } else {
-                    space++
-                }
-            }
-            if (isTab && space > 1 && space <= EditorContext.getTabSize()) {
-                return 'SpecialCharacters'
-            }
-        }
-        /**
-         * Time duration between 2 invocations should be greater than the threshold
-         * This threshold does not applies to Enter | SpecialCharacters type auto trigger.
-         */
-        const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-        if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) {
-            return ''
-        }
-        if (this.keyStrokeCount >= CodeWhispererConstants.invocationKeyThreshold) {
-            return 'KeyStrokeCount'
-        } else {
-            this.keyStrokeCount += 1
-        }
-        // Below condition is very likely a multi character insert when user accept native intelliSense suggestion
-        // VS Code does not provider API for intelliSense suggestion acceptance
-        if (changedText.length > 1 && !changedText.includes(' ') && changedText.length < 40 && !isCloud9()) {
-            return 'IntelliSenseAcceptance'
-        }
-        return ''
+    getDocumentChangedType(event: vscode.TextDocumentChangeEvent): DocumentChangedType | undefined {
+        const contentChanges = event.contentChanges
+        if (contentChanges.length == 1) return new SingleChange(contentChanges)
+        if (contentChanges.length > 1) return new MultiChange(contentChanges)
     }
 
-    getChangedText(
-        event: vscode.TextDocumentChangeEvent,
-        isAutomatedTriggerEnabled: boolean,
-        editor: vscode.TextEditor
-    ): string {
-        if (!isAutomatedTriggerEnabled) {
-            return ''
-        }
-        /**
-         * Skip when output channel gains focus and invoke
-         */
-        if (editor.document.languageId === 'Log') {
-            return ''
-        }
-
-        /**
-         * Skip Cloud9 IntelliSense acceptance event
-         */
-        if (
-            isCloud9() &&
-            event.contentChanges.length > 0 &&
-            RecommendationHandler.instance.recommendations.length > 0
-        ) {
-            if (event.contentChanges[0].text === RecommendationHandler.instance.recommendations[0].content) {
-                return ''
-            }
-        }
-        /**
-         * Pause automated trigger when typed input matches recommendation prefix
-         * for inline suggestion
-         */
-        if (InlineCompletion.instance.isTypeaheadInProgress) {
-            return ''
-        }
-
-        /**
-         * DO NOT auto trigger CodeWhisperer when appending muli-line snippets to document
-         * DO NOT auto trigger CodeWhisperer when deleting or undo
-         */
-        const changedText = event.contentChanges[0].text
-        const changedRange = event.contentChanges[0].range
-        if (!changedRange.isSingleLine || changedText === '') {
-            return ''
-        }
-        if (changedText.split('\n').length > 1) {
-            return ''
-        }
-        return changedText
-    }
     async invokeAutomatedTrigger(
         autoTriggerType: CodewhispererAutomatedTriggerType,
         editor: vscode.TextEditor,
@@ -192,14 +146,6 @@ export class KeyStrokeHandler {
                 } finally {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
-            } else if (isInlineCompletionEnabled()) {
-                InlineCompletionService.instance.getPaginatedRecommendation(
-                    client,
-                    editor,
-                    'AutoTrigger',
-                    config,
-                    autoTriggerType
-                )
             } else {
                 if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
                     await InlineCompletion.instance.resetInlineStates(editor)
@@ -214,4 +160,97 @@ export class KeyStrokeHandler {
             }
         }
     }
+}
+
+abstract class DocumentChangedType {
+    protected contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>
+
+    constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
+        this.contentChanges = contentChanges
+    }
+
+    abstract checkChangeSource(): DocumentChangedSource
+
+    static isEnterKey(str: string): boolean {
+        return str[0] === '\n' && str.substring(1).trim().length === 0
+    }
+
+    static isUserTypingSpecialChar(str: string): boolean {
+        const specialChars = new Map<string, string>([
+            ['(', ')'],
+            ['[', ']'],
+            ['{', '}'],
+            [':', ':'],
+        ])
+        if (specialChars.has(str[0])) {
+            const substr = str.substring(1)
+            // TODO: improve here with matching closing brackets
+            return substr.length === 0 || substr.length === 1
+        }
+
+        return false
+    }
+
+    static isSingleLine(str: string): boolean {
+        let newLineCounts = 0
+        for (const ch of str) {
+            if (ch === '\n') newLineCounts += 1
+        }
+
+        if (newLineCounts > 1) return false
+        if (newLineCounts === 1 && str[str.length - 1] !== '\n') return false
+        return true
+    }
+}
+
+class SingleChange extends DocumentChangedType {
+    constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
+        super(contentChanges)
+    }
+
+    override checkChangeSource(): DocumentChangedSource {
+        const changedText = this.contentChanges[0].text
+
+        // have to check isEnteyKey first, otherwise it will be considered as multi line change
+        if (DocumentChangedType.isEnterKey(changedText)) {
+            return DocumentChangedSource.EnterKey
+        }
+        if (DocumentChangedType.isSingleLine(changedText)) {
+            if (changedText === '') {
+                return DocumentChangedSource.Deletion
+            } else if (changedText.trim() === '') {
+                return DocumentChangedSource.UserTypingTab
+            } else if (DocumentChangedType.isUserTypingSpecialChar(changedText)) {
+                return DocumentChangedSource.UserTypingSpecialChars
+            } else if (changedText.length === 1) {
+                return DocumentChangedSource.UserTypingRegular
+            } else {
+                return DocumentChangedSource.IntelliSense
+            }
+        }
+
+        return DocumentChangedSource.Multiline
+    }
+}
+
+class MultiChange extends DocumentChangedType {
+    constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
+        super(contentChanges)
+    }
+
+    override checkChangeSource(): DocumentChangedSource {
+        return DocumentChangedSource.Reformatting
+    }
+}
+
+enum DocumentChangedSource {
+    Multiline,
+    UserTypingSpecialChars,
+    UserTypingRegular,
+    UserTypingTab,
+    EnterKey,
+    IntelliSense,
+    Reformatting,
+    Deletion,
+    Unknown,
 }

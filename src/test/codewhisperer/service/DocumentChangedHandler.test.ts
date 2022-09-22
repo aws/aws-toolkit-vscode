@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
-import { DocumentChangedHandler } from '../../../codewhisperer/service/DocumentChangedHandler'
+import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
 import {
     createMockTextEditor,
@@ -36,7 +36,7 @@ describe('DocumentChangedHandler', function () {
         let invokeSpy: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
         beforeEach(function () {
-            invokeSpy = sinon.stub(DocumentChangedHandler.instance, 'invokeAutomatedTrigger')
+            invokeSpy = sinon.stub(KeyStrokeHandler.instance, 'invokeAutomatedTrigger')
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             resetCodeWhispererGlobalVariables()
@@ -60,8 +60,8 @@ describe('DocumentChangedHandler', function () {
                 isAutomatedTriggerEnabled: false,
                 isIncludeSuggestionsWithCodeReferencesEnabled: true,
             }
-            const keyStrokeHandler = new DocumentChangedHandler()
-            await keyStrokeHandler.documentChanged(mockEvent, mockEditor, mockClient, cfg)
+            const keyStrokeHandler = new KeyStrokeHandler()
+            await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
         })
 
@@ -75,7 +75,7 @@ describe('DocumentChangedHandler', function () {
             vsCodeState.isIntelliSenseActive = true
             RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
             RecommendationHandler.instance.recommendations = [{ content: 'def two_sum(nums, target):\n for i in nums' }]
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -88,7 +88,7 @@ describe('DocumentChangedHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(1, 0)),
                 '\nprint(n'
             )
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -99,12 +99,12 @@ describe('DocumentChangedHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ''
             )
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger if previous text input is within 2 seconds and it is not a specialcharacter trigger \n', async function () {
-            DocumentChangedHandler.instance.keyStrokeCount = 14
+            KeyStrokeHandler.instance.keyStrokeCount = 14
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -112,7 +112,7 @@ describe('DocumentChangedHandler', function () {
                 'a'
             )
             RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -123,7 +123,7 @@ describe('DocumentChangedHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 '\n'
             )
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('Enter', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -135,7 +135,7 @@ describe('DocumentChangedHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 '{'
             )
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('SpecialCharacters', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -148,7 +148,7 @@ describe('DocumentChangedHandler', function () {
                 '  '
             )
             EditorContext.updateTabSize(2)
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('SpecialCharacters', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -161,7 +161,7 @@ describe('DocumentChangedHandler', function () {
                 '   '
             )
             EditorContext.updateTabSize(2)
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -172,8 +172,8 @@ describe('DocumentChangedHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 'a'
             )
-            DocumentChangedHandler.instance.keyStrokeCount = 15
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            KeyStrokeHandler.instance.keyStrokeCount = 15
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('KeyStrokeCount', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -186,10 +186,10 @@ describe('DocumentChangedHandler', function () {
                 'a'
             )
             RecommendationHandler.instance.lastInvocationTime = 0
-            DocumentChangedHandler.instance.keyStrokeCount = 8
-            await DocumentChangedHandler.instance.documentChanged(mockEvent, mockEditor, mockClient, config)
+            KeyStrokeHandler.instance.keyStrokeCount = 8
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
-            assert.strictEqual(DocumentChangedHandler.instance.keyStrokeCount, 9)
+            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 9)
         })
     })
 
@@ -208,7 +208,7 @@ describe('DocumentChangedHandler', function () {
 
         it('should call getPaginatedRecommendation', async function () {
             const mockEditor = createMockTextEditor()
-            const keyStrokeHandler = new DocumentChangedHandler()
+            const keyStrokeHandler = new KeyStrokeHandler()
             InlineCompletion.instance.setCodeWhispererStatusBarOk()
             const oldGetRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
@@ -218,12 +218,12 @@ describe('DocumentChangedHandler', function () {
 
         it('should reset invocationContext.keyStrokeCount to 0', async function () {
             const mockEditor = createMockTextEditor()
-            DocumentChangedHandler.instance.keyStrokeCount = 10
+            KeyStrokeHandler.instance.keyStrokeCount = 10
             sinon
                 .stub(RecommendationHandler.instance, 'getServerResponse')
                 .resolves([{ content: 'import math' }, { content: 'def two_sum(nums, target):' }])
-            await DocumentChangedHandler.instance.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.strictEqual(DocumentChangedHandler.instance.keyStrokeCount, 0)
+            await KeyStrokeHandler.instance.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
+            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
     })
 })
