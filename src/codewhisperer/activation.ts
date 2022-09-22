@@ -337,10 +337,9 @@ export async function activate(context: ExtContext): Promise<void> {
                     }
                 }
 
-                CodeWhispererCodeCoverageTracker.getTracker(
-                    e.document.languageId,
-                    context.extensionContext.globalState
-                )?.countTotalTokens(e)
+                const codeCoverageTracker = CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)
+                codeCoverageTracker?.countTotalTokens(e)
+
                 /**
                  * Handle this keystroke event only when
                  * 1. It is in current active editor with cwspr supported file types
@@ -386,8 +385,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
                 if (vscode.window.activeTextEditor) {
                     CodeWhispererCodeCoverageTracker.getTracker(
-                        vscode.window.activeTextEditor.document.languageId,
-                        context.extensionContext.globalState
+                        vscode.window.activeTextEditor.document.languageId
                     )?.updateAcceptedTokensCount(vscode.window.activeTextEditor)
                 }
             }),
@@ -468,10 +466,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     }
                 }
 
-                CodeWhispererCodeCoverageTracker.getTracker(
-                    e.document.languageId,
-                    context.extensionContext.globalState
-                )?.countTotalTokens(e)
+                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
