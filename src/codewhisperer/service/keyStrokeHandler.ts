@@ -78,7 +78,7 @@ export class KeyStrokeHandler {
                     triggerType = 'Enter'
                     break
                 }
-                case DocumentChangedSource.UserTypingSpecialChars: {
+                case DocumentChangedSource.SpecialCharsKey: {
                     this.keyStrokeCount += 1
                     triggerType = 'SpecialCharacters'
                     break
@@ -88,7 +88,7 @@ export class KeyStrokeHandler {
                     triggerType = 'IntelliSenseAcceptance'
                     break
                 }
-                case DocumentChangedSource.UserTypingRegular: {
+                case DocumentChangedSource.RegularKey: {
                     this.keyStrokeCount += 1
                     break
                 }
@@ -193,13 +193,20 @@ abstract class DocumentChangedType {
             if (ch === '\n') newLineCounts += 1
         }
 
-        if (newLineCounts > 1) return false
-        if (newLineCounts === 1 && str[str.length - 1] !== '\n') return false
+        // since pressing Enter key possibly will generate string like '\n        ' due to indention
+        if (this.isEnterKey(str)) return true
+        if (newLineCounts >= 1) return false
         return true
+    }
+
+    static isFormatting(str: string): boolean {
+        const rExp: RegExp = /^[\s]+$/g
+        return rExp.test(str)
     }
 }
 
-class SingleChange extends DocumentChangedType {
+// Case when event.contentChanges.length === 1
+export class SingleChange extends DocumentChangedType {
     constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
         super(contentChanges)
     }
@@ -207,28 +214,31 @@ class SingleChange extends DocumentChangedType {
     override checkChangeSource(): DocumentChangedSource {
         const changedText = this.contentChanges[0].text
 
-        // have to check isEnteyKey first, otherwise it will be considered as multi line change
-        if (DocumentChangedType.isEnterKey(changedText)) {
-            return DocumentChangedSource.EnterKey
-        }
         if (DocumentChangedType.isSingleLine(changedText)) {
             if (changedText === '') {
                 return DocumentChangedSource.Deletion
+            } else if (DocumentChangedType.isEnterKey(changedText)) {
+                return DocumentChangedSource.EnterKey
             } else if (changedText.trim() === '') {
-                return DocumentChangedSource.UserTypingTab
+                return DocumentChangedSource.TabKey
             } else if (DocumentChangedType.isUserTypingSpecialChar(changedText)) {
-                return DocumentChangedSource.UserTypingSpecialChars
+                return DocumentChangedSource.SpecialCharsKey
             } else if (changedText.length === 1) {
-                return DocumentChangedSource.UserTypingRegular
+                return DocumentChangedSource.RegularKey
+            } else if (DocumentChangedType.isFormatting(changedText)) {
+                // this logic must be checked after EnterKey
+                return DocumentChangedSource.Reformatting
             } else {
                 return DocumentChangedSource.IntelliSense
             }
         }
 
-        return DocumentChangedSource.Multiline
+        // Won't trigger cwspr on multi-line changes
+        return DocumentChangedSource.Unknown
     }
 }
 
+// Case when event.contentChanges.length > 1
 class MultiChange extends DocumentChangedType {
     constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
         super(contentChanges)
@@ -239,11 +249,10 @@ class MultiChange extends DocumentChangedType {
     }
 }
 
-enum DocumentChangedSource {
-    Multiline,
-    UserTypingSpecialChars,
-    UserTypingRegular,
-    UserTypingTab,
+export enum DocumentChangedSource {
+    SpecialCharsKey,
+    RegularKey,
+    TabKey,
     EnterKey,
     IntelliSense,
     Reformatting,
