@@ -96,12 +96,11 @@ export class PageLoader<T> {
     }
 }
 
-type LoadMoreable<T> = {
-    loadMore(resource?: T): Promise<void> | void
+interface LoadMoreable<T> {
+    loadMore(): Promise<T> | T
 }
 
-const loadMore = <T>(controller: LoadMoreable<T>, target?: T) => controller.loadMore(target)
-
+const loadMore = <T>(controller: LoadMoreable<T>) => controller.loadMore()
 export const loadMoreCommand = Commands.instance.register('_aws.resources.loadMore', loadMore)
 
 interface TreeNodeOptions<T> {
@@ -167,11 +166,19 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
             }
 
             if (this.loader && !this.loader.done) {
-                return this.withLoadMoreNode(this.loader, result)
+                return this.withLoadMoreNode(result)
             }
         }
 
         return result
+    }
+
+    public async loadMore(): Promise<TreeNode<U>[] | undefined> {
+        try {
+            return await this.loader?.load()
+        } finally {
+            this.getChangedEmitter().fire()
+        }
     }
 
     public dispose(): void {
@@ -207,17 +214,8 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
         return merged
     }
 
-    private withLoadMoreNode(loader: PageLoader<TreeNode<U>>, result: TreeNode<U>[]): [...typeof result, TreeNode] {
-        // TODO: optimize this by making `loadMore` apart of the `ResourceTreeNode` prototype?
-        // but then we can't make the method private :/
-        const controller = {
-            loadMore: () => {
-                loader.load().finally(() => this.getChangedEmitter().fire())
-            },
-        }
-        const loadMoreNode = loadMoreCommand
-            .build(controller, loader)
-            .asTreeNode({ label: `${localizedText.loadMore}...` })
+    private withLoadMoreNode(result: TreeNode<U>[]): [...typeof result, TreeNode] {
+        const loadMoreNode = loadMoreCommand.build(this).asTreeNode({ label: `${localizedText.loadMore}...` })
 
         return [...result, loadMoreNode]
     }
