@@ -10,37 +10,26 @@ import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../test
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
-import { DocumentChangedHandler } from '../../../codewhisperer/service/DocumentChangedHandler'
+import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
+import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
 
 describe('invokeRecommendation', function () {
     describe('invokeRecommendation', function () {
         let getRecommendationStub: sinon.SinonStub
+        let oldGetRecommendationStub: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
 
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
             getRecommendationStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            oldGetRecommendationStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
         })
 
         afterEach(function () {
             sinon.restore()
         })
 
-        it("Should skip if there's IN-PROGRESS invocation, should not call getRecommendations", async function () {
-            const config: ConfigurationEntry = {
-                isShowMethodsEnabled: true,
-                isManualTriggerEnabled: true,
-                isAutomatedTriggerEnabled: true,
-                isIncludeSuggestionsWithCodeReferencesEnabled: true,
-            }
-            const mockEditor = createMockTextEditor()
-            InlineCompletion.instance.setCodeWhispererStatusBarLoading()
-            await invokeRecommendation(mockEditor, mockClient, config)
-            assert.ok(!getRecommendationStub.called)
-            InlineCompletion.instance.setCodeWhispererStatusBarOk()
-        })
-
-        it('Should call getRecommendation with OnDemand as trigger type', async function () {
+        it('Should call getPaginatedRecommendation with OnDemand as trigger type', async function () {
             const mockEditor = createMockTextEditor()
             const config: ConfigurationEntry = {
                 isShowMethodsEnabled: true,
@@ -49,12 +38,12 @@ describe('invokeRecommendation', function () {
                 isIncludeSuggestionsWithCodeReferencesEnabled: true,
             }
             await invokeRecommendation(mockEditor, mockClient, config)
-            assert.ok(getRecommendationStub.called)
+            assert.ok(getRecommendationStub.called || oldGetRecommendationStub.called)
         })
 
         it('When called, keyStrokeCount should be set to 0', async function () {
             const mockEditor = createMockTextEditor()
-            DocumentChangedHandler.instance.keyStrokeCount = 10
+            KeyStrokeHandler.instance.keyStrokeCount = 10
             const config: ConfigurationEntry = {
                 isShowMethodsEnabled: true,
                 isManualTriggerEnabled: true,
@@ -62,7 +51,7 @@ describe('invokeRecommendation', function () {
                 isIncludeSuggestionsWithCodeReferencesEnabled: true,
             }
             await invokeRecommendation(mockEditor, mockClient, config)
-            assert.strictEqual(DocumentChangedHandler.instance.keyStrokeCount, 0)
+            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
     })
 })

@@ -16,6 +16,7 @@ import {
     resetCodeWhispererGlobalVariables,
     createMockDocument,
 } from '../testUtil'
+import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 
@@ -209,9 +210,10 @@ describe('DocumentChangedHandler', function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new DocumentChangedHandler()
             InlineCompletion.instance.setCodeWhispererStatusBarOk()
-            const getRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            const oldGetRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.ok(getRecommendationsStub.calledOnce)
+            assert.ok(getRecommendationsStub.calledOnce || oldGetRecommendationsStub.calledOnce)
         })
 
         it('should reset invocationContext.keyStrokeCount to 0', async function () {
