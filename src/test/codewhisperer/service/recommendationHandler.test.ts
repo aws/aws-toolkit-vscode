@@ -34,13 +34,14 @@ describe('recommendationHandler', function () {
         const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
-        const tracker = CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
 
         beforeEach(function () {
             sinon.restore()
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
         })
 
         afterEach(function () {
