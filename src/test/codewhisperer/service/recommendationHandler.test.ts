@@ -45,6 +45,7 @@ describe('recommendationHandler', function () {
 
         afterEach(function () {
             sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
         it('should assign correct recommendations given input', async function () {
