@@ -12,6 +12,7 @@ import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
+import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -171,6 +172,14 @@ abstract class DocumentChangedType {
         return str[0] === '\n' && str.substring(1).trim().length === 0
     }
 
+    static isTabKey(str: string): boolean {
+        const tabSize = getTabSizeSetting()
+        if (str.length % tabSize === 0 && str.trim() === '') {
+            return true
+        }
+        return false
+    }
+
     static isUserTypingSpecialChar(str: string): boolean {
         const specialChars = new Map<string, string>([
             ['(', ')'],
@@ -219,7 +228,7 @@ export class SingleChange extends DocumentChangedType {
                 return DocumentChangedSource.Deletion
             } else if (DocumentChangedType.isEnterKey(changedText)) {
                 return DocumentChangedSource.EnterKey
-            } else if (changedText.trim() === '') {
+            } else if (DocumentChangedType.isTabKey(changedText)) {
                 return DocumentChangedSource.TabKey
             } else if (DocumentChangedType.isUserTypingSpecialChar(changedText)) {
                 return DocumentChangedSource.SpecialCharsKey
@@ -250,12 +259,12 @@ class MultiChange extends DocumentChangedType {
 }
 
 export enum DocumentChangedSource {
-    SpecialCharsKey,
-    RegularKey,
-    TabKey,
-    EnterKey,
-    IntelliSense,
-    Reformatting,
-    Deletion,
-    Unknown,
+    SpecialCharsKey = 'SpecialCharsKey',
+    RegularKey = 'RegularKey',
+    TabKey = 'TabKey',
+    EnterKey = 'EnterKey',
+    IntelliSense = 'IntelliSense',
+    Reformatting = 'Reformatting',
+    Deletion = 'Deletion',
+    Unknown = 'Unknown',
 }
