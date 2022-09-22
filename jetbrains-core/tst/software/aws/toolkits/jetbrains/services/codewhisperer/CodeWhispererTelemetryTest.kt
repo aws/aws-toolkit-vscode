@@ -687,7 +687,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
         invokeCodeWhispererService()
 
-        verify(popupManagerSpy, never()).showPopup(any(), any(), any(), any(), any(), any(), any(), any())
+        verify(popupManagerSpy, never()).showPopup(any(), any(), any(), any(), any())
         runInEdtAndWait {
             val metricCaptor = argumentCaptor<MetricEvent>()
             verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -752,11 +752,11 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         val numOfEmptyRecommendations = response.recommendations().filter { it.content().isEmpty() }.size
         if (numOfEmptyRecommendations == response.recommendations().size) {
-            verify(popupManagerSpy, never()).showPopup(any(), any(), any(), any(), any(), any(), any(), any())
+            verify(popupManagerSpy, never()).showPopup(any(), any(), any(), any(), any())
         } else {
             val popupCaptor = argumentCaptor<JBPopup>()
             verify(popupManagerSpy, timeout(5000))
-                .showPopup(any(), any(), any(), any(), any(), popupCaptor.capture(), any(), any())
+                .showPopup(any(), any(), popupCaptor.capture(), any(), any())
             runInEdtAndWait {
                 popupManagerSpy.closePopup(popupCaptor.lastValue)
             }

@@ -60,6 +60,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.popup.listeners.Co
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.listeners.CodeWhispererPrevButtonActionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.listeners.CodeWhispererScrollListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
+import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.POPUP_DIM_HEX
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.POPUP_INFO_TEXT_SIZE
@@ -198,10 +199,7 @@ class CodeWhispererPopupManager {
         val caretPoint = states.requestContext.editor.offsetToXY(states.requestContext.caretPosition.offset)
         sessionContext.seen.add(sessionContext.selectedIndex)
         showPopup(
-            states.requestContext.editor,
-            states.recommendationContext.details,
-            states.recommendationContext.userInputOriginal,
-            states.recommendationContext.userInputSinceInvocation,
+            states,
             sessionContext,
             states.popup,
             caretPoint,
@@ -231,15 +229,16 @@ class CodeWhispererPopupManager {
     }
 
     fun showPopup(
-        editor: Editor,
-        detailContexts: List<DetailContext>,
-        userInputOriginal: String,
-        userInput: String,
+        states: InvocationContext,
         sessionContext: SessionContext,
         popup: JBPopup,
         p: Point,
         overlappingLinesCount: Int
     ) {
+        val editor = states.requestContext.editor
+        val detailContexts = states.recommendationContext.details
+        val userInputOriginal = states.recommendationContext.userInputOriginal
+        val userInput = states.recommendationContext.userInputSinceInvocation
         val selectedIndex = sessionContext.selectedIndex
         val typeaheadOriginal = sessionContext.typeaheadOriginal
         val typeahead = sessionContext.typeahead
@@ -294,6 +293,13 @@ class CodeWhispererPopupManager {
                 CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = originalAutoPopupCompletionLookup
             }
             popup.show(relativePopupLocationToEditor)
+            val perceivedLatency = CodeWhispererInvocationStatus.getInstance().getTimeSinceDocumentChanged()
+            CodeWhispererTelemetryService.getInstance().sendPerceivedLatencyEvent(
+                detailContexts[selectedIndex].requestId,
+                states.requestContext,
+                states.responseContext,
+                perceivedLatency
+            )
         }
         if (shouldHidePopup) {
             WindowManager.getInstance().setAlphaModeRatio(popup.popupWindow, 1f)

@@ -103,7 +103,7 @@ open class CodeWhispererTestBase {
 
         popupManagerSpy = spy(CodeWhispererPopupManager.getInstance())
         popupManagerSpy.reset()
-        doNothing().`when`(popupManagerSpy).showPopup(any(), any(), any(), any(), any(), any(), any(), any())
+        doNothing().`when`(popupManagerSpy).showPopup(any(), any(), any(), any(), any())
         ApplicationManager.getApplication().replaceService(CodeWhispererPopupManager::class.java, popupManagerSpy, disposableRule.disposable)
 
         invocationStatusSpy = spy(CodeWhispererInvocationStatus.getInstance())
@@ -152,7 +152,7 @@ open class CodeWhispererTestBase {
         val popupCaptor = argumentCaptor<JBPopup>()
         invokeCodeWhispererService()
         verify(popupManagerSpy, timeout(5000).atLeastOnce())
-            .showPopup(any(), any(), any(), any(), any(), popupCaptor.capture(), any(), any())
+            .showPopup(any(), any(), popupCaptor.capture(), any(), any())
         val popup = popupCaptor.lastValue
 
         try {

@@ -66,6 +66,12 @@ class CodeWhispererInvocationStatus {
         timeAtLastDocumentChanged = Instant.now()
     }
 
+    fun getTimeSinceDocumentChanged(): Double {
+        val timeSinceDocumentChanged = Duration.between(timeAtLastInvocationComplete, Instant.now())
+        val timeInDouble = timeSinceDocumentChanged.toMillis().toDouble()
+        return timeInDouble
+    }
+
     fun hasEnoughDelayToShowCodeWhisperer(): Boolean {
         val timeCanShowCodeWhisperer = timeAtLastDocumentChanged?.plusMillis(CodeWhispererConstants.POPUP_DELAY) ?: return true
         return timeCanShowCodeWhisperer.isBefore(Instant.now())

@@ -194,6 +194,26 @@ class CodeWhispererTelemetryService {
         }
     }
 
+    fun sendPerceivedLatencyEvent(
+        requestId: String,
+        requestContext: RequestContext,
+        responseContext: ResponseContext,
+        latency: Double,
+    ) {
+        val (project, _, triggerTypeInfo) = requestContext
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
+        CodewhispererTelemetry.perceivedLatency(
+            project = project,
+            codewhispererCompletionType = responseContext.completionType,
+            codewhispererLanguage = codewhispererLanguage,
+            codewhispererRequestId = requestId,
+            codewhispererSessionId = responseContext.sessionId,
+            codewhispererTriggerType = triggerTypeInfo.triggerType,
+            duration = latency,
+            passive = true
+        )
+    }
+
     private fun recordSuggestionState(
         index: Int,
         selectedIndex: Int,
