@@ -8,7 +8,11 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
-import { DocumentChangedSource, KeyStrokeHandler, SingleChange } from '../../../codewhisperer/service/keyStrokeHandler'
+import {
+    DocumentChangedSource,
+    KeyStrokeHandler,
+    DefaultDocumentChangedType,
+} from '../../../codewhisperer/service/keyStrokeHandler'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
@@ -245,7 +249,9 @@ describe('keyStrokeHandler', function () {
             const input = tuple[0]
             const expected = tuple[1]
             it(`test input ${input} should return ${expected}`, function () {
-                const actual = new SingleChange(createFakeDocumentChangeEvent(tuple[0])).checkChangeSource()
+                const actual = new DefaultDocumentChangedType(
+                    createFakeDocumentChangeEvent(tuple[0])
+                ).checkChangeSource()
                 assert.strictEqual(actual, expected)
             })
         })

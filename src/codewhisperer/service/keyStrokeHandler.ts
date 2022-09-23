@@ -74,7 +74,7 @@ export class KeyStrokeHandler {
             }
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
-            const changedSource = this.getDocumentChangedType(event)?.checkChangeSource()
+            const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     this.keyStrokeCount += 1
@@ -106,13 +106,6 @@ export class KeyStrokeHandler {
             getLogger().error('Automated Trigger Exception : ', error)
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
         }
-    }
-
-    getDocumentChangedType(event: vscode.TextDocumentChangeEvent): DocumentChangedType | undefined {
-        const contentChanges = event.contentChanges
-        if (contentChanges.length == 1) return new SingleChange(contentChanges)
-        if (contentChanges.length > 1) return new MultiChange(contentChanges)
-        return undefined
     }
 
     async invokeAutomatedTrigger(
@@ -171,22 +164,20 @@ export class KeyStrokeHandler {
 }
 
 export abstract class DocumentChangedType {
-    protected contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>
-
-    constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
+    constructor(protected readonly contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
         this.contentChanges = contentChanges
     }
 
     abstract checkChangeSource(): DocumentChangedSource
 
     // Enter key should always start with ONE '\n' and potentially following spaces due to IDE reformat
-    static isEnterKey(str: string): boolean {
+    protected isEnterKey(str: string): boolean {
         if (str.length === 0) return false
         return str[0] === '\n' && str.substring(1).trim().length === 0
     }
 
     // Tab should consist of space char only ' ' and the length % tabSize should be 0
-    static isTabKey(str: string): boolean {
+    protected isTabKey(str: string): boolean {
         const tabSize = getTabSizeSetting()
         if (str.length % tabSize === 0 && str.trim() === '') {
             return true
@@ -194,11 +185,11 @@ export abstract class DocumentChangedType {
         return false
     }
 
-    static isUserTypingSpecialChar(str: string): boolean {
+    protected isUserTypingSpecialChar(str: string): boolean {
         return ['(', '()', '[', '[]', '{', '{}', ':'].includes(str)
     }
 
-    static isSingleLine(str: string): boolean {
+    protected isSingleLine(str: string): boolean {
         let newLineCounts = 0
         for (const ch of str) {
             if (ch === '\n') newLineCounts += 1
@@ -209,35 +200,41 @@ export abstract class DocumentChangedType {
         if (newLineCounts >= 1) return false
         return true
     }
-
-    static singleWordRegex: RegExp = RegExp('^[\\S]+$')
-    static allSpaceRegex: RegExp = RegExp('^[ ]+$')
 }
 
 // Case when event.contentChanges.length === 1
-export class SingleChange extends DocumentChangedType {
+export class DefaultDocumentChangedType extends DocumentChangedType {
     constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
         super(contentChanges)
     }
 
-    override checkChangeSource(): DocumentChangedSource {
+    checkChangeSource(): DocumentChangedSource {
+        if (this.contentChanges.length === 0) {
+            return DocumentChangedSource.Unknown
+        }
+
+        // Case when event.contentChanges.length > 1
+        if (this.contentChanges.length > 1) {
+            return DocumentChangedSource.Reformatting
+        }
+
         const changedText = this.contentChanges[0].text
 
-        if (DocumentChangedType.isSingleLine(changedText)) {
+        if (this.isSingleLine(changedText)) {
             if (changedText === '') {
                 return DocumentChangedSource.Deletion
-            } else if (DocumentChangedType.isEnterKey(changedText)) {
+            } else if (this.isEnterKey(changedText)) {
                 return DocumentChangedSource.EnterKey
-            } else if (DocumentChangedType.isTabKey(changedText)) {
+            } else if (this.isTabKey(changedText)) {
                 return DocumentChangedSource.TabKey
-            } else if (DocumentChangedType.isUserTypingSpecialChar(changedText)) {
+            } else if (this.isUserTypingSpecialChar(changedText)) {
                 return DocumentChangedSource.SpecialCharsKey
             } else if (changedText.length === 1) {
                 return DocumentChangedSource.RegularKey
-            } else if (DocumentChangedType.allSpaceRegex.test(changedText)) {
+            } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (DocumentChangedType.singleWordRegex.test(changedText)) {
+            } else if (new RegExp('^[\\S]+$').test(changedText)) {
                 // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
                 // multi-words code snippets
                 return DocumentChangedSource.IntelliSense
@@ -248,17 +245,6 @@ export class SingleChange extends DocumentChangedType {
 
         // Won't trigger cwspr on multi-line changes
         return DocumentChangedSource.Unknown
-    }
-}
-
-// Case when event.contentChanges.length > 1
-class MultiChange extends DocumentChangedType {
-    constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
-        super(contentChanges)
-    }
-
-    override checkChangeSource(): DocumentChangedSource {
-        return DocumentChangedSource.Reformatting
     }
 }
 
