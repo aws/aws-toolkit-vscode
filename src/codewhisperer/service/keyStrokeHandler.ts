@@ -13,6 +13,8 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
+import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { InlineCompletionService } from './inlineCompletionService'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -144,6 +146,14 @@ export class KeyStrokeHandler {
                 } finally {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
+            } else if (isInlineCompletionEnabled()) {
+                InlineCompletionService.instance.getPaginatedRecommendation(
+                    client,
+                    editor,
+                    'AutoTrigger',
+                    config,
+                    autoTriggerType
+                )
             } else {
                 if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
                     await InlineCompletion.instance.resetInlineStates(editor)
