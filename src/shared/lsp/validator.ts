@@ -5,7 +5,7 @@
 
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { Diagnostic } from 'vscode-languageserver-types'
-import globals from '../../extensionGlobals'
+import globals from '../extensionGlobals'
 
 export class TextDocumentValidator {
     private validationDelayMs: number

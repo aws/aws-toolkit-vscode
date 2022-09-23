@@ -8,7 +8,7 @@ import { getLanguageService, LanguageService, SchemasSettings, WorkspaceContextS
 import { SettingsState } from 'yaml-language-server/lib/umd/yamlSettings'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { createConverter as p2cConverter } from 'vscode-languageclient/lib/protocolConverter'
-import { TextDocumentValidator } from '../languageServer/utils/validator'
+import { TextDocumentValidator } from '../lsp/validator'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { readFileSync } from 'fs-extra'
 import { getLogger } from '../logger'
