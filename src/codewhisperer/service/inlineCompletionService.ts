@@ -174,11 +174,15 @@ export class InlineCompletionService {
     private hide: vscode.Disposable
     private next: vscode.Disposable
     private prev: vscode.Disposable
+    private _isPaginationRunning = false
 
     constructor() {
         this.prev = prevCommand.register(this)
         this.next = nextCommand.register(this)
         this.hide = hideCommand.register(this)
+        RecommendationHandler.instance.onDidReceiveRecommendation(e => {
+            this.tryShowRecommendation()
+        })
     }
 
     static #instance: InlineCompletionService
@@ -196,7 +200,7 @@ export class InlineCompletionService {
         this.hide = hideCommand.register(this)
     }
 
-    subscribeCommands() {
+    subscribeSuggestionCommands() {
         this.disposeCommandOverrides()
         this.registerCommandOverrides()
         globals.context.subscriptions.push(this.prev)
@@ -244,6 +248,28 @@ export class InlineCompletionService {
         this.clearRejectionTimer()
     }
 
+    async tryShowRecommendation() {
+        const editor = vscode.window.activeTextEditor
+        if (this.isSuggestionVisible() || editor === undefined) return
+        if (
+            editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
+            editor.document.uri.fsPath !== this.documentUri?.fsPath
+        ) {
+            RecommendationHandler.instance.cancelPaginatedRequest()
+            RecommendationHandler.instance.recommendations.forEach((r, i) => {
+                RecommendationHandler.instance.setSuggestionState(i, 'Discard')
+            })
+            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            RecommendationHandler.instance.clearRecommendations()
+        } else if (RecommendationHandler.instance.recommendations.length > 0) {
+            RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
+            await HoverConfigUtil.instance.overwriteHoverConfig()
+            this.subscribeSuggestionCommands()
+            this.startRejectionTimer(editor)
+            await this.showRecommendation(0, true)
+        }
+    }
+
     async getPaginatedRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -251,11 +277,9 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
-        if (vsCodeState.isCodeWhispererEditing || this.isPaginationRunning()) return
+        if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning) return
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
-        await HoverConfigUtil.instance.overwriteHoverConfig()
-        this.subscribeCommands()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         this.documentUri = editor.document.uri
         try {
@@ -270,32 +294,12 @@ export class InlineCompletionService {
                     true,
                     page
                 )
-
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     this.setCodeWhispererStatusBarOk()
                     return
                 }
-
-                if (!this.isSuggestionVisible()) {
-                    if (
-                        editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
-                        editor.document.uri.fsPath !== this.documentUri?.fsPath
-                    ) {
-                        RecommendationHandler.instance.cancelPaginatedRequest()
-                        RecommendationHandler.instance.recommendations.forEach((r, i) => {
-                            RecommendationHandler.instance.setSuggestionState(i, 'Discard')
-                        })
-                        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
-                        RecommendationHandler.instance.clearRecommendations()
-                    } else if (RecommendationHandler.instance.recommendations.length > 0) {
-                        RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
-                        this.startRejectionTimer(editor)
-                        await this.showRecommendation(0, true)
-                    }
-                }
-
                 if (!RecommendationHandler.instance.hasNextToken()) break
                 page++
             }
@@ -309,9 +313,6 @@ export class InlineCompletionService {
             } else {
                 showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
             }
-        }
-        if (RecommendationHandler.instance.recommendations.length === 0) {
-            await HoverConfigUtil.instance.restoreHoverConfig()
         }
     }
 
@@ -349,11 +350,13 @@ export class InlineCompletionService {
     }
 
     setCodeWhispererStatusBarLoading() {
+        this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
+        this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
         this.statusBar.show()
     }
@@ -364,10 +367,6 @@ export class InlineCompletionService {
 
     isSuggestionVisible(): boolean {
         return this.inlineCompletionProvider?.getActiveItemIndex !== undefined
-    }
-
-    isPaginationRunning() {
-        return this.statusBar.text === ` $(loading~spin)CodeWhisperer`
     }
 
     private clearRejectionTimer() {
