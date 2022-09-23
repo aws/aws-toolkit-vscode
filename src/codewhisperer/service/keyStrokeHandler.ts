@@ -202,7 +202,6 @@ export abstract class DocumentChangedType {
     }
 }
 
-// Case when event.contentChanges.length === 1
 export class DefaultDocumentChangedType extends DocumentChangedType {
     constructor(contentChanges: ReadonlyArray<vscode.TextDocumentContentChangeEvent>) {
         super(contentChanges)
@@ -218,6 +217,7 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             return DocumentChangedSource.Reformatting
         }
 
+        // Case when event.contentChanges.length === 1
         const changedText = this.contentChanges[0].text
 
         if (this.isSingleLine(changedText)) {
