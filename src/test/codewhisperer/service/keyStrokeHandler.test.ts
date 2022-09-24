@@ -8,10 +8,14 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
-import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
+import {
+    DocumentChangedSource,
+    KeyStrokeHandler,
+    DefaultDocumentChangedType,
+} from '../../../codewhisperer/service/keyStrokeHandler'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 
@@ -79,7 +83,7 @@ describe('keyStrokeHandler', function () {
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(1, 0)),
-                'print(n'
+                '\nprint(n'
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
@@ -218,5 +222,49 @@ describe('keyStrokeHandler', function () {
             await KeyStrokeHandler.instance.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
             assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
+    })
+
+    describe('test checkChangeSource', function () {
+        const tabStr = ' '.repeat(EditorContext.getTabSize())
+
+        const cases: [string, DocumentChangedSource][] = [
+            ['\n          ', DocumentChangedSource.EnterKey],
+            ['\n', DocumentChangedSource.EnterKey],
+            ['(', DocumentChangedSource.SpecialCharsKey],
+            ['()', DocumentChangedSource.SpecialCharsKey],
+            ['{}', DocumentChangedSource.SpecialCharsKey],
+            ['(a, b):', DocumentChangedSource.Unknown],
+            [':', DocumentChangedSource.SpecialCharsKey],
+            ['a', DocumentChangedSource.RegularKey],
+            [tabStr, DocumentChangedSource.TabKey],
+            ['__str__', DocumentChangedSource.IntelliSense],
+            ['toString()', DocumentChangedSource.IntelliSense],
+            ['</p>', DocumentChangedSource.IntelliSense],
+            ['   ', DocumentChangedSource.Reformatting],
+            ['def add(a,b):\n    return a + b\n', DocumentChangedSource.Unknown],
+            ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],
+        ]
+
+        cases.forEach(tuple => {
+            const input = tuple[0]
+            const expected = tuple[1]
+            it(`test input ${input} should return ${expected}`, function () {
+                const actual = new DefaultDocumentChangedType(
+                    createFakeDocumentChangeEvent(tuple[0])
+                ).checkChangeSource()
+                assert.strictEqual(actual, expected)
+            })
+        })
+
+        function createFakeDocumentChangeEvent(str: string): ReadonlyArray<vscode.TextDocumentContentChangeEvent> {
+            return [
+                {
+                    range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 5)),
+                    rangeOffset: 0,
+                    rangeLength: 0,
+                    text: str,
+                },
+            ]
+        }
     })
 })
