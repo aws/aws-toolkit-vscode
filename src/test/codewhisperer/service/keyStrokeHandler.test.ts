@@ -19,6 +19,8 @@ import { InlineCompletionService } from '../../../codewhisperer/service/inlineCo
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 describe('keyStrokeHandler', function () {
     const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
@@ -31,9 +33,11 @@ describe('keyStrokeHandler', function () {
     })
     describe('processKeyStroke', async function () {
         let invokeSpy: sinon.SinonStub
+        let startTimerSpy: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
         beforeEach(function () {
             invokeSpy = sinon.stub(KeyStrokeHandler.instance, 'invokeAutomatedTrigger')
+            startTimerSpy = sinon.stub(KeyStrokeHandler.instance, 'startIdleTimeTriggerTimer')
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             resetCodeWhispererGlobalVariables()
@@ -60,6 +64,7 @@ describe('keyStrokeHandler', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
             await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger when changed text matches active recommendation prefix', async function () {
@@ -85,6 +90,7 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger when doing delete or undo (empty changed text)', async function () {
@@ -96,6 +102,7 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \n', async function () {
@@ -146,6 +153,28 @@ describe('keyStrokeHandler', function () {
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
+
+        it('Should start idle trigger timer when inputing special characters', async function () {
+            const mockEditor = createMockTextEditor()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '('
+            )
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(startTimerSpy.called)
+        })
+
+        it('Should start idle trigger timer when inputing non-special characters', async function () {
+            const mockEditor = createMockTextEditor()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                'a'
+            )
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(startTimerSpy.called)
+        })
     })
 
     describe('invokeAutomatedTrigger', function () {
@@ -169,6 +198,15 @@ describe('keyStrokeHandler', function () {
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
             assert.ok(getRecommendationsStub.calledOnce || oldGetRecommendationsStub.calledOnce)
+        })
+    })
+
+    describe('shouldTriggerIdleTime', function () {
+        it('should return false when it has not met invocation interval threshold ', function () {
+            const keyStrokeHandler = new KeyStrokeHandler()
+            RecommendationHandler.instance.lastInvocationTime = performance.now()
+            const result = keyStrokeHandler.shouldTriggerIdleTime()
+            assert.strictEqual(result, false)
         })
     })
 

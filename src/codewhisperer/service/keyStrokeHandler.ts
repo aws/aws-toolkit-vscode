@@ -42,7 +42,7 @@ export class KeyStrokeHandler {
         return (this.#instance ??= new this())
     }
 
-    private startIdleTimeTriggerTimer(
+    public startIdleTimeTriggerTimer(
         event: vscode.TextDocumentChangeEvent,
         editor: vscode.TextEditor,
         client: DefaultCodeWhispererClient,
@@ -53,15 +53,26 @@ export class KeyStrokeHandler {
             this.idleTriggerTimer = undefined
         }
         this.idleTriggerTimer = setInterval(() => {
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
-            if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) return
-            if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) return
-            if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) return
-            this.invokeAutomatedTrigger('IdleTime', editor, client, config)
-            if (this.idleTriggerTimer) clearInterval(this.idleTriggerTimer)
-            this.idleTriggerTimer = undefined
+            if (!this.shouldTriggerIdleTime()) return
+
+            try {
+                this.invokeAutomatedTrigger('IdleTime', editor, client, config)
+            } finally {
+                if (this.idleTriggerTimer) {
+                    clearInterval(this.idleTriggerTimer)
+                    this.idleTriggerTimer = undefined
+                }
+            }
         }, CodeWhispererConstants.idleTimerPollPeriod)
+    }
+
+    public shouldTriggerIdleTime(): boolean {
+        const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
+        if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return false
+        if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) return false
+        if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) return false
+        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) return false
+        return true
     }
 
     async processKeyStroke(
