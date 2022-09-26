@@ -174,8 +174,21 @@ export async function activate(context: ExtContext): Promise<void> {
         acceptSuggestion.register(context),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
-            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
-            RecommendationHandler.instance.clearRecommendations()
+            if (isInlineCompletionEnabled()) {
+                if (e.uri.fsPath === InlineCompletionService.instance.filePath()) {
+                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+                        vscode.window.activeTextEditor,
+                        -1
+                    )
+                    RecommendationHandler.instance.clearRecommendations()
+                }
+            } else {
+                RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+                    vscode.window.activeTextEditor,
+                    -1
+                )
+                RecommendationHandler.instance.clearRecommendations()
+            }
         }),
 
         vscode.languages.registerHoverProvider(
