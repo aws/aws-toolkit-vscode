@@ -87,4 +87,4 @@ export async function prepareCommand(
     return { path: ssmPlugin, args, dispose: () => void terminateSession() }
 }
 
-export class EcsSettings extends fromExtensionManifest('aws.ecs', { interactiveSessionCommand: String }) {}
+export class EcsSettings extends fromExtensionManifest('aws.ecs', { openTerminalCommand: String }) {}

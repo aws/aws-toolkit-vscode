@@ -152,7 +152,7 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'shell' })
 
-        const startCommand = new EcsSettings().get('interactiveSessionCommand')
+        const startCommand = new EcsSettings().get('openTerminalCommand')
         const { container, task, command } = await runCommandWizard(obj, startCommand)
 
         try {
