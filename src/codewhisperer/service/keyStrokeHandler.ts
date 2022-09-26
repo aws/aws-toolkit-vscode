@@ -79,8 +79,6 @@ export class KeyStrokeHandler {
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
             if (InlineCompletion.instance.isTypeaheadInProgress) return
 
-            this.startIdleTimeTriggerTimer(event, editor, client, config)
-
             // Skip Cloud9 IntelliSense acceptance event
             if (
                 isCloud9() &&
@@ -94,6 +92,9 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
+            if ([DocumentChangedSource.SpecialCharsKey, DocumentChangedSource.RegularKey].includes(changedSource)) {
+                this.startIdleTimeTriggerTimer(event, editor, client, config)
+            }
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     triggerType = 'Enter'

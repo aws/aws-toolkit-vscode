@@ -365,6 +365,10 @@ export class InlineCompletionService {
         this.statusBar.hide()
     }
 
+    isPaginationRunning(): boolean {
+        return this._isPaginationRunning
+    }
+
     isSuggestionVisible(): boolean {
         return this.inlineCompletionProvider?.getActiveItemIndex !== undefined
     }
