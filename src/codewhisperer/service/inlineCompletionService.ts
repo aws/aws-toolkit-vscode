@@ -191,6 +191,10 @@ export class InlineCompletionService {
         return (this.#instance ??= new this())
     }
 
+    filePath(): string | undefined {
+        return this.documentUri?.fsPath
+    }
+
     // These commands override the vs code inline completion commands
     // They are subscribed when suggestion starts and disposed when suggestion is accepted/rejected
     // to avoid impacting other plugins or user who uses this API
