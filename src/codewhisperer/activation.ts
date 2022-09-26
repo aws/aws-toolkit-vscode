@@ -174,6 +174,7 @@ export async function activate(context: ExtContext): Promise<void> {
         acceptSuggestion.register(context),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
+            if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) return
             RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
             RecommendationHandler.instance.clearRecommendations()
         }),
