@@ -19,9 +19,7 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
--   [NodeJS and NPM](https://nodejs.org/)
-    -   NodeJS Version: 12.x
-    -   NPM version: 7.x or higher
+-   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
@@ -31,7 +29,6 @@ To develop this project, install these dependencies:
 
 Then clone the repository and install NPM packages:
 
-    cd ~/repos
     git clone git@github.com:aws/aws-toolkit-vscode.git
     cd aws-toolkit-vscode
     npm install
