@@ -17,7 +17,11 @@ import { isCloud9 } from '../shared/extensionUtilities'
 const CAWS_SONO_PROFILE = {
     startUrl: 'https://d-9067642ac7.awsapps.com/start',
     region: 'us-east-1',
-    scopes: ['sso:account:access'],
+    scopes: [
+        'sso:account:access',
+        // TODO: fix when final branding is available
+        'codeaws:read_write',
+    ],
 }
 
 async function verifySession(tokenProvider: () => Promise<string>, id?: string | UserDetails) {
