@@ -64,7 +64,7 @@ describe('SharedCredentialsProvider', async function () {
         )
 
         assert.strictEqual(sut.getDefaultRegion(), 'foo')
-        assert.strictEqual(sut.canAutoConnect(), true)
+        assert.strictEqual(await sut.canAutoConnect(), true)
     })
 
     it('profile properties may be undefined', async function () {
