@@ -64,7 +64,7 @@ describe('completionProviderService', function () {
                         '',
                         'OnDemand',
                         'Line',
-                        'javascript',
+                        'typescript',
                         undefined,
                     ],
                 },
