@@ -1085,7 +1085,7 @@
                 },
                 {
                     "command": "aws.dev.openMenu",
-                    "when": "aws.isDevMode"
+                    "when": "aws.isDevMode || isCloud9"
                 }
             ],
             "editor/title": [
