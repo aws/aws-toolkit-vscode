@@ -60,7 +60,8 @@ export class CodeArtifactPackageNode extends AWSTreeNodeBase implements AWSTreeN
                     this,
                     localize('AWS.explorerNode.codeArtifact.noVersions', '[No package versions found]')
                 ),
-            sort: (item1, item2) => item1.version.versionName.localeCompare(item2.version.versionName),
+            sort: (item1, item2) =>
+                item2.version.versionName.localeCompare(item1.version.versionName, undefined, { numeric: true }),
         })
     }
 }
