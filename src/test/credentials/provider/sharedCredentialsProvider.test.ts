@@ -289,40 +289,6 @@ describe('SharedCredentialsProvider', async function () {
             await assertIniProviderResolves(sut, resolvedProfile)
         })
 
-        it('resolves profile with source_profile as sso', async function () {
-            resolvedBaseProfile['aws_session_token'] = 'token'
-            const resolvedProfile = {
-                base: resolvedBaseProfile,
-                child: childProfile,
-            }
-            const sut = new SharedCredentialsProvider(
-                'child',
-                new Map<string, Profile>([
-                    [
-                        'base',
-                        {
-                            sso_start_url: 'sso_url',
-                            sso_region: 'region',
-                            sso_account_id: 'account',
-                            sso_role_name: 'role',
-                        },
-                    ],
-                    ['child', { ...childProfile }],
-                ])
-            )
-
-            sandbox.stub(SharedCredentialsProvider.prototype as any, 'makeSsoProvider').returns({
-                refreshCredentials: () =>
-                    Promise.resolve({
-                        accessKeyId: resolvedBaseProfile['aws_access_key_id'],
-                        secretAccessKey: resolvedBaseProfile['aws_secret_access_key'],
-                        sessionToken: resolvedBaseProfile['aws_session_token'],
-                    }),
-            })
-
-            await assertIniProviderResolves(sut, resolvedProfile)
-        })
-
         it('resolves profile with source_profile and MFA', async function () {
             const mfaSerial = 'serial'
             const resolvedProfile = {
