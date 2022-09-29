@@ -311,7 +311,7 @@ export async function makePythonCodeLensProvider(configuration: SamCliSettings):
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             // Try to activate the Python Extension before requesting symbols from a python file
@@ -338,7 +338,7 @@ export async function makeCSharpCodeLensProvider(configuration: SamCliSettings):
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
@@ -359,7 +359,7 @@ export function makeTypescriptCodeLensProvider(configuration: SamCliSettings): O
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
@@ -380,7 +380,7 @@ export async function makeGoCodeLensProvider(configuration: SamCliSettings): Pro
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             const handlers = await goCodelens.getLambdaHandlerCandidates(document)
@@ -401,7 +401,7 @@ export async function makeJavaCodeLensProvider(configuration: SamCliSettings): P
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             // Try to activate the Java Extension before requesting symbols from a java file

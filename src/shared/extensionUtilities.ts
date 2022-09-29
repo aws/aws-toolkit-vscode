@@ -15,7 +15,6 @@ import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion } from './vscode/env'
-import globals from './extensionGlobals'
 import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
@@ -107,45 +106,6 @@ export function isCloud9(): boolean {
 
 export function isCn(): boolean {
     return getComputeRegion()?.startsWith('cn') ?? false
-}
-
-export class ExtensionUtilities {
-    public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'dist', 'libs')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'js')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'css')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const scripts: vscode.Uri[] = []
-        _.forEach(names, scriptName => {
-            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
-            scripts.push(webview.asWebviewUri(scriptPathOnDisk))
-        })
-
-        return scripts
-    }
-
-    public static getFilesAsVsCodeResources(rootdir: string, filenames: string[], webview: vscode.Webview) {
-        const arr: vscode.Uri[] = []
-        for (const filename of filenames) {
-            arr.push(webview.asWebviewUri(vscode.Uri.file(path.join(rootdir, filename))))
-        }
-
-        return arr
-    }
 }
 
 /**
@@ -329,11 +289,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Creates a modal to display OS, AWS Toolkit, and VS Code
- * versions and allows user to copy to clipboard
- * Also prints to the toolkit output channel
- *
- * @param toolkitOutputChannel VS Code Output Channel
+ * Shows info about the extension and its environment.
  */
 export async function aboutToolkit(): Promise<void> {
     const toolkitEnvDetails = getToolkitEnvironmentDetails()
@@ -353,16 +309,21 @@ export function getToolkitEnvironmentDetails(): string {
     const osArch = os.arch()
     const osRelease = os.release()
     const vsCodeVersion = vscode.version
+    const node = process.versions.node ? `node: ${process.versions.node}\n` : 'node: ?\n'
+    const electron = process.versions.electron ? `electron: ${process.versions.electron}\n` : ''
+
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\n{5} Toolkit Version:  {6}\n',
+        'OS: {0} {1} {2}\n{3} extension host:  {4}\n{5} Toolkit:  {6}\n{7}{8}',
         osType,
         osArch,
         osRelease,
         getIdeProperties().longName,
         vsCodeVersion,
         getIdeProperties().company,
-        extensionVersion
+        extensionVersion,
+        node,
+        electron
     )
 
     return envDetails

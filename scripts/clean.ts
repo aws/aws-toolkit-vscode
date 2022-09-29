@@ -14,6 +14,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
 
+const readFile = util.promisify(fs.readFile)
 const readdir = util.promisify(fs.readdir)
 const rmdir = util.promisify(fs.rmdir)
 const stat = util.promisify(fs.stat)
@@ -35,27 +36,54 @@ async function rdelete(p: string) {
     }
 }
 
-;(async () => {
-    for (const arg of process.argv.slice(2)) {
-        try {
-            const directory = path.join(process.cwd(), arg)
+async function tryDeleteRelative(p: string) {
+    try {
+        const target = path.resolve(process.cwd(), p)
 
-            try {
-                fs.accessSync(directory)
-            } catch (e) {
-                console.log(
-                    `Could not access '${directory}', probably because it does not exist. Skipping clean for this directory.`
-                )
-                return
-            }
-
-            console.log(`Removing ${directory} ...`)
-
-            await rdelete(directory)
-
-            console.log('Done')
-        } catch (e) {
-            console.error(`Could not clean '${arg}': ${String(e)}`)
+        if (!exists(target)) {
+            console.log(
+                `Could not access '${target}', probably because it does not exist. Skipping clean for this path.`
+            )
+            return
         }
+
+        await rdelete(target)
+    } catch (e) {
+        console.error(`Could not clean '${p}': ${String(e)}`)
     }
+}
+
+function exists(p: string): boolean {
+    try {
+        fs.accessSync(p)
+        return true
+    } catch {
+        return false
+    }
+}
+
+async function getGenerated(): Promise<string[]> {
+    if (!exists(path.join(process.cwd(), 'dist'))) {
+        return []
+    }
+
+    const p = path.join(process.cwd(), 'dist', 'generated.buildinfo')
+
+    try {
+        const data = JSON.parse(await readFile(p, 'utf-8'))
+
+        if (!Array.isArray(data) || !data.every(d => typeof d === 'string')) {
+            throw new Error('File manifest was not an array of strings')
+        }
+
+        return data
+    } catch (e) {
+        console.log(`Failed to read "generated.buildinfo": ${String(e)}`)
+        return []
+    }
+}
+
+;(async () => {
+    const args = process.argv.slice(2).concat(await getGenerated())
+    await Promise.all(args.map(tryDeleteRelative))
 })()

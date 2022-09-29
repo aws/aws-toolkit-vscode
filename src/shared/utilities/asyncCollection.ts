@@ -9,22 +9,42 @@ import { Coalesce } from './tsUtils'
  * High-level abstraction over async generator functions of the form `async function*` {@link AsyncGenerator}
  */
 export interface AsyncCollection<T> extends AsyncIterable<T> {
-    /** Flattens the collection 1-level deep */
+    /**
+     * Flattens the collection 1-level deep.
+     */
     flatten(): AsyncCollection<SafeUnboxIterable<T>>
-    /** Applies a mapping transform to the output generator */
-    map<U>(fn: (obj: T) => U): AsyncCollection<U>
-    /** Filters out results which will _not_ be passed on to further transformations. */
-    filter<U extends T>(predicate: Predicate<T, U>): AsyncCollection<U>
+
+    /**
+     * Applies a mapping transform to the output generator.
+     */
+    map<U>(fn: (obj: T) => Promise<U> | U): AsyncCollection<U>
+
+    /**
+     * Filters out results which will _not_ be passed on to further transformations.
+     */
+    filter<U extends T>(predicate: (item: T) => item is U): AsyncCollection<U>
     filter<U extends T>(predicate: (item: T) => boolean): AsyncCollection<U>
-    /** Uses only the first 'count' number of values returned by the generator. */
-    take(count: number): AsyncCollection<T>
-    /** Converts the collection to a Promise, resolving to an array of all values returned by the generator. */
+
+    /**
+     * Uses only the first 'count' number of values returned by the generator.
+     */
+    limit(count: number): AsyncCollection<T>
+
+    /**
+     * Converts the collection to a Promise, resolving to an array of all values returned by the generator.
+     */
     promise(): Promise<T[]>
-    /** Converts the collection to a Map, using either a property of the item or a function to select keys. */
+
+    /**
+     * Converts the collection to a Map, using either a property of the item or a function to select keys
+     */
     toMap<K extends StringProperty<T>, U extends string = never>(
         selector: KeySelector<T, U> | K
     ): Promise<Map<Coalesce<U, T[K]>, T>>
-    /** Returns an iterator directly from the underlying generator, preserving values returned. */
+
+    /**
+     * Returns an iterator directly from the underlying generator, preserving values returned.
+     */
     iterator(): AsyncIterator<T, T | void>
 }
 
@@ -56,8 +76,8 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
         filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
-        map: <U>(fn: (item: T) => U) => toCollection<U>(() => mapGenerator(generator(), fn)),
-        take: (count: number) => toCollection(() => delegateGenerator(generator(), takeFrom(count))),
+        map: <U>(fn: (item: T) => Promise<U> | U) => toCollection<U>(() => mapGenerator(generator(), fn)),
+        limit: (count: number) => toCollection(() => delegateGenerator(generator(), takeFrom(count))),
         promise: () => promise(iterable),
         toMap: <U extends string = never, K extends StringProperty<T> = never>(selector: KeySelector<T, U> | K) =>
             asyncIterableToMap(iterable, selector),
@@ -67,7 +87,7 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
 
 async function* mapGenerator<T, U, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
-    fn: (item: T | R) => U
+    fn: (item: T | R) => Promise<U> | U
 ): AsyncGenerator<U, U | undefined> {
     while (true) {
         const { value, done } = await generator.next()
@@ -80,22 +100,25 @@ async function* mapGenerator<T, U, R = T>(
     }
 }
 
+type Predicate<T, U extends T> = (item: T) => item is U
+
 async function* filterGenerator<T, U extends T, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
-    predicate: Predicate<T | R, U>
-): AsyncGenerator<U, U | undefined> {
+    predicate: Predicate<T | R, U> | ((item: T | R) => boolean)
+): AsyncGenerator<U, U | void> {
     while (true) {
         const { value, done } = await generator.next()
-        if (value === undefined || !predicate(value)) {
-            if (done) {
-                break
-            }
-            continue
-        }
+
         if (done) {
-            return value as unknown as Awaited<U | undefined>
+            if (value !== undefined && predicate(value)) {
+                return value as unknown as Awaited<U>
+            }
+            break
         }
-        yield value
+
+        if (predicate(value)) {
+            yield value
+        }
     }
 }
 
@@ -129,7 +152,7 @@ async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
     if (isIterable<U>(item)) {
         yield* item
     } else {
-        yield item as U
+        yield item as unknown as U
     }
 }
 
@@ -158,8 +181,6 @@ async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
 
     return result
 }
-
-type Predicate<T, U extends T> = (item: T) => item is U
 
 function addToMap<T, U extends string>(map: Map<string, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
     const key = typeof selector === 'function' ? selector(item) : item[selector]

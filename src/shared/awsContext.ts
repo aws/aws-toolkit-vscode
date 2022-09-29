@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
-import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-
+import { CredentialsShim } from '../credentials/loginManager'
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
     readonly credentialsId: string
@@ -25,10 +24,6 @@ export interface ContextChangeEventsArgs {
 // Represents a credential profile and zero or more regions.
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
-export class NoActiveCredentialError extends Error {
-    public message = 'No AWS profile selected'
-}
-
 const logged = new Set<string>()
 const DEFAULT_REGION = 'us-east-1'
 
@@ -39,19 +34,22 @@ const DEFAULT_REGION = 'us-east-1'
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
-
-    // the collection of regions the user has expressed an interest in working with in
-    // the current workspace
-    private readonly explorerRegions: string[]
+    private shim?: CredentialsShim
+    public lastTouchedRegion?: string
 
     private currentCredentials: AwsContextCredentials | undefined
 
-    public constructor(private context: vscode.ExtensionContext) {
+    public constructor() {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
+    }
 
-        const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
-        this.explorerRegions = persistedRegions || []
+    public get credentialsShim(): CredentialsShim | undefined {
+        return this.shim
+    }
+
+    public set credentialsShim(shim: CredentialsShim | undefined) {
+        this.shim = shim
     }
 
     /**
@@ -74,7 +72,12 @@ export class DefaultAwsContext implements AwsContext {
      * @description Gets the Credentials currently used by the Toolkit.
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.currentCredentials?.credentials
+        return (
+            this.shim?.get().catch(error => {
+                getLogger().warn(`credentials: failed to retrieve latest credentials: ${error.message}`)
+                return undefined
+            }) ?? this.currentCredentials?.credentials
+        )
     }
 
     // returns the configured profile, if any
@@ -97,42 +100,6 @@ export class DefaultAwsContext implements AwsContext {
         }
 
         return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
-    }
-
-    public async getExplorerRegions(): Promise<string[]> {
-        // (1a63f2a5fe05) "async to potentially support other ways of obtaining regions, e.g. from EC2 IMDS."
-        return this.explorerRegions
-    }
-
-    /**
-     * Adds a region(s) into the "preferred set", persisted as a comma-separated string.
-     *
-     * @param regions List of region ids (like `["us-west-2"]`)
-     */
-    public async addExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
-            if (index === -1) {
-                this.explorerRegions.push(r)
-            }
-        })
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-    }
-
-    /**
-     * Removes a region(s) from the user's "preferred set".
-     *
-     * @param regions List of region ids (like `["us-west-2"]`)
-     */
-    public async removeExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
-            if (index >= 0) {
-                this.explorerRegions.splice(index, 1)
-            }
-        })
-
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
     }
 
     private emitEvent() {

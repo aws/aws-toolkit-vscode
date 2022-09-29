@@ -4,123 +4,223 @@
  */
 
 import * as assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import * as messages from '../../../shared/utilities/messages'
-import { SSO, SSOServiceException, UnauthorizedException } from '@aws-sdk/client-sso'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
-import { instance, mock, when, reset, anything, verify } from '../../utilities/mockito'
-import { SsoClient } from '../../../credentials/sso/clients'
-import { SsoProvider } from '../../../credentials/providers/ssoCredentialProvider'
+import { installFakeClock } from '../../testUtil'
+import { getCache } from '../../../credentials/sso/cache'
+import * as vscode from 'vscode'
 
-describe('SsoProvider', () => {
-    const profileName = 'sso' as const
-    const ssoClient = mock(SSO)
-    const tokenProvider = mock(SsoAccessTokenProvider)
+import { instance, mock, when, anything, reset } from '../../utilities/mockito'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
+import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
+import { OidcClient } from '../../../credentials/sso/clients'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { InternalServerException, InvalidClientException, UnauthorizedClientException } from '@aws-sdk/client-sso-oidc'
 
-    const profile = {
-        ['sso_start_url']: 'https://d-92a70fe14d.awsapps.com/start',
-        ['sso_region']: 'us-east-1',
-        ['sso_account_id']: '01234567890',
-        ['sso_role_name']: 'AssumeRole',
+const HOUR_IN_MS = 3600000
+
+describe('SsoAccessTokenProvider', function () {
+    const region = 'fakeRegion'
+    const startUrl = 'fakeUrl'
+    const oidcClient = mock(OidcClient)
+
+    let sut: SsoAccessTokenProvider
+    let cache: ReturnType<typeof getCache>
+    let clock: FakeTimers.InstalledClock
+    let tempDir: string
+
+    function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
+        return {
+            accessToken: 'dummyAccessToken',
+            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            ...extras,
+        }
     }
 
-    let provider: SsoProvider
+    function createRegistration(timeDelta: number, extras: Partial<ClientRegistration> = {}) {
+        return {
+            scopes: [],
+            clientId: 'dummyClientId',
+            clientSecret: 'dummyClientSecret',
+            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            ...extras,
+        }
+    }
 
-    function createToken() {
-        return { accessToken: 'token', expiresAt: new Date() }
+    function createAuthorization(timeDelta: number) {
+        return {
+            interval: 1,
+            deviceCode: 'dummyCode',
+            verificationUriComplete: 'dummyLink',
+            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+        }
     }
 
     before(function () {
-        const tokenProviderInstance = instance(tokenProvider)
-        const ssoClientInstance = instance(ssoClient)
-        ssoClientInstance.middlewareStack = { add: () => {} } as any
-
-        sinon.stub(SsoClient, 'create').returns(new SsoClient(ssoClientInstance, tokenProviderInstance))
-        sinon.stub(SsoAccessTokenProvider, 'create').returns(tokenProviderInstance)
-        sinon.stub(messages, 'showConfirmationMessage').resolves(true)
+        clock = installFakeClock()
     })
 
     after(function () {
+        clock.uninstall()
+    })
+
+    beforeEach(async function () {
+        tempDir = await makeTemporaryToolkitFolder()
+        cache = getCache(tempDir)
+        sut = new SsoAccessTokenProvider({ region, startUrl }, cache, instance(oidcClient))
+    })
+
+    afterEach(async function () {
         sinon.restore()
+        clock.reset()
+        reset(oidcClient)
+        await tryRemoveFolder(tempDir)
     })
 
-    beforeEach(function () {
-        provider = new SsoProvider(profileName, { ...profile })
-    })
+    describe('getToken', function () {
+        it('returns a cached token', async function () {
+            const validToken = createToken(HOUR_IN_MS)
+            await cache.token.save(startUrl, { region, startUrl, token: validToken })
 
-    afterEach(function () {
-        reset(ssoClient)
-        reset(tokenProvider)
-    })
-
-    describe('getCredentials', () => {
-        it('invalidates cached access token if denied', async function () {
-            const exception = new UnauthorizedException({ $metadata: {} })
-
-            when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
-            when(tokenProvider.getToken()).thenResolve(createToken())
-            when(tokenProvider.invalidate()).thenResolve()
-
-            await assert.rejects(provider.getCredentials(), exception)
-            verify(tokenProvider.invalidate()).once()
+            assert.deepStrictEqual(await sut.getToken(), validToken)
         })
 
-        it('keeps cached token on server faults', async function () {
-            const exception = new SSOServiceException({ name: 'ServerError', $fault: 'server', $metadata: {} })
-            const provider = new SsoProvider(profileName, profile)
+        it('invalidates expired tokens', async function () {
+            const expiredToken = createToken(-HOUR_IN_MS)
+            await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
+            await sut.getToken()
 
-            when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
-            when(tokenProvider.getToken()).thenResolve(createToken())
-
-            await assert.rejects(provider.getCredentials(), exception)
-            verify(tokenProvider.invalidate()).never()
+            assert.strictEqual(await cache.token.load(startUrl), undefined)
         })
 
-        it('returns valid credentials', async () => {
-            const roleCredentials = {
-                expiration: 999,
-                accessKeyId: 'id',
-                secretAccessKey: 'secret',
-                sessionToken: 'session',
-            }
+        it('returns `undefined` for expired tokens that cannot be refreshed', async function () {
+            const expiredToken = createToken(-HOUR_IN_MS)
+            await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
 
-            when(ssoClient.getRoleCredentials(anything())).thenResolve({ $metadata: {}, roleCredentials })
-            when(tokenProvider.getToken()).thenResolve(createToken())
+            assert.strictEqual(await sut.getToken(), undefined)
+        })
 
-            assert.deepStrictEqual(await provider.getCredentials(), {
-                ...roleCredentials,
-                expiration: new Date(roleCredentials.expiration),
+        it('refreshes expired tokens', async function () {
+            const refreshedToken = createToken(HOUR_IN_MS, { accessToken: 'newToken' })
+            when(oidcClient.createToken(anything())).thenResolve(refreshedToken)
+
+            const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
+            const validRegistation = createRegistration(HOUR_IN_MS)
+            const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
+            await cache.token.save(startUrl, access)
+            assert.deepStrictEqual(await sut.getToken(), refreshedToken)
+
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            assert.deepStrictEqual(cachedToken, refreshedToken)
+        })
+
+        it('does not refresh if missing a client registration', async function () {
+            const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
+            await cache.token.save(startUrl, { region, startUrl, token: refreshableToken })
+
+            assert.strictEqual(await sut.getToken(), undefined)
+
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            assert.strictEqual(cachedToken, undefined)
+        })
+    })
+
+    describe('createToken', function () {
+        function stubOpen(userClicked = true) {
+            sinon.stub(vscode.env, 'openExternal').callsFake(async () => userClicked)
+        }
+
+        function setupFlow() {
+            const token = createToken(HOUR_IN_MS)
+            const registration = createRegistration(HOUR_IN_MS)
+            const authorization = createAuthorization(HOUR_IN_MS)
+
+            when(oidcClient.registerClient(anything())).thenResolve(registration)
+            when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+            when(oidcClient.pollForToken(anything(), anything(), anything())).thenResolve(token)
+
+            return { token, registration, authorization }
+        }
+
+        it('runs the full SSO flow', async function () {
+            const { token, registration } = setupFlow()
+            stubOpen()
+
+            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            assert.deepStrictEqual(cachedToken, token)
+            assert.deepStrictEqual(await cache.registration.load({ region }), registration)
+        })
+
+        it('always creates a new token, even if already cached', async function () {
+            const { token } = setupFlow()
+            stubOpen()
+
+            const cachedToken = createToken(HOUR_IN_MS, { accessToken: 'someOtherToken' })
+            await cache.token.save(startUrl, { region, startUrl, token: cachedToken })
+
+            assert.deepStrictEqual(await sut.getToken(), cachedToken)
+            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
+            assert.deepStrictEqual(await sut.getToken(), token)
+            assert.notDeepStrictEqual(await sut.getToken(), cachedToken)
+        })
+
+        describe('Exceptions', function () {
+            it('removes the client registration cache on client faults', async function () {
+                const exception = new UnauthorizedClientException({ $metadata: {} })
+                const registration = createRegistration(HOUR_IN_MS)
+
+                when(oidcClient.registerClient(anything())).thenResolve(registration)
+                when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
+
+                await assert.rejects(sut.createToken(), exception)
+                assert.strictEqual(await cache.registration.load({ region }), undefined)
+            })
+
+            it('removes the client registration cache on client faults (token step)', async function () {
+                const exception = new InvalidClientException({ $metadata: {} })
+                const registration = createRegistration(HOUR_IN_MS)
+
+                when(oidcClient.registerClient(anything())).thenResolve(registration)
+                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(createAuthorization(HOUR_IN_MS))
+                when(oidcClient.pollForToken(anything(), anything(), anything())).thenReject(exception)
+
+                stubOpen()
+
+                await assert.rejects(sut.createToken(), exception)
+                assert.strictEqual(await cache.registration.load({ region }), undefined)
+            })
+
+            it('preserves the client registration cache on server faults', async function () {
+                const exception = new InternalServerException({ $metadata: {} })
+                const registration = createRegistration(HOUR_IN_MS)
+
+                when(oidcClient.registerClient(anything())).thenResolve(registration)
+                when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
+
+                await assert.rejects(sut.createToken(), exception)
+                assert.deepStrictEqual(await cache.registration.load({ region }), registration)
             })
         })
-    })
 
-    describe('auto-connect', function () {
-        it('can auto-connect if a valid token is available', async function () {
-            when(tokenProvider.getToken()).thenResolve(createToken())
-            assert.strictEqual(await provider.canAutoConnect(), true)
-        })
+        describe('Cancellation', function () {
+            beforeEach(function () {
+                stubOpen(false)
+                setupFlow()
+            })
 
-        it('does not auto-connect when no token is present', async function () {
-            when(tokenProvider.getToken()).thenResolve(undefined)
-            assert.strictEqual(await provider.canAutoConnect(), false)
-        })
+            it('stops the flow if user does not click the link', async function () {
+                await assert.rejects(sut.createToken(), CancellationError)
+            })
 
-        it('does not auto-connect when `sso_start_url` is missing', async function () {
-            when(tokenProvider.getToken()).thenResolve(createToken())
-
-            const profileCopy = { ...profile, ['sso_start_url']: undefined }
-            const provider = new SsoProvider(profileName, profileCopy)
-
-            assert.strictEqual(await provider.canAutoConnect(), false)
-        })
-
-        it('does not auto-connect when `sso_region` is missing', async function () {
-            when(tokenProvider.getToken()).thenResolve(createToken())
-
-            const profileCopy = { ...profile, ['sso_region']: undefined }
-            const provider = new SsoProvider(profileName, profileCopy)
-
-            assert.strictEqual(await provider.canAutoConnect(), false)
+            it('saves the client registration even when cancelled', async function () {
+                const registration = createRegistration(HOUR_IN_MS)
+                await cache.registration.save({ region }, registration)
+                await assert.rejects(sut.createToken(), CancellationError)
+                const cached = await cache.registration.load({ region })
+                assert.deepStrictEqual(cached, registration)
+            })
         })
     })
 })

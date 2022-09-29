@@ -7,14 +7,13 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
-import { MockCloudControlClient } from '../../shared/clients/mockClients'
 import { deleteResource } from '../../../dynamicResources/commands/deleteResource'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 
 describe('deleteResource', function () {
     const FAKE_TYPE = 'fakeType'
     const FAKE_IDENTIFIER = 'fakeIdentifier'
-    const cloudControl: CloudControlClient = new MockCloudControlClient()
+    const cloudControl = new DefaultCloudControlClient('')
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {

@@ -103,6 +103,10 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._form
     }
 
+    public get initialState(): Readonly<Partial<TState>> | undefined {
+        return this.options.initState
+    }
+
     private _estimator: ((state: TState) => number) | undefined
     public set parentEstimator(estimator: (state: TState) => number) {
         this._estimator = estimator

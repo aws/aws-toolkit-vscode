@@ -138,9 +138,14 @@ export async function makePythonDebugConfig(
             // --ikpdb-protocol=vscode:
             //           For https://github.com/cmorisse/vscode-ikp3db
             //           Requires ikp3db 1.5 (unreleased): https://github.com/cmorisse/ikp3db/pull/12
-            config.debugArgs = [
-                `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`,
-            ]
+            const debugArgs = `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`
+
+            if (isImageLambda) {
+                const params = getPythonExeAndBootstrap(config.runtime)
+                config.debugArgs = [`${params.python} ${debugArgs} ${params.bootstrap}`]
+            } else {
+                config.debugArgs = [debugArgs]
+            }
         }
 
         manifestPath = await makePythonDebugManifest({
@@ -245,8 +250,6 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
     // unfortunately new 'Image'-base images did not standardize the paths
     // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
     switch (runtime) {
-        case 'python3.6':
-            return { python: '/var/lang/bin/python3.6', bootstrap: '/var/runtime/awslambda/bootstrap.py' }
         case 'python3.7':
             return { python: '/var/lang/bin/python3.7', bootstrap: '/var/runtime/bootstrap' }
         case 'python3.8':

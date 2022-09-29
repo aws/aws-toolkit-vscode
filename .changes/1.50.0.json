@@ -1,0 +1,22 @@
+{
+	"date": "2022-09-13",
+	"version": "1.50.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Debugging Python image-based lambdas fails with `Init failed error=exec: \"-m\": executable file not found`"
+		},
+		{
+			"type": "Feature",
+			"description": "if \"Create Credentials Profile\" fails, error message now shows \"Edit Credentials\" button"
+		},
+		{
+			"type": "Feature",
+			"description": "Decrease the amount of space SAM/CFN schemas take on the status bar"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer now supports .jsx files"
+		}
+	]
+}

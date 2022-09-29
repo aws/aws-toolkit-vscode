@@ -61,11 +61,11 @@ export class CredentialsStore {
         let credentials = await this.getCredentials(credentialsId)
 
         if (!credentials) {
-            credentials = await this.setCredentials(credentialsId, credentialsProvider)
+            credentials = await this.consumeProvider(credentialsId, credentialsProvider)
         } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode) {
             getLogger().verbose(`Using updated credentials: ${asString(credentialsId)}`)
             this.invalidateCredentials(credentialsId)
-            credentials = await this.setCredentials(credentialsId, credentialsProvider)
+            credentials = await this.consumeProvider(credentialsId, credentialsProvider)
         }
 
         return credentials
@@ -78,7 +78,14 @@ export class CredentialsStore {
         delete this.credentialsCache[asString(credentialsId)]
     }
 
-    private async setCredentials(
+    public async setCredentials(credentials: AWS.Credentials, provider: CredentialsProvider): Promise<void> {
+        this.credentialsCache[asString(provider.getCredentialsId())] = {
+            credentials,
+            credentialsHashCode: provider.getHashCode(),
+        }
+    }
+
+    private async consumeProvider(
         credentialsId: CredentialsId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {

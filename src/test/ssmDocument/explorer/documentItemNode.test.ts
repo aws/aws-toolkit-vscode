@@ -5,12 +5,11 @@
 
 import * as assert from 'assert'
 import { SSM } from 'aws-sdk'
-import * as sinon from 'sinon'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
+import { stub } from '../../utilities/stubber'
 
 describe('DocumentItemNode', async function () {
-    let sandbox: sinon.SinonSandbox
     let testNode: DocumentItemNode
     const testDoc: SSM.DocumentIdentifier = {
         Name: 'testDoc',
@@ -19,12 +18,8 @@ describe('DocumentItemNode', async function () {
     const fakeRegion = 'us-east-1'
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
-        testNode = new DocumentItemNode(testDoc, new MockSsmDocumentClient(), fakeRegion)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
+        const client = stub(DefaultSsmDocumentClient, { regionCode: fakeRegion })
+        testNode = new DocumentItemNode(testDoc, client, fakeRegion)
     })
 
     it('initializes name, owner, context value', async function () {

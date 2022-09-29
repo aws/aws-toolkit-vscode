@@ -10,15 +10,16 @@ import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 
 export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext) {
     const logger: Logger = getLogger()
 
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
 
     try {
         if (node.documentOwner === awsContext.getCredentialAccountId()) {
@@ -42,7 +43,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                     vscode.window.showInformationMessage(
                         localize(
                             'AWS.message.info.ssmDocument.updateDocumentVersion.success',
-                            'Updated document {0} default version to {1} successfully',
+                            'Updated document {0} default version to {1}',
                             node.documentName,
                             documentVersion
                         )
@@ -72,7 +73,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
         )
         logger.error('Error on updating document version: %0', error)
     } finally {
-        telemetry.recordSsmUpdateDocumentVersion({ result: result })
+        telemetry.ssm_updateDocumentVersion.emit({ result: result })
     }
 }
 

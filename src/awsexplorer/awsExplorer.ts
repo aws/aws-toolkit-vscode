@@ -8,7 +8,6 @@ import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilities'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -69,7 +68,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             })
         )
         this.extContext.subscriptions.push(
-            this.regionProvider.onRegionProviderUpdated(() => {
+            this.regionProvider.onDidChange(() => {
                 this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
                 this.refresh()
             })
@@ -81,6 +80,10 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
+        if (element) {
+            this.regionProvider.setLastTouchedRegion(element.regionCode)
+        }
+
         let childNodes: AWSTreeNodeBase[] = []
 
         try {
@@ -122,9 +125,8 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             return [this.ROOT_NODE_SIGN_IN]
         }
 
-        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
-
-        const userVisibleRegionCodes = await this.awsContext.getExplorerRegions()
+        const partitionRegions = this.regionProvider.getRegions()
+        const userVisibleRegionCodes = this.regionProvider.getExplorerRegions()
         const regionMap = toMap(partitionRegions, r => r.id)
 
         return await makeChildrenNodes({

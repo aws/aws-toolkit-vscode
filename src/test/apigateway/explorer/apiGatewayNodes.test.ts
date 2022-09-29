@@ -4,9 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
-import { RestApi } from 'aws-sdk/clients/apigateway'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
@@ -14,7 +11,8 @@ import {
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { stub } from '../../utilities/stubber'
 
 const FAKE_PARTITION_ID = 'aws'
 const FAKE_REGION_CODE = 'someregioncode'
@@ -34,26 +32,24 @@ const SORTED_TEXT = [
 ]
 
 describe('ApiGatewayNode', function () {
-    let sandbox: sinon.SinonSandbox
     let testNode: ApiGatewayNode
 
     let apiNames: { name: string; id: string }[]
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
+    function createClient() {
+        const client = stub(DefaultApiGatewayClient, { regionCode: FAKE_REGION_CODE })
+        client.listApis.callsFake(() => asyncGenerator(apiNames))
 
+        return client
+    }
+
+    beforeEach(function () {
         apiNames = [
             { name: 'api1', id: '11111' },
             { name: 'api2', id: '22222' },
         ]
 
-        initializeClientBuilders()
-
-        testNode = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
+        testNode = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -82,32 +78,10 @@ describe('ApiGatewayNode', function () {
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createClient()
+        client.listApis.throws(new Error())
 
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        const node = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE, client)
+        assertNodeListOnlyContainsErrorNode(await node.getChildren())
     })
-
-    function initializeClientBuilders() {
-        const apiGatewayClient = {
-            listApis: sandbox.stub().callsFake(() => {
-                return asyncGenerator<RestApi>(
-                    apiNames.map<RestApi>(({ name, id }) => {
-                        return {
-                            name,
-                            id,
-                        }
-                    })
-                )
-            }),
-        }
-
-        const clientBuilder = {
-            createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

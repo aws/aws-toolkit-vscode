@@ -5,10 +5,14 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
-import { isNameMangled } from './env'
-import { UnknownError } from '../toolkitError'
+import { isAutomation, isNameMangled } from './env'
+import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { getLogger, NullLogger } from '../logger/logger'
+import { LoginManager } from '../../credentials/loginManager'
+import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
+import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
+import { DefaultTelemetryService } from '../telemetry/telemetryService'
+import { telemetry } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -69,15 +73,28 @@ export class Commands {
                 throw new Error(`Command "${id}" cannot be re-registered`)
             }
 
-            return new CommandResource<Callback>({ id, factory: throwOnRegister }, this.commands)
+            const info = { id }
+            return new CommandResource<Callback>({ info, factory: throwOnRegister }, this.commands)
         }
     }
 
     /**
      * Registers a new command with the VS Code API.
+     *
+     * @param info command id (string) or {@link CommandInfo} object
+     * @param callback command implementation
      */
-    public register<T extends Callback>(id: string, callback: T): RegisteredCommand<T> {
-        const resource = new CommandResource({ id, factory: () => callback }, this.commands)
+    public register<T extends Callback>(
+        info: string | Omit<CommandInfo<T>, 'args' | 'label'>,
+        callback: T
+    ): RegisteredCommand<T> {
+        const resource = new CommandResource(
+            {
+                info: typeof info === 'string' ? { id: info } : info,
+                factory: () => callback,
+            },
+            this.commands
+        )
 
         return this.addResource(resource).register()
     }
@@ -89,10 +106,10 @@ export class Commands {
      * not just the command signature but also its immediate dependencies.
      */
     public declare<T extends Callback, D extends any[]>(
-        id: string | { id: string; name: string },
+        id: string | Omit<CommandInfo<T>, 'args' | 'label'>,
         factory: CommandFactory<T, D>
     ): DeclaredCommand<T, D> {
-        const resource = typeof id === 'string' ? { id, factory } : { ...id, factory }
+        const resource = typeof id === 'string' ? { info: { id }, factory } : { info: { ...id }, factory }
 
         return this.addResource(new CommandResource(resource, this.commands))
     }
@@ -121,7 +138,7 @@ export class Commands {
 
         for (const [k, v] of Object.entries<Callback>(getFunctions(target))) {
             const mappedKey = `declare${toTitleCase(k)}`
-            const name = !isNameMangled() ? `${target.name}.${k}` : ''
+            const name = !isNameMangled() ? `${target.name}.${k}` : undefined
 
             result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
         }
@@ -134,9 +151,9 @@ export class Commands {
     }
 
     private addResource<T extends Callback, U extends any[]>(resource: CommandResource<T, U>): CommandResource<T, U> {
-        const registered = this.resources.get(resource.id)
+        const previous = this.resources.get(resource.id)
 
-        if (registered?.declared) {
+        if (previous !== undefined) {
             throw new Error(`Command "${resource.id}" has already been declared by the Toolkit`)
         }
 
@@ -170,9 +187,6 @@ export class Commands {
     public static readonly from = this.instance.from.bind(this.instance)
 }
 
-type Functions<T> = { [P in keyof T]: T[P] extends Callback ? T[P] : never }
-type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : never }[keyof T]
-
 interface Declare<T, F extends Callback> {
     (id: string): DeclaredCommand<F, [target: T]>
 }
@@ -181,45 +195,18 @@ type Declarables<T> = {
     [P in FunctionKeys<T> as `declare${Capitalize<P & string>}`]: Declare<T, Functions<T>[P]>
 }
 
-/**
- * Returns all functions found on the target's prototype chain.
- *
- * Conflicts from functions sharing the same key are resolved by order of appearance, earlier
- * functions given precedence. This is equivalent to how the prototype chain is traversed when
- * evaluating `target[key]`, so long as the property descriptor is not a 'getter' function.
- */
-function getFunctions<T>(target: new (...args: any[]) => T): Functions<T> {
-    const result = {} as Functions<T>
-
-    for (const k of Object.getOwnPropertyNames(target.prototype)) {
-        if (typeof target.prototype[k] === 'function') {
-            result[k as keyof T] = target.prototype[k]
-        }
-    }
-
-    const next = Object.getPrototypeOf(target)
-    return next && next.prototype ? { ...getFunctions(next), ...result } : result
-}
-
-// TODO(sijaden): implement decoupled tree-view, then move this
-type ExcludedKeys = 'id' | 'label' | 'collapsibleState'
-interface LabeledTreeItem extends Omit<vscode.TreeItem, ExcludedKeys> {
-    readonly label: string
-}
-
 type PartialCommand = Omit<vscode.Command, 'arguments' | 'command'>
-type PartialTreeItem = Omit<LabeledTreeItem, 'command'>
+type PartialTreeItem = Omit<TreeItemContent, 'command'>
 
 interface Builder {
     asUri(): vscode.Uri
     asCommand(content: PartialCommand): vscode.Command
-    asTreeNode(content: PartialTreeItem): AWSTreeNodeBase
+    asTreeNode(content: PartialTreeItem): TreeNode<Command>
     asCodeLens(range: vscode.Range, content: PartialCommand): vscode.CodeLens
 }
 
 interface Deferred<T extends Callback, U extends any[]> {
-    readonly id: string
-    readonly name?: string
+    readonly info: Omit<CommandInfo<T>, 'args' | 'label'>
     readonly factory: CommandFactory<T, U>
 }
 
@@ -231,23 +218,18 @@ interface Deferred<T extends Callback, U extends any[]> {
  * by the singleton.
  */
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
-    private disposed?: boolean
-    private subscription?: vscode.Disposable
-    private static counter = 0 // Used to generated unique-ish tree item IDs
-    public readonly id = this.resource.id
+    private subscription: vscode.Disposable | undefined
+    private idCounter = 0
+    public readonly id = this.resource.info.id
 
     public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
-
-    public get declared() {
-        return !this.disposed
-    }
 
     public get registered() {
         return !!this.subscription
     }
 
     public build(...args: Parameters<T>): Builder {
-        const id = this.resource.id
+        const id = this.resource.info.id
 
         return {
             asUri: this.buildUri(id, args),
@@ -258,22 +240,30 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     }
 
     public register(...args: U): RegisteredCommand<T> {
-        const { id, name } = this.resource
+        const { id, name } = this.resource.info
         const label = name ? `"${name}" (id: ${id})` : `"${id}"`
         const target = this.resource.factory(...args)
-        const instrumented = (...args: Parameters<T>) => runCommand(target, { label, args })
-        this.subscription = this.commands.registerCommand(this.resource.id, instrumented)
+        const instrumented = (...args: Parameters<T>) => {
+            const info: CommandInfo<T> = {
+                ...this.resource.info,
+                id: id,
+                label: label,
+                args: args,
+            }
+            return runCommand(target, info)
+        }
+        this.subscription = this.commands.registerCommand(this.resource.info.id, instrumented)
 
         return this
     }
 
     public async execute(...args: Parameters<T>): Promise<ReturnType<T> | undefined> {
-        return this.commands.executeCommand<ReturnType<T>>(this.resource.id, ...args)
+        return this.commands.executeCommand<ReturnType<T>>(this.resource.info.id, ...args)
     }
 
     public dispose(): void {
-        this.disposed = true
         this.subscription?.dispose()
+        this.subscription = undefined
     }
 
     private buildUri(id: string, args: unknown[]) {
@@ -292,48 +282,110 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
 
     private buildTreeNode(id: string, args: unknown[]) {
         return (content: PartialTreeItem) => {
-            return new (class extends AWSTreeNodeBase {
-                public constructor() {
-                    super(content.label, vscode.TreeItemCollapsibleState.None)
-                    this.id = `${id}-${(CommandResource.counter += 1)}`
-                    this.command = { command: id, arguments: args, title: content.label }
+            const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
+            Object.assign(treeItem, {
+                ...content,
+                command: { command: id, arguments: args, title: content.label },
+            })
 
-                    Object.assign(this, content)
-                }
-            })()
+            return {
+                id: `${id}-${(this.idCounter += 1)}`,
+                resource: this,
+                getTreeItem: () => treeItem,
+            }
         }
     }
 }
 
 interface CommandInfo<T extends Callback> {
-    readonly label: string
+    readonly id: string
+    readonly name?: string
+    /** Display label, generated from id + name. */
+    readonly label?: string
     readonly args: Parameters<T>
     readonly logging?: boolean
-    readonly errorHandler?: (error: Error) => ReturnType<T> | void
+    /** Does the command require credentials? (default: false) */
+    readonly autoconnect?: boolean
+}
+
+// This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
+// commands with telemetry at once. The alternative is to do a gradual rollout although
+// it's not much safer in terms of weeding out problematic commands.
+const emitInfo = new Map<string, { token: number; startTime: number; debounceCounter: number }>()
+const emitTokens: Record<string, number> = {}
+
+function startRecordCommand(id: string): number {
+    const currentTime = Date.now()
+    const previousEmit = emitInfo.get(id)
+    const threshold = isAutomation() ? 0 : DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
+    const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
+
+    if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
+        emitInfo.set(id, { ...previousEmit, debounceCounter: previousEmit.debounceCounter + 1 })
+        return token
+    }
+
+    emitInfo.set(id, { token, startTime: currentTime, debounceCounter: previousEmit?.debounceCounter ?? 0 })
+    return token
+}
+
+function endRecordCommand(id: string, token: number, err?: unknown) {
+    const data = emitInfo.get(id)
+    const currentTime = Date.now()
+
+    if (token !== data?.token) {
+        getLogger().debug(`commands: skipped telemetry for "${id}"`)
+        return
+    }
+
+    emitInfo.set(id, { ...data, debounceCounter: 0 })
+
+    telemetry.vscode_executeCommand.emit({
+        command: id,
+        debounceCount: data.debounceCounter,
+        result: getTelemetryResult(err),
+        reason: getTelemetryReason(err),
+        duration: currentTime - data.startTime,
+    })
 }
 
 async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | undefined> {
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
-
-    // TODO(sijaden): add telemetry instrumentation here
+    const telemetryToken = startRecordCommand(info.id)
 
     logger.debug(`command: running ${label}${withArgs}`)
 
     try {
+        if (info.autoconnect === true) {
+            await LoginManager.tryAutoConnect()
+        }
+
         const result = await fn(...args)
-        logger.debug(`command: ${label} succeeded`)
+        logging && endRecordCommand(info.id, telemetryToken)
 
         return result
     } catch (error) {
-        // We should refrain from calling into extension-specific code directly from this module to avoid
-        // dependency issues. A "global" error handler may be added at a later date.
-        if (info.errorHandler) {
-            return info.errorHandler(UnknownError.cast(error)) ?? undefined
+        logging && endRecordCommand(info.id, telemetryToken, error)
+
+        if (errorHandler !== undefined) {
+            await errorHandler(info, error)
         } else {
-            logger.error(`command: ${label} failed: %O`, error)
+            logger.error(`command: ${label} failed without error handler: %O`, error)
             throw error
         }
     }
+}
+
+// Error handling may involve other Toolkit modules and so it must be defined and registered at
+// the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
+// This file should contain as little application-specific logic as possible.
+let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => Promise<void> | void
+export function registerErrorHandler(handler: typeof errorHandler): void {
+    if (errorHandler !== undefined) {
+        throw new TypeError('Error handler has already been registered')
+    }
+
+    errorHandler = handler
 }

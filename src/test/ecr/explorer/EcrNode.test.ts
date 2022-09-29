@@ -5,8 +5,7 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -19,7 +18,7 @@ describe('EcrNode', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = new DefaultEcrClient('')
     })
 
     afterEach(function () {
@@ -78,7 +77,7 @@ describe('EcrRepositoryNode', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = new DefaultEcrClient('')
     })
 
     afterEach(function () {

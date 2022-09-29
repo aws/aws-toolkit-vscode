@@ -11,3 +11,7 @@ const DEFAULT_TAB_SIZE = 4
 export function getTabSizeSetting(): number {
     return Settings.instance.getSection('editor').get('tabSize', DEFAULT_TAB_SIZE)
 }
+
+export function getInlineSuggestEnabled(): boolean {
+    return Settings.instance.getSection('editor').get('inlineSuggest.enabled', true)
+}

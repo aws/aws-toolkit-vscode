@@ -3,20 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../shared/extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
+import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
-
-import * as nls from 'vscode-nls'
-import globals from '../shared/extensionGlobals'
-const localize = nls.loadMessageBundle()
+import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
+import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
+import { ToolkitError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -33,36 +38,50 @@ export async function activate(
     initializeCodeLens(extensionContext)
 }
 
+/*
+ * TODO: Determine behaviour when command is run against bad input, or
+ * non-json files. Determine if we want to limit the command to only a
+ * specifc subset of file types ( .json only, custom .states extension, etc...)
+ * Ensure tests are written for this use case as well.
+ */
+export const previewStateMachineCommand = Commands.declare(
+    'aws.previewStateMachine',
+    (globalState: vscode.Memento, manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
+        try {
+            arg ??= vscode.window.activeTextEditor
+            const input = arg instanceof vscode.Uri ? arg : arg?.document
+
+            if (!input) {
+                throw new ToolkitError('No active text editor or document found')
+            }
+
+            return await manager.visualizeStateMachine(globalState, input)
+        } finally {
+            // TODO: Consider making the metric reflect the success/failure of the above call
+            telemetry.stepfunctions_previewstatemachine.emit()
+        }
+    }
+)
+
 async function registerStepFunctionCommands(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const visualizationManager = new AslVisualizationManager(extensionContext)
+    const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.previewStateMachine', async (input?: vscode.TextEditor | vscode.Uri) => {
-            try {
-                return await visualizationManager.visualizeStateMachine(extensionContext.globalState, input)
-            } finally {
-                // TODO: Consider making the metric reflect the success/failure of the above call
-                telemetry.recordStepfunctionsPreviewstatemachine()
-            }
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.stepfunctions.createStateMachineFromTemplate', async () => {
+        previewStateMachineCommand.register(extensionContext.globalState, visualizationManager),
+        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager),
+        Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
             } finally {
-                telemetry.recordStepfunctionsCreateStateMachineFromTemplate()
+                telemetry.stepfunctions_createStateMachineFromTemplate.emit()
             }
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async (node?: any) => {
+        }),
+        Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {
             const region: string | undefined = node?.regionCode
             await publishStateMachine(awsContext, outputChannel, region)
         })
@@ -77,15 +96,15 @@ export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof 
     const visualizationLibraryCache = join(context.globalStorageUri.fsPath, 'visualization')
 
     return {
-        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('media', 'js'))),
-        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))),
+        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js'))),
+        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js', 'graphStateMachine.js'))),
         visualizationLibraryCachePath: vscode.Uri.file(visualizationLibraryCache),
         visualizationLibraryScript: vscode.Uri.file(join(visualizationLibraryCache, 'graph.js')),
         visualizationLibraryCSS: vscode.Uri.file(join(visualizationLibraryCache, 'graph.css')),
         // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('media', 'css'))),
+        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'css'))),
         stateMachineCustomThemeCSS: vscode.Uri.file(
-            context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
+            context.asAbsolutePath(join('resources', 'css', 'stateMachineRender.css'))
         ),
     }
 }
@@ -95,11 +114,9 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
             const topOfDocument = new vscode.Range(0, 0, 0, 0)
 
-            const renderCommand: vscode.Command = {
-                command: 'aws.previewStateMachine',
+            const renderCodeLens = previewStateMachineCommand.build().asCodeLens(topOfDocument, {
                 title: localize('AWS.stepFunctions.render', 'Render graph'),
-            }
-            const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
+            })
 
             if (ASL_FORMATS.includes(document.languageId)) {
                 const publishCommand: vscode.Command = {

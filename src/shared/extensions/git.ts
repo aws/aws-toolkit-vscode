@@ -252,7 +252,12 @@ export class GitExtension {
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
             try {
-                const { stdout } = await execFileAsync(api.git.path, ['ls-remote', '--heads', remote.fetchUrl ?? ''])
+                const { stdout } = await execFileAsync(api.git.path, [
+                    'ls-remote',
+                    '--heads',
+                    '--',
+                    remote.fetchUrl ?? '',
+                ])
                 return stdout
                     .toString()
                     .split(/\r?\n/)
@@ -364,6 +369,7 @@ export class GitExtension {
 
                         return execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
+                            maxBuffer: 1024 * 1024 * 5,
                         }).then(({ stdout }) => stdout)
                     },
                 }))

@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdirSync, writeFileSync } from 'fs'
-import * as path from 'path'
 import * as vscode from 'vscode'
 import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
-import * as filesystemUtilities from './filesystemUtilities'
+import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
-import { CompositeResourceFetcher } from './resourcefetcher/compositeResourceFetcher'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
 import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
+import { AWS_SCHEME } from './constants'
+import { writeFile } from 'fs-extra'
+import { SystemUtilities } from './systemUtilities'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const SCHEMA_PREFIX = `${AWS_SCHEME}://`
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -31,7 +31,10 @@ export interface SchemaMapping {
 }
 
 export interface SchemaHandler {
+    /** Adds or removes a schema mapping to the given `schemas` collection. */
     handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void>
+    /** Returns true if the given file path is handled by this `SchemaHandler`. */
+    isMapped(f: vscode.Uri | string): boolean
 }
 
 /**
@@ -50,6 +53,7 @@ export class SchemaService {
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
         opts?: {
+            /** Assigned in start(). */
             schemas?: Schemas
             updatePeriod?: number
             handlers?: Map<SchemaType, SchemaHandler>
@@ -65,13 +69,31 @@ export class SchemaService {
             ])
     }
 
+    public isMapped(uri: vscode.Uri): boolean {
+        for (const h of this.handlers.values()) {
+            if (h.isMapped(uri)) {
+                return true
+            }
+        }
+        return false
+    }
+
     public async start(): Promise<void> {
         getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
         await this.startTimer()
     }
 
-    public registerMapping(mapping: SchemaMapping): void {
+    /**
+     * Registers a schema mapping in the schema service.
+     *
+     * @param mapping
+     * @param flush Flush immediately instead of waiting for timer.
+     */
+    public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
         this.updateQueue.push(mapping)
+        if (flush === true) {
+            this.processUpdates()
+        }
     }
 
     public async processUpdates(): Promise<void> {
@@ -118,35 +140,36 @@ export class SchemaService {
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     try {
-        // Convert the paths to URIs which is what the YAML extension expects
-        const cfnSchemaUri = vscode.Uri.file(
-            normalizeSeparator(path.join(extensionContext.globalStorageUri.fsPath, 'cloudformation.schema.json'))
-        )
-        const samSchemaUri = vscode.Uri.file(
-            normalizeSeparator(path.join(extensionContext.globalStorageUri.fsPath, 'sam.schema.json'))
-        )
+        const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
+        const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+
         const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
-        await getRemoteOrCachedFile({
-            filepath: cfnSchemaUri.fsPath,
+        await updateSchemaFromRemote({
+            destination: cfnSchemaUri,
             version: goformationSchemaVersion,
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
             cacheKey: 'cfnSchemaVersion',
             extensionContext,
+            title: SCHEMA_PREFIX + 'cloudformation.schema.json',
         })
-        await getRemoteOrCachedFile({
-            filepath: samSchemaUri.fsPath,
+        await updateSchemaFromRemote({
+            destination: samSchemaUri,
             version: goformationSchemaVersion,
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
+            title: SCHEMA_PREFIX + 'sam.schema.json',
         })
+
         return {
             cfn: cfnSchemaUri,
             sam: samSchemaUri,
         }
     } catch (e) {
         getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
+        // this.schemas will be undefined for the rest of the session, so
+        // processUpdates() will never do its work.
         return undefined
     }
 }
@@ -160,39 +183,52 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
  * @param params.cacheKey Cache key to check version against
  * @param params.extensionContext VSCode extension context
  */
-export async function getRemoteOrCachedFile(params: {
-    filepath: string
+export async function updateSchemaFromRemote(params: {
+    destination: vscode.Uri
     version?: string
     url: string
     cacheKey: string
     extensionContext: vscode.ExtensionContext
-}): Promise<string> {
-    const dir = path.parse(params.filepath).dir
-    if (!(await filesystemUtilities.fileExists(dir))) {
-        mkdirSync(dir, { recursive: true })
-    }
+    title: string
+}): Promise<void> {
     const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
-    const fetchers: ResourceFetcher[] = []
-    if (params.version && params.version !== cachedVersion) {
-        fetchers.push(
-            new HttpResourceFetcher(params.url, {
-                showUrl: true,
-                // updates curr version
-                onSuccess: contents => {
-                    writeFileSync(params.filepath, contents)
-                    params.extensionContext.globalState.update(params.cacheKey, params.version)
-                },
-            })
-        )
-    }
-    fetchers.push(new FileResourceFetcher(params.filepath))
-    const fetcher = new CompositeResourceFetcher(...fetchers)
+    const outdated = params.version && params.version !== cachedVersion
 
-    const result = await fetcher.get()
-    if (!result) {
-        throw new Error(`could not resolve schema at ${params.filepath}`)
+    // Check that the cached file actually can be fetched. Else we might
+    // never update the cache.
+    const fileFetcher = new FileResourceFetcher(params.destination.fsPath)
+    const cachedContent = await fileFetcher.get()
+
+    if (!outdated && cachedContent) {
+        return
     }
-    return result
+
+    try {
+        const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
+        const content = await httpFetcher.get()
+
+        if (!content) {
+            throw new Error(`failed to resolve schema: ${params.destination}`)
+        }
+
+        const parsedFile = { ...JSON.parse(content), title: params.title }
+        const dir = vscode.Uri.joinPath(params.destination, '..')
+        await SystemUtilities.createDirectory(dir)
+        await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+        await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
+            getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
+        })
+    } catch (err) {
+        if (cachedContent) {
+            getLogger().warn(
+                `schemas: failed to fetch the latest version for "${params.title}": ${
+                    (err as Error).message
+                }. Using cached schema instead.`
+            )
+        } else {
+            throw err
+        }
+    }
 }
 
 /**
@@ -254,6 +290,15 @@ async function addCustomTags(config = Settings.instance): Promise<void> {
 export class YamlSchemaHandler implements SchemaHandler {
     public constructor(private yamlExtension?: YamlExtension) {}
 
+    isMapped(file: string | vscode.Uri): boolean {
+        if (!this.yamlExtension) {
+            return false
+        }
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const exists = !!this.yamlExtension?.getSchema(uri)
+        return exists
+    }
+
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         if (!this.yamlExtension) {
             const ext = await activateYamlExtension()
@@ -281,6 +326,31 @@ export class JsonSchemaHandler implements SchemaHandler {
 
     public constructor(private readonly config = Settings.instance) {}
 
+    public isMapped(file: string | vscode.Uri): boolean {
+        const setting = this.getSettingBy({ file: file })
+        return !!setting
+    }
+
+    /**
+     * Gets a json schema setting by filtering on schema path and/or file path.
+     * @param args.schemaPath Path to the schema file
+     * @param args.file Path to the file being edited by the user
+     */
+    private getSettingBy(args: {
+        schemaPath?: string | vscode.Uri
+        file?: string | vscode.Uri
+    }): JSONSchemaSettings | undefined {
+        const path = typeof args.file === 'string' ? args.file : args.file?.fsPath
+        const schm = typeof args.schemaPath === 'string' ? args.schemaPath : args.schemaPath?.fsPath
+        const settings = this.getJsonSettings()
+        const setting = settings.find(schema => {
+            const schmMatch = schm && schema.url && pathutil.normalize(schema.url) === pathutil.normalize(schm)
+            const fileMatch = path && schema.fileMatch && schema.fileMatch.includes(path)
+            return (!path || fileMatch) && (!schm || schmMatch)
+        })
+        return setting
+    }
+
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         await this.clean()
 
@@ -288,7 +358,7 @@ export class JsonSchemaHandler implements SchemaHandler {
 
         if (mapping.schema) {
             const uri = resolveSchema(mapping.schema, schemas).toString()
-            const existing = settings.find(schema => schema.url === uri)
+            const existing = this.getSettingBy({ schemaPath: uri })
 
             if (existing) {
                 if (!existing.fileMatch) {

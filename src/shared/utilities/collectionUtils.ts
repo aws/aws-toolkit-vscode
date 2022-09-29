@@ -137,6 +137,21 @@ export function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean
     return result
 }
 
+/**
+ * Gets the first item matching predicate, or undefined.
+ */
+export async function findAsync<T>(
+    sequence: Iterable<T>,
+    predicate: (item: T) => Promise<boolean>
+): Promise<T | undefined> {
+    for (const item of sequence) {
+        if (await predicate(item)) {
+            return item
+        }
+    }
+    return undefined
+}
+
 export async function* filterAsync<T>(
     sequence: Iterable<T>,
     condition: (item: T) => Promise<boolean>
@@ -262,16 +277,17 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]): T[] {
 }
 
 /**
- * Applies `settings` to a base object. The shared properties between the settings and the object must have the
- * same types, enforced by the TypeScript compiler. Will only apply primitives. Silently ignores objects.
+ * Nearly equivalent to {@link Object.assign} except that `undefined` values are ignored.
+ *
+ * Directly mutates {@link target}. The function signature should be read as assigning {@link data}
+ * _into_ {@link target}.
  */
-export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(obj: T2, settings: T1): void {
-    const clone = Object.assign({}, settings)
-    Object.keys(clone)
-        .filter(key => typeof clone[key] === 'object' || clone[key] === undefined)
-        .forEach(key => delete clone[key])
-
-    Object.assign(obj, clone)
+export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T, target: U): asserts target is T & U {
+    for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) {
+            target[k as keyof U] = v
+        }
+    }
 }
 
 /** Recursively delete undefined key/value pairs */

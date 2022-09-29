@@ -13,11 +13,9 @@ import * as vscode from 'vscode'
 import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
@@ -30,7 +28,7 @@ import {
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
 
-import { EcrRepository } from '../../shared/clients/ecrClient'
+import { DefaultEcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
@@ -41,6 +39,9 @@ import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
+import { getIcon } from '../../shared/icons'
+import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -349,10 +350,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForRegion(step: number, initialRegionCode?: string): Promise<string | undefined> {
-        const partitionRegions = getRegionsForActiveCredentials(
-            this.extContext.awsContext,
-            this.extContext.regionProvider
-        )
+        const partitionRegions = this.extContext.regionProvider.getRegions()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -417,17 +415,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     ): Promise<string | undefined> {
         const createBucket = {
-            iconPath: {
-                light: vscode.Uri.file(globals.iconPaths.light.plus),
-                dark: vscode.Uri.file(globals.iconPaths.dark.plus),
-            },
+            iconPath: getIcon('vscode-add'),
             tooltip: CREATE_NEW_BUCKET,
         }
         const enterBucket = {
-            iconPath: {
-                light: vscode.Uri.file(globals.iconPaths.light.edit),
-                dark: vscode.Uri.file(globals.iconPaths.dark.edit),
-            },
+            iconPath: getIcon('vscode-edit'),
             tooltip: ENTER_BUCKET,
         }
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
@@ -549,7 +541,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
 
         const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => globals.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
+            () => new DefaultEcrClient(selectedRegion).describeRepositories(),
             response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
         )
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
@@ -801,20 +793,20 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = globals.toolkitClientBuilder.createS3Client(this.response.region!)
+                const s3Client = new DefaultS3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
                 vscode.window.showInformationMessage(
                     localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
                 )
-                telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+                telemetry.s3_createBucket.emit({ result: 'Succeeded' })
             } catch (e) {
                 showViewLogsMessage(
                     localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
                     vscode.window
                 )
-                telemetry.recordS3CreateBucket({ result: 'Failed' })
+                telemetry.s3_createBucket.emit({ result: 'Failed' })
                 return WIZARD_RETRY
             }
         } else if (response === ENTER_BUCKET) {
@@ -1004,7 +996,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = globals.toolkitClientBuilder.createS3Client(selectedRegion)
+            const s3Client = new DefaultS3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 

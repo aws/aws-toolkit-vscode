@@ -9,12 +9,12 @@ import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
+import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 
 const testTempDirs: string[] = []
 
@@ -111,7 +111,7 @@ export function createExecutableFile(filepath: string, contents: string): void {
     if (process.platform === 'win32') {
         fs.writeFileSync(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        fs.writeFileSync(filepath, contents)
+        fs.writeFileSync(filepath, `#!/bin/sh\n${contents}`)
         fs.chmodSync(filepath, 0o744)
     }
 }
@@ -130,66 +130,30 @@ export function installFakeClock(): FakeTimers.InstalledClock {
     })
 }
 
-type Telemetry = Omit<typeof telemetry, 'millisecondsSince'>
-// hard-coded, need significant updates to the codgen to make these kinds of things easier
-type Namespace =
-    | 'vpc'
-    | 'sns'
-    | 'sqs'
-    | 's3'
-    | 'session'
-    | 'schemas'
-    | 'sam'
-    | 'redshift'
-    | 'rds'
-    | 'lambda'
-    | 'aws'
-    | 'ecs'
-    | 'ecr'
-    | 'cdk'
-    | 'apprunner'
-    | 'dynamicresource'
-    | 'toolkit'
-    | 'cloudwatchinsights'
-    | 'iam'
-    | 'ec2'
-    | 'dynamodb'
-    | 'codecommit'
-    | 'cloudwatchlogs'
-    | 'beanstalk'
-    | 'cloudfront'
-    | 'apigateway'
-    | 'vscode'
-type NameFromFunction<T extends keyof Telemetry> = T extends `record${infer P}`
-    ? Uncapitalize<P> extends `${Namespace}${infer L}`
-        ? Uncapitalize<P> extends `${infer N}${L}`
-            ? `${N}_${Uncapitalize<L>}`
-            : never
-        : never
-    : never
-type MetricName = NameFromFunction<keyof Telemetry>
-type FunctionNameFromName<S extends MetricName> = S extends `${infer N}_${infer M}`
-    ? `record${Capitalize<N>}${Capitalize<M>}`
-    : never
-type FunctionFromName<S extends MetricName> = FunctionNameFromName<S> extends keyof Telemetry
-    ? Telemetry[FunctionNameFromName<S>]
-    : never
-type TelemetryMetric<K extends MetricName> = NonNullable<Parameters<FunctionFromName<K>>[0]>
-
 /**
+ * Gets all recorded metrics with the corresponding name.
+ *
+ * Unlike {@link assertTelemetry}, this function does not do any transformations to
+ * handle fields being converted into strings. It will also not return `passive` or `value`.
+ */
+export function getMetrics<K extends MetricName>(name: K, ...filters: string[]): readonly Partial<MetricShapes[K]>[] {
+    const query = { metricName: name, filters: ['awsAccount', ...filters] }
+
+    return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
+}
+
+/*
  * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
  * match the expected values.
  */
-export function assertTelemetry<K extends MetricName>(name: K, expected: TelemetryMetric<K>): void | never {
-    const expectedCopy = { ...(expected as Record<string, unknown>) } as NonNullable<
-        Parameters<Telemetry[keyof Telemetry]>[0]
-    >
+export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
+    const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
-    const query = { metricName: name, filters: ['awsAccount'] }
+    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
     delete expectedCopy['passive']
 
     Object.keys(expectedCopy).forEach(
-        k => ((expectedCopy as Record<string, string>)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+        k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
     )
 
     const metadata = globals.telemetry.logger.query(query)
@@ -207,7 +171,7 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: Telemet
  */
 export const assertTelemetryCurried =
     <K extends MetricName>(name: K) =>
-    (expected: TelemetryMetric<K>) =>
+    (expected: MetricShapes[K]) =>
         assertTelemetry(name, expected)
 
 /**
@@ -242,26 +206,32 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 }
 
 /**
- * Executes the close all editors command and waits for all visible editors to disappear
+ * Executes the "openEditors.closeAll" command and asserts that all visible
+ * editors were closed after waiting.
  */
-export async function closeAllEditors(): Promise<unknown> {
-    if ((await vscode.commands.getCommands()).includes('openEditors.closeAll')) {
+export async function closeAllEditors(): Promise<void> {
+    const hasCloseAll = (await vscode.commands.getCommands()).includes('openEditors.closeAll')
+    // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
+    // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
+    const closeAllCmd = hasCloseAll ? 'openEditors.closeAll' : 'workbench.action.closeAllEditors'
+    if (hasCloseAll) {
         if (isMinimumVersion() && !isReleaseVersion()) {
-            throw Error('openEditors.closeAll is available in min version, remove me!')
+            throw Error(
+                '"openEditors.closeAll" is available in min version, remove use of "workbench.action.closeAllEditors"!'
+            )
         }
-        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-        // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
-        return await vscode.commands.executeCommand('openEditors.closeAll')
     }
 
-    // Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+    // Output channels are named with the prefix 'extension-output'
+    // Maybe we can close these with a command?
+    const ignorePatterns = [/extension-output/, /tasks/]
 
-    // The output channel counts as an editor, but you can't really close that...
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
+            // Race: documents could appear after the call to closeAllEditors(), so retry.
+            await vscode.commands.executeCommand(closeAllCmd)
             const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+                editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
             )
 
             return visibleEditors.length === 0
@@ -274,10 +244,8 @@ export async function closeAllEditors(): Promise<unknown> {
     )
 
     if (!noVisibleEditor) {
-        throw new Error(
-            `Editor "${
-                vscode.window.activeTextEditor!.document.fileName
-            }" was still open after executing "closeAllEditors"`
-        )
+        const editors = vscode.window.visibleTextEditors.map(editor => `\t${editor.document.fileName}`)
+
+        throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
     }
 }

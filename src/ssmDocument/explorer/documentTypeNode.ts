@@ -13,12 +13,17 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { amazonRegistryName, RegistryItemNode, sharedRegistryName, userRegistryName } from './registryItemNode'
+import { DefaultSsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 export class DocumentTypeNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
     private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
 
-    public constructor(public readonly regionCode: string, public documentType: string) {
+    public constructor(
+        public readonly regionCode: string,
+        public documentType: string,
+        private readonly client = new DefaultSsmDocumentClient(regionCode)
+    ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.setLabel()
@@ -56,7 +61,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
             this.registryNodes,
             this.childRegistryNames,
             key => this.registryNodes.get(key)!.update(key),
-            key => new RegistryItemNode(this.regionCode, key, this.documentType)
+            key => new RegistryItemNode(this.regionCode, key, this.documentType, this.client)
         )
     }
 }

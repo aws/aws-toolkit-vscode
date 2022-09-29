@@ -5,11 +5,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
-import globals from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcsServiceNode } from './ecsServiceNode'
+import { getIcon } from '../../shared/icons'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsContainerNodeExecEnabled'
 const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
@@ -28,10 +27,7 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         this.tooltip = containerName
         this.contextValue = this.parent.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.container),
-            light: vscode.Uri.file(globals.iconPaths.light.container),
-        }
+        this.iconPath = getIcon('aws-ecs-container')
     }
 
     public describeTasks(tasks: string[]) {

@@ -4,7 +4,9 @@
  */
 
 import * as assert from 'assert'
-import { copyUrl, presignedURLCommand } from '../../../s3/commands/presignedURL'
+import {} from '../../../shared/vscode/env'
+import { copyToClipboard } from '../../../shared/utilities/messages'
+import { presignedURLCommand } from '../../../s3/commands/presignedURL'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
@@ -44,8 +46,7 @@ describe('presignedURLCommand', function () {
     })
 
     it('copies a given URL to the clipboard', async function () {
-        await copyUrl(testUrl, undefined, env)
-
+        await copyToClipboard(testUrl, 'URL', undefined, env)
         assert.deepStrictEqual(env.clipboard.text, testUrl)
     })
 })

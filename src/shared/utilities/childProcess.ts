@@ -42,7 +42,7 @@ export interface ChildProcessOptions {
     onStderr?: (text: string, context: RunParameterContext) => void
 }
 
-export interface ChildProcessRunOptions extends ChildProcessOptions {
+export interface ChildProcessRunOptions extends Omit<ChildProcessOptions, 'logging'> {
     /** Arguments applied in addition to the ones used in construction. */
     extraArgs?: string[]
 }
@@ -88,10 +88,10 @@ export class ChildProcess {
     public constructor(
         private readonly command: string,
         private readonly args: string[] = [],
-        private readonly options: ChildProcessOptions = {}
+        private readonly baseOptions: ChildProcessOptions = {}
     ) {
         // TODO: allow caller to use the various loggers instead of just the single one
-        this.log = options.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
+        this.log = baseOptions.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
 
     // Inspired by 'got'
@@ -115,30 +115,29 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
+        const options = {
+            collect: true,
+            waitForStreams: true,
+            ...this.baseOptions,
+            ...params,
+            spawnOptions: { ...this.baseOptions.spawnOptions, ...params.spawnOptions },
+        }
+
+        const { rejectOnError, rejectOnErrorCode, timeout } = options
+        const args = this.args.concat(options.extraArgs ?? [])
+
         const debugDetail = this.log.logLevelEnabled('debug')
             ? ` (running processes: ${ChildProcess.runningProcesses.size})`
             : ''
-        this.log.info(`Command: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
+        this.log.info(`Command: ${this.toString(options.logging === 'noparams')}${debugDetail}`)
 
         const cleanup = () => {
             this.childProcess?.stdout?.removeAllListeners()
             this.childProcess?.stderr?.removeAllListeners()
         }
 
-        const mergedOptions = {
-            ...this.options,
-            ...params,
-            spawnOptions: { ...this.options.spawnOptions, ...params.spawnOptions },
-        }
-        const { rejectOnError, rejectOnErrorCode, timeout } = mergedOptions
-        const args = this.args.concat(mergedOptions.extraArgs ?? [])
-
-        // Defaults
-        mergedOptions.collect ??= true
-        mergedOptions.waitForStreams ??= true
-
         return new Promise<ChildProcessResult>((resolve, reject) => {
-            const errorHandler = (error: Error, force = mergedOptions.useForceStop) => {
+            const errorHandler = (error: Error, force = options.useForceStop) => {
                 this.processErrors.push(error)
                 if (!this.stopped) {
                     this.stop(force)
@@ -169,10 +168,10 @@ export class ChildProcess {
             // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
             // [2] https://nodejs.org/api/child_process.html
             try {
-                this.childProcess = crossSpawn.spawn(this.command, args, mergedOptions.spawnOptions)
+                this.childProcess = crossSpawn.spawn(this.command, args, options.spawnOptions)
                 this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
             } catch (err) {
-                return errorHandler(err as Error)
+                return reject(err)
             }
 
             // Emitted whenever:
@@ -186,19 +185,19 @@ export class ChildProcess {
             this.childProcess.stderr?.on('error', errorHandler)
 
             this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
-                if (mergedOptions.collect) {
+                if (options.collect) {
                     this.stdoutChunks.push(data.toString())
                 }
 
-                mergedOptions.onStdout?.(data.toString(), paramsContext)
+                options.onStdout?.(data.toString(), paramsContext)
             })
 
             this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
-                if (mergedOptions.collect) {
+                if (options.collect) {
                     this.stderrChunks.push(data.toString())
                 }
 
-                mergedOptions.onStderr?.(data.toString(), paramsContext)
+                options.onStderr?.(data.toString(), paramsContext)
             })
 
             // Emitted when streams are closed.
@@ -225,7 +224,7 @@ export class ChildProcess {
                         reject(new Error(`Command exited with non-zero code: ${code}`))
                     }
                 }
-                if (mergedOptions.waitForStreams === false) {
+                if (options.waitForStreams === false) {
                     resolve(this.processResult)
                 }
             })

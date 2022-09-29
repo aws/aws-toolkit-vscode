@@ -1,7 +1,7 @@
 node_modules/**
-third-party
 **/*.json
 src/shared/telemetry/clienttelemetry.d.ts
+src/codewhisperer/client/codewhispererclient.d.ts
 **/*.gen.ts
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
 dist/**

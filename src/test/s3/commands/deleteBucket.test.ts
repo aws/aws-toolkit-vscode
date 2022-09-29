@@ -46,7 +46,7 @@ describe('deleteBucketCommand', function () {
     it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow()
         const commands = new FakeCommands()
-        await deleteBucketCommand(node, window, commands)
+        await assert.rejects(() => deleteBucketCommand(node, window, commands), /cancelled/i)
 
         verify(s3.deleteBucket(anything())).never()
 
@@ -59,9 +59,7 @@ describe('deleteBucketCommand', function () {
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
         const commands = new FakeCommands()
-        await deleteBucketCommand(node, window, commands)
-
-        assert.ok(window.message.error?.startsWith('Failed to delete bucket bucket-name'))
+        await assert.rejects(() => deleteBucketCommand(node, window, commands), /failed to delete bucket bucket-name/i)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
@@ -70,7 +68,7 @@ describe('deleteBucketCommand', function () {
     it('warns when confirmation is invalid', async function () {
         const window = new FakeWindow({ inputBox: { input: 'something other than the bucket name' } })
         const commands = new FakeCommands()
-        await deleteBucketCommand(node, window, commands)
+        await assert.rejects(() => deleteBucketCommand(node, window, commands))
 
         assert.strictEqual(window.inputBox.errorMessage, 'Enter bucket-name to confirm deletion')
     })

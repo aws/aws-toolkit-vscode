@@ -4,11 +4,7 @@ This project contains source code and supporting files for a serverless applicat
 
 A "SAM" (serverless application model) project is a project that contains a template.yaml file which is understood by ${COMPANYNAME} tooling (such as SAM CLI, and the ${PRODUCTNAME}).
 
-<br />
-
 ## Writing and Debugging Serverless Applications
-
-<br />
 
 The code for this application will differ based on the runtime, but the path to a handler can be found in the [`template.yaml`](./template.yaml) file through a resource's `CodeUri` and `Handler` fields.
 
@@ -21,19 +17,11 @@ Invocation parameters, including payloads and request parameters, can be edited 
 
 ${COMPANYNAME} Lambda functions not defined in the [`template.yaml`](./template.yaml) file can be invoked and debugged by creating a launch configuration through the ${CODELENS} over the function declaration, or with the `Add SAM Debug Configuration` command.
 
-<br />
-
 ## Deploying Serverless Applications
 
-<br />
-
-You can deploy a serverless application by invoking the `AWS: Deploy SAM application` command through the Command Palette or by right-clicking the Lambda node in the ${COMPANYNAME} Explorer and entering the deployment region, a valid S3 bucket from the region, and the name of a CloudFormation stack to deploy to. You can monitor your deployment's progress through the **${COMPANYNAME} Toolkit\*\* Output Channel.
-
-<br />
+You can deploy a serverless application by invoking the `AWS: Deploy SAM application` command through the Command Palette or by right-clicking the Lambda node in the ${COMPANYNAME} Explorer and entering the deployment region, a valid S3 bucket from the region, and the name of a CloudFormation stack to deploy to. You can monitor your deployment's progress through the `${COMPANYNAME} Toolkit` Output Channel.
 
 ## Interacting With Deployed Serverless Applications
-
-<br />
 
 A successfully-deployed serverless application can be found in the ${COMPANYNAME} Explorer under region and CloudFormation node that the serverless application was deployed to.
 
@@ -41,11 +29,7 @@ In the ${COMPANYNAME} Explorer, you can invoke _remote_ ${COMPANYNAME} Lambda Fu
 
 Similarly, if the Function declaration contained an API Gateway event, the API Gateway API can be found in the API Gateway node under the region node the serverless application was deployed to, and can be invoked via right-clicking the API node and selecting "Invoke on ${COMPANYNAME}".
 
-<br />
-
 ## Resources
-
-<br />
 
 General information about this SAM project can be found in the [`README.md`](./README.md) file in this folder.
 

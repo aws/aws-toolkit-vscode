@@ -14,9 +14,8 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
-import { ToolkitError } from '../shared/toolkitError'
-import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
 import { PromptSettings } from '../shared/settings'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -60,23 +59,19 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async read(): Promise<Uint8Array> {
-        const result = downloadFile(this._file, {
-            client: this.client,
-            progressLocation:
-                (this._file.sizeBytes ?? 0) < SIZE_LIMIT
-                    ? vscode.ProgressLocation.Window
-                    : vscode.ProgressLocation.Notification,
+        return telemetry.s3_downloadObject.run(span => {
+            span.record({ component: 'viewer' })
+
+            const result = downloadFile(this._file, {
+                client: this.client,
+                progressLocation:
+                    (this._file.sizeBytes ?? 0) < SIZE_LIMIT
+                        ? vscode.ProgressLocation.Window
+                        : vscode.ProgressLocation.Notification,
+            })
+
+            return result
         })
-
-        result.then(() => recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' }))
-
-        // There's no way to 'silently' fail here which is why we let the error bubble up
-        result.catch(err => {
-            const result = (err instanceof ToolkitError ? err?.metric?.result : undefined) ?? 'Failed'
-            recordS3DownloadObject({ result, component: 'viewer' })
-        })
-
-        return result
     }
 
     public async stat(): Promise<{ ctime: number; mtime: number; size: number }> {
@@ -90,24 +85,22 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async write(content: Uint8Array): Promise<void> {
-        const record = (result: Result) => recordS3UploadObject({ result, component: 'viewer' })
-        const result = await this.client
-            .uploadFile({
-                content,
-                key: this._file.key,
-                bucketName: this._file.bucket.name,
-                contentType: mime.contentType(path.extname(this._file.name)) || undefined,
-            })
-            .then(u => u.promise())
-            .catch(err => {
-                record('Failed')
-                throw err
-            })
+        return telemetry.s3_uploadObject.run(async span => {
+            span.record({ component: 'viewer' })
 
-        record('Succeeded')
-        this.updateETag(result.ETag)
-        this._file.lastModified = new Date()
-        this._file.sizeBytes = content.byteLength
+            const result = await this.client
+                .uploadFile({
+                    content,
+                    key: this._file.key,
+                    bucketName: this._file.bucket.name,
+                    contentType: mime.contentType(path.extname(this._file.name)) || undefined,
+                })
+                .then(u => u.promise())
+
+            this.updateETag(result.ETag)
+            this._file.lastModified = new Date()
+            this._file.sizeBytes = content.byteLength
+        })
     }
 
     private updateETag(newTag: string | undefined): void {
@@ -346,7 +339,7 @@ export class S3FileViewerManager {
             'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
         )
 
-        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
+        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show again")
         const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
         await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {

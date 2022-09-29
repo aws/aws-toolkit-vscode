@@ -21,10 +21,10 @@ import {
 } from '../../../eventSchemas/commands/downloadSchemaItemCode'
 
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
 
 import admZip = require('adm-zip')
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 
 describe('CodeDownloader', function () {
     let tempFolder: string
@@ -55,7 +55,7 @@ describe('CodeDownloader', function () {
 
     const language = 'Java8'
     const schemaVersion = 'testVersion'
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const codeDownloader = new CodeDownloader(schemaClient)
 
     describe('codeDownloader', async function () {
@@ -140,7 +140,7 @@ describe('CodeGenerator', function () {
         CREATE_FAILED = 'CREATE_FAILED',
     }
 
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const codeGenerator = new CodeGenerator(schemaClient)
 
     describe('codeGenerator', async function () {
@@ -216,7 +216,7 @@ describe('CodeGeneratorStatusPoller', function () {
         CREATE_FAILED = 'CREATE_FAILED',
     }
 
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const statuspoller = new CodeGenerationStatusPoller(schemaClient)
 
     describe('getCurrentStatus', async function () {
@@ -359,7 +359,7 @@ describe('SchemaCodeDownload', function () {
     const schemaVersion = 'testVersion'
 
     const fileContent = 'Test file contents'
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const poller = new CodeGenerationStatusPoller(schemaClient)
     const downloader = new CodeDownloader(schemaClient)
     const generator = new CodeGenerator(schemaClient)

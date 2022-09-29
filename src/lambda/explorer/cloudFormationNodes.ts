@@ -9,8 +9,8 @@ const localize = nls.loadMessageBundle()
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -19,14 +19,17 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
 
 export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly client = new DefaultCloudFormationClient(regionCode)
+    ) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
         this.contextValue = 'awsCloudFormationRootNode'
@@ -46,8 +49,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
-        const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
+        const stacks = await toMapAsync(listCloudFormationStacks(this.client), stack => stack.StackId)
 
         updateInPlace(
             this.stackNodes,
@@ -64,17 +66,16 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,
-        private stackSummary: CloudFormation.StackSummary
+        private stackSummary: CloudFormation.StackSummary,
+        private readonly lambdaClient = new DefaultLambdaClient(regionCode),
+        private readonly cloudformationClient = new DefaultCloudFormationClient(regionCode)
     ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, LambdaFunctionNode>()
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.cloudFormation),
-            light: vscode.Uri.file(globals.iconPaths.light.cloudFormation),
-        }
+        this.iconPath = getIcon('aws-cloudformation-stack')
     }
 
     public get stackId(): CloudFormation.StackId | undefined {
@@ -121,9 +122,8 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     private async updateChildren(): Promise<void> {
         const resources: string[] = await this.resolveLambdaResources()
-        const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
-            await toArrayAsync(listLambdaFunctions(client)),
+            await toArrayAsync(listLambdaFunctions(this.lambdaClient)),
             functionInfo => functionInfo.FunctionName
         )
 
@@ -136,8 +136,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
     }
 
     private async resolveLambdaResources(): Promise<string[]> {
-        const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
-        const response = await client.describeStackResources(this.stackSummary.StackName)
+        const response = await this.cloudformationClient.describeStackResources(this.stackSummary.StackName)
 
         if (response.StackResources) {
             return response.StackResources.filter(it => it.ResourceType.includes('Lambda::Function')).map(

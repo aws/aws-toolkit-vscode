@@ -9,8 +9,9 @@ import { getLogger } from './logger'
 import { cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
-import { isAutomation, isNameMangled } from './vscode/env'
+import { isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
+import { UnknownError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -166,16 +167,20 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     type Inner = FromDescriptor<T>
 
     // Class names are not always stable, especially when bundling
-    function makeLogger(name = 'Settings') {
+    function makeLogger(name = 'Settings', loglevel: 'debug' | 'error') {
         const prefix = `${isNameMangled() ? 'Settings' : name} (${section})`
-        return (message: string) => getLogger().debug(`${prefix}: ${message}`)
+        return (message: string) =>
+            loglevel === 'debug'
+                ? getLogger().debug(`${prefix}: ${message}`)
+                : getLogger().error(`${prefix}: ${message}`)
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
         private readonly config = this.settings.getSection(section)
         private readonly disposables: vscode.Disposable[] = []
         // TODO(sijaden): add metadata prop to `Logger` so we don't need to make one-off log functions
-        protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name)
+        protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'debug')
+        protected readonly logErr = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'error')
 
         public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {}
 
@@ -186,16 +191,15 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             try {
                 return this.getOrThrow(key, defaultValue)
-            } catch (error) {
-                this.log(`failed to read key "${key}": ${error}`)
-
-                if (isAutomation() || defaultValue === undefined) {
-                    throw new Error(`Failed to read key "${key}": ${error}`)
+            } catch (e) {
+                const message = UnknownError.cast(e)
+                if (arguments.length === 1) {
+                    throw new Error(`Failed to read key "${section}.${key}": ${message}`)
                 }
 
-                this.log(`using default value for "${key}"`)
+                this.logErr(`using default for key "${key}", read failed: ${message}`)
 
-                return defaultValue
+                return defaultValue as Inner[K]
             }
         }
 
@@ -247,10 +251,24 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //   - the "key" is `bar`
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
+            //
+            // Note that `undefined` is not a valid JSON value. So using it as a default
+            // value is a valid way to express that the key exists but no (valid) value is set.
+
             const props = keys(descriptor)
+            const store = toRecord(props, p => this.get(p, undefined))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                for (const key of props.filter(p => event.affectsConfiguration(p))) {
+                const isDifferent = (p: keyof T & string) => {
+                    const isDifferentLazy = () => {
+                        const previous = store[p]
+                        return previous !== (store[p] = this.get(p, undefined))
+                    }
+
+                    return event.affectsConfiguration(p) || isDifferentLazy()
+                }
+
+                for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
                     emitter.fire({ key })
                 }
@@ -595,17 +613,18 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
  * Simple utility function to 'migrate' a setting from one key to another.
  *
  * Currently only used for simple migrations where we are not concerned about maintaining the
- * legacy definition.
+ * legacy definition. Only migrates to global settings.
  */
 export async function migrateSetting<T, U = T>(
     from: { key: string; type: TypeConstructor<T> },
     to: { key: string; transform?: (value: T) => U }
 ) {
+    // TODO(sijaden): we should handle other targets besides 'global'
     const config = vscode.workspace.getConfiguration()
     const hasLatest = config.inspect(to.key)?.globalValue !== undefined
     const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
 
-    if (hasLatest) {
+    if (hasLatest || !config.has(from.key)) {
         return true
     }
 
@@ -614,10 +633,11 @@ export async function migrateSetting<T, U = T>(
         const newVal = to.transform?.(oldVal) ?? oldVal
 
         await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
+        getLogger().debug(`${logPrefix}: succeeded`)
 
         return true
     } catch (error) {
-        getLogger().verbose(`${logPrefix}: conversion failed: ${error}`)
+        getLogger().verbose(`${logPrefix}: failed: ${error}`)
 
         return false
     }

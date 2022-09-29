@@ -97,7 +97,7 @@ function main() {
             }
         }
 
-        child_process.execSync(`vsce package`)
+        child_process.execSync(`vsce package`, { stdio: 'inherit' })
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')

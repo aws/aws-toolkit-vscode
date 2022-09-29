@@ -8,9 +8,14 @@ import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
 
 export interface MetricQuery {
-    /** Metric name to look up in the log */
+    /**
+     * Metric name to look up in the log
+     */
     readonly metricName: string
-    /** Attributes to filter out of the metadata */
+
+    /**
+     * Attributes to filter out of the metadata
+     */
     readonly filters?: string[]
 }
 
@@ -45,12 +50,22 @@ export class TelemetryLogger {
         return this._metrics.length
     }
 
+    public clear(): void {
+        this._metrics.length = 0
+    }
+
     public log(metric: MetricDatum): void {
         const msg = `telemetry: emitted metric "${metric.MetricName}"`
+
         if (!isReleaseVersion()) {
             this._metrics.push(metric)
             const stringified = JSON.stringify(metric)
             getLogger().debug(`${msg} -> ${stringified}`)
+
+            if (this.metricCount > 1000) {
+                this.clear()
+                getLogger().debug('telemetry: cleared buffered metrics')
+            }
         } else {
             getLogger().debug(msg)
         }

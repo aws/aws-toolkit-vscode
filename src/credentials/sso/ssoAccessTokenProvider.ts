@@ -8,7 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
 import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
 import { getCache } from './cache'
-import { hasProps } from '../../shared/utilities/tsUtils'
+import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
@@ -56,17 +56,17 @@ const REFRESH_GRANT_TYPE = 'refresh_token'
  */
 export class SsoAccessTokenProvider {
     public constructor(
-        private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes'>,
+        private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         private readonly cache = getCache(),
         private readonly oidc = OidcClient.create(profile.region)
     ) {}
 
     public async invalidate(): Promise<void> {
-        await this.cache.token.clear(this.profile.startUrl)
+        await this.cache.token.clear(this.tokenCacheKey)
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
-        const data = await this.cache.token.load(this.profile.startUrl)
+        const data = await this.cache.token.load(this.tokenCacheKey)
 
         if (!data || !isExpired(data.token)) {
             return data?.token
@@ -74,26 +74,27 @@ export class SsoAccessTokenProvider {
 
         await this.invalidate()
 
-        if (data.registration) {
+        if (data.registration && !isExpired(data.registration)) {
             const refreshed = await this.refreshToken(data.token, data.registration)
 
             if (refreshed) {
-                await this.cache.token.save(this.profile.startUrl, refreshed)
+                await this.cache.token.save(this.tokenCacheKey, refreshed)
             }
 
             return refreshed?.token
         }
     }
 
-    public async createToken(): Promise<SsoToken> {
+    public async createToken(identityProvider?: (token: SsoToken) => Promise<string>): Promise<SsoToken> {
         const access = await this.runFlow()
-        await this.cache.token.save(this.profile.startUrl, access)
+        const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
+        await this.cache.token.save(identity, access)
 
-        return access.token
+        return { ...access.token, identity }
     }
 
     private async runFlow() {
-        const cacheKey = this.registrationCacheKey()
+        const cacheKey = this.registrationCacheKey
         const registration = await loadOr(this.cache.registration, cacheKey, () => this.registerClient())
 
         try {
@@ -113,7 +114,8 @@ export class SsoAccessTokenProvider {
 
     private async refreshToken(token: SsoToken, registration: ClientRegistration) {
         if (hasProps(token, 'refreshToken')) {
-            const response = await this.oidc.createToken({ ...registration, ...token, grantType: REFRESH_GRANT_TYPE })
+            const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
+            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: REFRESH_GRANT_TYPE })
 
             return this.formatToken(response, registration)
         }
@@ -123,7 +125,11 @@ export class SsoAccessTokenProvider {
         return { token, registration, region: this.profile.region, startUrl: this.profile.startUrl }
     }
 
-    private registrationCacheKey() {
+    protected get tokenCacheKey() {
+        return this.profile.identifier ?? this.profile.startUrl
+    }
+
+    private get registrationCacheKey() {
         return { region: this.profile.region, scopes: this.profile.scopes }
     }
 
@@ -162,7 +168,7 @@ export class SsoAccessTokenProvider {
         })
     }
 
-    public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes'>) {
+    public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
         return new this(profile)
     }
 }

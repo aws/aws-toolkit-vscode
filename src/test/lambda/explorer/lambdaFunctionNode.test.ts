@@ -6,28 +6,21 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import globals from '../../../shared/extensionGlobals'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('LambdaFunctionNode', function () {
     const parentNode = new TestAWSTreeNode('test node')
     let testNode: LambdaFunctionNode
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
             FunctionArn: 'testFunctionARN',
         }
 
         testNode = new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
-    })
-
-    after(async function () {
-        clearTestIconPaths()
     })
 
     it('instantiates without issue', async function () {
@@ -55,13 +48,6 @@ describe('LambdaFunctionNode', function () {
             testNode.tooltip,
             `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
         )
-    })
-
-    it('initializes the icon', async function () {
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.lambda, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
     it('has no children', async function () {

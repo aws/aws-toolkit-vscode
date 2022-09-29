@@ -3,27 +3,51 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as app from '../../../cdk/explorer/cdkProject'
 import * as assert from 'assert'
-import * as vscode from 'vscode'
-import * as sinon from 'sinon'
-
-import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import {
+    getStateMachines,
     PreviewStateMachineCDKWizard,
-    CdkAppLocationPickItem,
-    ConstructNodePickItem,
-    getCDKAppWorkspaceName,
-    TopLevelNodePickItem,
 } from '../../../stepFunctions/wizards/previewStateMachineCDKWizard'
+import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 
-let sandbox: sinon.SinonSandbox
-const workspaceFolderName = 'cdk-test-folder'
-const workspaceFolderPath = 'rootcdk-project'
+const stateMachine1: ConstructTreeEntity = {
+    id: 'MyStateMachine',
+    path: 'aws-tester/MyTopLevelNode/MyStateMachine',
+    children: {
+        Resource: {
+            id: 'Resource',
+            path: 'aws-tester/MyTopLevelNode/MyStateMachine/Resource',
+            attributes: {
+                'aws:cdk:cloudformation:type': 'AWS::StepFunctions::StateMachine',
+            },
+        },
+    },
+}
 
-const mockTopLevelConstructTreeEntity: ConstructTreeEntity = {
+const stateMachine2: ConstructTreeEntity = {
+    id: 'MyOtherStateMachine',
+    path: 'aws-tester/MyTopLevelNode/NestedNode/MyOtherStateMachine',
+    children: {
+        Resource: {
+            id: 'Resource',
+            path: 'aws-tester/MyTopLevelNode/NestedNode/MyOtherStateMachine/Resource',
+            attributes: {
+                'aws:cdk:cloudformation:type': 'AWS::StepFunctions::StateMachine',
+            },
+        },
+    },
+}
+
+const nested = {
+    id: 'NestedNode',
+    path: 'aws-tester/MyTopLevelNode',
+    children: {
+        MyOtherStateMachine: stateMachine2,
+    },
+}
+
+const root: ConstructTreeEntity = {
     id: 'MyTopLevelNode',
     path: 'aws-tester/MyTopLevelNode',
     children: {
@@ -34,200 +58,39 @@ const mockTopLevelConstructTreeEntity: ConstructTreeEntity = {
                 'aws:cdk:cloudformation:type': 'AWS::StepFunctions::ConstructNode',
             },
         },
+        MyStateMachine: stateMachine1,
+        NestedNode: nested,
     },
 }
 
-const mockTopLevelNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyTopLevelNode',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockTopLevelConstructTreeEntity
-)
+describe('getStateMachines', function () {
+    it('returns the input if it already is a state machine', function () {
+        const result = getStateMachines(stateMachine1)
+        assert.deepStrictEqual(result, [stateMachine1])
+    })
 
-const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
-    id: 'MyStateMachine',
-    path: 'aws-tester/MyStateMachine',
-    children: {
-        Resource: {
-            id: 'Resource',
-            path: 'aws-tester/MyStateMachine/Resource',
-            attributes: {
-                'aws:cdk:cloudformation:type': 'AWS::StepFunctions::StateMachine',
-            },
-        },
-    },
-}
+    it('lists all state machines from a construct (depth=1)', function () {
+        const result = getStateMachines(nested)
+        assert.deepStrictEqual(result, [stateMachine2])
+    })
 
-const mockStateMachineNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyStateMachine',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockStateMachineConstructTreeEntity
-)
-
-function getTestNode(): app.CdkAppLocation {
-    const mockUri = sandbox.createStubInstance(vscode.Uri)
-    sandbox.stub(mockUri, 'fsPath').value(workspaceFolderPath)
-    const mockWorkspaceFolder: vscode.WorkspaceFolder = { uri: mockUri, index: 0, name: workspaceFolderName }
-    const appLocation: app.CdkAppLocation = {
-        cdkJsonPath: 'cdkJsonPath',
-        treePath: 'treePath',
-        workspaceFolder: mockWorkspaceFolder,
-    }
-
-    return appLocation
-}
+    it('lists all state machines from a construct (depth=2)', function () {
+        const result = getStateMachines(root)
+        assert.strictEqual(result.length, 2)
+        assert.deepStrictEqual(result, [stateMachine1, stateMachine2])
+    })
+})
 
 describe('PreviewStateMachineCDKWizard', async function () {
-    const testNode = getTestNode()
-
-    const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
-    CDK_APPLOCATIONS.push({
-        label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
-        cdkApplocation: testNode,
-    })
-
-    const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
-    TOP_LEVEL_NODES.push({
-        label: mockTopLevelNode.label,
-        topLevelNode: mockTopLevelNode,
-    })
-
-    const STATE_MACHINES: ConstructNodePickItem[] = []
-    STATE_MACHINES.push({
-        label: mockStateMachineNode.label,
-        stateMachineNode: mockStateMachineNode,
-    })
+    let tester: WizardTester<PreviewStateMachineCDKWizard>
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
+        tester = createWizardTester(new PreviewStateMachineCDKWizard())
     })
 
-    afterEach(function () {
-        sandbox.restore()
-    })
-
-    it('exits when cancelled', async function () {
-        const mockUserPrompt: any = () => Promise.resolve(undefined)
-        const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.ok(!result)
-    })
-
-    it('returns undefined when cdk application does not exist', async function () {
-        const promptResults = [
-            [
-                {
-                    label: '',
-                    cdkApplocation: undefined,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    topLevelNode: undefined,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    stateMachineNode: undefined,
-                },
-            ],
-        ]
-        const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-        const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.strictEqual(result, undefined)
-    })
-
-    it('returns undefined when top level node does not exist', async function () {
-        const promptResults = [
-            [
-                {
-                    label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
-                    cdkApplocation: testNode,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    topLevelNode: undefined,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    stateMachineNode: undefined,
-                },
-            ],
-        ]
-        const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-        const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.strictEqual(result, undefined)
-    })
-
-    it('returns undefined when state machine node does not exist', async function () {
-        const promptResults = [
-            [
-                {
-                    label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
-                    cdkApplocation: testNode,
-                },
-            ],
-            [
-                {
-                    label: mockTopLevelNode.label,
-                    topLevelNode: mockTopLevelNode,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    stateMachineNode: undefined,
-                },
-            ],
-        ]
-        const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-        const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.strictEqual(result, undefined)
-    })
-
-    it('returns cdk application, top level node, and state machine node when completed', async function () {
-        const promptResults = [
-            [
-                {
-                    label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
-                    cdkApplocation: testNode,
-                },
-            ],
-            [
-                {
-                    label: mockTopLevelNode.label,
-                    topLevelNode: mockTopLevelNode,
-                },
-            ],
-            [
-                {
-                    label: mockStateMachineNode.label,
-                    stateMachineNode: mockStateMachineNode,
-                },
-            ],
-        ]
-        const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-        const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.strictEqual(result, {
-            cdkApplication: CDK_APPLOCATIONS[0],
-            topLevelNode: TOP_LEVEL_NODES[0],
-            stateMachine: STATE_MACHINES[0],
-        })
+    it('prompts for location then a state machine', function () {
+        tester.location.assertShowFirst()
+        tester.resource.assertShowSecond()
+        tester.assertShowCount(2)
     })
 })

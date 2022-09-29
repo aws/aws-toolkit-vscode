@@ -51,13 +51,39 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Adds a glob pattern to use for lookups and resets the registry to use it.
-     * Throws an error if this manager has already been disposed.
-     * @param glob vscode.GlobPattern to be used for lookups
+     * Creates a watcher across all opened workspace folders (or see below to
+     * watch _outside_ the workspace).
+     *
+     * (since vscode 1.64):
+     * - Watches RECURSIVELY if `pattern` is complex (e.g. contains `**` or
+     *   path segments), else watches NON-RECURSIVELY (i.e. only changes at the
+     *   first level will be reported).
+     *   https://github.com/microsoft/vscode/blob/7da792ae7cb53ee5a22b24016bca5dee31f43d41/src/vscode-dts/vscode.d.ts#L11428
+     * - `globPattern` as _string_ means "watch all opened workspace folders".
+     *   It cannot be used to add more folders for watching, nor will it report
+     *   events outside of workspace folders.
+     * - To watch _outside_ the workspace, pass `vscode.RelativePattern(vscode.Uri(…))`:
+     *   - non-recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '*.js'))`
+     *   - recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '**x/*.js'))`
+     * - **Note** recursive files may be excluded by user configuration
+     *   (`files.watcherExclude`, e.g. "node_modules"). To avoid that, watch
+     *   simple (non-recursive) patterns.
+     *
+     * https://github.com/microsoft/vscode/issues/3025#issuecomment-1007242256
+     *
+     * > we setup recursive watchers for all workspace folders right on startup
+     * > and we don't allow extensions to add additional watchers for the
+     * > workspace, because that would result in multiple watchers on the same
+     * > paths competing against each other.
+     *
+     * @param glob Pattern to match against (across all opened workspace folders)
      */
     public async addWatchPattern(glob: vscode.GlobPattern): Promise<void> {
         if (this._isDisposed) {
             throw new Error(`${this.name}: manager has already been disposed!`)
+        }
+        if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
+            getLogger().warn(`${this.name}: addWatchPattern(${glob}): no workspace`)
         }
         this.globs.push(glob)
 
@@ -86,9 +112,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean): Promise<void> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
-            getLogger().verbose(
-                `${this.name}: manager did not add item ${uri.fsPath} matching excluded pattern ${excluded}`
-            )
+            getLogger().verbose(`${this.name}: excluding path (matches "${excluded}"): ${uri.fsPath}`)
             return
         }
         const pathAsString = pathutils.normalize(uri.fsPath)
@@ -105,7 +129,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`${this.name}: item ${uri} is malformed: ${e}`)
+            getLogger().verbose(`${this.name}: failed to load(): ${uri}: ${(e as Error).message}`)
         }
     }
 
@@ -202,15 +226,15 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.disposables.push(
             watcher,
             watcher.onDidChange(async uri => {
-                getLogger().verbose(`${this.name}: manager detected a change to tracked file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: detected change: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {
-                getLogger().verbose(`${this.name}: manager detected a new file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: detected new file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
-                getLogger().verbose(`${this.name}: manager detected a deleted file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: detected delete: ${uri.fsPath}`)
                 await this.remove(uri)
             })
         )

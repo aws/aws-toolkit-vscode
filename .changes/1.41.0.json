@@ -1,0 +1,10 @@
+{
+	"date": "2022-06-22",
+	"version": "1.41.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Credentials are now automatically refreshed on certain AWS API errors"
+		}
+	]
+}

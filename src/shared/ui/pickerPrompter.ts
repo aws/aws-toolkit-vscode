@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
-import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
+import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 
@@ -104,6 +104,7 @@ export type DataQuickPickItem<T> = vscode.QuickPickItem & {
     onClick?: () => any | Promise<any>
     /** Stops the QuickPick from estimating how many steps an item would add in a Wizard flow */
     skipEstimate?: boolean
+    recentlyUsed?: boolean
 }
 
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
@@ -137,7 +138,7 @@ export function createQuickPick<T>(
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
     const mergedOptions = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
-    applyPrimitives(picker, mergedOptions)
+    assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
 
     const prompter =
@@ -148,6 +149,16 @@ export function createQuickPick<T>(
     prompter.loadItems(items)
 
     return prompter
+}
+
+export async function showQuickPick<T>(
+    items: ItemLoadTypes<T>,
+    options?: ExtendedQuickPickOptions<T>
+): Promise<T | undefined> {
+    const prompter = createQuickPick(items, options)
+    const response = await prompter.prompt()
+
+    return isValidResponse(response) ? response : undefined
 }
 
 // Note: the generic type used in `createLabelQuickPick` is needed to infer the correct type when using string

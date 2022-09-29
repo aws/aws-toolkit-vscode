@@ -13,17 +13,13 @@ import { openDocumentItem } from '../../../ssmDocument/commands/openDocumentItem
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
 
 import * as picker from '../../../shared/ui/picker'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { stub } from '../../utilities/stubber'
 
 describe('openDocumentItem', async function () {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
     const rawContent: SSM.Types.GetDocumentResult = {
@@ -62,21 +58,21 @@ describe('openDocumentItem', async function () {
     }
 
     it('create DocumentItemNode and openDocumentItem functionality', async function () {
-        sandbox.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
-        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
-        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
+        sinon.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
+        sinon.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
+        sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
 
         const documentNode = generateDocumentItemNode()
-        const openTextDocumentStub = sandbox.stub(vscode.workspace, 'openTextDocument')
-        await openDocumentItem(documentNode, fakeAwsContext)
+        const openTextDocumentStub = sinon.stub(vscode.workspace, 'openTextDocument')
+        await openDocumentItem(documentNode, fakeAwsContext, 'json')
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, rawContent.Content)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.language, 'ssm-json')
     })
 
     function generateDocumentItemNode(): DocumentItemNode {
-        const ssmDocumentClient = new MockSsmDocumentClient()
-        sandbox.stub(ssmDocumentClient, 'getDocument').returns(Promise.resolve(rawContent))
+        const client = stub(DefaultSsmDocumentClient, { regionCode: fakeRegion })
+        client.getDocument.resolves(rawContent)
 
-        return new DocumentItemNode(fakeDoc, ssmDocumentClient, fakeRegion)
+        return new DocumentItemNode(fakeDoc, client, fakeRegion)
     }
 })

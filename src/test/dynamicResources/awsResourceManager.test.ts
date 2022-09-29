@@ -16,7 +16,6 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
@@ -185,7 +184,7 @@ describe('ResourceManager', function () {
 
     it('registers schema mappings when opening in edit', async function () {
         const editor = await resourceManager.open(resourceNode, false)
-        verify(schemaService.registerMapping(anything())).once()
+        verify(schemaService.registerMapping(anything(), anything())).once()
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()
@@ -212,7 +211,8 @@ describe('ResourceManager', function () {
     it('deletes resource mapping on file close', async function () {
         const editor = await resourceManager.open(resourceNode, false)
         await resourceManager.close(editor.document.uri)
-        verify(schemaService.registerMapping(anything())).twice()
+        verify(schemaService.registerMapping(anything())).once()
+        verify(schemaService.registerMapping(anything(), anything())).once()
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()

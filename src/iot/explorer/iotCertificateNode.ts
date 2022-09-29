@@ -23,7 +23,7 @@ import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 const CONTEXT_BASE = 'awsIotCertificateNode'
 /**
@@ -52,10 +52,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
             moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT),
             things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
         )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.certificate),
-            light: vscode.Uri.file(globals.iconPaths.light.certificate),
-        }
+        this.iconPath = getIcon('aws-iot-certificate')
         this.description = `\t[${this.certificate.activeStatus}]`
         this.contextValue = `${CONTEXT_BASE}.${this.certificate.activeStatus}`
     }

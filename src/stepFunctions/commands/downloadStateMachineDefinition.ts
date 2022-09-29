@@ -11,12 +11,13 @@ import { StepFunctions } from 'aws-sdk'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 import { getLogger, Logger } from '../../shared/logger'
-import { recordStepfunctionsDownloadStateMachineDefinition, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import globals from '../../shared/extensionGlobals'
+import { previewStateMachineCommand } from '../activation'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -27,9 +28,7 @@ export async function downloadStateMachineDefinition(params: {
     let downloadResult: Result = 'Succeeded'
     const stateMachineName = params.stateMachineNode.details.name
     try {
-        const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
-            params.stateMachineNode.regionCode
-        )
+        const client: StepFunctionsClient = new DefaultStepFunctionsClient(params.stateMachineNode.regionCode)
         const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(
             params.stateMachineNode.details.stateMachineArn
         )
@@ -41,7 +40,7 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await vscode.commands.executeCommand('aws.previewStateMachine', textEditor)
+            await previewStateMachineCommand.execute(textEditor)
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -72,6 +71,6 @@ export async function downloadStateMachineDefinition(params: {
         params.outputChannel.appendLine(error.message)
         params.outputChannel.appendLine('')
     } finally {
-        recordStepfunctionsDownloadStateMachineDefinition({ result: downloadResult })
+        telemetry.stepfunctions_downloadStateMachineDefinition.emit({ result: downloadResult })
     }
 }

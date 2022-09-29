@@ -1,9 +1,9 @@
 # <a id="top"></a>AWS Toolkit
 
-AWS Toolkit is an extension for AWS Cloud9 that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
-See the [AWS Toolkit user guide](https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html) for complete documentation.
+The AWS Toolkit extension for AWS Cloud9 that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
+See the [user guide](https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html) for complete documentation.
 
-See [Get help](#get-help) for support.
+Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
 
 # <a id="features"></a>Features
 
@@ -13,9 +13,13 @@ See [Get help](#get-help) for support.
     -   CloudFormation stacks
     -   [CloudWatch Logs](https://docs.aws.amazon.com/cloud9/latest/user-guide/cloudwatch-logs-toolkit.html)
     -   ECR
+    -   [ECS](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html)
     -   IoT explorer
     -   Lambda functions
     -   S3 explorer
+-   [Developer Tools](#ui-components-dev-tools)
+    -   [CDK Explorer](#ui-components-cdk-expl)
+    -   [CodeWhisperer](#codewhisperer)
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
 -   [`AWS:` Commands](#aws-commands)
 
@@ -26,6 +30,32 @@ See [Get help](#get-help) for support.
 The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.
 
 ## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer-en.png)
+
+## <a id="ui-components-dev-tools"></a>Developer Tools
+
+The **Developer Tools** panel is a section for developer-focused tooling curated for working in an IDE. The **Developer Tools** panel can be found underneath the **AWS Explorer** when the **AWS icon** is selected in the **Activity bar**.
+
+## { [Return to Top](#top) }
+
+## <a id="ui-components-cdk-expl"></a>CDK Explorer
+
+The **AWS CDK Explorer** enables you to work with [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) applications. It shows a top-level view of your CDK applications that have been sythesized in your workspace.
+
+With the CDK explorer, you can navigate the CDK application's infrastructure stacks, resources, and policies.
+
+For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the user guide.
+
+{ [Return to Top](#top) }
+
+## <a id="codewhisperer"></a>Amazon CodeWhisperer
+
+**Amazon CodeWhisperer** provides inline code suggestions using machine learning and natural language processing on the contents of your current file. Supported languages include: Java, Python and Javascript.
+
+Once enabled, CodeWhisperer will provide code suggestions automatically and can also be requested manually using option+c (mac) / alt+c (PC). To accept a suggestion and add it to your file, press Tab, Enter or click on it. To dismiss a suggestion, press escape or keep typing.
+
+For more information, see [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer) in our user guide.
+
+## { [Return to Top](#top) }
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 
@@ -82,13 +112,14 @@ The Toolkit provides commands (prefixed with `AWS:`) to the AWS Cloud9 _Go to An
 | :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AWS: About Toolkit`                      | Displays information about the AWS Toolkit.                                                                                                                                                                                                |
 | `AWS: Add SAM Debug Configuration`        | Creates an `aws-sam` Debug Configuration from a function in the given source file                                                                                                                                                          |
-| `AWS: Connect to AWS`                     | Connects the Toolkit to an AWS account.                                                                                                                                                                                                    |
+| `AWS: Choose AWS Profile...`              | Selects the current credentials profile used to connect to AWS.                                                                                                                                                                            |
 | `AWS: Create a new Issue on Github`       | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                           |
 | `AWS: Create Credentials Profile`         | Creates an AWS credentials profile.                                                                                                                                                                                                        |
 | `AWS: Create Lambda SAM Application`      | Generates code files for a new AWS serverless Lambda application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html) in the user guide. |
 | `AWS: Create new CloudFormation Template` | Creates a new starter Cloudformation Template                                                                                                                                                                                              |
 | `AWS: Create new SAM Template`            | Creates a new starter SAM Template                                                                                                                                                                                                         |
 | `AWS: Deploy SAM Application`             | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/cloud9/latest/user-guide/deploy-serverless-app.html) in the user guide.               |
+| `AWS: Edit Credentials`                   | Opens the `~/.aws/credentials` or `~/.aws/config` file for editing.                                                                                                                                                                        |
 | `AWS: Edit SAM Debug Configuration`       | Shows a tool that helps you create, edit, run, and debug a SAM _launch config_ (`type:aws-sam`).                                                                                                                                           |
 | `AWS: Detect SAM CLI`                     | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                               |
 | `AWS: Show or Hide Regions`               | Adds or removes AWS Regions in the **AWS Explorer**.                                                                                                                                                                                       |

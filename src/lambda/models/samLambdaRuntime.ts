@@ -27,13 +27,8 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs14.x', 'nodejs12.x'])
-export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
-    'python3.9',
-    'python3.8',
-    'python3.7',
-    'python3.6',
-])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs16.x', 'nodejs14.x', 'nodejs12.x'])
+export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['python3.9', 'python3.8', 'python3.7'])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore3.1', 'dotnet6'])
@@ -74,6 +69,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
+    'nodejs16.x',
     'nodejs14.x',
     'nodejs12.x',
     'java11',
@@ -82,16 +78,13 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
 
 // Cloud9 supports a subset of runtimes for debugging.
 // * .NET is not supported
-// * Python3.6 is not supported for debugging by IKP3db
-const cloud9SupportedBaseRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
-const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
-    (runtime: string) => !['python3.6'].includes(runtime)
-)
+const cloud9SupportedRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
+
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 export function samLambdaCreatableRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
-    return cloud9 ? cloud9SupportedCreateRuntimes : samZipLambdaRuntimes
+    return cloud9 ? cloud9SupportedRuntimes : samZipLambdaRuntimes
 }
 
 // Image runtimes are not a direct subset of valid ZIP lambda types

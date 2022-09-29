@@ -13,95 +13,16 @@ import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
-import globals from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { closeAllEditors } from '../../testUtil'
+import { getLogger } from '../../../shared/logger'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
-let sandbox: sinon.SinonSandbox
 
 const mockGlobalStorage: vscode.Memento = {
     update: sinon.spy(),
     get: sinon.stub().returns(undefined),
-}
-
-const mockUriOne: vscode.Uri = {
-    authority: 'amazon.com',
-    fragment: 'MockFragmentOne',
-    fsPath: 'MockFSPathOne',
-    query: 'MockQueryOne',
-    path: '/MockPathOne',
-    scheme: 'MockSchemeOne',
-    with: () => {
-        return mockUriOne
-    },
-    toJSON: sinon.spy(),
-}
-
-const mockTextDocumentOne: vscode.TextDocument = {
-    eol: 1,
-    fileName: 'MockFileNameOne',
-    isClosed: false,
-    isDirty: false,
-    isUntitled: false,
-    languageId: 'MockLanguageIdOne',
-    lineCount: 0,
-    uri: mockUriOne,
-    version: 0,
-    getText: () => {
-        return 'MockDocumentTextOne'
-    },
-    getWordRangeAtPosition: sinon.spy(),
-    lineAt: sinon.spy(),
-    offsetAt: sinon.spy(),
-    positionAt: sinon.spy(),
-    save: sinon.spy(),
-    validatePosition: sinon.spy(),
-    validateRange: sinon.spy(),
-}
-
-const mockUriTwo: vscode.Uri = {
-    authority: 'amazon.org',
-    fragment: 'MockFragmentTwo',
-    fsPath: 'MockFSPathTwo',
-    query: 'MockQueryTwo',
-    path: '/MockPathTwo',
-    scheme: 'MockSchemeTwo',
-    with: sinon.spy(),
-    toJSON: sinon.spy(),
-}
-
-const mockTextDocumentTwo: vscode.TextDocument = {
-    eol: 1,
-    fileName: 'MockFileNameTwo',
-    isClosed: false,
-    isDirty: false,
-    isUntitled: false,
-    languageId: 'MockLanguageIdTwo',
-    lineCount: 0,
-    uri: mockUriTwo,
-    version: 0,
-    getText: () => {
-        return 'MockDocumentTextTwo'
-    },
-    getWordRangeAtPosition: sinon.spy(),
-    lineAt: sinon.spy(),
-    offsetAt: sinon.spy(),
-    positionAt: sinon.spy(),
-    save: sinon.spy(),
-    validatePosition: sinon.spy(),
-    validateRange: sinon.spy(),
-}
-
-const mockUriThree: vscode.Uri = {
-    authority: 'amazon.de',
-    fragment: 'MockFragmentYaml',
-    fsPath: 'MockFSPathYaml',
-    query: 'MockQueryYaml',
-    path: '/MockPathYaml',
-    scheme: 'MockSchemeYaml',
-    with: sinon.spy(),
-    toJSON: sinon.spy(),
 }
 
 const mockDataJson =
@@ -121,150 +42,37 @@ States:
     End: true
 `
 
-const mockTextDocumentYaml: vscode.TextDocument = {
-    eol: 1,
-    fileName: 'MockFileNameYaml',
-    isClosed: false,
-    isDirty: false,
-    isUntitled: false,
-    languageId: YAML_ASL,
-    lineCount: 0,
-    uri: mockUriThree,
-    version: 0,
-    getText: () => {
-        return mockDataYaml
-    },
-    getWordRangeAtPosition: sinon.spy(),
-    lineAt: sinon.spy(),
-    offsetAt: sinon.spy(),
-    positionAt: sinon.spy(),
-    save: sinon.spy(),
-    validatePosition: sinon.spy(),
-    validateRange: sinon.spy(),
-}
-
-const mockTextDocumentJson: vscode.TextDocument = {
-    eol: 1,
-    fileName: 'MockFileNameJson',
-    isClosed: false,
-    isDirty: false,
-    isUntitled: false,
-    languageId: JSON_ASL,
-    lineCount: 0,
-    uri: mockUriThree,
-    version: 0,
-    getText: () => {
-        return mockDataJson
-    },
-    getWordRangeAtPosition: sinon.spy(),
-    lineAt: sinon.spy(),
-    offsetAt: sinon.spy(),
-    positionAt: sinon.spy(),
-    save: sinon.spy(),
-    validatePosition: sinon.spy(),
-    validateRange: sinon.spy(),
-}
-
-const mockPosition: vscode.Position = {
-    line: 0,
-    character: 0,
-    isBefore: sinon.spy(),
-    isBeforeOrEqual: sinon.spy(),
-    isAfter: sinon.spy(),
-    isAfterOrEqual: sinon.spy(),
-    isEqual: sinon.spy(),
-    translate: sinon.spy(),
-    with: sinon.spy(),
-    compareTo: sinon.spy(),
-}
-
-const mockSelection: vscode.Selection = {
-    anchor: mockPosition,
-    active: mockPosition,
-    end: mockPosition,
-    isEmpty: false,
-    isReversed: false,
-    isSingleLine: false,
-    start: mockPosition,
-    contains: sinon.spy(),
-    intersection: sinon.spy(),
-    isEqual: sinon.spy(),
-    union: sinon.spy(),
-    with: sinon.spy(),
-}
-
-const mockRange: vscode.Range = {
-    start: mockPosition,
-    end: mockPosition,
-    isEmpty: false,
-    isSingleLine: false,
-    contains: sinon.spy(),
-    intersection: sinon.spy(),
-    isEqual: sinon.spy(),
-    union: sinon.spy(),
-    with: sinon.spy(),
-}
-
 describe('StepFunctions VisualizeStateMachine', async function () {
-    let mockVsCode: MockVSCode
+    async function getDocument(content = '', language?: string): Promise<vscode.TextDocument> {
+        return await vscode.workspace.openTextDocument({ content, language })
+    }
 
-    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
+    const getDoc1 = () => getDocument('TextOne', 'IdOne')
+    const getDoc2 = () => getDocument('TextTwo', 'IdTwo')
+    const getYamlDoc = () => getDocument(mockDataYaml, YAML_ASL)
+    const getJsonDoc = () => getDocument(mockDataJson, JSON_ASL)
 
-    // Before all
     before(function () {
-        mockVsCode = new MockVSCode()
-
-        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
-        globals.visualizationResourcePaths.webviewBodyScript = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
-
-        sandbox = sinon.createSandbox()
-        sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
-            return
-        })
+        sinon.stub(StateMachineGraphCache.prototype, 'updateCachedFile').resolves()
     })
 
-    // Before each
     beforeEach(async function () {
         const fakeExtCtx = await FakeExtensionContext.create()
         fakeExtCtx.globalState = mockGlobalStorage
         fakeExtCtx.workspaceState = mockGlobalStorage
-        fakeExtCtx.asAbsolutePath = sinon.spy()
         aslVisualizationManager = new AslVisualizationManager(fakeExtCtx)
     })
 
-    // After each
-    afterEach(function () {
-        mockVsCode.closeAll()
+    after(async function () {
+        sinon.restore()
+        await closeAllEditors().catch(e => getLogger().warn(`closeAllEditors failed: ${e}`))
     })
 
-    // After all
-    after(function () {
-        sandbox.restore()
-        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
-    })
+    it('Test AslVisualization on setup all properties are correct', async function () {
+        const doc = await getDoc1()
+        const vis = new MockAslVisualization(doc)
 
-    // Tests
-    it('Test AslVisualization on setup all properties are correct', function () {
-        const vis = new MockAslVisualization(mockTextDocumentOne)
-
-        assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
+        assert.deepStrictEqual(vis.documentUri, doc.uri)
         assert.strictEqual(vis.getIsPanelDisposed(), false)
         assert.strictEqual(vis.getDisposables().length, 5)
 
@@ -284,102 +92,75 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
-    it('Test AslVisualizationManager managedVisualizations set still empty if no active text editor', async function () {
-        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-
-        // Preview with no active text editor
-        await assert.rejects(
-            aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, undefined),
-            new Error('Could not get active text editor for state machine render.'),
-            'Expected an error to be thrown'
-        )
-
-        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-    })
-
     it('Test AslVisualizationManager managedVisualizations set has one AslVis on first preview', async function () {
+        const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async function () {
+        const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        // Preview Doc1 Again
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async function () {
+        const doc1 = await getDoc1()
+        const doc2 = await getDoc2()
+
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        // Preview Doc2
-        mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc1.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc2.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async function () {
+        const doc1 = await getDoc1()
+        const doc2 = await getDoc2()
+
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        // Preview Doc2
-        mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        // Preview Doc1 Again
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        // Preview Doc2 Again
-        mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc1.uri.fsPath))
+        assert.ok(managedVisualizations.get(doc2.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        let panel = await aslVisualizationManager.visualizeStateMachine(
-            mockGlobalStorage,
-            vscode.window.activeTextEditor
-        )
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, await getDoc1())
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Dispose of visualization panel
@@ -391,19 +172,15 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async function () {
+        const doc1 = await getDoc1()
+        const doc2 = await getDoc2()
+
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // Preview Doc1
-        mockVsCode.showTextDocument(mockTextDocumentOne)
-        let panel = await aslVisualizationManager.visualizeStateMachine(
-            mockGlobalStorage,
-            vscode.window.activeTextEditor
-        )
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        // Preview Doc2
-        mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Dispose of first visualization panel
@@ -415,6 +192,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {
+        const yamlDoc = await getYamlDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
@@ -422,9 +200,9 @@ describe('StepFunctions VisualizeStateMachine', async function () {
             }
         }
 
-        const visualisation = new MockAslVisualizationYaml(mockTextDocumentYaml)
+        const visualisation = new MockAslVisualizationYaml(yamlDoc)
 
-        await visualisation.sendUpdateMessage(mockTextDocumentYaml)
+        await visualisation.sendUpdateMessage(yamlDoc)
 
         const message = {
             command: 'update',
@@ -438,6 +216,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async function () {
+        const jsonDoc = await getJsonDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
@@ -445,9 +224,9 @@ describe('StepFunctions VisualizeStateMachine', async function () {
             }
         }
 
-        const visualisation = new MockAslVisualizationJson(mockTextDocumentJson)
+        const visualisation = new MockAslVisualizationJson(jsonDoc)
 
-        await visualisation.sendUpdateMessage(mockTextDocumentJson)
+        await visualisation.sendUpdateMessage(jsonDoc)
 
         const message = {
             command: 'update',
@@ -468,67 +247,5 @@ class MockAslVisualization extends AslVisualization {
 
     public getDisposables(): Disposable[] {
         return this.disposables
-    }
-}
-
-class MockEditor implements vscode.TextEditor {
-    public readonly options = {}
-    public readonly selection = mockSelection
-    public readonly selections = []
-    public readonly visibleRanges = [mockRange]
-    public readonly edit = sinon.spy()
-    public readonly insertSnippet = sinon.spy()
-    public readonly setDecorations = sinon.spy()
-    public readonly hide = sinon.spy()
-    public readonly revealRange = sinon.spy()
-    public readonly show = sinon.spy()
-    public document: vscode.TextDocument
-
-    public constructor(document: vscode.TextDocument) {
-        this.document = document
-    }
-
-    public setDocument(document: vscode.TextDocument): void {
-        this.document = document
-    }
-}
-
-class MockVSCode {
-    public activeEditor: MockEditor | undefined = undefined
-    private documents: Set<vscode.TextDocument> = new Set<vscode.TextDocument>()
-
-    public showTextDocument(documentToShow: vscode.TextDocument): void {
-        let doc = this.getDocument(documentToShow)
-        if (!doc) {
-            this.documents.add(documentToShow)
-            doc = documentToShow
-        }
-        this.updateActiveEditor(doc)
-
-        // Update the return value for the stub with each call to showTextDocument
-        sandbox.stub(vscode.window, 'activeTextEditor').value(this.activeEditor)
-    }
-
-    public closeAll(): void {
-        this.activeEditor = undefined
-        this.documents = new Set<vscode.TextDocument>()
-    }
-
-    private getDocument(documentToFind: vscode.TextDocument): vscode.TextDocument | undefined {
-        for (const doc of this.documents) {
-            if (doc.uri.fsPath === documentToFind.uri.fsPath) {
-                return doc
-            }
-        }
-
-        return
-    }
-
-    private updateActiveEditor(document: vscode.TextDocument): void {
-        if (this.activeEditor) {
-            this.activeEditor.setDocument(document)
-        } else {
-            this.activeEditor = new MockEditor(document)
-        }
     }
 }

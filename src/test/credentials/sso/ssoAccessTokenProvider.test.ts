@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { installFakeClock } from '../../testUtil'
-import * as cache from '../../../credentials/sso/cache'
+import { getCache } from '../../../credentials/sso/cache'
 import * as vscode from 'vscode'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
@@ -26,14 +26,9 @@ describe('SsoAccessTokenProvider', function () {
     const oidcClient = mock(OidcClient)
 
     let sut: SsoAccessTokenProvider
+    let cache: ReturnType<typeof getCache>
     let clock: FakeTimers.InstalledClock
     let tempDir: string
-
-    function setupCaches(dir: string) {
-        const tempCache = cache.getCache(dir)
-        sinon.stub(cache, 'getCache').callsFake(() => tempCache)
-        return tempCache
-    }
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
@@ -72,7 +67,8 @@ describe('SsoAccessTokenProvider', function () {
 
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
-        sut = new SsoAccessTokenProvider({ region, startUrl }, setupCaches(tempDir), instance(oidcClient))
+        cache = getCache(tempDir)
+        sut = new SsoAccessTokenProvider({ region, startUrl }, cache, instance(oidcClient))
     })
 
     afterEach(async function () {
@@ -85,22 +81,22 @@ describe('SsoAccessTokenProvider', function () {
     describe('getToken', function () {
         it('returns a cached token', async function () {
             const validToken = createToken(HOUR_IN_MS)
-            await cache.getTokenCache().save(startUrl, { region, startUrl, token: validToken })
+            await cache.token.save(startUrl, { region, startUrl, token: validToken })
 
             assert.deepStrictEqual(await sut.getToken(), validToken)
         })
 
         it('invalidates expired tokens', async function () {
             const expiredToken = createToken(-HOUR_IN_MS)
-            await cache.getTokenCache().save(startUrl, { region, startUrl, token: expiredToken })
+            await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
             await sut.getToken()
 
-            assert.strictEqual(await cache.getTokenCache().load(startUrl), undefined)
+            assert.strictEqual(await cache.token.load(startUrl), undefined)
         })
 
         it('returns `undefined` for expired tokens that cannot be refreshed', async function () {
             const expiredToken = createToken(-HOUR_IN_MS)
-            await cache.getTokenCache().save(startUrl, { region, startUrl, token: expiredToken })
+            await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
 
             assert.strictEqual(await sut.getToken(), undefined)
         })
@@ -112,26 +108,20 @@ describe('SsoAccessTokenProvider', function () {
             const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
             const validRegistation = createRegistration(HOUR_IN_MS)
             const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
-            await cache.getTokenCache().save(startUrl, access)
+            await cache.token.save(startUrl, access)
             assert.deepStrictEqual(await sut.getToken(), refreshedToken)
 
-            const cachedToken = await cache
-                .getTokenCache()
-                .load(startUrl)
-                .then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
             assert.deepStrictEqual(cachedToken, refreshedToken)
         })
 
         it('does not refresh if missing a client registration', async function () {
             const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
-            await cache.getTokenCache().save(startUrl, { region, startUrl, token: refreshableToken })
+            await cache.token.save(startUrl, { region, startUrl, token: refreshableToken })
 
             assert.strictEqual(await sut.getToken(), undefined)
 
-            const cachedToken = await cache
-                .getTokenCache()
-                .load(startUrl)
-                .then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
             assert.strictEqual(cachedToken, undefined)
         })
     })
@@ -157,14 +147,10 @@ describe('SsoAccessTokenProvider', function () {
             const { token, registration } = setupFlow()
             stubOpen()
 
-            assert.deepStrictEqual(await sut.createToken(), token)
-
-            const cachedToken = await cache
-                .getTokenCache()
-                .load(startUrl)
-                .then(a => a?.token)
+            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
+            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
             assert.deepStrictEqual(cachedToken, token)
-            assert.deepStrictEqual(await cache.getRegistrationCache().load({ region }), registration)
+            assert.deepStrictEqual(await cache.registration.load({ region }), registration)
         })
 
         it('always creates a new token, even if already cached', async function () {
@@ -172,9 +158,10 @@ describe('SsoAccessTokenProvider', function () {
             stubOpen()
 
             const cachedToken = createToken(HOUR_IN_MS, { accessToken: 'someOtherToken' })
-            await cache.getTokenCache().save(startUrl, { region, startUrl, token: cachedToken })
+            await cache.token.save(startUrl, { region, startUrl, token: cachedToken })
 
-            assert.deepStrictEqual(await sut.createToken(), token)
+            assert.deepStrictEqual(await sut.getToken(), cachedToken)
+            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
             assert.deepStrictEqual(await sut.getToken(), token)
             assert.notDeepStrictEqual(await sut.getToken(), cachedToken)
         })
@@ -188,7 +175,7 @@ describe('SsoAccessTokenProvider', function () {
                 when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
 
                 await assert.rejects(sut.createToken(), exception)
-                assert.strictEqual(await cache.getRegistrationCache().load({ region }), undefined)
+                assert.strictEqual(await cache.registration.load({ region }), undefined)
             })
 
             it('removes the client registration cache on client faults (token step)', async function () {
@@ -202,7 +189,7 @@ describe('SsoAccessTokenProvider', function () {
                 stubOpen()
 
                 await assert.rejects(sut.createToken(), exception)
-                assert.strictEqual(await cache.getRegistrationCache().load({ region }), undefined)
+                assert.strictEqual(await cache.registration.load({ region }), undefined)
             })
 
             it('preserves the client registration cache on server faults', async function () {
@@ -213,7 +200,7 @@ describe('SsoAccessTokenProvider', function () {
                 when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
 
                 await assert.rejects(sut.createToken(), exception)
-                assert.deepStrictEqual(await cache.getRegistrationCache().load({ region }), registration)
+                assert.deepStrictEqual(await cache.registration.load({ region }), registration)
             })
         })
 
@@ -229,9 +216,9 @@ describe('SsoAccessTokenProvider', function () {
 
             it('saves the client registration even when cancelled', async function () {
                 const registration = createRegistration(HOUR_IN_MS)
-                await cache.getRegistrationCache().save({ region }, registration)
+                await cache.registration.save({ region }, registration)
                 await assert.rejects(sut.createToken(), CancellationError)
-                const cached = await cache.getRegistrationCache().load({ region })
+                const cached = await cache.registration.load({ region })
                 assert.deepStrictEqual(cached, registration)
             })
         })

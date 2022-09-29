@@ -6,55 +6,10 @@
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
-import { Region } from '../../shared/regions/endpoints'
-import { RegionProvider } from '../../shared/regions/regionProvider'
+import { DEFAULT_TEST_REGION_CODE } from '../shared/regions/testUtil'
 
 export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
 export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
-export const DEFAULT_TEST_PARTITION_ID = 'partitionQwerty'
-export const DEFAULT_TEST_REGION_CODE = 'regionQuerty'
-export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
-export const DEFAULT_TEST_DNS_SUFFIX = 'querty.tld'
-
-// TODO : Introduce Mocking instead of stub implementations
-export class FakeRegionProvider implements RegionProvider {
-    public readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
-    public readonly onRegionProviderUpdated: vscode.Event<void> = this.onRegionProviderUpdatedEmitter.event
-    public readonly servicesNotInRegion: string[] = []
-
-    public getDnsSuffixForRegion(regionId: string): string | undefined {
-        if (regionId === DEFAULT_TEST_REGION_CODE) {
-            return DEFAULT_TEST_DNS_SUFFIX
-        }
-
-        return undefined
-    }
-
-    public getPartitionId(regionId: string): string | undefined {
-        if (regionId === DEFAULT_TEST_REGION_CODE) {
-            return DEFAULT_TEST_PARTITION_ID
-        }
-
-        return undefined
-    }
-
-    public getRegions(partitionId: string): Region[] {
-        if (partitionId === DEFAULT_TEST_PARTITION_ID) {
-            return [
-                {
-                    id: DEFAULT_TEST_REGION_CODE,
-                    name: DEFAULT_TEST_REGION_NAME,
-                },
-            ]
-        }
-
-        return []
-    }
-
-    public isServiceInRegion(serviceId: string, regionId: string): boolean {
-        return !this.servicesNotInRegion.includes(serviceId)
-    }
-}
 
 export interface FakeAwsContextParams {
     contextCredentials?: AwsContextCredentials
@@ -68,6 +23,17 @@ export class FakeAwsContext implements AwsContext {
 
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
+    }
+
+    public credentialsShim = {
+        get: async () => ({
+            accessKeyId: '',
+            secretAccessKey: '',
+            ...this.awsContextCredentials?.credentials,
+        }),
+        async refresh() {
+            return this.get()
+        },
     }
 
     public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {}
@@ -90,18 +56,6 @@ export class FakeAwsContext implements AwsContext {
 
     public getCredentialDefaultRegion(): string {
         return this.awsContextCredentials?.defaultRegion ?? DEFAULT_REGION
-    }
-
-    public async getExplorerRegions(): Promise<string[]> {
-        return [DEFAULT_TEST_REGION_CODE]
-    }
-
-    public async addExplorerRegion(...regions: string[]): Promise<void> {
-        throw new Error('Method not implemented.')
-    }
-
-    public async removeExplorerRegion(...regions: string[]): Promise<void> {
-        throw new Error('Method not implemented.')
     }
 }
 

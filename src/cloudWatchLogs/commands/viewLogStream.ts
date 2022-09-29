@@ -13,13 +13,13 @@ import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
-import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -28,7 +28,7 @@ export interface SelectLogStreamResponse {
 }
 
 export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
         const uri = convertLogGroupInfoToUri(
@@ -44,7 +44,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
         result = 'Cancelled'
     }
 
-    telemetry.recordCloudwatchlogsOpenStream({ result })
+    telemetry.cloudwatchlogs_openStream.emit({ result })
 }
 
 export interface SelectLogStreamWizardContext {
@@ -56,9 +56,9 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
 
     public async pickLogStream(): Promise<string | undefined> {
-        let telemetryResult: telemetry.Result = 'Succeeded'
+        let telemetryResult: Result = 'Succeeded'
 
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client = new DefaultCloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',
@@ -107,7 +107,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             telemetryResult = 'Failed'
         }
 
-        telemetry.recordCloudwatchlogsOpenGroup({ result: telemetryResult })
+        telemetry.cloudwatchlogs_openGroup.emit({ result: telemetryResult })
         return result
     }
 }

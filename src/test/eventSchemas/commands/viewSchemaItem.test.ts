@@ -11,8 +11,7 @@ import * as vscode from 'vscode'
 import { schemaFormatter, showSchemaContent, viewSchemaItem } from '../../../eventSchemas/commands/viewSchemaItem'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-
-import { MockSchemaClient } from '../../shared/clients/mockClients'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 
 const SCHEMA_TAB_SIZE = 2
 const AWS_EVENT_SCHEMA_RAW =
@@ -97,13 +96,13 @@ describe('viewSchemaItem', async function () {
     })
 
     function stubTextEditInsert() {
-        const textEdit = ({
+        const textEdit = {
             insert: () => {},
-        } as any) as vscode.TextEditorEdit
+        } as any as vscode.TextEditorEdit
 
-        const textEditor = ({
+        const textEditor = {
             edit: () => {},
-        } as any) as vscode.TextEditor
+        } as any as vscode.TextEditor
 
         sinon.stub(textEditor, 'edit').callsFake(async editBuilder => {
             editBuilder(textEdit)
@@ -121,7 +120,7 @@ describe('viewSchemaItem', async function () {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: AWS_EVENT_SCHEMA_RAW,
         }
-        const schemaClient = new MockSchemaClient()
+        const schemaClient = new DefaultSchemaClient('')
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
         return new SchemaItemNode(fakeSchema, schemaClient, testRegistryName)

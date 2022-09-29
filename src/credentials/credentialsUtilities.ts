@@ -12,7 +12,7 @@ import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import globals from '../shared/extensionGlobals'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
+import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
 import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../shared/settings'
 
@@ -32,19 +32,23 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
     return environmentVariables
 }
 
-export function notifyUserInvalidCredentials(credentialsId: string): void {
+export function showLoginFailedMessage(credentialsId: string, errMsg: string): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
+    const editCreds = messages.editCredentials(false)
     // TODO: getHelp page for Cloud9.
-    const buttons = isCloud9() ? [] : [getHelp]
+    const buttons = isCloud9() ? [editCreds] : [editCreds, getHelp]
 
     showViewLogsMessage(
-        localize('AWS.message.credentials.invalid', 'Invalid credentials: {0}', credentialsId),
+        localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
         vscode.window,
         'error',
         buttons
     ).then((selection: string | undefined) => {
         if (selection === getHelp) {
             vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+        }
+        if (selection === editCreds) {
+            vscode.commands.executeCommand('aws.credentials.edit')
         }
     })
 }

@@ -10,7 +10,7 @@ import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { validateRepositoryName } from '../utils'
-import { recordEcrCreateRepository } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function createRepository(
     node: EcrNode,
@@ -27,7 +27,7 @@ export async function createRepository(
 
     if (!repositoryName) {
         getLogger().info('createRepository cancelled')
-        recordEcrCreateRepository({ result: 'Cancelled' })
+        telemetry.ecr_createRepository.emit({ result: 'Cancelled' })
         return
     }
 
@@ -35,18 +35,18 @@ export async function createRepository(
     try {
         const repository = await node.createRepository(repositoryName)
 
-        getLogger().info('Successfully created repository %O', repository)
+        getLogger().info('created repository: %O', repository)
         window.showInformationMessage(
-            localize('AWS.ecr.createRepository.success', 'Created repository {0}', repositoryName)
+            localize('AWS.ecr.createRepository.success', 'Created repository: {0}', repositoryName)
         )
-        recordEcrCreateRepository({ result: 'Succeeded' })
+        telemetry.ecr_createRepository.emit({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create repository ${repositoryName}: %O`, e)
         showViewLogsMessage(
-            localize('AWS.ecr.createRepository.failure', 'Failed to create repository {0}', repositoryName),
+            localize('AWS.ecr.createRepository.failure', 'Failed to create repository: {0}', repositoryName),
             window
         )
-        recordEcrCreateRepository({ result: 'Failed' })
+        telemetry.ecr_createRepository.emit({ result: 'Failed' })
     } finally {
         await commands.execute('aws.refreshAwsExplorerNode', node)
     }

@@ -28,7 +28,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 
         let template: CloudFormation.Template | undefined
         try {
-            template = await CloudFormation.load(path)
+            template = await CloudFormation.load(path, false)
         } catch (e) {
             globals.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
             return undefined

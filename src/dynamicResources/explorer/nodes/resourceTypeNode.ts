@@ -10,14 +10,15 @@ import { getLogger } from '../../../shared/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { createErrorItem, makeChildrenNodes } from '../../../shared/treeview/utils'
+import { createErrorItem, makeChildrenNodes, TreeShim } from '../../../shared/treeview/utils'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
-import { recordDynamicresourceListResource, Result } from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
     CREATE: 'Creatable',
@@ -75,7 +76,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                     return new PlaceholderNode(this, `[${UNAVAILABLE_RESOURCE}]`)
                 } else {
                     result = 'Failed'
-                    return createErrorItem(error, `Resources: unexpected error: ${error.message}`)
+                    return new TreeShim(createErrorItem(error, `Resources: unexpected error: ${error.message}`))
                 }
             },
             getNoChildrenPlaceholderNode: async () =>
@@ -87,7 +88,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                 return 0
             },
         })
-        recordDynamicresourceListResource({
+        telemetry.dynamicresource_listResource.emit({
             resourceType: this.typeName,
             result: result,
         })
@@ -112,7 +113,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
         // S3::Bucket's resource handler LIST is not regionalized at this time
         if (this.typeName === 'AWS::S3::Bucket') {
-            const s3 = globals.toolkitClientBuilder.createS3Client(this.parent.region)
+            const s3 = new DefaultS3Client(this.parent.region)
             const buckets = await s3.listBuckets()
             newResources = buckets.buckets.map(bucket => new ResourceNode(this, bucket.name, this.childContextValue))
         } else {

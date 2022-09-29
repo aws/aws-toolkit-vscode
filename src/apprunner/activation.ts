@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { AppRunnerServiceNode } from './explorer/apprunnerServiceNode'
@@ -14,6 +13,10 @@ import { pauseService } from './commands/pauseService'
 import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
+import { copyToClipboard } from '../shared/utilities/messages'
+import { Commands } from '../shared/vscode/commands2'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { Result } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -35,31 +38,31 @@ const DEPLOY_SERVICE_FAILED = localize(
 const DELETE_SERVICE_FAILED = localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service')
 
 const copyUrl = async (node: AppRunnerServiceNode) => {
-    await vscode.env.clipboard.writeText(node.url)
-    telemetry.recordApprunnerCopyServiceUrl({ passive: false })
+    copyToClipboard(node.url, 'URL')
+    telemetry.apprunner_copyServiceUrl.emit({ passive: false })
 }
 const openUrl = async (node: AppRunnerServiceNode) => {
     await vscode.env.openExternal(vscode.Uri.parse(node.url))
-    telemetry.recordApprunnerOpenServiceUrl({ passive: false })
+    telemetry.apprunner_openServiceUrl.emit({ passive: false })
 }
 
 const resumeService = async (node: AppRunnerServiceNode) => {
-    let telemetryResult: telemetry.Result = 'Failed'
+    let telemetryResult: Result = 'Failed'
     try {
         await node.resume()
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerResumeService({ result: telemetryResult, passive: false })
+        telemetry.apprunner_resumeService.emit({ result: telemetryResult, passive: false })
     }
 }
 
 const deployService = async (node: AppRunnerServiceNode) => {
-    let telemetryResult: telemetry.Result = 'Failed'
+    let telemetryResult: Result = 'Failed'
     try {
         await node.deploy()
         telemetryResult = 'Succeeded'
     } finally {
-        telemetry.recordApprunnerStartDeployment({ result: telemetryResult, passive: false })
+        telemetry.apprunner_startDeployment.emit({ result: telemetryResult, passive: false })
     }
 }
 
@@ -78,7 +81,7 @@ commandMap.set(['aws.apprunner.deleteService', DELETE_SERVICE_FAILED], deleteSer
 export async function activate(context: ExtContext): Promise<void> {
     commandMap.forEach((command, tuple) => {
         context.extensionContext.subscriptions.push(
-            vscode.commands.registerCommand(tuple[0], async (...args: any) => {
+            Commands.register(tuple[0], async (...args: any) => {
                 try {
                     await command(...args)
                 } catch (err) {

@@ -9,6 +9,11 @@ import * as vscode from 'vscode'
 
 export interface SsoToken {
     /**
+     * An optional identity associated with this token.
+     */
+    readonly identity?: string
+
+    /**
      * A base64 encoded string returned by the SSO-OIDC service. This token must be treated as an
      * opaque UTF-8 string and must not be decoded.
      */
@@ -20,7 +25,7 @@ export interface SsoToken {
     readonly expiresAt: Date
 
     /**
-     * Should always be `Bearer` if present (?).
+     * Should always be `Bearer` if present.
      */
     readonly tokenType?: string
 
@@ -58,6 +63,7 @@ export interface SsoProfile {
     readonly accountId?: string
     readonly roleName?: string
     readonly scopes?: string[]
+    readonly identifier?: string
 }
 
 export async function openSsoPortalLink(authorization: { readonly verificationUriComplete: string }): Promise<boolean> {

@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { applyPrimitives } from '../utilities/collectionUtils'
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { assign } from '../utilities/collectionUtils'
+import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
@@ -34,7 +34,7 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
-    applyPrimitives(inputBox, { ...DEFAULT_INPUTBOX_OPTIONS, ...options })
+    assign({ ...DEFAULT_INPUTBOX_OPTIONS, ...options }, inputBox)
     inputBox.buttons = options?.buttons ?? []
 
     const prompter = new InputBoxPrompter(inputBox)
@@ -44,6 +44,13 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
     }
 
     return prompter
+}
+
+export async function showInputBox(options?: ExtendedInputBoxOptions): Promise<string | undefined> {
+    const prompter = createInputBox(options)
+    const response = await prompter.prompt()
+
+    return isValidResponse(response) ? response : undefined
 }
 
 /**

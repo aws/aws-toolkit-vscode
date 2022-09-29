@@ -58,6 +58,8 @@ export const sfnCreateStateMachineNameParamUrl: string =
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
+export const sfnSupportedRegionsUrl: string =
+    'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html#supported-regions'
 
 // URLs for SSM Documents
 export const ssmDocumentPublishGuideUrl: string =
@@ -74,8 +76,10 @@ export const debugNewSamAppUrl: string = isCloud9()
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
 export const ecsExecToolkitGuideUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
-export const ecsRequiredPermissionsUrl: string =
+export const ecsRequiredTaskPermissionsUrl: string =
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using'
+export const ecsRequiredIamPermissionsUrl: string =
+    'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
 
 /**
  * Moment format for rendering readable dates.
@@ -95,8 +99,7 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
  * URI scheme for CloudWatch Logs Virtual Documents
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
-
-export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
+export const AWS_SCHEME = 'aws'
 
 export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'
 

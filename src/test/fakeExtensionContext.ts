@@ -5,6 +5,7 @@
 
 import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
@@ -16,14 +17,15 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { createTestWorkspaceFolder } from './testUtil'
-import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
+import { FakeAwsContext } from './utilities/fakeAwsContext'
+import { createTestRegionProvider } from './shared/regions/testUtil'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -48,6 +50,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
+    public secrets = new SecretStorage()
 
     private _extensionPath: string = ''
     private _globalStoragePath: string = '.'
@@ -79,7 +82,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 
     public asAbsolutePath(relativePath: string): string {
-        return relativePath
+        return path.resolve(this._extensionPath, relativePath)
     }
 
     /**
@@ -109,7 +112,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }
-        const regionProvider = new FakeRegionProvider()
+        const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
         const outputChannel = new MockOutputChannel()
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
@@ -127,7 +130,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 }
 
-class FakeMemento implements vscode.Memento {
+export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T
@@ -145,6 +148,27 @@ class FakeMemento implements vscode.Memento {
         this._storage[key] = value
 
         return Promise.resolve()
+    }
+}
+
+class SecretStorage implements vscode.SecretStorage {
+    private _onDidChange = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
+    public readonly onDidChange = this._onDidChange.event
+
+    public constructor(private readonly storage: Record<string, string> = {}) {}
+
+    public async get(key: string): Promise<string | undefined> {
+        return this.storage[key]
+    }
+
+    public async store(key: string, value: string): Promise<void> {
+        this.storage[key] = value
+        this._onDidChange.fire({ key })
+    }
+
+    public async delete(key: string): Promise<void> {
+        delete this.storage[key]
+        this._onDidChange.fire({ key })
     }
 }
 

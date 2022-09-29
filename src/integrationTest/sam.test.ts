@@ -35,7 +35,7 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 // note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 120000
+const DEBUG_TIMEOUT: number = 240000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
@@ -77,12 +77,12 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
+        runtime: 'nodejs16.x',
+        displayName: 'nodejs16.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
     {
@@ -94,15 +94,15 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.8',
-        displayName: 'python3.8 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.8',
+    //     displayName: 'python3.8 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // TODO: Add Python3.9 support to integration test hosts
     // {
     //     runtime: 'python3.9',
@@ -173,13 +173,13 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (Image)',
-        baseImage: `amazon/python3.6-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
+        runtime: 'nodejs16.x',
+        displayName: 'nodejs16.x (Image)',
+        baseImage: `amazon/nodejs16.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
     {
@@ -192,16 +192,16 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.8',
-        displayName: 'python3.8 (Image)',
-        baseImage: `amazon/python3.8-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.8',
+    //     displayName: 'python3.8 (Image)',
+    //     baseImage: `amazon/python3.8-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // TODO: Add Python3.9 support to integration test hosts
     // {
     //     runtime: 'python3.9',
@@ -489,11 +489,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(
-                        createSamApplication(testDir),
-                        /directory already exists/,
-                        'Promise was not rejected'
-                    )
+                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
@@ -597,6 +593,9 @@ describe('SAM Integration Tests', async function () {
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
+                        },
+                        sam: {
+                            containerBuild: true,
                         },
                         ...extraConfig,
                     } as AwsSamDebuggerConfiguration

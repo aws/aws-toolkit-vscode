@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import { recordAwsLoadCredentials } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     asString,
     CredentialsProvider,
@@ -29,7 +29,7 @@ export class CredentialsProviderManager {
         for (const provider of this.providers) {
             if (await provider.isAvailable()) {
                 const telemType = credentialsProviderToTelemetryType(provider.getCredentialsId().credentialSource)
-                recordAwsLoadCredentials({ credentialSourceId: telemType, value: 1 })
+                telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: 1 })
                 providers = providers.concat(provider)
             } else {
                 getLogger().verbose(
@@ -46,11 +46,10 @@ export class CredentialsProviderManager {
                 continue
             }
             const telemType = credentialsProviderToTelemetryType(providerType)
-            recordAwsLoadCredentials({ credentialSourceId: telemType, value: refreshed.length })
+            telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: refreshed.length })
             providers = providers.concat(refreshed)
         }
 
-        getLogger().verbose(`available credentials providers: ${providers}`)
         return providers
     }
 

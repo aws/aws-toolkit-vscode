@@ -4,35 +4,27 @@
  */
 
 import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
-import { submitFeedbackMessage } from '../../../feedback/commands/submitFeedback'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import { Window } from '../../../shared/vscode/window'
-import { WebviewServer } from '../../../webviews/server'
+import * as assert from 'assert'
+import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 
 const COMMENT = 'comment'
 const SENTIMENT = 'Positive'
 const message = { command: 'submitFeedback', comment: COMMENT, sentiment: SENTIMENT }
 
 describe('submitFeedbackListener', function () {
-    let mockWebviewServer: WebviewServer
-    let mockWindow: Window
     let mockTelemetry: TelemetryService
 
     beforeEach(function () {
-        mockWebviewServer = mock()
-        mockWindow = mock()
         mockTelemetry = mock()
     })
 
     it('submits feedback, disposes, and shows message on success', async function () {
-        await submitFeedbackMessage(instance(mockWebviewServer), message, {
-            telemetryService: instance(mockTelemetry),
-            window: instance(mockWindow),
-        })
+        const webview = new FeedbackWebview(instance(mockTelemetry))
+        await webview.submit(message)
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: COMMENT, sentiment: SENTIMENT }))).once()
-        verify(mockWebviewServer.dispose()).once()
-        verify(mockWindow.showInformationMessage('Thanks for the feedback!')).once()
+        assert.ok(webview.isDisposed)
     })
 
     it('submits feedback and posts failure message on failure', async function () {
@@ -40,11 +32,9 @@ describe('submitFeedbackListener', function () {
 
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
-        await submitFeedbackMessage(instance(mockWebviewServer), message, {
-            telemetryService: instance(mockTelemetry),
-            window: instance(mockWindow),
-        })
+        const webview = new FeedbackWebview(instance(mockTelemetry))
+        const result = await webview.submit(message)
 
-        verify(mockWebviewServer.postMessage(deepEqual({ statusCode: 'Failure', error: error }))).once()
+        assert.strictEqual(result, error)
     })
 })

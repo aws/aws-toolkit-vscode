@@ -21,9 +21,9 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
-import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { sleep } from '../../utilities/timeoutUtils'
 import globals from '../../extensionGlobals'
+import { ToolkitError } from '../../errors'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -56,12 +56,12 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
-        showViewLogsMessage(
-            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
+        throw new ToolkitError(
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.'),
+            {
+                code: 'NoDelveInstallation',
+            }
         )
-
-        // Terminates the debug session by sending up a dummy config
-        return {} as GoDebugConfiguration
     }
 
     const c = (await runLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -163,7 +163,7 @@ interface InstallScript {
  * @returns Path for the debugger install script, undefined if we already built the binary
  */
 async function makeInstallScript(debuggerPath: string, isWindows: boolean): Promise<InstallScript | undefined> {
-    let script: string = ''
+    let script: string = isWindows ? '' : '#!/bin/sh\n'
     const DELVE_REPO: string = 'github.com/go-delve/delve'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
     const delvePath: string = path.posix.join(debuggerPath, 'dlv')
