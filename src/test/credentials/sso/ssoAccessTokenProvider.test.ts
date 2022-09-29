@@ -168,7 +168,7 @@ describe('SsoAccessTokenProvider', function () {
 
         describe('Exceptions', function () {
             it('removes the client registration cache on client faults', async function () {
-                const exception = new UnauthorizedClientException({ $metadata: {} })
+                const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
                 const registration = createRegistration(HOUR_IN_MS)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
@@ -179,7 +179,7 @@ describe('SsoAccessTokenProvider', function () {
             })
 
             it('removes the client registration cache on client faults (token step)', async function () {
-                const exception = new InvalidClientException({ $metadata: {} })
+                const exception = new InvalidClientException({ message: '', $metadata: {} })
                 const registration = createRegistration(HOUR_IN_MS)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
@@ -193,7 +193,7 @@ describe('SsoAccessTokenProvider', function () {
             })
 
             it('preserves the client registration cache on server faults', async function () {
-                const exception = new InternalServerException({ $metadata: {} })
+                const exception = new InternalServerException({ message: '', $metadata: {} })
                 const registration = createRegistration(HOUR_IN_MS)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)

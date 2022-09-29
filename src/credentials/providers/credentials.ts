@@ -71,7 +71,7 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
  * Compare the similar concept `telemetry.CredentialSourceId`.
  */
 export type CredentialsProviderType = typeof credentialsProviderType[number]
-export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env', 'sso'] as const
+export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
 
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId

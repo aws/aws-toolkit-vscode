@@ -38,9 +38,6 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 
 const BACKOFF_DELAY_MS = 5000
 
-// Needed until the SDKs update their types
-type TokenRequest = Omit<CreateTokenRequest, 'deviceCode'> & { readonly deviceCode?: string }
-
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
@@ -67,7 +64,7 @@ export class OidcClient {
         }
     }
 
-    public async createToken(request: TokenRequest) {
+    public async createToken(request: CreateTokenRequest) {
         const response = await this.client.createToken(request as CreateTokenRequest)
         assertHasProps(response, 'accessToken', 'expiresIn')
 

@@ -536,7 +536,6 @@ const DEV_SETTINGS = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
-    enableSsoProvider: Boolean,
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>
