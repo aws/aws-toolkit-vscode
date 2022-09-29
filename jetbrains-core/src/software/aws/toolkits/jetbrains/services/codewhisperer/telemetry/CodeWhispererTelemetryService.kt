@@ -11,7 +11,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
@@ -57,7 +56,7 @@ class CodeWhispererTelemetryService {
         val (project, _, triggerTypeInfo, caretPosition) = requestContext
         val (triggerType, automatedTriggerType) = triggerTypeInfo
         val (offset, line) = caretPosition
-        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
         CodewhispererTelemetry.serviceInvocation(
             project = project,
             codewhispererAutomatedTriggerType = automatedTriggerType,
@@ -85,7 +84,7 @@ class CodeWhispererTelemetryService {
         numOfRecommendations: Int
     ) {
         val (project, _, triggerTypeInfo) = requestContext
-        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
 
         LOG.debug {
             "Recording user decisions of recommendation. " +
@@ -161,7 +160,7 @@ class CodeWhispererTelemetryService {
     ) {
         val (project, _, triggerTypeInfo) = requestContext
         val (sessionId, completionType) = responseContext
-        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
         CodeWhispererUserModificationTracker.getInstance(project).enqueue(
             AcceptedSuggestionEntry(
                 time, vFile, range, suggestion, sessionId, requestId, selectedIndex,
@@ -201,7 +200,7 @@ class CodeWhispererTelemetryService {
         latency: Double,
     ) {
         val (project, _, triggerTypeInfo) = requestContext
-        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
         CodewhispererTelemetry.perceivedLatency(
             project = project,
             codewhispererCompletionType = responseContext.completionType,

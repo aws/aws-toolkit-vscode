@@ -37,7 +37,7 @@ class CodeWhispererStateTest : CodeWhispererTestBase() {
             assertThat(actualTriggerTypeInfo.triggerType).isEqualTo(CodewhispererTriggerType.OnDemand)
             assertThat(actualTriggerTypeInfo.automatedTriggerType).isEqualTo(CodewhispererAutomatedTriggerType.Unknown)
             assertThat(actualFilename).isEqualTo(pythonFileName)
-            assertThat(actualProgrammingLanguage.languageName).isEqualTo(CodewhispererLanguage.Python.toString())
+            assertThat(actualProgrammingLanguage.languageId).isEqualTo(CodewhispererLanguage.Python.toString())
 
             runInEdtAndWait {
                 val editor = projectRule.fixture.editor

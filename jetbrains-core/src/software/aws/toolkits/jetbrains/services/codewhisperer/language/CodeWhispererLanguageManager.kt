@@ -4,43 +4,35 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.language
 
 import com.intellij.openapi.components.service
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingLanguage
-import software.aws.toolkits.telemetry.CodewhispererLanguage
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 
 class CodeWhispererLanguageManager {
-    private val supportedLanguage = setOf(
-        CodewhispererLanguage.Java.toString(),
-        CodewhispererLanguage.Python.toString(),
-        CodewhispererLanguage.Javascript.toString()
-    )
-
-    fun isLanguageSupported(language: ProgrammingLanguage): Boolean {
-        val mappedLanguage = getParentLanguage(language)
-        return supportedLanguage.contains(mappedLanguage.languageName)
+    fun getLanguage(vFile: VirtualFile): CodeWhispererProgrammingLanguage {
+        val fileTypeName = vFile.fileType.name.lowercase()
+        return when {
+            fileTypeName.contains("python") -> CodeWhispererPython.INSTANCE
+            fileTypeName.contains("javascript") -> CodeWhispererJavaScript.INSTANCE
+            fileTypeName.contains("java") -> CodeWhispererJava.INSTANCE
+            fileTypeName.contains("jsx harmony") -> CodeWhispererJsx.INSTANCE
+            fileTypeName.contains("plain_text") -> CodeWhispererPlainText.INSTANCE
+            else -> CodeWhispererUnknownLanguage.INSTANCE
+        }
     }
 
-    /**
-     * This should be called to map some language dialect to their mother language
-     * e.g. JSX -> JavaScript, TypeScript -> JavaScript etc.
-     */
-    internal fun getParentLanguage(language: ProgrammingLanguage): ProgrammingLanguage =
-        when {
-            language.languageName.contains("jsx") -> ProgrammingLanguage(CodewhispererLanguage.Javascript)
-            else -> language
-        }
+    fun getLanguage(psiFile: PsiFile): CodeWhispererProgrammingLanguage = getLanguage(psiFile.virtualFile)
 
     companion object {
         fun getInstance(): CodeWhispererLanguageManager = service()
     }
 }
 
-fun ProgrammingLanguage.toCodeWhispererLanguage() = when {
-    languageName.contains("python") -> CodewhispererLanguage.Python
-    languageName.contains("javascript") -> CodewhispererLanguage.Javascript
-    languageName.contains("java") -> CodewhispererLanguage.Java
-    languageName.contains("jsx") -> CodewhispererLanguage.Jsx
-    languageName.contains("plain_text") -> CodewhispererLanguage.Plaintext
-    else -> CodewhispererLanguage.Unknown
-}
+fun PsiFile.programmingLanguage(): CodeWhispererProgrammingLanguage = CodeWhispererLanguageManager.getInstance().getLanguage(this)
 
-fun CodewhispererLanguage.toProgrammingLanguage() = ProgrammingLanguage(this.toString())
+fun VirtualFile.programmingLanguage(): CodeWhispererProgrammingLanguage = CodeWhispererLanguageManager.getInstance().getLanguage(this)

@@ -17,7 +17,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileFormatNotSupported
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
-import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.codeWhispererLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_KB
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_MB
@@ -60,7 +60,7 @@ internal sealed class CodeScanSessionConfig(
         // Copy all the included source files to the source zip
         val srcZip = zipFiles(includedSourceFiles.map { Path.of(it) })
         val payloadContext = PayloadContext(
-            selectedFile.codeWhispererLanguage,
+            selectedFile.programmingLanguage().toTelemetryType(),
             totalLines,
             includedSourceFiles.size,
             Instant.now().toEpochMilli() - start,
@@ -174,7 +174,7 @@ internal sealed class CodeScanSessionConfig(
         private val LOG = getLogger<CodeScanSessionConfig>()
         private const val TELEMETRY_TIMEOUT_IN_SECONDS: Long = 10
         const val FILE_SEPARATOR = '/'
-        fun create(file: VirtualFile, project: Project): CodeScanSessionConfig = when (file.codeWhispererLanguage) {
+        fun create(file: VirtualFile, project: Project): CodeScanSessionConfig = when (file.programmingLanguage().toTelemetryType()) {
             CodewhispererLanguage.Java -> JavaCodeScanSessionConfig(file, project)
             CodewhispererLanguage.Python -> PythonCodeScanSessionConfig(file, project)
             else -> fileFormatNotSupported(file.extension ?: "")

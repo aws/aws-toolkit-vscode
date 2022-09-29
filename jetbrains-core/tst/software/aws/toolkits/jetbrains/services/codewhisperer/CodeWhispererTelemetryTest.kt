@@ -51,6 +51,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_PAUSE_CODEWHISPERER
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_RESUME_CODEWHISPERER
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
@@ -465,7 +466,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreManagerMock, disposableRule.disposable)
         val project = projectRule.project
         val fixture = projectRule.fixture
-        val tracker = CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python)
+        val tracker = CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE)
         assertThat(tracker.isTrackerActive()).isFalse
         runInEdtAndWait {
             WriteCommandAction.runWriteCommandAction(project) {
@@ -520,7 +521,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             }
         }
 
-        CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
 
         val acceptedTokensSize = pythonResponse.recommendations()[0].content().length - deletedTokenByUser
         val totalTokensSize = pythonTestLeftContext.length + pythonResponse.recommendations()[0].content().length - deletedTokenByUser
@@ -563,7 +564,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     fixture.editor.document.deleteString(currentOffset - 1, currentOffset)
                 }
                 // use dispose() to force tracker to emit telemetry
-                CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
+                CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
             }
         }
 
@@ -612,7 +613,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
 
         // use dispose() to force tracker to emit telemetry
-        CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -659,7 +660,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 popupManagerSpy.popupComponents.acceptButton.doClick()
             }
         }
-        CodeWhispererCodeCoverageTracker.getInstance(CodewhispererLanguage.Python).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
 
         val acceptedTokensSize = "x, y):\n    return x + y".length
         val totalTokensSize = "$pythonTestLeftContext(".length + acceptedTokensSize

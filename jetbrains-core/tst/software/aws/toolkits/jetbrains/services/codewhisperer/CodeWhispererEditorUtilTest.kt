@@ -4,21 +4,18 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndGet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
-import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.programmingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
 class CodeWhispererEditorUtilTest {
@@ -36,18 +33,6 @@ class CodeWhispererEditorUtilTest {
     }
 
     @Test
-    fun `test psiFile_programmingLanguage`() {
-        val fileTypeMock = mock<FileType> {
-            on { name } doReturn "Java"
-        }
-        val psiFile = mock<PsiFile> {
-            on { fileType } doReturn fileTypeMock
-        }
-        val programmingLanguage = psiFile.programmingLanguage
-        assertThat(programmingLanguage.languageName).isEqualTo("java")
-    }
-
-    @Test
     fun `test getFileContextInfo`() {
         val psiFile = fixture.configureByText(pythonFileName, pythonTestLeftContext)
         val fileContext = runInEdtAndGet {
@@ -56,7 +41,7 @@ class CodeWhispererEditorUtilTest {
         }
 
         assertThat(fileContext.filename).isEqualTo(pythonFileName)
-        assertThat(fileContext.programmingLanguage.languageName).isEqualTo("python")
+        assertThat(fileContext.programmingLanguage).isInstanceOf(CodeWhispererPython::class.java)
         assertThat(fileContext.caretContext.leftFileContext).isEqualTo(pythonTestLeftContext)
         assertThat(fileContext.caretContext.rightFileContext).isEqualTo("")
     }

@@ -42,7 +42,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getCaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getFileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -87,7 +86,7 @@ class CodeWhispererService {
         }
 
         val language = requestContext.fileContextInfo.programmingLanguage
-        if (!CodeWhispererLanguageManager.getInstance().isLanguageSupported(language)) {
+        if (!language.isCodeCompletionSupported()) {
             LOG.debug { "Programming language $language is not supported by CodeWhisperer" }
             if (triggerTypeInfo.triggerType == CodewhispererTriggerType.OnDemand) {
                 showCodeWhispererInfoHint(
@@ -576,11 +575,11 @@ class CodeWhispererService {
         fun getInstance(): CodeWhispererService = service()
         const val KET_SESSION_ID = "x-amzn-SessionId"
 
-        internal fun buildCodeWhispererRequest(
+        fun buildCodeWhispererRequest(
             fileContextInfo: FileContextInfo
         ): ListRecommendationsRequest {
             val programmingLanguage = ProgrammingLanguage.builder()
-                .languageName(CodeWhispererLanguageManager.getInstance().getParentLanguage(fileContextInfo.programmingLanguage).languageName)
+                .languageName(fileContextInfo.programmingLanguage.toCodeWhispererRuntimeLanguage().languageId)
                 .build()
             val fileContext = FileContext.builder()
                 .leftFileContent(fileContextInfo.caretContext.leftFileContext)

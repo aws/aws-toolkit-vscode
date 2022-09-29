@@ -17,7 +17,7 @@ import info.debatty.java.stringsimilarity.Levenshtein
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispere
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererCodeCompletionServiceListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_SECONDS_IN_MINUTE
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import java.time.Duration
 import java.time.Instant
@@ -36,7 +35,7 @@ import kotlin.math.roundToInt
 
 abstract class CodeWhispererCodeCoverageTracker(
     private val timeWindowInSec: Long,
-    private val language: CodewhispererLanguage,
+    private val language: CodeWhispererProgrammingLanguage,
     private val rangeMarkers: MutableList<RangeMarker>,
     private val fileToTokens: MutableMap<Document, CodeCoverageTokens>,
     private val myServiceInvocationCount: AtomicInteger
@@ -74,7 +73,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,
             object : CodeWhispererUserActionListener {
                 override fun afterAccept(states: InvocationContext, sessionContext: SessionContext, rangeMarker: RangeMarker) {
-                    if (states.requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage() != language) return
+                    if (states.requestContext.fileContextInfo.programmingLanguage != language) return
                     rangeMarkers.add(rangeMarker)
                     val originalRecommendation = extractRangeMarkerString(rangeMarker)
                     originalRecommendation?.let {
@@ -88,7 +87,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             CodeWhispererService.CODEWHISPERER_CODE_COMPLETION_PERFORMED,
             object : CodeWhispererCodeCompletionServiceListener {
                 override fun onSuccess(fileContextInfo: FileContextInfo) {
-                    if (language == fileContextInfo.programmingLanguage.toCodeWhispererLanguage()) {
+                    if (language == fileContextInfo.programmingLanguage) {
                         myServiceInvocationCount.getAndIncrement()
                     }
                 }
@@ -201,7 +200,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             CodewhispererTelemetry.codePercentage(
                 project = null,
                 acceptedTokensSize,
-                language,
+                language.toTelemetryType(),
                 percentage,
                 totalTokensSize,
                 successCount = myServiceInvocationCount.get()
@@ -230,10 +229,10 @@ abstract class CodeWhispererCodeCoverageTracker(
         private const val REMAINING_RECOMMENDATION = "remainingRecommendation"
         private val KEY_REMAINING_RECOMMENDATION = Key<String>(REMAINING_RECOMMENDATION)
         private val LOG = getLogger<CodeWhispererCodeCoverageTracker>()
-        private val instances: MutableMap<CodewhispererLanguage, CodeWhispererCodeCoverageTracker> = mutableMapOf()
+        private val instances: MutableMap<CodeWhispererProgrammingLanguage, CodeWhispererCodeCoverageTracker> = mutableMapOf()
 
         fun calculatePercentage(acceptedTokens: Int, totalTokens: Int): Int = ((acceptedTokens.toDouble() * 100) / totalTokens).roundToInt()
-        fun getInstance(language: CodewhispererLanguage): CodeWhispererCodeCoverageTracker = when (val instance = instances[language]) {
+        fun getInstance(language: CodeWhispererProgrammingLanguage): CodeWhispererCodeCoverageTracker = when (val instance = instances[language]) {
             null -> {
                 val newTracker = DefaultCodeWhispererCodeCoverageTracker(language)
                 instances[language] = newTracker
@@ -243,14 +242,14 @@ abstract class CodeWhispererCodeCoverageTracker(
         }
 
         @TestOnly
-        fun getInstancesMap(): MutableMap<CodewhispererLanguage, CodeWhispererCodeCoverageTracker> {
+        fun getInstancesMap(): MutableMap<CodeWhispererProgrammingLanguage, CodeWhispererCodeCoverageTracker> {
             assert(ApplicationManager.getApplication().isUnitTestMode)
             return instances
         }
     }
 }
 
-class DefaultCodeWhispererCodeCoverageTracker(language: CodewhispererLanguage) : CodeWhispererCodeCoverageTracker(
+class DefaultCodeWhispererCodeCoverageTracker(language: CodeWhispererProgrammingLanguage) : CodeWhispererCodeCoverageTracker(
     5 * TOTAL_SECONDS_IN_MINUTE,
     language,
     mutableListOf(),

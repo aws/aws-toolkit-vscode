@@ -3,153 +3,168 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
-import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.internal.verification.Times
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.spy
-import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.toProgrammingLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
+import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.isAccessible
 
 class CodeWhispererLanguageManagerTest {
     @Rule
     @JvmField
-    var projectRule = PythonCodeInsightTestFixtureRule()
+    val applicationRule = ApplicationRule()
+
+    @Rule
+    @JvmField
+    val projectRule = PythonCodeInsightTestFixtureRule()
 
     @Rule
     @JvmField
     val disposableRule = DisposableRule()
 
-    @Test
-    fun `test ProgrammingLanguage class`() {
-        // isEqualTo() is based on languageName field, which is case-insensitive
-        assertThat(ProgrammingLanguage("JAVA")).isEqualTo(ProgrammingLanguage("Java"))
-        assertThat(ProgrammingLanguage("JAVA").languageName).isEqualTo("java")
-
-        assertThat(ProgrammingLanguage("JavaScript")).isEqualTo(ProgrammingLanguage("javascript"))
-        assertThat(ProgrammingLanguage("JavaScript").languageName).isEqualTo("javascript")
-    }
+    val manager = CodeWhispererLanguageManager()
 
     @Test
-    fun `test isLanguageSupported`() {
-        val manager = CodeWhispererLanguageManager()
-
-        // ProgrammingLanguage is case-insensitive
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("java"))).isTrue
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("Java"))).isTrue
-
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("python"))).isTrue
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("Python"))).isTrue
-
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("jsx"))).isTrue
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("JSX"))).isTrue
-
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("javascript"))).isTrue
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("JavaScript"))).isTrue
-
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("plain_text"))).isFalse
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("plaintext"))).isFalse
-
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("cpp"))).isFalse
-        assertThat(manager.isLanguageSupported(ProgrammingLanguage("unknown"))).isFalse
-    }
-
-    @Test
-    fun `test ProgrammingLanguage toCodeWhispererLanguage`() {
-        assertThat(ProgrammingLanguage("java").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Java)
-        assertThat(ProgrammingLanguage("Java").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Java)
-
-        assertThat(ProgrammingLanguage("python").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Python)
-        assertThat(ProgrammingLanguage("Python").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Python)
-
-        assertThat(ProgrammingLanguage("javascript").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Javascript)
-        assertThat(ProgrammingLanguage("JavaScript").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Javascript)
-
-        assertThat(ProgrammingLanguage("jsx").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Jsx)
-        assertThat(ProgrammingLanguage("JSX").toCodeWhispererLanguage()).isEqualTo(CodewhispererLanguage.Jsx)
-    }
-
-    @Test
-    fun `test CodewhispererLanguage toProgrammingLanguage`() {
-        assertThat(CodewhispererLanguage.Python.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Python)
-        )
-        assertThat(CodewhispererLanguage.Java.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Java)
-        )
-        assertThat(CodewhispererLanguage.Javascript.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Javascript)
-        )
-        assertThat(CodewhispererLanguage.Jsx.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Jsx)
-        )
-        assertThat(CodewhispererLanguage.Plaintext.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Plaintext)
-        )
-        assertThat(CodewhispererLanguage.Unknown.toProgrammingLanguage()).isEqualTo(
-            ProgrammingLanguage(CodewhispererLanguage.Unknown)
-        )
-    }
-
-    @Test
-    fun `test getParentLanguage`() {
-        val manager = CodeWhispererLanguageManager()
-        val javaLang = ProgrammingLanguage(CodewhispererLanguage.Java)
-        val pythonLang = ProgrammingLanguage(CodewhispererLanguage.Python)
-        val javascriptLang = ProgrammingLanguage(CodewhispererLanguage.Javascript)
-        val jsxLang = ProgrammingLanguage(CodewhispererLanguage.Jsx)
-        val plainText = ProgrammingLanguage(CodewhispererLanguage.Plaintext)
-        val unknown = ProgrammingLanguage(CodewhispererLanguage.Unknown)
-
-        assertThat(manager.getParentLanguage(javaLang)).isEqualTo(javaLang)
-        assertThat(manager.getParentLanguage(pythonLang)).isEqualTo(pythonLang)
-        assertThat(manager.getParentLanguage(javascriptLang)).isEqualTo(javascriptLang)
-        assertThat(manager.getParentLanguage(plainText)).isEqualTo(plainText)
-        assertThat(manager.getParentLanguage(unknown)).isEqualTo(unknown)
-
-        // JSX is the only case which will map to different language (javascript)
-        assertThat(manager.getParentLanguage(jsxLang)).isEqualTo(javascriptLang)
-    }
-
-    @Test
-    fun `test cwsprService buildCodeWhispererRequest should call getParentLanguage once`() {
-        testgetParentLanguageUtil("test.jsx", "jsx harmony")
-        testgetParentLanguageUtil("test.py", "python")
-        testgetParentLanguageUtil("test.java", "java")
-        testgetParentLanguageUtil("test.js", "javascript")
-    }
-
-    private fun testgetParentLanguageUtil(fileName: String, languageName: String) {
-        val languageManager = spy(CodeWhispererLanguageManager())
-        ApplicationManager.getApplication().replaceService(CodeWhispererLanguageManager::class.java, languageManager, disposableRule.disposable)
-
-        val caretContextMock = mock<CaretContext> {
-            on { leftFileContext } doReturn ""
-            on { rightFileContext } doReturn ""
+    fun `test CodeWhispererProgrammingLanguage should be singleton`() {
+        val fileTypeMock = mock<FileType> {
+            on { name } doReturn "java"
+        }
+        val vFileMock = mock<VirtualFile> {
+            on { fileType } doReturn fileTypeMock
         }
 
-        val fileContextInfo = mock<FileContextInfo> {
-            on { programmingLanguage } doReturn ProgrammingLanguage(languageName)
-            on { caretContext } doReturn caretContextMock
-            on { filename } doReturn fileName
+        val lang1 = manager.getLanguage(vFileMock)
+        val lang2 = manager.getLanguage(vFileMock)
+
+        assertThat(lang1).isSameAs(lang2)
+    }
+
+    @Test
+    fun `test getProgrammingLanguage`() {
+        testGetProgrammingLanguageUtil("java", CodeWhispererJava::class.java)
+        testGetProgrammingLanguageUtil("Java", CodeWhispererJava::class.java)
+        testGetProgrammingLanguageUtil("JAVA", CodeWhispererJava::class.java)
+
+        testGetProgrammingLanguageUtil("python", CodeWhispererPython::class.java)
+        testGetProgrammingLanguageUtil("Python", CodeWhispererPython::class.java)
+
+        testGetProgrammingLanguageUtil("javascript", CodeWhispererJavaScript::class.java)
+        testGetProgrammingLanguageUtil("JavaScript", CodeWhispererJavaScript::class.java)
+
+        testGetProgrammingLanguageUtil("jsx harmony", CodeWhispererJsx::class.java)
+
+        testGetProgrammingLanguageUtil("plain_text", CodeWhispererPlainText::class.java)
+
+        testGetProgrammingLanguageUtil("cpp", CodeWhispererUnknownLanguage::class.java)
+        testGetProgrammingLanguageUtil("ruby", CodeWhispererUnknownLanguage::class.java)
+        testGetProgrammingLanguageUtil("c", CodeWhispererUnknownLanguage::class.java)
+        testGetProgrammingLanguageUtil("go", CodeWhispererUnknownLanguage::class.java)
+    }
+
+    private fun <T : CodeWhispererProgrammingLanguage> testGetProgrammingLanguageUtil(fileTypeName: String, expectedLanguage: Class<T>) {
+        val fileTypeMock = mock<FileType> {
+            on { name } doReturn fileTypeName
+        }
+        val vFileMock = mock<VirtualFile> {
+            on { fileType } doReturn fileTypeMock
+        }
+        assertThat(manager.getLanguage(vFileMock)).isInstanceOf(expectedLanguage)
+    }
+}
+
+class CodeWhispererProgrammingLanguageTest {
+    class TestLanguage : CodeWhispererProgrammingLanguage() {
+        override val languageId: String = "test-language"
+        override fun toTelemetryType(): CodewhispererLanguage = CodewhispererLanguage.Unknown
+    }
+
+    @Test
+    fun `test language isSupport`() {
+        EP_NAME.extensionList.forEach { language ->
+            val telemetryType = language.toTelemetryType()
+            val shouldSupportAutoCompletion = when (telemetryType) {
+                CodewhispererLanguage.Java -> true
+                CodewhispererLanguage.Jsx -> true
+                CodewhispererLanguage.Javascript -> true
+                CodewhispererLanguage.Python -> true
+                else -> false
+            }
+
+            val shouldSupportSecurityScan = when (telemetryType) {
+                CodewhispererLanguage.Java -> true
+                CodewhispererLanguage.Python -> true
+                else -> false
+            }
+
+            assertThat(language.isCodeCompletionSupported()).isEqualTo(shouldSupportAutoCompletion)
+            assertThat(language.isCodeScanSupported()).isEqualTo(shouldSupportSecurityScan)
+        }
+    }
+
+    @Test
+    fun `test CodeWhispererProgrammingLanguage isEqual will compare its languageId`() {
+        val instance1: CodeWhispererJava = CodeWhispererJava.INSTANCE
+        val instance2: CodeWhispererJava
+        CodeWhispererJava::class.apply {
+            val constructor = primaryConstructor
+            constructor?.isAccessible = true
+            instance2 = this.createInstance()
         }
 
-        CodeWhispererService.buildCodeWhispererRequest(fileContextInfo)
+        assertThat(instance1).isNotSameAs(instance2)
+        assertThat(instance1).isEqualTo(instance2)
+    }
 
-        verify(languageManager, Times(1)).getParentLanguage(eq(ProgrammingLanguage(languageName)))
+    @Test
+    fun `test any class extending CodeWhispererProgrammingLanguage isEqual will compare its languageId`() {
+        val instance1: TestLanguage
+        val instance2: TestLanguage
+        TestLanguage::class.apply {
+            val constructor = primaryConstructor
+            constructor?.isAccessible = true
+            instance1 = this.createInstance()
+            instance2 = this.createInstance()
+        }
+
+        assertThat(instance1).isNotSameAs(instance2)
+        assertThat(instance1).isEqualTo(instance2)
+    }
+
+    @Test
+    fun `test hashCode`() {
+        val set = mutableSetOf<CodeWhispererProgrammingLanguage>()
+        val instance1 = CodeWhispererJava.INSTANCE
+        val instance2: CodeWhispererProgrammingLanguage
+        CodeWhispererJava::class.apply {
+            val constructor = primaryConstructor
+            constructor?.isAccessible = true
+            instance2 = this.createInstance()
+        }
+
+        set.add(instance1)
+        val flag = set.contains(instance2)
+        assertThat(flag).isTrue
+    }
+
+    private companion object {
+        val EP_NAME = ExtensionPointName<CodeWhispererProgrammingLanguage>("aws.toolkit.codewhisperer.programmingLanguage")
     }
 }

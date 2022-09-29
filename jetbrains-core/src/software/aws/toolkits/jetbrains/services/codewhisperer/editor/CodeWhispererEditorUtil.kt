@@ -10,43 +10,25 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.ui.popup.AbstractPopup
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.toCodeWhispererLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.LEFT_CONTEXT_ON_CURRENT_LINE
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.awt.Point
 import kotlin.math.max
 import kotlin.math.min
 
 object CodeWhispererEditorUtil {
-    /**
-     * it's a delegate function which will call the following three specific function to get metadata instead of call 3 times for each one
-     */
     fun getFileContextInfo(editor: Editor, psiFile: PsiFile): FileContextInfo {
         val caretContext = extractCaretContext(editor)
         val fileName = getFileName(psiFile)
-        val programmingLanguage = psiFile.programmingLanguage
+        val programmingLanguage = psiFile.programmingLanguage()
         return FileContextInfo(caretContext, fileName, programmingLanguage)
     }
-
-    /**
-     * return IDE identifiable ProgrammingLanguage e.g. ProgrammingLanguage("java"), ProgrammingLanguage("jsx harmony") etc.
-     */
-    val PsiFile.programmingLanguage: ProgrammingLanguage
-        get() = ProgrammingLanguage(this.fileType.name)
-
-    val PsiFile.codeWhispererLanguage: CodewhispererLanguage
-        get() = this.programmingLanguage.toCodeWhispererLanguage()
-
-    val VirtualFile.codeWhispererLanguage: CodewhispererLanguage
-        get() = ProgrammingLanguage(fileType.name).toCodeWhispererLanguage()
 
     fun extractCaretContext(editor: Editor): CaretContext {
         val document = editor.document

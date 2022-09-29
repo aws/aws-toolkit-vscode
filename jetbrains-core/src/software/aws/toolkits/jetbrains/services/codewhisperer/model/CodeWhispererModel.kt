@@ -9,10 +9,10 @@ import com.intellij.openapi.ui.popup.JBPopup
 import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
 
@@ -21,22 +21,8 @@ data class CaretContext(val leftFileContext: String, val rightFileContext: Strin
 data class FileContextInfo(
     val caretContext: CaretContext,
     val filename: String,
-    val programmingLanguage: ProgrammingLanguage
+    val programmingLanguage: CodeWhispererProgrammingLanguage
 )
-
-data class ProgrammingLanguage(private val myLanguageName: String) {
-    // case-insensitive
-    val languageName get() = myLanguageName.lowercase()
-    constructor(codewhispererLanguage: CodewhispererLanguage) : this(codewhispererLanguage.toString())
-
-    override fun equals(other: Any?): Boolean {
-        if (other !is ProgrammingLanguage) return false
-        return other.languageName == this.languageName
-    }
-
-    override fun toString(): String = languageName
-}
-
 data class RecommendationContext(
     val details: List<DetailContext>,
     val userInputOriginal: String,
