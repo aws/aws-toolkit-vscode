@@ -24,6 +24,7 @@ import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
+import { getCodeArtifactRootNode } from '../codeArtifact/model'
 import { getEcsRootNode } from '../ecs/model'
 import { TreeShim } from '../shared/treeview/utils'
 
@@ -43,6 +44,10 @@ const serviceCandidates = [
     {
         serviceId: 'logs',
         createFn: (regionCode: string) => new CloudWatchLogsNode(regionCode),
+    },
+    {
+        serviceId: 'codeartifact',
+        createFn: (regionCode: string) => new TreeShim(getCodeArtifactRootNode(regionCode)),
     },
     {
         serviceId: 'ecr',
