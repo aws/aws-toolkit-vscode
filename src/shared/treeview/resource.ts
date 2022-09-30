@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../localizedText'
 import { UnknownError } from '../errors'
-import { AsyncCollection, isAsyncCollection } from '../utilities/asyncCollection'
+import { isAsyncCollection } from '../utilities/asyncCollection'
 import { isAsyncIterable } from '../utilities/collectionUtils'
 import { once } from '../utilities/functionUtils'
 import { Commands } from '../vscode/commands2'
@@ -22,7 +22,7 @@ interface SimpleResourceProvider<T = unknown> {
 interface PaginatedResourceProvider<T = unknown> {
     readonly paginated: true
     readonly onDidChange?: vscode.Event<void>
-    listResources(): AsyncCollection<T | T[]>
+    listResources(): AsyncIterable<T | T[]>
 }
 
 export type ResourceProvider<T> = SimpleResourceProvider<T> | PaginatedResourceProvider<T>
@@ -94,10 +94,33 @@ const loadMore = <T>(controller: LoadMoreable<T>) => controller.loadMore()
 export const loadMoreCommand = Commands.instance.register('_aws.resources.loadMore', loadMore)
 
 interface TreeNodeOptions<T> {
+    /**
+     * A message or tree node to be used when no children are available.
+     */
     readonly placeholder?: string | TreeNode
+
+    /**
+     * An object that describes how the tree node should load child nodes. If absent, it is
+     * assumed that the tree node will never have children.
+     *
+     * This can come in two variants: paginated and non-paginated. Paginated providers must
+     * return a {@link AsyncIterable} while non-paginated providers can be sync or async.
+     */
     readonly childrenProvider?: ResourceProvider<TreeNode<T>>
+
+    /**
+     * Factory function to produce a tree node from an error.
+     *
+     * A default handler is used if this is not provided.
+     */
     readonly onError?: (error: Error) => TreeNode
-    sort?(a: TreeNode<T>, b: TreeNode<T>): number
+
+    /**
+     * Callback used to sort nodes as they are loaded in.
+     *
+     * For paginated lists of children, the entire list is re-sorted with each new page.
+     */
+    sort?(this: void, a: TreeNode<T>, b: TreeNode<T>): number
 }
 
 type TreeResource<T> = Pick<TreeNode<T>, 'id' | 'getTreeItem' | 'onDidChangeTreeItem'>
@@ -152,7 +175,7 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
 
         if (succeeded) {
             if (this.options.sort) {
-                result.sort(this.options.sort.bind(this.options))
+                result.sort(this.options.sort)
             }
 
             if (this.loader && !this.loader.done) {

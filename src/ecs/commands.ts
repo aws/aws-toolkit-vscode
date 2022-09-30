@@ -173,10 +173,7 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
                 terminal.show()
             })
         } catch (err) {
-            throw ToolkitError.chain(
-                err,
-                localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open task in terminal.')
-            )
+            throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
         }
     })
 })
