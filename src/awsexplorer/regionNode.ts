@@ -12,7 +12,6 @@ import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
 import { IotNode } from '../iot/explorer/iotNodes'
-import { EcsNode } from '../ecs/explorer/ecsNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { Region } from '../shared/regions/endpoints'
 import { DEFAULT_PARTITION, RegionProvider } from '../shared/regions/regionProvider'
@@ -21,13 +20,13 @@ import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
-import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
-import { DefaultEcsClient } from '../shared/clients/ecsClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
+import { getEcsRootNode } from '../ecs/model'
+import { TreeShim } from '../shared/treeview/utils'
 
 /**
  * An AWS Explorer node representing a region.
@@ -69,7 +68,7 @@ export class RegionNode extends AWSTreeNodeBase {
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(new DefaultEcsClient(this.regionCode)),
+                createFn: () => new TreeShim(getEcsRootNode(this.regionCode)),
             },
             {
                 serviceId: 'iot',
@@ -98,18 +97,8 @@ export class RegionNode extends AWSTreeNodeBase {
         this.childNodes.push(new ResourcesNode(this.regionCode))
     }
 
-    private tryClearChildren(): void {
-        this.childNodes.forEach(cn => {
-            if ('clearChildren' in cn) {
-                ;(cn as AWSTreeNodeBase & LoadMoreNode).clearChildren()
-            }
-        })
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        this.tryClearChildren()
-        const nodes = this.childNodes
-        return this.sortNodes(nodes)
+        return this.sortNodes(this.childNodes)
     }
 
     private sortNodes(nodes: AWSTreeNodeBase[]) {
