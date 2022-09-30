@@ -77,7 +77,7 @@ export class DefaultEcsClient {
                 return []
             }
 
-            const resp = await (await client).describeServices({ services }).promise()
+            const resp = await (await client).describeServices({ cluster: request.cluster, services }).promise()
             return resp.services!
         })
     }

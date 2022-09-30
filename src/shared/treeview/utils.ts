@@ -96,10 +96,10 @@ export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) 
  * Any new or existing code needs to account for this additional layer as the shim
  * would be passed in as-is.
  */
-export class TreeShim extends AWSTreeNodeBase {
+export class TreeShim<T = unknown> extends AWSTreeNodeBase {
     private children?: AWSTreeNodeBase[]
 
-    public constructor(public readonly node: TreeNode) {
+    public constructor(public readonly node: TreeNode<T>) {
         super('Loading...')
         this.updateTreeItem()
 
