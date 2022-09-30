@@ -109,7 +109,7 @@
                 },
                 "aws.ecs.openTerminalCommand": {
                     "type": "string",
-                    "default": "/usr/bin/env bash",
+                    "default": "/bin/sh",
                     "markdownDescription": "%AWS.configuration.description.ecs.openTerminalCommand%"
                 },
                 "aws.iot.maxItemsPerPage": {

@@ -68,6 +68,7 @@ export class Container {
 
 export class Service {
     public readonly id = this.description.serviceArn!
+    public readonly arn = this.description.serviceArn!
 
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
