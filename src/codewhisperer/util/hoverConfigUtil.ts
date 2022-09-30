@@ -22,7 +22,7 @@ export class HoverConfigUtil extends Settings.define('editor', { 'hover.enabled'
     }
 
     async overwriteHoverConfig() {
-        if (this.get('hover.enabled', false)) {
+        if (this.get('hover.enabled', true)) {
             await this.globalState.update('settings.editor.hover.enabled', true)
             await this.update('hover.enabled', false)
         }
