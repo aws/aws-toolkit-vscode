@@ -283,7 +283,7 @@ requests just from the model/types.
     ```
 2. Run the script:
     ```
-    ./node_modules/.bin/ts-node ./scripts/build/generateServiceClient.ts
+    npm run generateClients
     ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
