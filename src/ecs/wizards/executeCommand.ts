@@ -22,6 +22,7 @@ function createTaskPrompter(node: Container) {
     const taskItems = (async () => {
         // Filter for only 'Running' tasks
         return (await node.listTasks()).map(task => {
+            // TODO: get task definition name and include it in the item detail
             // The last 32 digits of the task arn is the task identifier
             const taskId = task.taskArn.substring(task.taskArn.length - 32)
             const invalidSelection = task.lastStatus !== 'RUNNING'
@@ -31,7 +32,7 @@ function createTaskPrompter(node: Container) {
                 detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
                 description:
                     invalidSelection && task.desiredStatus === 'RUNNING'
-                        ? 'Task starting, try again later.'
+                        ? 'Container instance starting, try again later.'
                         : undefined,
                 data: taskId,
                 invalidSelection,
@@ -40,12 +41,15 @@ function createTaskPrompter(node: Container) {
     })()
 
     return createQuickPick(taskItems, {
-        title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
+        title: localize('AWS.command.ecs.runCommandInContainer.chooseInstance', 'Choose a container instance'),
         buttons: createCommonButtons(ecsExecToolkitGuideUrl),
         noItemsFoundItem: {
-            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No valid tasks for this container'),
+            label: localize(
+                'AWS.command.ecs.runCommandInContainer.noInstances',
+                'No valid instances for this container'
+            ),
             detail: localize(
-                'AWS.command.ecs.runCommandInContainer.noTasks.description',
+                'AWS.command.ecs.runCommandInContainer.noInstances.description',
                 'If command execution was recently enabled, try again in a few minutes.'
             ),
             data: WIZARD_BACK,
