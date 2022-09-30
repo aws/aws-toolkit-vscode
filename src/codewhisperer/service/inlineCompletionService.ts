@@ -240,16 +240,19 @@ export class InlineCompletionService {
     }
 
     async clearInlineCompletionStates(editor: vscode.TextEditor | undefined) {
-        await HoverConfigUtil.instance.restoreHoverConfig()
-        vsCodeState.isCodeWhispererEditing = false
-        ReferenceInlineProvider.instance.removeInlineReference()
-        RecommendationHandler.instance.cancelPaginatedRequest()
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
-        RecommendationHandler.instance.clearRecommendations()
-        this.disposeInlineCompletion()
-        this.setCodeWhispererStatusBarOk()
-        this.disposeCommandOverrides()
-        this.clearRejectionTimer()
+        try {
+            vsCodeState.isCodeWhispererEditing = false
+            ReferenceInlineProvider.instance.removeInlineReference()
+            RecommendationHandler.instance.cancelPaginatedRequest()
+            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            RecommendationHandler.instance.clearRecommendations()
+            this.disposeInlineCompletion()
+            this.setCodeWhispererStatusBarOk()
+            this.disposeCommandOverrides()
+        } finally {
+            this.clearRejectionTimer()
+            await HoverConfigUtil.instance.restoreHoverConfig()
+        }
     }
 
     async tryShowRecommendation() {
@@ -267,9 +270,8 @@ export class InlineCompletionService {
             RecommendationHandler.instance.clearRecommendations()
         } else if (RecommendationHandler.instance.recommendations.length > 0) {
             RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
-            await HoverConfigUtil.instance.overwriteHoverConfig()
             this.subscribeSuggestionCommands()
-            this.startRejectionTimer(editor)
+            await this.startRejectionTimer(editor)
             await this.showRecommendation(0, true)
         }
     }
@@ -325,9 +327,6 @@ export class InlineCompletionService {
             this.inlineCompletionProvider?.getActiveItemIndex,
             indexShift
         )
-        this.inlineCompletionProvider.onDidShow(e => {
-            this._timer?.refresh()
-        })
         this.inlineCompletionProviderDisposable?.dispose()
         // when suggestion is active, registering a new provider will let VS Code invoke inline API automatically
         this.inlineCompletionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
@@ -375,24 +374,25 @@ export class InlineCompletionService {
 
     private clearRejectionTimer() {
         if (this._timer !== undefined) {
-            clearTimeout(this._timer)
+            clearInterval(this._timer)
             this._timer = undefined
         }
     }
 
     /*
      * This startRejectionTimer function is to mark recommendation as rejected
-     * when the suggestions are no longer been shown to users for more than 10 seconds
+     * when the suggestions are no longer been shown to users for more than 5 seconds
      */
     private async startRejectionTimer(editor: vscode.TextEditor): Promise<void> {
         if (this._timer !== undefined) {
             return
         }
-        this._timer = globals.clock.setTimeout(async () => {
+        await HoverConfigUtil.instance.overwriteHoverConfig()
+        this._timer = globals.clock.setInterval(async () => {
             if (!this.isSuggestionVisible()) {
                 getLogger().info(`Clearing cached suggestion`)
                 await this.clearInlineCompletionStates(editor)
             }
-        }, 10 * 1000)
+        }, 5 * 1000)
     }
 }
