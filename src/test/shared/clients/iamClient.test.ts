@@ -9,38 +9,34 @@ import * as sinon from 'sinon'
 import { DefaultIamClient, IamClient } from '../../../shared/clients/iamClient'
 
 describe('iamClient', function () {
-    describe('hasRolePermissions', async function () {
-        let sandbox: sinon.SinonSandbox
+    describe('getDeniedActions', async function () {
         const iamClient: IamClient = new DefaultIamClient('us-west-2')
         const request: IAM.SimulatePrincipalPolicyRequest = {
             PolicySourceArn: 'taskRoleArn1234',
             ActionNames: ['example:permission'],
         }
         const correctPermissionsResponse = {
-            EvaluationResults: [{ EvalDecision: 'allowed' }],
-        } as IAM.SimulatePolicyResponse
+            EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'allowed' }],
+        }
         const incorrectPermissionsResponse = {
-            EvaluationResults: [{ EvalDecision: 'denied' }],
-        } as IAM.SimulatePolicyResponse
-
-        beforeEach(function () {
-            sandbox = sinon.createSandbox()
-        })
+            EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'denied' }],
+        }
 
         afterEach(function () {
-            sandbox.restore()
+            sinon.restore()
         })
-        it('verifies correct task permissions', async function () {
-            sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(incorrectPermissionsResponse)
-            assert.strictEqual(await iamClient.hasRolePermissions(request), false)
+
+        it('returns incorrect task permissions', async function () {
+            sinon.stub(iamClient, 'simulatePrincipalPolicy').resolves(incorrectPermissionsResponse)
+            assert.deepStrictEqual(
+                await iamClient.getDeniedActions(request),
+                incorrectPermissionsResponse.EvaluationResults
+            )
         })
-        it('denies incorrect task permissions', async function () {
-            sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
-            assert.strictEqual(await iamClient.hasRolePermissions(request), true)
-        })
-        it('catches errors during permissions check', async function () {
-            sandbox.stub(iamClient, 'simulatePrincipalPolicy').throws()
-            assert.strictEqual(await iamClient.hasRolePermissions(request), undefined)
+
+        it('does not return correct task permissions', async function () {
+            sinon.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
+            assert.deepStrictEqual(await iamClient.getDeniedActions(request), [])
         })
     })
 })

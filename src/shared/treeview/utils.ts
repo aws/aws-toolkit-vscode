@@ -12,8 +12,9 @@ import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../errors'
 import { Logging } from '../logger/commands'
-import { TreeNode } from './resourceTreeDataProvider'
+import { isTreeNode, TreeNode } from './resourceTreeDataProvider'
 import { assign } from '../utilities/collectionUtils'
+import { cast, TypeConstructor } from '../utilities/typeConstructors'
 
 /**
  * Produces a list of child nodes using handlers to consistently populate the
@@ -135,4 +136,16 @@ export class TreeShim extends AWSTreeNodeBase {
         assign(item, this)
         return { didRefresh: false }
     }
+}
+
+export function getResourceFromTreeNode<T = unknown>(input: unknown, type: TypeConstructor<T>): T {
+    if (input instanceof TreeShim) {
+        input = input.node
+    }
+
+    if (!isTreeNode(input)) {
+        throw new TypeError('Input was not a tree node')
+    }
+
+    return cast(input.resource, type)
 }
