@@ -3,19 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { instance, mock } from '../../utilities/mockito'
 import { CommandWizard, CommandWizardState } from '../../../ecs/wizards/executeCommand'
-import { EcsContainerNode } from '../../../ecs/explorer/ecsContainerNode'
+import { Container } from '../../../ecs/model'
+import { stub } from '../../utilities/stubber'
+import { DefaultEcsClient } from '../../../shared/clients/ecsClient'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<CommandWizardState>
-    let node: EcsContainerNode
+
+    const createContainer = () =>
+        new Container(stub(DefaultEcsClient, { regionCode: '' }), { clusterArn: '', taskRoleArn: '' })
 
     beforeEach(function () {
-        node = mock()
-        tester = createWizardTester(new CommandWizard(instance(node), false))
+        tester = createWizardTester(new CommandWizard(createContainer(), false))
     })
 
     it('should prompt for tasks and then command', function () {
@@ -24,7 +25,7 @@ describe('CreateServiceWizard', function () {
     })
 
     it('should ask for confirmation last', function () {
-        tester = createWizardTester(new CommandWizard(instance(node), true))
+        tester = createWizardTester(new CommandWizard(createContainer(), true))
         tester.task.assertShowFirst()
         tester.command.assertShowSecond()
         tester.confirmation.assertShowThird()
