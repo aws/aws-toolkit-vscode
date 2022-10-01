@@ -4,7 +4,7 @@
  */
 
 import { AsyncCollection, toCollection } from './asyncCollection'
-import { SharedProp, AccumulableKeys, Coalesce } from './tsUtils'
+import { SharedKeys, AccumulableKeys, Coalesce } from './tsUtils'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -319,7 +319,7 @@ export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
 export function pageableToCollection<
     TRequest,
     TResponse,
-    TTokenProp extends SharedProp<TRequest, TResponse>,
+    TTokenProp extends SharedKeys<TRequest, TResponse>,
     TTokenType extends TRequest[TTokenProp] & TResponse[TTokenProp],
     TResult extends AccumulableKeys<TResponse> = never
 >(

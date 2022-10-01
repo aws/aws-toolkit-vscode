@@ -287,5 +287,9 @@ function hasCode(error: Error): error is typeof error & { code: string } {
 }
 
 export function isUserCancelledError(error: unknown): boolean {
-    return CancellationError.isUserCancelled(error) || (error instanceof ToolkitError && error.cancelled)
+    return (
+        CancellationError.isUserCancelled(error) ||
+        (error instanceof ToolkitError && error.cancelled) ||
+        (isAwsError(error) && isUserCancelledError(error.originalError))
+    )
 }

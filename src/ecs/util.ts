@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { EcsClient } from '../shared/clients/ecsClient'
 import { IamClient } from '../shared/clients/iamClient'
 import { ToolkitError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -18,6 +17,7 @@ import { TaskDefinition } from 'aws-sdk/clients/ecs'
 import { getLogger } from '../shared/logger'
 import { SSM } from 'aws-sdk'
 import { fromExtensionManifest } from '../shared/settings'
+import { EcsClient } from './client'
 
 interface EcsTaskIdentifer {
     readonly task: string
@@ -71,7 +71,7 @@ export async function prepareCommand(
     task: EcsTaskIdentifer
 ): Promise<{ path: string; args: string[]; dispose: () => void }> {
     const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9())
-    const { session } = await client.executeCommand({ ...task, command })
+    const { session } = await client.executeInteractiveCommand({ ...task, command })
     const args = [JSON.stringify(session), client.regionCode, 'StartSession']
 
     async function terminateSession() {
