@@ -5,174 +5,83 @@
 
 import { CodeArtifact } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
-export interface CodeArtifactDomain {
-    domainName: string
-    domainArn: string
-    domainStatus: string
-}
-export interface CodeArtifactRepository {
-    repositoryName: string
-    repositoryArn: string
-    repositoryDomainName: string
-    repositoryDescription: string
-}
-
-export interface CodeArtifactPackage {
-    packageFormat: string
-    packageNamespace: string
-    packageName: string
-    packageFullName: string
-}
-
-export interface CodeArtifactPackageVersion {
-    versionName: string
-    versionStatus: string
-}
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
+import { ClassToInterfaceType, isNonNullable } from '../utilities/tsUtils'
 
 export type CodeArtifactClient = ClassToInterfaceType<DefaultCodeArtifactClient>
+
 export class DefaultCodeArtifactClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *listPackageVersions(
-        domainName: string,
-        repositoryName: string,
-        format: string,
-        namespace: string,
-        packageName: string
-    ): AsyncIterableIterator<CodeArtifactPackageVersion> {
-        const sdkClient = await this.createSdkClient()
-        const request: CodeArtifact.ListPackageVersionsRequest = {
-            domain: domainName,
-            repository: repositoryName,
-            format: format,
-            namespace: namespace,
-            package: packageName,
+    public listDomains(request: CodeArtifact.ListDomainsRequest = {}): AsyncCollection<CodeArtifact.DomainSummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: CodeArtifact.ListDomainsRequest) => (await client).listDomains(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'domains')
+
+        return collection.filter(isNonNullable).map(async domains => {
+            if (domains.length === 0) {
+                return []
+            }
+
+            return domains
+        })
+    }
+
+    public listRepositoriesInDomain(
+        request: CodeArtifact.ListRepositoriesInDomainRequest = { domain: '' }
+    ): AsyncCollection<CodeArtifact.RepositorySummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: CodeArtifact.ListRepositoriesInDomainRequest) =>
+            (await client).listRepositoriesInDomain(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'repositories')
+
+        return collection.filter(isNonNullable).map(async repositories => {
+            if (repositories.length === 0) {
+                return []
+            }
+
+            return repositories
+        })
+    }
+
+    public listPackages(
+        request: CodeArtifact.ListPackagesRequest = { domain: '', repository: '' }
+    ): AsyncCollection<CodeArtifact.PackageSummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: CodeArtifact.ListPackagesRequest) => (await client).listPackages(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'packages')
+
+        return collection.filter(isNonNullable).map(async packages => {
+            if (packages.length === 0) {
+                return []
+            }
+
+            return packages
+        })
+    }
+
+    public listPackageVersions(
+        request: CodeArtifact.ListPackageVersionsRequest = {
+            domain: '',
+            repository: '',
+            namespace: '',
+            package: '',
+            format: '',
         }
-        do {
-            const response = await sdkClient.listPackageVersions(request).promise()
-            if (response.versions) {
-                yield* response.versions
-                    .map(version => {
-                        // If any of these are not present, the version returned is not valid.
-                        if (!version.version || !version.status) {
-                            return undefined
-                        } else {
-                            return {
-                                versionName: version.version,
-                                versionStatus: version.status,
-                            }
-                        }
-                    })
-                    .filter(item => item !== undefined) as CodeArtifactPackageVersion[]
+    ): AsyncCollection<CodeArtifact.PackageVersionSummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: CodeArtifact.ListPackageVersionsRequest) =>
+            (await client).listPackageVersions(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'versions')
+
+        return collection.filter(isNonNullable).map(async versions => {
+            if (versions.length === 0) {
+                return []
             }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
-    }
 
-    public async *listDomains(): AsyncIterableIterator<CodeArtifactDomain> {
-        const sdkClient = await this.createSdkClient()
-        const request: CodeArtifact.ListDomainsRequest = {}
-        do {
-            const response = await sdkClient.listDomains(request).promise()
-            if (response.domains) {
-                yield* response.domains
-                    .map(domain => {
-                        // If any of these are not present, the domain returned is not valid. Arn
-                        // is based on name, and it's not possible to not have a name
-                        if (!domain.name || !domain.arn || !domain.status) {
-                            return undefined
-                        } else {
-                            return {
-                                domainName: domain.name,
-                                domainStatus: domain.status,
-                                domainArn: domain.arn,
-                            }
-                        }
-                    })
-                    .filter(item => item !== undefined) as CodeArtifactDomain[]
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
-    }
-
-    public async *listRepositoriesInDomain(domainName: string): AsyncIterableIterator<CodeArtifactRepository> {
-        const sdkClient = await this.createSdkClient()
-        const request: CodeArtifact.ListRepositoriesInDomainRequest = { domain: domainName }
-        do {
-            const response = await sdkClient.listRepositoriesInDomain(request).promise()
-            if (response.repositories) {
-                yield* response.repositories
-                    .map(repo => {
-                        // If any of these are not present, the repo returned is not valid. repositoryUri/Arn
-                        // are both based on name, and it's not possible to not have a name
-                        if (!repo.arn || !repo.name || !repo.description) {
-                            return undefined
-                        } else {
-                            return {
-                                repositoryName: repo.name,
-                                repositoryDescription: repo.description,
-                                repositoryArn: repo.arn,
-                            }
-                        }
-                    })
-                    .filter(item => item !== undefined) as CodeArtifactRepository[]
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
-    }
-
-    public async *listPackages(domainName: string, repositoryName: string): AsyncIterableIterator<CodeArtifactPackage> {
-        const sdkClient = await this.createSdkClient()
-        const request: CodeArtifact.ListPackagesRequest = { domain: domainName, repository: repositoryName }
-        do {
-            const response = await sdkClient.listPackages(request).promise()
-            if (response.packages) {
-                yield* response.packages
-                    .map(artifact => {
-                        // If any of these are not present, the package returned is not valid
-                        if (!artifact.format || !artifact.namespace || !artifact.package) {
-                            return undefined
-                        } else {
-                            const item = {
-                                packageFormat: artifact.format,
-                                packageNamespace: artifact.namespace,
-                                packageName: artifact.package,
-                                packageFullName: artifact.package,
-                            }
-                            if (artifact.format == 'npm') {
-                                item.packageFullName = `@${artifact.namespace}/${artifact.package}`
-                            } else if (artifact.format == 'maven') {
-                                item.packageFullName = `${artifact.namespace}.${artifact.package}`
-                            }
-
-                            return item
-                        }
-                    })
-                    .filter(item => item !== undefined) as CodeArtifactPackage[]
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
-    }
-
-    public async createRepository(repositoryName: string): Promise<void> {
-        // const sdkClient = await this.createSdkClient()
-        // await sdkClient.createRepository({ repositoryName: repositoryName }).promise()
-    }
-
-    public async deleteDomain(domainName: string): Promise<void> {
-        // const sdkClient = await this.createSdkClient()
-        // await sdkClient.deleteRepository({ repositoryName: repositoryName }).promise()
-    }
-
-    public async deleteRepository(repositoryName: string): Promise<void> {
-        // const sdkClient = await this.createSdkClient()
-        // await sdkClient.deleteRepository({ repositoryName: repositoryName }).promise()
-    }
-
-    public async deleteTag(repositoryName: string, tag: string): Promise<void> {
-        // const sdkClient = await this.createSdkClient()
-        // await sdkClient.batchDeleteImage({ repositoryName: repositoryName, imageIds: [{ imageTag: tag }] }).promise()
+            return versions
+        })
     }
 
     protected async createSdkClient(): Promise<CodeArtifact> {
