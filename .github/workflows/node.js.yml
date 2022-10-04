@@ -26,7 +26,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
               # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
@@ -58,7 +57,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
               env:

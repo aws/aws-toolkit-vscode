@@ -1,0 +1,58 @@
+.mynah-toggle-container {
+    display: inline-flex;
+    flex-flow: row nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    padding: var(--mynah-sizing-1);
+    position: relative;
+    background: var(--mynah-color-context-should-contain);
+    color: var(--mynah-color-context-reverse);
+    border-radius: var(--mynah-button-radius);
+    .mynah-toggle-option {
+        display: none;
+        &:not(:first-child) + .mynah-toggle-option-label {
+            margin-left: calc(-1 * var(--mynah-sizing-1));
+        }
+        & + .mynah-toggle-option-label {
+            cursor: pointer;
+            position: relative;
+            z-index: 100;
+            padding: var(--mynah-sizing-1) var(--mynah-sizing-2) var(--mynah-sizing-1) var(--mynah-sizing-2);
+            border-radius: var(--mynah-button-radius);
+            transition: var(--mynah-short-transition-rev), background-color 1ms 0ms;
+            min-height: var(--mynah-sizing-8);
+            min-width: var(--mynah-sizing-8);
+            box-sizing: border-box;
+            display: inline-flex;
+            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+        }
+        &:checked + .mynah-toggle-option-label {
+            pointer-events: none;
+            color: var(--mynah-color-button-reverse);
+            background-color: var(--mynah-color-button);
+            transition: var(--mynah-short-transition-rev), background-color 1ms 500ms;
+        }
+        &:not(:checked) + .mynah-toggle-option-label {
+            background-color: rgba(0, 0, 0, 0) !important;
+        }
+    }
+    > .mynah-toggle-indicator-transitioner {
+        background-color: var(--mynah-color-button);
+        display: inline-block;
+        transition: var(--mynah-short-transition-rev);
+        border-radius: var(--mynah-button-radius);
+        position: absolute;
+        z-index: 30;
+        width: var(--mynah-sizing-8);
+        height: var(--mynah-sizing-8);
+        left: calc(-1 * var(--mynah-sizing-8));
+        top: calc(50% - var(--mynah-sizing-4));
+        &.relocate {
+            transition-duration: 1ms;
+        }
+    }
+}
