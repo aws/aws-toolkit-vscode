@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "running commands on ECS tasks can now be cancelled"
-}
