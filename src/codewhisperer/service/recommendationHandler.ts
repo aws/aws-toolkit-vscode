@@ -283,7 +283,7 @@ export class RecommendationHandler {
             this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
             this._onDidReceiveRecommendation.fire()
         }
-
+        // send Empty userDecision event only when all paginated request finishes
         if (this.recommendations.length === 0 && nextToken === '') {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
                 requestId,
