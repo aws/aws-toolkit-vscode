@@ -76,7 +76,10 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
     return uri.scheme === 'untitled'
 }
 
-// If the VSCode URI is untitled then return the string representation, otherwise normalize the filesystem path
+// If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path
 export function normalizeVSCodeUri(uri: vscode.Uri): string {
-    return isUntitledScheme(uri) ? uri.toString() : pathutils.normalize(uri.fsPath)
+    if (uri.scheme !== 'file') {
+        return uri.toString()
+    }
+    return pathutils.normalize(uri.fsPath)
 }

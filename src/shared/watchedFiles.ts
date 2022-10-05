@@ -23,7 +23,7 @@ export interface WatchedItem<T> {
 /**
  * WatchedFiles lets us index files in the current registry. It is used
  * for CFN templates among other things. WatchedFiles holds a list of pairs of
- * the absolute path to the file or the path to an untitled file along with a transform of it that is useful for
+ * the absolute path to the file or "untitled:" URI along with a transform of it that is useful for
  * where it is used. For example, for templates, it parses the template and stores it.
  */
 export abstract class WatchedFiles<T> implements vscode.Disposable {
@@ -99,8 +99,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Create a special watcher that operates only on untitled files.
-     * VSCode does not make it easy to watch untitled files and globs won't work without knowing exactly
-     * where the untitled files are stored on disk
+     * To "watch" the in-memory contents of an untitled:/ file we just subscribe to `onDidChangeTextDocument`
      */
     public async watchUntitledFiles() {
         this.disposables.push(

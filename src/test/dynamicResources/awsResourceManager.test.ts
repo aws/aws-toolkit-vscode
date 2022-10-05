@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import * as vscode from 'vscode'
 import { ResourcesNode } from '../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
@@ -192,7 +193,9 @@ describe('ResourceManager', function () {
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
         assert.ok(existsSync(expectedSchemaLocation))
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.uri.fsPath.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        assert.ok(
+            pathutils.areEqual(undefined, mapping.uri.fsPath.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        )
         const schema = mapping.schema as vscode.Uri
         assert.strictEqual(schema.fsPath.toLowerCase(), expectedSchemaLocation.toLowerCase())
     })
@@ -217,7 +220,9 @@ describe('ResourceManager', function () {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.uri.fsPath.toString().toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        assert.ok(
+            pathutils.areEqual(undefined, mapping.uri.fsPath.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        )
         assert.strictEqual(mapping.schema, undefined)
     })
 
