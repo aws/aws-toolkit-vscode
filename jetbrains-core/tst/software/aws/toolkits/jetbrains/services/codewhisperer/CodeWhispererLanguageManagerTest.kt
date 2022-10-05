@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import org.assertj.core.api.Assertions.assertThat
@@ -58,7 +59,7 @@ class CodeWhispererLanguageManagerTest {
     }
 
     @Test
-    fun `test getProgrammingLanguage`() {
+    fun `test getProgrammingLanguage(virtualFile)`() {
         testGetProgrammingLanguageUtil("java", CodeWhispererJava::class.java)
         testGetProgrammingLanguageUtil("Java", CodeWhispererJava::class.java)
         testGetProgrammingLanguageUtil("JAVA", CodeWhispererJava::class.java)
@@ -77,6 +78,15 @@ class CodeWhispererLanguageManagerTest {
         testGetProgrammingLanguageUtil("ruby", CodeWhispererUnknownLanguage::class.java)
         testGetProgrammingLanguageUtil("c", CodeWhispererUnknownLanguage::class.java)
         testGetProgrammingLanguageUtil("go", CodeWhispererUnknownLanguage::class.java)
+    }
+
+    @Test
+    fun `psiFile passed to getProgrammingLanguage(psiFile) returns null`() {
+        // psiFile.virtualFile potentially will return null if virtualFile only exist in the memory instead of the disk
+        val psiFileMock = mock<PsiFile> {
+            on { virtualFile } doReturn null
+        }
+        assertThat(manager.getLanguage(psiFileMock)).isInstanceOf(CodeWhispererUnknownLanguage::class.java)
     }
 
     private fun <T : CodeWhispererProgrammingLanguage> testGetProgrammingLanguageUtil(fileTypeName: String, expectedLanguage: Class<T>) {
