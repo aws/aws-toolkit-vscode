@@ -109,3 +109,6 @@ export type Coalesce<T, U> = [T] extends [never] ? U : T
 
 /** Makes all keys `K` of `T` non-nullable */
 export type RequiredProps<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> }
+
+/** Analagous to shifting an array but for tuples */
+export type Shift<T extends any[]> = T extends [infer _, ...infer U] ? U : []

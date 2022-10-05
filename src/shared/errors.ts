@@ -4,6 +4,8 @@
  */
 
 import { AWSError } from 'aws-sdk'
+import { ServiceException } from '@aws-sdk/smithy-client'
+import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
@@ -280,4 +282,11 @@ function hasCode(error: Error): error is typeof error & { code: string } {
 
 export function isUserCancelledError(error: unknown): boolean {
     return CancellationError.isUserCancelled(error) || (error instanceof ToolkitError && error.cancelled)
+}
+
+/**
+ * Checks if the AWS SDK v3 error was caused by the client and not due to a service issue.
+ */
+export function isClientFault(error: ServiceException): boolean {
+    return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
 }

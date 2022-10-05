@@ -31,10 +31,10 @@ import {
     RequiredProps,
     selectFrom,
 } from '../../shared/utilities/tsUtils'
-import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import { isClientFault } from '../../shared/errors'
 
 const BACKOFF_DELAY_MS = 5000
 
@@ -174,11 +174,7 @@ export class SsoClient {
     }
 
     private async handleError(error: unknown): Promise<never> {
-        if (
-            error instanceof SSOServiceException &&
-            error.$fault === 'client' &&
-            !(isThrottlingError(error) || isTransientError(error))
-        ) {
+        if (error instanceof SSOServiceException && isClientFault(error)) {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
             await this.provider.invalidate()
         }
