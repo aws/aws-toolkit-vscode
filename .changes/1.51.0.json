@@ -1,0 +1,54 @@
+{
+	"date": "2022-10-01",
+	"version": "1.51.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "styling issue in CodeWhisperer reference log"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer duplicate closing bracket when using recommendation inside brackets"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer triggered by React plugin generated code snippets"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "cached ECS/EC2 credentials not refreshed when expired"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "malformed ECS icons on recent versions of VS Code"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer sometimes edits user's code"
+		},
+		{
+			"type": "Feature",
+			"description": "running commands on ECS tasks can now be cancelled"
+		},
+		{
+			"type": "Feature",
+			"description": "\"AWS (Developer)\" menu now includes a \"Show Global State\" item"
+		},
+		{
+			"type": "Feature",
+			"description": "Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services"
+		},
+		{
+			"type": "Feature",
+			"description": "Prompt users to install YAML plugin when AWSTemplateFormatVersion becomes available in their YAML document"
+		},
+		{
+			"type": "Feature",
+			"description": "ECS tasks can be opened up in the terminal"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved CodeWhisperer inline suggestion experience"
+		}
+	]
+}
