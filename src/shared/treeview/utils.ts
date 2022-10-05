@@ -11,9 +11,10 @@ import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../errors'
 import { Logging } from '../logger/commands'
-import { TreeNode } from './resourceTreeDataProvider'
+import { isTreeNode, TreeNode } from './resourceTreeDataProvider'
 import { assign } from '../utilities/collectionUtils'
 import { addColor, getIcon } from '../icons'
+import { cast, TypeConstructor } from '../utilities/typeConstructors'
 
 /**
  * Produces a list of child nodes using handlers to consistently populate the
@@ -78,10 +79,10 @@ export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) 
  * Any new or existing code needs to account for this additional layer as the shim
  * would be passed in as-is.
  */
-export class TreeShim extends AWSTreeNodeBase {
+export class TreeShim<T = unknown> extends AWSTreeNodeBase {
     private children?: AWSTreeNodeBase[]
 
-    public constructor(public readonly node: TreeNode) {
+    public constructor(public readonly node: TreeNode<T>) {
         super('Loading...')
         this.updateTreeItem()
 
@@ -118,4 +119,16 @@ export class TreeShim extends AWSTreeNodeBase {
         assign(item, this)
         return { didRefresh: false }
     }
+}
+
+export function getResourceFromTreeNode<T = unknown>(input: unknown, type: TypeConstructor<T>): T {
+    if (input instanceof TreeShim) {
+        input = input.node
+    }
+
+    if (!isTreeNode(input)) {
+        throw new TypeError('Input was not a tree node')
+    }
+
+    return cast(input.resource, type)
 }

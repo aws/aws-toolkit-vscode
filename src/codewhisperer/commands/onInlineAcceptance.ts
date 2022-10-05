@@ -59,7 +59,12 @@ export const acceptSuggestion = Commands.declare(
                     references,
                 },
                 context.extensionContext.globalState
-            )
+            ).finally(async () => {
+                if (isInlineCompletionEnabled()) {
+                    // at the end of recommendation acceptance, clear recommendations.
+                    await InlineCompletionService.instance.clearInlineCompletionStates(editor)
+                }
+            })
         }
 )
 /**
@@ -149,7 +154,4 @@ export async function onInlineAcceptance(
             )
         }
     }
-
-    // at the end of recommendation acceptance, clear recommendations.
-    await InlineCompletionService.instance.clearInlineCompletionStates(acceptanceEntry.editor)
 }
