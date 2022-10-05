@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "cached ECS/EC2 credentials not refreshed when expired"
-}
