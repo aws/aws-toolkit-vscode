@@ -1,3 +1,18 @@
+## 1.51.0 2022-10-01
+
+- **Bug Fix** styling issue in CodeWhisperer reference log
+- **Bug Fix** CodeWhisperer duplicate closing bracket when using recommendation inside brackets
+- **Bug Fix** CodeWhisperer triggered by React plugin generated code snippets
+- **Bug Fix** cached ECS/EC2 credentials not refreshed when expired
+- **Bug Fix** malformed ECS icons on recent versions of VS Code
+- **Bug Fix** CodeWhisperer sometimes edits user's code
+- **Feature** running commands on ECS tasks can now be cancelled
+- **Feature** "AWS (Developer)" menu now includes a "Show Global State" item
+- **Feature** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services
+- **Feature** Prompt users to install YAML plugin when AWSTemplateFormatVersion becomes available in their YAML document
+- **Feature** ECS tasks can be opened up in the terminal
+- **Feature** Improved CodeWhisperer inline suggestion experience
+
 ## 1.50.0 2022-09-13
 
 - **Bug Fix** Debugging Python image-based lambdas fails with `Init failed error=exec: "-m": executable file not found`
