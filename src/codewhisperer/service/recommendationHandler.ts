@@ -282,7 +282,9 @@ export class RecommendationHandler {
             })
             this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
             this._onDidReceiveRecommendation.fire()
-        } else {
+        }
+
+        if (this.recommendations.length === 0 && nextToken === '') {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
                 requestId,
                 sessionId,
