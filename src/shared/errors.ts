@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Uri } from 'vscode'
 import { AWSError } from 'aws-sdk'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
@@ -70,6 +71,13 @@ export interface ErrorInformation {
      * Flag to determine if the error was from a user-initiated cancellation.
      */
     readonly cancelled?: boolean
+
+    /**
+     * A link to documentation relevant to this error.
+     *
+     * TODO: implement this
+     */
+    readonly documentationUri?: Uri
 }
 
 /**

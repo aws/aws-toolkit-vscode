@@ -169,7 +169,7 @@ export class ChildProcess {
             // [2] https://nodejs.org/api/child_process.html
             try {
                 this.childProcess = crossSpawn.spawn(this.command, args, options.spawnOptions)
-                this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
+                this.registerLifecycleListeners(this.childProcess, errorHandler, options)
             } catch (err) {
                 return reject(err)
             }
@@ -288,14 +288,14 @@ export class ChildProcess {
     private registerLifecycleListeners(
         process: child_process.ChildProcess,
         errorHandler: (error: Error, forceStop?: boolean) => void,
-        timeout?: Timeout
+        options?: ChildProcessOptions
     ): void {
         const pid = process.pid
         ChildProcess.runningProcesses.set(pid, this)
 
-        const timeoutListener = timeout?.token.onCancellationRequested(({ agent }) => {
+        const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
-            this.log.verbose(`${message}${this}`)
+            this.log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
             errorHandler(new CancellationError(agent), true)
         })
 

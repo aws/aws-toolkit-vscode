@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.51.0-SNAPSHOT",
+    "version": "1.52.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -106,6 +106,11 @@
                     "type": "string",
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
+                },
+                "aws.ecs.openTerminalCommand": {
+                    "type": "string",
+                    "default": "/bin/sh",
+                    "markdownDescription": "%AWS.configuration.description.ecs.openTerminalCommand%"
                 },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
@@ -1043,6 +1048,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.ecs.openTaskInTerminal",
+                    "when": "false"
+                },
+                {
                     "command": "aws.ecs.enableEcsExec",
                     "when": "false"
                 },
@@ -1568,8 +1577,13 @@
                     "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
                 },
                 {
+                    "command": "aws.ecs.openTaskInTerminal",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
+                },
+                {
                     "command": "aws.ecs.enableEcsExec",
-                    "group": "0@1",
+                    "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsEcsServiceNode.DISABLED"
                 },
                 {
@@ -2580,6 +2594,17 @@
                 }
             },
             {
+                "command": "aws.ecs.openTaskInTerminal",
+                "title": "%AWS.ecs.openTaskInTerminal%",
+                "category": "%AWS.title%",
+                "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.ecs.enableEcsExec",
                 "title": "%AWS.ecs.enableEcsExec%",
                 "category": "%AWS.title%",
@@ -3180,15 +3205,14 @@
     },
     "scripts": {
         "prepare": "husky install",
-        "vscode:prepublish": "npm run clean && npm run lint && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && npm run lint && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
-        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
+        "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles -- --webpacked",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./scripts/build/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
+        "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
@@ -3196,8 +3220,10 @@
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
+        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./scripts/newChange.ts",
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
