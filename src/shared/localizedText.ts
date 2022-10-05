@@ -22,6 +22,7 @@ export const viewDocs = localize('AWS.generic.viewDocs', 'View Documentation')
 export const recentlyUsed = localize('AWS.generic.recentlyUsed', 'recently used')
 export const viewSettings = localize('AWS.generic.viewSettings', 'View Settings')
 export const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
+export const loadMore = localize('AWS.generic.loadMore', 'Load More')
 
 export function checklogs(): string {
     const message = localize(

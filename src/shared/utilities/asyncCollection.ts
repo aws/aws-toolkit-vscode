@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -48,6 +48,8 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     iterator(): AsyncIterator<T, T | void>
 }
 
+const asyncCollection = Symbol('asyncCollection')
+
 /**
  * Converts an async generator function to an {@link AsyncCollection}
  *
@@ -73,6 +75,7 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
     }
 
     return Object.assign(iterable, {
+        [asyncCollection]: true,
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
         filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
@@ -83,6 +86,10 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
             asyncIterableToMap(iterable, selector),
         iterator: generator,
     })
+}
+
+export function isAsyncCollection<T>(iterable: AsyncIterable<T>): iterable is AsyncCollection<T> {
+    return asyncCollection in iterable
 }
 
 async function* mapGenerator<T, U, R = T>(
