@@ -111,7 +111,6 @@ class Repository {
     }
 
     public toTreeNode(): ResourceTreeNode<this, Package> {
-        //public toTreeNode(): ResourceTreeNode<this> {
         return new ResourceTreeNode(this, {
             placeholder: localize('AWS.explorerNode.codeArtifact.noPackages', '[No Packages found]'),
             childrenProvider: {
@@ -119,7 +118,6 @@ class Repository {
                 listResources: () => this.listPackages().map(packages => packages.map(s => s.toTreeNode())),
             },
         })
-        // return new ResourceTreeNode(this)
     }
 }
 
