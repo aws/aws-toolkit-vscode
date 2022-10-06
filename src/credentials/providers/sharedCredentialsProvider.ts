@@ -16,11 +16,11 @@ import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { resolveProviderWithCancel } from '../credentialsUtilities'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
-import { SsoProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
-import { DevSettings } from '../../shared/settings'
+import { DefaultStsClient } from '../../shared/clients/stsClient'
+import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
+import { SsoClient } from '../sso/clients'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -118,20 +118,18 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public async canAutoConnect(): Promise<boolean> {
         if (isSsoProfile(this.profile)) {
-            return new SsoProvider(this.profileName, this.profile).canAutoConnect()
+            const tokenProvider = new SsoAccessTokenProvider({
+                region: this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]!,
+                startUrl: this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!,
+            })
+
+            return (await tokenProvider.getToken()) !== undefined
         }
 
         return !hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
     }
 
     public async isAvailable(): Promise<boolean> {
-        if (isSsoProfile(this.profile) && DevSettings.instance.get('enableSsoProvider', false)) {
-            // If we don't skip SSO profiles, duplicate entries may show up in the UI.
-            // This of course assumes that something else is handling SSO.
-            getLogger().debug(`Treating profile "${this.profileName}" as SSO. Skipped in "sharedCredentialsProvider".`)
-            return false
-        }
-
         const validationMessage = this.validate()
         if (validationMessage) {
             getLogger().error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
@@ -315,7 +313,20 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL} - treating as SSO Credentials`
             )
 
-            return () => new SsoProvider(this.profileName, this.profile).getCredentials()
+            const region = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]!
+            const startUrl = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!
+            const accountId = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID]!
+            const roleName = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME]!
+            const tokenProvider = new SsoAccessTokenProvider({ region, startUrl })
+            const client = SsoClient.create(region, tokenProvider)
+
+            return async () => {
+                if ((await tokenProvider.getToken()) === undefined) {
+                    await tokenProvider.createToken()
+                }
+
+                return client.getRoleCredentials({ accountId, roleName })
+            }
         }
 
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)

@@ -31,15 +31,12 @@ import {
     RequiredProps,
     selectFrom,
 } from '../../shared/utilities/tsUtils'
-import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import { isClientFault } from '../../shared/errors'
 
 const BACKOFF_DELAY_MS = 5000
-
-// Needed until the SDKs update their types
-type TokenRequest = Omit<CreateTokenRequest, 'deviceCode'> & { readonly deviceCode?: string }
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -67,7 +64,7 @@ export class OidcClient {
         }
     }
 
-    public async createToken(request: TokenRequest) {
+    public async createToken(request: CreateTokenRequest) {
         const response = await this.client.createToken(request as CreateTokenRequest)
         assertHasProps(response, 'accessToken', 'expiresIn')
 
@@ -177,11 +174,7 @@ export class SsoClient {
     }
 
     private async handleError(error: unknown): Promise<never> {
-        if (
-            error instanceof SSOServiceException &&
-            error.$fault === 'client' &&
-            !(isThrottlingError(error) || isTransientError(error))
-        ) {
+        if (error instanceof SSOServiceException && isClientFault(error)) {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
             await this.provider.invalidate()
         }

@@ -83,7 +83,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         return getStringHash(this.getProviderType() + `-${this.createTime}`)
     }
 
-    public canAutoConnect(): boolean {
+    public async canAutoConnect(): Promise<boolean> {
         return true
     }
 

@@ -164,7 +164,7 @@ export async function loginWithMostRecentCredentials(
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
-        } else if (provider.canAutoConnect()) {
+        } else if (await provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
                 getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
@@ -224,7 +224,7 @@ export async function loginWithMostRecentCredentials(
     // Try to auto-connect any other non-default profile (useful for env vars, IMDS, Cloud9, ECS, …).
     const nonDefault = await findAsync(profileNames, async p => {
         const provider = await manager.getCredentialsProvider(providerMap[p])
-        return p !== defaultName && !!provider?.canAutoConnect()
+        return p !== defaultName && !!(await provider?.canAutoConnect())
     })
     if (nonDefault) {
         getLogger().info('autoconnect: trying "%s"', nonDefault)
@@ -309,7 +309,7 @@ function createCredentialsShim(
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (!provider.canAutoConnect()) {
+            if (!(await provider.canAutoConnect())) {
                 const message = localize('aws.credentials.expired', 'Credentials are expired or invalid, login again?')
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 

@@ -12,7 +12,7 @@ import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
-import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
+import { isClientFault } from '../../shared/errors'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -100,11 +100,7 @@ export class SsoAccessTokenProvider {
         try {
             return await this.authorize(registration)
         } catch (error) {
-            if (
-                error instanceof SSOOIDCServiceException &&
-                error.$fault === 'client' &&
-                !(isThrottlingError(error) || isTransientError(error))
-            ) {
+            if (error instanceof SSOOIDCServiceException && isClientFault(error)) {
                 this.cache.registration.clear(cacheKey)
             }
 

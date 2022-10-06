@@ -116,7 +116,7 @@ export interface CredentialsProvider {
      * first use (in particular, credentials that may prompt, such as SSO/MFA,
      * should _not_ attempt to auto-connect).
      */
-    canAutoConnect(): boolean | Promise<boolean>
+    canAutoConnect(): Promise<boolean>
     /**
      * Determines if the provider is currently capable of producing credentials.
      */

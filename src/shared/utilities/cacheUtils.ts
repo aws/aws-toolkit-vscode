@@ -17,9 +17,8 @@ import { dirname } from 'path'
 export interface KeyedCache<T, K = string> {
     /**
      * Attempts to read data stored at {@link key}.
-     * 
+     *
      * @param key Target key to read from.
-
      * @returns `T` on success, `undefined` if {@link key} doesn't exist.
      */
     load(key: K): Promise<T | undefined>
