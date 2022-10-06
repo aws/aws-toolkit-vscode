@@ -66,7 +66,8 @@ class Package {
 
         const item = new vscode.TreeItem(packageFullName)
         item.tooltip = this.artifact.package!
-        item.iconPath = getIcon('aws-ecs-cluster')
+        item.iconPath = getIcon('vscode-package')
+        item.description = this.artifact.format
         item.contextValue = 'awsCodeArtifactPackageNode'
 
         return item
