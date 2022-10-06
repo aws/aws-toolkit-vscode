@@ -303,10 +303,10 @@ class CodeWhispererService {
 
         val hasAtLeastOneValid = checkRecommendationsValidity(nextStates, response.nextToken().isEmpty())
 
-        // If there are no recommendations in this response, we need to manually send the user decision event here
+        // If there are no recommendations at all in this session, we need to manually send the user decision event here
         // since it won't be sent automatically later
-        if (response.recommendations().isEmpty()) {
-            LOG.debug { "Received an empty list from response, requestId: $requestId" }
+        if (nextStates.recommendationContext.details.isEmpty() && response.nextToken().isEmpty()) {
+            LOG.debug { "Received just an empty list from this session, requestId: $requestId" }
             CodeWhispererTelemetryService.getInstance().sendUserDecisionEvent(
                 requestId,
                 requestContext,

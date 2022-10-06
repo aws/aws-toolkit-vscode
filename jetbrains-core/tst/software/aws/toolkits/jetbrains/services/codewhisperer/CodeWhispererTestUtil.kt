@@ -21,6 +21,7 @@ object CodeWhispererTestUtil {
     const val testRequestIdForCodeWhispererException = "test_request_id_for_codewhispererException"
     const val codeWhispererRecommendationActionId = "CodeWhispererRecommendationAction"
     const val testValidAccessToken = "test_valid_access_token"
+    const val testNextToken = "test_next_token"
     private val testReferenceInfoPair = listOf(
         Pair("MIT", "testRepo1"),
         Pair("Apache-2.0", "testRepo2"),
@@ -53,6 +54,7 @@ object CodeWhispererTestUtil {
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
         .build() as ListRecommendationsResponse
+    val pythonResponseWithToken: ListRecommendationsResponse = pythonResponse.toBuilder().nextToken(testNextToken).build()
     val javaResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
         .recommendations(
             generateMockRecommendationDetail("(x, y) {\n        return x + y\n    }"),

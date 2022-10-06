@@ -24,6 +24,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
@@ -42,6 +43,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.listOfEmptyRecommendationResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.listOfMixedEmptyAndNonEmptyRecommendationResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponseWithToken
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testCodeWhispererException
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testRequestId
@@ -666,7 +668,6 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         val totalTokensSize = "$pythonTestLeftContext(".length + acceptedTokensSize
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
-        metricCaptor.allValues.forEach { println(it) }
         assertEventsContainsFieldsAndCount(
             metricCaptor.allValues,
             codePercentage,
@@ -697,6 +698,41 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 userDecision,
                 1,
                 "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString()
+            )
+        }
+    }
+
+    @Test
+    fun `test getting some recommendations and a final empty list of recommendations at session end should not sent empty userDecision events`() {
+        mockClient.stub {
+            on {
+                mockClient.listRecommendations(any<ListRecommendationsRequest>())
+            } doReturnConsecutively(listOf(pythonResponseWithToken, emptyListResponse))
+        }
+
+        withCodeWhispererServiceInvokedAndWait { }
+
+        runInEdtAndWait {
+            val metricCaptor = argumentCaptor<MetricEvent>()
+            // 2 serviceInvocation + 5 userDecision
+            verify(batcher, atLeast(pythonResponseWithToken.recommendations().size + 2)).enqueue(metricCaptor.capture())
+            assertEventsContainsFieldsAndCount(
+                metricCaptor.allValues,
+                userDecision,
+                0,
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString()
+            )
+            assertEventsContainsFieldsAndCount(
+                metricCaptor.allValues,
+                userDecision,
+                1,
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Accept.toString()
+            )
+            assertEventsContainsFieldsAndCount(
+                metricCaptor.allValues,
+                userDecision,
+                4,
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Unseen.toString()
             )
         }
     }
