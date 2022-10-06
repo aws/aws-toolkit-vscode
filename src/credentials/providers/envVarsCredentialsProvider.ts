@@ -51,7 +51,7 @@ export class EnvVarsCredentialsProvider implements CredentialsProvider {
         return env.AWS_REGION
     }
 
-    public canAutoConnect(): boolean {
+    public async canAutoConnect(): Promise<boolean> {
         return true
     }
 
