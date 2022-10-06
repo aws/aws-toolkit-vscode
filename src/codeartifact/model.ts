@@ -21,6 +21,7 @@ class PackageVersion {
 
     public getTreeItem() {
         const item = new vscode.TreeItem(this.packageVersion.version!)
+        item.description = this.packageVersion.status !== 'Published' ? this.packageVersion.status : undefined
         item.tooltip = this.packageVersion.version!
         item.contextValue = 'awsCodeArtifactPackageVersionNode'
 
