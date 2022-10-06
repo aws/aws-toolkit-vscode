@@ -34,10 +34,18 @@
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
             "metadata": [
-                { "type": "command" },
-                { "type": "debounceCount" },
-                { "type": "duration" },
-                { "type": "result" },
+                {
+                    "type": "command"
+                },
+                {
+                    "type": "debounceCount"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
                 {
                     "type": "reason",
                     "required": false
@@ -178,7 +186,11 @@
         {
             "name": "aws_showExplorerErrorDetails",
             "description": "Called when getting more details about errors thrown by the explorer",
-            "metadata": [{ "type": "result" }]
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         },
         {
             "name": "aws_showRegion",
@@ -191,7 +203,11 @@
         {
             "name": "sam_detect",
             "description": "Called when detecting the location of the SAM CLI",
-            "metadata": [{ "type": "result" }],
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ],
             "passive": true
         },
         {
@@ -222,17 +238,35 @@
             "name": "sam_attachDebugger",
             "description": "Called after trying to attach a debugger to a local sam invoke",
             "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType" },
-                { "type": "runtime" },
-                { "type": "attempts" },
-                { "type": "duration" },
-                { "type": "lambdaArchitecture", "required": false }
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "lambdaPackageType"
+                },
+                {
+                    "type": "runtime"
+                },
+                {
+                    "type": "attempts"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "lambdaArchitecture",
+                    "required": false
+                }
             ]
         },
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "mynah_activate",
+            "description": "Emitted when Mynah is activated",
+            "passive": true
         }
     ]
 }

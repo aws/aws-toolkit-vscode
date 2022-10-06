@@ -1,0 +1,31 @@
+{
+  "name": "amzn-mynah-fully-qualified-names",
+  "version": "0.1.0",
+  "publisher": "aws-mynah",
+  "license": "UNLICENSED",
+  "repository": "ssh://git.amazon.com/pkg/MynahFullyQualifiedNames",
+  "main": "./amzn_mynah_fully_qualified_names.js",
+  "types": "./amzn_mynah_fully_qualified_names.d.ts",
+  "module": "./amzn_mynah_fully_qualified_names.js",
+  "scripts": {
+    "clean": "rm -rf build out dist node_modules",
+    "test": "echo 'no tests yet'"
+  },
+  "dependencies": {
+    "tree-sitter-typescript": "^0.20.1",
+    "tree-sitter-python": "^0.19.0",
+    "web-tree-sitter": "^0.20.5"
+  },
+  "npm-pretty-much": {
+    "ciBuild": "never",
+    "runTest": "never"
+  },
+  "prettier": {
+    "bracketSpacing": true,
+    "printWidth": 120,
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "all"
+  }
+}
