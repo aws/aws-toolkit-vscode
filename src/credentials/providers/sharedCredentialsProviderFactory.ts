@@ -5,6 +5,7 @@
 
 import * as fs from 'fs-extra'
 import { getLogger, Logger } from '../../shared/logger'
+import { DevSettings } from '../../shared/settings'
 import {
     getConfigFilename,
     getCredentialsFilename,
@@ -14,8 +15,11 @@ import {
 import { CredentialsProviderType } from './credentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
+import { SsoProvider } from './ssoCredentialProvider'
 
-export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
+export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<
+    SharedCredentialsProvider | SsoProvider
+> {
     private readonly logger: Logger = getLogger()
 
     private loadedCredentialsModificationMillis?: number
@@ -60,12 +64,26 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         const profileNames = Array.from(allCredentialProfiles.keys())
         getLogger().verbose(`credentials: found profiles: ${profileNames}`)
         for (const profileName of profileNames) {
-            const provider = new SharedCredentialsProvider(profileName, allCredentialProfiles)
-            await this.addProviderIfValid(profileName, provider)
+            const profile = allCredentialProfiles.get(profileName)
+            if (!profile) {
+                continue
+            }
+
+            if (DevSettings.instance.get('enableSsoProvider', false) && profile['sso_start_url']) {
+                await this.addProviderIfValid(profileName, new SsoProvider(profileName, profile))
+            } else {
+                await this.addProviderIfValid(
+                    profileName,
+                    new SharedCredentialsProvider(profileName, allCredentialProfiles)
+                )
+            }
         }
     }
 
-    private async addProviderIfValid(profileName: string, provider: SharedCredentialsProvider): Promise<void> {
+    private async addProviderIfValid(
+        profileName: string,
+        provider: SharedCredentialsProvider | SsoProvider
+    ): Promise<void> {
         if (!(await provider.isAvailable())) {
             this.logger.warn(
                 `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit.`

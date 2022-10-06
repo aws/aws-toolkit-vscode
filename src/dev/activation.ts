@@ -12,6 +12,7 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
+import { deleteWorkpaceCommand, installVsixCommand, openTerminalCommand } from './caws'
 
 interface MenuOption {
     readonly label: string
@@ -28,6 +29,24 @@ interface MenuOption {
  * feature/module as a description so it can be moved around easier.
  */
 const menuOptions: Record<string, MenuOption> = {
+    installVsix: {
+        label: 'Install VSIX on Remote Environment',
+        description: 'REMOVED.codes',
+        detail: 'Automatically upload/install a VSIX to a remote host',
+        executor: installVsixCommand,
+    },
+    openTerminal: {
+        label: 'Open Remote Terminal',
+        description: 'REMOVED.codes',
+        detail: 'Open a new terminal connected to the remote environment',
+        executor: openTerminalCommand,
+    },
+    deleteWorkpace: {
+        label: 'Delete Workspace',
+        description: 'REMOVED.codes',
+        detail: 'Deletes the selected workpace',
+        executor: deleteWorkpaceCommand,
+    },
     editStorage: {
         label: 'Edit Storage',
         description: 'VS Code',
