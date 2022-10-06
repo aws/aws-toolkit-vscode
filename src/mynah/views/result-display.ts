@@ -26,6 +26,7 @@ import {
 } from '../models/model'
 import { getIcon, Icon } from '../../shared/icons'
 import { Telemetry } from '../telemetry/telemetry/interfaces'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 enum LiveSearchCommands {
     PAUSE = 'Mynah.LiveSearchPause',
@@ -235,20 +236,30 @@ export class ResultDisplay {
             )
         })
         const session = this.client.newSession(panelId)
+        const context = {
+            should: queryContext.should,
+            must: queryContext.must,
+            mustNot: queryContext.mustNot,
+        }
         session.recordEvent(TelemetryEventName.SEARCH, {
             searchMetadata: {
                 query: input,
                 trigger: this.getTelemetrySearchTrigger(trigger),
-                queryContext: {
-                    should: queryContext.should,
-                    must: queryContext.must,
-                    mustNot: queryContext.mustNot,
-                },
+                queryContext: context,
                 code,
                 sourceId,
                 codeQuery: query.codeQuery,
                 implicit: query.implicit ?? false,
             },
+        })
+        telemetry.mynah_search.emit({
+            mynahQuery: input,
+            mynahQueryContext: JSON.stringify(context),
+            mynahTrigger: this.getTelemetrySearchTrigger(trigger),
+            mynahCode: code,
+            mynahSourceId: sourceId,
+            mynahCodeQuery: JSON.stringify(query.codeQuery),
+            mynahImplicit: query.implicit ?? false,
         })
 
         panel.webview.onDidReceiveMessage(msg => {
@@ -289,6 +300,15 @@ export class ResultDisplay {
                             implicit: msg.implicit ?? false,
                             fromAutocomplete,
                         },
+                    })
+                    telemetry.mynah_search.emit({
+                        mynahQuery: msg.text,
+                        mynahQueryContext: JSON.stringify(msg.context),
+                        mynahTrigger: trigger,
+                        mynahCode: code,
+                        mynahCodeQuery: JSON.stringify(msg.codeQuery),
+                        mynahImplicit: msg.implicit ?? false,
+                        mynahFromAutocomplete: fromAutocomplete,
                     })
                     // Since the search performs when the extension's search-input changes, we don't want to trigger a real search for history items.
                     if (trigger !== SearchTrigger.SEARCH_HISTORY) {
