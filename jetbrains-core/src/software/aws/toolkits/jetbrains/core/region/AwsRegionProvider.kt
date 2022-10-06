@@ -18,6 +18,7 @@ import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
+import software.aws.toolkits.resources.BundledResources
 
 class AwsRegionProvider : ToolkitRegionProvider() {
     private val regionChain by lazy {
@@ -26,7 +27,9 @@ class AwsRegionProvider : ToolkitRegionProvider() {
     }
     private val partitions: Map<String, PartitionData> by lazy {
         val inputStream = RemoteResourceResolverProvider.getInstance().get().resolve(ServiceEndpointResource).toCompletableFuture().get()?.inputStream()
-        val partitions = inputStream?.use { PartitionParser.parse(it) }?.partitions ?: return@lazy emptyMap<String, PartitionData>()
+        val partitions = inputStream?.use { PartitionParser.parse(it) }?.partitions
+            ?: BundledResources.ENDPOINTS_FILE.use { PartitionParser.parse(BundledResources.ENDPOINTS_FILE) }?.partitions
+            ?: throw Exception("Failed to retrieve partitions.")
 
         partitions.asSequence().associateBy { it.partition }.mapValues {
             PartitionData(

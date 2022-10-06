@@ -14,6 +14,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import software.aws.toolkits.core.lambda.LambdaManifestValidator
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,7 +53,7 @@ class RemoteResourceResolverTest {
     @Test
     fun expiredFileIsDownloadedAgain() {
         val urlFetcher = mock<UrlFetcher> {
-            on { fetch(eq(PRIMARY_URL), any()) }.doAnswer(writeDataToFile("first")).doAnswer(writeDataToFile("second"))
+            on { fetch(eq(PRIMARY_URL), any()) }.doAnswer(writeDataToFile("data1")).doAnswer(writeDataToFile("data2"))
         }
 
         val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
@@ -64,8 +65,26 @@ class RemoteResourceResolverTest {
         val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
         assertThat(firstCall).isEqualTo(secondCall)
-        assertThat(secondCall).hasContent("second")
+
+        assertThat(secondCall).hasContent("data2")
         verify(urlFetcher, times(2)).fetch(eq(PRIMARY_URL), any())
+    }
+    @Test
+    fun downloadedParseFailedSkippedMove() {
+        val urlFetcher = mock<UrlFetcher> {
+            on { fetch(eq(PRIMARY_URL), any()) }.doAnswer(writeDataToFile(FAIL))
+        }
+
+        val cachePath = tempPath.newFolder().toPath()
+        val sut = DefaultRemoteResourceResolver(urlFetcher, cachePath, immediateExecutor)
+
+        val resource = xmlResource()
+
+        val firstCall = sut.resolve(resource).unwrap()
+        val secondCall = sut.resolve(resource).unwrap()
+
+        assertThat(firstCall).isEqualTo(secondCall)
+        assertThat(firstCall.exists()).isFalse()
     }
 
     @Test
@@ -131,12 +150,26 @@ class RemoteResourceResolverTest {
             name: String = "resource",
             urls: List<String> = listOf(PRIMARY_URL),
             ttl: Duration? = Duration.ofMillis(1000),
-            initialValue: InputStream? = null
+            initialValue: InputStream? = null,
         ) = object : RemoteResource {
             override val urls: List<String> = urls
             override val name: String = name
             override val ttl: Duration? = ttl
             override val initialValue = initialValue?.let { { it } }
+        }
+
+        fun xmlResource(
+            name: String = "resource",
+            urls: List<String> = listOf(PRIMARY_URL),
+            ttl: Duration? = Duration.ofMillis(1000),
+            initialValue: InputStream? = null,
+            remoteResolveParser: RemoteResolveParser? = LambdaManifestValidator
+        ) = object : RemoteResource {
+            override val urls: List<String> = urls
+            override val name: String = name
+            override val ttl: Duration? = ttl
+            override val initialValue = initialValue?.let { { it } }
+            override val remoteResolveParser: RemoteResolveParser = remoteResolveParser as LambdaManifestValidator
         }
 
         fun writeDataToFile(data: String): (InvocationOnMock) -> Unit = { invocation ->
@@ -154,5 +187,8 @@ class RemoteResourceResolverTest {
 
         const val PRIMARY_URL = "http://example.com"
         const val SECONDARY_URL = "http://example2.com"
+        const val FAIL = "<aws>" +
+            "data" +
+            "<>"
     }
 }

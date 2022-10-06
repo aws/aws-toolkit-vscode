@@ -74,6 +74,12 @@ class AwsRegionProviderTest {
     }
 
     @Test
+    fun allRegionsWorksFallsBackToBundledResource() {
+        createRegionDataProvider("all-Regions-Works-Falls-Back-To-Bundled-Resource.json")
+        val awsRegionProvider = AwsRegionProvider()
+        assertThat(awsRegionProvider.partitions()).isNotEmpty
+    }
+    @Test
     fun noDefaultRegionFallsBackToUsEast1() {
         createRegionDataProvider("no-default-region-us-east-1-fallback-endpoints.json")
         val awsRegionProvider = AwsRegionProvider()

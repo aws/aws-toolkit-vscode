@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
+import software.aws.toolkits.core.utils.RemoteResolveParser
 import software.aws.toolkits.core.utils.RemoteResource
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.BundledResources
@@ -47,10 +48,16 @@ object PartitionParser {
         mapper.readValue(inputStream, Partitions::class.java)
     }
 }
+object EndpointsJsonValidator : RemoteResolveParser {
+    override fun canBeParsed(data: InputStream): Boolean {
+        return PartitionParser.parse(data)?.partitions?.isNotEmpty() ?: return false
+    }
+}
 
 object ServiceEndpointResource : RemoteResource {
     override val urls: List<String> = listOf("https://idetoolkits.amazonwebservices.com/endpoints.json")
     override val name: String = "service-endpoints.json"
     override val ttl: Duration? = Duration.ofHours(24)
     override val initialValue: (() -> InputStream)? = { BundledResources.ENDPOINTS_FILE }
+    override val remoteResolveParser: EndpointsJsonValidator = EndpointsJsonValidator
 }

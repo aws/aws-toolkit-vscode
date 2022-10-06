@@ -1,0 +1,20 @@
+{
+    "partitions" : [ {
+        "defaults" : {
+            "hostname" : "{service}.{region}.{dnsSuffix}",
+            "protocols" : [ "https" ],
+            "signatureVersions" : [ "v4" ],
+            "variants" : [ {
+                "dnsSuffix" : "amazonaws.com",
+                "hostname" : "{service}-fips.{region}.{dnsSuffix}",
+                "tags" : [ "fips" ]
+            }, {
+                "dnsSuffix" : "api.aws",
+                "hostname" : "{service}-fips.{region}.{dnsSuffix}",
+                "tags" : [ "dualstack", "fips" ]
+            }, {
+                "dnsSuffix" : "api.aws",
+                "hostname" : "{service}.{region}.{dnsSuffix}",
+                "tags" : [ "dualstack" ]
+            } ]
+        },

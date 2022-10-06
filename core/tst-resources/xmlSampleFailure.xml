@@ -1,0 +1,13 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<requests>
+    <request category="Alexa">
+        <name>Alexa End Session
+        <filename>alexa-end-session.json</filename>
+    </request>
+    <request category="Alexa">
+        <name>Alexa Intent - Answer</name>
+        <filename>alexa-intent-answer.json
+    </request>
+</requests>

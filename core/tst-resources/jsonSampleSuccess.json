@@ -1,0 +1,63 @@
+{
+    "partitions" : [ {
+        "defaults" : {
+            "hostname" : "{service}.{region}.{dnsSuffix}",
+            "protocols" : [ "https" ],
+            "signatureVersions" : [ "v4" ],
+            "variants" : [ {
+                "dnsSuffix" : "amazonaws.com",
+                "hostname" : "{service}-fips.{region}.{dnsSuffix}",
+                "tags" : [ "fips" ]
+            }, {
+                "dnsSuffix" : "api.aws",
+                "hostname" : "{service}-fips.{region}.{dnsSuffix}",
+                "tags" : [ "dualstack", "fips" ]
+            }, {
+                "dnsSuffix" : "api.aws",
+                "hostname" : "{service}.{region}.{dnsSuffix}",
+                "tags" : [ "dualstack" ]
+            } ]
+        },
+        "dnsSuffix" : "amazonaws.com",
+        "partition" : "aws",
+        "partitionName" : "AWS Standard",
+        "regionRegex" : "^(us|eu|ap|sa|ca|me|af)\\-\\w+\\-\\d+$",
+        "regions" : {
+            "af-south-1" : {
+                "description" : "Africa (Cape Town)"
+            },
+            "ap-east-1" : {
+                "description" : "Asia Pacific (Hong Kong)"
+            }
+        },
+        "services" : {
+            "a4b" : {
+                "endpoints" : {
+                    "us-east-1" : { }
+                }
+            },
+            "access-analyzer" : {
+                "endpoints" : {
+                    "af-south-1" : { },
+                    "ap-east-1" : { },
+                    "ca-central-1" : {
+                        "variants" : [ {
+                            "hostname" : "access-analyzer-fips.ca-central-1.amazonaws.com",
+                            "tags" : [ "fips" ]
+                        } ]
+                    },
+                    "eu-west-2" : { },
+                    "eu-west-3" : { },
+                    "fips-ca-central-1" : {
+                        "credentialScope" : {
+                            "region" : "ca-central-1"
+                        },
+                        "deprecated" : true,
+                        "hostname" : "access-analyzer-fips.ca-central-1.amazonaws.com"
+                    }
+                }
+            }
+        }
+    } ],
+    "version" : 3
+}
