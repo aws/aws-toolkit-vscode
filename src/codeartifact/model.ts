@@ -101,8 +101,6 @@ class Repository {
     }
 
     public getTreeItem() {
-        if (this.client) {
-        }
         const item = new vscode.TreeItem(this.repository.name!)
         item.tooltip = this.repository.name!
         item.iconPath = getIcon('vscode-repo')
