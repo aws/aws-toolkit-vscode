@@ -58,7 +58,11 @@ class Package {
     public getTreeItem() {
         let packageFullName: string
         if (this.artifact.format == 'npm') {
-            packageFullName = `@${this.artifact.namespace}/${this.artifact.package}`
+            if (this.artifact.namespace) {
+                packageFullName = `@${this.artifact.namespace}/${this.artifact.package}`
+            } else {
+                packageFullName = `${this.artifact.package}`
+            }
         } else if (this.artifact.format == 'maven') {
             packageFullName = `${this.artifact.namespace}.${this.artifact.package}`
         } else {
