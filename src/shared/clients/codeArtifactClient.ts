@@ -29,7 +29,7 @@ export class DefaultCodeArtifactClient {
     }
 
     public listRepositoriesInDomain(
-        request: CodeArtifact.ListRepositoriesInDomainRequest = { domain: '' }
+        request: CodeArtifact.ListRepositoriesInDomainRequest
     ): AsyncCollection<CodeArtifact.RepositorySummary[]> {
         const client = this.createSdkClient()
         const requester = async (req: CodeArtifact.ListRepositoriesInDomainRequest) =>
