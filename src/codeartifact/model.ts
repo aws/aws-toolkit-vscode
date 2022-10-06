@@ -49,6 +49,7 @@ class Package {
                 namespace: this.artifact.namespace!,
                 package: this.artifact.package!,
                 format: this.artifact.format!,
+                sortBy: 'PUBLISHED_TIME',
             })
             .map(packages => packages.map(s => new PackageVersion(s)))
     }
