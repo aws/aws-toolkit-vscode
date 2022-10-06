@@ -18,7 +18,7 @@ class CodeWhispererInvocationStatus {
     private val isInvokingCodeWhisperer: AtomicBoolean = AtomicBoolean(false)
     private var keyStrokeCount: Int = 0
     private var timeAtLastInvocationComplete: Instant? = null
-    private var timeAtLastDocumentChanged: Instant? = null
+    private var timeAtLastDocumentChanged: Instant = Instant.now()
     private var isPopupActive: Boolean = false
 
     fun checkExistingInvocationAndSet(): Boolean =
@@ -67,13 +67,13 @@ class CodeWhispererInvocationStatus {
     }
 
     fun getTimeSinceDocumentChanged(): Double {
-        val timeSinceDocumentChanged = Duration.between(timeAtLastInvocationComplete, Instant.now())
+        val timeSinceDocumentChanged = Duration.between(timeAtLastDocumentChanged, Instant.now())
         val timeInDouble = timeSinceDocumentChanged.toMillis().toDouble()
         return timeInDouble
     }
 
     fun hasEnoughDelayToShowCodeWhisperer(): Boolean {
-        val timeCanShowCodeWhisperer = timeAtLastDocumentChanged?.plusMillis(CodeWhispererConstants.POPUP_DELAY) ?: return true
+        val timeCanShowCodeWhisperer = timeAtLastDocumentChanged.plusMillis(CodeWhispererConstants.POPUP_DELAY)
         return timeCanShowCodeWhisperer.isBefore(Instant.now())
     }
 
