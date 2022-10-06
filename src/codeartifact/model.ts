@@ -103,7 +103,7 @@ class Repository {
         }
         const item = new vscode.TreeItem(this.repository.name!)
         item.tooltip = this.repository.name!
-        item.iconPath = getIcon('aws-ecs-cluster')
+        item.iconPath = getIcon('vscode-repo')
         item.contextValue = 'awsCodeArtifactRepositoryNode'
 
         return item
