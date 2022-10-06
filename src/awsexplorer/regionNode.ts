@@ -24,7 +24,7 @@ import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
-import { getCodeArtifactRootNode } from '../codeArtifact/model'
+import { getCodeArtifactRootNode } from '../codeartifact/model'
 import { getEcsRootNode } from '../ecs/model'
 import { TreeShim } from '../shared/treeview/utils'
 
