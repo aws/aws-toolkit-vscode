@@ -134,7 +134,7 @@ class Domain {
     public getTreeItem() {
         const item = new vscode.TreeItem(this.domain.name!)
         item.tooltip = this.domain.arn!
-        item.iconPath = getIcon('aws-ecs-cluster')
+        item.iconPath = getIcon('vscode-globe')
         item.contextValue = 'awsCodeArtifactDomainNode'
 
         return item
