@@ -22,7 +22,6 @@ class PackageVersion {
     public getTreeItem() {
         const item = new vscode.TreeItem(this.packageVersion.version!)
         item.tooltip = this.packageVersion.version!
-        item.iconPath = getIcon('aws-ecs-cluster')
         item.contextValue = 'awsCodeArtifactPackageVersionNode'
 
         return item
