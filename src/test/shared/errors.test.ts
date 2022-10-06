@@ -208,7 +208,7 @@ describe('Telemetry', function () {
         })
 
         it('can handle AWS errors (JS SDK v3)', function () {
-            const error = new UnauthorizedException({ $metadata: {} })
+            const error = new UnauthorizedException({ message: '', $metadata: {} })
             assert.strictEqual(getTelemetryReason(error), 'UnauthorizedException')
         })
 
