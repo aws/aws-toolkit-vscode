@@ -3318,7 +3318,7 @@
         "@vue/compiler-sfc": "^3.2.26",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.6.0",
-        "esbuild-loader": "^2.20.0",
+        "esbuild-loader": "2.18.0",
         "eslint": "^8.23.1",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
