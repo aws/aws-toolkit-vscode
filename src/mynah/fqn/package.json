@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "tree-sitter-typescript": "^0.20.1",
-    "tree-sitter-python": "^0.19.0",
-    "web-tree-sitter": "^0.20.5"
+    "tree-sitter-python": "^0.20.1",
+    "web-tree-sitter": "^0.20.7"
   },
   "npm-pretty-much": {
     "ciBuild": "never",

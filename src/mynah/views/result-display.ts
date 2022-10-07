@@ -119,7 +119,7 @@ export class ResultDisplay {
             if (this.liveSearchDisplay.isLiveSearchPaused()) {
                 const panel = this.panelStore.getPanel(liveSearchPanelId)
                 const session = panel?.telemetrySession
-                session?.recordEvent(TelemetryEventName.RESUME_LUVE_SEARCH)
+                session?.recordEvent(TelemetryEventName.RESUME_LIVE_SEARCH)
                 this.liveSearchDisplay.resumeLiveSearch()
 
                 void panel?.webviewPanel.webview.postMessage(
