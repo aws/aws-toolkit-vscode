@@ -130,6 +130,39 @@ describe('recommendationHandler', function () {
                 codewhispererLanguage: 'python',
             })
         })
+
+        it('should call telemetry function that records a Empty userDecision event', async function () {
+            const mockServerResult = {
+                recommendations: [],
+                nextToken: '',
+                $response: {
+                    requestId: 'test_request_empty',
+                    httpResponse: {
+                        headers: {
+                            'x-amzn-sessionid': 'test_request_empty',
+                        },
+                    },
+                },
+            }
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(performance, 'now').returns(0.0)
+            handler.startPos = new vscode.Position(1, 0)
+            TelemetryHelper.instance.cursorOffset = 2
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
+            assertTelemetry({
+                codewhispererRequestId: 'test_request_empty',
+                codewhispererSessionId: 'test_request_empty',
+                codewhispererPaginationProgress: 0,
+                codewhispererTriggerType: 'AutoTrigger',
+                codewhispererSuggestionIndex: -1,
+                codewhispererSuggestionState: 'Empty',
+                codewhispererSuggestionReferenceCount: 0,
+                codewhispererCompletionType: 'Line',
+                codewhispererLanguage: 'python',
+            })
+        })
     })
 
     describe('isValidResponse', function () {
