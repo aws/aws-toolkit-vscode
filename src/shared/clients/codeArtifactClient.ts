@@ -46,7 +46,7 @@ export class DefaultCodeArtifactClient {
     }
 
     public listPackages(
-        request: CodeArtifact.ListPackagesRequest = { domain: '', repository: '' }
+        request: CodeArtifact.ListPackagesRequest
     ): AsyncCollection<CodeArtifact.PackageSummary[]> {
         const client = this.createSdkClient()
         const requester = async (req: CodeArtifact.ListPackagesRequest) => (await client).listPackages(req).promise()
