@@ -62,13 +62,7 @@ export class DefaultCodeArtifactClient {
     }
 
     public listPackageVersions(
-        request: CodeArtifact.ListPackageVersionsRequest = {
-            domain: '',
-            repository: '',
-            namespace: '',
-            package: '',
-            format: '',
-        }
+        request: CodeArtifact.ListPackageVersionsRequest
     ): AsyncCollection<CodeArtifact.PackageVersionSummary[]> {
         const client = this.createSdkClient()
         const requester = async (req: CodeArtifact.ListPackageVersionsRequest) =>
