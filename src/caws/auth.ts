@@ -18,7 +18,6 @@ const CAWS_SONO_PROFILE = {
     startUrl: 'https://d-9067642ac7.awsapps.com/start',
     region: 'us-east-1',
     scopes: [
-        'sso:account:access',
         // TODO: fix when final branding is available
         'codeaws:read_write',
     ],
@@ -217,6 +216,7 @@ export class CawsAuthenticationProvider {
             const token = await tokenProvider.getToken()
 
             if (token === undefined) {
+                await this.logout()
                 throw new ToolkitError('Credentials are expired and could not be refreshed', {
                     code: 'ExpiredCredentials',
                 })
