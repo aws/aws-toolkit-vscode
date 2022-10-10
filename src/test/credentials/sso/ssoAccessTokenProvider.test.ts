@@ -124,6 +124,36 @@ describe('SsoAccessTokenProvider', function () {
             const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
             assert.strictEqual(cachedToken, undefined)
         })
+
+        describe('Exceptions', function () {
+            it('drops expired tokens if failure was a client-fault', async function () {
+                const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
+                when(oidcClient.createToken(anything())).thenReject(exception)
+
+                const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
+                const validRegistation = createRegistration(HOUR_IN_MS)
+                const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
+                await cache.token.save(startUrl, access)
+                await assert.rejects(sut.getToken())
+
+                const cachedToken = await cache.token.load(startUrl)
+                assert.strictEqual(cachedToken, undefined)
+            })
+
+            it('preserves expired tokens if failure was not a client-fault', async function () {
+                const exception = new InternalServerException({ message: '', $metadata: {} })
+                when(oidcClient.createToken(anything())).thenReject(exception)
+
+                const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
+                const validRegistation = createRegistration(HOUR_IN_MS)
+                const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
+                await cache.token.save(startUrl, access)
+                await assert.rejects(sut.getToken())
+
+                const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+                assert.deepStrictEqual(cachedToken, refreshableToken)
+            })
+        })
     })
 
     describe('createToken', function () {
