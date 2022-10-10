@@ -8,7 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
 import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
 import { getCache } from './cache'
-import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { hasProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
@@ -72,9 +72,7 @@ export class SsoAccessTokenProvider {
             return data?.token
         }
 
-        await this.invalidate()
-
-        if (data.registration && !isExpired(data.registration)) {
+        if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
             const refreshed = await this.refreshToken(data.token, data.registration)
 
             if (refreshed) {
@@ -82,6 +80,8 @@ export class SsoAccessTokenProvider {
             }
 
             return refreshed?.token
+        } else {
+            await this.invalidate()
         }
     }
 
@@ -99,21 +99,27 @@ export class SsoAccessTokenProvider {
 
         try {
             return await this.authorize(registration)
-        } catch (error) {
-            if (error instanceof SSOOIDCServiceException && isClientFault(error)) {
+        } catch (err) {
+            if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 this.cache.registration.clear(cacheKey)
             }
 
-            throw error
+            throw err
         }
     }
 
-    private async refreshToken(token: SsoToken, registration: ClientRegistration) {
-        if (hasProps(token, 'refreshToken')) {
+    private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
+        try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: REFRESH_GRANT_TYPE })
 
             return this.formatToken(response, registration)
+        } catch (err) {
+            if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
+                this.cache.token.clear(this.tokenCacheKey)
+            }
+
+            throw err
         }
     }
 
