@@ -24,6 +24,7 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Container, Service } from './model'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 async function runCommandWizard(
     param?: unknown,
@@ -138,6 +139,10 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
 
 // VSC is logging args to the PTY host log file if shell integration is enabled :(
 async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
+    if (isCloud9()) {
+        return cb()
+    }
+
     const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
 
     try {
