@@ -154,4 +154,7 @@ export async function onInlineAcceptance(
             )
         }
     }
+
+    // at the end of recommendation acceptance, clear recommendations.
+    RecommendationHandler.instance.clearRecommendations()
 }
