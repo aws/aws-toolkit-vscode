@@ -23,6 +23,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.awt.RelativePoint
+import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.amazon.awssdk.services.codewhisperer.model.Reference
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getPopupPositionAboveText
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getRelativePathToContentRoot
@@ -66,34 +67,17 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
         val (requestContext, _, recommendationContext) = states
         val (_, editor, _, caretPosition) = requestContext
         val (_, detail, reformattedDetail) = recommendationContext.details[selectedIndex]
-        val userInput = recommendationContext.userInputSinceInvocation
         val startOffset = caretPosition.offset
         val relativePath = getRelativePathToContentRoot(editor)
         reformattedDetail.references().forEachIndexed { i, reference ->
-            // start and end could intersect with the userInput, we do not want to show reference for the
-            // userInput part, so we truncate the range to exclude userInput here if there's an overlap.
-            if (reference.recommendationContentSpan().end() <= userInput.length) return@forEachIndexed
-
-            // Now there's at least some valid range, truncate start if applicable
-            val spanStartExcludeUserInput = maxOf(reference.recommendationContentSpan().start(), userInput.length)
-            val start = startOffset + spanStartExcludeUserInput
+            val start = startOffset + reference.recommendationContentSpan().start()
             val end = startOffset + reference.recommendationContentSpan().end()
-            val startLine = editor.document.getLineNumber(start)
-            val endLine = editor.document.getLineNumber(end)
-            val lineNums = if (startLine == endLine) {
-                (startLine + 1).toString()
-            } else {
-                "${startLine + 1} to ${endLine + 1}"
-            }
-
-            val originalSpan = detail.references()[i].recommendationContentSpan()
+            val lineNums = getReferenceLineNums(editor, start, end)
 
             // There is an unformatted recommendation(directly from response) and reformatted one. We want to get
             // the line number, start/end offset of the reformatted one because it's the one inserted to the editor.
             // However, the one that shows in the tool window record should show the original recommendation, as below.
-            val originalContentLines = detail.content().substring(
-                maxOf(originalSpan.start(), userInput.length), originalSpan.end()
-            ).split("\n")
+            val originalContentLines = getOriginalContentLines(detail, i)
 
             codeReferenceComponents.contentPanel.apply {
                 add(
@@ -113,6 +97,24 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
 
             insertHighLightContext(editor, start, end, reference)
         }
+    }
+
+    fun getReferenceLineNums(editor: Editor, start: Int, end: Int): String {
+        val startLine = editor.document.getLineNumber(start)
+        val endLine = editor.document.getLineNumber(end)
+        val lineNums = if (startLine == endLine) {
+            (startLine + 1).toString()
+        } else {
+            "${startLine + 1} to ${endLine + 1}"
+        }
+        return lineNums
+    }
+
+    fun getOriginalContentLines(detail: Recommendation, i: Int): List<String> {
+        val originalSpan = detail.references()[i].recommendationContentSpan()
+        return detail.content()
+            .substring(originalSpan.start(), originalSpan.end())
+            .split("\n")
     }
 
     private fun insertHighLightContext(editor: Editor, start: Int, end: Int, reference: Reference) {
