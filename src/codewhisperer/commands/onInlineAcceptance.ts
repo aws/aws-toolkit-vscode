@@ -62,6 +62,7 @@ export const acceptSuggestion = Commands.declare(
             ).finally(async () => {
                 if (isInlineCompletionEnabled()) {
                     // at the end of recommendation acceptance, clear recommendations.
+                    RecommendationHandler.instance.clearRecommendations()
                     await InlineCompletionService.instance.clearInlineCompletionStates(editor)
                 }
             })
