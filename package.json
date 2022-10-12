@@ -1607,7 +1607,7 @@
                 {
                     "command": "aws.ecs.openTaskInTerminal",
                     "group": "0@2",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/ && !isCloud9"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
