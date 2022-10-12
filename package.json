@@ -1579,7 +1579,7 @@
                 {
                     "command": "aws.ecs.openTaskInTerminal",
                     "group": "0@2",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/ && !isCloud9"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
@@ -3309,7 +3309,7 @@
         "cross-spawn": "^7.0.3",
         "fast-json-patch": "^3.1.1",
         "fs-extra": "^10.0.1",
-        "got": "^11.8.5",
+        "got": "^12.5.2",
         "immutable": "^4.0.0",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.0.0",
