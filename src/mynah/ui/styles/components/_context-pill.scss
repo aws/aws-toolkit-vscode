@@ -9,17 +9,6 @@
     transition: z-index 1ms 75ms linear;
     z-index: 1;
 
-    & + #add-new-context {
-        width: var(--mynah-sizing-8);
-        .add-new-context-label {
-            max-width: 0px !important;
-            overflow: hidden;
-            margin: 0 !important;
-            pointer-events: none;
-            opacity: 0;
-        }
-    }
-
     > .mynah-prioritise-button {
         position: absolute;
         z-index: 1;
@@ -219,13 +208,14 @@
     }
 
     &#add-new-context {
-        order: 100;
+        order: 0;
         justify-content: center;
         font-size: var(--mynah-font-size-large);
         width: auto;
         max-width: 100%;
         transition: var(--mynah-very-short-transition);
         flex: 0 0 auto;
+        min-width: 90px;
 
         &.shake {
             border: 1px solid rgba(0, 0, 0, 0);
@@ -234,7 +224,6 @@
         &.context-insertion-activated {
             width: auto !important;
             pointer-events: none;
-            min-width: 82px;
             @include lighten-darken();
             > .add-new-context-label,
             > i {
@@ -242,7 +231,6 @@
             }
         }
         &:not(.context-insertion-activated) {
-            min-width: 0;
             > .context-text-input {
                 width: 0px;
                 opacity: 0;

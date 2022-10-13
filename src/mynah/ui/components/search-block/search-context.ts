@@ -101,7 +101,7 @@ export class SearchContext {
                 ...window.contextManager.contextMap[contextKey],
                 render: contextRender,
             }
-            this.contextWrapper.insertChild('afterbegin', contextRender)
+            this.contextWrapper.insertChild('beforeend', contextRender)
         }
     }
 
