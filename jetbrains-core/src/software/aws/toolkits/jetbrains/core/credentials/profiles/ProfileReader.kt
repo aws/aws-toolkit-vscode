@@ -14,7 +14,7 @@ data class Profiles(val validProfiles: Map<String, Profile>, val invalidProfiles
  * Reads the AWS shared credentials files and produces what profiles are valid and if not why it is not
  */
 fun validateAndGetProfiles(): Profiles {
-    val allProfiles: Map<String, Profile> = ProfileFile.defaultProfileFile().profiles()
+    val allProfiles: Map<String, Profile> = ProfileFile.defaultProfileFile().profiles().orEmpty()
 
     val validProfiles = mutableMapOf<String, Profile>()
     val invalidProfiles = mutableMapOf<String, Exception>()

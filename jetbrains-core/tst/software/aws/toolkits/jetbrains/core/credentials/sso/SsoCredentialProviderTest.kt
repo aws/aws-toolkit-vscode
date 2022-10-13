@@ -31,7 +31,7 @@ class SsoCredentialProviderTest {
     private val secretKey = aString()
     private val sessionToken = aString()
     private val credentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken)
-    private val accessToken = AccessToken(aString(), aString(), accessTokenId, Instant.now().plusSeconds(10))
+    private val accessToken = AccessToken(aString(), aString(), accessTokenId, expiresAt = Instant.now().plusSeconds(10))
 
     private lateinit var ssoClient: SsoClient
     private lateinit var ssoAccessTokenProvider: SsoAccessTokenProvider

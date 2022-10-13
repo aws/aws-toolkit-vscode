@@ -116,14 +116,15 @@ class ToolkitCredentialProcessProviderTest {
     }
 
     @Test
-    fun `expiry in the past means command is re-run`() {
+    fun `expiry in the past means command is not re-run`() {
+        // Java SDK prefers threads to block when this happens https://github.com/aws/aws-sdk-java-v2/commit/5151e4049382bdb5ea6b487e6f150314b579181d
         val sut = createSut("echo")
         stubParser(CredentialProcessOutput("foo", "bar", null, Instant.now().minus(Duration.ofHours(1))))
 
         sut.resolveCredentials()
         sut.resolveCredentials()
 
-        verify(parser, times(2)).parse(any())
+        verify(parser).parse(any())
     }
 
     @Test

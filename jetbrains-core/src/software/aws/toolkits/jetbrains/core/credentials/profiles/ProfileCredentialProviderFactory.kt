@@ -25,6 +25,8 @@ import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
@@ -142,6 +144,8 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         val detail = e.message?.let {
             ": $it"
         } ?: ""
+
+        LOG.warn(e) { loadingFailureMessage }
 
         if (AwsSettings.getInstance().profilesNotification != ProfilesNotification.Never) {
             notifyError(
@@ -298,6 +302,10 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
     private fun Profile.requiresSso(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
         .any { it.propertyExists(ProfileProperty.SSO_START_URL) }
+
+    companion object {
+        private val LOG = getLogger<ProfileCredentialProviderFactory>()
+    }
 }
 
 private fun Profile.toCredentialType(): CredentialType? = when {

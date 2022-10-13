@@ -3,10 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
+import com.intellij.testFramework.ApplicationRule
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
@@ -49,18 +51,22 @@ class SsoAccessTokenProviderTest {
     private lateinit var sut: SsoAccessTokenProvider
     private lateinit var ssoCache: SsoCache
 
+    @JvmField
+    @Rule
+    val applicationRule = ApplicationRule()
+
     @Before
     fun setUp() {
         ssoOidcClient = delegateMock()
         ssoLoginCallback = mock()
         ssoCache = mock()
 
-        sut = SsoAccessTokenProvider(ssoUrl, ssoRegion, ssoLoginCallback, ssoCache, ssoOidcClient, clock)
+        sut = SsoAccessTokenProvider(ssoUrl, ssoRegion, ssoLoginCallback, ssoCache, ssoOidcClient, clock = clock)
     }
 
     @Test
     fun getAccessTokenWithAccessTokenCache() {
-        val accessToken = AccessToken(ssoUrl, ssoRegion, "dummyToken", clock.instant())
+        val accessToken = AccessToken(ssoUrl, ssoRegion, "dummyToken", expiresAt = clock.instant())
         ssoCache.stub {
             on(
                 ssoCache.loadAccessToken(ssoUrl)
@@ -94,7 +100,7 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180)
                 )
             )
 
@@ -116,6 +122,7 @@ class SsoAccessTokenProviderTest {
                     RegisterClientRequest.builder()
                         .clientType("public")
                         .clientName("aws-toolkit-jetbrains-${Instant.now(clock)}")
+                        .scopes(emptyList())
                         .build()
                 )
             ).thenReturn(
@@ -137,7 +144,7 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180)
                 )
             )
 
@@ -177,7 +184,7 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180)
                 )
             )
 
@@ -188,6 +195,36 @@ class SsoAccessTokenProviderTest {
         verify(ssoCache).loadAccessToken(ssoUrl)
         verify(ssoCache).loadClientRegistration(ssoRegion)
         verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+    }
+
+    @Test
+    fun `refresh access token updates caches`() {
+        val expirationClientRegistration = clock.instant().plusSeconds(120)
+        setupCacheStub(expirationClientRegistration)
+
+        val accessToken = AccessToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant())
+        ssoCache.stub {
+            on(
+                ssoCache.loadAccessToken(ssoUrl)
+            ).thenReturn(
+                accessToken
+            )
+        }
+
+        ssoOidcClient.stub {
+            on(
+                ssoOidcClient.createToken(refreshTokenRequest())
+            ).thenReturn(
+                refreshTokenResponse()
+            )
+        }
+
+        val refreshedToken = runBlocking { sut.refreshToken(sut.accessToken()) }
+
+        verify(ssoCache).loadAccessToken(ssoUrl)
+        verify(ssoCache).loadClientRegistration(ssoRegion)
+        verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
+        verify(ssoCache).saveAccessToken(ssoUrl, refreshedToken)
     }
 
     @Test
@@ -236,7 +273,7 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180)
                 )
             )
 
@@ -356,6 +393,19 @@ class SsoAccessTokenProviderTest {
 
     private fun createTokenResponse(): CreateTokenResponse = CreateTokenResponse.builder()
         .accessToken("accessToken")
+        .expiresIn(180)
+        .build()
+
+    private fun refreshTokenRequest(): CreateTokenRequest = CreateTokenRequest.builder()
+        .clientId(clientId)
+        .clientSecret(clientSecret)
+        .refreshToken("refreshToken")
+        .grantType("refresh_token")
+        .build()
+
+    private fun refreshTokenResponse(): CreateTokenResponse = CreateTokenResponse.builder()
+        .accessToken("accessToken2")
+        .refreshToken("refreshToken2")
         .expiresIn(180)
         .build()
 }

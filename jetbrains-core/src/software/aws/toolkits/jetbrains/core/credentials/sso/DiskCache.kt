@@ -24,10 +24,10 @@ import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
 import java.security.MessageDigest
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter.ISO_INSTANT
-import java.time.temporal.ChronoUnit
 import java.util.TimeZone
 
 /**
@@ -78,11 +78,11 @@ class DiskCache(
         val inputStream = cacheFile.inputStreamIfExists() ?: return null
 
         return tryOrNull {
-            val clientRegistration = objectMapper.readValue<AccessToken>(inputStream)
+            val accessToken = objectMapper.readValue<AccessToken>(inputStream)
             // Use same expiration logic as client registration even though RFC/SEP does not specify it.
             // This prevents a cache entry being returned as valid and then expired when we go to use it.
-            if (clientRegistration.expiresAt.isNotExpired()) {
-                clientRegistration
+            if (!accessToken.isDefinitelyExpired()) {
+                accessToken
             } else {
                 null
             }
@@ -113,7 +113,9 @@ class DiskCache(
     }
 
     // If the item is going to expire in the next 15 mins, we must treat it as already expired
-    private fun Instant.isNotExpired(): Boolean = this.isAfter(Instant.now(clock).plus(15, ChronoUnit.MINUTES))
+    private fun Instant.isNotExpired(): Boolean = this.isAfter(Instant.now(clock).plus(EXPIRATION_THRESHOLD))
+
+    private fun AccessToken.isDefinitelyExpired(): Boolean = refreshToken == null && !expiresAt.isNotExpired()
 
     private class CliCompatibleInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
         override fun deserialize(parser: JsonParser, context: DeserializationContext): Instant {
@@ -128,5 +130,9 @@ class DiskCache(
 
             return ISO_INSTANT.parse(sanitized) { Instant.from(it) }
         }
+    }
+
+    companion object {
+        val EXPIRATION_THRESHOLD = Duration.ofMinutes(15)
     }
 }

@@ -6,7 +6,9 @@ package software.aws.toolkits.jetbrains.core.credentials.sso
 import com.intellij.openapi.progress.ProgressManager
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.ssooidc.model.AuthorizationPendingException
+import software.amazon.awssdk.services.ssooidc.model.CreateTokenResponse
 import software.amazon.awssdk.services.ssooidc.model.InvalidClientException
+import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SlowDownException
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.sleepWithCancellation
@@ -23,6 +25,7 @@ class SsoAccessTokenProvider(
     private val onPendingToken: SsoLoginCallback,
     private val cache: SsoCache,
     private val client: SsoOidcClient,
+    private val scopes: List<String> = emptyList(),
     private val clock: Clock = Clock.systemUTC()
 ) {
     fun accessToken(): AccessToken {
@@ -47,6 +50,7 @@ class SsoAccessTokenProvider(
         // Based on botocore: https://github.com/boto/botocore/blob/5dc8ee27415dc97cfff75b5bcfa66d410424e665/botocore/utils.py#L1753
         val registerResponse = client.registerClient {
             it.clientType(CLIENT_REGISTRATION_TYPE)
+            it.scopes(scopes)
             it.clientName("aws-toolkit-jetbrains-${Instant.now(clock)}")
         }
 
@@ -99,20 +103,13 @@ class SsoAccessTokenProvider(
                 val tokenResponse = client.createToken {
                     it.clientId(registration.clientId)
                     it.clientSecret(registration.clientSecret)
-                    it.grantType(GRANT_TYPE)
+                    it.grantType(DEVICE_GRANT_TYPE)
                     it.deviceCode(authorization.deviceCode)
                 }
 
-                val expirationTime = Instant.now(clock).plusSeconds(tokenResponse.expiresIn().toLong())
-
                 onPendingToken.tokenRetrieved()
 
-                return AccessToken(
-                    ssoUrl,
-                    ssoRegion,
-                    tokenResponse.accessToken(),
-                    expirationTime
-                )
+                return tokenResponse.toAccessToken()
             } catch (e: SlowDownException) {
                 backOffTime = backOffTime.plusSeconds(SLOW_DOWN_DELAY_SECS)
             } catch (e: AuthorizationPendingException) {
@@ -126,13 +123,46 @@ class SsoAccessTokenProvider(
         }
     }
 
+    fun refreshToken(currentToken: AccessToken): AccessToken {
+        if (currentToken.refreshToken == null) {
+            throw InvalidRequestException.builder().build()
+        }
+
+        val registration = cache.loadClientRegistration(ssoRegion) ?: throw InvalidClientException.builder().build()
+
+        val newToken = client.createToken {
+            it.clientId(registration.clientId)
+            it.clientSecret(registration.clientSecret)
+            it.grantType(REFRESH_GRANT_TYPE)
+            it.refreshToken(currentToken.refreshToken)
+        }
+
+        val token = newToken.toAccessToken()
+        cache.saveAccessToken(ssoUrl, token)
+
+        return token
+    }
+
     fun invalidate() {
         cache.invalidateAccessToken(ssoUrl)
     }
 
+    private fun CreateTokenResponse.toAccessToken(): AccessToken {
+        val expirationTime = Instant.now(clock).plusSeconds(expiresIn().toLong())
+
+        return AccessToken(
+            startUrl = ssoUrl,
+            region = ssoRegion,
+            accessToken = accessToken(),
+            refreshToken = refreshToken(),
+            expiresAt = expirationTime
+        )
+    }
+
     private companion object {
         const val CLIENT_REGISTRATION_TYPE = "public"
-        const val GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
+        const val DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
+        const val REFRESH_GRANT_TYPE = "refresh_token"
 
         // Default number of seconds to poll for token, https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
         const val DEFAULT_INTERVAL_SECS = 5L

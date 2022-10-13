@@ -71,13 +71,13 @@ class DiskCacheTest {
 
     @Test
     fun clientRegistrationExpiringSoonIsTreatedAsExpired() {
-        val expiationTime = now.plus(14, ChronoUnit.MINUTES)
+        val expirationTime = now.plus(14, ChronoUnit.MINUTES)
         cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText(
             """
             {
                 "clientId": "DummyId", 
                 "clientSecret": "DummySecret", 
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
@@ -87,13 +87,13 @@ class DiskCacheTest {
 
     @Test
     fun validClientRegistrationReturnsCorrectly() {
-        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText(
             """
             {
                 "clientId": "DummyId", 
                 "clientSecret": "DummySecret", 
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
@@ -104,7 +104,7 @@ class DiskCacheTest {
                 ClientRegistration(
                     "DummyId",
                     "DummySecret",
-                    expiationTime
+                    expirationTime
                 )
             )
     }
@@ -139,19 +139,19 @@ class DiskCacheTest {
 
     @Test
     fun invalidateClientRegistrationDeletesTheFile() {
-        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         val cacheFile = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
         cacheFile.writeText(
             """
             {
                 "clientId": "DummyId", 
                 "clientSecret": "DummySecret", 
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
 
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull
+        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull()
 
         sut.invalidateClientRegistration(ssoRegion)
 
@@ -172,13 +172,13 @@ class DiskCacheTest {
     }
 
     @Test
-    fun expiredAccessTokenReturnsNull() {
+    fun `expired access token is not loaded`() {
         cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
             """
             {
-                "clientId": "$ssoUrl", 
-                "clientSecret": "$ssoRegion",
-                "clientSecret": "DummyAccessToken",
+                "startUrl": "$ssoUrl", 
+                "region": "$ssoRegion",
+                "accessToken": "DummyAccessToken",
                 "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(now.minusSeconds(100))}"
             }
             """.trimIndent()
@@ -188,15 +188,32 @@ class DiskCacheTest {
     }
 
     @Test
-    fun accessTokenExpiringSoonIsTreatedAsExpired() {
-        val expiationTime = now.plus(14, ChronoUnit.MINUTES)
+    fun `expired access token is loaded if it has a refresh token`() {
         cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "refreshToken": "ARefreshToken",
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(now.minusSeconds(100))}"
+            }
+            """.trimIndent()
+        )
+
+        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull()
+    }
+
+    @Test
+    fun accessTokenExpiringSoonIsTreatedAsExpired() {
+        val expirationTime = now.plus(14, ChronoUnit.MINUTES)
+        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
+            """
+            {
+                "startUrl": "$ssoUrl", 
+                "region": "$ssoRegion",
+                "accessToken": "DummyAccessToken",
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
@@ -206,14 +223,14 @@ class DiskCacheTest {
 
     @Test
     fun validAccessTokenReturnsCorrectly() {
-        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
@@ -225,7 +242,7 @@ class DiskCacheTest {
                     ssoUrl,
                     ssoRegion,
                     "DummyAccessToken",
-                    expiationTime
+                    expiresAt = expirationTime
                 )
             )
     }
@@ -250,7 +267,7 @@ class DiskCacheTest {
                     ssoUrl,
                     ssoRegion,
                     "DummyAccessToken",
-                    ZonedDateTime.of(2999, 6, 10, 0, 50, 40, 0, ZoneOffset.UTC).toInstant()
+                    expiresAt = ZonedDateTime.of(2999, 6, 10, 0, 50, 40, 0, ZoneOffset.UTC).toInstant()
                 )
             )
     }
@@ -264,7 +281,7 @@ class DiskCacheTest {
                 ssoUrl,
                 ssoRegion,
                 "DummyAccessToken",
-                Instant.from(expirationTime)
+                expiresAt = Instant.from(expirationTime)
             )
         )
 
@@ -288,7 +305,7 @@ class DiskCacheTest {
 
     @Test
     fun accessTokenInvalidationDeletesFile() {
-        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         val cacheFile = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
         cacheFile.writeText(
             """
@@ -296,12 +313,12 @@ class DiskCacheTest {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
             }
             """.trimIndent()
         )
 
-        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull
+        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull()
 
         sut.invalidateAccessToken(ssoUrl)
 
