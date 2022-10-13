@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core.docker
 import com.intellij.docker.DockerAgentPathMapperImpl
 import com.intellij.docker.DockerDeploymentConfiguration
 import com.intellij.docker.DockerServerRuntimeInstance
-import com.intellij.docker.agent.DockerAgentLogProvider
 import com.intellij.docker.agent.DockerAgentProgressCallback
 import com.intellij.docker.agent.DockerAgentSourceType
 import com.intellij.docker.agent.progress.DockerResponseItem
@@ -234,15 +233,7 @@ class ToolkitDockerAdapter(project: Project, serverRuntime: DockerServerRuntimeI
             DockerAgentPathMapperImpl(project)
         )
 
-        val logger = DockerAgentLogProvider(
-            infoFunction = LOG::info,
-            traceFunction = LOG::trace,
-            warnFunction = LOG::warn,
-            errorFunction = LOG::error,
-            isTraceEnabled = false
-        )
-
-        return deployment.deploy("untagged test image", DockerTerminalPipe("AWS Toolkit build for $dockerfile", logger), null)?.imageId
+        return deployment.deploy("untagged test image", DockerTerminalPipe("AWS Toolkit build for $dockerfile"), null)?.imageId
     }
 
     override suspend fun hackyBuildDockerfileWithUi(project: Project, pushRequest: DockerfileEcrPushRequest) =

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.datagrip.auth
 
-import DatabaseAuthProviderCompatabilityAdapter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -21,6 +20,8 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.datagrip.auth.compatability.DatabaseAuthProviderCompatabilityAdapter
+import software.aws.toolkits.jetbrains.datagrip.auth.compatability.project
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
 import software.aws.toolkits.jetbrains.datagrip.secretsManagerIsApplicable
@@ -52,10 +53,10 @@ class SecretsManagerAuth : DatabaseAuthProviderCompatabilityAdapter {
         silent: Boolean
     ): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
-        val scope = projectCoroutineScope(connection.runConfiguration.project)
+        val project = connection.project()
+        val scope = projectCoroutineScope(project)
         return scope.future {
             var result = Result.Succeeded
-            val project = connection.runConfiguration.project
             try {
                 val connectionSettings = getConfiguration(connection)
                 val dbSecret = getDbSecret(connectionSettings)

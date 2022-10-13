@@ -11,11 +11,11 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.FakePsiElement
 import com.intellij.workspaceModel.ide.WorkspaceModel
-import com.intellij.workspaceModel.ide.impl.virtualFile
 import com.jetbrains.rider.projectView.workspace.containingProjectEntity
 import com.jetbrains.rider.projectView.workspace.getProjectModelEntity
 import com.jetbrains.rider.projectView.workspace.getVirtualFileAsContentRoot
 import com.jetbrains.rider.util.idea.getPsiFile
+import software.aws.toolkits.jetbrains.core.compatability.toVirtualFile
 import javax.swing.Icon
 
 /**
@@ -51,5 +51,5 @@ class RiderLambdaHandlerFakePsiElement(
         .getProjectModelEntity(fileId)
         ?.containingProjectEntity()
         ?.url
-        ?.virtualFile
+        ?.toVirtualFile()
 }

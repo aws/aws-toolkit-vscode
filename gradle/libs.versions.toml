@@ -4,8 +4,8 @@ assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.c
 awsSdk = "2.17.219"
 commonmark = "0.17.1"
 detekt = "1.21.0"
-intellijGradle = "1.8.1"
-intellijRemoteRobot = "0.11.14"
+intellijGradle = "1.9.0"
+intellijRemoteRobot = "0.11.16"
 jackson = "2.13.3"
 jacoco = "0.8.8"
 jgit = "5.11.0.202103091610-r"
@@ -13,11 +13,11 @@ junit4 = "4.13.2"
 junit5 = "5.8.2"
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#adding-kotlin-support
 # https://kotlinlang.org/docs/releases.html#release-details
-# TODO: 221+ seems to have binary compat issues with 1.7.0
-kotlin = "1.6.21"
-kotlinCoroutines = "1.5.0"
+kotlin = "1.7.20"
+kotlinCoroutines = "1.6.4"
 mockito = "4.6.1"
 mockitoKotlin = "4.0.0"
+mockk = "1.13.2"
 telemetryGenerator = "1.0.72"
 testLogger = "3.1.0"
 testRetry = "1.2.1"
@@ -84,6 +84,7 @@ kotlin-stdLibJdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", versio
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
+mockk = { module = "io.mockk:mockk", version.ref="mockk" }
 telemetryGenerator = { module = "software.aws.toolkits:telemetry-generator", version.ref = "telemetryGenerator" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 wiremock = { module = "com.github.tomakehurst:wiremock-jre8", version.ref = "wiremock" }

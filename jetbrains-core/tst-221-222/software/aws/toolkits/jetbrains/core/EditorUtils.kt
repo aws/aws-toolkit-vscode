@@ -5,17 +5,23 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.impl.NonBlockingReadActionImpl
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.EditorNotificationProvider
 import com.intellij.ui.EditorNotificationsImpl
+import javax.swing.JComponent
 
 @Suppress("UNUSED_PARAMETER")
-fun <T : EditorNotificationProvider, U : EditorNotificationPanel> getEditorNotifications(editor: FileEditor, provider: Class<T>, key: Key<U>): U? {
+fun <T : EditorNotificationProvider, U : EditorNotificationPanel> getEditorNotifications(
+    project: Project,
+    editor: FileEditor,
+    provider: Class<T>,
+    key: Key<U>
+): JComponent? {
     PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
     NonBlockingReadActionImpl.waitForAsyncTaskCompletion()
 
-    @Suppress("UNCHECKED_CAST")
-    return EditorNotificationsImpl.getNotificationPanels(editor)[provider] as? U
+    return EditorNotificationsImpl.getNotificationPanels(editor)[provider]
 }

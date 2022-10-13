@@ -7,11 +7,7 @@ import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.RunManager
 import com.intellij.execution.application.ApplicationConfiguration
 import com.intellij.execution.application.ApplicationConfigurationType
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.compiler.CompileContext
-import com.intellij.openapi.compiler.CompilerManager
-import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.JavaSdk
@@ -29,6 +25,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.core.compileProjectAndWait
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
@@ -36,8 +33,6 @@ import software.aws.toolkits.jetbrains.utils.rules.ExperimentRule
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 class JavaAwsConnectionExtensionIntegrationTest {
 
@@ -106,21 +101,7 @@ class JavaAwsConnectionExtensionIntegrationTest {
 
     private fun compileModule(module: Module) {
         setUpCompiler()
-        val compileFuture = CompletableFuture<CompileContext>()
-        ApplicationManager.getApplication().invokeAndWait {
-            CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, context ->
-                if (!aborted && errors == 0) {
-                    compileFuture.complete(context)
-                } else {
-                    compileFuture.completeExceptionally(
-                        RuntimeException(
-                            "Compilation error: ${context.getMessages(CompilerMessageCategory.ERROR).map { it.message }}"
-                        )
-                    )
-                }
-            }
-        }
-        compileFuture.get(30, TimeUnit.SECONDS)
+        compileProjectAndWait(module.project)
     }
 
     private fun setUpCompiler() {

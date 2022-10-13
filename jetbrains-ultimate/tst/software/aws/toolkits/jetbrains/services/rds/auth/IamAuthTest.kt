@@ -8,6 +8,8 @@ import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConne
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.testFramework.ProjectRule
+import io.mockk.every
+import io.mockk.mockkStatic
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -25,6 +27,7 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.RequireSsl
+import software.aws.toolkits.jetbrains.datagrip.auth.compatability.project
 import software.aws.toolkits.resources.message
 
 class IamAuthTest {
@@ -200,15 +203,15 @@ class IamAuthTest {
                 }
             }
         }
-        return mock {
+        return mock<ProtoConnection> {
             val m = mutableMapOf<String, String>()
             on { connectionPoint } doReturn dbConnectionPoint
-            on { runConfiguration } doAnswer {
-                mock {
-                    on { project } doAnswer { projectRule.project }
-                }
-            }
             on { connectionProperties } doReturn m
+        }.also {
+            mockkStatic("software.aws.toolkits.jetbrains.datagrip.auth.compatability.DatabaseAuthProviderCompatabilityAdapterKt")
+            every {
+                it.project()
+            } returns projectRule.project
         }
     }
 }

@@ -18,6 +18,7 @@ import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.layout.Cell
 import com.intellij.ui.layout.CellBuilder
@@ -56,6 +57,7 @@ import javax.swing.table.TableCellRenderer
 import javax.swing.text.Highlighter
 import javax.swing.text.JTextComponent
 import kotlin.reflect.KMutableProperty0
+import com.intellij.ui.dsl.builder.Cell as Cell2
 
 fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
     text
@@ -248,17 +250,35 @@ class ResizingTextColumnRenderer : ResizingColumnRenderer() {
  */
 fun CellBuilder<DialogPanel>.installOnParent(applies: () -> Boolean = { true }): CellBuilder<DialogPanel> {
     withValidationOnApply {
-        if (!applies()) {
-            null
-        } else {
-            val errors = this@installOnParent.component.validateCallbacks.mapNotNull { it() }
-            if (errors.isEmpty()) {
-                this@installOnParent.component.apply()
-            }
-            errors.firstOrNull()
-        }
+        validate(applies, it)
     }
     return this
+}
+
+fun Cell2<DialogPanel>.installOnParent(applies: () -> Boolean = { true }): Cell2<DialogPanel> {
+    validationOnApply {
+        validate(applies, it)
+    }
+    return this
+}
+
+private inline fun validate(applies: () -> Boolean, component: DialogPanel): ValidationInfo? =
+    if (!applies()) {
+        null
+    } else {
+        val errors = component.validateCallbacks.mapNotNull { it() }
+        if (errors.isEmpty()) {
+            component.apply()
+        }
+        errors.firstOrNull()
+    }
+
+// backport since removed in 223
+fun <T> CellBuilder<JBRadioButton>.bindValueToProperty(prop: PropertyBinding<T>, value: T): CellBuilder<JBRadioButton> = apply {
+    component.isSelected = prop.get() == value
+    onApply { if (component.isSelected) prop.set(value) }
+    onReset { component.isSelected = prop.get() == value }
+    onIsModified { component.isSelected != (prop.get() == value) }
 }
 
 fun Row.visibleIf(predicate: ComponentPredicate): Row {

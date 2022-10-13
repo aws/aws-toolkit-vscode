@@ -9,8 +9,13 @@ env:
   variables:
     CI: true
     LOCAL_ENV_RUN: true
+    JAVA_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
 
 phases:
+  install:
+    commands:
+      - alternatives --set java ${JAVA_HOME}/bin/java
+      - alternatives --set javac ${JAVA_HOME}/bin/javac
   build:
     commands:
       - |

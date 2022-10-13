@@ -4,6 +4,8 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import software.aws.toolkits.gradle.jvmTarget
+import software.aws.toolkits.gradle.kotlinTarget
 
 plugins {
     id("java")
@@ -40,7 +42,7 @@ sourceSets {
     }
 }
 
-val javaVersion = software.aws.toolkits.gradle.jvmTarget
+val javaVersion = project.jvmTarget().get()
 java {
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
@@ -48,7 +50,7 @@ java {
 
 tasks.withType<KotlinCompile>().all {
     kotlinOptions.jvmTarget = javaVersion.majorVersion
-    kotlinOptions.apiVersion = software.aws.toolkits.gradle.kotlinTarget
+    kotlinOptions.apiVersion = kotlinTarget
 }
 
 tasks.withType<Detekt>().configureEach {

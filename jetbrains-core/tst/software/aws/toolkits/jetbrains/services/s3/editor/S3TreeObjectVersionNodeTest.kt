@@ -3,7 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.s3.editor
 
-import com.intellij.icons.AllIcons
+import com.intellij.openapi.fileTypes.PlainTextFileType
+import com.intellij.openapi.fileTypes.UnknownFileType
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -70,7 +71,7 @@ class S3TreeObjectVersionNodeTest {
         val parent = S3TreeObjectNode(dirNode, "my/folder/file.txt", objectSize, lastModifiedTime)
         val sut = S3TreeObjectVersionNode(parent, "version1", objectSize, lastModifiedTime)
 
-        assertThat(sut.icon).isEqualTo(AllIcons.FileTypes.Text)
+        assertThat(sut.icon).isEqualTo(PlainTextFileType.INSTANCE.icon)
     }
 
     @Test
@@ -78,6 +79,6 @@ class S3TreeObjectVersionNodeTest {
         val parent = S3TreeObjectNode(dirNode, "my/folder/file.unknownFile", objectSize, lastModifiedTime)
         val sut = S3TreeObjectVersionNode(parent, "version1", objectSize, lastModifiedTime)
 
-        assertThat(sut.icon).isEqualTo(AllIcons.FileTypes.Unknown)
+        assertThat(sut.icon).isEqualTo(UnknownFileType.INSTANCE.icon)
     }
 }

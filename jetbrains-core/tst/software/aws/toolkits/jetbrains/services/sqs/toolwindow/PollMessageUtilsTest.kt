@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -28,7 +29,11 @@ class PollMessageUtilsTest {
                 )
             )
             .build()
-        val table = MessagesTable().apply { tableModel.addRow(message) }
+        val table = MessagesTable().apply {
+            runInEdtAndWait {
+                tableModel.addRow(message)
+            }
+        }
 
         assertThat(table.tableModel.items.size).isOne()
         assertThat(table.tableModel.items.first().body()).isEqualTo(message.body())

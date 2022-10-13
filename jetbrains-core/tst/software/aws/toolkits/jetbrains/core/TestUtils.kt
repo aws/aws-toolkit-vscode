@@ -3,6 +3,11 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.compiler.CompileContext
+import com.intellij.openapi.compiler.CompileStatusNotification
+import com.intellij.openapi.compiler.CompilerManager
+import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.project.Project
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.apprunner.model.ServiceStatus
@@ -29,6 +34,7 @@ import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 fun MockResourceCacheRule.fillResourceCache(project: Project) {
     this.addEntry(
@@ -119,4 +125,27 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
 
 fun makeMockList(clusterArn: String): Resource.Cached<List<String>> = mock {
     on { id }.thenReturn("ecs.list_services.$clusterArn")
+}
+
+fun compileProjectAndWait(project: Project) {
+    val compileFuture = CompletableFuture<CompileContext>()
+    ApplicationManager.getApplication().invokeAndWait {
+        @Suppress("ObjectLiteralToLambda")
+        CompilerManager.getInstance(project).rebuild(
+            object : CompileStatusNotification {
+                override fun finished(aborted: Boolean, errors: Int, warnings: Int, compileContext: CompileContext) {
+                    if (!aborted && errors == 0) {
+                        compileFuture.complete(compileContext)
+                    } else {
+                        compileFuture.completeExceptionally(
+                            RuntimeException(
+                                "Compilation error: ${compileContext.getMessages(CompilerMessageCategory.ERROR).map { it.message }}"
+                            )
+                        )
+                    }
+                }
+            }
+        )
+    }
+    compileFuture.get(30, TimeUnit.SECONDS)
 }

@@ -27,12 +27,15 @@ import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.fields.ExtendableTextComponent
 import com.intellij.ui.components.fields.ExtendableTextField
+import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.layout.GrowPolicy
 import com.intellij.ui.layout.applyToComponent
-import com.intellij.ui.layout.buttonGroup
 import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
+import com.intellij.ui.layout.toBinding
 import com.intellij.util.text.nullize
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
@@ -65,6 +68,7 @@ import software.aws.toolkits.telemetry.EcrTelemetry
 import software.aws.toolkits.telemetry.Result
 import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
+import com.intellij.ui.dsl.builder.panel as panelv2
 
 class PushToRepositoryAction : EcrDockerAction() {
     override fun actionPerformed(selected: EcrRepositoryNode, e: AnActionEvent) {
@@ -153,7 +157,7 @@ internal class PushToEcrDialog(
         }
     }
 
-    override fun createCenterPanel() = panel {
+    override fun createCenterPanel() = panelv2 {
         // valid tag is ascii letters, numbers, underscores, periods, or dashes
         // https://docs.docker.com/engine/reference/commandline/tag/#extended-description
         val validTagRegex = "[a-zA-Z0-9_.-]{1,128}".toRegex()
@@ -161,10 +165,10 @@ internal class PushToEcrDialog(
         lateinit var fromLocalImageButton: JBRadioButton
         lateinit var fromDockerfileButton: JBRadioButton
 
-        buttonGroup(::type) {
+        buttonGroup(::type.toBinding(), type = BuildType::class.java) {
             row {
-                fromLocalImageButton = this@row.radioButton(message("ecr.push.type.local_image.label"), BuildType.LocalImage).component
-                fromDockerfileButton = this@row.radioButton(message("ecr.push.type.dockerfile.label"), BuildType.Dockerfile).component
+                fromLocalImageButton = radioButton(message("ecr.push.type.local_image.label"), BuildType.LocalImage).component
+                fromDockerfileButton = radioButton(message("ecr.push.type.dockerfile.label"), BuildType.Dockerfile).component
             }
         }
 
@@ -172,30 +176,28 @@ internal class PushToEcrDialog(
         val dockerfilePanel = dockerfileConfigurationSelectorPanel()
 
         row {
-            cell(isFullWidth = true) {
-                imageSelectorPanel(grow)
-                    .installOnParent { fromLocalImageButton.isSelected }
-                    .visibleIf(fromLocalImageButton.selected)
-                dockerfilePanel(grow)
-                    .installOnParent { fromDockerfileButton.isSelected }
-                    .visibleIf(fromDockerfileButton.selected)
-            }
+            cell(imageSelectorPanel)
+                .visibleIf(fromLocalImageButton.selected)
+                .installOnParent { fromLocalImageButton.isSelected }
+            cell(dockerfilePanel)
+                .visibleIf(fromDockerfileButton.selected)
+                .installOnParent { fromDockerfileButton.isSelected }
         }
 
         row(message("ecr.repo.label")) {
-            component(remoteRepos)
-                .growPolicy(GrowPolicy.MEDIUM_TEXT)
-                .withErrorOnApplyIf(message("loading_resource.still_loading")) { it.isLoading }
-                .withErrorOnApplyIf(message("ecr.repo.not_selected")) { it.selected() == null }
+            cell(remoteRepos)
+                .columns(COLUMNS_MEDIUM)
+                .errorOnApply(message("loading_resource.still_loading")) { it.isLoading }
+                .errorOnApply(message("ecr.repo.not_selected")) { it.selected() == null }
         }
 
         row(message("ecr.push.remoteTag")) {
-            textField(::remoteTag)
-                .constraints(grow)
+            textField()
+                .bindText(::remoteTag)
                 .also {
                     it.component.emptyText.text = defaultTag
                 }
-                .withErrorOnApplyIf(message("ecr.tag.invalid")) { it.text.isNotEmpty() && !it.text.matches(validTagRegex) }
+                .errorOnApply(message("ecr.tag.invalid")) { it.text.isNotEmpty() && !it.text.matches(validTagRegex) }
         }
     }
 

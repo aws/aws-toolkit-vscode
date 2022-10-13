@@ -83,9 +83,7 @@ class PollMessagePane(
                     it.visibilityTimeout(0)
                 }.messages().distinctBy { it.messageId() }
 
-                polledMessages.forEach {
-                    messagesTable.tableModel.addRow(it)
-                }
+                messagesTable.tableModel.addRows(polledMessages)
 
                 messagesTable.table.emptyText.text = message("sqs.message.no_messages")
             }

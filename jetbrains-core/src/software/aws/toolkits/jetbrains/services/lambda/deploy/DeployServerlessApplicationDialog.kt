@@ -14,7 +14,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.MutableCollectionComboBoxModel
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.layout.applyToComponent
-import com.intellij.ui.layout.buttonGroup
 import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
 import com.intellij.ui.layout.toBinding
@@ -45,6 +44,7 @@ import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.utils.ui.bindValueToProperty
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.toolTipText
@@ -178,12 +178,13 @@ class DeployServerlessApplicationDialog(
         panel {
             val wideInputSizeGroup = "wideInputSizeGroup"
             // create stack
-            buttonGroup(::deployType) {
+            buttonGroup {
                 row {
                     val createStackButton = radioButton(
-                        message("serverless.application.deploy.label.stack.new"),
-                        value = DeployType.CREATE
-                    ).toolTipText(message("serverless.application.deploy.tooltip.createStack"))
+                        message("serverless.application.deploy.label.stack.new")
+                    )
+                        .bindValueToProperty(::deployType.toBinding(), DeployType.CREATE)
+                        .toolTipText(message("serverless.application.deploy.tooltip.createStack"))
 
                     createStackButton.selected.addListener {
                         if (it && deployType != DeployType.CREATE) {
@@ -210,8 +211,9 @@ class DeployServerlessApplicationDialog(
                 row {
                     val updateStackButton = radioButton(
                         message("serverless.application.deploy.label.stack.select"),
-                        value = DeployType.UPDATE
-                    ).toolTipText(message("serverless.application.deploy.tooltip.updateStack"))
+                    )
+                        .bindValueToProperty(::deployType.toBinding(), DeployType.UPDATE)
+                        .toolTipText(message("serverless.application.deploy.tooltip.updateStack"))
 
                     updateStackButton.selected.addListener {
                         if (it && deployType != DeployType.UPDATE) {

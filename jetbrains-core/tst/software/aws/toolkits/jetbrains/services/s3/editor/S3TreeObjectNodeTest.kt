@@ -3,7 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.s3.editor
 
-import com.intellij.icons.AllIcons
+import com.intellij.openapi.fileTypes.PlainTextFileType
+import com.intellij.openapi.fileTypes.UnknownFileType
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -81,7 +82,7 @@ class S3TreeObjectNodeTest {
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.txt", objectSize, lastModifiedTime)
 
-        assertThat(sut.icon).isEqualTo(AllIcons.FileTypes.Text)
+        assertThat(sut.icon).isEqualTo(PlainTextFileType.INSTANCE.icon)
     }
 
     @Test
@@ -91,7 +92,7 @@ class S3TreeObjectNodeTest {
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.unknownFile", objectSize, lastModifiedTime)
 
-        assertThat(sut.icon).isEqualTo(AllIcons.FileTypes.Unknown)
+        assertThat(sut.icon).isEqualTo(UnknownFileType.INSTANCE.icon)
     }
 
     @Test

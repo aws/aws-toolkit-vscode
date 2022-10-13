@@ -16,13 +16,15 @@ env:
     SCREEN_HEIGHT: 1080
     SCREEN_DEPTH: 24
 
+    JAVA_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
+    JDK_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
+    JRE_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
 phases:
   install:
-    runtime-versions:
-      java: corretto11
-      dotnet: 3.1
-
     commands:
+      - rpm -i https://corretto.aws/downloads/latest/amazon-corretto-17-x64-al2-headful.rpm
+      - alternatives --set java ${JAVA_HOME}/bin/java
+      - alternatives --set javac ${JAVA_HOME}/bin/javac
       - startDesktop.sh
 
       # login to DockerHub so we don't get throttled

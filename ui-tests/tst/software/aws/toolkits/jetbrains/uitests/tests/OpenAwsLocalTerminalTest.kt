@@ -49,7 +49,7 @@ class OpenAwsLocalTerminalTest {
                     findByXpath("//div[@class='ContentTabLabel' and contains(@text,'$connection')]")
                 }
                 val terminal = step("find terminal window") {
-                    findByXpath("//div[@class='ShellTerminalWidget' and @name='terminal']")
+                    findByXpath("//div[@class='ShellTerminalWidget']")
                 }
                 step("click in terminal") {
                     terminal.click()

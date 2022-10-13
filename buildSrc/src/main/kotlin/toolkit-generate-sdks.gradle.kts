@@ -3,6 +3,7 @@
 
 import software.aws.toolkits.gradle.sdk.GenerateSdk
 import software.aws.toolkits.gradle.sdk.GenerateSdkExtension
+import software.aws.toolkits.gradle.jvmTarget
 
 val sdkGenerator = project.extensions.create<GenerateSdkExtension>("sdkGenerator")
 
@@ -25,8 +26,9 @@ sourceSets {
 }
 
 java {
-    sourceCompatibility = software.aws.toolkits.gradle.jvmTarget
-    targetCompatibility = software.aws.toolkits.gradle.jvmTarget
+    val target = project.jvmTarget().get()
+    sourceCompatibility = target
+    targetCompatibility = target
 }
 
 tasks.withType<JavaCompile>().configureEach {
