@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Watch untitled yaml files for cloudformation/sam contents"
+	"description": "Enable syntax features for untitled (unsaved) cloudformation/sam yaml files"
 }
