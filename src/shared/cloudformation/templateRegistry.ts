@@ -14,23 +14,28 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
-
-export interface TemplateDatum {
-    path: string
-    template: CloudFormation.Template
-}
+import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     protected name: string = 'CloudFormationTemplateRegistry'
-    protected async load(path: string): Promise<CloudFormation.Template | undefined> {
+    protected async process(uri: vscode.Uri, contents?: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
         // P1: Alter registry functionality to search ALL YAML files and apply JSON schemas + add to registry based on validity
 
         let template: CloudFormation.Template | undefined
+        const path = normalizeVSCodeUri(uri)
         try {
-            template = await CloudFormation.load(path, false)
+            if (isUntitledScheme(uri)) {
+                if (!contents) {
+                    // this error technically just throw us into the catch so the error message isn't used
+                    throw new Error('Contents must be defined for untitled uris')
+                }
+                template = await CloudFormation.loadByContents(contents, false)
+            } else {
+                template = await CloudFormation.load(path, false)
+            }
         } catch (e) {
-            globals.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined })
             return undefined
         }
 
@@ -39,26 +44,27 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                globals.schemaService.registerMapping({ path, type: 'yaml', schema: 'sam' })
+                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'sam' })
             } else {
                 // apply cfn schema
-                globals.schemaService.registerMapping({ path, type: 'yaml', schema: 'cfn' })
+                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'cfn' })
             }
 
             return template
         }
 
-        globals.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
+        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined })
         return undefined
     }
 
     // handles delete case
-    public async remove(path: string | vscode.Uri): Promise<void> {
+    public async remove(uri: vscode.Uri): Promise<void> {
         globals.schemaService.registerMapping({
-            path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
+            uri,
             type: 'yaml',
             schema: undefined,
         })
+        const path = normalizeVSCodeUri(uri)
         await super.remove(path)
     }
 }
