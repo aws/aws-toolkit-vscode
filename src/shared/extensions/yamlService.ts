@@ -65,7 +65,18 @@ export async function activateYAMLLanguageService(): Promise<LanguageService> {
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('YAML')
     const validator = new TextDocumentValidator(async (document: TextDocument) => {
         const diagnostics = await yamlService.doValidation(document, false)
-        diagnosticCollection.set(vscode.Uri.parse(document.uri), converter.asDiagnostics(diagnostics))
+        const filteredDiagnostics = diagnostics.filter(x => {
+            // filter out incorrect type errors that occur because of the lack of support for intrinsic functions
+            const currentLine = document.getText(
+                new vscode.Range(
+                    new vscode.Position(x.range.start.line, 0),
+                    new vscode.Position(x.range.end.line, x.range.end.character)
+                )
+            )
+            const erroredOnTag = CloudFormation.cloudFormationTags.some(tag => currentLine.includes(tag))
+            return !(x.message.startsWith('Incorrect type') && erroredOnTag)
+        })
+        diagnosticCollection.set(vscode.Uri.parse(document.uri), converter.asDiagnostics(filteredDiagnostics))
     }, 200)
 
     vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
