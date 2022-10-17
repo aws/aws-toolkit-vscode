@@ -371,14 +371,17 @@ export namespace CloudFormation {
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.load(templateAsYaml, {
+        return loadByContents(templateAsYaml, validate)
+    }
+
+    export async function loadByContents(contents: string, validate: boolean = true): Promise<Template> {
+        const template = yaml.load(contents, {
             schema: schema as any,
         }) as Template
 
         if (validate) {
             validateTemplate(template)
         }
-
         return template
     }
 
