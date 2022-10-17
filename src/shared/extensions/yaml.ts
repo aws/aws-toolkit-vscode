@@ -41,6 +41,8 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     const schemaMap = new Map<string, vscode.Uri>()
 
     if (isCloud9()) {
+        // Until Cloud 9 supports VSCode-YAML out of the box, start the yaml-language-service
+        // inside of the toolkit so that users can still have cfn/sam support
         const languageService = await activateYAMLLanguageService()
         return {
             assignSchema: async (path, schema) => {
