@@ -165,6 +165,34 @@ class ToolkitCredentialProcessProviderTest {
     }
 
     @Test
+    fun `handles quoted commands`() {
+        val cmd = if (SystemInfo.isWindows) {
+            """
+                "dir"
+            """.trimIndent()
+        } else {
+            """
+                ls
+            """.trimIndent()
+        }
+
+        val folderWithSpaceInItsName = folder.newFolder("hello world")
+        val file = File(folderWithSpaceInItsName, "foo")
+        file.writeText("bar")
+
+        val sut = createSut("""$cmd ${folder.root.absolutePath}${File.separator}"hello world"""")
+        stubParser()
+
+        sut.resolveCredentials()
+
+        val captor = argumentCaptor<String>().apply {
+            verify(parser).parse(capture())
+        }
+
+        assertThat(captor.firstValue).contains("foo")
+    }
+
+    @Test
     fun `has path`() {
         val cmd = if (SystemInfo.isWindows) {
             "SET"

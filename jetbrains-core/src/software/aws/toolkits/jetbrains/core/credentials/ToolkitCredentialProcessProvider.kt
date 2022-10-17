@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.intellij.execution.configurations.CommandLineTokenizer
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.util.ExecUtil
@@ -24,6 +25,7 @@ import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
 import software.aws.toolkits.resources.message
 import java.time.Instant
+import java.util.Enumeration
 
 /**
  * Similar to the SDKs ProcessCredentialsProvider, but ties in the env var system of the IDE such as getting $PATH
@@ -39,7 +41,8 @@ class ToolkitCredentialProcessProvider internal constructor(
     }
     private val cmd by lazy {
         if (SystemInfo.isWindows) {
-            GeneralCommandLine("cmd", "/C", command)
+            @Suppress("UNCHECKED_CAST")
+            GeneralCommandLine("cmd", "/C", *(CommandLineTokenizer(command) as Enumeration<String>).toList().toTypedArray())
         } else {
             GeneralCommandLine("sh", "-c", command)
         }
