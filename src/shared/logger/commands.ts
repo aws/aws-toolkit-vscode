@@ -31,7 +31,7 @@ export class Logging {
     public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
 
     public async openLogUri(logUri = this.defaultLogUri): Promise<vscode.TextEditor | undefined> {
-        telemetry.vscode_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
+        telemetry.toolkit_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
 
         return vscode.window.showTextDocument(logUri)
     }
