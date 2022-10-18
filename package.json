@@ -93,6 +93,7 @@
         "onCommand:aws.addSamDebugConfig",
         "onCommand:aws.s3.uploadFile",
         "onCommand:aws.cloudFormation.newTemplate",
+        "onCommand:aws.buildspec.newTemplate",
         "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
         "onFileSystem:s3-readonly",
@@ -3094,6 +3095,16 @@
                 "command": "aws.samcli.syncCode",
                 "title": "%AWS.command.samcli.syncCode%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.buildspec.newTemplate",
+                "title": "%AWS.command.buildspec.newTemplate%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.codeWhisperer",
