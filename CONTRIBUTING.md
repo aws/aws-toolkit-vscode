@@ -1,7 +1,7 @@
 # Contributing to AWS Toolkit for VS Code
 
-Thanks for taking the time to help us. We greatly value feedback and
-contributions from our community!
+Thanks for taking the time to help improve AWS Toolkit! We greatly value
+feedback and contributions from the community.
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -186,11 +186,11 @@ GitHub provides additional document on [forking a repository](https://help.githu
 
 ### Commit messages
 
-Generally, your pull request description should be a copy-paste of your commit
-message(s). If your PR description provides insight not found in a commit
-message, ask why. Source control (Git) is our source-of-truth, not GitHub.
+Generally your PR description should be a copy-paste of your commit message(s).
+If your PR description provides insight and context, that also should exist in
+the commit message. Source control (Git) is our source-of-truth, not GitHub.
 
-Quick summary of commit message guidelines:
+Follow these [commit message guidelines](https://cbea.ms/git-commit/):
 
 -   Subject: single line up to 50-72 characters
     -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
