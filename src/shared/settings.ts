@@ -536,6 +536,7 @@ const DEV_SETTINGS = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    buildspecSchemaUrl: String,
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>

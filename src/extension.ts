@@ -17,6 +17,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+import { activate as activateBuildspecTemplateRegistry } from './shared/buildspec/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
@@ -188,6 +189,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
 
         await activateCloudFormationTemplateRegistry(context)
+        await activateBuildspecTemplateRegistry(context)
 
         await activateAwsExplorer({
             context: extContext,
