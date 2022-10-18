@@ -197,6 +197,8 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
     doLast {
         val arguments = listOf(
             "build",
+            "--verbosity",
+            "normal",
             "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln"
         )
         exec {
