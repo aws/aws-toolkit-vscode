@@ -78,7 +78,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = globals.templateRegistry.registeredItems
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = globals.templateRegistry.cfn.registeredItems
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {
