@@ -9,7 +9,7 @@ import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
-import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
+import { getFromUrl, getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
@@ -18,10 +18,14 @@ import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { CloudFormation } from './cloudformation/cloudformation'
+import { getStringHash } from './utilities/textUtilities'
 
-const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
-const SCHEMA_PREFIX = `${AWS_SCHEME}://`
+const schemaPrefix = `${AWS_SCHEME}://`
+const buildspecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
+const buildspecCloudfrontURL = 'https://d3rrggjwfhwld2.cloudfront.net' + buildspecHostedFilesPath
+const buildspecS3FallbackURL = 'https://aws-vs-toolkit.s3.amazonaws.com' + buildspecHostedFilesPath
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -29,6 +33,7 @@ export type SchemaType = 'yaml' | 'json'
 export interface SchemaMapping {
     uri: vscode.Uri
     type: SchemaType
+    owner?: string
     schema?: string | vscode.Uri
 }
 
@@ -51,6 +56,7 @@ export class SchemaService {
     private updateQueue: SchemaMapping[] = []
     private schemas?: Schemas
     private handlers: Map<SchemaType, SchemaHandler>
+    private owned: Map<vscode.Uri, SchemaMapping>
 
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
@@ -69,6 +75,7 @@ export class SchemaService {
                 ['json', new JsonSchemaHandler()],
                 ['yaml', new YamlSchemaHandler()],
             ])
+        this.owned = new Map()
     }
 
     public isMapped(uri: vscode.Uri): boolean {
@@ -86,15 +93,33 @@ export class SchemaService {
     }
 
     /**
-     * Registers a schema mapping in the schema service.
+     * Registers a schema mapping in the schema service. If the incoming mapping has an owner, then the mapping will be considered "owned".
+     * If the URI is owned (in the owners map), the update will only be processed if the incoming mapping owner is the same as the owned user OR
+     * the type of the schema changed
      *
      * @param mapping
      * @param flush Flush immediately instead of waiting for timer.
      */
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
-        this.updateQueue.push(mapping)
-        if (flush === true) {
-            this.processUpdates()
+        // The owner is undefined and needs to be set
+        const isOwnerUndefined =
+            !this.owned.has(mapping.uri) && mapping.owner !== undefined && mapping.schema !== undefined
+
+        // The owner and the incoming owner are defined but the schema changed
+        const isSchemaChanged =
+            this.owned.has(mapping.uri) &&
+            mapping.owner !== undefined &&
+            this.owned.get(mapping.uri)?.schema !== mapping.schema
+
+        if (isOwnerUndefined || isSchemaChanged) {
+            this.owned.set(mapping.uri, mapping)
+        }
+
+        if (mapping.owner === this.owned.get(mapping.uri)?.owner) {
+            this.updateQueue.push(mapping)
+            if (flush === true) {
+                this.processUpdates()
+            }
         }
     }
 
@@ -144,10 +169,10 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
     const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
+    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
-    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+    const goformationSchemaVersion = await getPropertyFromJsonUrl(goformationManifestURL, 'tag_name')
     const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
-
     const schemas: Schemas = {}
 
     try {
@@ -157,7 +182,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
             cacheKey: 'cfnSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'cloudformation.schema.json',
+            title: schemaPrefix + 'cloudformation.schema.json',
         })
         schemas['cfn'] = cfnSchemaUri
     } catch (e) {
@@ -171,11 +196,45 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'sam.schema.json',
+            title: schemaPrefix + 'sam.schema.json',
         })
         schemas['sam'] = samSchemaUri
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+    }
+
+    try {
+        try {
+            const contents = await getFromUrl(buildspecCloudfrontURL)
+            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                version: buildspecSchemaVersion,
+                url: buildspecCloudfrontURL,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: schemaPrefix + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = buildSpecSchemaUri
+        } catch (e) {
+            getLogger().verbose(
+                'Could not download buildspec schema from CloudFront: %s. Attempting to download buildspec schema from S3',
+                (e as Error).message
+            )
+            const contents = await getFromUrl(buildspecS3FallbackURL)
+            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                version: buildspecSchemaVersion,
+                url: buildspecS3FallbackURL,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: schemaPrefix + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = buildSpecSchemaUri
+        }
+    } catch (e) {
+        getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
 
     try {
@@ -185,7 +244,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'devfile.schema.json',
+            title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
     } catch (e) {
