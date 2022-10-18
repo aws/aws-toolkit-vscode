@@ -35,7 +35,7 @@ export const DEVFILE_EXCLUDE_PATTERN = /.*devfile\.(yaml|yml)/i
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
         const registry = new CloudFormationTemplateRegistry()
-        globals.templateRegistry = registry
+        globals.templateRegistry.cfn = registry
         await registry.addExcludedPattern(DEVFILE_EXCLUDE_PATTERN)
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
@@ -44,18 +44,18 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. {0}} will not appear on SAM template files.',
+                'Failed to activate cloudformation template registry. {0} will not appear on SAM template files.',
                 getIdeProperties().codelenses
             )
         )
         getLogger().error('Failed to activate template registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        globals.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
+        globals.templateRegistry.cfn = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
-        globals.templateRegistry,
+        globals.templateRegistry.cfn,
         Commands.register('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
         Commands.register('aws.sam.newTemplate', () => createStarterTemplateFile(true))
     )

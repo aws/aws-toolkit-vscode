@@ -39,7 +39,7 @@ describe('awsFiletypes', function () {
     })
 
     it('emit telemetry when opened by user', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
+        await globals.templateRegistry.cfn.addItemToRegistry(cfnUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         await vscode.commands.executeCommand('vscode.open', awsConfigUri)
         await vscode.workspace.openTextDocument({
@@ -70,7 +70,7 @@ describe('awsFiletypes', function () {
     })
 
     it('emit telemetry exactly once per filetype in a given flush window', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
+        await globals.templateRegistry.cfn.addItemToRegistry(cfnUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         async function getMetrics() {
             return await waitUntil(
