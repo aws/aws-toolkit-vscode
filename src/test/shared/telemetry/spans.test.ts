@@ -153,7 +153,7 @@ describe('TelemetryTracer', function () {
             tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
             tracer.spans[0]?.emit()
 
-            const metrics = getMetrics('vscode_executeCommand', 'duration', 'result', 'missingFields')
+            const metrics = getMetrics('vscode_executeCommand', 'duration', 'result', 'missingFields', 'awsRegion')
             assert.deepStrictEqual(metrics[1], { command: 'foo' })
             assert.deepStrictEqual(metrics[0], { command: 'foo', debounceCount: '100' })
         })
