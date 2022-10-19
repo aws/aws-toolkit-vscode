@@ -25,10 +25,12 @@
     },
     "categories": [
         "Debuggers",
+        "Linters",
         "Other"
     ],
     "keywords": [
         "AWS",
+        "CodeWhisperer",
         "Lambda",
         "Serverless"
     ],
