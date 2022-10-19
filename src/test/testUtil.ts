@@ -140,7 +140,7 @@ export function getMetrics<K extends MetricName>(
     name: K,
     ...excludeKeys: string[]
 ): readonly Partial<MetricShapes[K]>[] {
-    const query = { metricName: name, excludeKeys: ['awsAccount', ...excludeKeys] }
+    const query = { metricName: name, excludeKeys: ['awsAccount', 'awsRegion', ...excludeKeys] }
 
     return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
