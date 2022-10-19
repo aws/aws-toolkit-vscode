@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
+import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
 import { Window } from '../vscode/window'
 import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
@@ -141,4 +142,16 @@ export async function activateExtension<T>(
  */
 export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
     return new Promise((resolve, reject) => thenable.then(resolve, reject))
+}
+
+export function isUntitledScheme(uri: vscode.Uri): boolean {
+    return uri.scheme === 'untitled'
+}
+
+// If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path
+export function normalizeVSCodeUri(uri: vscode.Uri): string {
+    if (uri.scheme !== 'file') {
+        return uri.toString()
+    }
+    return pathutils.normalize(uri.fsPath)
 }

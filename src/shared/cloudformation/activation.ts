@@ -39,6 +39,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         await registry.addExcludedPattern(DEVFILE_EXCLUDE_PATTERN)
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        await registry.watchUntitledFiles()
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
