@@ -3330,7 +3330,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.72",
+        "@aws-toolkits/telemetry": "^1.0.76",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",

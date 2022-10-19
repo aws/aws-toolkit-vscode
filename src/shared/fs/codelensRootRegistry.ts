@@ -5,6 +5,8 @@
 
 import * as path from 'path'
 import { WatchedFiles } from './watchedFiles'
+import * as pathutils from '../utilities/pathUtils'
+import * as vscode from 'vscode'
 
 /**
  * CodelensRootRegistry stores the locations of files that we consider as candidates for
@@ -17,7 +19,8 @@ import { WatchedFiles } from './watchedFiles'
  */
 export class CodelensRootRegistry extends WatchedFiles<string> {
     protected name: string = 'CodelensRootRegistry'
-    protected async load(p: string): Promise<string> {
-        return path.basename(p)
+    protected async process(p: vscode.Uri): Promise<string> {
+        const normalizedPath = pathutils.normalize(p.fsPath)
+        return path.basename(normalizedPath)
     }
 }
