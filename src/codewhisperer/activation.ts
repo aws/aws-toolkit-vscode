@@ -262,9 +262,7 @@ export async function activate(context: ExtContext): Promise<void> {
         updateCloud9TreeNodes.execute()
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
-        if (await getManualTriggerStatus()) {
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-        }
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', await getManualTriggerStatus())
     } else {
         await setSubscriptionsforVsCodeInline()
     }
