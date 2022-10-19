@@ -1,3 +1,8 @@
+# _1.52_ (2022-10-19)
+- **(Feature)** Added 2022.3 support
+- **(Bug Fix)** Fix `credential_process` retrieval when command contains quoted arguments on Windows ([#3322](https://github.com/aws/aws-toolkit-jetbrains/issues/3322))
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2021.3 platform
+
 # _1.51_ (2022-09-22)
 - **(Feature)** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services
 - **(Feature)** CodeWhisperer now supports .jsx files

@@ -1,0 +1,14 @@
+{
+  "date" : "2022-10-19",
+  "version" : "1.52",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Added 2022.3 support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix `credential_process` retrieval when command contains quoted arguments on Windows (#3322)"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for IDEs based on the 2021.3 platform"
+  } ]
+}

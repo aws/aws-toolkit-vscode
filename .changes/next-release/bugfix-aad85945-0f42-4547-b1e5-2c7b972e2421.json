@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix `credential_process` retrieval when command contains quoted arguments on Windows (#3322)"
-}
