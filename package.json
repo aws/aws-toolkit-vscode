@@ -3352,12 +3352,12 @@
         "webpack-dev-server": "^4.9.2"
     },
     "dependencies": {
-        "@aws-sdk/client-cognito-identity": "3.46.0",
+        "@aws-sdk/client-cognito-identity": "3.47.0",
         "@aws-sdk/client-sso": "^3.181.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
-        "@aws-sdk/credential-providers": "^3.46.0",
+        "@aws-sdk/credential-providers": "^3.47.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@vscode/codicons": "^0.0.29",
         "@vscode/debugprotocol": "^1.57.0",
