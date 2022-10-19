@@ -3,16 +3,21 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.lang.javascript.DialectDetector
-import com.intellij.lang.typescript.compiler.TypeScriptCompilerService
+import com.intellij.lang.typescript.compiler.TypeScriptService
 import com.intellij.lang.typescript.tsconfig.TypeScriptConfig
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.PsiElement
+import com.intellij.util.castSafelyTo
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
@@ -52,35 +57,64 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     val tsOutput = sourceRoot.resolve(TS_BUILD_DIR).normalize().toAbsolutePath().toString()
                     // relative to existing tsconfig because there is no other option https://github.com/microsoft/TypeScript/issues/25430
                     val tsConfig = sourceRoot.resolve(TS_CONFIG_FILE)
+
+                    // read base ts config into mutable map
+                    fun loadBaseConfig(tsConfig: Path): MutableMap<String, Any>? {
+                        if (!tsConfig.exists()) {
+                            return null
+                        }
+
+                        try {
+                            val tsConfigMap: MutableMap<String, Any> = MAPPER.readValue(tsConfig.inputStream())
+                            stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.using_base", tsConfig), false)
+                            return tsConfigMap
+                        } catch (e: JsonProcessingException) {
+                            stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.using_base_error", tsConfig), true)
+                        }
+
+                        return null
+                    }
+                    val tsConfigMap = loadBaseConfig(tsConfig)
+                        ?: loadBaseConfig(sourceRoot.resolve(TS_CONFIG_INITIAL_BASE_FILE))
+                        ?: mutableMapOf()
+
+                    // will create config from scratch if no base config has been loaded
+                    if (tsConfigMap.isEmpty()) {
+                        stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.creating_config"), false)
+                    }
+
+                    // use initial skeleton for compilerOptions if it does not exist
+                    val compilerOptions = tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY].castSafelyTo<MutableMap<String, Any>>()
+                        ?: mutableMapOf<String, Any>(
+                            TypeScriptConfig.TARGET_OPTION to TypeScriptConfig.LanguageTarget.ES6.libName,
+                            TypeScriptConfig.MODULE to TypeScriptConfig.MODULE_COMMON_JS,
+                            TypeScriptConfig.SOURCE_MAP to true
+                        )
+                    tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY] = compilerOptions
+
+                    // overwrite outDir, rootDir, sourceRoot
+                    compilerOptions[TypeScriptConfig.OUT_DIR] = tsOutput
+                    compilerOptions[TypeScriptConfig.ROOT_DIR] = "."
+                    compilerOptions["sourceRoot"] = sourceRoot.toString()
+
+                    // ensure typeRoots has resolved path
+                    val typeRoots = compilerOptions[TypeScriptConfig.TYPE_ROOTS].castSafelyTo<MutableList<String>>() ?: mutableListOf()
+                    typeRoots.add(sourceRoot.resolve(TypeScriptConfig.DEFAULT_TYPES_DIRECTORY).toString())
+                    compilerOptions[TypeScriptConfig.TYPE_ROOTS] = typeRoots.toSet().toList()
+
+                    // ensure types has node
+                    val types = compilerOptions[TypeScriptConfig.TYPES].castSafelyTo<MutableList<String>>() ?: mutableListOf()
+                    types.add("node")
+                    compilerOptions[TypeScriptConfig.TYPES] = types.toSet().toList()
+
+                    // pretty print the merged result
                     if (!tsConfig.exists()) {
                         Files.createFile(tsConfig)
                     }
-
-                    // TODO: if there's an existing tsconfig file, should we use it as a base?
-                    tsConfig.writeText(
-                        // language=JSON
-                        """
-                        {
-                            "compilerOptions": {
-                                "${TypeScriptConfig.TYPE_ROOTS}": [
-                                  "${sourceRoot.resolve(TypeScriptConfig.DEFAULT_TYPES_DIRECTORY)}"
-                                ],
-                                "${TypeScriptConfig.TYPES}": [
-                                  "node"
-                                ],
-                                "${TypeScriptConfig.TARGET_OPTION}": "${TypeScriptConfig.LanguageTarget.ES6.libName}",
-                                "${TypeScriptConfig.MODULE}": "${TypeScriptConfig.MODULE_COMMON_JS}",
-                                "${TypeScriptConfig.OUT_DIR}": "$tsOutput",
-                                "${TypeScriptConfig.ROOT_DIR}": ".",
-                                "sourceRoot": "$sourceRoot",
-                                "${TypeScriptConfig.SOURCE_MAP}": true
-                            }
-                        }
-                        """.trimIndent()
-                    )
+                    tsConfig.writeText(MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(tsConfigMap))
 
                     val tsConfigVirtualFile = VfsUtil.findFile(tsConfig, true) ?: throw RuntimeException("Could not find temporary tsconfig file using VFS")
-                    val tsService = TypeScriptCompilerService.getServiceForFile(project, handlerElement.containingFile.virtualFile)
+                    val tsService = TypeScriptService.getCompilerServiceForFile(project, handlerElement.containingFile.virtualFile)
 
                     stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.running", tsConfig), false)
                     val compilerFuture = tsService?.compileConfigProjectAndGetErrors(tsConfigVirtualFile)
@@ -140,6 +174,11 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
     companion object {
         private const val TS_BUILD_DIR = "aws-toolkit-ts-output"
         private const val TS_CONFIG_FILE = "aws-toolkit-tsconfig.json"
+
+        // use project tsconfig.json as initial base - if unable to parse existing config
+        private const val TS_CONFIG_INITIAL_BASE_FILE = "tsconfig.json"
+
+        private val MAPPER = jacksonObjectMapper()
 
         private fun getSourceRoot(handlerElement: PsiElement): Path {
             val handlerVirtualFile = runReadAction { handlerElement.containingFile?.virtualFile }
