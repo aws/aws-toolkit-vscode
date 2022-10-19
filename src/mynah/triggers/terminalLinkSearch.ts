@@ -21,8 +21,8 @@ import { LiveSearchDisplay } from '../views/live-search'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import { Query } from '../models/model'
 
-const errorTraceRule = '^(?<errorName>\\w*Error): (?<errorMessage>.*)$'
-const ERROR_TRACE: RegExp = new RegExp(errorTraceRule)
+const PYTHON_JS_ERROR_TRACE: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
+const JVM_ERROR: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
 const TERMINAL_ERROR_NOTIFICATION = 'live_search_terminal_error'
 
 interface ErrorCache {
@@ -44,62 +44,61 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
     }
 
     async provideTerminalLinks(context: TerminalLinkContext, _: CancellationToken): Promise<SearchTerminalLink[]> {
-        const error = context.line.match(ERROR_TRACE)
-        if (error?.index !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const { errorName, errorMessage } = error.groups!
-            const message = `${errorName} ${errorMessage}`
-            const editor = window.activeTextEditor
-            const errorMetadata = {
-                message,
-                severity: DiagnosticSeverity.Error.toString(),
-                errorId: uuid(),
-                file: editor?.document?.fileName ?? '',
-                languageId: editor?.document?.languageId ?? '',
-                type: ErrorType.TERMINAL,
-            }
-            const query: Query = {
-                trigger: 'TerminalLink',
-                input: message,
-                queryContext: await extractContext(false),
-                queryId: uuid(),
-                sourceId: errorMetadata.errorId,
-                codeSelection: {
-                    selectedCode: '',
-                    file: {
-                        range: {
-                            start: { row: '', column: '' },
-                            end: { row: '', column: '' },
-                        },
-                        name: '',
+        const error = PYTHON_JS_ERROR_TRACE.exec(context.line) ?? JVM_ERROR.exec(context.line)
+        if (!error?.groups) {
+            return []
+        }
+        const { errorName, errorMessage } = error.groups
+        const message = `${errorName} ${errorMessage}`
+        const editor = window.activeTextEditor
+        const errorMetadata = {
+            message,
+            severity: DiagnosticSeverity.Error.toString(),
+            errorId: uuid(),
+            file: editor?.document?.fileName ?? '',
+            languageId: editor?.document?.languageId ?? '',
+            type: ErrorType.TERMINAL,
+        }
+        const query: Query = {
+            trigger: 'TerminalLink',
+            input: message,
+            queryContext: await extractContext(false),
+            queryId: uuid(),
+            sourceId: errorMetadata.errorId,
+            codeSelection: {
+                selectedCode: '',
+                file: {
+                    range: {
+                        start: { row: '', column: '' },
+                        end: { row: '', column: '' },
                     },
+                    name: '',
                 },
-            }
+            },
+        }
 
-            if (this.isNewError(errorMetadata)) {
-                this.telemetrySession.recordEvent(TelemetryEventName.OBSERVE_ERROR, { errorMetadata })
-                if (await this.liveSearchDisplay.canShowLiveSearchPane()) {
-                    this.queryEmitter.fire({ ...query, implicit: true })
-                } else {
-                    const notificationInfo = await this.notificationInfoStore.getRecordFromWorkplaceStore(
-                        TERMINAL_ERROR_NOTIFICATION
-                    )
-                    if (notificationInfo === undefined || !notificationInfo.muted) {
-                        await this.showNotification(query)
-                    }
+        if (this.isNewError(errorMetadata)) {
+            this.telemetrySession.recordEvent(TelemetryEventName.OBSERVE_ERROR, { errorMetadata })
+            if (await this.liveSearchDisplay.canShowLiveSearchPane()) {
+                this.queryEmitter.fire({ ...query, implicit: true })
+            } else {
+                const notificationInfo = await this.notificationInfoStore.getRecordFromWorkplaceStore(
+                    TERMINAL_ERROR_NOTIFICATION
+                )
+                if (notificationInfo === undefined || !notificationInfo.muted) {
+                    await this.showNotification(query)
                 }
             }
-            this.addError(errorMetadata)
-            return [
-                {
-                    startIndex: error.index,
-                    length: error[0].length,
-                    tooltip: 'Help Me Fix',
-                    query,
-                },
-            ]
         }
-        return []
+        this.addError(errorMetadata)
+        return [
+            {
+                startIndex: error.index,
+                length: error[0].length,
+                tooltip: 'Help Me Fix',
+                query,
+            },
+        ]
     }
 
     private async showNotification(query: Query): Promise<void> {

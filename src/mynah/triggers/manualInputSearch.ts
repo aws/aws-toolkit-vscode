@@ -7,7 +7,7 @@ import { EventEmitter, ExtensionContext, commands, window } from 'vscode'
 import { NotificationType, showNotification } from '../utils/notify'
 import { v4 as uuid } from 'uuid'
 import { extractContext } from '../utils/context-extraction'
-import { Python, TypeScript, Tsx, Extent, Location } from '../fqn'
+import { Java, Python, TypeScript, Tsx, Extent, Location } from '../fqn'
 import { SearchPayloadCodeSelection } from '../ui/helper/static'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import * as vs from 'vscode'
@@ -24,6 +24,7 @@ export class ManualInputSearch extends SearchInput {
     private readonly muteNotificationButtonText = 'Do not show again'
 
     private readonly supportedLanguages = new Set<string>([
+        'java',
         'javascript',
         'javascriptreact',
         'typescriptreact',
@@ -44,8 +45,8 @@ export class ManualInputSearch extends SearchInput {
     public activate(context: ExtensionContext): void {
         context.subscriptions.push(commands.registerCommand('Mynah.show', async () => await this.show()))
 
-        vs.window.onDidChangeTextEditorSelection(() => {
-            void this.checkIfSelectionHasFQNs()
+        vs.window.onDidChangeTextEditorSelection(async event => {
+            await this.checkIfSelectionHasFQNs()
         })
     }
 
@@ -152,7 +153,7 @@ export class ManualInputSearch extends SearchInput {
 
             await vs.window
                 .showInformationMessage(
-                    "Currently we only support javascript, typescript and python. We'll let you know when we have more supported languages.",
+                    "Currently we only support java, javascript, typescript and python. We'll let you know when we have more supported languages.",
                     this.muteNotificationButtonText
                 )
                 .then(async selection => {
@@ -268,6 +269,9 @@ export class ManualInputSearch extends SearchInput {
 
         let names: any = {}
         switch (languageId) {
+            case 'java':
+                names = await Java.findNamesWithInExtent(fileText, extent)
+                break
             case 'javascript':
             case 'javascriptreact':
             case 'typescriptreact':

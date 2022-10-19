@@ -47,6 +47,12 @@ export class ServiceConnector {
     }
 
     private readonly handleMessageRecieve = (message: MessageEvent): void => {
+        // Temporary fix to only handle message sent by Mynah webview,
+        // currently this method is also capturing some other message sent globally
+        // Dogus will be working on a more secure fix soon
+        if (typeof message.data !== 'string') {
+            return
+        }
         const messageData = this.parseMessageData(message.data)
         if (this.liveSearchStateExternalChangeHandler !== undefined && messageData.liveSearchAction !== undefined) {
             this.liveSearchStateExternalChangeHandler(messageData.liveSearchAction)

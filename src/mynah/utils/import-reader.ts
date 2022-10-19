@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Python, TypeScript, Tsx } from '../fqn'
+import { Java, Python, TypeScript, Tsx } from '../fqn'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
     let names: any = {}
     switch (languageId) {
+        case 'java':
+            names = await Java.findNames(text)
+            break
         case 'javascript':
         case 'javascriptreact':
         case 'typescriptreact':
