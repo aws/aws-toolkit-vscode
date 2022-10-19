@@ -318,7 +318,7 @@ describe('codewhispererCodecoverageTracker', function () {
             tracker.flush()
             const data = globals.telemetry.logger.query({
                 metricName: 'codewhisperer_codePercentage',
-                filters: ['awsAccount'],
+                excludeKeys: ['awsAccount'],
             })
             assert.strictEqual(data.length, 0)
         })
