@@ -2987,12 +2987,12 @@
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             }
         ],
         "grammars": [
