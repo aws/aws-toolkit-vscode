@@ -22,7 +22,7 @@ env:
 phases:
   install:
     commands:
-      - rpm -i https://corretto.aws/downloads/latest/amazon-corretto-17-x64-al2-headful.rpm
+      - yum install -y java-17-amazon-corretto
       - alternatives --set java ${JAVA_HOME}/bin/java
       - alternatives --set javac ${JAVA_HOME}/bin/javac
       - startDesktop.sh
