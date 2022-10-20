@@ -121,6 +121,7 @@ export async function activate(context: ExtContext): Promise<void> {
             await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
             await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
             await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
             const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
