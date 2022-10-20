@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, Service } from 'aws-sdk'
+import { AWSError, CognitoIdentityCredentials, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
@@ -39,8 +39,16 @@ export type ListCodeScanFindingsRequest = Readonly<CodeWhispererClient.ListCodeS
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap>
 export class DefaultCodeWhispererClient {
+    private credentials?: CognitoIdentityCredentials
+
     private async createSdkClient(): Promise<CodeWhispererClient> {
-        const credentials = !isCloud9() ? await getCognitoCredentials() : undefined
+        if (!this.credentials && !isCloud9()) {
+            this.credentials = await getCognitoCredentials()
+        } else if (this.credentials?.needsRefresh()) {
+            this.credentials.refresh(error => {
+                getLogger().error('Error when refreshing credentials', error)
+            })
+        }
         const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
 
@@ -49,7 +57,7 @@ export class DefaultCodeWhispererClient {
             {
                 apiConfig: apiConfig,
                 region: CodeWhispererConstants.region,
-                credentials: credentials,
+                credentials: this.credentials,
                 endpoint: CodeWhispererConstants.endpoint,
                 onRequestSetup: [
                     req => {
