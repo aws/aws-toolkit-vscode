@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fixed bug when CodeWhisperer left/right arrow keybinding conflict with other plugins"
+	"description": "CodeWhisperer left/right arrow keybinding conflict with other plugins"
 }
