@@ -55,6 +55,9 @@ describe('telemetryHelper', function () {
     })
 
     describe('recordUserDecisionTelemetry', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+        })
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]
