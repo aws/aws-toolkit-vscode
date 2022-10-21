@@ -1,3 +1,8 @@
+## 1.52.0 2022-10-20
+
+- **Bug Fix** CodeWhisperer left/right arrow keybinding conflict with other plugins
+- **Feature** Enable syntax features for untitled (unsaved) cloudformation/sam yaml files
+
 ## 1.51.0 2022-10-01
 
 - **Bug Fix** styling issue in CodeWhisperer reference log
