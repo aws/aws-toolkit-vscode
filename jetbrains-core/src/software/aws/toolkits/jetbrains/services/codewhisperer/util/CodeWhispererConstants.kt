@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.util
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
+import software.amazon.awssdk.regions.Region
 import java.awt.Font
 
 object CodeWhispererConstants {
@@ -39,13 +40,15 @@ object CodeWhispererConstants {
     const val TOTAL_MILLIS_IN_SECOND = 1000
     const val TOTAL_SECONDS_IN_MINUTE: Long = 60L
 
-    const val CODEWHISPERER_ENDPOINT = "https://codewhisperer.us-east-1.amazonaws.com/"
-
-    const val CODEWHISPERER_IDPOOL_ID = "us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9"
-
     object AutoSuggestion {
         const val SETTING_ID = "codewhisperer_autoSuggestionActivation"
         const val ACTIVATED = "Activated"
         const val DEACTIVATED = "Deactivated"
+    }
+
+    object Config {
+        const val CODEWHISPERER_ENDPOINT = "https://codewhisperer.us-east-1.amazonaws.com/"
+        const val CODEWHISPERER_IDPOOL_ID = "us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9"
+        val REGION = Region.US_EAST_1
     }
 }

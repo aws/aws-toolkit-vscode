@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.credentials
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -14,8 +13,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 class CodeWhispererClientManager : Disposable {
     private val client: CodeWhispererClient = AwsClientManager.getInstance().createUnmanagedClient(
         AnonymousCredentialsProvider.create(),
-        Region.US_EAST_1,
-        CodeWhispererConstants.CODEWHISPERER_ENDPOINT
+        CodeWhispererConstants.Config.REGION,
+        CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT
     )
     fun getClient() = client
 
