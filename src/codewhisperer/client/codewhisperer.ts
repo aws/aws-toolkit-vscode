@@ -42,13 +42,20 @@ export class DefaultCodeWhispererClient {
     private credentials?: CognitoIdentityCredentials
 
     private async createSdkClient(): Promise<CodeWhispererClient> {
-        if (!this.credentials && !isCloud9()) {
-            this.credentials = await getCognitoCredentials()
-        } else if (this.credentials?.needsRefresh()) {
-            this.credentials.refresh(error => {
-                getLogger().error('Error when refreshing credentials', error)
-            })
+        try {
+            if (!this.credentials && !isCloud9()) {
+                this.credentials = await getCognitoCredentials()
+            }
+            if (this.credentials && this.credentials?.needsRefresh()) {
+                await new Promise<void>((resolve, reject) =>
+                    this.credentials?.refresh(e => (e ? reject(e) : resolve()))
+                )
+            }
+        } catch (e) {
+            getLogger().debug('Error when getting or refreshing Cognito credentials', e)
+            throw new CognitoCredentialsError('Error when getting or refreshing Cognito credentials')
         }
+
         const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
 
@@ -140,3 +147,5 @@ export class DefaultCodeWhispererClient {
         return (await this.createSdkClient()).listCodeScanFindings(request).promise()
     }
 }
+
+export class CognitoCredentialsError extends Error {}
