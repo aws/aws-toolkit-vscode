@@ -53,6 +53,10 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('toggleCodeSuggestion', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
         it('should emit aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
             const fakeMemeto = new FakeMemento()
             targetCommand = testCommand(toggleCodeSuggestions, fakeMemeto)
