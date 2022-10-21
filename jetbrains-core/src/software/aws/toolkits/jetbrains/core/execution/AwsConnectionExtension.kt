@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.execution
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RunConfigurationBase
+import com.intellij.execution.target.TargetedCommandLineBuilder
 import com.intellij.execution.target.value.TargetEnvironmentFunction
 import com.intellij.execution.target.value.constant
 import com.intellij.openapi.util.Key
@@ -12,6 +13,7 @@ import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.mergeWithExistingEnvironmentVariables
+import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.core.region.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -29,7 +31,7 @@ class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
     fun addToTargetEnvironment(configuration: T, environment: MutableMap<String, TargetEnvironmentFunction<String>>, runtimeString: () -> String? = { null }) {
         injectCredentials(configuration, runtimeString) { settings ->
             val putFn = { map: Map<String, String> ->
-                map.forEach { (k, v) -> environment.put(k, constant(v)) }
+                map.forEach { (k, v) -> environment[k] = constant(v) }
             }
 
             settings.region.mergeWithExistingEnvironmentVariables(environment.keys, putFn)
@@ -41,6 +43,13 @@ class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
         injectCredentials(configuration, runtimeString) {
             it.region.mergeWithExistingEnvironmentVariables(environment)
             it.credentials.resolveCredentials().mergeWithExistingEnvironmentVariables(environment)
+        }
+    }
+
+    fun addToTargetCommandLineBuilder(configuration: T, cmdLine: TargetedCommandLineBuilder, runtimeString: () -> String? = { null }) {
+        injectCredentials(configuration, runtimeString) {
+            it.credentials.resolveCredentials().toEnvironmentVariables().forEach { key, value -> cmdLine.addEnvironmentVariable(key, value) }
+            it.region.toEnvironmentVariables().forEach { key, value -> cmdLine.addEnvironmentVariable(key, value) }
         }
     }
 
@@ -115,7 +124,7 @@ fun <T : RunConfigurationBase<*>> AwsConnectionRunConfigurationExtension<T>.addE
     runtimeString: () -> String? = { null }
 ) = addEnvironmentVariables(configuration, cmdLine.environment, runtimeString)
 
-fun <T : RunConfigurationBase<*>> connectionSettingsEditor(configuration: T): AwsConnectionExtensionSettingsEditor<T>? =
+fun <T : RunConfigurationBase<*>> connectionSettingsEditor(configuration: T): AwsConnectionExtensionSettingsEditor<T> =
     configuration.getProject().let { AwsConnectionExtensionSettingsEditor(it, false) }
 
 val AWS_CONNECTION_RUN_CONFIGURATION_KEY =
