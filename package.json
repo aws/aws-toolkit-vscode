@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.52.0-SNAPSHOT",
+    "version": "1.53.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -25,10 +25,12 @@
     },
     "categories": [
         "Debuggers",
+        "Linters",
         "Other"
     ],
     "keywords": [
         "AWS",
+        "CodeWhisperer",
         "Lambda",
         "Serverless"
     ],
@@ -1597,7 +1599,7 @@
                 {
                     "command": "aws.ecs.openTaskInTerminal",
                     "group": "0@2",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/ && !isCloud9"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
@@ -3014,12 +3016,12 @@
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "command": "Mynah.show",
@@ -3286,7 +3288,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.72",
+        "@aws-toolkits/telemetry": "^1.0.76",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
@@ -3315,7 +3317,7 @@
         "@typescript-eslint/eslint-plugin": "^5.38.0",
         "@typescript-eslint/parser": "^5.38.0",
         "@vscode/test-electron": "^2.1.5",
-        "@vue/compiler-sfc": "^3.2.26",
+        "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.6.0",
         "esbuild-loader": "2.18.0",
@@ -3385,7 +3387,7 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.7.2",
+        "typescript": "^4.8.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",

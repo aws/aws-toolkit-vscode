@@ -235,10 +235,6 @@
             "passive": true
         },
         {
-            "name": "vscode_viewLogs",
-            "description": "View the VSCode IDE logs"
-        },
-        {
             "name": "aws_showExplorerErrorDetails",
             "description": "Called when getting more details about errors thrown by the explorer",
             "metadata": [

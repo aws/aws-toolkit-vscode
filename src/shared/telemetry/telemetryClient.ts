@@ -19,6 +19,7 @@ import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
+export const REGION_KEY = 'awsRegion'
 export const COMPUTE_REGION_KEY = 'computeRegion'
 
 export enum AccountStatus {
