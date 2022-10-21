@@ -12,7 +12,7 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
-import { deleteWorkpaceCommand, installVsixCommand, openTerminalCommand } from './caws'
+import { deleteWorkpaceCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 
 interface MenuOption {
     readonly label: string

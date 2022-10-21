@@ -5,17 +5,17 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { CawsAuthenticationProvider, CawsAuthStorage } from '../../caws/auth'
+import { CodeCatalystAuthenticationProvider, CodeCatalystAuthStorage } from '../../codecatalyst/auth'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { UserDetails } from '../../shared/clients/cawsClient'
+import { UserDetails } from '../../shared/clients/codeCatalystClient'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { SsoToken } from '../../credentials/sso/model'
 
-describe('CawsAuthenticationProvider', function () {
+describe('CodeCatalystAuthenticationProvider', function () {
     const savedUsers = new Map<string, UserDetails | undefined>()
     let users: typeof savedUsers
     let secrets: string[]
-    let authProvider: CawsAuthenticationProvider
+    let authProvider: CodeCatalystAuthenticationProvider
 
     async function getUser(secret: () => Promise<string>, id?: string | UserDetails): Promise<UserDetails> {
         const data = users.get(await secret())
@@ -80,7 +80,10 @@ describe('CawsAuthenticationProvider', function () {
     beforeEach(async function () {
         const ctx = await FakeExtensionContext.create()
         // TODO: initialize secrets/memento directly instead of stubbing `SsoAccessTokenProvider`
-        authProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets), getUser)
+        authProvider = new CodeCatalystAuthenticationProvider(
+            new CodeCatalystAuthStorage(ctx.globalState, ctx.secrets),
+            getUser
+        )
         users = new Map(savedUsers.entries())
         secrets = Array.from(users.keys())
     })

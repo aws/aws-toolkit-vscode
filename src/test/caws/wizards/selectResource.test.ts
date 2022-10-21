@@ -4,8 +4,8 @@
  */
 
 import { instance, when } from 'ts-mockito'
-import { createOrgPrompter } from '../../../caws/wizards/selectResource'
-import { CawsOrg, ConnectedCawsClient } from '../../../shared/clients/cawsClient'
+import { createOrgPrompter } from '../../../codecatalyst/wizards/selectResource'
+import { CodeCatalystOrg, ConnectedCodeCatalystClient } from '../../../shared/clients/codeCatalystClient'
 import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
 import { createQuickPickTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
@@ -18,14 +18,14 @@ function intoCollection<T>(arr: T[]): AsyncCollection<T> {
 }
 
 describe('Prompts', function () {
-    let orgs: CawsOrg[]
+    let orgs: CodeCatalystOrg[]
 
     beforeEach(function () {
         orgs = [{ type: 'org', name: 'MyOrg', description: 'My Description', regionName: 'region' }]
     })
 
-    function mockClient(): ConnectedCawsClient {
-        const client = mock<ConnectedCawsClient>()
+    function mockClient(): ConnectedCodeCatalystClient {
+        const client = mock<ConnectedCodeCatalystClient>()
 
         when(client.listOrganizations()).thenReturn(intoCollection([orgs]))
 

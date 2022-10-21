@@ -96,14 +96,14 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export function getCawsWorkspaceArn(): string | undefined {
-    return process.env['__DEVELOPMENT_WORKSPACE_ARN']
+export function getCodeCatalystWorkspaceArn(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_ARN']
 }
 
-export function getCawsProjectName(): string | undefined {
+export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEVELOPMENT_WORKSPACE_PROJECT_NAME']
 }
 
-export function getCawsOrganizationName(): string | undefined {
+export function getCodeCatalystOrganizationName(): string | undefined {
     return process.env['__DEVELOPMENT_WORKSPACE_ORGANIZATION_NAME']
 }

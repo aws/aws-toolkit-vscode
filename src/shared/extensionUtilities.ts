@@ -14,7 +14,7 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion, getCawsWorkspaceArn } from './vscode/env'
+import { extensionVersion, getCodeCatalystWorkspaceArn } from './vscode/env'
 import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
@@ -264,8 +264,8 @@ async function promptQuickstart(): Promise<void> {
  * @param context VS Code Extension Context
  */
 export function showWelcomeMessage(context: vscode.ExtensionContext): void {
-    if (getCawsWorkspaceArn() !== undefined) {
-        // Do not show clippy in CAWS development environments.
+    if (getCodeCatalystWorkspaceArn() !== undefined) {
+        // Do not show clippy in Code Catalyst development environments.
         return
     }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version

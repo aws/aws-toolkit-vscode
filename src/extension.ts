@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as caws from './caws/activation'
+import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
@@ -190,7 +190,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await caws.activate(extContext)
+        await codecatalyst.activate(extContext)
 
         await activateCloudFormationTemplateRegistry(context)
 

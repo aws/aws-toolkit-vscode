@@ -6,14 +6,14 @@
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { register } from '../../caws/uriHandlers'
+import { register } from '../../codecatalyst/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { ConnectedCawsClient } from '../../shared/clients/cawsClient'
+import { ConnectedCodeCatalystClient } from '../../shared/clients/codeCatalystClient'
 import { anything, mock, reset, when } from 'ts-mockito'
 import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
-import { DevelopmentWorkspaceId } from '../../caws/model'
+import { DevEnvironmentId } from '../../codecatalyst/model'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
@@ -21,7 +21,7 @@ function createCloneUri(target: string): vscode.Uri {
     return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/clone?url=${encodeURIComponent(target)}`)
 }
 
-function createConnectUri(env: DevelopmentWorkspaceId): vscode.Uri {
+function createConnectUri(env: DevEnvironmentId): vscode.Uri {
     const params = {
         developmentWorkspaceId: env.id,
         organizationName: env.org.name,
@@ -36,11 +36,11 @@ function createConnectUri(env: DevelopmentWorkspaceId): vscode.Uri {
 // Tests involving `UriHandler` should _not_ couple the URI paths to the implementation.
 // The path is apart of our public API! They should not be easy to change.
 
-describe('CAWS handlers', function () {
+describe('Code Catalyst handlers', function () {
     let handler: UriHandler
     let testWindow: TestWindow
     let commandStub: Stub<typeof vscode.commands.executeCommand>
-    const client = mock<ConnectedCawsClient>()
+    const client = mock<ConnectedCodeCatalystClient>()
 
     beforeEach(function () {
         handler = new UriHandler((testWindow = createTestWindow()))
@@ -70,7 +70,7 @@ describe('CAWS handlers', function () {
             assert.strictEqual(commandStub.called, false)
         })
 
-        it('does a normal git clone if not a CAWS URL', async function () {
+        it('does a normal git clone if not a Code Catalyst URL', async function () {
             const target = 'https://github.com/antlr/grammars-v4.git'
             await handler.handleUri(createCloneUri(target))
             assert.ok(commandStub.calledWith('git.clone', target))
@@ -93,7 +93,7 @@ describe('CAWS handlers', function () {
                 message.assertSeverity(SeverityLevel.Error)
             })
 
-            when(client.getDevelopmentWorkspace(anything())).thenReject(new Error('No development workspace found'))
+            when(client.getDevEnvironment(anything())).thenReject(new Error('No development environment found'))
             await handler.handleUri(createConnectUri(workspaceId))
             await errorMessage
         })

@@ -63,15 +63,15 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
-        "onCommand:aws.caws.listCommands",
-        "onCommand:aws.caws.login",
-        "onCommand:aws.caws.logout",
-        "onCommand:aws.caws.openOrg",
-        "onCommand:aws.caws.openProject",
-        "onCommand:aws.caws.openRepo",
-        "onCommand:aws.caws.openWorkspace",
-        "onCommand:aws.caws.cloneRepo",
-        "onCommand:aws.caws.createWorkspace",
+        "onCommand:aws.codeCatalyst.listCommands",
+        "onCommand:aws.codeCatalyst.login",
+        "onCommand:aws.codeCatalyst.logout",
+        "onCommand:aws.codeCatalyst.openOrg",
+        "onCommand:aws.codeCatalyst.openProject",
+        "onCommand:aws.codeCatalyst.openRepo",
+        "onCommand:aws.codeCatalyst.openWorkspace",
+        "onCommand:aws.codeCatalyst.cloneRepo",
+        "onCommand:aws.codeCatalyst.createWorkspace",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -789,15 +789,15 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.caws.listCommands",
+                    "command": "aws.codeCatalyst.listCommands",
                     "when": "false"
                 },
                 {
-                    "command": "aws.caws.openWorkspace",
+                    "command": "aws.codeCatalyst.openWorkspace",
                     "when": "!isCloud9"
                 },
                 {
-                    "command": "aws.caws.createWorkspace",
+                    "command": "aws.codeCatalyst.createWorkspace",
                     "when": "!isCloud9"
                 },
                 {
@@ -1218,29 +1218,29 @@
                     "group": "z_about@1"
                 },
                 {
-                    "command": "aws.caws.login",
-                    "when": "view == aws.caws",
-                    "group": "1_caws@1"
+                    "command": "aws.codeCatalyst.login",
+                    "when": "view == aws.codeCatalyst",
+                    "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.caws.cloneRepo",
-                    "when": "view == aws.caws",
-                    "group": "1_caws@1"
+                    "command": "aws.codeCatalyst.cloneRepo",
+                    "when": "view == aws.codeCatalyst",
+                    "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.caws.createWorkspace",
-                    "when": "view == aws.caws && !isCloud9",
-                    "group": "1_caws@1"
+                    "command": "aws.codeCatalyst.createWorkspace",
+                    "when": "view == aws.codeCatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.caws.listCommands",
-                    "when": "view == aws.caws && !isCloud9",
-                    "group": "1_caws@1"
+                    "command": "aws.codeCatalyst.listCommands",
+                    "when": "view == aws.codeCatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.caws.openWorkspace",
-                    "when": "view == aws.caws && !isCloud9",
-                    "group": "1_caws@1"
+                    "command": "aws.codeCatalyst.openWorkspace",
+                    "when": "view == aws.codeCatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
                 }
             ],
             "explorer/context": [
@@ -1853,50 +1853,50 @@
                 }
             },
             {
-                "command": "aws.caws.openOrg",
-                "title": "%AWS.command.caws.openOrg%",
+                "command": "aws.codeCatalyst.openOrg",
+                "title": "%AWS.command.codeCatalyst.openOrg%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.openProject",
-                "title": "%AWS.command.caws.openProject%",
+                "command": "aws.codeCatalyst.openProject",
+                "title": "%AWS.command.codeCatalyst.openProject%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.openRepo",
-                "title": "%AWS.command.caws.openRepo%",
+                "command": "aws.codeCatalyst.openRepo",
+                "title": "%AWS.command.codeCatalyst.openRepo%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.openWorkspace",
-                "title": "%AWS.command.caws.openWorkspace%",
+                "command": "aws.codeCatalyst.openWorkspace",
+                "title": "%AWS.command.codeCatalyst.openWorkspace%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
             },
             {
-                "command": "aws.caws.listCommands",
-                "title": "%AWS.command.caws.listCommands%",
+                "command": "aws.codeCatalyst.listCommands",
+                "title": "%AWS.command.codeCatalyst.listCommands%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
             },
             {
-                "command": "aws.caws.login",
-                "title": "%AWS.command.caws.login%",
+                "command": "aws.codeCatalyst.login",
+                "title": "%AWS.command.codeCatalyst.login%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.logout",
-                "title": "%AWS.command.caws.logout%",
+                "command": "aws.codeCatalyst.logout",
+                "title": "%AWS.command.codeCatalyst.logout%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.cloneRepo",
-                "title": "%AWS.command.caws.cloneRepo%",
+                "command": "aws.codeCatalyst.cloneRepo",
+                "title": "%AWS.command.codeCatalyst.cloneRepo%",
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.createWorkspace",
-                "title": "%AWS.command.caws.createWorkspace%",
+                "command": "aws.codeCatalyst.createWorkspace",
+                "title": "%AWS.command.codeCatalyst.createWorkspace%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
             },

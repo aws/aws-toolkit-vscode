@@ -20,7 +20,7 @@ describe('tech debt', function () {
 
         assert.ok(
             semver.lt(minVscode, '1.53.0'),
-            'remove `SecretMemento` from src/caws/auth.ts added in https://github.com/aws/aws-toolkit-vscode-staging/pull/466'
+            'remove `SecretMemento` from src/codecatalyst/auth.ts added in https://github.com/aws/aws-toolkit-vscode-staging/pull/466'
         )
 
         assert.ok(

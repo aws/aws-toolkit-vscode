@@ -11,10 +11,15 @@ import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemU
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { startSshAgent } from '../../shared/extensions/ssh'
-import { ensureConnectScript } from '../../caws/tools'
-import { bearerTokenCacheLocation, DevelopmentWorkspaceId, getCawsSsmEnv, sshLogFileLocation } from '../../caws/model'
+import { ensureConnectScript } from '../../codecatalyst/tools'
+import {
+    bearerTokenCacheLocation,
+    DevEnvironmentId,
+    getCodeCatalystSsmEnv,
+    sshLogFileLocation,
+} from '../../codecatalyst/model'
 import { readFile, writeFile } from 'fs-extra'
-import { StartSessionDevelopmentWorkspaceRequest } from '../../../types/clientcodeaws'
+import { StartDevEnvironmentSessionRequest } from '../../../types/clientcodecatalyst'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
@@ -59,7 +64,7 @@ describe('Connect Script', function () {
         assert.ok(isWithin(context.globalStorageUri.fsPath, script))
     })
 
-    function createFakeServer(testWorkspace: DevelopmentWorkspaceId) {
+    function createFakeServer(testWorkspace: DevEnvironmentId) {
         return http.createServer(async (req, resp) => {
             try {
                 const data = await new Promise<string>((resolve, reject) => {
@@ -68,11 +73,11 @@ describe('Connect Script', function () {
                 })
 
                 const body = JSON.parse(data)
-                const expected: Pick<StartSessionDevelopmentWorkspaceRequest, 'sessionConfiguration'> = {
+                const expected: Pick<StartDevEnvironmentSessionRequest, 'sessionConfiguration'> = {
                     sessionConfiguration: { sessionType: 'SSH' },
                 }
 
-                const expectedPath = `/v1/organizations/${testWorkspace.org.name}/projects/${testWorkspace.project.name}/developmentWorkspaces/${testWorkspace.id}/session`
+                const expectedPath = `/v1/organizations/${testWorkspace.org.name}/projects/${testWorkspace.project.name}/devEnvironments/${testWorkspace.id}/session`
 
                 assert.deepStrictEqual(body, expected)
                 assert.strictEqual(req.url, expectedPath)
@@ -95,7 +100,7 @@ describe('Connect Script', function () {
     }
 
     it('can run the script with environment variables', async function () {
-        const testWorkspace: DevelopmentWorkspaceId = {
+        const testWorkspace: DevEnvironmentId = {
             id: '01234567890',
             project: { name: 'project' },
             org: { name: 'org' },
@@ -109,8 +114,8 @@ describe('Connect Script', function () {
 
         await writeFile(bearerTokenCacheLocation(testWorkspace.id), 'token')
         const script = (await ensureConnectScript(context)).unwrap().fsPath
-        const env = getCawsSsmEnv('us-weast-1', 'echo', testWorkspace)
-        env.CAWS_ENDPOINT = address
+        const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testWorkspace)
+        env.CODECATALYST_ENDPOINT = address
 
         // This could be de-duped
         const isWindows = process.platform === 'win32'

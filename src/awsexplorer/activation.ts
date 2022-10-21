@@ -28,7 +28,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
-import { initNodes } from '../caws/explorer'
+import { initNodes } from '../codecatalyst/explorer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.

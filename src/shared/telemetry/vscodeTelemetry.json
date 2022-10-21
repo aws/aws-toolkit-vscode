@@ -33,15 +33,15 @@
             "description": "Installed CLI"
         },
         {
-            "name": "caws_createWorkspaceRepoType",
+            "name": "codecatalyst_createWorkspaceRepoType",
             "type": "string",
-            "description": "Type of Git repository provided to the CAWS workspace create wizard",
+            "description": "Type of Git repository provided to the Code Catalyst workspace create wizard",
             "allowedValues": ["linked", "none"]
         },
         {
-            "name": "caws_updateWorkspaceLocationType",
+            "name": "codecatalyst_updateWorkspaceLocationType",
             "type": "string",
-            "description": "Locality of the CAWS update workspace request (i.e., from the thin client or the local IDE instance)",
+            "description": "Locality of the Code Catalyst update workspace request (i.e., from the thin client or the local IDE instance)",
             "allowedValues": ["remote", "local"]
         },
         {
@@ -258,35 +258,39 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
-            "name": "caws_createWorkspace",
-            "description": "Create a CAWS Development Workspace",
+            "name": "codecatalyst_createWorkspace",
+            "description": "Create a Code Catalyst Development Workspace",
             "metadata": [
                 { "type": "result" },
                 { "type": "userId" },
                 {
-                    "type": "caws_createWorkspaceRepoType",
+                    "type": "codecatalyst_createWorkspaceRepoType",
                     "required": false
                 }
             ]
         },
         {
-            "name": "caws_updateWorkspaceSettings",
-            "description": "Update properties of a CAWS development workspace",
-            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "caws_updateWorkspaceLocationType" }]
+            "name": "codecatalyst_updateWorkspaceSettings",
+            "description": "Update properties of a Code Catalyst development environment",
+            "metadata": [
+                { "type": "result" },
+                { "type": "userId" },
+                { "type": "codecatalyst_updateWorkspaceLocationType" }
+            ]
         },
         {
-            "name": "caws_updateDevfile",
-            "description": "Trigger a devfile update on a CAWS development workspace",
+            "name": "codecatalyst_updateDevfile",
+            "description": "Trigger a devfile update on a Code Catalyst development environment",
             "metadata": [{ "type": "result" }, { "type": "userId" }]
         },
         {
-            "name": "caws_localClone",
-            "description": "Clone a CAWS code repository locally",
+            "name": "codecatalyst_localClone",
+            "description": "Clone a Code Catalyst code repository locally",
             "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
         },
         {
-            "name": "caws_connect",
-            "description": "Connect to a CAWS development workspace",
+            "name": "codecatalyst_connect",
+            "description": "Connect to a Code Catalyst development environment",
             "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
         }
     ]

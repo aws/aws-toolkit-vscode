@@ -4,22 +4,22 @@
  */
 
 import * as assert from 'assert'
-import { toCawsUrl } from '../../caws/utils'
-import * as caws from '../../shared/clients/cawsClient'
+import { toCodeCatalystUrl } from '../../codecatalyst/utils'
+import * as codecatalyst from '../../shared/clients/codeCatalystClient'
 
-describe('cawsClient', function () {
-    it('toCawsUrl()', async function () {
-        const org: caws.CawsOrg = {
+describe('codeCatalystClient', function () {
+    it('toCodeCatalystUrl()', async function () {
+        const org: codecatalyst.CodeCatalystOrg = {
             type: 'org',
             name: 'org1',
             regionName: 'region',
         }
-        const project: caws.CawsProject = {
+        const project: codecatalyst.CodeCatalystProject = {
             type: 'project',
             org: org,
             name: 'project1',
         }
-        const repo: caws.CawsRepo = {
+        const repo: codecatalyst.CodeCatalystRepo = {
             type: 'repo',
             org: org,
             project: project,
@@ -28,9 +28,12 @@ describe('cawsClient', function () {
             lastUpdatedTime: new Date(),
             createdTime: new Date(),
         }
-        const prefix = `https://${caws.getCawsConfig().hostname}/organizations`
-        assert.deepStrictEqual(toCawsUrl(org), `${prefix}/org1/view`)
-        assert.deepStrictEqual(toCawsUrl(project), `${prefix}/org1/projects/project1/view`)
-        assert.deepStrictEqual(toCawsUrl(repo), `${prefix}/org1/projects/project1/source-repositories/repo1/view`)
+        const prefix = `https://${codecatalyst.getCodeCatalystConfig().hostname}/organizations`
+        assert.deepStrictEqual(toCodeCatalystUrl(org), `${prefix}/org1/view`)
+        assert.deepStrictEqual(toCodeCatalystUrl(project), `${prefix}/org1/projects/project1/view`)
+        assert.deepStrictEqual(
+            toCodeCatalystUrl(repo),
+            `${prefix}/org1/projects/project1/source-repositories/repo1/view`
+        )
     })
 })
