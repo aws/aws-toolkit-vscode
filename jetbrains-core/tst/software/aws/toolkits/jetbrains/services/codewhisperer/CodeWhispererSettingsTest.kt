@@ -137,8 +137,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
 
         runInEdtAndWait {
             assertThat(
-                AwsToolkitExplorerToolWindow.getInstance(projectRule.project)
-                    .find(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
+                AwsToolkitExplorerToolWindow.toolWindow(projectRule.project)
             ).isNotNull
             assertThat(problemsWindow.contentManager.contentCount).isEqualTo(0)
             assertThat(codeReferenceWindow.isAvailable).isFalse
@@ -153,7 +152,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         runInEdtAndWait {
             assertThat(
                 AwsToolkitExplorerToolWindow.getInstance(projectRule.project)
-                    .find(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
+                    .getTabLabelComponent(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
             ).isNull()
         }
 
@@ -161,8 +160,8 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         runInEdtAndWait {
             assertThat(
                 AwsToolkitExplorerToolWindow.getInstance(projectRule.project)
-                    .find(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
-            ).isNotNull
+                    .getTabLabelComponent(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
+            ).isNotNull()
         }
     }
 

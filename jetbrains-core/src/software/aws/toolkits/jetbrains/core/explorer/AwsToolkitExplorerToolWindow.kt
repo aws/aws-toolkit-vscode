@@ -6,63 +6,107 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.ui.content.Content
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ui.components.JBTabbedPane
+import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 import software.aws.toolkits.jetbrains.services.codewhisperer.experiment.CodeWhispererExperiment
 import software.aws.toolkits.resources.message
+import java.awt.Component
 
-class AwsToolkitExplorerToolWindow(override val project: Project) : ToolkitToolWindow {
-    private lateinit var devToolsContent: Content
-    override val toolWindowId = AwsToolkitExplorerFactory.TOOLWINDOW_ID
+class AwsToolkitExplorerToolWindow(private val project: Project) : BorderLayoutPanel() {
+    private val tabPane = JBTabbedPane()
+
+    private val tabComponents = mapOf<String, () -> Component>(
+        EXPLORER_TAB_ID to { ExplorerToolWindow.getInstance(project) },
+        DEVTOOLS_TAB_ID to { DevToolsToolWindow.getInstance(project) }
+    )
+
     init {
         runInEdt {
-            addTab(
-                message("explorer.toolwindow.title"),
-                ExplorerToolWindow.getInstance(project),
-                activate = true,
-                id = EXPLORER_TAB_ID,
-                additionalDisposable = null
-            )
-            devToolsContent = addTab(
-                message("aws.developer.tools.tab.title"),
-                DevToolsToolWindow.getInstance(project),
-                activate = false,
-                id = DEVTOOLS_TAB_ID,
-                additionalDisposable = null
-            )
+            val toolWindow = toolWindow(project)
+            tabComponents.forEach { name, contentProvider ->
+                tabPane.addTab(name, contentProvider())
+            }
+
+            val toolkitToolWindowListener = ToolkitToolWindowListener(project)
+            val onTabChange = {
+                toolkitToolWindowListener.tabChanged(tabPane.getTitleAt(tabPane.selectedIndex))
+            }
+            tabPane.model.addChangeListener {
+                onTabChange()
+            }
+            onTabChange()
+
             // Hide dev tool on initialization if CodeWhisperer is not enabled in experimental feature.
             // We can do this since CodeWhisperer is the only node in Dev Tool pane for now.
             if (!CodeWhispererExperiment.isEnabled()) {
                 setDevToolsTabVisible(false)
             }
+
+            toolWindow.contentManager.apply {
+                addContent(
+                    factory.createContent(tabPane, null, false).also {
+                        it.isCloseable = true
+                        it.isPinnable = true
+                    }
+                )
+            }
         }
     }
 
     fun setDevToolsTabVisible(visible: Boolean) {
-        val content = find(DEVTOOLS_TAB_ID)
+        val index = tabPane.indexOfTab(DEVTOOLS_TAB_ID)
+        if (index == -1) {
+            if (!visible) {
+                // if we don't need to be visible we're done
+                return
+            }
+
+            // else we need content
+            tabComponents.onEachIndexed { i, (name, contentProvider) ->
+                if (name == DEVTOOLS_TAB_ID) {
+                    tabPane.insertTab(name, null, contentProvider(), null, i)
+                    tabPane.selectedIndex = i
+                    return
+                }
+            }
+        }
+
+        // we have content
+        val content = tabPane.getComponentAt(index)
         if (!visible) {
+            // remove if we want it gone
             content?.let {
-                // only hide the compoenet instead of dispoing all of them
-                toolWindow().contentManager.removeContent(it, false)
+                // only hide the compoenet instead of disposing all of them
+                tabPane.removeTabAt(index)
             }
             return
         }
 
+        // otherwise select the tab
         content?.let {
-            // shouldn't be here
-            show(it)
-        } ?: run {
-            toolWindow().contentManager.addContent(this.devToolsContent)
-            show(this.devToolsContent)
+            tabPane.selectedIndex = index
         }
     }
 
+    fun getTabLabelComponent(tabName: String): Component? {
+        val index = tabPane.indexOfTab(tabName)
+        if (index == -1) {
+            return null
+        }
+
+        return tabPane.getTabComponentAt(index)
+    }
+
     companion object {
-        private const val EXPLORER_TAB_ID = "aws.toolkit.explorer"
-        const val DEVTOOLS_TAB_ID = "aws.toolkit.developer.tools"
+        private val EXPLORER_TAB_ID = message("explorer.toolwindow.title")
+        val DEVTOOLS_TAB_ID = message("aws.developer.tools.tab.title")
 
         fun getInstance(project: Project) = project.service<AwsToolkitExplorerToolWindow>()
+
+        fun toolWindow(project: Project) = ToolWindowManager.getInstance(project).getToolWindow(AwsToolkitExplorerFactory.TOOLWINDOW_ID)
+            ?: error("Can't find AwsToolkitExplorerToolWindow")
     }
 }

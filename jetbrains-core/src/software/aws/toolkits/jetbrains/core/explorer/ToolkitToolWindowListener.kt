@@ -5,14 +5,11 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import software.aws.toolkits.resources.message
 
 class ToolkitToolWindowListener(project: Project) {
-    private val toolWindowId = AwsToolkitExplorerFactory.TOOLWINDOW_ID
-    private val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(toolWindowId)
-        ?: throw IllegalStateException("Can't find tool window $toolWindowId")
+    private val toolWindow by lazy { AwsToolkitExplorerToolWindow.toolWindow(project) }
     private val actionManager by lazy { ActionManager.getInstance() }
     private val explorerActions by lazy { listOf(actionManager.getAction("aws.toolkit.explorer.titleBar")) }
 
@@ -23,11 +20,14 @@ class ToolkitToolWindowListener(project: Project) {
     }
 
     fun tabChanged(tabName: String) {
-        if (toolWindow is ToolWindowEx) {
-            if (tabName == message("explorer.toolwindow.title")) {
-                toolWindow.setTitleActions(explorerActions)
-            } else if (tabName == message("aws.developer.tools.tab.title")) {
-                toolWindow.setTitleActions(developerToolsActions)
+        // compiler can't smart cast since property is lazy and therefore has a custom getter
+        toolWindow.let {
+            if (it is ToolWindowEx) {
+                if (tabName == message("explorer.toolwindow.title")) {
+                    it.setTitleActions(explorerActions)
+                } else if (tabName == message("aws.developer.tools.tab.title")) {
+                    it.setTitleActions(developerToolsActions)
+                }
             }
         }
     }

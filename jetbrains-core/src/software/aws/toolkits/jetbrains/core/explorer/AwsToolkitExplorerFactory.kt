@@ -11,8 +11,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
-import com.intellij.ui.content.ContentManagerEvent
-import com.intellij.ui.content.ContentManagerListener
 import software.aws.toolkits.jetbrains.core.experiments.ExperimentsActionGroup
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
@@ -22,16 +20,6 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         toolWindow.helpId = HelpIds.EXPLORER_WINDOW.id
         toolWindow.installWatcher(toolWindow.contentManager)
-        val toolkitToolWindowListener = ToolkitToolWindowListener(project)
-        toolWindow.contentManager.addContentManagerListener(object : ContentManagerListener {
-            override fun selectionChanged(event: ContentManagerEvent) {
-                super.selectionChanged(event)
-                if (event.operation == ContentManagerEvent.ContentOperation.add) {
-                    // TODO: Change to ID based tab detection
-                    toolWindow.contentManager.selectedContent?.let { toolkitToolWindowListener.tabChanged(it.tabName) }
-                }
-            }
-        })
 
         if (toolWindow is ToolWindowEx) {
             val actionManager = ActionManager.getInstance()
