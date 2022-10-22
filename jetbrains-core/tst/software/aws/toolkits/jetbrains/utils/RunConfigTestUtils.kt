@@ -25,6 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.util.ReflectionUtil
 import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSessionListener
@@ -43,7 +44,9 @@ import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.DelayQueue
 import java.util.concurrent.TimeUnit
+import javax.swing.Timer
 import kotlin.test.assertNotNull
 
 fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: String): CompletableFuture<Output> {
@@ -116,7 +119,35 @@ fun getState(runConfiguration: RunConfiguration, executorId: String = DefaultRun
 fun executeRunConfigurationAndWait(runConfiguration: RunConfiguration, executorId: String = DefaultRunExecutor.EXECUTOR_ID): Output {
     val executionFuture = executeRunConfiguration(runConfiguration, executorId)
     // 4 is arbitrary, but Image-based functions can take > 3 min on first build/run, so 4 is a safe number
-    return executionFuture.get(4, TimeUnit.MINUTES)
+    return try {
+        executionFuture.get(4, TimeUnit.MINUTES)
+    } finally {
+        try {
+            checkJavaSwingTimersAreDisposed()
+        } catch (e: Throwable) {
+            println("Exception attempting to dispose of Java Swing Timers: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+}
+
+// Adapted from https://github.com/JetBrains/intellij-community/blob/2926d8e27e2e0d8120a63089d1173b7e461e3dd1/platform/testFramework/src/com/intellij/testFramework/TestApplicationManager.kt#L338
+// See https://intellij-support.jetbrains.com/hc/en-us/community/posts/360006918780-Tests-Fail-due-to-Java-Swing-Timers-Not-Disposed
+// Seems to have been removed in 223: https://github.com/JetBrains/intellij-community/blob/223.7126/platform/testFramework/src/com/intellij/testFramework/TestApplicationManager.kt
+private fun checkJavaSwingTimersAreDisposed() {
+    val timerQueueClass = Class.forName("javax.swing.TimerQueue")
+    val sharedInstance = timerQueueClass.getMethod("sharedInstance")
+    sharedInstance.isAccessible = true
+    val timerQueue = sharedInstance.invoke(null)
+    val delayQueue = ReflectionUtil.getField(timerQueueClass, timerQueue, DelayQueue::class.java, "queue")
+    while (true) {
+        val timer = delayQueue.peek() ?: return
+        val delay = timer.getDelay(TimeUnit.MILLISECONDS)
+        val getTimer = ReflectionUtil.getDeclaredMethod(timer.javaClass, "getTimer") ?: throw NullPointerException()
+        val swingTimer = getTimer.invoke(timer) as Timer
+        println("Not disposed javax.swing.Timer: (listeners: ${listOf(*swingTimer.actionListeners)}) (delayed for ${delay}ms)")
+        swingTimer.stop()
+    }
 }
 
 fun stopOnPause(project: Project) {

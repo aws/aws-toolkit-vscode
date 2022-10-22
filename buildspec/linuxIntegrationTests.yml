@@ -17,6 +17,7 @@ phases:
     commands:
       - alternatives --set java ${JAVA_HOME}/bin/java
       - alternatives --set javac ${JAVA_HOME}/bin/javac
+      - n install 16
       - startDocker.sh
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
