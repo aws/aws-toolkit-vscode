@@ -57,11 +57,6 @@ export class KeyStrokeHandler {
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
             if (InlineCompletion.instance.isTypeaheadInProgress) return
 
-            // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
-
             // Skip Cloud9 IntelliSense acceptance event
             if (
                 isCloud9() &&
@@ -75,6 +70,9 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
+            // Time duration between 2 invocations should be greater than the threshold
+            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
+            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     this.keyStrokeCount += 1
@@ -88,12 +86,17 @@ export class KeyStrokeHandler {
                 }
                 case DocumentChangedSource.IntelliSense: {
                     this.keyStrokeCount += 1
-                    triggerType = 'IntelliSenseAcceptance'
+                    if (duration >= CodeWhispererConstants.invocationTimeIntervalThreshold) {
+                        triggerType = 'IntelliSenseAcceptance'
+                    }
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
                     this.keyStrokeCount += 1
-                    if (this.keyStrokeCount >= 15) {
+                    if (
+                        this.keyStrokeCount >= 15 &&
+                        duration >= CodeWhispererConstants.invocationTimeIntervalThreshold
+                    ) {
                         triggerType = 'KeyStrokeCount'
                         this.keyStrokeCount = 0
                     }
@@ -175,10 +178,13 @@ export abstract class DocumentChangedType {
 
     abstract checkChangeSource(): DocumentChangedSource
 
-    // Enter key should always start with ONE '\n' and potentially following spaces due to IDE reformat
+    // Enter key should always start with ONE '\n' or '\r\n' and potentially following spaces due to IDE reformat
     protected isEnterKey(str: string): boolean {
         if (str.length === 0) return false
-        return str[0] === '\n' && str.substring(1).trim().length === 0
+        return (
+            (str.startsWith('\r\n') && str.substring(2).trim() === '') ||
+            (str[0] === '\n' && str.substring(1).trim() === '')
+        )
     }
 
     // Tab should consist of space char only ' ' and the length % tabSize should be 0
