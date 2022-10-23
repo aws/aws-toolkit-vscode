@@ -93,16 +93,17 @@ export class KeyStrokeHandler {
                 }
                 case DocumentChangedSource.RegularKey: {
                     this.keyStrokeCount += 1
+                    if (this.keyStrokeCount >= 15) {
+                        triggerType = 'KeyStrokeCount'
+                        this.keyStrokeCount = 0
+                    }
                     break
                 }
                 default: {
                     break
                 }
             }
-            if (this.keyStrokeCount >= 15) {
-                triggerType = 'KeyStrokeCount'
-                this.keyStrokeCount = 0
-            }
+
             if (triggerType) {
                 this.invokeAutomatedTrigger(triggerType, editor, client, config)
             }
