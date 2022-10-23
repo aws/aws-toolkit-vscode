@@ -71,7 +71,7 @@ export class KeyStrokeHandler {
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
             // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
+            // This threshold does not applies to Enter | SpecialCharacters | IntelliSenseAcceptance type auto trigger.
             const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
@@ -86,9 +86,8 @@ export class KeyStrokeHandler {
                 }
                 case DocumentChangedSource.IntelliSense: {
                     this.keyStrokeCount += 1
-                    if (duration >= CodeWhispererConstants.invocationTimeIntervalThreshold) {
-                        triggerType = 'IntelliSenseAcceptance'
-                    }
+                    triggerType = 'IntelliSenseAcceptance'
+
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
