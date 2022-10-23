@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix bug when CodeWhisperer auto trigger did not work as expected"
+}
