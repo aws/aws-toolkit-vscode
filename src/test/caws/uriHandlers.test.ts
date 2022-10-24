@@ -23,7 +23,7 @@ function createCloneUri(target: string): vscode.Uri {
 
 function createConnectUri(env: DevEnvironmentId): vscode.Uri {
     const params = {
-        developmentWorkspaceId: env.id,
+        devEnvironmentId: env.id,
         organizationName: env.org.name,
         projectName: env.project.name,
     }
@@ -36,7 +36,7 @@ function createConnectUri(env: DevEnvironmentId): vscode.Uri {
 // Tests involving `UriHandler` should _not_ couple the URI paths to the implementation.
 // The path is apart of our public API! They should not be easy to change.
 
-describe('Code Catalyst handlers', function () {
+describe('CodeCatalyst handlers', function () {
     let handler: UriHandler
     let testWindow: TestWindow
     let commandStub: Stub<typeof vscode.commands.executeCommand>
@@ -70,7 +70,7 @@ describe('Code Catalyst handlers', function () {
             assert.strictEqual(commandStub.called, false)
         })
 
-        it('does a normal git clone if not a Code Catalyst URL', async function () {
+        it('does a normal git clone if not a CodeCatalyst URL', async function () {
             const target = 'https://github.com/antlr/grammars-v4.git'
             await handler.handleUri(createCloneUri(target))
             assert.ok(commandStub.calledWith('git.clone', target))

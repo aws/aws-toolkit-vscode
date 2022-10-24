@@ -7,7 +7,7 @@
         <div id="restart-notification" class="notification" v-if="canRestart">
             <span id="notification-span">
                 <span id="info-notification-icon" class="icon icon-lg icon-vscode-info mr-8"></span>
-                <span>Restart your workspace to update with changes.</span>
+                <span>Restart your dev environment to update with changes.</span>
             </span>
             <button
                 id="restart-button"
@@ -50,7 +50,7 @@ import { defineComponent } from 'vue'
 import { CodeCatalystConfigureWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { Status } from '../../../shared/clients/developmentWorkspaceClient'
+import { Status } from '../../../shared/clients/devenvClient'
 import { WorkspaceSettings } from '../../commands'
 
 const client = WebviewClientFactory.create<CodeCatalystConfigureWebview>()

@@ -13,7 +13,7 @@ import { CodeCatalystCommands } from './commands'
 const STATUS_PRIORITY = 1
 const STATUS_TOOLTIP = localize(
     'AWS.codecatalyst.statusbar.tooltip',
-    'Click to connect to REMOVED.codes or check its status.'
+    'Click to connect to CodeCatalyst or check its status.'
 )
 
 export function initStatusbar(authProvider: CodeCatalystAuthenticationProvider): vscode.Disposable {
@@ -30,5 +30,5 @@ export function initStatusbar(authProvider: CodeCatalystAuthenticationProvider):
 }
 
 function setCodeCatalystStatusbar(statusBarItem: vscode.StatusBarItem, username?: string): void {
-    statusBarItem.text = localize('AWS.codecatalyst.statusbar.text', 'REMOVED.codes: {0}', username || '-')
+    statusBarItem.text = localize('AWS.codecatalyst.statusbar.text', 'CodeCatalyst: {0}', username || '-')
 }

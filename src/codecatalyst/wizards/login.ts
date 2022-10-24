@@ -78,7 +78,7 @@ export class LoginWizard extends Wizard<LoginWizardState> {
                                 if (account !== newAccount) {
                                     return auth.login(account).catch(async error => {
                                         // Usually you'd only get to this point if the refresh token itself expired
-                                        getLogger().error(`REMOVED.codes: failed to login: %O`, error)
+                                        getLogger().error(`codecatalyst: failed to login: %O`, error)
                                         await auth.deleteAccount(account)
 
                                         return auth.login(await auth.createAccount())

@@ -4,20 +4,20 @@
  */
 
 import got from 'got'
-import { getCodeCatalystWorkspaceArn } from '../vscode/env'
+import { getCodeCatalystDevenvArn } from '../vscode/env'
 
 const ENVIRONMENT_AUTH_TOKEN = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
 const ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
 
-export class DevelopmentWorkspaceClient {
+export class DevenvClient {
     public constructor(private readonly endpoint: string = ENVIRONMENT_ENDPOINT) {}
 
     public get arn(): string | undefined {
-        return getCodeCatalystWorkspaceArn()
+        return getCodeCatalystDevenvArn()
     }
 
     public isCodeCatalystWorkspace(): boolean {
-        return !!getCodeCatalystWorkspaceArn()
+        return !!getCodeCatalystDevenvArn()
     }
 
     // Start an action

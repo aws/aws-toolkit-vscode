@@ -2,7 +2,7 @@
 
 # Usage:
 #   When connecting to a development environment
-#       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… WORKSPACE_ID=… ./codecatalyst_connect
+#       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… DEVENV_ID=… ./codecatalyst_connect
 
 set -e
 set -u
@@ -37,17 +37,17 @@ _parse_json_for_value() {
     echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
 }
 
-# Note: A development environment must have been previously started by VSCode Extension/Code Catalyst
+# Note: A development environment must have been previously started by VSCode Extension/CodeCatalyst
 _start_dev_environment_session() {
     # Function inputs
     local CODECATALYST_ENDPOINT=$1
     local BEARER_TOKEN=$2
     local ORGANIZATION_NAME=$3
     local PROJECT_NAME=$4
-    local WORKSPACE_ID=$5
+    local DEVENV_ID=$5
 
     # Local variables
-    local START_SESSION_PATH="/v1/organizations/$ORGANIZATION_NAME/projects/$PROJECT_NAME/devEnvironments/$WORKSPACE_ID/session"
+    local START_SESSION_PATH="/v1/organizations/$ORGANIZATION_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
     local START_SESSION_QUERY=$(
         cat << EOF
 {
@@ -72,7 +72,7 @@ _codecatalyst() {
     local BEARER_TOKEN=$3
     local ORGANIZATION_NAME=$4
     local PROJECT_NAME=$5
-    local WORKSPACE_ID=$6
+    local DEVENV_ID=$6
     local AWS_REGION=$7
 
     # Local variables
@@ -81,10 +81,10 @@ _codecatalyst() {
     local TOKEN
     local SESSION
 
-    START_SESSION_RESPONSE=$(_start_dev_environment_session "$CODECATALYST_ENDPOINT" "$BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID")
+    START_SESSION_RESPONSE=$(_start_dev_environment_session "$CODECATALYST_ENDPOINT" "$BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$DEVENV_ID")
 
     # Errors happen when you have invalid token etc
-    # ValidationExceptions happen when the Development workspace is not running
+    # ValidationExceptions happen when the devenv is not running
     if [[ "$START_SESSION_RESPONSE" == *"errors"* || "$START_SESSION_RESPONSE" == *"ValidationException"* || "$START_SESSION_RESPONSE" == *"NotValidException"* ]]; then
         _log "Failed to start the session with error:" "$START_SESSION_RESPONSE"
         exit 1
@@ -108,11 +108,11 @@ _main() {
     _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
     _require ORGANIZATION_NAME "${ORGANIZATION_NAME:-}"
     _require PROJECT_NAME "${PROJECT_NAME:-}"
-    _require WORKSPACE_ID "${WORKSPACE_ID:-}"
+    _require DEVENV_ID "${DEVENV_ID:-}"
 
     CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
 
-    _codecatalyst "$AWS_SSM_CLI" "$CODECATALYST_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID" "$AWS_REGION"
+    _codecatalyst "$AWS_SSM_CLI" "$CODECATALYST_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$DEVENV_ID" "$AWS_REGION"
 }
 
 _main

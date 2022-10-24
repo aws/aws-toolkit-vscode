@@ -96,14 +96,14 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export function getCodeCatalystWorkspaceArn(): string | undefined {
+export function getCodeCatalystDevenvArn(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_ARN']
 }
 
 export function getCodeCatalystProjectName(): string | undefined {
-    return process.env['__DEVELOPMENT_WORKSPACE_PROJECT_NAME']
+    return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }
 
 export function getCodeCatalystOrganizationName(): string | undefined {
-    return process.env['__DEVELOPMENT_WORKSPACE_ORGANIZATION_NAME']
+    return process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
 }

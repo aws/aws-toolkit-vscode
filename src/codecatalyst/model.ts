@@ -15,7 +15,7 @@ import {
     createClient,
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
-import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
+import { DevenvClient } from '../shared/clients/devenvClient'
 import { getLogger } from '../shared/logger'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
@@ -40,7 +40,7 @@ export function getCodeCatalystSsmEnv(region: string, ssmPath: string, workspace
             LOG_FILE_LOCATION: sshLogFileLocation(workspace.id),
             ORGANIZATION_NAME: workspace.org.name,
             PROJECT_NAME: workspace.project.name,
-            WORKSPACE_ID: workspace.id,
+            DEVENV_ID: workspace.id,
         },
         process.env
     )
@@ -109,15 +109,15 @@ export async function autoConnect(authProvider: CodeCatalystAuthenticationProvid
     }
 
     for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
-        getLogger().info(`REMOVED.codes: trying to auto-connect with user: ${account.label}`)
+        getLogger().info(`codecatalyst: trying to auto-connect with user: ${account.label}`)
 
         try {
             const session = await authProvider.login(account)
-            getLogger().info(`REMOVED.codes: auto-connected with user: ${account.label}`)
+            getLogger().info(`codecatalyst: auto-connected with user: ${account.label}`)
 
             return session
         } catch (err) {
-            getLogger().debug(`REMOVED.codes: unable to auto-connect with user "${account.label}": %O`, err)
+            getLogger().debug(`codecatalyst: unable to auto-connect with user "${account.label}": %O`, err)
         }
     }
 
@@ -141,12 +141,12 @@ export function createClientFactory(
 
 export interface ConnectedWorkspace {
     readonly summary: DevEnvironment
-    readonly workspaceClient: DevelopmentWorkspaceClient
+    readonly workspaceClient: DevenvClient
 }
 
 export async function getConnectedWorkspace(
     codeCatalystClient: ConnectedCodeCatalystClient,
-    workspaceClient = new DevelopmentWorkspaceClient()
+    workspaceClient = new DevenvClient()
 ): Promise<ConnectedWorkspace | undefined> {
     const arn = workspaceClient.arn
     if (!arn || !workspaceClient.isCodeCatalystWorkspace()) {
@@ -207,7 +207,7 @@ export async function prepareWorkpaceConnection(
     )
 
     const hostname = getHostNameFromEnv({ id, org, project })
-    const logPrefix = topic ? `REMOVED.codes ${topic} (${id})` : `REMOVED.codes (${id})`
+    const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`
     const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
     const envProvider = createCodeCatalystEnvProvider(client, ssm, runningWorkspace)
     const SessionProcess = createBoundProcess(envProvider).extend({
@@ -250,7 +250,7 @@ export const codeCatalystConnectCommand = Commands.register(
     openDevelopmentWorkspace
 )
 
-export async function getDevfileLocation(client: DevelopmentWorkspaceClient, root?: vscode.Uri) {
+export async function getDevfileLocation(client: DevenvClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
         throw new Error('No root directory or workspace folder found')
@@ -279,7 +279,7 @@ export function toCodeCatalystGitUri(username: string, token: string, repo: Repo
 }
 
 /**
- * Given a collection of Code Catalyst repos, try to find a corresponding workspace, if any
+ * Given a collection of CodeCatalyst repos, try to find a corresponding workspace, if any
  */
 export function associateWorkspace(
     client: ConnectedCodeCatalystClient,
@@ -306,11 +306,11 @@ export interface DevelopmentWorkspaceMemento {
     previousConnectionTimestamp: number
     /** Previous open workspace */
     previousOpenWorkspace: string
-    /** Code Catalyst Organization Name */
+    /** CodeCatalyst Organization Name */
     organizationName: string
-    /** Code Catalyst Project name */
+    /** CodeCatalyst Project name */
     projectName: string
-    /** Code Catalyst Alias */
+    /** CodeCatalyst Alias */
     alias: string | undefined
 }
 

@@ -11,7 +11,7 @@ import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
 import { isValidResponse } from '../../../shared/wizards/wizard'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { GetStatusResponse } from '../../../shared/clients/developmentWorkspaceClient'
+import { GetStatusResponse } from '../../../shared/clients/devenvClient'
 import { openCodeCatalystUrl } from '../../utils'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
 import {

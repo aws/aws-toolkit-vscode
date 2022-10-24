@@ -100,7 +100,7 @@ export function createOrgPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient
 ): QuickPickPrompter<codecatalyst.CodeCatalystOrg> {
     return createResourcePrompter(client.listOrganizations(), {
-        title: 'Select a REMOVED.codes Organization',
+        title: 'Select a CodeCatalyst Organization',
         placeholder: 'Search for an Organization',
     })
 }
@@ -112,7 +112,7 @@ export function createProjectPrompter(
     const projects = org ? client.listProjects({ organizationName: org.name }) : client.listResources('project')
 
     return createResourcePrompter(projects, {
-        title: 'Select a REMOVED.codes Project',
+        title: 'Select a CodeCatalyst Project',
         placeholder: 'Search for a Project',
     })
 }
@@ -126,7 +126,7 @@ export function createRepoPrompter(
         : client.listResources('repo')
 
     return createResourcePrompter(repos, {
-        title: 'Select a REMOVED.codes Repository',
+        title: 'Select a CodeCatalyst Repository',
         placeholder: 'Search for a Repository',
     })
 }
@@ -142,8 +142,8 @@ export function createWorkpacePrompter(
     }
 
     return createResourcePrompter(filtered, {
-        title: 'Select a REMOVED.codes Workspace',
-        placeholder: 'Search for a Workspace',
+        title: 'Select a CodeCatalyst Dev Environment',
+        placeholder: 'Search for a Dev Environment',
         compare: (a, b) => {
             if (isData(a.data) && isData(b.data)) {
                 if (a.data.status === b.data.status) {
@@ -196,13 +196,13 @@ export async function selectRepoForWorkspace(
         {
             ...asQuickpickItem(repo),
             invalidSelection: repo.developmentWorkspace !== undefined,
-            description: repo.developmentWorkspace ? `Repository already has a workspace` : '',
+            description: repo.developmentWorkspace ? `Repository already has a dev environment` : '',
         },
     ])
 
     const prompter = createQuickPick(items, {
         buttons: [refresh, ...createCommonButtons(getHelpUrl())],
-        title: 'Select a REMOVED.codes Repository',
+        title: 'Select a CodeCatalyst Repository',
         placeholder: 'Search for a Repository',
         compare: (a, b) => {
             if (a.invalidSelection === b.invalidSelection) {

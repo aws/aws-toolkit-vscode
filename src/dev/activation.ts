@@ -31,19 +31,19 @@ interface MenuOption {
 const menuOptions: Record<string, MenuOption> = {
     installVsix: {
         label: 'Install VSIX on Remote Environment',
-        description: 'REMOVED.codes',
+        description: 'CodeCatalyst',
         detail: 'Automatically upload/install a VSIX to a remote host',
         executor: installVsixCommand,
     },
     openTerminal: {
         label: 'Open Remote Terminal',
-        description: 'REMOVED.codes',
+        description: 'CodeCatalyst',
         detail: 'Open a new terminal connected to the remote environment',
         executor: openTerminalCommand,
     },
     deleteWorkpace: {
         label: 'Delete Workspace',
-        description: 'REMOVED.codes',
+        description: 'CodeCatalyst',
         detail: 'Deletes the selected workpace',
         executor: deleteWorkpaceCommand,
     },

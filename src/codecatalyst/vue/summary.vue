@@ -22,7 +22,7 @@
                 <b class="mb-8" style="display: block">{{ branchName }}</b>
                 <button class="button-theme-secondary" @click="openBranch">
                     <!--TODO: support 3P links?-->
-                    Open Branch in REMOVED.codes
+                    Open Branch in CodeCatalyst
                 </button>
             </div>
             <div id="project" style="grid-area: project">

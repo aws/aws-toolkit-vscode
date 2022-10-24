@@ -209,7 +209,7 @@ export async function showCreateWorkspace(
     })
 
     const webview = await activePanel!.show({
-        title: localize('AWS.view.createWorkspace.title', 'Create a REMOVED.codes Workspace'),
+        title: localize('AWS.view.createWorkspace.title', 'Create a CodeCatalyst Dev Environment'),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 

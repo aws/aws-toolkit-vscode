@@ -9,7 +9,7 @@ import { pushIf } from '../shared/utilities/collectionUtils'
 import { Ides } from '../../types/clientcodecatalyst'
 
 /**
- * Builds a web URL from the given Code Catalyst object.
+ * Builds a web URL from the given CodeCatalyst object.
  */
 export function toCodeCatalystUrl(resource: CodeCatalystResource): string {
     const prefix = `https://${getCodeCatalystConfig().hostname}/organizations`
@@ -44,7 +44,7 @@ export function getHelpUrl(): string {
 }
 
 /**
- * Builds a web URL from the given Code Catalyst object.
+ * Builds a web URL from the given CodeCatalyst object.
  */
 export function openCodeCatalystUrl(o: CodeCatalystResource) {
     const url = toCodeCatalystUrl(o)

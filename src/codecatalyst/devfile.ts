@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
+import { DevenvClient } from '../shared/clients/devenvClient'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { getLogger } from '../shared/logger'
 import { Commands } from '../shared/vscode/commands2'
@@ -16,12 +16,12 @@ import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
-    const client = new DevelopmentWorkspaceClient()
+    const client = new DevenvClient()
     if (!client.isCodeCatalystWorkspace()) {
         throw new Error('Cannot update devfile while outside a development environment')
     }
 
-    // XXX: hard-coded `projects` path, waiting for Code Catalyst to provide an environment variable
+    // XXX: hard-coded `projects` path, waiting for CodeCatalyst to provide an environment variable
     // could also just parse the devfile...
     const location = path.relative('/projects', uri.fsPath)
 
@@ -60,7 +60,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 
     public constructor(
         registry: DevfileRegistry,
-        private readonly client = new DevelopmentWorkspaceClient(),
+        private readonly client = new DevenvClient(),
         workspace: Workspace = vscode.workspace
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)
@@ -71,7 +71,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
                 }
 
                 await this.handleUpdate(document).catch(err => {
-                    getLogger().debug(`REMOVED.codes: devfile codelens failure: ${err?.message}`)
+                    getLogger().debug(`codecatalyst: devfile codelens failure: ${err?.message}`)
                 })
             })
         )
@@ -96,7 +96,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         // also make the positions better
         const range = new vscode.Range(0, 0, 0, 0)
         const lens = updateDevfileCommand.build(document.uri).asCodeLens(range, {
-            title: localize('AWS.codecatalyst.codelens.updateWorkspace', 'Update Workspace'),
+            title: localize('AWS.codecatalyst.codelens.updateWorkspace', 'Update Dev Environment'),
         })
 
         return [lens]
@@ -107,7 +107,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
     }
 }
 
-export function registerDevfileWatcher(workspaceClient: DevelopmentWorkspaceClient): vscode.Disposable {
+export function registerDevfileWatcher(workspaceClient: DevenvClient): vscode.Disposable {
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, workspaceClient)
     registry.addWatchPattern(DEVFILE_GLOB_PATTERN)

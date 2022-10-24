@@ -22,7 +22,7 @@ import { DevSettings } from '../settings'
 import { Credentials } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 
-// XXX: remove signing from the Code Catalyst model until Bearer token auth is added to the SDKs
+// XXX: remove signing from the CodeCatalyst model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
 
 // REMOVE ME SOON: only used for development
@@ -60,7 +60,7 @@ export interface DevEnvironment extends codecatalyst.DevEnvironmentSummary {
     readonly project: Pick<CodeCatalystProject, 'name'>
 }
 
-/** Code Catalyst developer environment session. */
+/** CodeCatalyst developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CodeCatalystDevEnvSession extends codecatalyst.StartDevEnvironmentResponse {}
 
@@ -97,7 +97,7 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevelopmentWorkspace(
+function toDevEnv(
     organizationName: string,
     projectName: string,
     summary: codecatalyst.DevEnvironmentSummary
@@ -148,7 +148,7 @@ export type UserDetails = RequiredProps<
     readonly version: '1'
 }
 
-// Code Catalyst client has two variants: 'logged-in' and 'not logged-in'
+// CodeCatalyst client has two variants: 'logged-in' and 'not logged-in'
 // The 'not logged-in' variant is a subtype and has restricted functionality
 // These characteristics appear in the Smithy model, but the SDK codegen is unable to model this
 
@@ -211,7 +211,7 @@ class CodeCatalystClientInternal {
 
     public get identity(): ConnectedCodeCatalystClient['identity'] {
         if (!this.userDetails) {
-            throw new Error('REMOVED.codes client is not connected')
+            throw new Error('CodeCatalyst client is not connected')
         }
 
         return { id: this.userDetails.userId, name: this.userDetails.userName }
@@ -219,17 +219,17 @@ class CodeCatalystClientInternal {
 
     public get token(): ConnectedCodeCatalystClient['token'] {
         if (!this.connected) {
-            throw new Error('REMOVED.codes client is not connected')
+            throw new Error('CodeCatalyst client is not connected')
         }
 
         return this.bearerToken as string
     }
 
     /**
-     * Rebuilds/reconnects Code Catalyst clients with new credentials
+     * Rebuilds/reconnects CodeCatalyst clients with new credentials
      *
      * @param bearerToken   User secret
-     * @param userId       Code Catalyst account id
+     * @param userId       CodeCatalyst account id
      * @returns
      */
     public async setCredentials(
@@ -256,7 +256,7 @@ class CodeCatalystClientInternal {
         const log = this.log
 
         if (!this.bearerTokenProvider) {
-            throw new ToolkitError('REMOVED.codes client is not logged-in', { code: 'NotLoggedIn' })
+            throw new ToolkitError('CodeCatalyst client is not logged-in', { code: 'NotLoggedIn' })
         }
 
         const bearerToken = (this.bearerToken = await this.bearerTokenProvider())
@@ -353,7 +353,7 @@ class CodeCatalystClientInternal {
         assertHasProps(resp, 'identity')
 
         if (this.userId && this.userId !== resp.identity) {
-            throw new Error('REMOVED.codes identity does not match the one provided by the client')
+            throw new Error('CodeCatalyst identity does not match the one provided by the client')
         }
 
         this.userId = resp.identity
@@ -367,7 +367,7 @@ class CodeCatalystClientInternal {
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         if (resp.version !== '1') {
-            throw new Error(`REMOVED.codes 'getUserDetails' API returned an unsupported version: ${resp.version}`)
+            throw new Error(`CodeCatalyst 'getUserDetails' API returned an unsupported version: ${resp.version}`)
         }
 
         return { ...resp, version: resp.version } as const
@@ -386,7 +386,7 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets a list of all orgs for the current Code Catalyst user.
+     * Gets a list of all orgs for the current CodeCatalyst user.
      */
     public listOrganizations(request: codecatalyst.ListOrganizationsRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
         const requester = async (request: codecatalyst.ListOrganizationsRequest) =>
@@ -397,7 +397,7 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets a list of all projects for the given Code Catalyst user.
+     * Gets a list of all projects for the given CodeCatalyst user.
      */
     public listProjects(request: codecatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
         const requester = async (request: codecatalyst.ListProjectsRequest) =>
@@ -415,7 +415,7 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets a flat list of all workspaces for the given Code Catalyst project.
+     * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
     public listDevEnvironment(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
@@ -427,11 +427,11 @@ class CodeCatalystClientInternal {
             })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
-        return collection.map(envs => envs.map(s => toDevelopmentWorkspace(proj.org.name, proj.name, s)))
+        return collection.map(envs => envs.map(s => toDevEnv(proj.org.name, proj.name, s)))
     }
 
     /**
-     * Gets a flat list of all repos for the given Code Catalyst user.
+     * Gets a flat list of all repos for the given CodeCatalyst user.
      */
     public listSourceRepositories(
         request: codecatalyst.ListSourceRepositoriesRequest
@@ -552,7 +552,7 @@ class CodeCatalystClientInternal {
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevEnvironment(a), false)
 
-        return toDevelopmentWorkspace(args.organizationName, args.projectName, { ...args, ...r })
+        return toDevEnv(args.organizationName, args.projectName, { ...args, ...r })
     }
 
     public async deleteDevEnvironment(
@@ -568,7 +568,7 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Best-effort attempt to start a workspace given an ID, showing a progress notifcation with a cancel button
+     * Best-effort attempt to start a devenv given an ID, showing a progress notifcation with a cancel button
      * TODO: may combine this progress stuff into some larger construct
      *
      * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
@@ -592,12 +592,12 @@ class CodeCatalystClientInternal {
         }
 
         const progress = await showMessageWithCancel(
-            localize('AWS.codecatalyst.startMde.message', 'REMOVED.codes'),
+            localize('AWS.codecatalyst.startMde.message', 'CodeCatalyst'),
             timeout
         )
         progress.report({ message: localize('AWS.codecatalyst.startMde.checking', 'checking status...') })
 
-        const pollWorkspace = waitUntil(
+        const pollDevEnv = waitUntil(
             async () => {
                 // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
@@ -606,23 +606,26 @@ class CodeCatalystClientInternal {
 
                 const resp = await this.getDevEnvironment(args)
                 if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
-                    throw new ToolkitError('Workspace failed to start', { code: 'BadWorkspaceState' })
+                    throw new ToolkitError('Dev environment failed to start', { code: 'BadWorkspaceState' })
                 }
 
                 if (resp.status === 'STOPPED') {
                     progress.report({
-                        message: localize('AWS.codecatalyst.startMde.stopStart', 'resuming workspace...'),
+                        message: localize('AWS.codecatalyst.startMde.stopStart', 'resuming dev environment...'),
                     })
                     await this.startDevEnvironment(args)
                 } else if (resp.status === 'STOPPING') {
                     progress.report({
-                        message: localize('AWS.codecatalyst.startMde.resuming', 'waiting for workspace to stop...'),
+                        message: localize(
+                            'AWS.codecatalyst.startMde.resuming',
+                            'waiting for dev environment to stop...'
+                        ),
                     })
                 } else if (resp.status === 'FAILED') {
-                    throw new ToolkitError('Workspace failed to start', { code: 'FailedWorkspace' })
+                    throw new ToolkitError('Dev environment failed to start', { code: 'FailedWorkspace' })
                 } else {
                     progress.report({
-                        message: localize('AWS.codecatalyst.startMde.starting', 'opening workspace...'),
+                        message: localize('AWS.codecatalyst.startMde.starting', 'opening dev environment...'),
                     })
                 }
 
@@ -633,11 +636,11 @@ class CodeCatalystClientInternal {
             { interval: 5000, timeout: timeout.remainingTime, truthy: true }
         )
 
-        const workspace = await waitTimeout(pollWorkspace, timeout)
-        if (!workspace) {
-            throw new ToolkitError('Workspace failed to start', { code: 'Timeout' })
+        const devenv = await waitTimeout(pollDevEnv, timeout)
+        if (!devenv) {
+            throw new ToolkitError('Dev environment failed to start', { code: 'Timeout' })
         }
 
-        return workspace
+        return devenv
     }
 }

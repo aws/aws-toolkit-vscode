@@ -66,7 +66,7 @@ export async function ensureDependencies(
 
         tools.err().forEach(d => {
             if (d.reason) {
-                getLogger().error(`REMOVED.codes: failed to get tool "${d.name}": ${d.reason}`)
+                getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
             }
         })
 
@@ -81,7 +81,7 @@ export async function ensureDependencies(
     const config = await ensureCodeCatalystSshConfig(tools.ok().ssh)
     if (config.isErr()) {
         const err = config.err()
-        getLogger().error(`REMOVED.codes: failed to add ssh config section: ${err.message}`)
+        getLogger().error(`codecatalyst: failed to add ssh config section: ${err.message}`)
 
         return Result.err(err)
     }
@@ -216,7 +216,7 @@ async function verifySSHHost({
     if (!hasProxyCommand) {
         if (configSection !== undefined) {
             getLogger().warn(
-                `REMOVED.codes: SSH config: found old/outdated "${configHostName}" section:\n%O`,
+                `codecatalyst: SSH config: found old/outdated "${configHostName}" section:\n%O`,
                 configSection
             )
             const oldConfig = localize(

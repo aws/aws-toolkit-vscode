@@ -27,7 +27,7 @@ export function register(
         telemetry.codecatalyst_connect.record({ source: 'UriHandler' })
 
         await commands.openWorkspace.execute({
-            id: params.developmentWorkspaceId,
+            id: params.devEnvironmentId,
             org: { name: params.organizationName },
             project: { name: params.projectName },
         })
@@ -44,5 +44,5 @@ function parseCloneParams(query: SearchParams) {
 }
 
 function parseConnectParams(query: SearchParams) {
-    return query.getFromKeysOrThrow('developmentWorkspaceId', 'organizationName', 'projectName')
+    return query.getFromKeysOrThrow('devEnvironmentId', 'organizationName', 'projectName')
 }

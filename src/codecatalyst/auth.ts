@@ -68,7 +68,7 @@ export class CodeCatalystAuthStorage {
             })
         } catch (error) {
             const message = UnknownError.cast(error).message
-            getLogger().warn(`REMOVED.codes: failed to save user information for: ${id}: ${message}`)
+            getLogger().warn(`codecatalyst: failed to save user information for: ${id}: ${message}`)
         }
     }
 
@@ -93,7 +93,7 @@ export class CodeCatalystAuthStorage {
             })
         }
 
-        const logger = (message: string) => getLogger().debug(`SSO token cache (REMOVED.codes): ${message}`)
+        const logger = (message: string) => getLogger().debug(`SSO token cache (codecatalyst): ${message}`)
         const cache = mapCache(createSecretsCache(this.secrets, logger), read, write)
         const getKey = (id: string) => `${CodeCatalystAuthStorage.SECRETS_KEY}.${id}`
 
@@ -190,7 +190,7 @@ export class CodeCatalystAuthenticationProvider {
         getRegistrationCache()
             .clear(SONO_PROFILE)
             .then(() => {
-                getLogger().debug('REMOVED.codes: cleared client registration to prevent it being re-used')
+                getLogger().debug('codecatalyst: cleared client registration to prevent it being re-used')
             })
 
         assertHasProps(token, 'identity')
@@ -213,7 +213,7 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         if (this.#session.expiresAt.getTime() < Date.now()) {
-            getLogger().debug(`REMOVED.codes: refreshing expired credentials`)
+            getLogger().debug(`codecatalyst: refreshing expired credentials`)
             const tokenProvider = this.storage.getTokenProvider(this.#session.accountDetails.id)
             const token = await tokenProvider.getToken()
 
@@ -246,7 +246,7 @@ export class CodeCatalystAuthenticationProvider {
 
         try {
             const stored = this.storage.getUser(account.id)
-            // TODO(sijaden): we need to know exactly which errors Code Catalyst returns for bad tokens
+            // TODO(sijaden): we need to know exactly which errors CodeCatalyst returns for bad tokens
             // right now we invalidate on any error, even if it isn't directly related to the token
             const person = await this.verify(async () => token.accessToken, stored ?? account.id)
             const updatedPerson = { ...person, canAutoConnect: true }
@@ -266,7 +266,7 @@ export class CodeCatalystAuthenticationProvider {
 
             return this.#session
         } catch (err) {
-            getLogger().debug(`REMOVED.codes: failed to login (will clear existing secrets): ${(err as Error).message}`)
+            getLogger().debug(`codecatalyst: failed to login (will clear existing secrets): ${(err as Error).message}`)
             tokenProvider.invalidate()
             throw err
         }
@@ -306,7 +306,7 @@ export class CodeCatalystAuthenticationProvider {
 
     public async tryLoginFromDisk(): Promise<CodeCatalystSession | undefined> {
         const token = await this.storage.getTokenFromDisk().catch(err => {
-            getLogger().warn('REMOVED.codes: failed to pull credentials from disk: %O', err)
+            getLogger().warn('codecatalyst: failed to pull credentials from disk: %O', err)
         })
 
         if (token?.identity !== undefined) {

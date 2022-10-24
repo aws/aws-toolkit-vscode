@@ -39,7 +39,7 @@ export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
 
         return localize(
             'AWS.codecatalyst.cloneRepo.git',
-            'REMOVED.codes {0}',
+            'Amazon CodeCatalyst {0}',
             username
                 ? localize('AWS.codecatalyst.cloneRepo.connected', '(connected as {0})', username)
                 : localize('AWS.credentials.statusbar.no.credentials', '(not connected)')

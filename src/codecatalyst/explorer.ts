@@ -9,7 +9,7 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { getCodeCatalystWorkspaceArn } from '../shared/vscode/env'
+import { getCodeCatalystDevenvArn } from '../shared/vscode/env'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import {
@@ -35,15 +35,15 @@ function getLocalCommands() {
     return [
         ...cmds,
         CodeCatalystCommands.declared.openWorkspace.build().asTreeNode({
-            label: 'Open Workspace',
+            label: 'Open Dev Environment',
             iconPath: getIcon('vscode-vm-connect'),
         }),
         CodeCatalystCommands.declared.createWorkspace.build().asTreeNode({
-            label: 'Create Workspace',
+            label: 'Create Dev Environment',
             iconPath: getIcon('vscode-add'),
         }),
         CodeCatalystCommands.declared.listCommands.build().asTreeNode({
-            label: 'Show REMOVED.codes Commands',
+            label: 'Show CodeCatalyst Commands',
             iconPath: getIcon('vscode-list-flat'), // TODO(sijaden): use better icon
         }),
     ]
@@ -52,7 +52,7 @@ function getLocalCommands() {
 function getRemoteCommands(currentWorkspace: DevEnvironment, devfileLocation: vscode.Uri) {
     return [
         CodeCatalystCommands.declared.stopWorkspace.build(currentWorkspace, { showPrompt: true }).asTreeNode({
-            label: 'Stop Workspace',
+            label: 'Stop Dev Environment',
             iconPath: getIcon('vscode-stop-circle'),
         }),
         CodeCatalystCommands.declared.openWorkspaceSettings.build().asTreeNode({
@@ -68,7 +68,7 @@ function getRemoteCommands(currentWorkspace: DevEnvironment, devfileLocation: vs
 }
 
 export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
-    if (isCloud9() && !getCodeCatalystWorkspaceArn()) {
+    if (isCloud9() && !getCodeCatalystDevenvArn()) {
         return []
     }
 
@@ -138,11 +138,11 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
-        const item = new vscode.TreeItem('REMOVED.codes', vscode.TreeItemCollapsibleState.Collapsed)
+        const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         this.workspace = await this.getWorkspace()
 
         if (this.workspace !== undefined) {
-            item.description = 'Connected to Workspace'
+            item.description = 'Connected to Dev Environment'
             item.iconPath = addColor(getIcon('vscode-pass'), 'testing.iconPassed')
         }
 

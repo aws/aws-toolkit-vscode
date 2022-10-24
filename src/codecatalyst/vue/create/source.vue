@@ -2,12 +2,12 @@
     <div class="modes mb-16">
         <label class="mode-container" :data-disabled="model.type !== 'linked'">
             <input class="radio" type="radio" name="mode" id="from-code-catalyst" v-model="model.type" value="linked" />
-            <span class="ml-8 option-label" style="padding: 0px">Use an existing REMOVED.codes Repository</span>
+            <span class="ml-8 option-label" style="padding: 0px">Use an existing CodeCatalyst repository</span>
         </label>
 
         <label class="mode-container" :data-disabled="model.type !== 'none'">
             <input class="radio" type="radio" name="mode" id="from-none" v-model="model.type" value="none" />
-            <span class="ml-8 option-label" style="padding: 0px">Create an Empty Workspace</span>
+            <span class="ml-8 option-label" style="padding: 0px">Create an empty dev environment</span>
         </label>
     </div>
 
