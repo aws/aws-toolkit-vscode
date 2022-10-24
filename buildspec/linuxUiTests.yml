@@ -16,15 +16,9 @@ env:
     SCREEN_HEIGHT: 1080
     SCREEN_DEPTH: 24
 
-    JAVA_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
-    JDK_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
-    JRE_HOME: /usr/lib/jvm/java-17-amazon-corretto.x86_64
 phases:
   install:
     commands:
-      - yum install -y java-17-amazon-corretto
-      - alternatives --set java ${JAVA_HOME}/bin/java
-      - alternatives --set javac ${JAVA_HOME}/bin/javac
       - startDesktop.sh
 
       # login to DockerHub so we don't get throttled
