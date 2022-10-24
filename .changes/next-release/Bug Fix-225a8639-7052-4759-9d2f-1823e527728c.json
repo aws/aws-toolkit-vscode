@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "latency caused by unnecessary refreshing of credentials"
+	"description": "Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials"
 }
