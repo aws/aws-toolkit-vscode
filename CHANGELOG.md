@@ -1,3 +1,8 @@
+## 1.53.0 2022-10-24
+
+- **Bug Fix** Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials
+- **Bug Fix** CodeWhisperer auto trigger not working correctly in certain circumstances
+
 ## 1.52.0 2022-10-20
 
 - **Bug Fix** CodeWhisperer left/right arrow keybinding conflict with other plugins
