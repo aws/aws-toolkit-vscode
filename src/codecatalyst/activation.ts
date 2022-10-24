@@ -53,10 +53,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (getCodeCatalystWorkspaceArn()) {
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
-                'AWS.codeCatalyst.connectedMessage',
+                'AWS.codecatalyst.connectedMessage',
                 'Welcome to your REMOVED.codes Workspace. For more options and information, view Workspace settings (AWS Extension > REMOVED.codes).'
             )
-            const openWorkspaceSettings = localize('AWS.codeCatalyst.openWorkspaceSettings', 'Open Workspace Settings')
+            const openWorkspaceSettings = localize('AWS.codecatalyst.openWorkspaceSettings', 'Open Workspace Settings')
             vscode.window.showInformationMessage(message, dontShow, openWorkspaceSettings).then(selection => {
                 if (selection === dontShow) {
                     settings.disablePrompt('remoteConnected')

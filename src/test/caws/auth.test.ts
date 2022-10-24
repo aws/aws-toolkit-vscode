@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { CodeCatalystAuthenticationProvider, CodeCatalystAuthStorage } from '../../codecatalyst/auth'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { UserDetails } from '../../shared/clients/codeCatalystClient'
+import { UserDetails } from '../../shared/clients/codecatalystClient'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { SsoToken } from '../../credentials/sso/model'
 

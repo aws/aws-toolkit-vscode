@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as codecatalyst from '../../shared/clients/codeCatalystClient'
+import * as codecatalyst from '../../shared/clients/codecatalystClient'
 import { createCommonButtons, createRefreshButton } from '../../shared/ui/buttons'
 import {
     createQuickPick,

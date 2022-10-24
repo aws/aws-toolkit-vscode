@@ -26,7 +26,7 @@ import {
     CodeCatalystProject,
     ConnectedCodeCatalystClient,
     DevEnvironment,
-} from '../../../shared/clients/codeCatalystClient'
+} from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'

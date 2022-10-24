@@ -12,7 +12,7 @@ import { CodeCatalystAuthenticationProvider } from '../auth'
 import { createRepoLabel } from '../wizards/selectResource'
 import { toCodeCatalystGitUri } from '../model'
 import { CodeCatalystCommands } from '../commands'
-import { CodeCatalystRepo } from '../../shared/clients/codeCatalystClient'
+import { CodeCatalystRepo } from '../../shared/clients/codecatalystClient'
 
 function showQuickPickLoadingBar<T>(title: string, task: () => Promise<T>): Promise<T> {
     const picker = vscode.window.createQuickPick()
@@ -38,10 +38,10 @@ export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
         const username = this.authProvider.activeAccount?.label
 
         return localize(
-            'AWS.codeCatalyst.cloneRepo.git',
+            'AWS.codecatalyst.cloneRepo.git',
             'REMOVED.codes {0}',
             username
-                ? localize('AWS.codeCatalyst.cloneRepo.connected', '(connected as {0})', username)
+                ? localize('AWS.codecatalyst.cloneRepo.connected', '(connected as {0})', username)
                 : localize('AWS.credentials.statusbar.no.credentials', '(not connected)')
         )
     }

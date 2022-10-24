@@ -24,7 +24,7 @@ import {
 import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
-import { ConnectedCodeCatalystClient, DevEnvironment } from '../../../shared/clients/codeCatalystClient'
+import { ConnectedCodeCatalystClient, DevEnvironment } from '../../../shared/clients/codecatalystClient'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()

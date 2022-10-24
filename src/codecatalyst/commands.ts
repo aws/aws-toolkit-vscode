@@ -18,7 +18,7 @@ import {
     CodeCatalystClient,
     ConnectedCodeCatalystClient,
     CodeCatalystResource,
-} from '../shared/clients/codeCatalystClient'
+} from '../shared/clients/codecatalystClient'
 import {
     createClientFactory,
     DevEnvironmentId,
@@ -111,7 +111,7 @@ export async function stopWorkspace(
     if (opts?.showPrompt) {
         const confirmed = await showConfirmationMessage({
             prompt: localize(
-                'aws.codeCatalyst.stopWorkspace.confirm',
+                'aws.codecatalyst.stopWorkspace.confirm',
                 'Stopping the workspace will end all running processes. Continue?'
             ),
         })
@@ -322,33 +322,33 @@ export class CodeCatalystCommands {
     }
 
     public static readonly declared = {
-        login: Commands.from(this).declareLogin('aws.codeCatalyst.login'),
-        logout: Commands.from(this).declareLogout('aws.codeCatalyst.logout'),
-        openResource: Commands.from(this).declareOpenResource('aws.codeCatalyst.openResource'),
-        listCommands: Commands.from(this).declareListCommands('aws.codeCatalyst.listCommands'),
-        openOrganization: Commands.from(this).declareOpenOrganization('aws.codeCatalyst.openOrg'),
-        openProject: Commands.from(this).declareOpenProject('aws.codeCatalyst.openProject'),
-        openRepository: Commands.from(this).declareOpenRepository('aws.codeCatalyst.openRepo'),
-        stopWorkspace: Commands.from(this).declareStopWorkspace('aws.codeCatalyst.stopWorkspace'),
-        deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.codeCatalyst.deleteWorkspace'),
+        login: Commands.from(this).declareLogin('aws.codecatalyst.login'),
+        logout: Commands.from(this).declareLogout('aws.codecatalyst.logout'),
+        openResource: Commands.from(this).declareOpenResource('aws.codecatalyst.openResource'),
+        listCommands: Commands.from(this).declareListCommands('aws.codecatalyst.listCommands'),
+        openOrganization: Commands.from(this).declareOpenOrganization('aws.codecatalyst.openOrg'),
+        openProject: Commands.from(this).declareOpenProject('aws.codecatalyst.openProject'),
+        openRepository: Commands.from(this).declareOpenRepository('aws.codecatalyst.openRepo'),
+        stopWorkspace: Commands.from(this).declareStopWorkspace('aws.codecatalyst.stopWorkspace'),
+        deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.codecatalyst.deleteWorkspace'),
         openWorkspaceSettings: Commands.from(this).declareOpenWorkspaceSettings(
-            'aws.codeCatalyst.openWorkspaceSettings'
+            'aws.codecatalyst.openWorkspaceSettings'
         ),
-        openDevfile: Commands.from(this).declareOpenDevfile('aws.codeCatalyst.openDevfile'),
+        openDevfile: Commands.from(this).declareOpenDevfile('aws.codecatalyst.openDevfile'),
         cloneRepo: Commands.from(this).declareCloneRepository({
-            id: 'aws.codeCatalyst.cloneRepo',
+            id: 'aws.codecatalyst.cloneRepo',
             telemetryName: 'codecatalyst_localClone',
         }),
         createWorkspace: Commands.from(this).declareCreateWorkspace({
-            id: 'aws.codeCatalyst.createWorkspace',
+            id: 'aws.codecatalyst.createWorkspace',
             telemetryName: 'codecatalyst_createWorkspace',
         }),
         updateWorkspace: Commands.from(this).declareUpdateWorkspace({
-            id: 'aws.codeCatalyst.updateWorkspace',
+            id: 'aws.codecatalyst.updateWorkspace',
             telemetryName: 'codecatalyst_updateWorkspaceSettings',
         }),
         openWorkspace: Commands.from(this).declareOpenWorkspace({
-            id: 'aws.codeCatalyst.openWorkspace',
+            id: 'aws.codecatalyst.openWorkspace',
             telemetryName: 'codecatalyst_connect',
         }),
     } as const

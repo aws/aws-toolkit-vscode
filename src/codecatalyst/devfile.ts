@@ -25,7 +25,7 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
     // could also just parse the devfile...
     const location = path.relative('/projects', uri.fsPath)
 
-    const title = localize('AWS.codeCatalyst.container.restart', 'Restarting workspace container...')
+    const title = localize('AWS.codecatalyst.container.restart', 'Restarting workspace container...')
     await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, async () => {
         if (checkUnsavedChanges()) {
             // TODO: show confirmation prompt instead
@@ -44,7 +44,7 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
 
 export const updateDevfileCommand = Commands.register(
     {
-        id: 'aws.codeCatalyst.updateDevfile',
+        id: 'aws.codecatalyst.updateDevfile',
         telemetryName: 'codecatalyst_updateDevfile',
     },
     updateDevfile
@@ -96,7 +96,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         // also make the positions better
         const range = new vscode.Range(0, 0, 0, 0)
         const lens = updateDevfileCommand.build(document.uri).asCodeLens(range, {
-            title: localize('AWS.codeCatalyst.codelens.updateWorkspace', 'Update Workspace'),
+            title: localize('AWS.codecatalyst.codelens.updateWorkspace', 'Update Workspace'),
         })
 
         return [lens]

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codeCatalystClient'
+import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
 import { Ides } from '../../types/clientcodecatalyst'
 

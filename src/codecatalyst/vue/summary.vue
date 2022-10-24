@@ -65,7 +65,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import { createClass, createType } from '../../webviews/util'
 import { CodeCatalystConfigureWebview } from './configure/backend'
-import { DevEnvironment } from '../../shared/clients/codeCatalystClient'
+import { DevEnvironment } from '../../shared/clients/codecatalystClient'
 
 const client = WebviewClientFactory.create<CodeCatalystConfigureWebview>()
 

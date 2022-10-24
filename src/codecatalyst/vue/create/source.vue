@@ -73,7 +73,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { CodeCatalystBranch, CodeCatalystProject } from '../../../shared/clients/codeCatalystClient'
+import { CodeCatalystBranch, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { createClass, createType } from '../../../webviews/util'
 import { CodeCatalystCreateWebview, SourceResponse } from './backend'

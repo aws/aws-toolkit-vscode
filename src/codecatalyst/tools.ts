@@ -59,7 +59,7 @@ export async function ensureDependencies(
             .map(d => d.name)
             .join(', ')
         const msg = localize(
-            'AWS.codeCatalyst.missingRequiredTool',
+            'AWS.codecatalyst.missingRequiredTool',
             'Failed to connect to workspace, missing required tools: {0}',
             missing
         )
@@ -111,7 +111,7 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
 
         return Result.ok(connectScript)
     } catch (e) {
-        const message = localize('AWS.codeCatalyst.error.copyScript', 'Failed to update connect script')
+        const message = localize('AWS.codecatalyst.error.copyScript', 'Failed to update connect script')
 
         return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
     }
@@ -220,7 +220,7 @@ async function verifySSHHost({
                 configSection
             )
             const oldConfig = localize(
-                'AWS.codeCatalyst.error.oldConfig',
+                'AWS.codecatalyst.error.oldConfig',
                 'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
                 configHostName
             )
@@ -236,12 +236,12 @@ async function verifySSHHost({
         }
 
         const confirmTitle = localize(
-            'AWS.codeCatalyst.confirm.installSshConfig.title',
+            'AWS.codecatalyst.confirm.installSshConfig.title',
             '{0} Toolkit will add host {1} to ~/.ssh/config. This allows you to use SSH with your development envionments',
             getIdeProperties().company,
             configHostName
         )
-        const confirmText = localize('AWS.codeCatalyst.confirm.installSshConfig.button', 'Update SSH config')
+        const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
         if (!response) {
             return Result.err(new CancellationError('user'))
@@ -253,7 +253,7 @@ async function verifySSHHost({
             await fs.appendFile(sshConfigPath, section)
         } catch (e) {
             const message = localize(
-                'AWS.codeCatalyst.error.writeFail',
+                'AWS.codecatalyst.error.writeFail',
                 'Failed to write SSH config: {0} (permission issue?)',
                 sshConfigPath
             )

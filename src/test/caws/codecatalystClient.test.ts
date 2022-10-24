@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { toCodeCatalystUrl } from '../../codecatalyst/utils'
-import * as codecatalyst from '../../shared/clients/codeCatalystClient'
+import * as codecatalyst from '../../shared/clients/codecatalystClient'
 
 describe('codeCatalystClient', function () {
     it('toCodeCatalystUrl()', async function () {

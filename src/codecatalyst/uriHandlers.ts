@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
-import { getCodeCatalystConfig } from '../shared/clients/codeCatalystClient'
+import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { CodeCatalystCommands } from './commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 

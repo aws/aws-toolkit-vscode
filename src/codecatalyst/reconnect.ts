@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import { ConnectedCodeCatalystClient, DevEnvironment } from '../shared/clients/codeCatalystClient'
+import { ConnectedCodeCatalystClient, DevEnvironment } from '../shared/clients/codecatalystClient'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
@@ -57,7 +57,7 @@ function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, env
             const workspaceName = getWorkspaceName(workspace.alias, workspaceId)
             getLogger().info(`REMOVED.codes: ssh session reconnected to workspace: ${workspaceName}`)
             vscode.window.showInformationMessage(
-                localize('AWS.codeCatalyst.reconnect.success', 'Reconnected to workspace: {0}', workspaceName)
+                localize('AWS.codecatalyst.reconnect.success', 'Reconnected to workspace: {0}', workspaceName)
             )
             delete pendingReconnects[workspaceId]
             memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
@@ -92,7 +92,7 @@ async function reconnectWorkspaces(client: ConnectedCodeCatalystClient, ctx: Ext
 
     const polledWorkspaces = workspaceNames.join(', ')
     const progressTitle = localize(
-        'AWS.codeCatalyst.reconnect.restarting',
+        'AWS.codecatalyst.reconnect.restarting',
         'The following workspaces are restarting: {0}',
         polledWorkspaces
     )
@@ -198,7 +198,7 @@ async function pollWorkspaces(
                 await failWorkspace(memento, id)
                 delete workspaces[id]
                 showViewLogsMessage(
-                    localize('AWS.codeCatalyst.reconnect', 'Unable to reconnect to ${0}', workspaceName)
+                    localize('AWS.codecatalyst.reconnect', 'Unable to reconnect to ${0}', workspaceName)
                 )
             }
         }

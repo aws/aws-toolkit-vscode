@@ -10,7 +10,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
-import * as codeCatalyst from '../../../types/clientcodecatalyst'
+import * as codecatalyst from '../../../types/clientcodecatalyst'
 import * as logger from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
@@ -53,7 +53,7 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
     }
 }
 
-export interface DevEnvironment extends codeCatalyst.DevEnvironmentSummary {
+export interface DevEnvironment extends codecatalyst.DevEnvironmentSummary {
     readonly type: 'devEnvironment'
     readonly id: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
@@ -62,27 +62,27 @@ export interface DevEnvironment extends codeCatalyst.DevEnvironmentSummary {
 
 /** Code Catalyst developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CodeCatalystDevEnvSession extends codeCatalyst.StartDevEnvironmentResponse {}
+export interface CodeCatalystDevEnvSession extends codecatalyst.StartDevEnvironmentResponse {}
 
-export interface CodeCatalystOrg extends codeCatalyst.OrganizationSummary {
+export interface CodeCatalystOrg extends codecatalyst.OrganizationSummary {
     readonly type: 'org'
     readonly name: string
 }
 
-export interface CodeCatalystProject extends codeCatalyst.ProjectSummary {
+export interface CodeCatalystProject extends codecatalyst.ProjectSummary {
     readonly type: 'project'
     readonly name: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
 }
 
-export interface CodeCatalystRepo extends codeCatalyst.ListSourceRepositoriesItem {
+export interface CodeCatalystRepo extends codecatalyst.ListSourceRepositoriesItem {
     readonly type: 'repo'
     readonly name: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
     readonly project: Pick<CodeCatalystProject, 'name'>
 }
 
-export interface CodeCatalystBranch extends codeCatalyst.SourceBranchSummary {
+export interface CodeCatalystBranch extends codecatalyst.SourceBranchSummary {
     readonly type: 'branch'
     readonly name: string
     readonly repo: Pick<CodeCatalystRepo, 'name'>
@@ -100,7 +100,7 @@ export type CodeCatalystResource =
 function toDevelopmentWorkspace(
     organizationName: string,
     projectName: string,
-    summary: codeCatalyst.DevEnvironmentSummary
+    summary: codecatalyst.DevEnvironmentSummary
 ): DevEnvironment {
     return {
         type: 'devEnvironment',
@@ -110,7 +110,7 @@ function toDevelopmentWorkspace(
     }
 }
 
-function intoBranch(org: string, project: string, branch: codeCatalyst.SourceBranchSummary): CodeCatalystBranch {
+function intoBranch(org: string, project: string, branch: codecatalyst.SourceBranchSummary): CodeCatalystBranch {
     assertHasProps(branch, 'branchName', 'sourceRepositoryName')
 
     return {
@@ -126,7 +126,7 @@ function intoBranch(org: string, project: string, branch: codeCatalyst.SourceBra
 async function createCodeCatalystClient(
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint
-): Promise<codeCatalyst> {
+): Promise<codecatalyst> {
     const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
         apiConfig: apiConfig,
         region: regionCode,
@@ -136,13 +136,13 @@ async function createCodeCatalystClient(
         // in more than one place. So we add fake credentials here until the two concepts
         // can be combined into one.
         credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
-    } as ServiceConfigurationOptions)) as codeCatalyst
+    } as ServiceConfigurationOptions)) as codecatalyst
 
     return c
 }
 
 export type UserDetails = RequiredProps<
-    codeCatalyst.GetUserDetailsResponse,
+    codecatalyst.GetUserDetailsResponse,
     'userId' | 'userName' | 'displayName' | 'primaryEmail'
 > & {
     readonly version: '1'
@@ -181,7 +181,7 @@ export async function createClient(
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
 function fixAliasInRequest<
-    T extends codeCatalyst.CreateDevEnvironmentRequest | codeCatalyst.UpdateDevEnvironmentRequest
+    T extends codecatalyst.CreateDevEnvironmentRequest | codecatalyst.UpdateDevEnvironmentRequest
 >(request: T): T {
     if (!request.alias) {
         delete request.alias
@@ -199,7 +199,7 @@ class CodeCatalystClientInternal {
     public constructor(
         public readonly regionCode: string,
         private readonly endpoint: string,
-        private sdkClient: codeCatalyst,
+        private sdkClient: codecatalyst,
         private bearerTokenProvider?: () => Promise<string>
     ) {
         this.log = logger.getLogger()
@@ -333,14 +333,14 @@ class CodeCatalystClientInternal {
      * @returns PAT secret
      */
     public async createAccessToken(
-        args: codeCatalyst.CreateAccessTokenRequest
-    ): Promise<codeCatalyst.CreateAccessTokenResponse> {
+        args: codecatalyst.CreateAccessTokenRequest
+    ): Promise<codecatalyst.CreateAccessTokenResponse> {
         return this.sdkClient.createAccessToken(args).promise()
     }
 
     public async describeSubscription(
-        request: codeCatalyst.DescribeSubscriptionRequest
-    ): Promise<codeCatalyst.DescribeSubscriptionResponse> {
+        request: codecatalyst.DescribeSubscriptionRequest
+    ): Promise<codecatalyst.DescribeSubscriptionResponse> {
         return this.call(this.sdkClient.describeSubscription(request), false)
     }
 
@@ -362,7 +362,7 @@ class CodeCatalystClientInternal {
         return { ...this.userDetails }
     }
 
-    private async getUserDetails(args: codeCatalyst.GetUserDetailsRequest) {
+    private async getUserDetails(args: codecatalyst.GetUserDetailsRequest) {
         const resp = await this.call(this.sdkClient.getUserDetails(args), false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
@@ -373,13 +373,13 @@ class CodeCatalystClientInternal {
         return { ...resp, version: resp.version } as const
     }
 
-    public async getOrganization(request: codeCatalyst.GetOrganizationRequest): Promise<CodeCatalystOrg> {
+    public async getOrganization(request: codecatalyst.GetOrganizationRequest): Promise<CodeCatalystOrg> {
         const resp = await this.call(this.sdkClient.getOrganization(request), false)
 
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: codeCatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
+    public async getProject(request: codecatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
 
         return { ...resp, type: 'project', org: { name: request.organizationName } }
@@ -388,8 +388,8 @@ class CodeCatalystClientInternal {
     /**
      * Gets a list of all orgs for the current Code Catalyst user.
      */
-    public listOrganizations(request: codeCatalyst.ListOrganizationsRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
-        const requester = async (request: codeCatalyst.ListOrganizationsRequest) =>
+    public listOrganizations(request: codecatalyst.ListOrganizationsRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
+        const requester = async (request: codecatalyst.ListOrganizationsRequest) =>
             this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -399,8 +399,8 @@ class CodeCatalystClientInternal {
     /**
      * Gets a list of all projects for the given Code Catalyst user.
      */
-    public listProjects(request: codeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
-        const requester = async (request: codeCatalyst.ListProjectsRequest) =>
+    public listProjects(request: codecatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+        const requester = async (request: codecatalyst.ListProjectsRequest) =>
             this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -419,7 +419,7 @@ class CodeCatalystClientInternal {
      */
     public listDevEnvironment(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
-        const requester = async (request: codeCatalyst.ListDevEnvironmentsRequest) =>
+        const requester = async (request: codecatalyst.ListDevEnvironmentsRequest) =>
             this.call(this.sdkClient.listDevEnvironments(request), true, {
                 organizationName: proj.org.name,
                 projectName: proj.name,
@@ -434,9 +434,9 @@ class CodeCatalystClientInternal {
      * Gets a flat list of all repos for the given Code Catalyst user.
      */
     public listSourceRepositories(
-        request: codeCatalyst.ListSourceRepositoriesRequest
+        request: codecatalyst.ListSourceRepositoriesRequest
     ): AsyncCollection<CodeCatalystRepo[]> {
-        const requester = async (request: codeCatalyst.ListSourceRepositoriesRequest) =>
+        const requester = async (request: codecatalyst.ListSourceRepositoriesRequest) =>
             this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
@@ -451,9 +451,9 @@ class CodeCatalystClientInternal {
     }
 
     public listBranches(
-        request: codeCatalyst.ListSourceRepositoryBranchesRequest
+        request: codecatalyst.ListSourceRepositoryBranchesRequest
     ): AsyncCollection<CodeCatalystBranch[]> {
-        const requester = async (request: codeCatalyst.ListSourceRepositoryBranchesRequest) =>
+        const requester = async (request: codecatalyst.ListSourceRepositoryBranchesRequest) =>
             this.call(this.sdkClient.listSourceBranches(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -503,12 +503,12 @@ class CodeCatalystClientInternal {
     }
 
     public async createSourceBranch(
-        args: codeCatalyst.CreateSourceBranchInput
-    ): Promise<codeCatalyst.CreateSourceBranchOutput> {
+        args: codecatalyst.CreateSourceBranchInput
+    ): Promise<codecatalyst.CreateSourceBranchOutput> {
         return this.call(this.sdkClient.createSourceBranch(args), false)
     }
 
-    public async createDevEnvironment(args: codeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async createDevEnvironment(args: codecatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
         const { id } = await this.call(this.sdkClient.createDevEnvironment(fixAliasInRequest(args)), false)
 
         return this.getDevEnvironment({
@@ -519,20 +519,20 @@ class CodeCatalystClientInternal {
     }
 
     public async startDevEnvironment(
-        args: codeCatalyst.StartDevEnvironmentRequest
-    ): Promise<codeCatalyst.StartDevEnvironmentResponse> {
+        args: codecatalyst.StartDevEnvironmentRequest
+    ): Promise<codecatalyst.StartDevEnvironmentResponse> {
         return this.call(this.sdkClient.startDevEnvironment(args), false)
     }
 
-    public async createProject(args: codeCatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
+    public async createProject(args: codecatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
         await this.call(this.sdkClient.createProject(args), false)
 
         return { ...args, type: 'project', org: { name: args.organizationName } }
     }
 
     public async startDevEnvironmentSession(
-        args: codeCatalyst.StartDevEnvironmentSessionRequest
-    ): Promise<codeCatalyst.StartDevEnvironmentSessionResponse & { sessionId: string }> {
+        args: codecatalyst.StartDevEnvironmentSessionRequest
+    ): Promise<codecatalyst.StartDevEnvironmentSessionResponse & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startDevEnvironmentSession(args), false)
         if (!r.sessionId) {
             throw new TypeError('Received falsy development environment "sessionId"')
@@ -541,12 +541,12 @@ class CodeCatalystClientInternal {
     }
 
     public async stopDevEnvironment(
-        args: codeCatalyst.StopDevEnvironmentRequest
-    ): Promise<codeCatalyst.StopDevEnvironmentResponse> {
+        args: codecatalyst.StopDevEnvironmentRequest
+    ): Promise<codecatalyst.StopDevEnvironmentResponse> {
         return this.call(this.sdkClient.stopDevEnvironment(args), false)
     }
 
-    public async getDevEnvironment(args: codeCatalyst.GetDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async getDevEnvironment(args: codecatalyst.GetDevEnvironmentRequest): Promise<DevEnvironment> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
@@ -556,14 +556,14 @@ class CodeCatalystClientInternal {
     }
 
     public async deleteDevEnvironment(
-        args: codeCatalyst.DeleteDevEnvironmentRequest
-    ): Promise<codeCatalyst.DeleteDevEnvironmentResponse> {
+        args: codecatalyst.DeleteDevEnvironmentRequest
+    ): Promise<codecatalyst.DeleteDevEnvironmentResponse> {
         return this.call(this.sdkClient.deleteDevEnvironment(args), false)
     }
 
     public updateDevEnvironment(
-        args: codeCatalyst.UpdateDevEnvironmentRequest
-    ): Promise<codeCatalyst.UpdateDevEnvironmentResponse> {
+        args: codecatalyst.UpdateDevEnvironmentRequest
+    ): Promise<codecatalyst.UpdateDevEnvironmentResponse> {
         return this.call(this.sdkClient.updateDevEnvironment(fixAliasInRequest(args)), false)
     }
 
@@ -575,7 +575,7 @@ class CodeCatalystClientInternal {
      * on the development environment starting should not progress.
      */
     public async startDevEnvironmentWithProgress(
-        args: codeCatalyst.StartDevEnvironmentRequest,
+        args: codecatalyst.StartDevEnvironmentRequest,
         status: string,
         timeout: Timeout = new Timeout(180000)
     ): Promise<DevEnvironment> {
@@ -592,10 +592,10 @@ class CodeCatalystClientInternal {
         }
 
         const progress = await showMessageWithCancel(
-            localize('AWS.codeCatalyst.startMde.message', 'REMOVED.codes'),
+            localize('AWS.codecatalyst.startMde.message', 'REMOVED.codes'),
             timeout
         )
-        progress.report({ message: localize('AWS.codeCatalyst.startMde.checking', 'checking status...') })
+        progress.report({ message: localize('AWS.codecatalyst.startMde.checking', 'checking status...') })
 
         const pollWorkspace = waitUntil(
             async () => {
@@ -611,18 +611,18 @@ class CodeCatalystClientInternal {
 
                 if (resp.status === 'STOPPED') {
                     progress.report({
-                        message: localize('AWS.codeCatalyst.startMde.stopStart', 'resuming workspace...'),
+                        message: localize('AWS.codecatalyst.startMde.stopStart', 'resuming workspace...'),
                     })
                     await this.startDevEnvironment(args)
                 } else if (resp.status === 'STOPPING') {
                     progress.report({
-                        message: localize('AWS.codeCatalyst.startMde.resuming', 'waiting for workspace to stop...'),
+                        message: localize('AWS.codecatalyst.startMde.resuming', 'waiting for workspace to stop...'),
                     })
                 } else if (resp.status === 'FAILED') {
                     throw new ToolkitError('Workspace failed to start', { code: 'FailedWorkspace' })
                 } else {
                     progress.report({
-                        message: localize('AWS.codeCatalyst.startMde.starting', 'opening workspace...'),
+                        message: localize('AWS.codecatalyst.startMde.starting', 'opening workspace...'),
                     })
                 }
 

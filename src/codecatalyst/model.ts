@@ -14,7 +14,7 @@ import {
     ConnectedCodeCatalystClient,
     createClient,
     getCodeCatalystConfig,
-} from '../shared/clients/codeCatalystClient'
+} from '../shared/clients/codecatalystClient'
 import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
 import { getLogger } from '../shared/logger'
 import { CodeCatalystAuthenticationProvider } from './auth'
@@ -244,7 +244,7 @@ export async function openDevelopmentWorkspace(
 // in connecting to the workspace
 export const codeCatalystConnectCommand = Commands.register(
     {
-        id: '_aws.codeCatalyst.connect',
+        id: '_aws.codecatalyst.connect',
         telemetryName: 'codecatalyst_connect',
     },
     openDevelopmentWorkspace
