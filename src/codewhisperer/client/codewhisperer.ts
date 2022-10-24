@@ -46,7 +46,7 @@ export class DefaultCodeWhispererClient {
             if (!this.credentials && !isCloud9()) {
                 this.credentials = await getCognitoCredentials()
             }
-            if (this.credentials && this.credentials?.needsRefresh()) {
+            if (this.credentials && this.credentials.needsRefresh()) {
                 await new Promise<void>((resolve, reject) =>
                     this.credentials?.refresh(e => (e ? reject(e) : resolve()))
                 )
