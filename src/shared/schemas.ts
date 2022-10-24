@@ -10,7 +10,7 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { Settings } from './settings'
+import { DevSettings, Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
@@ -143,7 +143,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     try {
         const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
         const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
-
+        const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
         const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
         await updateSchemaFromRemote({
@@ -162,7 +162,21 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'sam.schema.json',
         })
-
+        const buildSpecSchemaUrl = DevSettings.instance.get('buildspecSchemaUrl', '')
+        if (buildSpecSchemaUrl !== '') {
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                url: buildSpecSchemaUrl,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: SCHEMA_PREFIX + 'buildspec.schema.json',
+            })
+            return {
+                cfn: cfnSchemaUri,
+                sam: samSchemaUri,
+                buildspec: buildSpecSchemaUri,
+            }
+        }
         return {
             cfn: cfnSchemaUri,
             sam: samSchemaUri,

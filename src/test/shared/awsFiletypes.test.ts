@@ -16,6 +16,7 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 describe('awsFiletypes', function () {
     let awsConfigUri: vscode.Uri | undefined
     let cfnUri: vscode.Uri | undefined
+    let buildspecUri: vscode.Uri | undefined
 
     beforeEach(async function () {
         testUtil.closeAllEditors()
@@ -32,6 +33,12 @@ describe('awsFiletypes', function () {
             'python3.7-plain-sam-app/template.yaml'
         )
         cfnUri = vscode.Uri.file(cfnFile)
+
+        const buildspecFile = workspaceUtils.tryGetAbsolutePath(
+            vscode.workspace.workspaceFolders?.[0],
+            'buildspec/buildspec.yml'
+        )
+        buildspecUri = vscode.Uri.file(buildspecFile)
     })
 
     after(async function () {
@@ -39,8 +46,10 @@ describe('awsFiletypes', function () {
     })
 
     it('emit telemetry when opened by user', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
+        await globals.templateRegistry.cfn.addItemToRegistry(cfnUri!)
+        await globals.templateRegistry.buildspec.addItemToRegistry(buildspecUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
+        await vscode.commands.executeCommand('vscode.open', buildspecUri)
         await vscode.commands.executeCommand('vscode.open', awsConfigUri)
         await vscode.workspace.openTextDocument({
             content: 'test content for SSM JSON',
@@ -60,17 +69,19 @@ describe('awsFiletypes', function () {
         )
 
         assert(r, 'did not emit expected telemetry')
-        assert(r.length === 3, 'emitted file_editAwsFile too many times')
+        assert(r.length === 4, 'emitted file_editAwsFile too many times')
         const m1filetype = r[0].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
         const m2filetype = r[1].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
         const m3filetype = r[2].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
+        const m4filetype = r[3].Metadata?.find(o => o.Key === 'awsFiletype')?.Value
         assert.strictEqual(m1filetype, 'cloudformationSam')
-        assert.strictEqual(m2filetype, 'awsCredentials')
-        assert.strictEqual(m3filetype, 'ssmDocument')
+        assert.strictEqual(m2filetype, 'codebuildBuildspec')
+        assert.strictEqual(m3filetype, 'awsCredentials')
+        assert.strictEqual(m4filetype, 'ssmDocument')
     })
 
     it('emit telemetry exactly once per filetype in a given flush window', async function () {
-        await globals.templateRegistry.addItemToRegistry(cfnUri!)
+        await globals.templateRegistry.cfn.addItemToRegistry(cfnUri!)
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         async function getMetrics() {
             return await waitUntil(

@@ -615,7 +615,7 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     // XXX: force load since template registry seems a bit flakey
-                    await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
+                    await globals.templateRegistry.cfn.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
                     await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
                 }
