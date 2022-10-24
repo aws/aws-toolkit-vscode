@@ -113,12 +113,50 @@ describe('keyStrokeHandler', function () {
             assert.ok(!invokeSpy.called)
         })
 
+        it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is new line', async function () {
+            KeyStrokeHandler.instance.keyStrokeCount = 14
+            const mockEditor = createMockTextEditor()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '\n'
+            )
+            RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(invokeSpy.called)
+        })
+
+        it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is a specialcharacter', async function () {
+            KeyStrokeHandler.instance.keyStrokeCount = 14
+            const mockEditor = createMockTextEditor()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '('
+            )
+            RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(invokeSpy.called)
+        })
+
         it('Should call invokeAutomatedTrigger with Enter when inputing \n', async function () {
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 '\n'
+            )
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            invokeSpy('Enter', mockEditor, mockClient)
+            assert.ok(invokeSpy.called)
+        })
+
+        it('Should call invokeAutomatedTrigger with Enter when inputing \r\n', async function () {
+            const mockEditor = createMockTextEditor()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 2)),
+                '\r\n'
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('Enter', mockEditor, mockClient)
