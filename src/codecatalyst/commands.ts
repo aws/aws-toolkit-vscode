@@ -112,7 +112,7 @@ export async function stopWorkspace(
         const confirmed = await showConfirmationMessage({
             prompt: localize(
                 'aws.codecatalyst.stopWorkspace.confirm',
-                'Stopping the workspace will end all running processes. Continue?'
+                'Stopping the dev environment will end all processes. Continue?'
             ),
         })
 

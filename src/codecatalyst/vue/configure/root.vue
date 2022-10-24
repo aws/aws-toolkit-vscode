@@ -133,7 +133,7 @@ export default defineComponent({
                 })
             } catch {
                 this.restarting = false
-                client.showLogsMessage('Unable to update the workspace. View the logs for more information')
+                client.showLogsMessage('Unable to update the dev environment. View the logs for more information')
             }
         },
     },

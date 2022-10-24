@@ -241,7 +241,7 @@ export async function openDevelopmentWorkspace(
 //
 // Recording metrics like this is a lot more involved so for now we'll
 // assume that if the first step succeeds, the user probably succeeded
-// in connecting to the workspace
+// in connecting to the devenv
 export const codeCatalystConnectCommand = Commands.register(
     {
         id: '_aws.codecatalyst.connect',
@@ -253,7 +253,7 @@ export const codeCatalystConnectCommand = Commands.register(
 export async function getDevfileLocation(client: DevenvClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
-        throw new Error('No root directory or workspace folder found')
+        throw new Error('No root directory or dev environment folder found')
     }
 
     // TODO(sijaden): should make this load greedily and continously poll
@@ -300,7 +300,7 @@ export function associateWorkspace(
 }
 
 export interface DevelopmentWorkspaceMemento {
-    /** True if the extension is watching the status of the workspace to try and reconnect. */
+    /** True if the extension is watching the status of the devenv to try and reconnect. */
     attemptingReconnect?: boolean
     /** Unix time of the most recent connection. */
     previousConnectionTimestamp: number
