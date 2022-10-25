@@ -3,30 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError } from 'aws-sdk'
+import * as AWS from 'aws-sdk'
 import { Token } from 'aws-sdk/lib/token'
 import { Connection } from './auth'
 
-export class TokenProvider extends Token {
+const TokenClass = (AWS as any).Token as typeof Token
+export class TokenProvider extends TokenClass {
     public constructor(private readonly connection: Connection & { type: 'sso' }) {
         super({ token: '', expireTime: new Date(0) })
     }
 
-    public override get(cb: (err?: AWSError | undefined) => void): void {
+    public override get(cb: (err?: AWS.AWSError | undefined) => void): void {
         if (!this.token || this.needsRefresh()) {
             this.refresh(cb)
+        } else {
+            cb()
         }
-
-        cb()
     }
 
-    public override refresh(cb: (err?: AWSError | undefined) => void): void {
+    public override refresh(cb: (err?: AWS.AWSError | undefined) => void): void {
         this.connection
             .getToken()
             .then(({ accessToken, expiresAt }) => {
                 this.token = accessToken
                 this.expireTime = expiresAt
                 this.expired = false
+                cb()
             })
             .catch(cb)
     }
