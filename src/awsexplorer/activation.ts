@@ -28,7 +28,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
-import { Auth, AuthNode, ProfileStore } from '../credentials/auth'
+import { Auth, AuthNode } from '../credentials/auth'
 import { DevSettings } from '../shared/settings'
 
 /**
@@ -75,10 +75,8 @@ export async function activate(args: {
         })
     )
 
-    const auth = new Auth(new ProfileStore(args.context.extensionContext.globalState))
-    const authNode = new AuthNode(auth)
     const nodes = DevSettings.instance.get('showAuthNode', false)
-        ? [authNode, cdkNode, codewhispererNode]
+        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
         : [cdkNode, codewhispererNode]
 
     const developerTools = createLocalExplorerView(nodes)

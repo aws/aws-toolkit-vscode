@@ -15,6 +15,7 @@ import { ToolkitError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { SsoToken } from './sso/model'
+import globals from '../shared/extensionGlobals'
 
 interface SsoConnection {
     readonly type: 'sso'
@@ -330,6 +331,11 @@ export class Auth implements AuthService, LoginManager {
         await this.updateState(id, 'valid')
 
         return refreshed
+    }
+
+    static #instance: Auth | undefined
+    public static get instance() {
+        return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
     }
 }
 
