@@ -21,7 +21,7 @@ import { CloudFormation } from './cloudformation/cloudformation'
 import { getStringHash } from './utilities/textUtilities'
 
 const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
-const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
+const defileManifestUrl = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
 const buildspecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
 const buildspecCloudfrontURL = 'https://d3rrggjwfhwld2.cloudfront.net' + buildspecHostedFilesPath
@@ -172,7 +172,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(goformationManifestURL, 'tag_name')
-    const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
+    const devfileSchemaVersion = await getPropertyFromJsonUrl(defileManifestUrl, 'tag_name')
     const schemas: Schemas = {}
 
     try {
