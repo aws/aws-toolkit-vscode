@@ -10,7 +10,7 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { DevSettings, Settings } from './settings'
+import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
@@ -22,6 +22,9 @@ import { CloudFormation } from './cloudformation/cloudformation'
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
+const HOSTED_FILES_CLOUD_FRONT_DISTRIBUTION = 'https://d3rrggjwfhwld2.cloudfront.net/'
+const HOSTED_FILES_S3_FALLBACK = 'https://aws-vs-toolkit.s3.amazonaws.com/'
+const BUILD_SPEC_HOSTED_FILES_PATH = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -165,6 +168,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
     const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
+    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
     const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
@@ -211,6 +215,30 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         schemas['devfile'] = devfileSchemaUri
     } catch (e) {
         getLogger().verbose('Could not download devfile schema: %s', (e as Error).message)
+    }
+
+    try {
+        try {
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                url: HOSTED_FILES_CLOUD_FRONT_DISTRIBUTION + BUILD_SPEC_HOSTED_FILES_PATH,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: SCHEMA_PREFIX + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = buildSpecSchemaUri
+        } catch (e) {
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                url: HOSTED_FILES_S3_FALLBACK + BUILD_SPEC_HOSTED_FILES_PATH,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: SCHEMA_PREFIX + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = buildSpecSchemaUri
+        }
+    } catch (e) {
+        getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
 
     return schemas
