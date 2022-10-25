@@ -65,6 +65,10 @@ export function createConstantMap<T extends PropertyKey, U extends PropertyKey>(
     return new Map<T, U>(Object.entries(obj) as [T, U][]) as unknown as ConstantMap<T, U>
 }
 
+export function createFactoryFunction<T extends new (...args: any[]) => any>(ctor: T): FactoryFunction<T> {
+    return (...args) => new ctor(...args)
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**
@@ -112,3 +116,10 @@ export type RequiredProps<T, K extends keyof T> = T & { [P in K]-?: NonNullable<
 
 /** Analagous to shifting an array but for tuples */
 export type Shift<T extends any[]> = T extends [infer _, ...infer U] ? U : []
+
+/** Transforms a type into a mutable version */
+export type Mutable<T> = { -readonly [P in keyof T]: T[P] }
+
+export type FactoryFunction<T extends abstract new (...args: any[]) => any> = (
+    ...args: ConstructorParameters<T>
+) => InstanceType<T>

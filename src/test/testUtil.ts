@@ -15,6 +15,7 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
+import { keys, selectFrom } from '../shared/utilities/tsUtils'
 
 const testTempDirs: string[] = []
 
@@ -248,4 +249,52 @@ export async function closeAllEditors(): Promise<void> {
 
         throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
     }
+}
+
+export interface EventCapturer<T = unknown> {
+    readonly emits: readonly T[]
+    readonly last: T | undefined
+    next(timeout?: number): Promise<T>
+    dispose(): void
+}
+
+export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
+    let disposed = false
+    const emits: T[] = []
+    const listeners: vscode.Disposable[] = []
+    listeners.push(event(data => emits.push(data)))
+
+    return {
+        emits,
+        get last() {
+            return emits[emits.length - 1]
+        },
+        next: (timeout?: number) => {
+            if (disposed) {
+                throw new Error('Capturer has been disposed')
+            }
+
+            return new Promise<T>((resolve, reject) => {
+                const stop = () => reject(new Error('Timed out waiting for event'))
+                const disposable = event(data => resolve(data))
+
+                if (timeout !== undefined) {
+                    setTimeout(stop, timeout)
+                }
+
+                listeners.push({ dispose: () => (disposable.dispose(), stop()) })
+            })
+        },
+        dispose: () => {
+            disposed = true
+            vscode.Disposable.from(...listeners).dispose()
+        },
+    }
+}
+
+export function partialStrictEqual<T extends Record<string, any>, U extends T>(
+    actual: T,
+    expected: U
+): asserts actual is Pick<U, keyof T> {
+    assert.deepStrictEqual(actual, selectFrom(expected, ...keys(actual)))
 }

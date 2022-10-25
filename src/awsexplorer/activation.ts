@@ -28,6 +28,8 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
+import { Auth, AuthNode, ProfileStore } from '../credentials/auth'
+import { DevSettings } from '../shared/settings'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -73,7 +75,12 @@ export async function activate(args: {
         })
     )
 
-    const nodes = [cdkNode, codewhispererNode]
+    const auth = new Auth(new ProfileStore(args.context.extensionContext.globalState))
+    const authNode = new AuthNode(auth)
+    const nodes = DevSettings.instance.get('showAuthNode', false)
+        ? [authNode, cdkNode, codewhispererNode]
+        : [cdkNode, codewhispererNode]
+
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
