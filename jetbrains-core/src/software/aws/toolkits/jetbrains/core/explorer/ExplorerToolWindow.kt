@@ -11,9 +11,7 @@ import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.ide.util.treeView.TreeState
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.ActionToolbar.WRAP_LAYOUT_POLICY
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
@@ -44,11 +42,8 @@ import com.intellij.util.ui.tree.TreeUtil
 import org.jetbrains.concurrency.CancellablePromise
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
-import software.aws.toolkits.jetbrains.core.credentials.ProjectLevelSettingSelector
-import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorComboBoxAction
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
@@ -86,16 +81,6 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)
 
     init {
-        val group = DefaultActionGroup(
-            SettingsSelectorComboBoxAction(ProjectLevelSettingSelector(project, ChangeSettingsMode.CREDENTIALS)),
-            SettingsSelectorComboBoxAction(ProjectLevelSettingSelector(project, ChangeSettingsMode.REGIONS))
-        )
-
-        toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).apply {
-            layoutPolicy = WRAP_LAYOUT_POLICY
-            setTargetComponent(this@ExplorerToolWindow)
-        }.component
-
         background = UIUtil.getTreeBackground()
         setContent(treePanelWrapper)
 
