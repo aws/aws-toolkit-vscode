@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "S3: \"Copy Path\" action now returns \"s3://bucket/path/file.txt\" URI instead of just the \"path/file.txt\" path"
+}
