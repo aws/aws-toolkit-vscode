@@ -38,6 +38,7 @@ open class JTreeFixture(remoteRobot: RemoteRobot, remoteComponent: RemoteCompone
 
     fun rightClickPath(vararg path: String, fullMatch: Boolean = true) {
         findExpandedPath(*path, fullMatch = fullMatch)?.let {
+            clickRow(it.row)
             rightClickRow(it.row)
         } ?: throw PathNotFoundException(path.toList())
     }

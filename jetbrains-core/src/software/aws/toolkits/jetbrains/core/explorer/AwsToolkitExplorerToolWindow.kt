@@ -46,7 +46,6 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
             }.component
 
             // main content
-            val toolWindow = toolWindow(project)
             tabComponents.forEach { name, contentProvider ->
                 tabPane.addTab(name, contentProvider())
             }
@@ -65,15 +64,6 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
             // We can do this since CodeWhisperer is the only node in Dev Tool pane for now.
             if (!CodeWhispererExperiment.isEnabled()) {
                 setDevToolsTabVisible(false)
-            }
-
-            toolWindow.contentManager.apply {
-                addContent(
-                    factory.createContent(this@AwsToolkitExplorerToolWindow, null, false).also {
-                        it.isCloseable = true
-                        it.isPinnable = true
-                    }
-                )
             }
         }
     }

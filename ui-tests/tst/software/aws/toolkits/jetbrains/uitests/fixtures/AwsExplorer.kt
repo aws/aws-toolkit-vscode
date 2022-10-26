@@ -16,7 +16,7 @@ fun IdeaFrame.awsExplorer(
     timeout: Duration = Duration.ofSeconds(20),
     function: AwsExplorer.() -> Unit
 ) {
-    val locator = byXpath("//div[@accessiblename='Explorer Tool Window']")
+    val locator = byXpath("//div[@accessiblename='AWS Toolkit Tool Window']")
 
     step("AWS toolkit tool window") {
         val explorer = try {

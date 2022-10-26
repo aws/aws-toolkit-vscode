@@ -19,7 +19,6 @@ import software.aws.toolkits.resources.message
 class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         toolWindow.helpId = HelpIds.EXPLORER_WINDOW.id
-        toolWindow.installWatcher(toolWindow.contentManager)
 
         if (toolWindow is ToolWindowEx) {
             val actionManager = ActionManager.getInstance()
@@ -53,8 +52,14 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
             )
         }
 
-        // content will be added to tool window in initialization of AwsToolkitExplorerToolWindow
-        AwsToolkitExplorerToolWindow.getInstance(project)
+        val contentManager = toolWindow.contentManager
+        val content = contentManager.factory.createContent(AwsToolkitExplorerToolWindow.getInstance(project), null, false).also {
+            it.isCloseable = true
+            it.isPinnable = true
+        }
+        contentManager.addContent(content)
+        toolWindow.activate(null)
+        contentManager.setSelectedContent(content)
     }
     override fun init(toolWindow: ToolWindow) {
         toolWindow.stripeTitle = message("aws.notification.title")
