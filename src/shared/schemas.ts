@@ -139,12 +139,14 @@ export class SchemaService {
  * @param extensionContext VSCode extension context
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
+    const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
+    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+
+    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+
+    const schemas: Schemas = {}
+
     try {
-        const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-        const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
-
-        const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
-
         await updateSchemaFromRemote({
             destination: cfnSchemaUri,
             version: goformationSchemaVersion,
@@ -153,6 +155,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'cloudformation.schema.json',
         })
+        schemas['cfn'] = cfnSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download cfn schema: %s', (e as Error).message)
+    }
+
+    try {
         await updateSchemaFromRemote({
             destination: samSchemaUri,
             version: goformationSchemaVersion,
@@ -161,17 +169,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'sam.schema.json',
         })
-
-        return {
-            cfn: cfnSchemaUri,
-            sam: samSchemaUri,
-        }
+        schemas['sam'] = samSchemaUri
     } catch (e) {
-        getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
-        // this.schemas will be undefined for the rest of the session, so
-        // processUpdates() will never do its work.
-        return undefined
+        getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
     }
+
+    return schemas
 }
 
 /**
