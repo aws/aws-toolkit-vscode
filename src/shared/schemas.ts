@@ -10,13 +10,14 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { Settings } from './settings'
+import { DevSettings, Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
 import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
+import { CloudFormation } from './cloudformation/cloudformation'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
@@ -141,12 +142,15 @@ export class SchemaService {
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
     const schemas: Schemas = {}
 
     try {
+        const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+
         await updateSchemaFromRemote({
             destination: cfnSchemaUri,
             version: goformationSchemaVersion,
@@ -172,6 +176,22 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         schemas['sam'] = samSchemaUri
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+    }
+
+    try {
+        const buildSpecSchemaUrl = DevSettings.instance.get('buildspecSchemaUrl', '')
+        if (buildSpecSchemaUrl !== '') {
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                url: buildSpecSchemaUrl,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: SCHEMA_PREFIX + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = samSchemaUri
+        }
+    } catch (e) {
+        getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
 
     return schemas
@@ -243,39 +263,10 @@ export async function updateSchemaFromRemote(params: {
  */
 async function addCustomTags(config = Settings.instance): Promise<void> {
     const settingName = 'yaml.customTags'
-    const cloudFormationTags = [
-        '!And',
-        '!And sequence',
-        '!If',
-        '!If sequence',
-        '!Not',
-        '!Not sequence',
-        '!Equals',
-        '!Equals sequence',
-        '!Or',
-        '!Or sequence',
-        '!FindInMap',
-        '!FindInMap sequence',
-        '!Base64',
-        '!Join',
-        '!Join sequence',
-        '!Cidr',
-        '!Ref',
-        '!Sub',
-        '!Sub sequence',
-        '!GetAtt',
-        '!GetAZs',
-        '!ImportValue',
-        '!ImportValue sequence',
-        '!Select',
-        '!Select sequence',
-        '!Split',
-        '!Split sequence',
-    ]
 
     try {
         const currentTags = config.get(settingName, ArrayConstructor(Any), [])
-        const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+        const missingTags = CloudFormation.cloudFormationTags.filter(item => !currentTags.includes(item))
 
         if (missingTags.length > 0) {
             const updateTags = currentTags.concat(missingTags)

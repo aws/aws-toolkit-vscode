@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
 import { Timeout, waitTimeout } from './timeoutUtils'
+import { Window } from '../vscode/window'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -82,4 +84,19 @@ export function normalizeVSCodeUri(uri: vscode.Uri): string {
         return uri.toString()
     }
     return pathutils.normalize(uri.fsPath)
+}
+
+/**
+ * Given some contents, create a starter YAML template file.
+ */
+export async function createStarterTemplateFile(content: string, window: Window = Window.vscode()): Promise<void> {
+    const wsFolder = vscode.workspace.workspaceFolders
+    const loc = await window.showSaveDialog({
+        filters: { YAML: ['yaml'] },
+        defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
+    })
+    if (loc) {
+        fs.writeFileSync(loc.fsPath, content)
+        await vscode.commands.executeCommand('vscode.open', loc)
+    }
 }

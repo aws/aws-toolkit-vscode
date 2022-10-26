@@ -271,7 +271,7 @@ export async function createNewSamApplication(
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
         const isTemplateRegistered = await waitUntil(
-            async () => globals.templateRegistry.getRegisteredItem(templateUri),
+            async () => globals.templateRegistry.cfn.getRegisteredItem(templateUri),
             {
                 timeout: 5000,
                 interval: 500,

@@ -67,10 +67,13 @@ export function activate(): void {
         vscode.workspace.onDidOpenTextDocument(async (doc: vscode.TextDocument) => {
             const isAwsFileExt = isAwsFiletype(doc)
             const isSchemaHandled = globals.schemaService.isMapped(doc.uri)
-            const isCfnTemplate = !!globals.templateRegistry.registeredItems.find(
+            const isCfnTemplate = !!globals.templateRegistry.cfn.registeredItems.find(
                 t => pathutil.normalize(t.path) === pathutil.normalize(doc.fileName)
             )
-            if (!isAwsFileExt && !isSchemaHandled && !isCfnTemplate) {
+            const isBuildspecTemplate = !!globals.templateRegistry.buildspec.registeredItems.find(
+                t => pathutil.normalize(t.path) === pathutil.normalize(doc.fileName)
+            )
+            if (!isAwsFileExt && !isSchemaHandled && !isCfnTemplate && !isBuildspecTemplate) {
                 return
             }
 
@@ -82,7 +85,13 @@ export function activate(): void {
             // TODO: ask schemaService for the precise filetype.
             let telemKind = isAwsConfig(doc.fileName) ? 'awsCredentials' : langidToAwsFiletype(doc.languageId)
             if (telemKind === 'other') {
-                telemKind = isCfnTemplate ? 'cloudformationSam' : isSchemaHandled ? 'cloudformation' : 'other'
+                if (isCfnTemplate) {
+                    telemKind = 'cloudformationSam'
+                } else if (isBuildspecTemplate) {
+                    telemKind = 'codebuildBuildspec'
+                } else if (isSchemaHandled) {
+                    telemKind = 'cloudformation'
+                }
             }
 
             // HACK: for "~/.aws/foo" vscode sometimes _only_ emits "~/.aws/foo.git".

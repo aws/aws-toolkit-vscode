@@ -66,7 +66,9 @@ const baseConfig = {
                 ],
             },
             {
-                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice)/,
+                // Only needed for transitive `jsonc-parser` dependency
+                // Can be removed when using esm
+                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice|yaml-language-server)/,
                 use: { loader: 'umd-compat-loader' },
             },
         ],
