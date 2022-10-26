@@ -59,15 +59,6 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     // zips
     {
-        runtime: 'nodejs12.x',
-        displayName: 'nodejs12.x (ZIP)',
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'nodejs14.x',
         displayName: 'nodejs14.x (ZIP)',
         path: 'hello-world/app.js',
@@ -79,6 +70,15 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs16.x',
         displayName: 'nodejs16.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'nodejs18.x',
+        displayName: 'nodejs18.x (ZIP)',
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
@@ -153,16 +153,6 @@ const scenarios: TestScenario[] = [
 
     // images
     {
-        runtime: 'nodejs12.x',
-        displayName: 'nodejs12.x (Image)',
-        baseImage: `amazon/nodejs12.x-base`,
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'nodejs14.x',
         displayName: 'nodejs14.x (Image)',
         baseImage: `amazon/nodejs14.x-base`,
@@ -176,6 +166,16 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs16.x',
         displayName: 'nodejs16.x (Image)',
         baseImage: `amazon/nodejs16.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'nodejs18.x',
+        displayName: 'nodejs18.x (Image)',
+        baseImage: `amazon/nodejs18.x-base`,
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
