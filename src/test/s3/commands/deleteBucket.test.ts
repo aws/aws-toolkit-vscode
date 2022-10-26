@@ -23,7 +23,11 @@ describe('deleteBucketCommand', function () {
     beforeEach(function () {
         s3 = mock()
         parentNode = new S3Node(instance(s3))
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, parentNode, instance(s3))
+        node = new S3BucketNode(
+            { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' },
+            parentNode,
+            instance(s3)
+        )
     })
 
     it('confirms deletion, deletes bucket, shows progress bar, and refreshes parent node', async function () {

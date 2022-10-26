@@ -10,7 +10,6 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { readablePath } from '../util'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
@@ -35,7 +34,7 @@ export async function createFolderCommand(
 
     await telemetry.s3_createFolder.run(async () => {
         const folderName = await window.showInputBox({
-            prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', readablePath(node)),
+            prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', node.bucket.uri),
             placeHolder: localize('AWS.s3.createFolder.placeHolder', 'Folder Name'),
             validateInput: validateFolderName,
         })

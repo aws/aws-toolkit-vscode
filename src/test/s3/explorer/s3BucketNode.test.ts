@@ -18,9 +18,9 @@ import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 describe('S3BucketNode', function () {
     const name = 'bucket-name'
     const continuationToken = 'continuationToken'
-    const bucket: Bucket = { name, region: 'region', arn: 'arn' }
-    const file: File = { name: 'name', key: 'key', arn: 'arn' }
-    const folder: Folder = { name: 'folder', path: 'path', arn: 'arn' }
+    const bucket: Bucket = { name, region: 'region', arn: 'arn', uri: 's3://foo' }
+    const file: File = { name: 'name', key: 'key', arn: 'arn', uri: 's3://foo' }
+    const folder: Folder = { name: 'folder', path: 'path', arn: 'arn', uri: 's3://foo' }
     const maxResults = 200
     let s3: S3Client
 

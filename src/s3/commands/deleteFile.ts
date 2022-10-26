@@ -12,7 +12,6 @@ import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { readablePath } from '../util'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -33,13 +32,13 @@ export async function deleteFileCommand(
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
-    const filePath = readablePath(node)
+    const filePath = node.file.uri
     getLogger().debug('DeleteFile called for %O', node)
 
     await telemetry.s3_deleteObject.run(async () => {
         const isConfirmed = await showConfirmationMessage(
             {
-                prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
+                prompt: localize('AWS.s3.deleteFile.prompt', 'Delete file {0}?', filePath),
                 confirm: localizedText.localizedDelete,
                 cancel: localizedText.cancel,
             },
@@ -48,8 +47,6 @@ export async function deleteFileCommand(
         if (!isConfirmed) {
             throw new CancellationError('user')
         }
-
-        getLogger().info(`Deleting file ${filePath}`)
 
         await node
             .deleteFile()

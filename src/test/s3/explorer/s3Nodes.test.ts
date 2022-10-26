@@ -11,8 +11,13 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { instance, mock, when } from '../../utilities/mockito'
 
 describe('S3Node', function () {
-    const firstBucket: Bucket = { name: 'first-bucket-name', region: 'firstRegion', arn: 'firstArn' }
-    const secondBucket: Bucket = { name: 'second-bucket-name', region: 'secondRegion', arn: 'secondArn' }
+    const firstBucket: Bucket = { name: 'first-bucket-name', region: 'firstRegion', arn: 'firstArn', uri: 's3://foo' }
+    const secondBucket: Bucket = {
+        name: 'second-bucket-name',
+        region: 'secondRegion',
+        arn: 'secondArn',
+        uri: 's3://foo',
+    }
 
     let s3: S3Client
 

@@ -107,7 +107,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     public get path(): string {
-        return this.folder.path
+        return this.folder.uri
     }
 
     public [inspect.custom](): string {

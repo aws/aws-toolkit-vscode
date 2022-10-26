@@ -284,7 +284,7 @@ async function uploadBatchOfFiles(
             while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
                 const request = uploadRequests[requestIdx]
                 const fileName = path.basename(request.key)
-                const destinationPath = readablePath({ bucket: { name: request.bucketName }, path: request.key })
+                const destinationPath = readablePath({ bucket: request.bucketName, path: request.key })
                 showOutputMessage(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel

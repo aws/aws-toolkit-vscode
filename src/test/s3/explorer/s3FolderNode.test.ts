@@ -17,10 +17,10 @@ describe('S3FolderNode', function () {
     const bucketName = 'bucket-name'
     const path = 'folder/path'
     const continuationToken = 'continuationToken'
-    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
-    const file: File = { name: 'name', key: 'key', arn: 'arn' }
-    const folder: Folder = { name: 'folder', path, arn: 'arn' }
-    const subFolder: Folder = { name: 'subFolder', path: 'subPath', arn: 'subArn' }
+    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' }
+    const file: File = { name: 'name', key: 'key', arn: 'arn', uri: 's3://foo' }
+    const folder: Folder = { name: 'folder', path, arn: 'arn', uri: 's3://foo' }
+    const subFolder: Folder = { name: 'subFolder', path: 'subPath', arn: 'subArn', uri: 's3://foo' }
     const maxResults = 200
     const workspace = new FakeWorkspace({
         section: 'aws',

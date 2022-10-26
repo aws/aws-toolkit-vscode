@@ -31,9 +31,9 @@ describe('presignedURLCommand', function () {
         window = mock()
         env = new FakeEnv()
 
-        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' }
         bucketNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
-        node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn' }, bucketNode, instance(s3))
+        node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn', uri: 's3://foo' }, bucketNode, instance(s3))
     })
 
     it('calls S3 to get the URL', async function () {

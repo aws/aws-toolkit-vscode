@@ -39,11 +39,11 @@ describe('downloadFileAsCommand', function () {
     beforeEach(function () {
         s3 = mock()
 
-        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' }
         bucketNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
         node = new S3FileNode(
             bucket,
-            { name: fileName, key: key, arn: 'arn', lastModified, sizeBytes },
+            { name: fileName, key: key, arn: 'arn', lastModified, sizeBytes, uri: 's3://foo' },
             bucketNode,
             instance(s3)
         )

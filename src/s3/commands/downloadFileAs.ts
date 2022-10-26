@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import { downloadsDir } from '../../shared/filesystemUtilities'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
@@ -116,7 +115,7 @@ export async function downloadFileAsCommand(
     outputChannel = globals.outputChannel
 ): Promise<void> {
     const { bucket, file } = node
-    const sourcePath = readablePath(node)
+    const sourcePath = node.file.uri
 
     await telemetry.s3_downloadObject.run(async () => {
         const saveLocation = await promptForSaveLocation(file.name, window)
