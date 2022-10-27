@@ -244,6 +244,18 @@ Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
 
+### Service Endpoints
+
+Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
+
+Example:
+
+```json
+"aws.dev.endpoints": {
+    "s3": "http://example.com"
+}
+```
+
 ### Telemetry and Automation
 
 Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.

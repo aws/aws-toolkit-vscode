@@ -9,6 +9,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
 import globals from './extensionGlobals'
+import { DevSettings } from './settings'
 import { getClientId } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 
@@ -130,6 +131,11 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
             const clientId = await getClientId(globals.context.globalState)
             opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version} ClientId/${clientId}`
         }
+
+        const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
+        const serviceName =
+            apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier: string }).serviceIdentifier
+        opt.endpoint = DevSettings.instance.get('endpoints', {})[serviceName.toLowerCase()]
 
         const service = new type(opt)
         const originalSetup = service.setupRequestListeners.bind(service)
