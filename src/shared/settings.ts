@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { getLogger } from './logger'
-import { cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
+import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
@@ -536,6 +536,7 @@ const DEV_SETTINGS = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    endpoints: Record(String, String),
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>
