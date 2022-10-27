@@ -161,10 +161,15 @@ export class SchemaService {
  * @param extensionContext VSCode extension context
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
+    const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
+    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
+
+    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+
+    const schemas: Schemas = {}
+
     try {
-        const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-        const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
-        const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
         const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
         await updateSchemaFromRemote({
@@ -175,6 +180,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'cloudformation.schema.json',
         })
+        schemas['cfn'] = cfnSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download cfn schema: %s', (e as Error).message)
+    }
+
+    try {
         await updateSchemaFromRemote({
             destination: samSchemaUri,
             version: goformationSchemaVersion,
@@ -183,6 +194,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'sam.schema.json',
         })
+        schemas['sam'] = samSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+    }
+
+    try {
         const buildSpecSchemaUrl = DevSettings.instance.get('buildspecSchemaUrl', '')
         if (buildSpecSchemaUrl !== '') {
             await updateSchemaFromRemote({
@@ -192,22 +209,13 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
                 extensionContext,
                 title: SCHEMA_PREFIX + 'buildspec.schema.json',
             })
-            return {
-                cfn: cfnSchemaUri,
-                sam: samSchemaUri,
-                buildspec: buildSpecSchemaUri,
-            }
-        }
-        return {
-            cfn: cfnSchemaUri,
-            sam: samSchemaUri,
+            schemas['buildspec'] = samSchemaUri
         }
     } catch (e) {
-        getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
-        // this.schemas will be undefined for the rest of the session, so
-        // processUpdates() will never do its work.
-        return undefined
+        getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
+
+    return schemas
 }
 
 /**
