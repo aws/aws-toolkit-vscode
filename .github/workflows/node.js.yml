@@ -9,6 +9,9 @@ on:
     pull_request:
         branches: [master, feature/*]
 
+env:
+    NODE_OPTIONS: '--max-old-space-size=8192'
+
 jobs:
     macos:
         name: macOS nodejs
@@ -29,9 +32,6 @@ jobs:
             - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
-              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
               with:
                   run: npm test
             - name: Code coverage
@@ -60,9 +60,6 @@ jobs:
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
-              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
               run: npm test
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}

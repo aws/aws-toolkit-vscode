@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Add auto completion, validation, hover assistance for AWS CodeBuild [buildspec](https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec-ref-syntax) files"
+}

@@ -86,6 +86,7 @@
         "onCommand:aws.addSamDebugConfig",
         "onCommand:aws.s3.uploadFile",
         "onCommand:aws.cloudFormation.newTemplate",
+        "onCommand:aws.buildspec.newTemplate",
         "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
         "onFileSystem:s3-readonly",
@@ -2845,6 +2846,16 @@
                 }
             },
             {
+                "command": "aws.buildspec.newTemplate",
+                "title": "%AWS.command.buildspec.newTemplate%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.codeWhisperer",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
@@ -3333,7 +3344,8 @@
         "winston-transport": "^4.5.0",
         "xml2js": "^0.4.19",
         "yaml": "^1.9.2",
-        "yaml-cfn": "^0.3.1"
+        "yaml-cfn": "^0.3.1",
+        "yaml-language-server": "^1.10.0"
     },
     "prettier": {
         "printWidth": 120,

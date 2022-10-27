@@ -10,13 +10,14 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { Settings } from './settings'
+import { DevSettings, Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
 import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
+import { CloudFormation } from './cloudformation/cloudformation'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
@@ -27,6 +28,7 @@ export type SchemaType = 'yaml' | 'json'
 export interface SchemaMapping {
     uri: vscode.Uri
     type: SchemaType
+    owner?: string
     schema?: string | vscode.Uri
 }
 
@@ -49,6 +51,7 @@ export class SchemaService {
     private updateQueue: SchemaMapping[] = []
     private schemas?: Schemas
     private handlers: Map<SchemaType, SchemaHandler>
+    private owned: Map<vscode.Uri, SchemaMapping>
 
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
@@ -67,6 +70,7 @@ export class SchemaService {
                 ['json', new JsonSchemaHandler()],
                 ['yaml', new YamlSchemaHandler()],
             ])
+        this.owned = new Map()
     }
 
     public isMapped(uri: vscode.Uri): boolean {
@@ -84,15 +88,33 @@ export class SchemaService {
     }
 
     /**
-     * Registers a schema mapping in the schema service.
+     * Registers a schema mapping in the schema service. If the incoming mapping has an owner, then the mapping will be considered "owned".
+     * If the URI is owned (in the owners map), the update will only be processed if the incoming mapping owner is the same as the owned user OR
+     * the type of the schema changed
      *
      * @param mapping
      * @param flush Flush immediately instead of waiting for timer.
      */
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
-        this.updateQueue.push(mapping)
-        if (flush === true) {
-            this.processUpdates()
+        // The owner is undefined and needs to be set
+        const isOwnerUndefined =
+            !this.owned.has(mapping.uri) && mapping.owner !== undefined && mapping.schema !== undefined
+
+        // The owner and the incoming owner are defined but the schema changed
+        const isSchemaChanged =
+            this.owned.has(mapping.uri) &&
+            mapping.owner !== undefined &&
+            this.owned.get(mapping.uri)?.schema !== mapping.schema
+
+        if (isOwnerUndefined || isSchemaChanged) {
+            this.owned.set(mapping.uri, mapping)
+        }
+
+        if (mapping.owner === this.owned.get(mapping.uri)?.owner) {
+            this.updateQueue.push(mapping)
+            if (flush === true) {
+                this.processUpdates()
+            }
         }
     }
 
@@ -141,12 +163,15 @@ export class SchemaService {
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
     const schemas: Schemas = {}
 
     try {
+        const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+
         await updateSchemaFromRemote({
             destination: cfnSchemaUri,
             version: goformationSchemaVersion,
@@ -172,6 +197,22 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         schemas['sam'] = samSchemaUri
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+    }
+
+    try {
+        const buildSpecSchemaUrl = DevSettings.instance.get('buildspecSchemaUrl', '')
+        if (buildSpecSchemaUrl !== '') {
+            await updateSchemaFromRemote({
+                destination: buildSpecSchemaUri,
+                url: buildSpecSchemaUrl,
+                cacheKey: 'buildSpecSchemaVersion',
+                extensionContext,
+                title: SCHEMA_PREFIX + 'buildspec.schema.json',
+            })
+            schemas['buildspec'] = samSchemaUri
+        }
+    } catch (e) {
+        getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
 
     return schemas
@@ -243,39 +284,10 @@ export async function updateSchemaFromRemote(params: {
  */
 async function addCustomTags(config = Settings.instance): Promise<void> {
     const settingName = 'yaml.customTags'
-    const cloudFormationTags = [
-        '!And',
-        '!And sequence',
-        '!If',
-        '!If sequence',
-        '!Not',
-        '!Not sequence',
-        '!Equals',
-        '!Equals sequence',
-        '!Or',
-        '!Or sequence',
-        '!FindInMap',
-        '!FindInMap sequence',
-        '!Base64',
-        '!Join',
-        '!Join sequence',
-        '!Cidr',
-        '!Ref',
-        '!Sub',
-        '!Sub sequence',
-        '!GetAtt',
-        '!GetAZs',
-        '!ImportValue',
-        '!ImportValue sequence',
-        '!Select',
-        '!Select sequence',
-        '!Split',
-        '!Split sequence',
-    ]
 
     try {
         const currentTags = config.get(settingName, ArrayConstructor(Any), [])
-        const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+        const missingTags = CloudFormation.cloudFormationTags.filter(item => !currentTags.includes(item))
 
         if (missingTags.length > 0) {
             const updateTags = currentTags.concat(missingTags)

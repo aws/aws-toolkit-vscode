@@ -5,14 +5,14 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
-import { localize } from '../utilities/vsCodeUtils'
+import { createStarterTemplateFile, localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
-import { createStarterTemplateFile } from './cloudformation'
 import { Commands } from '../vscode/commands2'
 import globals from '../extensionGlobals'
+import { createCloudFormationTemplateYaml } from './cloudformation'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
 
@@ -33,7 +33,7 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
         const registry = new CloudFormationTemplateRegistry()
-        globals.templateRegistry = registry
+        globals.templateRegistry.cfn = registry
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
         await registry.watchUntitledFiles()
@@ -41,19 +41,25 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. {0}} will not appear on SAM template files.',
+                'Failed to activate cloudformation template registry. {0} will not appear on SAM template files.',
                 getIdeProperties().codelenses
             )
         )
         getLogger().error('Failed to activate template registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        globals.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
+        globals.templateRegistry.cfn = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
-        globals.templateRegistry,
-        Commands.register('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
-        Commands.register('aws.sam.newTemplate', () => createStarterTemplateFile(true))
+        globals.templateRegistry.cfn,
+        Commands.register('aws.cloudFormation.newTemplate', () => {
+            const contents = createCloudFormationTemplateYaml(false)
+            return createStarterTemplateFile(contents)
+        }),
+        Commands.register('aws.sam.newTemplate', () => {
+            const contents = createCloudFormationTemplateYaml(true)
+            return createStarterTemplateFile(contents)
+        })
     )
 }
