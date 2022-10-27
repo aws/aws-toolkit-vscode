@@ -59,7 +59,8 @@ export interface AWSClientBuilder {
         type: new (o: ServiceConfigurationOptions) => T,
         options?: ServiceOptions,
         region?: string,
-        userAgent?: boolean
+        userAgent?: boolean,
+        settings?: DevSettings
     ): Promise<T>
 }
 
@@ -70,7 +71,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         type: new (o: ServiceConfigurationOptions) => T,
         options?: ServiceOptions,
         region?: string,
-        userAgent: boolean = true
+        userAgent: boolean = true,
+        settings = DevSettings.instance
     ): Promise<T> {
         const onRequest = options?.onRequestSetup ?? []
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
@@ -134,8 +136,10 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
         const serviceName =
-            apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier: string }).serviceIdentifier
-        opt.endpoint = DevSettings.instance.get('endpoints', {})[serviceName.toLowerCase()]
+            apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+        if (serviceName) {
+            opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()]
+        }
 
         const service = new type(opt)
         const originalSetup = service.setupRequestListeners.bind(service)
