@@ -206,18 +206,11 @@ has a short subject line and unlimited detail in the body.
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
-artifact that will live longer than any code in the codebase.
+artifact that will outlive most code.
 
-Consider prefixing the subject with a topic: this again helps humans (and
-scripts) scan and omit ranges of the history at a glance. For example if I'm
-looking for a code change, I can eliminate all of the `doc:` and `test:`
-commits when inspecting this commit log:
-
-    doc: update README.md
-    test: Deploy wizard
-    SAM debug: fix bug in foo
-    doc: explain SAM debug architecture
-    Lambda: add button to thing
+Prefix the subject with `type(topic):` ([conventional
+commits](https://www.conventionalcommits.org/) format): this again helps humans
+(and scripts) scan and omit ranges of the history at a glance.
 
 ### CI artifact
 
