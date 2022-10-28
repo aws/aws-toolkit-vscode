@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
+import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { getIcon } from '../shared/icons'
@@ -53,17 +57,31 @@ interface AuthService {
     getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined>
 }
 
-interface LoginManager {
+interface ConnectionManager {
     readonly activeConnection: Connection | undefined
     readonly onDidChangeActiveConnection: vscode.Event<Connection | undefined>
-    login(connection: Pick<Connection, 'id'>): Promise<Connection>
-    logout(): void
+
+    /**
+     * Changes the current 'active' connection used by the Toolkit.
+     *
+     * The user may be prompted if the connection is no longer valid.
+     */
+    useConnection(connection: Pick<Connection, 'id'>): Promise<Connection>
 }
 
 interface ProfileMetadata {
+    /**
+     * Labels are used for anything UI related when present.
+     */
     readonly label?: string
-    readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
-    readonly canShowExpirationMessage: boolean
+
+    /**
+     * Used to differentiate various edge-cases that are based off state or state transitions:
+     * * `unauthenticated` -> try to login
+     * * `valid` -> `invalid` -> notify that the credentials are invalid, prompt to login again
+     * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
+     */
+    readonly connectionState: 'valid' | 'invalid' | 'unauthenticated'
 }
 
 type StoredProfile<T extends Profile = Profile> = T & { readonly metadata: ProfileMetadata }
@@ -121,7 +139,6 @@ export class ProfileStore {
         return {
             ...profile,
             metadata: {
-                canShowExpirationMessage: false,
                 connectionState: 'unauthenticated',
             },
         }
@@ -162,7 +179,7 @@ function sortProfilesByScope(profiles: StoredProfile<Profile>[]): StoredProfile<
 // So it is not exposed on the `Connection` interface
 type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
 
-export class Auth implements AuthService, LoginManager {
+export class Auth implements AuthService, ConnectionManager {
     private readonly ssoCache = getCache()
     private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
     public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
@@ -177,7 +194,7 @@ export class Auth implements AuthService, LoginManager {
         return this.#activeConnection
     }
 
-    public async login({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
@@ -260,10 +277,7 @@ export class Auth implements AuthService, LoginManager {
     }
 
     private async updateState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
-        const metadata: Partial<ProfileMetadata> =
-            connectionState !== 'invalid' ? { connectionState, canShowExpirationMessage: false } : { connectionState }
-
-        const profile = await this.store.updateProfile(id, metadata)
+        const profile = await this.store.updateProfile(id, { connectionState })
 
         if (this.#activeConnection) {
             this.#activeConnection.state = connectionState
@@ -306,20 +320,18 @@ export class Auth implements AuthService, LoginManager {
 
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         const previousState = this.store.getProfile(id)?.metadata.connectionState
-        const { metadata } = await this.updateState(id, 'invalid')
+        await this.updateState(id, 'invalid')
 
-        if (metadata.canShowExpirationMessage) {
+        if (previousState === 'invalid') {
             throw new ToolkitError('Credentials are invalid or expired. Try logging in again.', {
                 code: 'InvalidCredentials',
             })
         }
 
-        if (previousState !== 'unauthenticated') {
-            await this.store.updateProfile(id, { canShowExpirationMessage: true })
-
-            const message = 'Credentials are expired or invalid, login again?'
-            const resp = await vscode.window.showInformationMessage(message, 'Yes', 'No')
-            if (resp !== 'Yes') {
+        if (previousState === 'valid') {
+            const message = localize('aws.auth.invalidCredentials', 'Credentials are expired or invalid, login again?')
+            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
+            if (resp !== localizedText.yes) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
                     code: 'InvalidCredentials',
@@ -346,12 +358,15 @@ const loginCommand = Commands.register('aws.auth.login', async (auth: Auth) => {
         return [...connections.map(c => ({ label: c.label, data: c }))]
     })()
 
-    const resp = await showQuickPick(items, { title: 'Select a connection' })
+    const resp = await showQuickPick(items, {
+        title: localize('aws.auth.login.title', 'Select a connection'),
+    })
+
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
 
-    await auth.login(resp)
+    await auth.useConnection(resp)
 })
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
@@ -372,8 +387,11 @@ export class AuthNode {
             return this.createBadConnectionItem()
         }
 
-        const label = this.resource.activeConnection?.label
-        const item = new vscode.TreeItem(label ? `Connected to ${label}` : 'Select a connection...')
+        const itemLabel =
+            this.resource.activeConnection?.label !== undefined
+                ? localize('aws.auth.node.connected', `Connected to {0}`, this.resource.activeConnection.label)
+                : localize('aws.auth.node.selectConnection', 'Select a connection...')
+        const item = new vscode.TreeItem(itemLabel)
         item.iconPath = getIcon('vscode-account')
         item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
 
@@ -381,7 +399,8 @@ export class AuthNode {
     }
 
     private createBadConnectionItem() {
-        const item = new vscode.TreeItem('Connection is invalid or expired')
+        const label = localize('aws.auth.node.invalid', 'Connection is invalid or expired')
+        const item = new vscode.TreeItem(label)
         item.iconPath = getIcon('vscode-error')
         item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
 

@@ -14,10 +14,6 @@ import { createTestWindow } from '../shared/vscode/window'
 import { captureEvent } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
-function createStore() {
-    return new ProfileStore(new FakeMemento())
-}
-
 function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
         type: 'sso',
@@ -39,7 +35,7 @@ describe('Auth', function () {
         tokenProviders.set(getSsoProfileKey(profile), provider)
         provider.getToken.callsFake(async () => token)
         provider.createToken.callsFake(
-            async () => (token = { accessToken: '123', expiresAt: new Date(Date.now() + 100000) })
+            async () => (token = { accessToken: '123', expiresAt: new Date(Date.now() + 1000000) })
         )
         provider.invalidate.callsFake(async () => (token = undefined))
 
@@ -51,7 +47,9 @@ describe('Auth', function () {
     beforeEach(function () {
         tokenProviders.clear()
         sinon.restore()
-        auth = new Auth(createStore(), createTestTokenProvider)
+
+        const store = new ProfileStore(new FakeMemento())
+        auth = new Auth(store, createTestTokenProvider)
     })
 
     it('can create a new sso connection', async function () {
@@ -81,7 +79,7 @@ describe('Auth', function () {
 
     it('can delete an active connection', async function () {
         const conn = await auth.createConnection(ssoProfile)
-        await auth.login(conn)
+        await auth.useConnection(conn)
         assert.ok(auth.activeConnection)
         await auth.deleteConnection(auth.activeConnection)
         assert.strictEqual((await auth.listConnections()).length, 0)
@@ -105,7 +103,7 @@ describe('Auth', function () {
         const conn = await auth.createConnection(ssoProfile)
 
         const events = captureEvent(auth.onDidChangeActiveConnection)
-        await auth.login(conn)
+        await auth.useConnection(conn)
         assert.strictEqual(auth.activeConnection?.id, conn.id)
         assert.strictEqual(auth.activeConnection.state, 'valid')
         assert.strictEqual(events.emits[0]?.id, conn.id)
@@ -115,7 +113,7 @@ describe('Auth', function () {
         const conn = await auth.createConnection(ssoProfile)
 
         const events = captureEvent(auth.onDidChangeActiveConnection)
-        await auth.login(conn)
+        await auth.useConnection(conn)
         assert.strictEqual(auth.activeConnection?.id, conn.id)
         auth.logout()
         assert.strictEqual(auth.activeConnection, undefined)

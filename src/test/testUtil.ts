@@ -15,7 +15,6 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
-import { keys, selectFrom } from '../shared/utilities/tsUtils'
 
 const testTempDirs: string[] = []
 
@@ -251,13 +250,26 @@ export async function closeAllEditors(): Promise<void> {
     }
 }
 
-export interface EventCapturer<T = unknown> {
+export interface EventCapturer<T = unknown> extends vscode.Disposable {
+    /**
+     * All events captured after instrumentation
+     */
     readonly emits: readonly T[]
+
+    /**
+     * The most recently emitted event
+     */
     readonly last: T | undefined
+
+    /**
+     * Waits for the next event to be emitted
+     */
     next(timeout?: number): Promise<T>
-    dispose(): void
 }
 
+/**
+ * Instruments an event for easier inspection.
+ */
 export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let disposed = false
     const emits: T[] = []
@@ -290,11 +302,4 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
             vscode.Disposable.from(...listeners).dispose()
         },
     }
-}
-
-export function partialStrictEqual<T extends Record<string, any>, U extends T>(
-    actual: T,
-    expected: U
-): asserts actual is Pick<U, keyof T> {
-    assert.deepStrictEqual(actual, selectFrom(expected, ...keys(actual)))
 }
