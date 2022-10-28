@@ -536,6 +536,7 @@ const DEV_SETTINGS = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    showAuthNode: Boolean,
     endpoints: Record(String, String),
 }
 

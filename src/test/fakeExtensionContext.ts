@@ -134,15 +134,8 @@ export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T
-    public get(key: any, defaultValue?: any) {
-        if (Object.prototype.hasOwnProperty.call(this._storage, String(key))) {
-            return this._storage[key]
-        }
-        if (defaultValue) {
-            return defaultValue
-        }
-
-        return undefined
+    public get(key: string, defaultValue?: unknown) {
+        return this._storage[key] ?? defaultValue
     }
     public update(key: string, value: any): Thenable<void> {
         this._storage[key] = value
