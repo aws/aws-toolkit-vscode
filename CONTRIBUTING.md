@@ -1,6 +1,6 @@
 # Contributing to AWS Toolkit for VS Code
 
-Thanks for taking the time to help improve AWS Toolkit! We greatly value
+Thanks for taking the time to help improve the AWS Toolkit! We greatly value
 feedback and contributions from the community.
 
 Reviewing this document will maximize your success in working with the
