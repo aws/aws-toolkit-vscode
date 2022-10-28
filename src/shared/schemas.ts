@@ -12,11 +12,11 @@ import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
-import { normalizeSeparator } from './utilities/pathUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
 import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
+import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
@@ -25,7 +25,7 @@ export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
 
 export interface SchemaMapping {
-    path: string
+    uri: vscode.Uri
     type: SchemaType
     schema?: string | vscode.Uri
 }
@@ -103,7 +103,7 @@ export class SchemaService {
 
         const batch = this.updateQueue.splice(0, this.updateQueue.length)
         for (const mapping of batch) {
-            const { type, schema, path } = mapping
+            const { type, schema, uri } = mapping
             const handler = this.handlers.get(type)
             if (!handler) {
                 throw new Error(`no registered handler for type ${type}`)
@@ -112,7 +112,7 @@ export class SchemaService {
                 'schema service: handle %s mapping: %s -> %s',
                 type,
                 schema?.toString() ?? '[removed]',
-                path
+                uri
             )
             await handler.handleUpdate(mapping, this.schemas)
         }
@@ -139,12 +139,14 @@ export class SchemaService {
  * @param extensionContext VSCode extension context
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
+    const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
+    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+
+    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+
+    const schemas: Schemas = {}
+
     try {
-        const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-        const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
-
-        const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
-
         await updateSchemaFromRemote({
             destination: cfnSchemaUri,
             version: goformationSchemaVersion,
@@ -153,6 +155,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'cloudformation.schema.json',
         })
+        schemas['cfn'] = cfnSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download cfn schema: %s', (e as Error).message)
+    }
+
+    try {
         await updateSchemaFromRemote({
             destination: samSchemaUri,
             version: goformationSchemaVersion,
@@ -161,17 +169,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             extensionContext,
             title: SCHEMA_PREFIX + 'sam.schema.json',
         })
-
-        return {
-            cfn: cfnSchemaUri,
-            sam: samSchemaUri,
-        }
+        schemas['sam'] = samSchemaUri
     } catch (e) {
-        getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
-        // this.schemas will be undefined for the rest of the session, so
-        // processUpdates() will never do its work.
-        return undefined
+        getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
     }
+
+    return schemas
 }
 
 /**
@@ -309,11 +312,10 @@ export class YamlSchemaHandler implements SchemaHandler {
             this.yamlExtension = ext
         }
 
-        const path = vscode.Uri.file(normalizeSeparator(mapping.path))
         if (mapping.schema) {
-            this.yamlExtension.assignSchema(path, resolveSchema(mapping.schema, schemas))
+            this.yamlExtension.assignSchema(mapping.uri, resolveSchema(mapping.schema, schemas))
         } else {
-            this.yamlExtension.removeSchema(path)
+            this.yamlExtension.removeSchema(mapping.uri)
         }
     }
 }
@@ -356,6 +358,7 @@ export class JsonSchemaHandler implements SchemaHandler {
 
         let settings = this.getJsonSettings()
 
+        const path = normalizeVSCodeUri(mapping.uri)
         if (mapping.schema) {
             const uri = resolveSchema(mapping.schema, schemas).toString()
             const existing = this.getSettingBy({ schemaPath: uri })
@@ -364,16 +367,16 @@ export class JsonSchemaHandler implements SchemaHandler {
                 if (!existing.fileMatch) {
                     getLogger().debug(`JsonSchemaHandler: skipped setting schema '${uri}'`)
                 } else {
-                    existing.fileMatch.push(mapping.path)
+                    existing.fileMatch.push(path)
                 }
             } else {
                 settings.push({
-                    fileMatch: [mapping.path],
+                    fileMatch: [path],
                     url: uri,
                 })
             }
         } else {
-            settings = filterJsonSettings(settings, file => file !== mapping.path)
+            settings = filterJsonSettings(settings, file => file !== path)
         }
 
         await this.config.update('json.schemas', settings)

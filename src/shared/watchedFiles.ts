@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger/logger'
 import * as pathutils from './utilities/pathUtils'
 import * as path from 'path'
+import { isUntitledScheme, normalizeVSCodeUri } from './utilities/vsCodeUtils'
 
 export interface WatchedItem<T> {
     /**
@@ -22,7 +23,7 @@ export interface WatchedItem<T> {
 /**
  * WatchedFiles lets us index files in the current registry. It is used
  * for CFN templates among other things. WatchedFiles holds a list of pairs of
- * the absolute path to the file along with a transform of it that is useful for
+ * the absolute path to the file or "untitled:" URI along with a transform of it that is useful for
  * where it is used. For example, for templates, it parses the template and stores it.
  */
 export abstract class WatchedFiles<T> implements vscode.Disposable {
@@ -33,10 +34,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     private readonly registryData: Map<string, T> = new Map<string, T>()
 
     /**
-     * Load in filesystem items, doing any parsing/validaton as required. If it fails, throws
-     * @param path A string with the absolute path to the detected file
+     * Process any incoming URI/content, doing any parsing/validation as required.
+     * If the path does not point to a file on the local file system then contents should be defined.
+     * If it fails, throws
+     * @param path A uri with the absolute path to the detected file
      */
-    protected abstract load(path: string): Promise<T | undefined>
+    protected abstract process(path: vscode.Uri, contents?: string): Promise<T | undefined>
+
     /**
      * Name for logs
      */
@@ -94,6 +98,25 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
+     * Create a special watcher that operates only on untitled files.
+     * To "watch" the in-memory contents of an untitled:/ file we just subscribe to `onDidChangeTextDocument`
+     */
+    public async watchUntitledFiles() {
+        this.disposables.push(
+            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+                if (isUntitledScheme(event.document.uri)) {
+                    this.addItemToRegistry(event.document.uri, true, event.document.getText())
+                }
+            }),
+            vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
+                if (isUntitledScheme(event.uri)) {
+                    this.remove(event.uri)
+                }
+            })
+        )
+    }
+
+    /**
      * Adds a regex pattern to ignore paths containing the pattern
      */
     public async addExcludedPattern(pattern: RegExp): Promise<void> {
@@ -109,16 +132,16 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Adds an item to registry. Wipes any existing item in its place with new copy of the data
      * @param uri vscode.Uri containing the item to load in
      */
-    public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean): Promise<void> {
+    public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<void> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
             getLogger().verbose(`${this.name}: excluding path (matches "${excluded}"): ${uri.fsPath}`)
             return
         }
-        const pathAsString = pathutils.normalize(uri.fsPath)
-        this.assertAbsolute(pathAsString)
+        this.assertAbsolute(uri)
+        const pathAsString = normalizeVSCodeUri(uri)
         try {
-            const item = await this.load(pathAsString)
+            const item = await this.process(uri, contents)
             if (item) {
                 this.registryData.set(pathAsString, item)
             } else {
@@ -135,12 +158,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Get a specific item's data
+     * Untitled files must be referred to by their URI
      * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
     public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
         // fsPath is needed for Windows, it's equivalent to path on mac/linux
-        const absolutePath = typeof path === 'string' ? path : path.fsPath
-        const normalizedPath = pathutils.normalize(absolutePath)
+        const normalizedPath = typeof path === 'string' ? pathutils.normalize(path) : normalizeVSCodeUri(path)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
         if (!item) {
@@ -170,16 +193,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Removes an item from the registry.
-     * @param absolutePath The absolute path to the item or a vscode.Uri to the item
+     *
+     * @param path Path to the item
      */
-    public async remove(path: string | vscode.Uri): Promise<void> {
-        if (typeof path === 'string') {
-            this.registryData.delete(path)
-        } else {
-            const pathAsString = pathutils.normalize(path.fsPath)
-            this.assertAbsolute(pathAsString)
-            this.registryData.delete(pathAsString)
-        }
+    public async remove(path: vscode.Uri): Promise<void> {
+        const pathAsString = normalizeVSCodeUri(path)
+        this.assertAbsolute(pathAsString)
+        this.registryData.delete(pathAsString)
     }
 
     /**
@@ -240,16 +260,25 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         )
     }
 
-    private assertAbsolute(p: string) {
-        if (!path.isAbsolute(p)) {
-            throw Error(`FileRegistry: path is relative when it should be absolute: ${p}`)
+    /**
+     * Assert if the path is absolute.
+     * Untitled URIs are considered absolute
+     * @param p The path to verify
+     */
+    private assertAbsolute(p: string | vscode.Uri) {
+        const pathAsString = typeof p === 'string' ? p : p.fsPath
+        if (
+            (typeof p === 'string' && !path.isAbsolute(pathAsString) && !pathAsString.startsWith('untitled:')) ||
+            (typeof p !== 'string' && !path.isAbsolute(pathAsString) && !isUntitledScheme(p))
+        ) {
+            throw new Error(`FileRegistry: path is relative when it should be absolute: ${pathAsString}`)
         }
     }
 }
 
 export class NoopWatcher extends WatchedFiles<any> {
-    protected async load(path: string): Promise<any> {
-        throw new Error(`Attempted to add a file to the NoopWatcher: ${path}`)
+    protected async process(uri: vscode.Uri): Promise<any> {
+        throw new Error(`Attempted to add a file to the NoopWatcher: ${uri.fsPath}`)
     }
     protected name: string = 'NoOp'
 }

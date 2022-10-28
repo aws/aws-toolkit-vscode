@@ -105,7 +105,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         const iteratingIndexes = this.getIteratingIndexes()
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
-            if (r.content.startsWith(prefix)) {
+            if (r.content.startsWith(prefix) && r.content.length > 0) {
                 this.activeItemIndex = i
                 items.push({
                     insertText: this.getGhostText(prefix, r.content),

@@ -29,7 +29,6 @@ export const getCognitoCredentials = async (): Promise<CognitoIdentityCredential
         }
 
         const credentials = new CognitoIdentityCredentials({ IdentityId: identityId }, { region })
-        await credentials.getPromise()
         return credentials
     } catch (err) {
         getLogger().error(`Failed to initialize Cognito identity for CodeWhisperer: ${err} in region: ${region}`)

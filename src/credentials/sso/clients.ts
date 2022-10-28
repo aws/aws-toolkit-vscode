@@ -35,6 +35,7 @@ import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { isClientFault } from '../../shared/errors'
+import { DevSettings } from '../../shared/settings'
 
 const BACKOFF_DELAY_MS = 5000
 
@@ -97,7 +98,13 @@ export class OidcClient {
     }
 
     public static create(region: string) {
-        return new this(new SSOOIDC({ region: region }), globals.clock)
+        return new this(
+            new SSOOIDC({
+                region,
+                endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
+            }),
+            globals.clock
+        )
     }
 }
 
@@ -183,6 +190,12 @@ export class SsoClient {
     }
 
     public static create(region: string, provider: SsoAccessTokenProvider) {
-        return new this(new SSO({ region }), provider)
+        return new this(
+            new SSO({
+                region,
+                endpoint: DevSettings.instance.get('endpoints', {})['sso'],
+            }),
+            provider
+        )
     }
 }

@@ -136,8 +136,11 @@ export function installFakeClock(): FakeTimers.InstalledClock {
  * Unlike {@link assertTelemetry}, this function does not do any transformations to
  * handle fields being converted into strings. It will also not return `passive` or `value`.
  */
-export function getMetrics<K extends MetricName>(name: K, ...filters: string[]): readonly Partial<MetricShapes[K]>[] {
-    const query = { metricName: name, filters: ['awsAccount', ...filters] }
+export function getMetrics<K extends MetricName>(
+    name: K,
+    ...excludeKeys: string[]
+): readonly Partial<MetricShapes[K]>[] {
+    const query = { metricName: name, excludeKeys: ['awsAccount', 'awsRegion', ...excludeKeys] }
 
     return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
@@ -149,12 +152,15 @@ export function getMetrics<K extends MetricName>(name: K, ...filters: string[]):
 export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
     const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
-    const query = { metricName: name, filters: ['awsAccount', 'duration'] }
+    const query = { metricName: name, excludeKeys: ['awsAccount', 'duration'] }
     delete expectedCopy['passive']
 
     Object.keys(expectedCopy).forEach(
         k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
     )
+
+    // Telemetry client should add awsRegion to all metrics.
+    ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
 
     const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
