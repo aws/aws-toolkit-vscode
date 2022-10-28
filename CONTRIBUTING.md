@@ -173,16 +173,14 @@ Before sending a pull request:
 
 To send a pull request:
 
-1. Fork the repository.
+1. [Fork the repository](https://help.github.com/articles/fork-a-repo/).
 2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
-3. Ensure local tests pass.
-4. Commit to your fork using clear commit messages.
-5. Once you are done with your change, run `npm run newChange`, follow the prompts, then commit the changelog item to your fork.
-6. Send us a pull request, answering any default questions in the pull request interface.
-7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
-
-GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
-[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+    - Read the [project guidelines](#guidelines), this is very important for non-trivial changes.
+3. Commit to your fork using clear [commit messages](#commit-messages).
+4. Add a changelog by running `npm run newChange`.
+    - Note: the main purpose of the `newChange` task is to avoid merge conflicts.
+5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
+6. Pay attention to any CI failures reported in the pull request.
 
 ### Commit messages
 
