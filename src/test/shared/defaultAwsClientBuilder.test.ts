@@ -65,6 +65,24 @@ describe('DefaultAwsClientBuilder', function () {
             assert.strictEqual(service.config.endpoint, 'http://example.com')
         })
 
+        it('does not clobber endpoint setting if no override is present', async function () {
+            const settings = new TestSettings()
+
+            const service = await builder.createAwsService(
+                Service,
+                {
+                    customUserAgent: 'CUSTOM USER AGENT',
+                    apiConfig: { metadata: { serviceId: 'foo' } },
+                    endpoint: 'http://example.com',
+                } as any,
+                undefined,
+                undefined,
+                new DevSettings(settings)
+            )
+
+            assert.strictEqual(service.config.endpoint, 'http://example.com')
+        })
+
         describe('request listeners', function () {
             type WithConfig = Parameters<typeof builder['createAwsService']>[1] & { apiConfig: Record<string, any> }
 
