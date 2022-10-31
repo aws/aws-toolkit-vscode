@@ -538,6 +538,7 @@ const DEV_SETTINGS = {
     telemetryUserPool: String,
     showAuthNode: Boolean,
     endpoints: Record(String, String),
+    cawsStage: String,
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>

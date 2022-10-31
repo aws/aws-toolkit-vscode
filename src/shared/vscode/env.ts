@@ -95,3 +95,15 @@ export function getMinVscodeVersion(): string {
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
+
+export function getCodeCatalystDevenvId(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_ID']
+}
+
+export function getCodeCatalystProjectName(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
+}
+
+export function getCodeCatalystOrganizationName(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
+}

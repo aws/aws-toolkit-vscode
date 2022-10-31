@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
@@ -100,7 +101,7 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.awsContext = awsContext
         const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(awsContext, credentialsStore)
+        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -124,16 +125,18 @@ export async function activate(context: vscode.ExtensionContext) {
         await globals.schemaService.start()
         awsFiletypes.activate()
 
-        context.subscriptions.push(vscode.window.registerUriHandler(new UriHandler()))
+        globals.uriHandler = new UriHandler()
+        context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
 
         const extContext: ExtContext = {
             extensionContext: context,
-            awsContext: awsContext,
+            awsContext: globals.awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
             outputChannel: toolkitOutputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
+            uriHandler: globals.uriHandler,
             credentialsStore,
         }
 
@@ -187,6 +190,8 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
+        await codecatalyst.activate(extContext)
+
         await activateCloudFormationTemplateRegistry(context)
 
         await activateAwsExplorer({
@@ -205,7 +210,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
+        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
 
         await activateSam(extContext)
 
