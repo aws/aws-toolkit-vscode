@@ -138,7 +138,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         const serviceName =
             apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
         if (serviceName) {
-            opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()]
+            opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()] ?? opt.endpoint
         }
 
         const service = new type(opt)
