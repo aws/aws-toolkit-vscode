@@ -96,8 +96,8 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export function getCodeCatalystDevenvArn(): string | undefined {
-    return process.env['__DEV_ENVIRONMENT_ARN']
+export function getCodeCatalystDevenvId(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_ID']
 }
 
 export function getCodeCatalystProjectName(): string | undefined {

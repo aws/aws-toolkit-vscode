@@ -15,7 +15,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
 import { DevenvClient } from '../shared/clients/devenvClient'
 import { watchRestartingWorkspaces } from './reconnect'
-import { getCodeCatalystDevenvArn } from '../shared/vscode/env'
+import { getCodeCatalystDevenvId } from '../shared/vscode/env'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -45,12 +45,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 
     const workspaceClient = new DevenvClient()
-    if (workspaceClient.arn) {
+    if (workspaceClient.id) {
         ctx.extensionContext.subscriptions.push(registerDevfileWatcher(workspaceClient))
     }
 
     const settings = PromptSettings.instance
-    if (getCodeCatalystDevenvArn()) {
+    if (getCodeCatalystDevenvId()) {
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',

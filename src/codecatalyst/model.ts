@@ -148,24 +148,13 @@ export async function getConnectedWorkspace(
     codeCatalystClient: ConnectedCodeCatalystClient,
     workspaceClient = new DevenvClient()
 ): Promise<ConnectedWorkspace | undefined> {
-    const arn = workspaceClient.arn
-    if (!arn || !workspaceClient.isCodeCatalystWorkspace()) {
+    const devEnvId = workspaceClient.id
+    if (!devEnvId || !workspaceClient.isCodeCatalystDevEnv()) {
         return
-    }
-
-    // ARN path segment follows this pattern: /organization/<GUID>/project/<GUID>/development-workspace/<GUID>
-    const path = arn.split(':').pop()
-    if (!path) {
-        throw new Error(`Workspace ARN "${arn}" did not contain a path segment`)
     }
 
     const projectName = getCodeCatalystProjectName()
     const organizationName = getCodeCatalystOrganizationName()
-    const workspaceId = path.match(/development-workspace\/([\w\-]+)/)?.[1]
-
-    if (!workspaceId) {
-        throw new Error('Unable to parse workspace id from ARN')
-    }
 
     if (!projectName || !organizationName) {
         throw new Error('No project or organization name found')
@@ -174,7 +163,7 @@ export async function getConnectedWorkspace(
     const summary = await codeCatalystClient.getDevEnvironment({
         projectName,
         organizationName,
-        id: workspaceId,
+        id: devEnvId,
     })
 
     return { summary, workspaceClient: workspaceClient }

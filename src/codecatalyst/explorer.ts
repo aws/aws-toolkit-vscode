@@ -9,7 +9,7 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { getCodeCatalystDevenvArn } from '../shared/vscode/env'
+import { getCodeCatalystDevenvId } from '../shared/vscode/env'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import {
@@ -68,7 +68,7 @@ function getRemoteCommands(currentWorkspace: DevEnvironment, devfileLocation: vs
 }
 
 export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
-    if (isCloud9() && !getCodeCatalystDevenvArn()) {
+    if (isCloud9() && !getCodeCatalystDevenvId()) {
         return []
     }
 

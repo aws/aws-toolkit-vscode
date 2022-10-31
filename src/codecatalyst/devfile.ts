@@ -17,7 +17,7 @@ import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
     const client = new DevenvClient()
-    if (!client.isCodeCatalystWorkspace()) {
+    if (!client.isCodeCatalystDevEnv()) {
         throw new Error('Cannot update devfile outside a dev environment')
     }
 

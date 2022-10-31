@@ -19,7 +19,7 @@ import {
 } from './model'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { getCodeCatalystDevenvArn } from '../shared/vscode/env'
+import { getCodeCatalystDevenvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
 import { telemetry } from '../shared/telemetry/telemetry'
 
@@ -37,29 +37,28 @@ export function watchRestartingWorkspaces(ctx: ExtContext, authProvider: CodeCat
 
         const client = await createClientFactory(authProvider)()
         if (client.connected) {
-            const arn = getCodeCatalystDevenvArn()
-            handleRestart(client, ctx, arn)
+            const envId = getCodeCatalystDevenvId()
+            handleRestart(client, ctx, envId)
             restartHandled = true
         }
     })
 }
 
-function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, envArn: string | undefined) {
-    if (envArn !== undefined) {
+function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, envId: string | undefined) {
+    if (envId !== undefined) {
         const memento = ctx.extensionContext.globalState
         const pendingReconnects = memento.get<Record<string, DevelopmentWorkspaceMemento>>(
             CODECATALYST_RECONNECT_KEY,
             {}
         )
-        const workspaceId = envArn.split('/').pop() ?? ''
-        if (workspaceId && workspaceId in pendingReconnects) {
-            const workspace = pendingReconnects[workspaceId]
-            const workspaceName = getWorkspaceName(workspace.alias, workspaceId)
+        if (envId in pendingReconnects) {
+            const workspace = pendingReconnects[envId]
+            const workspaceName = getWorkspaceName(workspace.alias, envId)
             getLogger().info(`codecatalyst: ssh session reconnected to devenv: ${workspaceName}`)
             vscode.window.showInformationMessage(
                 localize('AWS.codecatalyst.reconnect.success', 'Reconnected to dev environment: {0}', workspaceName)
             )
-            delete pendingReconnects[workspaceId]
+            delete pendingReconnects[envId]
             memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
         }
     } else {
