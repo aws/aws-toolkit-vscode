@@ -335,7 +335,7 @@ class CodeCatalystClientInternal {
     public async createAccessToken(
         args: codecatalyst.CreateAccessTokenRequest
     ): Promise<codecatalyst.CreateAccessTokenResponse> {
-        return this.sdkClient.createAccessToken(args).promise()
+        return this.call(this.sdkClient.createAccessToken(args), false)
     }
 
     public async describeSubscription(
