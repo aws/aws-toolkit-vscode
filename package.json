@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.52.0-SNAPSHOT",
+    "version": "1.54.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -25,10 +25,12 @@
     },
     "categories": [
         "Debuggers",
+        "Linters",
         "Other"
     ],
     "keywords": [
         "AWS",
+        "CodeWhisperer",
         "Lambda",
         "Serverless"
     ],
@@ -3085,12 +3087,12 @@
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             }
         ],
         "grammars": [
@@ -3343,7 +3345,7 @@
         "@types/lodash": "^4.14.180",
         "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
-        "@types/mocha": "^9.0.0",
+        "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.5",
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
@@ -3361,7 +3363,7 @@
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
         "esbuild-loader": "2.18.0",
-        "eslint": "^8.23.1",
+        "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
@@ -3369,7 +3371,7 @@
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^11.0.2",
         "marked": "^4.0.10",
-        "mocha": "^9.1.3",
+        "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",

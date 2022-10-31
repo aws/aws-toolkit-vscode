@@ -193,16 +193,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Removes an item from the registry.
-     * @param absolutePath The absolute path to the item or a vscode.Uri to the item
+     *
+     * @param path Path to the item
      */
-    public async remove(path: string | vscode.Uri): Promise<void> {
-        if (typeof path === 'string') {
-            this.registryData.delete(path)
-        } else {
-            const pathAsString = normalizeVSCodeUri(path)
-            this.assertAbsolute(pathAsString)
-            this.registryData.delete(pathAsString)
-        }
+    public async remove(path: vscode.Uri): Promise<void> {
+        const pathAsString = normalizeVSCodeUri(path)
+        this.assertAbsolute(pathAsString)
+        this.registryData.delete(pathAsString)
     }
 
     /**

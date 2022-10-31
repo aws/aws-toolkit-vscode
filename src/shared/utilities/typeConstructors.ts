@@ -155,6 +155,24 @@ function InstanceConstructor<T>(type: new (...args: any[]) => T): TypeConstructo
     }
 }
 
+export function Record<T extends PropertyKey, U>(
+    key: TypeConstructor<T>,
+    value: TypeConstructor<U>
+): TypeConstructor<Record<T, U>> {
+    return input => {
+        if (!(typeof input === 'object') || !input) {
+            throw new TypeError('Value is not a non-nullable object')
+        }
+
+        const result = {} as Record<T, U>
+        for (const [k, v] of Object.entries(input)) {
+            result[cast(k, key)] = cast(v, value)
+        }
+
+        return result
+    }
+}
+
 export type Optional<T> = TypeConstructor<T | undefined>
 export const Optional = OptionalConstructor
 

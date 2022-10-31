@@ -64,8 +64,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
             type: 'yaml',
             schema: undefined,
         })
-        const path = normalizeVSCodeUri(uri)
-        await super.remove(path)
+        await super.remove(uri)
     }
 }
 

@@ -57,11 +57,6 @@ export class KeyStrokeHandler {
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
             if (InlineCompletion.instance.isTypeaheadInProgress) return
 
-            // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
-
             // Skip Cloud9 IntelliSense acceptance event
             if (
                 isCloud9() &&
@@ -75,6 +70,9 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
+            // Time duration between 2 invocations should be greater than the threshold
+            // This threshold does not applies to Enter | SpecialCharacters | IntelliSenseAcceptance type auto trigger.
+            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     this.keyStrokeCount += 1
@@ -92,13 +90,22 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    this.keyStrokeCount += 1
+                    // text length can be greater than 1 in Cloud9
+                    this.keyStrokeCount += event.contentChanges[0].text.length
+                    if (
+                        this.keyStrokeCount >= 15 &&
+                        duration >= CodeWhispererConstants.invocationTimeIntervalThreshold
+                    ) {
+                        triggerType = 'KeyStrokeCount'
+                        this.keyStrokeCount = 0
+                    }
                     break
                 }
                 default: {
                     break
                 }
             }
+
             if (triggerType) {
                 this.invokeAutomatedTrigger(triggerType, editor, client, config)
             }
@@ -170,10 +177,13 @@ export abstract class DocumentChangedType {
 
     abstract checkChangeSource(): DocumentChangedSource
 
-    // Enter key should always start with ONE '\n' and potentially following spaces due to IDE reformat
+    // Enter key should always start with ONE '\n' or '\r\n' and potentially following spaces due to IDE reformat
     protected isEnterKey(str: string): boolean {
         if (str.length === 0) return false
-        return str[0] === '\n' && str.substring(1).trim().length === 0
+        return (
+            (str.startsWith('\r\n') && str.substring(2).trim() === '') ||
+            (str[0] === '\n' && str.substring(1).trim() === '')
+        )
     }
 
     // Tab should consist of space char only ' ' and the length % tabSize should be 0
@@ -212,8 +222,8 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             return DocumentChangedSource.Unknown
         }
 
-        // Case when event.contentChanges.length > 1
-        if (this.contentChanges.length > 1) {
+        // event.contentChanges.length will be 2 when user press Enter key multiple times
+        if (this.contentChanges.length > 2) {
             return DocumentChangedSource.Reformatting
         }
 
@@ -234,12 +244,12 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText)) {
+            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
                 // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
                 // multi-words code snippets
                 return DocumentChangedSource.IntelliSense
             } else {
-                return DocumentChangedSource.Unknown
+                return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
         }
 

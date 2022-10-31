@@ -14,9 +14,9 @@ export interface MetricQuery {
     readonly metricName: string
 
     /**
-     * Attributes to filter out of the metadata
+     * Exclude metadata items matching these keys.
      */
-    readonly filters?: string[]
+    readonly excludeKeys?: string[]
 }
 
 interface Metadata {
@@ -30,11 +30,11 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
 /**
  * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
  */
-const mapMetadata = (filters: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
+const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
     const result: Metadata = {}
     return metadata
         .filter(isValidEntry)
-        .filter(a => !filters.includes(a.Key))
+        .filter(a => !excludeKeys.includes(a.Key))
         .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
 }
 
@@ -80,7 +80,7 @@ export class TelemetryLogger {
     public query(query: MetricQuery): Metadata[] {
         return this.queryFull(query)
             .map(m => m.Metadata ?? [])
-            .map(mapMetadata(query.filters ?? []))
+            .map(mapMetadata(query.excludeKeys ?? []))
     }
 
     /**

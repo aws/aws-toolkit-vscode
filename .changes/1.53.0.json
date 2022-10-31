@@ -1,0 +1,14 @@
+{
+	"date": "2022-10-24",
+	"version": "1.53.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer auto trigger not working correctly in certain circumstances"
+		}
+	]
+}

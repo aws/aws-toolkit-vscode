@@ -40,6 +40,10 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
         this.onDidSelectItem = this._onDidSelectItem.event
     }
 
+    public get visible() {
+        return this._showing
+    }
+
     public assertMessage(expected: string): void {
         assert.strictEqual(this.message, expected)
     }

@@ -28,6 +28,8 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
+import { Auth, AuthNode } from '../credentials/auth'
+import { DevSettings } from '../shared/settings'
 import { initNodes } from '../codecatalyst/explorer'
 
 /**
@@ -74,7 +76,10 @@ export async function activate(args: {
         })
     )
 
-    const nodes = [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
+    const nodes = DevSettings.instance.get('showAuthNode', false)
+        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
+        : [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
+
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
