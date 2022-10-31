@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AccountDetails, Session } from '../credentials/authentication'
-import { getRegistrationCache, SsoAccess } from '../credentials/sso/cache'
+import { getCache, getRegistrationCache, SsoAccess } from '../credentials/sso/cache'
 import { SsoAccessTokenProvider } from '../credentials/sso/ssoAccessTokenProvider'
 import { ConnectedCodeCatalystClient, createClient, UserDetails } from '../shared/clients/codecatalystClient'
 import { getLogger } from '../shared/logger'
@@ -106,10 +106,14 @@ export class CodeCatalystAuthStorage {
 
     public getTokenProvider(id?: string): SsoAccessTokenProvider {
         const profile = { ...SONO_PROFILE, identifier: id }
-        const provider = new SsoAccessTokenProvider(profile, {
-            token: this.getTokenCache(),
-            registration: getRegistrationCache(),
-        })
+        const cache = isCloud9()
+            ? getCache()
+            : {
+                  token: this.getTokenCache(),
+                  registration: getRegistrationCache(),
+              }
+
+        const provider = new SsoAccessTokenProvider(profile, cache)
 
         return provider
     }
