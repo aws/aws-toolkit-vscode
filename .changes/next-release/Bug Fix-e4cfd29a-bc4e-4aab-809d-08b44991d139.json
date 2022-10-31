@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "JSON-schemas download logic is brittle #2957"
+}
