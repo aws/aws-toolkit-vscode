@@ -77,7 +77,7 @@ export async function activate(args: {
     )
 
     const nodes = DevSettings.instance.get('showAuthNode', false)
-        ? [new AuthNode(Auth.instance), ...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
+        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
         : [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
 
     const developerTools = createLocalExplorerView(nodes)
