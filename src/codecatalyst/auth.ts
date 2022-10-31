@@ -105,7 +105,8 @@ export class CodeCatalystAuthStorage {
     }
 
     public getTokenProvider(id?: string): SsoAccessTokenProvider {
-        const profile = { ...SONO_PROFILE, identifier: id }
+        // XXX: always use 'caws' for disk caching
+        const profile = { ...SONO_PROFILE, identifier: isCloud9() ? 'caws' : id }
         const cache = isCloud9()
             ? getCache()
             : {
