@@ -1,0 +1,45 @@
+@mixin background-shadow {
+    overflow: visible;
+    &:before {
+        content: '';
+        background-color: transparent;
+        transition: var(--mynah-short-transition-rev);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        box-shadow: var(--mynah-shadow-card);
+        pointer-events: none;
+        filter: brightness(50%) saturate(250%) contrast(250%);
+        opacity: 0.4;
+    }
+}
+
+@mixin lighten-darken {
+    &:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        backdrop-filter: brightness(var(--mynah-color-context-filter));
+    }
+}
+
+@mixin list-fader {
+    position: relative;
+    $listFader: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black var(--mynah-sizing-6),
+        black calc(100% - var(--mynah-sizing-6)),
+        transparent 100%
+    );
+    -webkit-mask-image: $listFader;
+    -webkit-mask-size: 100% 100%;
+    mask-image: $listFader;
+    mask-size: 100% 100%;
+}
