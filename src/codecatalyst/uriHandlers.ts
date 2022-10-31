@@ -11,7 +11,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 
 export function register(
     handler: UriHandler,
-    commands: Pick<typeof CodeCatalystCommands.declared, 'cloneRepo' | 'openWorkspace'>
+    commands: Pick<typeof CodeCatalystCommands.declared, 'cloneRepo' | 'openDevEnv'>
 ) {
     async function cloneHandler(params: ReturnType<typeof parseCloneParams>) {
         telemetry.codecatalyst_localClone.record({ source: 'UriHandler' })
@@ -26,7 +26,7 @@ export function register(
     async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
         telemetry.codecatalyst_connect.record({ source: 'UriHandler' })
 
-        await commands.openWorkspace.execute({
+        await commands.openDevEnv.execute({
             id: params.devEnvironmentId,
             org: { name: params.organizationName },
             project: { name: params.projectName },

@@ -13,9 +13,9 @@ import { GitExtension } from '../shared/extensions/git'
 import { initStatusbar } from './statusbar'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
-import { DevenvClient } from '../shared/clients/devenvClient'
-import { watchRestartingWorkspaces } from './reconnect'
-import { getCodeCatalystDevenvId } from '../shared/vscode/env'
+import { DevEnvClient } from '../shared/clients/devenvClient'
+import { watchRestartingDevEnvs } from './reconnect'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -41,30 +41,27 @@ export async function activate(ctx: ExtContext): Promise<void> {
     })
 
     if (!isCloud9()) {
-        watchRestartingWorkspaces(ctx, authProvider)
+        watchRestartingDevEnvs(ctx, authProvider)
     }
 
-    const workspaceClient = new DevenvClient()
-    if (workspaceClient.id) {
-        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(workspaceClient))
+    const devenvClient = new DevEnvClient()
+    if (devenvClient.id) {
+        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(devenvClient))
     }
 
     const settings = PromptSettings.instance
-    if (getCodeCatalystDevenvId()) {
+    if (getCodeCatalystDevEnvId()) {
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
                 'Welcome to your Amazon CodeCatalyst dev environment. For more options and information, view Dev Environment settings (AWS Extension > CodeCatalyst).'
             )
-            const openWorkspaceSettings = localize(
-                'AWS.codecatalyst.openWorkspaceSettings',
-                'Open Dev Environment Settings'
-            )
-            vscode.window.showInformationMessage(message, dontShow, openWorkspaceSettings).then(selection => {
+            const openDevEnvSettings = localize('AWS.codecatalyst.openDevEnvSettings', 'Open Dev Environment Settings')
+            vscode.window.showInformationMessage(message, dontShow, openDevEnvSettings).then(selection => {
                 if (selection === dontShow) {
                     settings.disablePrompt('remoteConnected')
-                } else if (selection === openWorkspaceSettings) {
-                    CodeCatalystCommands.declared.openWorkspaceSettings.execute()
+                } else if (selection === openDevEnvSettings) {
+                    CodeCatalystCommands.declared.openDevEnvSettings.execute()
                 }
             })
         }

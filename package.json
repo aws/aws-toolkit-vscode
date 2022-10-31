@@ -71,9 +71,9 @@
         "onCommand:aws.codecatalyst.openOrg",
         "onCommand:aws.codecatalyst.openProject",
         "onCommand:aws.codecatalyst.openRepo",
-        "onCommand:aws.codecatalyst.openWorkspace",
+        "onCommand:aws.codecatalyst.openDevEnv",
         "onCommand:aws.codecatalyst.cloneRepo",
-        "onCommand:aws.codecatalyst.createWorkspace",
+        "onCommand:aws.codecatalyst.createDevEnv",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -795,11 +795,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.codecatalyst.openWorkspace",
+                    "command": "aws.codecatalyst.openDevEnv",
                     "when": "!isCloud9"
                 },
                 {
-                    "command": "aws.codecatalyst.createWorkspace",
+                    "command": "aws.codecatalyst.createDevEnv",
                     "when": "!isCloud9"
                 },
                 {
@@ -1230,7 +1230,7 @@
                     "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.codecatalyst.createWorkspace",
+                    "command": "aws.codecatalyst.createDevEnv",
                     "when": "view == aws.codecatalyst && !isCloud9",
                     "group": "1_codeCatalyst@1"
                 },
@@ -1240,7 +1240,7 @@
                     "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.codecatalyst.openWorkspace",
+                    "command": "aws.codecatalyst.openDevEnv",
                     "when": "view == aws.codecatalyst && !isCloud9",
                     "group": "1_codeCatalyst@1"
                 }
@@ -1870,8 +1870,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.codecatalyst.openWorkspace",
-                "title": "%AWS.command.codecatalyst.openWorkspace%",
+                "command": "aws.codecatalyst.openDevEnv",
+                "title": "%AWS.command.codecatalyst.openDevEnv%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
             },
@@ -1897,8 +1897,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.codecatalyst.createWorkspace",
-                "title": "%AWS.command.codecatalyst.createWorkspace%",
+                "command": "aws.codecatalyst.createDevEnv",
+                "title": "%AWS.command.codecatalyst.createDevEnv%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
             },

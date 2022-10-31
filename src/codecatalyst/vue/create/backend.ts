@@ -18,7 +18,7 @@ import {
     createTimeoutPrompter,
     getAllInstanceDescriptions,
     isValidSubscriptionType,
-} from '../../wizards/workspaceSettings'
+} from '../../wizards/devenvSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import {
     CodeCatalystBranch,
@@ -53,7 +53,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     public constructor(
         private readonly client: ConnectedCodeCatalystClient,
         private readonly commands: typeof CodeCatalystCommands.declared,
-        private readonly onComplete: (workspace?: DevEnvironment) => void
+        private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
         super()
     }
@@ -132,23 +132,23 @@ export class CodeCatalystCreateWebview extends VueWebview {
     }
 
     public async submit(settings: DevEnvironmentSettings, source: SourceResponse) {
-        const workspace: DevEnvironment = await (() => {
+        const devenv: DevEnvironment = await (() => {
             switch (source.type) {
                 case 'none':
-                    return this.createEmptyWorkpace(settings, source)
+                    return this.createEmptyDevEnv(settings, source)
                 case 'linked':
-                    return this.createLinkedWorkspace(settings, source)
+                    return this.createLinkedDevEnv(settings, source)
             }
         })()
 
         telemetry.codecatalyst_connect.record({ source: 'Webview' })
         telemetry.codecatalyst_createWorkspace.record({ codecatalyst_createWorkspaceRepoType: source.type })
 
-        this.onComplete(workspace)
-        this.commands.openWorkspace.execute(workspace)
+        this.onComplete(devenv)
+        this.commands.openDevEnv.execute(devenv)
     }
 
-    private async createEmptyWorkpace(settings: DevEnvironmentSettings, source: EmptyResponse) {
+    private async createEmptyDevEnv(settings: DevEnvironmentSettings, source: EmptyResponse) {
         return this.client.createDevEnvironment({
             ides: [{ name: 'VSCode' }],
             projectName: source.selectedProject.name,
@@ -157,7 +157,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         })
     }
 
-    private async createLinkedWorkspace(settings: DevEnvironmentSettings, source: LinkedResponse) {
+    private async createLinkedDevEnv(settings: DevEnvironmentSettings, source: LinkedResponse) {
         const isNewBranch = !!source.newBranch
         if (isNewBranch) {
             await this.client.createSourceBranch({
@@ -193,14 +193,14 @@ let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 let submitPromise: Promise<void> | undefined
 
-export async function showCreateWorkspace(
+export async function showCreateDevEnv(
     client: ConnectedCodeCatalystClient,
     ctx: vscode.ExtensionContext,
     commands: typeof CodeCatalystCommands.declared
 ): Promise<void> {
     submitPromise ??= new Promise<void>((resolve, reject) => {
-        activePanel ??= new Panel(ctx, client, commands, workspace => {
-            if (workspace === undefined) {
+        activePanel ??= new Panel(ctx, client, commands, devenv => {
+            if (devenv === undefined) {
                 reject(new CancellationError('user'))
             } else {
                 resolve()
@@ -209,7 +209,7 @@ export async function showCreateWorkspace(
     })
 
     const webview = await activePanel!.show({
-        title: localize('AWS.view.createWorkspace.title', 'Create a CodeCatalyst Dev Environment'),
+        title: localize('AWS.view.createDevEnv.title', 'Create a CodeCatalyst Dev Environment'),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 

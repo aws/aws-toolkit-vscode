@@ -27,7 +27,7 @@ describe('Prompts', function () {
     function mockClient(): ConnectedCodeCatalystClient {
         const client = mock<ConnectedCodeCatalystClient>()
 
-        when(client.listOrganizations()).thenReturn(intoCollection([orgs]))
+        when(client.listSpaces()).thenReturn(intoCollection([orgs]))
 
         return instance(client)
     }

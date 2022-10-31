@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { DevenvClient } from '../shared/clients/devenvClient'
+import { DevEnvClient } from '../shared/clients/devenvClient'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { getLogger } from '../shared/logger'
 import { Commands } from '../shared/vscode/commands2'
@@ -16,7 +16,7 @@ import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
-    const client = new DevenvClient()
+    const client = new DevEnvClient()
     if (!client.isCodeCatalystDevEnv()) {
         throw new Error('Cannot update devfile outside a dev environment')
     }
@@ -60,7 +60,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 
     public constructor(
         registry: DevfileRegistry,
-        private readonly client = new DevenvClient(),
+        private readonly client = new DevEnvClient(),
         workspace: Workspace = vscode.workspace
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)
@@ -96,7 +96,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         // also make the positions better
         const range = new vscode.Range(0, 0, 0, 0)
         const lens = updateDevfileCommand.build(document.uri).asCodeLens(range, {
-            title: localize('AWS.codecatalyst.codelens.updateWorkspace', 'Update Dev Environment'),
+            title: localize('AWS.codecatalyst.codelens.updateDevEnv', 'Update Dev Environment'),
         })
 
         return [lens]
@@ -107,9 +107,9 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
     }
 }
 
-export function registerDevfileWatcher(workspaceClient: DevenvClient): vscode.Disposable {
+export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Disposable {
     const registry = new DevfileRegistry()
-    const codelensProvider = new DevfileCodeLensProvider(registry, workspaceClient)
+    const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
     registry.addWatchPattern(DEVFILE_GLOB_PATTERN)
 
     const codelensDisposable = vscode.languages.registerCodeLensProvider(

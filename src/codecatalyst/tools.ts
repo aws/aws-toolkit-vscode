@@ -42,7 +42,7 @@ export async function ensureDependencies(
     window = vscode.window
 ): Promise<Result<DependencyPaths, CancellationError | Error>> {
     if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
-        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to workspace', window)
+        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to dev environment', window)
 
         return Result.err(
             new ToolkitError('Remote SSH extension not installed', {
@@ -60,7 +60,7 @@ export async function ensureDependencies(
             .join(', ')
         const msg = localize(
             'AWS.codecatalyst.missingRequiredTool',
-            'Failed to connect to workspace, missing required tools: {0}',
+            'Failed to connect to dev environment, missing required tools: {0}',
             missing
         )
 

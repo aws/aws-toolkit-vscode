@@ -96,7 +96,7 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export function getCodeCatalystDevenvId(): string | undefined {
+export function getCodeCatalystDevEnvId(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_ID']
 }
 
@@ -104,6 +104,7 @@ export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }
 
-export function getCodeCatalystOrganizationName(): string | undefined {
-    return process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
+export function getCodeCatalystSpaceName(): string | undefined {
+    // TODO: remove legacy __DEV_ENVIRONMENT_ORGANIZATION_NAME
+    return process.env['__DEV_ENVIRONMENT_SPACE_NAME'] || process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
 }

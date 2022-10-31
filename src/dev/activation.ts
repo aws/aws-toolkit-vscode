@@ -12,7 +12,7 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
-import { deleteWorkpaceCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
+import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 
 interface MenuOption {
     readonly label: string
@@ -41,11 +41,11 @@ const menuOptions: Record<string, MenuOption> = {
         detail: 'Open a new terminal connected to the remote environment',
         executor: openTerminalCommand,
     },
-    deleteWorkpace: {
+    deleteDevEnv: {
         label: 'Delete Workspace',
         description: 'CodeCatalyst',
-        detail: 'Deletes the selected workpace',
-        executor: deleteWorkpaceCommand,
+        detail: 'Deletes the selected dev environment',
+        executor: deleteDevEnvCommand,
     },
     editStorage: {
         label: 'Edit Storage',

@@ -15,11 +15,11 @@ import {
     createClient,
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
-import { DevenvClient } from '../shared/clients/devenvClient'
+import { DevEnvClient } from '../shared/clients/devenvClient'
 import { getLogger } from '../shared/logger'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
-import { getCodeCatalystOrganizationName, getCodeCatalystProjectName } from '../shared/vscode/env'
+import { getCodeCatalystSpaceName, getCodeCatalystProjectName } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
 import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -30,17 +30,17 @@ import { Commands } from '../shared/vscode/commands2'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
-export function getCodeCatalystSsmEnv(region: string, ssmPath: string, workspace: DevEnvironmentId): NodeJS.ProcessEnv {
+export function getCodeCatalystSsmEnv(region: string, ssmPath: string, devenv: DevEnvironmentId): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: region,
             AWS_SSM_CLI: ssmPath,
             CODECATALYST_ENDPOINT: getCodeCatalystConfig().endpoint,
-            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(workspace.id),
-            LOG_FILE_LOCATION: sshLogFileLocation(workspace.id),
-            ORGANIZATION_NAME: workspace.org.name,
-            PROJECT_NAME: workspace.project.name,
-            DEVENV_ID: workspace.id,
+            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(devenv.id),
+            LOG_FILE_LOCATION: sshLogFileLocation(devenv.id),
+            SPACE_NAME: devenv.org.name,
+            PROJECT_NAME: devenv.project.name,
+            DEVENV_ID: devenv.id,
         },
         process.env
     )
@@ -49,16 +49,16 @@ export function getCodeCatalystSsmEnv(region: string, ssmPath: string, workspace
 export function createCodeCatalystEnvProvider(
     client: ConnectedCodeCatalystClient,
     ssmPath: string,
-    workspace: DevEnvironment,
+    devenv: DevEnvironment,
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
         if (!client.connected) {
-            throw new Error('Unable to provide development workpace environment variables when not logged-in')
+            throw new Error('Cannot provide environment variables when not logged-in')
         }
 
-        await cacheBearerToken(client.token, workspace.id)
-        const vars = getCodeCatalystSsmEnv(client.regionCode, ssmPath, workspace)
+        await cacheBearerToken(client.token, devenv.id)
+        const vars = getCodeCatalystSsmEnv(client.regionCode, ssmPath, devenv)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
     }
@@ -86,16 +86,16 @@ export function createBoundProcess(envProvider: EnvProvider): typeof ChildProces
     }
 }
 
-export async function cacheBearerToken(bearerToken: string, workspaceId: string): Promise<void> {
-    await writeFile(bearerTokenCacheLocation(workspaceId), `${bearerToken}`, 'utf8')
+export async function cacheBearerToken(bearerToken: string, devenvId: string): Promise<void> {
+    await writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, 'utf8')
 }
 
-export function bearerTokenCacheLocation(workspaceId: string): string {
-    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${workspaceId}.token`)
+export function bearerTokenCacheLocation(devenvId: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.token`)
 }
 
-export function sshLogFileLocation(workspaceId: string): string {
-    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${workspaceId}.log`)
+export function sshLogFileLocation(devenvId: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.log`)
 }
 
 export function getHostNameFromEnv(env: DevEnvironmentId): string {
@@ -139,40 +139,40 @@ export function createClientFactory(
     }
 }
 
-export interface ConnectedWorkspace {
+export interface ConnectedDevEnv {
     readonly summary: DevEnvironment
-    readonly workspaceClient: DevenvClient
+    readonly devenvClient: DevEnvClient
 }
 
-export async function getConnectedWorkspace(
+export async function getConnectedDevEnv(
     codeCatalystClient: ConnectedCodeCatalystClient,
-    workspaceClient = new DevenvClient()
-): Promise<ConnectedWorkspace | undefined> {
-    const devEnvId = workspaceClient.id
-    if (!devEnvId || !workspaceClient.isCodeCatalystDevEnv()) {
+    devenvClient = new DevEnvClient()
+): Promise<ConnectedDevEnv | undefined> {
+    const devEnvId = devenvClient.id
+    if (!devEnvId || !devenvClient.isCodeCatalystDevEnv()) {
         return
     }
 
     const projectName = getCodeCatalystProjectName()
-    const organizationName = getCodeCatalystOrganizationName()
+    const spaceName = getCodeCatalystSpaceName()
 
-    if (!projectName || !organizationName) {
-        throw new Error('No project or organization name found')
+    if (!projectName || !spaceName) {
+        throw new Error('No project or space name found')
     }
 
     const summary = await codeCatalystClient.getDevEnvironment({
-        projectName,
-        organizationName,
+        projectName: projectName,
+        organizationName: spaceName,
         id: devEnvId,
     })
 
-    return { summary, workspaceClient: workspaceClient }
+    return { summary, devenvClient: devenvClient }
 }
 
 /**
  * Everything needed to connect to a development environment via VS Code or `ssh`
  */
-interface WorkspaceConnection {
+interface DevEnvConnection {
     readonly sshPath: string
     readonly vscPath: string
     readonly hostname: string
@@ -180,13 +180,13 @@ interface WorkspaceConnection {
     readonly SessionProcess: typeof ChildProcess
 }
 
-export async function prepareWorkpaceConnection(
+export async function prepareDevEnvConnection(
     client: ConnectedCodeCatalystClient,
     { id, org, project }: DevEnvironmentId,
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
-): Promise<WorkspaceConnection> {
+): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const runningWorkspace = await client.startDevEnvironmentWithProgress(
+    const runningDevEnv = await client.startDevEnvironmentWithProgress(
         {
             id,
             organizationName: org.name,
@@ -198,7 +198,7 @@ export async function prepareWorkpaceConnection(
     const hostname = getHostNameFromEnv({ id, org, project })
     const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`
     const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
-    const envProvider = createCodeCatalystEnvProvider(client, ssm, runningWorkspace)
+    const envProvider = createCodeCatalystEnvProvider(client, ssm, runningDevEnv)
     const SessionProcess = createBoundProcess(envProvider).extend({
         timeout,
         onStdout: logger,
@@ -215,13 +215,13 @@ export async function prepareWorkpaceConnection(
     }
 }
 
-export async function openDevelopmentWorkspace(
+export async function openDevEnv(
     client: ConnectedCodeCatalystClient,
-    workspace: DevEnvironmentId,
+    devenv: DevEnvironmentId,
     targetPath = '/projects'
 ): Promise<void> {
-    const { SessionProcess, vscPath } = await prepareWorkpaceConnection(client, workspace, { topic: 'connect' })
-    await startVscodeRemote(SessionProcess, getHostNameFromEnv(workspace), targetPath, vscPath)
+    const { SessionProcess, vscPath } = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
+    await startVscodeRemote(SessionProcess, getHostNameFromEnv(devenv), targetPath, vscPath)
 }
 
 // The "codecatalyst_connect" metric should really be splt into two parts:
@@ -236,10 +236,10 @@ export const codeCatalystConnectCommand = Commands.register(
         id: '_aws.codecatalyst.connect',
         telemetryName: 'codecatalyst_connect',
     },
-    openDevelopmentWorkspace
+    openDevEnv
 )
 
-export async function getDevfileLocation(client: DevenvClient, root?: vscode.Uri) {
+export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
         throw new Error('No root directory or dev environment folder found')
@@ -268,14 +268,14 @@ export function toCodeCatalystGitUri(username: string, token: string, repo: Repo
 }
 
 /**
- * Given a collection of CodeCatalyst repos, try to find a corresponding workspace, if any
+ * Given a collection of CodeCatalyst repos, try to find a corresponding devenv, if any
  */
-export function associateWorkspace(
+export function associateDevEnv(
     client: ConnectedCodeCatalystClient,
     repos: AsyncCollection<CodeCatalystRepo>
-): AsyncCollection<CodeCatalystRepo & { developmentWorkspace?: DevEnvironment }> {
+): AsyncCollection<CodeCatalystRepo & { devEnv?: DevEnvironment }> {
     return toCollection(async function* () {
-        const workspaces = await client
+        const devenvs = await client
             .listResources('devEnvironment')
             .flatten()
             .filter(env => env.repositories.length > 0 && isCodeCatalystVSCode(env.ides))
@@ -283,20 +283,20 @@ export function associateWorkspace(
 
         yield* repos.map(repo => ({
             ...repo,
-            developmentWorkspace: workspaces.get(`${repo.org.name}.${repo.project.name}.${repo.name}`),
+            devEnv: devenvs.get(`${repo.org.name}.${repo.project.name}.${repo.name}`),
         }))
     })
 }
 
-export interface DevelopmentWorkspaceMemento {
+export interface DevEnvMemento {
     /** True if the extension is watching the status of the devenv to try and reconnect. */
     attemptingReconnect?: boolean
     /** Unix time of the most recent connection. */
     previousConnectionTimestamp: number
-    /** Previous open workspace */
-    previousOpenWorkspace: string
-    /** CodeCatalyst Organization Name */
-    organizationName: string
+    /** Previous open vscode workspace directory. */
+    previousVscodeWorkspace: string
+    /** CodeCatalyst Space (Org) Name */
+    spaceName: string
     /** CodeCatalyst Project name */
     projectName: string
     /** CodeCatalyst Alias */

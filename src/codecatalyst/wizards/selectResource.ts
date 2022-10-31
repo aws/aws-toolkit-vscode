@@ -14,7 +14,7 @@ import {
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { associateWorkspace } from '../model'
+import { associateDevEnv } from '../model'
 import { getHelpUrl, isCodeCatalystVSCode } from '../utils'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
@@ -39,7 +39,7 @@ export function asQuickpickItem<T extends codecatalyst.CodeCatalystResource>(res
                 data: resource,
             }
         case 'devEnvironment':
-            return { ...fromWorkspace(resource), data: resource }
+            return { ...fromDevEnv(resource), data: resource }
         case 'org':
             return { label: resource.name, detail: resource.description, data: resource }
         default:
@@ -47,7 +47,7 @@ export function asQuickpickItem<T extends codecatalyst.CodeCatalystResource>(res
     }
 }
 
-function fromWorkspace(env: codecatalyst.DevEnvironment): Omit<DataQuickPickItem<unknown>, 'data'> {
+function fromDevEnv(env: codecatalyst.DevEnvironment): Omit<DataQuickPickItem<unknown>, 'data'> {
     const labelParts = [] as string[]
 
     if (env.status === 'RUNNING') {
@@ -99,7 +99,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
 export function createOrgPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient
 ): QuickPickPrompter<codecatalyst.CodeCatalystOrg> {
-    return createResourcePrompter(client.listOrganizations(), {
+    return createResourcePrompter(client.listSpaces(), {
         title: 'Select a CodeCatalyst Organization',
         placeholder: 'Search for an Organization',
     })
@@ -131,11 +131,11 @@ export function createRepoPrompter(
     })
 }
 
-export function createWorkpacePrompter(
+export function createDevEnvPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
-    const envs = proj ? client.listDevEnvironment(proj) : client.listResources('devEnvironment')
+    const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
     const filtered = envs.map(arr => arr.filter(env => isCodeCatalystVSCode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
@@ -175,7 +175,7 @@ export async function selectCodeCatalystResource<T extends ResourceType>(
             case 'branch':
                 throw new Error('Picking a branch is not supported')
             case 'devEnvironment':
-                return createWorkpacePrompter(client)
+                return createDevEnvPrompter(client)
         }
     })()
 
@@ -184,19 +184,19 @@ export async function selectCodeCatalystResource<T extends ResourceType>(
 }
 
 /**
- * Special-case of {@link createRepoPrompter} for creating a new workspace
+ * Special-case of {@link createRepoPrompter} for creating a new devenv
  */
-export async function selectRepoForWorkspace(
+export async function selectRepoForDevEnv(
     client: codecatalyst.ConnectedCodeCatalystClient
 ): Promise<codecatalyst.CodeCatalystRepo | undefined> {
-    const repos = associateWorkspace(client, client.listResources('repo').flatten())
+    const repos = associateDevEnv(client, client.listResources('repo').flatten())
 
     const refresh = createRefreshButton()
     const items = repos.map(repo => [
         {
             ...asQuickpickItem(repo),
-            invalidSelection: repo.developmentWorkspace !== undefined,
-            description: repo.developmentWorkspace ? `Repository already has a dev environment` : '',
+            invalidSelection: repo.devEnv !== undefined,
+            description: repo.devEnv ? `Repository already has a dev environment` : '',
         },
     ])
 

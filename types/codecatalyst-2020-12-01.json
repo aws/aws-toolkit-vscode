@@ -48,6 +48,25 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "AcceptSpaceInvitation": {
+            "name": "AcceptSpaceInvitation",
+            "http": {
+                "method": "PUT",
+                "requestUri": "/v1/spaces/{spaceName}/invitations/{id}",
+                "responseCode": 200
+            },
+            "input": { "shape": "AcceptSpaceInvitationRequest" },
+            "output": { "shape": "AcceptSpaceInvitationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
+        },
         "AddUserToRole": {
             "name": "AddUserToRole",
             "http": {
@@ -266,6 +285,25 @@
                 { "shape": "ResourceNotFoundException" },
                 { "shape": "AccessDeniedException" }
             ]
+        },
+        "CancelSpaceInvitation": {
+            "name": "CancelSpaceInvitation",
+            "http": {
+                "method": "DELETE",
+                "requestUri": "/v1/spaces/{spaceName}/invitations/{id}",
+                "responseCode": 200
+            },
+            "input": { "shape": "CancelSpaceInvitationRequest" },
+            "output": { "shape": "CancelSpaceInvitationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
         },
         "ConnectAwsAccount": {
             "name": "ConnectAwsAccount",
@@ -1016,6 +1054,25 @@
             ],
             "idempotent": true
         },
+        "CreateSpace": {
+            "name": "CreateSpace",
+            "http": {
+                "method": "POST",
+                "requestUri": "/v1/spaces",
+                "responseCode": 200
+            },
+            "input": { "shape": "CreateSpaceRequest" },
+            "output": { "shape": "CreateSpaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
+        },
         "CreateUserDetails": {
             "name": "CreateUserDetails",
             "http": {
@@ -1566,6 +1623,25 @@
             ],
             "idempotent": true
         },
+        "DeleteSpace": {
+            "name": "DeleteSpace",
+            "http": {
+                "method": "POST",
+                "requestUri": "/TODO/110",
+                "responseCode": 200
+            },
+            "input": { "shape": "DeleteSpaceRequest" },
+            "output": { "shape": "DeleteSpaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
+        },
         "DescribeOrganizationMembers": {
             "name": "DescribeOrganizationMembers",
             "http": {
@@ -1789,7 +1865,7 @@
             "name": "GetActionRun",
             "http": {
                 "method": "GET",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{workflowRunId}/actionRuns/{id}",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{workflowRunId}/actionRuns/{id}",
                 "responseCode": 200
             },
             "input": { "shape": "GetActionRunRequest" },
@@ -1807,7 +1883,7 @@
             "name": "GetActionRunArtifactMetadata",
             "http": {
                 "method": "GET",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{workflowRunId}/actionRuns/{actionRunId}/artifacts/{name}/metadata",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{workflowRunId}/actionRuns/{actionRunId}/artifacts/{name}/metadata",
                 "responseCode": 200
             },
             "input": { "shape": "GetActionRunArtifactMetadataRequest" },
@@ -1825,7 +1901,7 @@
             "name": "GetActionRunLogEntries",
             "http": {
                 "method": "GET",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{workflowRunId}/actionRuns/{id}/logEntries",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{workflowRunId}/actionRuns/{id}/logEntries",
                 "responseCode": 200
             },
             "input": { "shape": "GetActionRunLogEntriesRequest" },
@@ -2190,6 +2266,24 @@
             },
             "input": { "shape": "GetCatalogActionVersionRequest" },
             "output": { "shape": "GetCatalogActionVersionResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "GetCatalogActionVersionFileRecord": {
+            "name": "GetCatalogActionVersionFileRecord",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/catalog-action-version/actions/{actionId}/versions/{id}/file-record-type/{fileType}",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetCatalogActionVersionFileRecordRequest" },
+            "output": { "shape": "GetCatalogActionVersionFileRecordResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
@@ -3085,6 +3179,60 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "GetSpace": {
+            "name": "GetSpace",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/spaces/{name}",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetSpaceRequest" },
+            "output": { "shape": "GetSpaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "GetSpaceInvitation": {
+            "name": "GetSpaceInvitation",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/spaces/{spaceName}/invitations/{id}",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetSpaceInvitationRequest" },
+            "output": { "shape": "GetSpaceInvitationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "GetSpaceUsageReport": {
+            "name": "GetSpaceUsageReport",
+            "http": {
+                "method": "POST",
+                "requestUri": "/v1/spaces/{name}/usageReport",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetSpaceUsageReportRequest" },
+            "output": { "shape": "GetSpaceUsageReportResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "GetStaticAnalysisFinding": {
             "name": "GetStaticAnalysisFinding",
             "http": {
@@ -3233,7 +3381,7 @@
             "name": "GetWorkflowRun",
             "http": {
                 "method": "GET",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{id}",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{id}",
                 "responseCode": 200
             },
             "input": { "shape": "GetWorkflowRunRequest" },
@@ -3346,7 +3494,7 @@
             "name": "ListActionRuns",
             "http": {
                 "method": "POST",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{workflowRunId}/actionRuns",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{workflowRunId}/actionRuns",
                 "responseCode": 200
             },
             "input": { "shape": "ListActionRunsRequest" },
@@ -3423,6 +3571,24 @@
             },
             "input": { "shape": "ListActiveProjectInvitationsRequest" },
             "output": { "shape": "ListActiveProjectInvitationsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "ListActiveSpaceInvitations": {
+            "name": "ListActiveSpaceInvitations",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/spaces/{spaceName}/invitations",
+                "responseCode": 200
+            },
+            "input": { "shape": "ListActiveSpaceInvitationsRequest" },
+            "output": { "shape": "ListActiveSpaceInvitationsResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
@@ -4566,6 +4732,42 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "ListSpaceUsers": {
+            "name": "ListSpaceUsers",
+            "http": {
+                "method": "POST",
+                "requestUri": "/v1/spaces/{name}/users",
+                "responseCode": 200
+            },
+            "input": { "shape": "ListSpaceUsersRequest" },
+            "output": { "shape": "ListSpaceUsersResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "ListSpaces": {
+            "name": "ListSpaces",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/spaces",
+                "responseCode": 200
+            },
+            "input": { "shape": "ListSpacesRequest" },
+            "output": { "shape": "ListSpacesResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "ListStaticAnalysisFindingStatistics": {
             "name": "ListStaticAnalysisFindingStatistics",
             "http": {
@@ -4714,7 +4916,7 @@
             "name": "ListWorkflowRuns",
             "http": {
                 "method": "POST",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns",
                 "responseCode": 200
             },
             "input": { "shape": "ListWorkflowRunsRequest" },
@@ -4781,6 +4983,25 @@
                 { "shape": "ResourceNotFoundException" },
                 { "shape": "AccessDeniedException" }
             ]
+        },
+        "MigrateAwsAccount": {
+            "name": "MigrateAwsAccount",
+            "http": {
+                "method": "POST",
+                "requestUri": "/v1/organizations/{organizationName}/awsAccountMigrations",
+                "responseCode": 201
+            },
+            "input": { "shape": "MigrateAwsAccountRequest" },
+            "output": { "shape": "MigrateAwsAccountResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
         },
         "PublishActionVersion": {
             "name": "PublishActionVersion",
@@ -4983,6 +5204,24 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "SendSpaceInvitation": {
+            "name": "SendSpaceInvitation",
+            "http": {
+                "method": "POST",
+                "requestUri": "/v1/spaces/{spaceName}/invitations",
+                "responseCode": 200
+            },
+            "input": { "shape": "SendSpaceInvitationRequest" },
+            "output": { "shape": "SendSpaceInvitationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "SetSubscription": {
             "name": "SetSubscription",
             "http": {
@@ -5042,7 +5281,7 @@
             "name": "StartWorkflowRun",
             "http": {
                 "method": "PUT",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns",
                 "responseCode": 200
             },
             "input": { "shape": "StartWorkflowRunRequest" },
@@ -5658,6 +5897,25 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "UpdateSpace": {
+            "name": "UpdateSpace",
+            "http": {
+                "method": "PUT",
+                "requestUri": "/v1/spaces/{name}",
+                "responseCode": 200
+            },
+            "input": { "shape": "UpdateSpaceRequest" },
+            "output": { "shape": "UpdateSpaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
+        },
         "ValidateOrganizationName": {
             "name": "ValidateOrganizationName",
             "http": {
@@ -5685,6 +5943,24 @@
             },
             "input": { "shape": "ValidateProjectNameRequest" },
             "output": { "shape": "ValidateProjectNameResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "ValidateSpaceName": {
+            "name": "ValidateSpaceName",
+            "http": {
+                "method": "POST",
+                "requestUri": "/TODO/129",
+                "responseCode": 200
+            },
+            "input": { "shape": "ValidateSpaceNameRequest" },
+            "output": { "shape": "ValidateSpaceNameResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
@@ -5733,7 +6009,7 @@
             "name": "_UpdateWorkflowRun",
             "http": {
                 "method": "PUT",
-                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflows/{workflowId}/workflowRuns/{workflowRunId}",
+                "requestUri": "/v1/organizations/{organizationName}/projects/{projectName}/workflowRuns/{workflowRunId}",
                 "responseCode": 200
             },
             "input": { "shape": "UpdateWorkflowRunRequest" },
@@ -5844,6 +6120,51 @@
                 "projectName": { "shape": "String" },
                 "status": { "shape": "ProjectInvitationStatus" },
                 "inviteeRole": { "shape": "ProjectInviteeRole" }
+            }
+        },
+        "AcceptSpaceInvitationRequest": {
+            "type": "structure",
+            "required": ["spaceName", "id"],
+            "members": {
+                "spaceName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "spaceName"
+                },
+                "id": {
+                    "shape": "AcceptSpaceInvitationRequestIdString",
+                    "location": "uri",
+                    "locationName": "id"
+                }
+            }
+        },
+        "AcceptSpaceInvitationRequestIdString": {
+            "type": "string",
+            "max": 180,
+            "min": 32
+        },
+        "AcceptSpaceInvitationResponse": {
+            "type": "structure",
+            "required": [
+                "lastUpdatedTime",
+                "timestamp",
+                "inviteeEmailAddress",
+                "spaceName",
+                "status",
+                "inviteeRole",
+                "id"
+            ],
+            "members": {
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "timestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "inviterUserName": { "shape": "String" },
+                "inviteeEmailAddress": { "shape": "EmailAddressString" },
+                "inviteeDisplayName": { "shape": "String" },
+                "signupEmailAddress": { "shape": "EmailAddressString" },
+                "spaceName": { "shape": "NameString" },
+                "status": { "shape": "InvitationStatus" },
+                "inviteeRole": { "shape": "SpaceInviteeRole" },
+                "id": { "shape": "String" }
             }
         },
         "AccessDeniedException": {
@@ -6410,8 +6731,10 @@
         },
         "ActionVersionWorkflowSchema": {
             "type": "structure",
+            "required": ["supportedComputeTypes"],
             "members": {
                 "baseSchema": { "shape": "ActionVersionWorkflowSchemaBaseSchemaString" },
+                "supportedComputeTypes": { "shape": "ActionsSupportedComputeTypes" },
                 "optionalInterfaces": { "shape": "ActionVersionWorkflowSchemaOptionalInterfacesList" },
                 "requiredInterfaces": { "shape": "ActionVersionWorkflowSchemaRequiredInterfacesList" },
                 "predefinedInterfaces": { "shape": "ActionVersionWorkflowSchemaPredefinedInterfacesList" },
@@ -6490,6 +6813,14 @@
             "type": "string",
             "max": 50,
             "min": 0
+        },
+        "ActionsSupportedComputeType": {
+            "type": "string",
+            "enum": ["EC2", "LAMBDA"]
+        },
+        "ActionsSupportedComputeTypes": {
+            "type": "list",
+            "member": { "shape": "ActionsSupportedComputeType" }
         },
         "ActivityFeedEventType": {
             "type": "string",
@@ -7009,9 +7340,7 @@
         },
         "AssociateAwsAccountOnboardingRequestAwsAccountIdString": {
             "type": "string",
-            "max": 12,
-            "min": 12,
-            "pattern": "[0-9]+"
+            "pattern": "[0-9]{12}"
         },
         "AssociateAwsAccountOnboardingRequestDescriptionString": {
             "type": "string",
@@ -7060,9 +7389,7 @@
         },
         "AssociateAwsAccountRequestAwsAccountIdString": {
             "type": "string",
-            "max": 12,
-            "min": 12,
-            "pattern": "[0-9]+"
+            "pattern": "[0-9]{12}"
         },
         "AssociateAwsAccountRequestDescriptionString": {
             "type": "string",
@@ -7575,6 +7902,38 @@
                 "status": { "shape": "InvitationStatus" }
             }
         },
+        "CancelSpaceInvitationRequest": {
+            "type": "structure",
+            "required": ["spaceName", "id"],
+            "members": {
+                "spaceName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "spaceName"
+                },
+                "id": {
+                    "shape": "CancelSpaceInvitationRequestIdString",
+                    "location": "uri",
+                    "locationName": "id"
+                }
+            }
+        },
+        "CancelSpaceInvitationRequestIdString": {
+            "type": "string",
+            "max": 180,
+            "min": 32
+        },
+        "CancelSpaceInvitationResponse": {
+            "type": "structure",
+            "required": ["spaceName", "id", "lastUpdatedTime", "inviteeEmailAddress", "status"],
+            "members": {
+                "spaceName": { "shape": "NameString" },
+                "id": { "shape": "String" },
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "inviteeEmailAddress": { "shape": "EmailAddressString" },
+                "status": { "shape": "InvitationStatus" }
+            }
+        },
         "CatalogActionCategory": {
             "type": "string",
             "enum": ["BUILD", "TEST", "UTILITIES", "SECURITY", "DEPLOYMENT", "CODE_QUALITY"]
@@ -7621,6 +7980,15 @@
             "type": "string",
             "max": 32,
             "min": 0
+        },
+        "CatalogActionVersionFileContent": {
+            "type": "string",
+            "max": 10240,
+            "min": 0
+        },
+        "CatalogActionVersionFileRecordType": {
+            "type": "string",
+            "enum": ["LICENSE", "README"]
         },
         "CatalogActionVersionSchemaInterface": {
             "type": "structure",
@@ -7691,8 +8059,10 @@
         },
         "CatalogActionVersionWorkflowSchema": {
             "type": "structure",
+            "required": ["supportedComputeTypes"],
             "members": {
                 "baseSchema": { "shape": "CatalogActionVersionWorkflowSchemaBaseSchemaString" },
+                "supportedComputeTypes": { "shape": "ActionsSupportedComputeTypes" },
                 "optionalInterfaces": { "shape": "CatalogActionVersionWorkflowSchemaOptionalInterfacesList" },
                 "requiredInterfaces": { "shape": "CatalogActionVersionWorkflowSchemaRequiredInterfacesList" },
                 "predefinedInterfaces": { "shape": "CatalogActionVersionWorkflowSchemaPredefinedInterfacesList" },
@@ -9423,6 +9793,41 @@
                 "autoInitialize": { "shape": "CreateSourceRepositoryAutoInitializeOutput" }
             }
         },
+        "CreateSpaceRequest": {
+            "type": "structure",
+            "required": ["name", "regionName", "displayName"],
+            "members": {
+                "name": { "shape": "NameString" },
+                "regionName": { "shape": "RegionString" },
+                "displayName": { "shape": "CreateSpaceRequestDisplayNameString" },
+                "description": { "shape": "CreateSpaceRequestDescriptionString" }
+            }
+        },
+        "CreateSpaceRequestDescriptionString": {
+            "type": "string",
+            "max": 200,
+            "min": 0
+        },
+        "CreateSpaceRequestDisplayNameString": {
+            "type": "string",
+            "max": 200,
+            "min": 1
+        },
+        "CreateSpaceResponse": {
+            "type": "structure",
+            "members": {
+                "name": { "shape": "NameString" },
+                "regionName": { "shape": "RegionString" },
+                "displayName": { "shape": "String" },
+                "description": { "shape": "String" },
+                "versionId": { "shape": "String" },
+                "id": {
+                    "shape": "String",
+                    "deprecated": true,
+                    "deprecatedMessage": "field no longer in Rococo recommended schema"
+                }
+            }
+        },
         "CreateUserDetailsRequest": {
             "type": "structure",
             "required": ["userName", "id"],
@@ -10141,6 +10546,20 @@
             "required": ["name"],
             "members": {
                 "name": { "shape": "SourceRepositoryNameString" }
+            }
+        },
+        "DeleteSpaceRequest": {
+            "type": "structure",
+            "required": ["name"],
+            "members": {
+                "name": { "shape": "NameString" },
+                "versionId": { "shape": "String" }
+            }
+        },
+        "DeleteSpaceResponse": {
+            "type": "structure",
+            "members": {
+                "versionId": { "shape": "String" }
             }
         },
         "DeniedActionsList": {
@@ -10935,7 +11354,8 @@
                 "requestPayload": { "shape": "EventPayload" },
                 "responsePayload": { "shape": "EventPayload" },
                 "errorCode": { "shape": "String" },
-                "sourceIpAddress": { "shape": "String" }
+                "sourceIpAddress": { "shape": "String" },
+                "userAgent": { "shape": "String" }
             }
         },
         "EventPayload": {
@@ -11153,7 +11573,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "workflowRunId": {
@@ -11200,7 +11620,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "workflowRunId": {
@@ -11318,7 +11738,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "workflowRunId": {
@@ -11630,9 +12050,7 @@
         },
         "GetAwsAccountRoleRequestNameString": {
             "type": "string",
-            "max": 64,
-            "min": 1,
-            "pattern": ".*[\\w+=,.@-]+.*"
+            "pattern": "[\\w+=,.@-]{1,64}"
         },
         "GetAwsAccountRoleResponse": {
             "type": "structure",
@@ -11871,6 +12289,52 @@
         "GetCatalogActionResponseNameString": {
             "type": "string",
             "max": 32,
+            "min": 0
+        },
+        "GetCatalogActionVersionFileRecordRequest": {
+            "type": "structure",
+            "required": ["actionId", "id", "fileType"],
+            "members": {
+                "actionId": {
+                    "shape": "GetCatalogActionVersionFileRecordRequestActionIdString",
+                    "location": "uri",
+                    "locationName": "actionId"
+                },
+                "id": {
+                    "shape": "GetCatalogActionVersionFileRecordRequestIdString",
+                    "location": "uri",
+                    "locationName": "id"
+                },
+                "fileType": {
+                    "shape": "CatalogActionVersionFileRecordType",
+                    "location": "uri",
+                    "locationName": "fileType"
+                }
+            }
+        },
+        "GetCatalogActionVersionFileRecordRequestActionIdString": {
+            "type": "string",
+            "max": 250,
+            "min": 0
+        },
+        "GetCatalogActionVersionFileRecordRequestIdString": {
+            "type": "string",
+            "max": 10,
+            "min": 0
+        },
+        "GetCatalogActionVersionFileRecordResponse": {
+            "type": "structure",
+            "required": ["actionId", "fileType", "fileContent"],
+            "members": {
+                "actionId": { "shape": "String" },
+                "id": { "shape": "GetCatalogActionVersionFileRecordResponseIdString" },
+                "fileType": { "shape": "CatalogActionVersionFileRecordType" },
+                "fileContent": { "shape": "CatalogActionVersionFileContent" }
+            }
+        },
+        "GetCatalogActionVersionFileRecordResponseIdString": {
+            "type": "string",
+            "max": 10,
             "min": 0
         },
         "GetCatalogActionVersionRequest": {
@@ -13357,6 +13821,101 @@
                 "provider": { "shape": "GetSourceRepositoryProvider" }
             }
         },
+        "GetSpaceInvitationRequest": {
+            "type": "structure",
+            "required": ["spaceName", "id"],
+            "members": {
+                "spaceName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "spaceName"
+                },
+                "id": {
+                    "shape": "GetSpaceInvitationRequestIdString",
+                    "location": "uri",
+                    "locationName": "id"
+                }
+            }
+        },
+        "GetSpaceInvitationRequestIdString": {
+            "type": "string",
+            "max": 180,
+            "min": 32
+        },
+        "GetSpaceInvitationResponse": {
+            "type": "structure",
+            "required": [
+                "lastUpdatedTime",
+                "timestamp",
+                "inviteeEmailAddress",
+                "spaceName",
+                "status",
+                "inviteeRole",
+                "id"
+            ],
+            "members": {
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "timestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "inviterUserName": { "shape": "String" },
+                "inviteeEmailAddress": { "shape": "EmailAddressString" },
+                "inviteeDisplayName": { "shape": "String" },
+                "signupEmailAddress": { "shape": "EmailAddressString" },
+                "spaceName": { "shape": "NameString" },
+                "status": { "shape": "InvitationStatus" },
+                "inviteeRole": { "shape": "SpaceInviteeRole" },
+                "id": { "shape": "String" }
+            }
+        },
+        "GetSpaceRequest": {
+            "type": "structure",
+            "required": ["name"],
+            "members": {
+                "name": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "name"
+                }
+            }
+        },
+        "GetSpaceResponse": {
+            "type": "structure",
+            "required": ["name", "regionName"],
+            "members": {
+                "id": {
+                    "shape": "String",
+                    "deprecated": true,
+                    "deprecatedMessage": "field no longer in Rococo recommended schema"
+                },
+                "name": { "shape": "NameString" },
+                "regionName": { "shape": "RegionString" },
+                "displayName": { "shape": "String" },
+                "description": { "shape": "String" }
+            }
+        },
+        "GetSpaceUsageReportRequest": {
+            "type": "structure",
+            "required": ["name", "resourceTypes"],
+            "members": {
+                "name": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "name"
+                },
+                "resourceTypes": { "shape": "GetSpaceUsageReportRequestResourceTypesList" }
+            }
+        },
+        "GetSpaceUsageReportRequestResourceTypesList": {
+            "type": "list",
+            "member": { "shape": "String" },
+            "max": 50,
+            "min": 1
+        },
+        "GetSpaceUsageReportResponse": {
+            "type": "structure",
+            "members": {
+                "items": { "shape": "SpaceUsageReportList" }
+            }
+        },
         "GetStaticAnalysisFindingRequest": {
             "type": "structure",
             "required": ["organizationName", "projectName", "id"],
@@ -13765,7 +14324,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 }
             }
@@ -14563,7 +15122,7 @@
                 },
                 "workflowId": {
                     "shape": "String",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "workflowRunId": {
@@ -14767,6 +15326,44 @@
                 "nextToken": { "shape": "String" }
             }
         },
+        "ListActiveSpaceInvitationsRequest": {
+            "type": "structure",
+            "required": ["spaceName"],
+            "members": {
+                "spaceName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "spaceName"
+                },
+                "nextToken": {
+                    "shape": "ListActiveSpaceInvitationsRequestNextTokenString",
+                    "location": "querystring",
+                    "locationName": "nextToken"
+                },
+                "maxResults": {
+                    "shape": "ListActiveSpaceInvitationsRequestMaxResultsInteger",
+                    "location": "querystring",
+                    "locationName": "maxResults"
+                }
+            }
+        },
+        "ListActiveSpaceInvitationsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 50
+        },
+        "ListActiveSpaceInvitationsRequestNextTokenString": {
+            "type": "string",
+            "min": 1
+        },
+        "ListActiveSpaceInvitationsResponse": {
+            "type": "structure",
+            "required": ["items"],
+            "members": {
+                "items": { "shape": "SpaceInvitationList" },
+                "nextToken": { "shape": "String" }
+            }
+        },
         "ListArtifactPackageVersionAssetsInput": {
             "type": "structure",
             "required": ["organizationName", "projectName", "repositoryName", "name", "format", "packageVersion"],
@@ -14963,6 +15560,7 @@
         },
         "ListAwsAccountRolesRequestNextTokenString": {
             "type": "string",
+            "max": 256,
             "min": 1
         },
         "ListAwsAccountRolesResponse": {
@@ -15060,6 +15658,7 @@
         },
         "ListAwsAccountsOnboardingRequestNextTokenString": {
             "type": "string",
+            "max": 256,
             "min": 1
         },
         "ListAwsAccountsOnboardingResponse": {
@@ -15108,6 +15707,7 @@
         },
         "ListAwsAccountsRequestNextTokenString": {
             "type": "string",
+            "max": 256,
             "min": 1
         },
         "ListAwsAccountsResponse": {
@@ -17513,6 +18113,60 @@
                 "nextToken": { "shape": "String" }
             }
         },
+        "ListSpaceUsersRequest": {
+            "type": "structure",
+            "required": ["name"],
+            "members": {
+                "name": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "name"
+                },
+                "nextToken": { "shape": "ListSpaceUsersRequestNextTokenString" },
+                "maxResults": { "shape": "ListSpaceUsersRequestMaxResultsInteger" },
+                "sortBy": { "shape": "SpaceUsersSortBy" },
+                "sortDirection": { "shape": "SpaceUsersSortDirection" },
+                "filters": { "shape": "SpaceUsersFilters" }
+            }
+        },
+        "ListSpaceUsersRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 50,
+            "min": 1
+        },
+        "ListSpaceUsersRequestNextTokenString": {
+            "type": "string",
+            "min": 1
+        },
+        "ListSpaceUsersResponse": {
+            "type": "structure",
+            "members": {
+                "nextToken": { "shape": "String" },
+                "items": { "shape": "SpaceUsersList" }
+            }
+        },
+        "ListSpacesRequest": {
+            "type": "structure",
+            "members": {
+                "nextToken": {
+                    "shape": "ListSpacesRequestNextTokenString",
+                    "location": "querystring",
+                    "locationName": "nextToken"
+                }
+            }
+        },
+        "ListSpacesRequestNextTokenString": {
+            "type": "string",
+            "min": 1
+        },
+        "ListSpacesResponse": {
+            "type": "structure",
+            "members": {
+                "nextToken": { "shape": "String" },
+                "items": { "shape": "SpaceSummaries" }
+            }
+        },
         "ListStaticAnalysisFindingStatisticsResponse": {
             "type": "structure",
             "required": [
@@ -17926,7 +18580,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "projectName": {
@@ -18150,6 +18804,36 @@
             "required": ["data"],
             "members": {
                 "data": { "shape": "Double" }
+            }
+        },
+        "MigrateAwsAccountRequest": {
+            "type": "structure",
+            "required": ["organizationName", "name", "connectionId"],
+            "members": {
+                "organizationName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "organizationName"
+                },
+                "name": { "shape": "NameString" },
+                "connectionId": { "shape": "String" }
+            }
+        },
+        "MigrateAwsAccountResponse": {
+            "type": "structure",
+            "required": ["organizationName", "connectionId", "name", "awsAccountId", "status", "requesterId"],
+            "members": {
+                "organizationName": { "shape": "String" },
+                "connectionId": { "shape": "String" },
+                "name": { "shape": "String" },
+                "awsAccountId": { "shape": "String" },
+                "status": { "shape": "AwsAccountStatus" },
+                "description": { "shape": "String" },
+                "createdTime": { "shape": "SyntheticTimestamp_date_time" },
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "requesterId": { "shape": "String" },
+                "accountConnectionToken": { "shape": "AccountConnectionToken" },
+                "connectionRequestedFeatures": { "shape": "ConnectionFeatures" }
             }
         },
         "NameString": {
@@ -19741,6 +20425,44 @@
                 "inviteeRole": { "shape": "ProjectInviteeRole" }
             }
         },
+        "SendSpaceInvitationRequest": {
+            "type": "structure",
+            "required": ["spaceName", "inviteeEmailAddress", "inviteeDisplayName", "inviteeRole", "clientToken"],
+            "members": {
+                "spaceName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "spaceName"
+                },
+                "inviteeEmailAddress": { "shape": "EmailAddressString" },
+                "inviteeDisplayName": { "shape": "SendSpaceInvitationRequestInviteeDisplayNameString" },
+                "inviteeRole": { "shape": "SpaceInviteeRole" },
+                "clientToken": {
+                    "shape": "SpaceInvitationClientToken",
+                    "idempotencyToken": true
+                }
+            }
+        },
+        "SendSpaceInvitationRequestInviteeDisplayNameString": {
+            "type": "string",
+            "max": 100,
+            "min": 0
+        },
+        "SendSpaceInvitationResponse": {
+            "type": "structure",
+            "required": ["lastUpdatedTime", "timestamp", "inviteeEmailAddress", "spaceName", "status", "inviteeRole"],
+            "members": {
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "timestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "inviterUserName": { "shape": "String" },
+                "inviteeEmailAddress": { "shape": "String" },
+                "inviteeDisplayName": { "shape": "String" },
+                "signupEmailAddress": { "shape": "EmailAddressString" },
+                "spaceName": { "shape": "NameString" },
+                "status": { "shape": "SpaceInvitationStatus" },
+                "inviteeRole": { "shape": "SpaceInviteeRole" }
+            }
+        },
         "SensitiveString": {
             "type": "string",
             "sensitive": true
@@ -20492,6 +21214,114 @@
                 "commitSha1": { "shape": "String" }
             }
         },
+        "SpaceInvitationClientToken": {
+            "type": "string",
+            "max": 64,
+            "min": 64,
+            "pattern": "[0-9a-zA-Z]*",
+            "sensitive": true
+        },
+        "SpaceInvitationList": {
+            "type": "list",
+            "member": { "shape": "SpaceInvitationListMember" }
+        },
+        "SpaceInvitationListMember": {
+            "type": "structure",
+            "required": ["lastUpdatedTime", "timestamp", "inviteeEmailAddress", "spaceName", "status", "inviteeRole"],
+            "members": {
+                "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
+                "timestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "inviterUserName": { "shape": "String" },
+                "inviteeEmailAddress": { "shape": "EmailAddressString" },
+                "inviteeDisplayName": { "shape": "String" },
+                "signupEmailAddress": { "shape": "EmailAddressString" },
+                "spaceName": { "shape": "NameString" },
+                "status": { "shape": "InvitationStatus" },
+                "inviteeRole": { "shape": "SpaceInviteeRole" },
+                "id": { "shape": "String" }
+            }
+        },
+        "SpaceInvitationStatus": {
+            "type": "string",
+            "enum": [
+                "MEMBER",
+                "INVITATION_SENDING",
+                "INVITATION_SENT",
+                "FAILURE_SENDING",
+                "INVITATION_CANCELLED",
+                "INVITATION_RESENT"
+            ]
+        },
+        "SpaceInviteeRole": {
+            "type": "string",
+            "enum": ["ADMIN"]
+        },
+        "SpaceSummaries": {
+            "type": "list",
+            "member": { "shape": "SpaceSummary" }
+        },
+        "SpaceSummary": {
+            "type": "structure",
+            "required": ["name", "regionName"],
+            "members": {
+                "name": { "shape": "NameString" },
+                "regionName": { "shape": "RegionString" },
+                "displayName": { "shape": "String" },
+                "description": { "shape": "String" }
+            }
+        },
+        "SpaceUsageReportEntry": {
+            "type": "structure",
+            "required": ["limitPeriod", "resourceType", "usageAmount", "limitAmount"],
+            "members": {
+                "limitPeriod": { "shape": "String" },
+                "resourceType": { "shape": "String" },
+                "usageAmount": { "shape": "Double" },
+                "limitAmount": { "shape": "Double" }
+            }
+        },
+        "SpaceUsageReportList": {
+            "type": "list",
+            "member": { "shape": "SpaceUsageReportEntry" }
+        },
+        "SpaceUser": {
+            "type": "structure",
+            "required": ["id", "username", "displayName", "emailAddress", "roleId"],
+            "members": {
+                "id": { "shape": "String" },
+                "username": { "shape": "String" },
+                "displayName": { "shape": "String" },
+                "emailAddress": { "shape": "String" },
+                "roleId": { "shape": "String" }
+            }
+        },
+        "SpaceUsersFilter": {
+            "type": "structure",
+            "members": {
+                "name": { "shape": "SpaceUsersFilterName" },
+                "value": { "shape": "String" }
+            }
+        },
+        "SpaceUsersFilterName": {
+            "type": "string",
+            "enum": ["USERNAME", "DISPLAY_NAME", "EMAIL_ADDRESS", "ROLE"]
+        },
+        "SpaceUsersFilters": {
+            "type": "list",
+            "member": { "shape": "SpaceUsersFilter" }
+        },
+        "SpaceUsersList": {
+            "type": "list",
+            "member": { "shape": "SpaceUser" }
+        },
+        "SpaceUsersSortBy": {
+            "type": "string",
+            "enum": ["USERNAME", "DISPLAY_NAME", "EMAIL_ADDRESS", "ROLE"]
+        },
+        "SpaceUsersSortDirection": {
+            "type": "string",
+            "enum": ["ASCENDING", "DESCENDING"]
+        },
         "StartDevEnvironmentRequest": {
             "type": "structure",
             "required": ["organizationName", "projectName", "id"],
@@ -20579,8 +21409,8 @@
                     "locationName": "projectName"
                 },
                 "workflowId": {
-                    "shape": "StartWorkflowRunRequestWorkflowIdString",
-                    "location": "uri",
+                    "shape": "Uuid",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "clientToken": {
@@ -20600,11 +21430,6 @@
             "type": "string",
             "min": 1,
             "pattern": "[a-zA-Z0-9]+(?:[-_\\.][a-zA-Z0-9]+)*"
-        },
-        "StartWorkflowRunRequestWorkflowIdString": {
-            "type": "string",
-            "min": 1,
-            "pattern": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
         },
         "StartWorkflowRunResponse": {
             "type": "structure",
@@ -22073,6 +22898,39 @@
                 "description": { "shape": "SourceRepositoryDescriptionString" }
             }
         },
+        "UpdateSpaceRequest": {
+            "type": "structure",
+            "required": ["name", "displayName"],
+            "members": {
+                "name": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "name"
+                },
+                "displayName": { "shape": "UpdateSpaceRequestDisplayNameString" },
+                "description": { "shape": "UpdateSpaceRequestDescriptionString" },
+                "versionId": { "shape": "String" }
+            }
+        },
+        "UpdateSpaceRequestDescriptionString": {
+            "type": "string",
+            "max": 200,
+            "min": 0
+        },
+        "UpdateSpaceRequestDisplayNameString": {
+            "type": "string",
+            "max": 200,
+            "min": 1
+        },
+        "UpdateSpaceResponse": {
+            "type": "structure",
+            "members": {
+                "name": { "shape": "NameString" },
+                "displayName": { "shape": "String" },
+                "description": { "shape": "String" },
+                "versionId": { "shape": "String" }
+            }
+        },
         "UpdateWorkflowRunRequest": {
             "type": "structure",
             "required": ["organizationName", "projectName", "workflowId", "workflowRunId", "runStatus"],
@@ -22089,7 +22947,7 @@
                 },
                 "workflowId": {
                     "shape": "Uuid",
-                    "location": "uri",
+                    "location": "querystring",
                     "locationName": "workflowId"
                 },
                 "workflowRunId": {
@@ -22190,6 +23048,28 @@
             }
         },
         "ValidateProjectNameResponse": {
+            "type": "structure",
+            "required": ["suggestedName", "isNameValid"],
+            "members": {
+                "suggestedName": { "shape": "String" },
+                "isNameValid": { "shape": "Boolean" },
+                "isNameTaken": { "shape": "Boolean" },
+                "message": { "shape": "String" }
+            }
+        },
+        "ValidateSpaceNameRequest": {
+            "type": "structure",
+            "required": ["displayName"],
+            "members": {
+                "displayName": { "shape": "ValidateSpaceNameRequestDisplayNameString" },
+                "name": { "shape": "NameString" }
+            }
+        },
+        "ValidateSpaceNameRequestDisplayNameString": {
+            "type": "string",
+            "min": 1
+        },
+        "ValidateSpaceNameResponse": {
             "type": "structure",
             "required": ["suggestedName", "isNameValid"],
             "members": {

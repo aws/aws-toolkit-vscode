@@ -42,20 +42,20 @@
             class="button-theme-secondary mt-8"
             type="button"
             :disabled="!isConnected"
-            @click="stopWorkspace"
+            @click="stopDevEnv"
         >
             <span id="stop-icon" class="icon icon-lg icon-vscode-stop-circle"></span>Stop
         </button>
         <!--TODO: add generic 'delete thing' prompt then enable this-->
         <button
-            id="delete-workspace"
+            id="delete-devenv"
             class="button-theme-secondary ml-8 mt-8"
             type="button"
             :disabled="!isConnected"
-            @click="deleteWorkspace"
+            @click="deleteDevEnv"
             v-show="false"
         >
-            Delete Workspace
+            Delete Dev Environment
         </button>
     </div>
 </template>
@@ -79,7 +79,7 @@ export const VueModel = createClass<PartialModel>({
 })
 
 export default defineComponent({
-    name: 'workspace-summary',
+    name: 'devenv-summary',
     props: {
         modelValue: {
             type: createType(VueModel),
@@ -109,18 +109,18 @@ export default defineComponent({
             this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
         },
         // Need to move these two remote calls up into the root component.
-        async stopWorkspace() {
+        async stopDevEnv() {
             try {
                 this.update('status', 'STOPPING')
-                await client.stopWorkspace(this.summary)
+                await client.stopDevEnv(this.summary)
             } catch {
                 this.update('status', 'RUNNING')
             }
         },
-        async deleteWorkspace() {
+        async deleteDevEnv() {
             try {
                 this.update('status', 'DELETING')
-                await client.deleteWorkspace(this.summary)
+                await client.deleteDevEnv(this.summary)
             } catch {
                 this.update('status', 'RUNNING')
             }

@@ -64,7 +64,7 @@ export interface DevEnvironment extends codecatalyst.DevEnvironmentSummary {
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CodeCatalystDevEnvSession extends codecatalyst.StartDevEnvironmentResponse {}
 
-export interface CodeCatalystOrg extends codecatalyst.OrganizationSummary {
+export interface CodeCatalystOrg extends codecatalyst.SpaceSummary {
     readonly type: 'org'
     readonly name: string
 }
@@ -373,8 +373,8 @@ class CodeCatalystClientInternal {
         return { ...resp, version: resp.version } as const
     }
 
-    public async getOrganization(request: codecatalyst.GetOrganizationRequest): Promise<CodeCatalystOrg> {
-        const resp = await this.call(this.sdkClient.getOrganization(request), false)
+    public async getSpace(request: codecatalyst.GetSpaceRequest): Promise<CodeCatalystOrg> {
+        const resp = await this.call(this.sdkClient.getSpace(request), false)
 
         return { ...resp, type: 'org' }
     }
@@ -386,11 +386,11 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets a list of all orgs for the current CodeCatalyst user.
+     * Gets a list of all spaces (orgs) for the current CodeCatalyst user.
      */
-    public listOrganizations(request: codecatalyst.ListOrganizationsRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
-        const requester = async (request: codecatalyst.ListOrganizationsRequest) =>
-            this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
+    public listSpaces(request: codecatalyst.ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
+        const requester = async (request: codecatalyst.ListSpacesRequest) =>
+            this.call(this.sdkClient.listSpaces(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection.map(summaries => summaries?.map(s => ({ type: 'org', ...s })) ?? [])
@@ -417,7 +417,7 @@ class CodeCatalystClientInternal {
     /**
      * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
-    public listDevEnvironment(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
+    public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: codecatalyst.ListDevEnvironmentsRequest) =>
             this.call(this.sdkClient.listDevEnvironments(request), true, {
@@ -488,7 +488,7 @@ class CodeCatalystClientInternal {
 
         switch (resourceType) {
             case 'org':
-                return this.listOrganizations()
+                return this.listSpaces()
             case 'project':
                 return mapInner(this.listResources('org'), o => this.listProjects({ organizationName: o.name }))
             case 'repo':
@@ -498,7 +498,7 @@ class CodeCatalystClientInternal {
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
             case 'devEnvironment':
-                return mapInner(this.listResources('project'), p => this.listDevEnvironment(p))
+                return mapInner(this.listResources('project'), p => this.listDevEnvironments(p))
         }
     }
 
@@ -581,11 +581,11 @@ class CodeCatalystClientInternal {
     ): Promise<DevEnvironment> {
         let lastStatus: undefined | string
         try {
-            const workpace = await this.getDevEnvironment(args)
-            lastStatus = workpace.status
+            const devenv = await this.getDevEnvironment(args)
+            lastStatus = devenv.status
             if (status === 'RUNNING' && lastStatus === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
-                return workpace
+                return devenv
             }
         } catch {
             lastStatus = undefined
@@ -606,7 +606,7 @@ class CodeCatalystClientInternal {
 
                 const resp = await this.getDevEnvironment(args)
                 if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
-                    throw new ToolkitError('Dev environment failed to start', { code: 'BadWorkspaceState' })
+                    throw new ToolkitError('Dev environment failed to start', { code: 'BadDevEnvState' })
                 }
 
                 if (resp.status === 'STOPPED') {
@@ -622,7 +622,7 @@ class CodeCatalystClientInternal {
                         ),
                     })
                 } else if (resp.status === 'FAILED') {
-                    throw new ToolkitError('Dev environment failed to start', { code: 'FailedWorkspace' })
+                    throw new ToolkitError('Dev environment failed to start', { code: 'FailedDevEnv' })
                 } else {
                     progress.report({
                         message: localize('AWS.codecatalyst.startMde.starting', 'opening dev environment...'),

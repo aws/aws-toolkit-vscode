@@ -2,7 +2,7 @@
 
 # Usage:
 #   When connecting to a development environment
-#       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… DEVENV_ID=… ./codecatalyst_connect
+#       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… SPACE_NAME=… PROJECT_NAME=… DEVENV_ID=… ./codecatalyst_connect
 
 set -e
 set -u
@@ -42,12 +42,12 @@ _start_dev_environment_session() {
     # Function inputs
     local CODECATALYST_ENDPOINT=$1
     local BEARER_TOKEN=$2
-    local ORGANIZATION_NAME=$3
+    local SPACE_NAME=$3
     local PROJECT_NAME=$4
     local DEVENV_ID=$5
 
     # Local variables
-    local START_SESSION_PATH="/v1/organizations/$ORGANIZATION_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
+    local START_SESSION_PATH="/v1/organizations/$SPACE_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
     local START_SESSION_QUERY=$(
         cat << EOF
 {
@@ -70,7 +70,7 @@ _codecatalyst() {
     local AWS_SSM_CLI=$1
     local CODECATALYST_ENDPOINT=$2
     local BEARER_TOKEN=$3
-    local ORGANIZATION_NAME=$4
+    local SPACE_NAME=$4
     local PROJECT_NAME=$5
     local DEVENV_ID=$6
     local AWS_REGION=$7
@@ -81,7 +81,7 @@ _codecatalyst() {
     local TOKEN
     local SESSION
 
-    START_SESSION_RESPONSE=$(_start_dev_environment_session "$CODECATALYST_ENDPOINT" "$BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$DEVENV_ID")
+    START_SESSION_RESPONSE=$(_start_dev_environment_session "$CODECATALYST_ENDPOINT" "$BEARER_TOKEN" "$SPACE_NAME" "$PROJECT_NAME" "$DEVENV_ID")
 
     # Errors happen when you have invalid token etc
     # ValidationExceptions happen when the devenv is not running
@@ -106,13 +106,13 @@ _main() {
 
     _require CODECATALYST_ENDPOINT "${CODECATALYST_ENDPOINT:-}"
     _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
-    _require ORGANIZATION_NAME "${ORGANIZATION_NAME:-}"
+    _require SPACE_NAME "${SPACE_NAME:-}"
     _require PROJECT_NAME "${PROJECT_NAME:-}"
     _require DEVENV_ID "${DEVENV_ID:-}"
 
     CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
 
-    _codecatalyst "$AWS_SSM_CLI" "$CODECATALYST_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$DEVENV_ID" "$AWS_REGION"
+    _codecatalyst "$AWS_SSM_CLI" "$CODECATALYST_ENDPOINT" "$CACHED_BEARER_TOKEN" "$SPACE_NAME" "$PROJECT_NAME" "$DEVENV_ID" "$AWS_REGION"
 }
 
 _main

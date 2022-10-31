@@ -64,7 +64,7 @@ describe('Connect Script', function () {
         assert.ok(isWithin(context.globalStorageUri.fsPath, script))
     })
 
-    function createFakeServer(testDevenv: DevEnvironmentId) {
+    function createFakeServer(testDevEnv: DevEnvironmentId) {
         return http.createServer(async (req, resp) => {
             try {
                 const data = await new Promise<string>((resolve, reject) => {
@@ -77,7 +77,7 @@ describe('Connect Script', function () {
                     sessionConfiguration: { sessionType: 'SSH' },
                 }
 
-                const expectedPath = `/v1/organizations/${testDevenv.org.name}/projects/${testDevenv.project.name}/devEnvironments/${testDevenv.id}/session`
+                const expectedPath = `/v1/organizations/${testDevEnv.org.name}/projects/${testDevEnv.project.name}/devEnvironments/${testDevEnv.id}/session`
 
                 assert.deepStrictEqual(body, expected)
                 assert.strictEqual(req.url, expectedPath)
@@ -100,21 +100,21 @@ describe('Connect Script', function () {
     }
 
     it('can run the script with environment variables', async function () {
-        const testDevenv: DevEnvironmentId = {
+        const testDevEnv: DevEnvironmentId = {
             id: '01234567890',
             project: { name: 'project' },
             org: { name: 'org' },
         }
 
-        const server = createFakeServer(testDevenv)
+        const server = createFakeServer(testDevEnv)
         const address = await new Promise<string>((resolve, reject) => {
             server.on('error', reject)
             server.listen({ host: 'localhost', port: 28142 }, () => resolve(`http://localhost:28142`))
         })
 
-        await writeFile(bearerTokenCacheLocation(testDevenv.id), 'token')
+        await writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
         const script = (await ensureConnectScript(context)).unwrap().fsPath
-        const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testDevenv)
+        const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testDevEnv)
         env.CODECATALYST_ENDPOINT = address
 
         // This could be de-duped
@@ -124,7 +124,7 @@ describe('Connect Script', function () {
 
         const output = await new ChildProcess(cmd, args).run({ spawnOptions: { env } })
         if (output.exitCode !== 0) {
-            const logOutput = sshLogFileLocation(testDevenv.id)
+            const logOutput = sshLogFileLocation(testDevEnv.id)
             const message = `stderr:\n${output.stderr}\n\nlogs:\n${await readFile(logOutput)}`
 
             assert.fail(`Connect script should exit with a zero status:\n${message}`)

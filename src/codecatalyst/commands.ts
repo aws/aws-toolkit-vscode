@@ -19,15 +19,9 @@ import {
     ConnectedCodeCatalystClient,
     CodeCatalystResource,
 } from '../shared/clients/codecatalystClient'
-import {
-    createClientFactory,
-    DevEnvironmentId,
-    getConnectedWorkspace,
-    openDevelopmentWorkspace,
-    toCodeCatalystGitUri,
-} from './model'
-import { showConfigureWorkspace } from './vue/configure/backend'
-import { showCreateWorkspace } from './vue/create/backend'
+import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, openDevEnv, toCodeCatalystGitUri } from './model'
+import { showConfigureDevEnv } from './vue/configure/backend'
+import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -86,7 +80,7 @@ export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient,
 
 /**
  * Implements commands:
- * - "Open CodeCatalyst Organization"
+ * - "Open CodeCatalyst Space"
  * - "Open CodeCatalyst Project"
  * - "Open CodeCatalyst Repository"
  */
@@ -103,15 +97,15 @@ export async function openCodeCatalystResource(
     openCodeCatalystUrl(resource)
 }
 
-export async function stopWorkspace(
+export async function stopDevEnv(
     client: ConnectedCodeCatalystClient,
-    workspace: DevEnvironmentId,
+    devenv: DevEnvironmentId,
     opts?: { readonly showPrompt?: boolean }
 ): Promise<void> {
     if (opts?.showPrompt) {
         const confirmed = await showConfirmationMessage({
             prompt: localize(
-                'aws.codecatalyst.stopWorkspace.confirm',
+                'aws.codecatalyst.stopDevEnv.confirm',
                 'Stopping the dev environment will end all processes. Continue?'
             ),
         })
@@ -122,17 +116,17 @@ export async function stopWorkspace(
     }
 
     await client.stopDevEnvironment({
-        id: workspace.id,
-        projectName: workspace.project.name,
-        organizationName: workspace.org.name,
+        id: devenv.id,
+        projectName: devenv.project.name,
+        organizationName: devenv.org.name,
     })
 }
 
-export async function deleteWorkspace(client: ConnectedCodeCatalystClient, workspace: DevEnvironmentId): Promise<void> {
+export async function deleteDevEnv(client: ConnectedCodeCatalystClient, devenv: DevEnvironmentId): Promise<void> {
     await client.deleteDevEnvironment({
-        id: workspace.id,
-        projectName: workspace.project.name,
-        organizationName: workspace.org.name,
+        id: devenv.id,
+        projectName: devenv.project.name,
+        organizationName: devenv.org.name,
     })
 }
 
@@ -141,16 +135,16 @@ export type DevEnvironmentSettings = Pick<
     'alias' | 'instanceType' | 'inactivityTimeoutMinutes' | 'persistentStorage'
 >
 
-export async function updateWorkspace(
+export async function updateDevEnv(
     client: ConnectedCodeCatalystClient,
-    workspace: DevEnvironmentId,
+    devenv: DevEnvironmentId,
     settings: DevEnvironmentSettings
 ): Promise<void> {
     await client.updateDevEnvironment({
         ...settings,
-        id: workspace.id,
-        projectName: workspace.project.name,
-        organizationName: workspace.org.name,
+        id: devenv.id,
+        projectName: devenv.project.name,
+        organizationName: devenv.org.name,
     })
 }
 
@@ -230,31 +224,31 @@ export class CodeCatalystCommands {
         return this.withClient(cloneCodeCatalystRepo, ...args)
     }
 
-    public createWorkspace(): Promise<void> {
-        return this.withClient(showCreateWorkspace, globals.context, CodeCatalystCommands.declared)
+    public createDevEnv(): Promise<void> {
+        return this.withClient(showCreateDevEnv, globals.context, CodeCatalystCommands.declared)
     }
 
     public openResource(...args: WithClient<typeof openCodeCatalystResource>) {
         return this.withClient(openCodeCatalystResource, ...args)
     }
 
-    public stopWorkspace(...args: WithClient<typeof stopWorkspace>) {
-        return this.withClient(stopWorkspace, ...args).then(() => {
+    public stopDevEnv(...args: WithClient<typeof stopDevEnv>) {
+        return this.withClient(stopDevEnv, ...args).then(() => {
             vscode.commands.executeCommand('workbench.action.remote.close')
         })
     }
 
-    public deleteWorkspace(...args: WithClient<typeof deleteWorkspace>) {
-        return this.withClient(deleteWorkspace, ...args)
+    public deleteDevEnv(...args: WithClient<typeof deleteDevEnv>) {
+        return this.withClient(deleteDevEnv, ...args)
     }
 
-    public updateWorkspace(...args: WithClient<typeof updateWorkspace>) {
+    public updateDevEnv(...args: WithClient<typeof updateDevEnv>) {
         telemetry.codecatalyst_updateWorkspaceSettings.record({ codecatalyst_updateWorkspaceLocationType: 'remote' })
 
-        return this.withClient(updateWorkspace, ...args)
+        return this.withClient(updateDevEnv, ...args)
     }
 
-    public openOrganization() {
+    public openSpace() {
         return this.openResource('org')
     }
 
@@ -270,17 +264,14 @@ export class CodeCatalystCommands {
         await vscode.window.showTextDocument(uri)
     }
 
-    public async openWorkspace(id?: DevEnvironmentId, targetPath?: string): Promise<void> {
+    public async openDevEnv(id?: DevEnvironmentId, targetPath?: string): Promise<void> {
         if (vscode.env.remoteName === 'ssh-remote') {
-            throw new ToolkitError(
-                'Cannot open workspace from a remote environment. Try again from a local VS Code instance.',
-                {
-                    code: 'ConnectedToRemote',
-                }
-            )
+            throw new ToolkitError('Cannot connect from a remote context. Try again from a local VS Code instance.', {
+                code: 'ConnectedToRemote',
+            })
         }
 
-        const workspace = id ?? (await this.selectWorkspace())
+        const devenv = id ?? (await this.selectDevEnv())
 
         // TODO(sijaden): add named timestamp markers for granular duration info
         //
@@ -291,27 +282,27 @@ export class CodeCatalystCommands {
             telemetry.codecatalyst_connect.record({ source: 'CommandPalette' })
         }
 
-        return this.withClient(openDevelopmentWorkspace, workspace, targetPath)
+        return this.withClient(openDevEnv, devenv, targetPath)
     }
 
-    public async openWorkspaceSettings(): Promise<void> {
-        const workspace = await this.withClient(getConnectedWorkspace)
+    public async openDevEnvSettings(): Promise<void> {
+        const devenv = await this.withClient(getConnectedDevEnv)
 
-        if (!workspace) {
-            throw new Error('No workspace available')
+        if (!devenv) {
+            throw new Error('No devenv available')
         }
 
-        return this.withClient(showConfigureWorkspace, globals.context, workspace, CodeCatalystCommands.declared)
+        return this.withClient(showConfigureDevEnv, globals.context, devenv, CodeCatalystCommands.declared)
     }
 
-    private async selectWorkspace(): Promise<DevEnvironmentId> {
-        const workspace = await this.withClient(selectCodeCatalystResource, 'devEnvironment' as const)
+    private async selectDevEnv(): Promise<DevEnvironmentId> {
+        const devenv = await this.withClient(selectCodeCatalystResource, 'devEnvironment' as const)
 
-        if (!workspace) {
+        if (!devenv) {
             throw new CancellationError('user')
         }
 
-        return workspace
+        return devenv
     }
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
@@ -326,29 +317,27 @@ export class CodeCatalystCommands {
         logout: Commands.from(this).declareLogout('aws.codecatalyst.logout'),
         openResource: Commands.from(this).declareOpenResource('aws.codecatalyst.openResource'),
         listCommands: Commands.from(this).declareListCommands('aws.codecatalyst.listCommands'),
-        openOrganization: Commands.from(this).declareOpenOrganization('aws.codecatalyst.openOrg'),
+        openSpace: Commands.from(this).declareOpenSpace('aws.codecatalyst.openOrg'),
         openProject: Commands.from(this).declareOpenProject('aws.codecatalyst.openProject'),
         openRepository: Commands.from(this).declareOpenRepository('aws.codecatalyst.openRepo'),
-        stopWorkspace: Commands.from(this).declareStopWorkspace('aws.codecatalyst.stopWorkspace'),
-        deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.codecatalyst.deleteWorkspace'),
-        openWorkspaceSettings: Commands.from(this).declareOpenWorkspaceSettings(
-            'aws.codecatalyst.openWorkspaceSettings'
-        ),
+        stopDevEnv: Commands.from(this).declareStopDevEnv('aws.codecatalyst.stopDevEnv'),
+        deleteDevEnv: Commands.from(this).declareDeleteDevEnv('aws.codecatalyst.deleteDevEnv'),
+        openDevEnvSettings: Commands.from(this).declareOpenDevEnvSettings('aws.codecatalyst.openDevEnvSettings'),
         openDevfile: Commands.from(this).declareOpenDevfile('aws.codecatalyst.openDevfile'),
         cloneRepo: Commands.from(this).declareCloneRepository({
             id: 'aws.codecatalyst.cloneRepo',
             telemetryName: 'codecatalyst_localClone',
         }),
-        createWorkspace: Commands.from(this).declareCreateWorkspace({
-            id: 'aws.codecatalyst.createWorkspace',
+        createDevEnv: Commands.from(this).declareCreateDevEnv({
+            id: 'aws.codecatalyst.createDevEnv',
             telemetryName: 'codecatalyst_createWorkspace',
         }),
-        updateWorkspace: Commands.from(this).declareUpdateWorkspace({
-            id: 'aws.codecatalyst.updateWorkspace',
+        updateDevEnv: Commands.from(this).declareUpdateDevEnv({
+            id: 'aws.codecatalyst.updateDevEnv',
             telemetryName: 'codecatalyst_updateWorkspaceSettings',
         }),
-        openWorkspace: Commands.from(this).declareOpenWorkspace({
-            id: 'aws.codecatalyst.openWorkspace',
+        openDevEnv: Commands.from(this).declareOpenDevEnv({
+            id: 'aws.codecatalyst.openDevEnv',
             telemetryName: 'codecatalyst_connect',
         }),
     } as const

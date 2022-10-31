@@ -1,6 +1,6 @@
 <template>
     <div id="configure-header">
-        <h2 style="display: inline">Settings for {{ workspaceName }}</h2>
+        <h2 style="display: inline">Settings for {{ devenvName }}</h2>
         <br />
     </div>
     <transition name="slide-down">
@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import summaryPanel, { VueModel as WorkspaceDetailsModel } from '../summary.vue'
+import summaryPanel, { VueModel as DevEnvDetailsModel } from '../summary.vue'
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import devfilePanel from '../devfile.vue'
@@ -51,14 +51,14 @@ import { CodeCatalystConfigureWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
 import { Status } from '../../../shared/clients/devenvClient'
-import { WorkspaceSettings } from '../../commands'
+import { DevEnvSettings } from '../../commands'
 
 const client = WebviewClientFactory.create<CodeCatalystConfigureWebview>()
 
 const model = {
-    details: new WorkspaceDetailsModel(),
+    details: new DevEnvDetailsModel(),
     definitionFilePath: '',
-    workspaceUrl: '',
+    devenvUrl: '',
     devfileStatus: 'STABLE' as Status,
     compute: new ComputeModel(),
     restarting: false,
@@ -79,7 +79,7 @@ export default defineComponent({
         return model
     },
     computed: {
-        workspaceName() {
+        devenvName() {
             const alias = this.details.alias
             const branch = this.details.repositories[0]?.branchName
 
@@ -93,7 +93,7 @@ export default defineComponent({
     },
     created() {
         client.init().then(env => {
-            this.details = env ? new WorkspaceDetailsModel(env) : this.details
+            this.details = env ? new DevEnvDetailsModel(env) : this.details
             this.compute = env ? new ComputeModel(env) : this.compute
         })
 
@@ -106,7 +106,7 @@ export default defineComponent({
         }
     },
     methods: {
-        async editCompute(key: keyof WorkspaceSettings) {
+        async editCompute(key: keyof DevEnvSettings) {
             const previous = this.compute[key as Exclude<typeof key, 'alias'>]
             const current = { ...this.compute, alias: this.details.alias }
             const resp = await client.editSetting(current, key)
@@ -116,7 +116,7 @@ export default defineComponent({
                 this.compute = new ComputeModel(resp)
             } else if (resp.alias) {
                 this.details.alias = resp.alias
-                await client.updateWorkspace(this.details, { alias: this.details.alias })
+                await client.updateDevEnv(this.details, { alias: this.details.alias })
             }
         },
         async restart() {
@@ -127,13 +127,13 @@ export default defineComponent({
                 }
 
                 // SDK rejects extraneous fields
-                await client.updateWorkspace(this.details, {
+                await client.updateDevEnv(this.details, {
                     instanceType: this.compute.instanceType,
                     inactivityTimeoutMinutes: this.compute.inactivityTimeoutMinutes,
                 })
             } catch {
                 this.restarting = false
-                client.showLogsMessage('Unable to update the dev environment. View the logs for more information')
+                client.showLogsMessage('Unable to update the dev Environment. View the logs for more information')
             }
         },
     },

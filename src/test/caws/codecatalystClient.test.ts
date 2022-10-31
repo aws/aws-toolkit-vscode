@@ -28,7 +28,7 @@ describe('codeCatalystClient', function () {
             lastUpdatedTime: new Date(),
             createdTime: new Date(),
         }
-        const prefix = `https://${codecatalyst.getCodeCatalystConfig().hostname}/organizations`
+        const prefix = `https://${codecatalyst.getCodeCatalystConfig().hostname}/spaces`
         assert.deepStrictEqual(toCodeCatalystUrl(org), `${prefix}/org1/view`)
         assert.deepStrictEqual(toCodeCatalystUrl(project), `${prefix}/org1/projects/project1/view`)
         assert.deepStrictEqual(

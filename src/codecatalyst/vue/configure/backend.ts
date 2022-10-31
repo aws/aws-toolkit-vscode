@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ConnectedWorkspace, DevEnvironmentId, getDevfileLocation } from '../../model'
+import { ConnectedDevEnv, DevEnvironmentId, getDevfileLocation } from '../../model'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
@@ -20,7 +20,7 @@ import {
     createTimeoutPrompter,
     getAllInstanceDescriptions,
     isValidSubscriptionType,
-} from '../../wizards/workspaceSettings'
+} from '../../wizards/devenvSettings'
 import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
@@ -37,14 +37,14 @@ export class CodeCatalystConfigureWebview extends VueWebview {
 
     public constructor(
         private readonly client: ConnectedCodeCatalystClient,
-        private readonly workspace: ConnectedWorkspace,
+        private readonly devenv: ConnectedDevEnv,
         private readonly commands: typeof CodeCatalystCommands.declared
     ) {
         super()
     }
 
     public init() {
-        return this.workspace.summary
+        return this.devenv.summary
     }
 
     public getAllInstanceDescriptions() {
@@ -52,12 +52,12 @@ export class CodeCatalystConfigureWebview extends VueWebview {
     }
 
     public async getDevfileLocation() {
-        const location = await getDevfileLocation(this.workspace.workspaceClient)
+        const location = await getDevfileLocation(this.devenv.devenvClient)
         return vscode.workspace.asRelativePath(location)
     }
 
     public async openDevfile() {
-        const location = await getDevfileLocation(this.workspace.workspaceClient)
+        const location = await getDevfileLocation(this.devenv.devenvClient)
         return this.commands.openDevfile.execute(location)
     }
 
@@ -71,29 +71,29 @@ export class CodeCatalystConfigureWebview extends VueWebview {
         await updateDevfileCommand.execute(vscode.Uri.joinPath(rootDirectory, location))
     }
 
-    public async stopWorkspace(id: DevEnvironmentId) {
-        return this.commands.stopWorkspace.execute(id)
+    public async stopDevEnv(id: DevEnvironmentId) {
+        return this.commands.stopDevEnv.execute(id)
     }
 
-    public async deleteWorkspace(id: DevEnvironmentId) {
-        return this.commands.deleteWorkspace.execute(id)
+    public async deleteDevEnv(id: DevEnvironmentId) {
+        return this.commands.deleteDevEnv.execute(id)
     }
 
-    public async updateWorkspace(
+    public async updateDevEnv(
         id: Pick<DevEnvironment, 'id' | 'org' | 'project' | 'alias'>,
         settings: DevEnvironmentSettings
     ) {
-        if (isLongReconnect(this.workspace.summary, settings)) {
+        if (isLongReconnect(this.devenv.summary, settings)) {
             try {
                 await saveReconnectionInformation(id)
-                await this.commands.updateWorkspace.execute(id, settings)
+                await this.commands.updateDevEnv.execute(id, settings)
                 reportClosingMessage()
             } catch (err) {
                 await removeReconnectionInformation(id)
                 throw err
             }
         } else {
-            return this.commands.updateWorkspace.execute(id, settings)
+            return this.commands.updateDevEnv.execute(id, settings)
         }
     }
 
@@ -105,7 +105,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
         settings: DevEnvironmentSettings,
         key: keyof DevEnvironmentSettings
     ): Promise<DevEnvironmentSettings> {
-        const organizationName = this.workspace.summary.org.name
+        const organizationName = this.devenv.summary.org.name
         const subscriptionType = await this.client
             .describeSubscription({ organizationName })
             .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
@@ -134,14 +134,14 @@ export class CodeCatalystConfigureWebview extends VueWebview {
     }
 
     public openBranch(): void {
-        const repo = this.workspace.summary.repositories?.[0]
+        const repo = this.devenv.summary.repositories?.[0]
         assertHasProps(repo, 'branchName')
         openCodeCatalystUrl({
             type: 'branch',
             name: repo.branchName,
             repo: { name: repo.repositoryName },
-            org: { name: this.workspace.summary.org.name },
-            project: { name: this.workspace.summary.project.name },
+            org: { name: this.devenv.summary.org.name },
+            project: { name: this.devenv.summary.project.name },
         })
     }
 }
@@ -150,20 +150,20 @@ const Panel = VueWebview.compilePanel(CodeCatalystConfigureWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-export async function showConfigureWorkspace(
+export async function showConfigureDevEnv(
     client: ConnectedCodeCatalystClient,
     ctx: vscode.ExtensionContext,
-    workspace: ConnectedWorkspace,
+    devenv: ConnectedDevEnv,
     commands: typeof CodeCatalystCommands.declared
 ): Promise<void> {
-    activePanel ??= new Panel(ctx, client, workspace, commands)
+    activePanel ??= new Panel(ctx, client, devenv, commands)
     const webview = await activePanel.show({
-        title: localize('AWS.view.configureWorkspace.title', 'Workspace Settings'),
+        title: localize('AWS.view.configureDevEnv.title', 'Dev Environment Settings'),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {
-        const poller = pollDevfile(workspace, activePanel.server)
+        const poller = pollDevfile(devenv, activePanel.server)
         subscriptions = [
             poller,
             webview.onDidDispose(() => {
@@ -175,12 +175,12 @@ export async function showConfigureWorkspace(
     }
 }
 
-function pollDevfile(workspace: ConnectedWorkspace, server: CodeCatalystConfigureWebview): vscode.Disposable {
+function pollDevfile(devenv: ConnectedDevEnv, server: CodeCatalystConfigureWebview): vscode.Disposable {
     let done = false
 
     ;(async () => {
         while (!done) {
-            const resp = await workspace.workspaceClient.getStatus()
+            const resp = await devenv.devenvClient.getStatus()
             if (resp.status === 'CHANGED') {
                 server.onDidChangeDevfile.fire({ ...resp, actionId: 'devfile' })
             }

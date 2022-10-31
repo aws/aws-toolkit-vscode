@@ -1,6 +1,6 @@
 # Usage:
 #   When connecting to a development environment
-#       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:CODECATALYST_ENDPOINT=… $Env:BEARER_TOKEN_LOCATION=… $Env:ORGANIZATION_NAME=… $Env:PROJECT_NAME=… $Env:DEVENV_ID=… ./code_catalyst_connect.ps1
+#       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:CODECATALYST_ENDPOINT=… $Env:BEARER_TOKEN_LOCATION=… $Env:SPACE_NAME=… $Env:PROJECT_NAME=… $Env:DEVENV_ID=… ./code_catalyst_connect.ps1
 
 function Get-Timestamp {
     return Get-Date -format "[yyyy-MMM-dd HH:mm:ss]"
@@ -54,12 +54,12 @@ function StartDevEnvironmentSession {
     param (
         [string] $Endpoint,
         [string] $Token,
-        [string] $Organization,
+        [string] $Space,
         [string] $Project,
-        [string] $DevenvId
+        [string] $DevEnvId
     )
 
-    $startSessionPath = "/v1/organizations/$Organization/projects/$Project/devEnvironments/$DevenvId/session"
+    $startSessionPath = "/v1/organizations/$Space/projects/$Project/devEnvironments/$DevEnvId/session"
     $startSessionQuery = @"
 {
     "sessionConfiguration": { 
@@ -76,14 +76,14 @@ function ExecCodeCatalyst {
     param (
         [string] $Endpoint,
         [string] $Token,
-        [string] $Organization,
+        [string] $Space,
         [string] $Project,
-        [string] $DevenvId,
+        [string] $DevEnvId,
         [string] $Region,
         [string] $SsmPath
     )
 
-    $startSessionResponse = StartDevEnvironmentSession -Endpoint $Endpoint -Token $Token -Organization $Organization -Project $Project -DevenvId $DevenvId
+    $startSessionResponse = StartDevEnvironmentSession -Endpoint $Endpoint -Token $Token -Space $Space -Project $Project -DevEnvId $DevEnvId
 
     if ($startSessionResponse -match ".*errors.*" -or $startSessionResponse -match ".*ValidationException.*") {
         Log -Output "Failed to start the session with error: $startSessionResponse"
@@ -111,13 +111,13 @@ function Main {
 
     $codeCatalystEndpoint = Require -VariableName "CODECATALYST_ENDPOINT"
     $bearerTokenLocation = Require -VariableName "BEARER_TOKEN_LOCATION"
-    $organizationName = Require -VariableName "ORGANIZATION_NAME"
+    $spaceName = Require -VariableName "SPACE_NAME"
     $projectName = Require -VariableName "PROJECT_NAME"
     $devenvId = Require -VariableName "DEVENV_ID"
     
     $cachedBearerToken = Get-Content -Path $bearerTokenLocation
 
-    ExecCodeCatalyst -Endpoint $codeCatalystEndpoint -Token $cachedBearerToken -Organization $organizationName -Project $projectName -DevenvId $devenvId  -Region $region -SsmPath $ssmPath 
+    ExecCodeCatalyst -Endpoint $codeCatalystEndpoint -Token $cachedBearerToken -Space $spaceName -Project $projectName -DevEnvId $devenvId  -Region $region -SsmPath $ssmPath 
 }
 
 Main

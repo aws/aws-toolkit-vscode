@@ -13,7 +13,7 @@ import { getLogger } from '../shared/logger'
 import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResource'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { DevEnvironment, ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
-import { prepareWorkpaceConnection } from '../codecatalyst/model'
+import { prepareDevEnvConnection } from '../codecatalyst/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CodeCatalystCommands } from '../codecatalyst/commands'
@@ -58,12 +58,12 @@ export async function openTerminalCommand(ctx: ExtContext) {
 }
 
 async function openTerminal(client: ConnectedCodeCatalystClient, progress: LazyProgress<{ message: string }>) {
-    const workspace = await selectCodeCatalystResource(client, 'devEnvironment')
-    if (!workspace) {
+    const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
+    if (!devenv) {
         return
     }
 
-    const connection = await prepareWorkpaceConnection(client, workspace, {
+    const connection = await prepareDevEnvConnection(client, devenv, {
         topic: 'terminal',
         timeout: progress.getToken(),
     })
@@ -71,7 +71,7 @@ async function openTerminal(client: ConnectedCodeCatalystClient, progress: LazyP
     progress.report({ message: 'Opening terminal...' })
 
     const options: vscode.TerminalOptions = {
-        name: `Remote Connection (${workspace.id})`,
+        name: `Remote Connection (${devenv.id})`,
         shellPath: connection.sshPath,
         shellArgs: [connection.hostname],
         env: (await connection.envProvider()) as Record<string, string>,
@@ -208,7 +208,7 @@ async function installVsix(
         return
     }
 
-    const connection = await prepareWorkpaceConnection(client, env, {
+    const connection = await prepareDevEnvConnection(client, env, {
         topic: 'install',
         timeout: progress.getToken(),
     })
@@ -266,19 +266,19 @@ async function installVsix(
     await startVscodeRemote(SessionProcess, hostname, '/projects', vscPath)
 }
 
-export async function deleteWorkpaceCommand(ctx: ExtContext) {
+export async function deleteDevEnvCommand(ctx: ExtContext) {
     const commands = CodeCatalystCommands.fromContext(ctx.extensionContext)
 
     await commands.withClient(async client => {
-        const workspace = await selectCodeCatalystResource(client, 'devEnvironment')
-        if (!workspace) {
+        const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
+        if (!devenv) {
             return
         }
 
         await client.deleteDevEnvironment({
-            id: workspace.id,
-            projectName: workspace.project.name,
-            organizationName: workspace.org.name,
+            id: devenv.id,
+            projectName: devenv.project.name,
+            organizationName: devenv.org.name,
         })
     })
 }

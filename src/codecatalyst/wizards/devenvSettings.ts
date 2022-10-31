@@ -9,7 +9,8 @@ import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { toTitleCase } from '../../shared/utilities/textUtilities'
 
-export type InstanceType = keyof typeof workspaceOptions['instanceType']
+const devenvOptions = settings['environment']
+export type InstanceType = keyof typeof devenvOptions['instanceType']
 export type SubscriptionType = typeof subscriptionTypes[number]
 
 const subscriptionTypes = ['FREE', 'STANDARD', 'STANDARD_PLUS_WORKSPACES'] as const
@@ -22,8 +23,6 @@ interface InstanceDescription {
     name: string
     specs: string
 }
-
-const workspaceOptions = settings['environment']
 
 function entries<T extends Record<string, any>, K extends keyof T = keyof T & string>(obj: T): [K, T[K]][] {
     return Object.entries(obj) as any
@@ -41,7 +40,7 @@ function abbreviateUnit(unit: string): string {
 }
 
 export function getInstanceDescription(type: InstanceType): InstanceDescription {
-    const desc = workspaceOptions.instanceType[type]
+    const desc = devenvOptions.instanceType[type]
 
     return {
         name: toTitleCase(type.split('.').pop()!),
@@ -51,13 +50,13 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
 
 export function getAllInstanceDescriptions(): { [key: string]: InstanceDescription } {
     const desc: { [key: string]: InstanceDescription } = {}
-    entries(workspaceOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
+    entries(devenvOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
     return desc
 }
 
 export function createInstancePrompter(subscriptionType: SubscriptionType): QuickPickPrompter<InstanceType> {
     const isSupported = (name: string) => subscriptionType !== 'FREE' || name === 'dev.standard1.small'
-    const items = entries(workspaceOptions.instanceType).map(([name, desc]) => ({
+    const items = entries(devenvOptions.instanceType).map(([name, desc]) => ({
         data: name,
         label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
         description: isSupported(name) ? '' : 'unavailable in current organization billing tier',
@@ -82,7 +81,7 @@ export function createAliasPrompter(): InputBoxPrompter {
         title: 'Edit Alias',
         validateInput: value => {
             if (value?.length > 128) {
-                return 'Workspace alias cannot be longer than 128 characters'
+                return 'Dev environment alias cannot be longer than 128 characters'
             }
         },
     })

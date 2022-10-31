@@ -9,16 +9,10 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { getCodeCatalystDevenvId } from '../shared/vscode/env'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
-import {
-    autoConnect,
-    ConnectedWorkspace,
-    createClientFactory,
-    getConnectedWorkspace,
-    getDevfileLocation,
-} from './model'
+import { autoConnect, ConnectedDevEnv, createClientFactory, getConnectedDevEnv, getDevfileLocation } from './model'
 
 function getLocalCommands() {
     const cmds = [
@@ -34,11 +28,11 @@ function getLocalCommands() {
 
     return [
         ...cmds,
-        CodeCatalystCommands.declared.openWorkspace.build().asTreeNode({
+        CodeCatalystCommands.declared.openDevEnv.build().asTreeNode({
             label: 'Open Dev Environment',
             iconPath: getIcon('vscode-vm-connect'),
         }),
-        CodeCatalystCommands.declared.createWorkspace.build().asTreeNode({
+        CodeCatalystCommands.declared.createDevEnv.build().asTreeNode({
             label: 'Create Dev Environment',
             iconPath: getIcon('vscode-add'),
         }),
@@ -49,13 +43,13 @@ function getLocalCommands() {
     ]
 }
 
-function getRemoteCommands(currentWorkspace: DevEnvironment, devfileLocation: vscode.Uri) {
+function getRemoteCommands(currentDevEnv: DevEnvironment, devfileLocation: vscode.Uri) {
     return [
-        CodeCatalystCommands.declared.stopWorkspace.build(currentWorkspace, { showPrompt: true }).asTreeNode({
+        CodeCatalystCommands.declared.stopDevEnv.build(currentDevEnv, { showPrompt: true }).asTreeNode({
             label: 'Stop Dev Environment',
             iconPath: getIcon('vscode-stop-circle'),
         }),
-        CodeCatalystCommands.declared.openWorkspaceSettings.build().asTreeNode({
+        CodeCatalystCommands.declared.openDevEnvSettings.build().asTreeNode({
             label: 'Open Settings',
             iconPath: getIcon('vscode-settings-gear'),
         }),
@@ -68,7 +62,7 @@ function getRemoteCommands(currentWorkspace: DevEnvironment, devfileLocation: vs
 }
 
 export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
-    if (isCloud9() && !getCodeCatalystDevenvId()) {
+    if (isCloud9() && !getCodeCatalystDevEnvId()) {
         return []
     }
 
@@ -109,7 +103,7 @@ export class AuthNode implements RootNode {
 
 export class CodeCatalystRootNode implements RootNode {
     public readonly id = 'codecatalyst'
-    public readonly resource = this.workspace
+    public readonly resource = this.devenv
 
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
 
@@ -117,7 +111,7 @@ export class CodeCatalystRootNode implements RootNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
-    private workspace?: ConnectedWorkspace
+    private devenv?: ConnectedDevEnv
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
         this.authProvider.onDidChangeSession(() => this.onDidChangeEmitter.fire())
@@ -128,20 +122,20 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getChildren(): Promise<TreeNode[]> {
-        if (!this.workspace) {
+        if (!this.devenv) {
             return getLocalCommands()
         }
 
-        const devfileLocation = await getDevfileLocation(this.workspace.workspaceClient)
+        const devfileLocation = await getDevfileLocation(this.devenv.devenvClient)
 
-        return getRemoteCommands(this.workspace.summary, devfileLocation)
+        return getRemoteCommands(this.devenv.summary, devfileLocation)
     }
 
     public async getTreeItem() {
         const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
-        this.workspace = await this.getWorkspace()
+        this.devenv = await this.getDevEnv()
 
-        if (this.workspace !== undefined) {
+        if (this.devenv !== undefined) {
             item.description = 'Connected to Dev Environment'
             item.iconPath = addColor(getIcon('vscode-pass'), 'testing.iconPassed')
         }
@@ -149,8 +143,8 @@ export class CodeCatalystRootNode implements RootNode {
         return item
     }
 
-    private async getWorkspace() {
+    private async getDevEnv() {
         const client = await createClientFactory(this.authProvider)()
-        return client.connected ? getConnectedWorkspace(client) : undefined
+        return client.connected ? getConnectedDevEnv(client) : undefined
     }
 }

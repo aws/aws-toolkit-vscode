@@ -12,7 +12,7 @@ import { Ides } from '../../types/clientcodecatalyst'
  * Builds a web URL from the given CodeCatalyst object.
  */
 export function toCodeCatalystUrl(resource: CodeCatalystResource): string {
-    const prefix = `https://${getCodeCatalystConfig().hostname}/organizations`
+    const prefix = `https://${getCodeCatalystConfig().hostname}/spaces`
 
     const format = (org: string, proj?: string, repo?: string, branch?: string) => {
         const parts = [prefix, org]
@@ -33,9 +33,9 @@ export function toCodeCatalystUrl(resource: CodeCatalystResource): string {
         case 'branch':
             return format(resource.org.name, resource.project.name, resource.repo.name, resource.name)
         case 'devEnvironment':
-            // There's currently no page to view an individual workspace
+            // There's currently no page to view an individual devenv.
             // This may be changed to direct to the underlying repository instead
-            return [prefix, resource.org.name, 'projects', resource.project.name, 'development-workspaces'].join('/')
+            return [prefix, resource.org.name, 'projects', resource.project.name, 'dev-environments'].join('/')
     }
 }
 

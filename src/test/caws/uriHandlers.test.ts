@@ -45,7 +45,7 @@ describe('CodeCatalyst handlers', function () {
     beforeEach(function () {
         handler = new UriHandler((testWindow = createTestWindow()))
         register(handler, {
-            openWorkspace: {
+            openDevEnv: {
                 execute: async () => undefined,
             } as any,
             cloneRepo: {
@@ -78,7 +78,7 @@ describe('CodeCatalyst handlers', function () {
     })
 
     describe('connect', function () {
-        const workspaceId = {
+        const devenvId = {
             id: 'somefoo',
             org: { name: 'org' },
             project: { name: 'project' },
@@ -94,7 +94,7 @@ describe('CodeCatalyst handlers', function () {
             })
 
             when(client.getDevEnvironment(anything())).thenReject(new Error('No development environment found'))
-            await handler.handleUri(createConnectUri(workspaceId))
+            await handler.handleUri(createConnectUri(devenvId))
             await errorMessage
         })
     })
