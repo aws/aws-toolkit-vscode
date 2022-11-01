@@ -51,10 +51,16 @@ export class TelemetryLogger {
 
     public log(metric: MetricDatum): void {
         const msg = `telemetry: emitted metric "${metric.MetricName}"`
+
         if (!isReleaseVersion()) {
             this._metrics.push(metric)
             const stringified = JSON.stringify(metric)
             getLogger().debug(`${msg} -> ${stringified}`)
+
+            if (this.metricCount > 1000) {
+                this.clear()
+                getLogger().debug('telemetry: cleared buffered metrics')
+            }
         } else {
             getLogger().debug(msg)
         }

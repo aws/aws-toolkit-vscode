@@ -13,11 +13,59 @@ import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
+import * as localizedText from '../../shared/localizedText'
 
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
 
     return message
+}
+
+function showMessageWithItems(
+    message: string,
+    kind: 'info' | 'warn' | 'error' = 'error',
+    items: string[] = [],
+    window: Window = globals.window
+): Thenable<string | undefined> {
+    switch (kind) {
+        case 'info':
+            return window.showInformationMessage(message, ...items)
+        case 'warn':
+            return window.showWarningMessage(message, ...items)
+        case 'error':
+        default:
+            return window.showErrorMessage(message, ...items)
+    }
+}
+
+/**
+ * Shows a non-modal message with a linkbutton.
+ *
+ * @param message  Message text
+ * @param url URL to visit when `urlItem` is clicked
+ * @param urlItem URL button text (default: "View Documentation")
+ * @param kind  Kind of message to show
+ * @param extraItems  Extra buttons shown _before_ the "View Documentation" button
+ * @returns Promise that resolves when a button is clicked or the message is
+ * dismissed, and returns the selected button text.
+ */
+export async function showMessageWithUrl(
+    message: string,
+    url: string | vscode.Uri,
+    urlItem: string = localizedText.viewDocs,
+    kind: 'info' | 'warn' | 'error' = 'error',
+    extraItems: string[] = []
+): Promise<string | undefined> {
+    const uri = typeof url === 'string' ? vscode.Uri.parse(url) : url
+    const items = [...extraItems, urlItem]
+
+    const p = showMessageWithItems(message, kind, items)
+    return p.then<string | undefined>(selection => {
+        if (selection === urlItem) {
+            vscode.env.openExternal(uri)
+        }
+        return selection
+    })
 }
 
 /**
@@ -39,19 +87,7 @@ export async function showViewLogsMessage(
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
     const items = [...extraItems, logsItem]
 
-    let p = undefined
-    switch (kind) {
-        case 'info':
-            p = window.showInformationMessage(message, ...items)
-            break
-        case 'warn':
-            p = window.showWarningMessage(message, ...items)
-            break
-        case 'error':
-        default:
-            p = window.showErrorMessage(message, ...items)
-            break
-    }
+    const p = showMessageWithItems(message, kind, items, window)
     return p.then<string | undefined>(selection => {
         if (selection === logsItem) {
             showLogOutputChannel()
