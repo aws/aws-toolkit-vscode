@@ -170,7 +170,7 @@ export class AwsContextCommands {
      * editing their credentials file.
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
         const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
         const profileNames = Object.keys(providerMap)
         if (profileNames.length > 0) {
