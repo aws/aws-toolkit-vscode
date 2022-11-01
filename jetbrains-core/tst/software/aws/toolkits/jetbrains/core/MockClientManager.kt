@@ -10,8 +10,10 @@ import com.intellij.testFramework.ThreadTracker
 import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.regions.Region
+import software.aws.toolkits.core.ToolkitClientCustomizer
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.clients.SdkClientProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -33,9 +35,11 @@ class MockClientManager : AwsClientManager() {
     @Suppress("UNCHECKED_CAST")
     override fun <T : SdkClient> constructAwsClient(
         sdkClass: KClass<T>,
-        credProvider: AwsCredentialsProvider,
+        credProvider: AwsCredentialsProvider?,
+        tokenProvider: SdkTokenProvider?,
         region: Region,
-        endpointOverride: String?
+        endpointOverride: String?,
+        clientCustomizer: ToolkitClientCustomizer?
     ): T = mockClients[Key(sdkClass, region.id(), credProvider)] as? T
         ?: mockClients[Key(sdkClass)] as? T
         ?: throw IllegalStateException("No mock registered for $sdkClass")

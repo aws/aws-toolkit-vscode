@@ -11,4 +11,12 @@ interface SsoCache {
     fun loadAccessToken(ssoUrl: String): AccessToken?
     fun saveAccessToken(ssoUrl: String, accessToken: AccessToken)
     fun invalidateAccessToken(ssoUrl: String)
+
+    fun loadClientRegistration(cacheKey: ClientRegistrationCacheKey): ClientRegistration?
+    fun saveClientRegistration(cacheKey: ClientRegistrationCacheKey, registration: ClientRegistration)
+    fun invalidateClientRegistration(cacheKey: ClientRegistrationCacheKey)
+
+    fun loadAccessToken(cacheKey: AccessTokenCacheKey): AccessToken?
+    fun saveAccessToken(cacheKey: AccessTokenCacheKey, accessToken: AccessToken)
+    fun invalidateAccessToken(cacheKey: AccessTokenCacheKey)
 }

@@ -23,6 +23,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.mock
+import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
@@ -33,6 +35,9 @@ import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.TokenConnectionSettings
+import software.aws.toolkits.core.ToolkitClientCustomizer
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.anAwsRegion
@@ -97,13 +102,13 @@ class AwsClientManagerTest {
         sut.getClient<DummyServiceClient>(credentialProvider, anAwsRegion())
 
         assertThat(sut.cachedClients().keys).anySatisfy {
-            assertThat(it.credentialProviderId).isEqualTo("profile:admin")
+            assertThat(it.providerId).isEqualTo("profile:admin")
         }
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved(credentialsIdentifier)
 
         assertThat(sut.cachedClients().keys).noneSatisfy {
-            assertThat(it.credentialProviderId).isEqualTo("profile:admin")
+            assertThat(it.providerId).isEqualTo("profile:admin")
         }
     }
 
@@ -164,6 +169,20 @@ class AwsClientManagerTest {
     }
 
     @Test
+    fun `tokenProvider can be passed to bearer clients`() {
+        val sut = getClientManager()
+        val client = sut.getClient<DummyBearerServiceClient>(TokenConnectionSettings(ToolkitBearerTokenProvider(mock()), regionProvider.createAwsRegion()))
+
+        assertThat(client.withTokenProvider).isTrue()
+    }
+
+    @Test
+    fun `no error thrown when tokenProvider is passed to incompatible client`() {
+        val sut = getClientManager()
+        sut.getClient<DummyServiceClient>(TokenConnectionSettings(ToolkitBearerTokenProvider(mock()), regionProvider.createAwsRegion()))
+    }
+
+    @Test
     fun clientsAreScopedToRegion() {
         val sut = getClientManager()
         val credProvider = credentialManager.createCredentialProvider()
@@ -199,7 +218,7 @@ class AwsClientManagerTest {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
         val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
-        val customizer = AwsClientCustomizer { credentialProvider, region, builder ->
+        val customizer = ToolkitClientCustomizer { credentialProvider, _, region, builder, _ ->
             assertThat(credentialProvider).isEqualTo(aConnection.credentials)
             assertThat(region).isEqualTo(aConnection.region.id)
 
@@ -219,7 +238,7 @@ class AwsClientManagerTest {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
         val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
-        val customizer = AwsClientCustomizer { credentialProvider, region, builder ->
+        val customizer = ToolkitClientCustomizer { credentialProvider, _, region, builder, _ ->
             assertThat(credentialProvider).isEqualTo(aConnection.credentials)
             assertThat(region).isEqualTo(aConnection.region.id)
 
@@ -239,7 +258,7 @@ class AwsClientManagerTest {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
         val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
-        val customizer = AwsClientCustomizer { _, _, builder ->
+        val customizer = ToolkitClientCustomizer { _, _, _, builder, _ ->
             builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
         }
         ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
@@ -256,7 +275,7 @@ class AwsClientManagerTest {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
         val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
-        val customizer = AwsClientCustomizer { _, _, builder ->
+        val customizer = ToolkitClientCustomizer { _, _, _, builder, _ ->
             builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
         }
         ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
@@ -285,6 +304,30 @@ class AwsClientManagerTest {
         override fun signingName(): String = serviceName()
 
         override fun buildClient() = DummyServiceClient(syncClientConfiguration().option(SdkClientOption.SYNC_HTTP_CLIENT))
+    }
+
+    class DummyBearerServiceClient(val httpClient: SdkHttpClient, val withTokenProvider: Boolean = false) : TestClient() {
+        companion object {
+            @Suppress("unused")
+            @JvmStatic
+            fun builder() = DummyBearerServiceClientBuilder()
+        }
+    }
+
+    class DummyBearerServiceClientBuilder : TestClientBuilder<DummyBearerServiceClientBuilder, DummyBearerServiceClient>() {
+        private var tokenProviderMethodInvoked = false
+
+        fun tokenProvider(ignored: SdkTokenProvider): DummyBearerServiceClientBuilder {
+            tokenProviderMethodInvoked = true
+
+            return this
+        }
+
+        override fun serviceName(): String = "DummyBearerService"
+
+        override fun signingName(): String = serviceName()
+
+        override fun buildClient() = DummyBearerServiceClient(syncClientConfiguration().option(SdkClientOption.SYNC_HTTP_CLIENT), tokenProviderMethodInvoked)
     }
 
     class SecondDummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {

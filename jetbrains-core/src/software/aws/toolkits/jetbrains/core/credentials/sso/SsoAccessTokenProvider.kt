@@ -28,22 +28,36 @@ class SsoAccessTokenProvider(
     private val scopes: List<String> = emptyList(),
     private val clock: Clock = Clock.systemUTC()
 ) {
+    private val clientRegistrationCacheKey by lazy {
+        ClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes
+        )
+    }
+    internal val accessTokenCacheKey by lazy {
+        AccessTokenCacheKey(
+            connectionId = ssoRegion,
+            startUrl = ssoUrl,
+            scopes = scopes
+        )
+    }
+
     fun accessToken(): AccessToken {
         assertIsNonDispatchThread()
 
-        cache.loadAccessToken(ssoUrl)?.let {
+        loadAccessToken()?.let {
             return it
         }
 
         val token = pollForToken()
 
-        cache.saveAccessToken(ssoUrl, token)
+        saveAccessToken(token)
 
         return token
     }
 
     private fun registerClient(): ClientRegistration {
-        cache.loadClientRegistration(ssoRegion)?.let {
+        loadClientRegistration()?.let {
             return it
         }
 
@@ -60,7 +74,7 @@ class SsoAccessTokenProvider(
             Instant.ofEpochSecond(registerResponse.clientSecretExpiresAt())
         )
 
-        cache.saveClientRegistration(ssoRegion, registeredClient)
+        saveClientRegistration(registeredClient)
 
         return registeredClient
     }
@@ -74,7 +88,7 @@ class SsoAccessTokenProvider(
                 it.clientSecret(clientId.clientSecret)
             }
         } catch (e: InvalidClientException) {
-            cache.invalidateClientRegistration(ssoRegion)
+            invalidateClientRegistration()
             throw e
         }
 
@@ -128,7 +142,7 @@ class SsoAccessTokenProvider(
             throw InvalidRequestException.builder().build()
         }
 
-        val registration = cache.loadClientRegistration(ssoRegion) ?: throw InvalidClientException.builder().build()
+        val registration = loadClientRegistration() ?: throw InvalidClientException.builder().build()
 
         val newToken = client.createToken {
             it.clientId(registration.clientId)
@@ -138,13 +152,61 @@ class SsoAccessTokenProvider(
         }
 
         val token = newToken.toAccessToken()
-        cache.saveAccessToken(ssoUrl, token)
+        saveAccessToken(token)
 
         return token
     }
 
     fun invalidate() {
-        cache.invalidateAccessToken(ssoUrl)
+        if (scopes.isEmpty()) {
+            cache.invalidateAccessToken(ssoUrl)
+        } else {
+            cache.invalidateAccessToken(accessTokenCacheKey)
+        }
+    }
+
+    private fun loadClientRegistration(): ClientRegistration? = if (scopes.isEmpty()) {
+        cache.loadClientRegistration(ssoRegion)?.let {
+            return it
+        }
+    } else {
+        cache.loadClientRegistration(clientRegistrationCacheKey)?.let {
+            return it
+        }
+    }
+
+    private fun saveClientRegistration(registration: ClientRegistration) {
+        if (scopes.isEmpty()) {
+            cache.saveClientRegistration(ssoRegion, registration)
+        } else {
+            cache.saveClientRegistration(clientRegistrationCacheKey, registration)
+        }
+    }
+
+    private fun invalidateClientRegistration() {
+        if (scopes.isEmpty()) {
+            cache.invalidateClientRegistration(ssoRegion)
+        } else {
+            cache.invalidateClientRegistration(clientRegistrationCacheKey)
+        }
+    }
+
+    private fun loadAccessToken(): AccessToken? = if (scopes.isEmpty()) {
+        cache.loadAccessToken(ssoUrl)?.let {
+            return it
+        }
+    } else {
+        cache.loadAccessToken(accessTokenCacheKey)?.let {
+            return it
+        }
+    }
+
+    private fun saveAccessToken(token: AccessToken) {
+        if (scopes.isEmpty()) {
+            cache.saveAccessToken(ssoUrl, token)
+        } else {
+            cache.saveAccessToken(accessTokenCacheKey, token)
+        }
     }
 
     private fun CreateTokenResponse.toAccessToken(): AccessToken {

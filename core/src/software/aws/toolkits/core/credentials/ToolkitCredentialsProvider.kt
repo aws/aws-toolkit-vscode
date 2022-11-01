@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 
 enum class CredentialType {
     StaticProfile,
@@ -80,8 +81,15 @@ abstract class CredentialIdentifierBase(override val credentialType: CredentialT
     final override fun toString(): String = "${this::class.simpleName}(id='$id')"
 }
 
-class ToolkitCredentialsProvider(val identifier: CredentialIdentifier, delegate: AwsCredentialsProvider) : AwsCredentialsProvider by delegate {
-    val id: String = identifier.id
+interface ToolkitAuthenticationProvider {
+    val id: String
+}
+
+class ToolkitCredentialsProvider(
+    val identifier: CredentialIdentifier,
+    delegate: AwsCredentialsProvider
+) : ToolkitAuthenticationProvider, AwsCredentialsProvider by delegate {
+    override val id: String = identifier.id
     val displayName = identifier.displayName
     val shortName = identifier.shortName
 
@@ -99,4 +107,8 @@ class ToolkitCredentialsProvider(val identifier: CredentialIdentifier, delegate:
     override fun hashCode(): Int = identifier.hashCode()
 
     override fun toString(): String = "${this::class.simpleName}(identifier='$identifier')"
+}
+
+class ToolkitBearerTokenProvider(delegate: SdkTokenProvider) : ToolkitAuthenticationProvider, SdkTokenProvider by delegate {
+    override val id = delegate.hashCode().toString()
 }

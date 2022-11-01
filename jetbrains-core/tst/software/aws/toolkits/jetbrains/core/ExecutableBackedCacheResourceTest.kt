@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -101,7 +102,7 @@ class ExecutableBackedCacheResourceTest {
             assertionBlock.invoke(this)
         }
 
-        return cacheResource.fetch(getDefaultRegion(), mockCredentials())
+        return cacheResource.fetch(ConnectionSettings(mockCredentials(), getDefaultRegion()))
     }
 
     private fun mockCredentials(): ToolkitCredentialsProvider =

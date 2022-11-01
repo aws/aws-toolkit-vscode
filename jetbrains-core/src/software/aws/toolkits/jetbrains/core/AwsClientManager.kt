@@ -11,10 +11,14 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.core.SdkClient
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.TokenConnectionSettings
+import software.aws.toolkits.core.ToolkitClientCustomizer
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
@@ -49,8 +53,14 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
 
     override fun getRegionProvider(): ToolkitRegionProvider = AwsRegionProvider.getInstance()
 
-    override fun clientCustomizer(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>) {
-        CUSTOMIZER_EP.extensionList.forEach { it.customize(credentialProvider, regionId, builder) }
+    override fun globalClientCustomizer(
+        credentialProvider: AwsCredentialsProvider?,
+        tokenProvider: SdkTokenProvider?,
+        regionId: String,
+        builder: AwsClientBuilder<*, *>,
+        clientOverrideConfiguration: ClientOverrideConfiguration.Builder
+    ) {
+        CUSTOMIZER_EP.extensionList.forEach { it.customize(credentialProvider, tokenProvider, regionId, builder, clientOverrideConfiguration) }
     }
 
     companion object {
@@ -63,7 +73,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
             "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion ClientId/${AwsSettings.getInstance().clientId}"
         }
 
-        internal val CUSTOMIZER_EP = ExtensionPointName<AwsClientCustomizer>("aws.toolkit.sdk.clientCustomizer")
+        internal val CUSTOMIZER_EP = ExtensionPointName<ToolkitClientCustomizer>("aws.toolkit.sdk.clientCustomizer")
     }
 }
 
@@ -77,21 +87,4 @@ inline fun <reified T : SdkClient> Project.awsClient(): T {
 
 inline fun <reified T : SdkClient> ConnectionSettings.awsClient(): T = AwsClientManager.getInstance().getClient(credentials, region)
 
-/**
- * Used to override/add behavior during AWS SDK Client creation.
- *
- * Example usage to add a local development endpoint for a particular service:
- *
- * ```
- * class MyDevEndpointCustomizer : AwsClientCustomizer {
- *   override fun customize(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>) {
- *     if (builder is LambdaClientBuilder && connection.region.id == "us-west-2") {
- *       builder.endpointOverride(URI.create("http://localhost:8888"))
- *     }
- *   }
- * }
- * ```
- */
-fun interface AwsClientCustomizer {
-    fun customize(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>)
-}
+inline fun <reified T : SdkClient> TokenConnectionSettings.awsClient(): T = AwsClientManager.getInstance().getClient(this)
