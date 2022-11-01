@@ -15,4 +15,11 @@
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.go.GoImageDebugSupport"/>
         <sam.projectWizard id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamProjectWizard"/>
     </extensions>
+
+    <extensions defaultExtensionNs="com.goide">
+        <runConfigurationExtension implementation="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension"/>
+    </extensions>
+    <extensions defaultExtensionNs="aws.toolkit">
+        <experiment implementation="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionExperiment"/>
+    </extensions>
 </idea-plugin>
