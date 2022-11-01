@@ -255,3 +255,57 @@ export async function closeAllEditors(): Promise<void> {
         throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
     }
 }
+
+export interface EventCapturer<T = unknown> extends vscode.Disposable {
+    /**
+     * All events captured after instrumentation
+     */
+    readonly emits: readonly T[]
+
+    /**
+     * The most recently emitted event
+     */
+    readonly last: T | undefined
+
+    /**
+     * Waits for the next event to be emitted
+     */
+    next(timeout?: number): Promise<T>
+}
+
+/**
+ * Instruments an event for easier inspection.
+ */
+export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
+    let disposed = false
+    const emits: T[] = []
+    const listeners: vscode.Disposable[] = []
+    listeners.push(event(data => emits.push(data)))
+
+    return {
+        emits,
+        get last() {
+            return emits[emits.length - 1]
+        },
+        next: (timeout?: number) => {
+            if (disposed) {
+                throw new Error('Capturer has been disposed')
+            }
+
+            return new Promise<T>((resolve, reject) => {
+                const stop = () => reject(new Error('Timed out waiting for event'))
+                const disposable = event(data => resolve(data))
+
+                if (timeout !== undefined) {
+                    setTimeout(stop, timeout)
+                }
+
+                listeners.push({ dispose: () => (disposable.dispose(), stop()) })
+            })
+        },
+        dispose: () => {
+            disposed = true
+            vscode.Disposable.from(...listeners).dispose()
+        },
+    }
+}

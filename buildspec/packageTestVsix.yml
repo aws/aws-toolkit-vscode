@@ -28,6 +28,8 @@ phases:
 
     build:
         commands:
+            # Generate CHANGELOG.md
+            - npm run createRelease
             - npm run generateNonCodeFiles
             - cp ./README.quickstart.vscode.md ./README.md
             - npm run package

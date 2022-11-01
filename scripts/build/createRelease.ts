@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+//
+// Generates CHANGELOG.md
+//
+
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -17,12 +21,12 @@ fs.mkdirpSync(nextReleaseDirectory)
 
 const changeFiles = fs.readdirSync(nextReleaseDirectory)
 if (changeFiles.length === 0) {
-    console.log('Error! no changes to release!')
-    process.exit(-1)
+    console.warn('no changes to release (missing .changes/ directory)')
+    process.exit()
 }
 try {
     fs.accessSync(changesFile)
-    console.log(`Error! changelog file ${changesFile} already exists for version ${version}!`)
+    console.log(`error: changelog data file already exists: ${changesFile}`)
     process.exit(-1)
 } catch (err) {
     // This is what we want to happen, the file should not exist
