@@ -16,16 +16,7 @@ export const REQUIRE_REGEX = /^[ \t]*.+require[ \t]*\([ \t]*['"][^'"]+['"][ \t]*
 export const MODULE_REGEX = /["'][^"'\r\n]+["']/gm
 
 export class JavascriptDependencyGraph extends DependencyGraph {
-    private _fileExt: string = ''
     private _generatedDirs: Set<string> = new Set(['node_modules', 'dist', 'build', 'cdk.out'])
-
-    constructor(languageId: string) {
-        super(languageId)
-        this._fileExt =
-            languageId === CodeWhispererConstants.javascript
-                ? DependencyGraphConstants.jsExt
-                : DependencyGraphConstants.tsExt
-    }
 
     getReadableSizeLimit(): string {
         return `${CodeWhispererConstants.codeScanJavascriptPayloadSizeLimitBytes / Math.pow(2, 10)}KB`
@@ -65,8 +56,8 @@ export class JavascriptDependencyGraph extends DependencyGraph {
 
     generateFilePath(modulePath: string, dirPath: string) {
         const filePath = modulePath.startsWith('.')
-            ? path.join(dirPath, modulePath + this._fileExt)
-            : modulePath + this._fileExt
+            ? path.join(dirPath, modulePath + DependencyGraphConstants.jsExt)
+            : modulePath + DependencyGraphConstants.jsExt
         return filePath.includes(dirPath) && existsSync(filePath) ? filePath : ''
     }
 
@@ -163,7 +154,7 @@ export class JavascriptDependencyGraph extends DependencyGraph {
                 await this.traverseDir(absPath)
             } else if (file.isFile()) {
                 if (
-                    file.name.endsWith(this._fileExt) &&
+                    file.name.endsWith(DependencyGraphConstants.jsExt) &&
                     !this.reachSizeLimit(this._totalSize) &&
                     !this.willReachSizeLimit(this._totalSize, statSync(absPath).size) &&
                     !this._pickedSourceFiles.has(absPath)

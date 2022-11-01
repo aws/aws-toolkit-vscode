@@ -50,7 +50,6 @@ export const DependencyGraphConstants = {
     javaExt: '.java',
     javaBuildExt: '.class',
     jsExt: '.js',
-    tsExt: '.ts',
 }
 
 export abstract class DependencyGraph {

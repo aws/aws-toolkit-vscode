@@ -134,7 +134,7 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
         artifactType: CodeWhispererConstants.artifactTypeSource,
         contentMd5: getMd5(truncPaths.src.zip),
     }
-    getLogger().verbose(`Getting presigned Url for uploading src context...`)
+    getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
@@ -149,7 +149,7 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
             artifactType: CodeWhispererConstants.artifactTypeBuild,
             contentMd5: getMd5(truncPaths.build.zip),
         }
-        getLogger().verbose(`Getting presigned Url for uploading build context...`)
+        getLogger().verbose(`Prepare for uploading build context...`)
         const buildResp = await client.createUploadUrl(buildReq)
         getLogger().verbose(`Request id: ${buildResp.$response.requestId}`)
         getLogger().verbose(`Complete Getting presigned Url for uploading build context.`)
