@@ -3,16 +3,14 @@
 
 package software.aws.toolkits.jetbrains.core.docker
 
-import com.intellij.docker.DockerAgentPathMapperImpl
 import com.intellij.docker.DockerDeploymentConfiguration
 import com.intellij.docker.DockerServerRuntimeInstance
+import com.intellij.docker.agent.DockerAgentDeploymentConfig
 import com.intellij.docker.agent.DockerAgentProgressCallback
 import com.intellij.docker.agent.DockerAgentSourceType
 import com.intellij.docker.agent.progress.DockerResponseItem
-import com.intellij.docker.agent.terminal.pipe.DockerTerminalPipe
 import com.intellij.docker.registry.DockerAgentRepositoryConfigImpl
 import com.intellij.docker.registry.DockerRepositoryModel
-import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
 import com.intellij.docker.remote.run.runtime.DockerAgentDeploymentConfigImpl
 import com.intellij.docker.runtimes.DockerApplicationRuntime
 import com.intellij.docker.runtimes.DockerImageRuntime
@@ -31,6 +29,7 @@ import com.intellij.remoteServer.runtime.deployment.DeploymentTask
 import com.intellij.remoteServer.runtime.ui.RemoteServersView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.runBlocking
 import org.apache.commons.io.FileUtils
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
@@ -46,6 +45,7 @@ import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.ObjectInputStream
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 abstract class AbstractToolkitDockerAdapter(protected val project: Project, protected val serverRuntime: DockerServerRuntimeInstance) {
@@ -192,6 +192,16 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
         }.withEnvs(dockerConfig.envVars.toTypedArray())
             .withBuildArgs(dockerConfig.buildArgs.toTypedArray())
 
+        return buildImage(project, serverRuntime, config, dockerfilePath, tag)
+    }
+
+    protected suspend fun buildImage(
+        project: Project,
+        serverRuntime: DockerServerRuntimeInstance,
+        config: DockerAgentDeploymentConfig,
+        dockerfilePath: String,
+        tag: String
+    ): String? {
         val queue = serverRuntime.agent.createImageBuilder().asyncBuildImage(config).await()
         val future = CompletableFuture<String?>()
         object : Task.Backgroundable(project, message("dockerfile.building", dockerfilePath), false) {
@@ -208,7 +218,7 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
                         indicator.text2 = message
                     }
 
-                    LOG.debug { message ?: deserialized.toString() }
+                    AbstractToolkitDockerAdapter.LOG.debug { message ?: deserialized.toString() }
                 }
 
                 future.complete(serverRuntime.agent.getImages(null).firstOrNull { it.imageRepoTags.contains("$tag:latest") }?.imageId)
@@ -227,13 +237,16 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
 
 // TODO: merge with abstract class
 class ToolkitDockerAdapter(project: Project, serverRuntime: DockerServerRuntimeInstance) : AbstractToolkitDockerAdapter(project, serverRuntime) {
+    @TestOnly
     override fun buildLocalImage(dockerfile: File): String? {
-        val deployment = serverRuntime.agent.createDeployment(
-            DockerAgentBuildImageConfig(System.currentTimeMillis().toString(), dockerfile, false),
-            DockerAgentPathMapperImpl(project)
-        )
+        val tag = UUID.randomUUID().toString()
+        val config = object : DockerAgentDeploymentConfigImpl(tag, null) {
+            override fun getFile() = dockerfile
 
-        return deployment.deploy("untagged test image", DockerTerminalPipe("AWS Toolkit build for $dockerfile"), null)?.imageId
+            override fun sourceType() = DockerAgentSourceType.FILE.toString()
+        }
+
+        return runBlocking { buildImage(project, serverRuntime, config, dockerfile.absolutePath, tag) }
     }
 
     override suspend fun hackyBuildDockerfileWithUi(project: Project, pushRequest: DockerfileEcrPushRequest) =

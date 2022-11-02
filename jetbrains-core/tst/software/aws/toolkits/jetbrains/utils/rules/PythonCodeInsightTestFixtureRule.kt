@@ -25,8 +25,6 @@ import com.jetbrains.python.PythonModuleTypeBase
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
-import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
-import org.jetbrains.annotations.NotNull
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
@@ -110,11 +108,6 @@ class PyTestSdk(private val version: String) : ProjectJdkImpl("PySdk $version", 
     }
 
     override fun getVersionString(): String = "FakeCPython $version"
-}
-
-internal class FakeCPython : CPythonSdkFlavor() {
-    @NotNull
-    override fun getName(): String = "FakeCPython"
 }
 
 fun PythonCodeInsightTestFixtureRule.addBreakpoint() {

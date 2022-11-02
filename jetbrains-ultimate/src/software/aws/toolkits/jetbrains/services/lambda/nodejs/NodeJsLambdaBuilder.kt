@@ -15,7 +15,6 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.PsiElement
-import com.intellij.util.castSafelyTo
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.core.utils.writeText
@@ -84,7 +83,7 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     }
 
                     // use initial skeleton for compilerOptions if it does not exist
-                    val compilerOptions = tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY].castSafelyTo<MutableMap<String, Any>>()
+                    val compilerOptions = tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY] as? MutableMap<String, Any>
                         ?: mutableMapOf<String, Any>(
                             TypeScriptConfig.TARGET_OPTION to TypeScriptConfig.LanguageTarget.ES6.libName,
                             TypeScriptConfig.MODULE to TypeScriptConfig.MODULE_COMMON_JS,
@@ -98,12 +97,12 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     compilerOptions["sourceRoot"] = sourceRoot.toString()
 
                     // ensure typeRoots has resolved path
-                    val typeRoots = compilerOptions[TypeScriptConfig.TYPE_ROOTS].castSafelyTo<MutableList<String>>() ?: mutableListOf()
+                    val typeRoots = compilerOptions[TypeScriptConfig.TYPE_ROOTS] as? MutableList<String> ?: mutableListOf()
                     typeRoots.add(sourceRoot.resolve(TypeScriptConfig.DEFAULT_TYPES_DIRECTORY).toString())
                     compilerOptions[TypeScriptConfig.TYPE_ROOTS] = typeRoots.toSet().toList()
 
                     // ensure types has node
-                    val types = compilerOptions[TypeScriptConfig.TYPES].castSafelyTo<MutableList<String>>() ?: mutableListOf()
+                    val types = compilerOptions[TypeScriptConfig.TYPES] as? MutableList<String> ?: mutableListOf()
                     types.add("node")
                     compilerOptions[TypeScriptConfig.TYPES] = types.toSet().toList()
 

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.roots.ModuleRootManagerEx
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.testFramework.IdeaTestUtil
@@ -62,8 +63,9 @@ class JavaLambdaBuilderTest {
     fun mavenRootPomHandlerBaseDirIsCorrect() {
         val psiClass = projectRule.setUpMavenProject()
 
-        val baseDir = sut.handlerBaseDirectory(projectRule.module, psiClass.methods.first())
-        val moduleRoot = ModuleRootManagerEx.getInstanceEx(projectRule.module).contentRoots.first().path
+        val module = ModuleManager.getInstance(projectRule.project).modules.first()
+        val baseDir = sut.handlerBaseDirectory(module, psiClass.methods.first())
+        val moduleRoot = ModuleRootManagerEx.getInstanceEx(module).contentRoots.first().path
         assertThat(baseDir).isEqualTo(Paths.get(moduleRoot))
     }
 
@@ -71,8 +73,9 @@ class JavaLambdaBuilderTest {
     fun mavenRootPomBuildDirectoryIsCorrect() {
         projectRule.setUpMavenProject()
 
-        val baseDir = sut.getBuildDirectory(projectRule.module)
-        val moduleRoot = ModuleRootManagerEx.getInstanceEx(projectRule.module).contentRoots.first().path
+        val module = ModuleManager.getInstance(projectRule.project).modules.first()
+        val baseDir = sut.getBuildDirectory(module)
+        val moduleRoot = ModuleRootManagerEx.getInstanceEx(module).contentRoots.first().path
         assertThat(baseDir.toAbsolutePath()).isEqualTo(Paths.get(moduleRoot, SamCommon.SAM_BUILD_DIR, "build"))
     }
 

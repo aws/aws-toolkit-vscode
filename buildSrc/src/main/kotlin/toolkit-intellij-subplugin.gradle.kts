@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.eclipse.jgit.api.Git
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension.Output
 import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
 import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
@@ -135,7 +136,14 @@ tasks.buildSearchableOptions {
 val openedPackages = OpenedPackages + listOf(
     // very noisy in UI tests
     "--add-opens=java.desktop/javax.swing.text=ALL-UNNAMED",
-)
+) + with(OperatingSystem.current()) {
+    when {
+        isWindows -> listOf(
+            "--add-opens=java.base/sun.nio.fs=ALL-UNNAMED",
+        )
+        else -> emptyList()
+    }
+}
 
 tasks.withType<Test>().all {
     systemProperty("log.dir", intellij.sandboxDir.map { "$it-test/logs" }.get())
