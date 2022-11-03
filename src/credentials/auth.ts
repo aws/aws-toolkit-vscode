@@ -275,8 +275,8 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error(`Connection does not exist: ${id}`)
         }
 
-        await this.validateConnection(id, profile)
-        const conn = (this.#activeConnection = this.getSsoConnection(id, profile))
+        const validated = await this.validateConnection(id, profile)
+        const conn = (this.#activeConnection = this.getSsoConnection(id, validated))
         this.onDidChangeActiveConnectionEmitter.fire(conn)
         await this.store.setCurrentProfileId(id)
 

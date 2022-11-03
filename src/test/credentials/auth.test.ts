@@ -171,6 +171,7 @@ describe('Auth', function () {
 
     it('uses the persisted connection if available (invalid)', async function () {
         const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+        tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
         await store.setCurrentProfileId(conn.id)
         await auth.restorePreviousSession()
         assert.strictEqual(auth.activeConnection?.state, 'invalid')
@@ -228,6 +229,7 @@ describe('Auth', function () {
         it('shows an error if the connection is invalid', async function () {
             const node = new AuthNode(auth)
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+            tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
             await store.setCurrentProfileId(conn.id)
             await auth.restorePreviousSession()
             await assertTreeItem(node, { label: 'Connection is invalid or expired' })
