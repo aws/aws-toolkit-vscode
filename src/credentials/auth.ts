@@ -28,6 +28,7 @@ export interface SsoConnection {
     readonly type: 'sso'
     readonly id: string
     readonly label: string
+    readonly startUrl: string
     readonly scopes?: string[]
 
     /**
@@ -414,6 +415,7 @@ export class Auth implements AuthService, ConnectionManager {
             id,
             type: profile.type,
             scopes: profile.scopes,
+            startUrl: profile.startUrl,
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? `SSO (${profile.startUrl})`,
             getToken: () => this.debouncedGetToken(id, provider),
