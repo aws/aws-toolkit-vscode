@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
@@ -13,19 +13,16 @@ import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { handleAutoClosingBrackets } from '../util/closingBracketUtil'
+import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletion } from '../service/inlineCompletion'
-import { KeyStrokeHandler } from '../service/keyStrokeHandler'
+import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
+import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
  */
-export async function onAcceptance(
-    acceptanceEntry: OnRecommendationAcceptanceEntry,
-    isAutoClosingBracketsEnabled: boolean,
-    globalStorage: vscode.Memento
-) {
+export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry, globalStorage: vscode.Memento) {
     RecommendationHandler.instance.cancelPaginatedRequest()
     /**
      * Format document
@@ -45,15 +42,9 @@ export async function onAcceptance(
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
-        if (isAutoClosingBracketsEnabled && !InlineCompletion.instance.isTypeaheadInProgress) {
+        if (!InlineCompletion.instance.isTypeaheadInProgress) {
             try {
-                await handleAutoClosingBrackets(
-                    acceptanceEntry.triggerType,
-                    acceptanceEntry.editor,
-                    acceptanceEntry.recommendation,
-                    end.line,
-                    KeyStrokeHandler.instance.specialChar
-                )
+                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
             } catch (error) {
                 getLogger().error(`${error} in handleAutoClosingBrackets`)
             }
@@ -105,9 +96,24 @@ export async function onAcceptance(
             completionType: acceptanceEntry.completionType,
             language: languageContext.language,
         })
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language, globalStorage).setAcceptedTokens(
-            acceptanceEntry.recommendation
+        const codeRangeAfterFormat = new vscode.Range(start, acceptanceEntry.editor.selection.active)
+        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
+            codeRangeAfterFormat,
+            acceptanceEntry.editor.document.getText(codeRangeAfterFormat),
+            acceptanceEntry.editor.document.fileName
         )
+        if (acceptanceEntry.references !== undefined) {
+            const referenceLog = ReferenceLogViewProvider.getReferenceLog(
+                acceptanceEntry.recommendation,
+                acceptanceEntry.references,
+                acceptanceEntry.editor
+            )
+            ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
+            ReferenceHoverProvider.instance.addCodeReferences(
+                acceptanceEntry.recommendation,
+                acceptanceEntry.references
+            )
+        }
     }
 
     // at the end of recommendation acceptance, clear recommendations.

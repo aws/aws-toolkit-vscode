@@ -7,8 +7,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { downloadsDir } from '../../shared/filesystemUtilities'
-import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
@@ -17,10 +15,11 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { DefaultS3Client, S3Client } from '../../shared/clients/s3Client'
 import { Timeout, CancellationError } from '../../shared/utilities/timeoutUtils'
-import { getTelemetryResult, ToolkitError } from '../../shared/errors'
+import { ToolkitError } from '../../shared/errors'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface DownloadFileOptions {
     /**
@@ -117,19 +116,15 @@ export async function downloadFileAsCommand(
     outputChannel = globals.outputChannel
 ): Promise<void> {
     const { bucket, file } = node
-
-    getLogger().debug('DownloadFile called for %O', node)
-
-    const saveLocation = await promptForSaveLocation(file.name, window)
-    if (!saveLocation) {
-        getLogger().info('DownloadFile cancelled')
-        telemetry.recordS3DownloadObject({ result: 'Cancelled' })
-        return
-    }
-
     const sourcePath = readablePath(node)
-    try {
-        showOutputMessage(`Downloading file from ${sourcePath} to ${saveLocation}`, outputChannel)
+
+    await telemetry.s3_downloadObject.run(async () => {
+        const saveLocation = await promptForSaveLocation(file.name, window)
+        if (!saveLocation) {
+            throw new CancellationError('user')
+        }
+
+        showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
 
         await downloadFile(
             { ...file, bucket },
@@ -141,12 +136,8 @@ export async function downloadFileAsCommand(
             }
         )
 
-        showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
-        telemetry.recordS3DownloadObject({ result: 'Succeeded' })
-    } catch (e) {
-        telemetry.recordS3DownloadObject({ result: getTelemetryResult(e) })
-        throw e
-    }
+        showOutputMessage(`Downloaded: ${saveLocation}`, outputChannel)
+    })
 }
 
 async function promptForSaveLocation(fileName: string, window: Window): Promise<vscode.Uri | undefined> {

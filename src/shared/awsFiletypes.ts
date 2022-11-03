@@ -7,12 +7,13 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as constants from '../shared/constants'
 import * as aslFormats from '../stepFunctions/constants/aslFormats'
-import * as telemetry from './telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import * as fsutil from '../shared/filesystemUtilities'
 import * as sysutil from '../shared/systemUtilities'
 import * as collectionUtil from '../shared/utilities/collectionUtils'
 import globals from './extensionGlobals'
+import { telemetry } from './telemetry/telemetry'
+import { AwsFiletype } from './telemetry/telemetry'
 
 /** AWS filetypes: vscode language ids */
 export const awsFiletypeLangIds = {
@@ -25,7 +26,7 @@ export const awsFiletypeLangIds = {
 /**
  * Maps vscode language ids to AWS filetypes for telemetry.
  */
-export function langidToAwsFiletype(langId: string): telemetry.AwsFiletype {
+export function langidToAwsFiletype(langId: string): AwsFiletype {
     switch (langId) {
         case constants.ssmJson:
         case constants.ssmYaml:
@@ -102,7 +103,7 @@ export function activate(): void {
                 return // Avoid redundant/duplicate metrics.
             }
 
-            telemetry.recordFileEditAwsFile({
+            telemetry.file_editAwsFile.emit({
                 awsFiletype: telemKind,
                 passive: true,
                 result: 'Succeeded',

@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import * as semver from 'semver'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
+
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     return new Date().toLocaleString([], { timeZone: timezone })
@@ -26,4 +31,20 @@ export function isAwsError(error: any): boolean {
         typeof error.code === 'string' &&
         error.time instanceof Date
     )
+}
+
+export function isInlineCompletionEnabled() {
+    return semver.gte(vscode.version, '1.68.0') && getInlineSuggestEnabled() && !isCloud9()
+}
+
+export function getFileExt(languageId: string) {
+    switch (languageId) {
+        case 'java':
+            return '.java'
+        case 'python':
+            return '.py'
+        default:
+            break
+    }
+    return undefined
 }

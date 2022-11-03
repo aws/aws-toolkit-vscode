@@ -46,12 +46,12 @@ describe('SchemaService', function () {
 
     it('assigns schemas to the yaml extension', async function () {
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
         })
         service.registerMapping({
-            path: '/bar',
+            uri: vscode.Uri.parse('/bar'),
             type: 'yaml',
             schema: 'sam',
         })
@@ -62,7 +62,7 @@ describe('SchemaService', function () {
 
     it('removes schemas from the yaml extension', async function () {
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: undefined,
         })
@@ -72,7 +72,7 @@ describe('SchemaService', function () {
 
     it('registers schemas to json configuration', async function () {
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'json',
             schema: 'cfn',
         })
@@ -90,7 +90,7 @@ describe('SchemaService', function () {
 
     it('removes schemas from json configuration', async function () {
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'json',
             schema: undefined,
         })
@@ -113,7 +113,7 @@ describe('SchemaService', function () {
         })
 
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
         })
@@ -126,7 +126,7 @@ describe('SchemaService', function () {
         service = new SchemaService(fakeExtensionContext)
 
         service.registerMapping({
-            path: '/foo',
+            uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
         })

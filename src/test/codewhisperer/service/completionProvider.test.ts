@@ -35,6 +35,8 @@ describe('completionProviderService', function () {
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
             RecommendationHandler.instance.startPos = new vscode.Position(0, 0)
+            RecommendationHandler.instance.requestId = 'mock_requestId_getCompletionItem'
+            RecommendationHandler.instance.sessionId = 'mock_sessionId_getCompletionItem'
             const mockPosition = new vscode.Position(0, 1)
             const mockRecommendationDetail: Recommendation = {
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
@@ -60,8 +62,8 @@ describe('completionProviderService', function () {
                         new vscode.Range(0, 0, 0, 0),
                         1,
                         "\n\t\tconsole.log('Hello world!');\n\t}",
-                        '',
-                        '',
+                        'mock_requestId_getCompletionItem',
+                        'mock_sessionId_getCompletionItem',
                         'OnDemand',
                         'Line',
                         'javascript',

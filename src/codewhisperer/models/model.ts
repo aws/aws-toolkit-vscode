@@ -2,8 +2,13 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
+import {
+    CodewhispererCompletionType,
+    CodewhispererLanguage,
+    CodewhispererTriggerType,
+    Result,
+} from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 
 // unavoidable global variables
@@ -38,9 +43,9 @@ export interface AcceptedSuggestionEntry {
     readonly requestId: string
     readonly sessionId: string
     readonly index: number
-    readonly triggerType: telemetry.CodewhispererTriggerType
-    readonly completionType: telemetry.CodewhispererCompletionType
-    readonly language: telemetry.CodewhispererLanguage
+    readonly triggerType: CodewhispererTriggerType
+    readonly completionType: CodewhispererCompletionType
+    readonly language: CodewhispererLanguage
 }
 
 export interface OnRecommendationAcceptanceEntry {
@@ -50,9 +55,9 @@ export interface OnRecommendationAcceptanceEntry {
     readonly recommendation: string
     readonly requestId: string
     readonly sessionId: string
-    readonly triggerType: telemetry.CodewhispererTriggerType
-    readonly completionType: telemetry.CodewhispererCompletionType
-    readonly language: telemetry.CodewhispererLanguage
+    readonly triggerType: CodewhispererTriggerType
+    readonly completionType: CodewhispererCompletionType
+    readonly language: CodewhispererLanguage
     readonly references: References | undefined
 }
 
@@ -82,7 +87,8 @@ export const codeScanState: CodeScanState = {
 
 export interface CodeScanTelemetryEntry {
     codewhispererCodeScanJobId?: string
-    codewhispererLanguage: telemetry.CodewhispererLanguage
+    codewhispererLanguage: CodewhispererLanguage
+    codewhispererCodeScanProjectBytes?: number
     codewhispererCodeScanSrcPayloadBytes: number
     codewhispererCodeScanBuildPayloadBytes?: number
     codewhispererCodeScanSrcZipFileBytes: number
@@ -92,7 +98,7 @@ export interface CodeScanTelemetryEntry {
     contextTruncationDuration: number
     artifactsUploadDuration: number
     codeScanServiceInvocationsDuration: number
-    result: telemetry.Result
+    result: Result
     reason?: string
     codewhispererCodeScanTotalIssues: number
 }

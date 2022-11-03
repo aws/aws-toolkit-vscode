@@ -5,16 +5,20 @@
 
 import * as vscode from 'vscode'
 import { ConfigurationEntry, vsCodeState } from '../models/model'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
+import {
+    telemetry,
+    CodewhispererAutomatedTriggerType,
+    CodewhispererTriggerType,
+} from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -28,7 +32,6 @@ interface InlineCompletionItem {
  */
 export class InlineCompletion {
     private _range!: vscode.Range
-    private _referenceProvider!: ReferenceInlineProvider
     private dimDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
         textDecoration: `none; opacity: ${50 / 100}`,
         light: {
@@ -85,10 +88,6 @@ export class InlineCompletion {
         this._range = range
     }
 
-    setReferenceInlineProvider(provider: ReferenceInlineProvider) {
-        this._referenceProvider = provider
-    }
-
     getCompletionItems() {
         const completionItems: Recommendation[] = []
         RecommendationHandler.instance.recommendations.forEach(r => {
@@ -110,10 +109,7 @@ export class InlineCompletion {
                 { undoStopAfter: false, undoStopBefore: false }
             )
             .then(async () => {
-                let languageId = editor?.document?.languageId
-                languageId =
-                    languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-                const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+                const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
                 const index = this.items[this.position].index
                 const acceptArguments = [
                     this._range,
@@ -127,7 +123,7 @@ export class InlineCompletion {
                     this.origin[index].references,
                 ] as const
                 vsCodeState.isCodeWhispererEditing = false
-                this._referenceProvider.removeInlineReference()
+                ReferenceInlineProvider.instance.removeInlineReference()
                 await vscode.commands.executeCommand('aws.codeWhisperer.accept', ...acceptArguments)
                 await this.resetInlineStates(editor)
             })
@@ -149,7 +145,7 @@ export class InlineCompletion {
         if (!editor || vsCodeState.isCodeWhispererEditing) return
         if (!isTypeAheadRejection && this.items.length === 0) return
         vsCodeState.isCodeWhispererEditing = true
-        this._referenceProvider.removeInlineReference()
+        ReferenceInlineProvider.instance.removeInlineReference()
         if (onDidChangeVisibleTextEditors && this.documentUri && this.documentUri.fsPath.length > 0) {
             const workEdits = new vscode.WorkspaceEdit()
             workEdits.set(this.documentUri, [vscode.TextEdit.delete(this._range)])
@@ -198,7 +194,7 @@ export class InlineCompletion {
             )
         }
 
-        return typedPrefix.substring(move)
+        return typedPrefix.substring(move).replace(/\r\n/g, '\n')
     }
 
     async setTypeAheadRecommendations(editor: vscode.TextEditor | undefined, event: vscode.TextDocumentChangeEvent) {
@@ -282,12 +278,12 @@ export class InlineCompletion {
                             )
                             this.isInlineActive = true
                             const curItem = this.items[this.position]
-                            this._referenceProvider.setInlineReference(
+                            ReferenceInlineProvider.instance.setInlineReference(
                                 RecommendationHandler.instance.startPos.line,
-                                curItem,
+                                curItem.content,
                                 this.origin[curItem.index].references
                             )
-                            RecommendationHandler.instance.recommendationSuggestionState.set(curItem.index, 'Showed')
+                            RecommendationHandler.instance.setSuggestionState(curItem.index, 'Showed')
                         })
                 }
             })
@@ -318,9 +314,9 @@ export class InlineCompletion {
     async getPaginatedRecommendation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.CodewhispererAutomatedTriggerType
+        autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
         RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()
@@ -378,20 +374,48 @@ export class InlineCompletion {
             if (delay < showSuggestionDelay) {
                 this._timer?.refresh()
             } else {
-                // do not show recommendation if cursor is before invocation position
-                // and cancel paginated request
-                if (editor.selection.active.isBefore(RecommendationHandler.instance.startPos)) {
+                // do not show recommendation if cursor is before invocation position or user opened another document
+                // mark suggestions as Discard and cancel paginated request
+                if (
+                    editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
+                    editor.document.uri.fsPath !== this.documentUri?.fsPath
+                ) {
+                    RecommendationHandler.instance.cancelPaginatedRequest()
+                    RecommendationHandler.instance.recommendations.forEach((r, i) => {
+                        RecommendationHandler.instance.setSuggestionState(i, 'Discard')
+                    })
+                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.clearRecommendations()
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
                         this._timer = undefined
                     }
-                    RecommendationHandler.instance.cancelPaginatedRequest()
                     return
                 }
                 this.setCompletionItems(editor)
                 if (this.items.length > 0) {
                     this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
-                    await this.showRecommendation(editor)
+                    try {
+                        await this.showRecommendation(editor)
+                        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
+                        telemetry.codewhisperer_perceivedLatency.emit({
+                            codewhispererRequestId: RecommendationHandler.instance.requestId,
+                            codewhispererSessionId: RecommendationHandler.instance.sessionId,
+                            codewhispererTriggerType: TelemetryHelper.instance.triggerType,
+                            codewhispererCompletionType: TelemetryHelper.instance.completionType,
+                            codewhispererLanguage: languageContext.language,
+                            duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
+                            passive: true,
+                        })
+                    } catch (error) {
+                        getLogger().error(`Failed to show suggestion ${error}`)
+                        RecommendationHandler.instance.cancelPaginatedRequest()
+                        RecommendationHandler.instance.recommendations.forEach((r, i) => {
+                            RecommendationHandler.instance.setSuggestionState(i, 'Discard')
+                        })
+                        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                        RecommendationHandler.instance.clearRecommendations()
+                    }
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
                         this._timer = undefined
@@ -403,13 +427,15 @@ export class InlineCompletion {
                         if (this._timer !== undefined) {
                             clearTimeout(this._timer)
                             this._timer = undefined
-                            if (isManualTrigger) {
+                            if (isManualTrigger && RecommendationHandler.instance.recommendations.length === 0) {
                                 if (RecommendationHandler.instance.errorMessagePrompt !== '') {
                                     showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
                                 } else {
                                     showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
                                 }
                             }
+                            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                            RecommendationHandler.instance.clearRecommendations()
                         }
                     }
                 }
@@ -431,7 +457,7 @@ export class InlineCompletion {
             this.origin.forEach((item, index) => {
                 if (
                     item.content.startsWith(this.typeAhead) &&
-                    RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered'
+                    RecommendationHandler.instance.getSuggestionState(index) !== 'Filtered'
                 ) {
                     this.items.push({
                         content: item.content.substring(this.typeAhead.length),
@@ -441,7 +467,7 @@ export class InlineCompletion {
             })
         } else {
             this.origin.forEach((item, index) => {
-                if (RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered') {
+                if (RecommendationHandler.instance.getSuggestionState(index) !== 'Filtered') {
                     this.items.push({
                         content: item.content,
                         index: index,

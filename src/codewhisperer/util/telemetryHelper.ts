@@ -2,39 +2,38 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../../shared/telemetry/telemetry'
-import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
+
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { LicenseUtil } from './licenseUtil'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodewhispererAutomatedTriggerType,
+    CodewhispererCompletionType,
+    CodewhispererSuggestionState,
+    CodewhispererTriggerType,
+} from '../../shared/telemetry/telemetry'
 
 export class TelemetryHelper {
     /**
-     * to record each recommendation is prefix matched or not with
-     * left context before 'editor.action.triggerSuggest'
-     */
-    public isPrefixMatched: boolean[]
-
-    /**
      * Trigger type for getting CodeWhisperer recommendation
      */
-    public triggerType: telemetry.CodewhispererTriggerType
+    public triggerType: CodewhispererTriggerType
     /**
      * Auto Trigger Type for getting event of Automated Trigger
      */
-    public CodeWhispererAutomatedtriggerType: telemetry.CodewhispererAutomatedTriggerType
+    public CodeWhispererAutomatedtriggerType: CodewhispererAutomatedTriggerType
     /**
      * completion Type of the CodeWhisperer recommendation, line vs block
      */
-    public completionType: telemetry.CodewhispererCompletionType
+    public completionType: CodewhispererCompletionType
     /**
      * the cursor offset location at invocation time
      */
     public cursorOffset: number
 
     constructor() {
-        this.isPrefixMatched = []
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
         this.completionType = 'Line'
@@ -47,49 +46,24 @@ export class TelemetryHelper {
         return (this.#instance ??= new this())
     }
 
-    /**
-     * VScode IntelliSense has native matching for recommendation.
-     * This is only to check if the recommendation match the updated left context when
-     * user keeps typing before getting CodeWhisperer response back.
-     * @param recommendations the recommendations of current invocation
-     * @param startPos the invocation position of current invocation
-     * @param newCodeWhispererRequest if newCodeWhispererRequest, then we need to reset the invocationContext.isPrefixMatched, which is used as
-     *                           part of user decision telemetry (see models.ts for more details)
-     * @param editor the current VSCode editor
-     *
-     * @returns
-     */
-    public updatePrefixMatchArray(
-        recommendations: RecommendationsList,
-        startPos: vscode.Position,
-        newCodeWhispererRequest: boolean,
-        editor: vscode.TextEditor | undefined
+    public recordUserDecisionTelemetryForEmptyList(
+        requestId: string,
+        sessionId: string,
+        paginationIndex: number,
+        languageId: string
     ) {
-        if (!editor || !newCodeWhispererRequest) {
-            return
-        }
-        // Only works for cloud9, as it works for completion items
-        if (isCloud9() && startPos.line !== editor.selection.active.line) {
-            return
-        }
-
-        let typedPrefix = ''
-        if (newCodeWhispererRequest) {
-            this.isPrefixMatched = []
-        }
-
-        typedPrefix = editor.document.getText(new vscode.Range(startPos, editor.selection.active))
-
-        recommendations.forEach(recommendation => {
-            if (recommendation.content.startsWith(typedPrefix)) {
-                if (newCodeWhispererRequest) {
-                    this.isPrefixMatched.push(true)
-                }
-            } else {
-                if (newCodeWhispererRequest) {
-                    this.isPrefixMatched.push(false)
-                }
-            }
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+        telemetry.codewhisperer_userDecision.emit({
+            codewhispererRequestId: requestId,
+            codewhispererSessionId: sessionId ? sessionId : undefined,
+            codewhispererPaginationProgress: paginationIndex,
+            codewhispererTriggerType: this.triggerType,
+            codewhispererSuggestionIndex: -1,
+            codewhispererSuggestionState: 'Empty',
+            codewhispererSuggestionReferences: undefined,
+            codewhispererSuggestionReferenceCount: 0,
+            codewhispererCompletionType: this.completionType,
+            codewhispererLanguage: languageContext.language,
         })
     }
 
@@ -99,10 +73,11 @@ export class TelemetryHelper {
      * @param acceptIndex the index of the accepted suggestion in the corresponding list of CodeWhisperer response.
      * If this function is not called on acceptance, then acceptIndex == -1
      * @param languageId the language ID of the current document in current active editor
-     * @param filtered whether this user decision is to filter the recommendation due to license
+     * @param paginationIndex the index of pagination calls
+     * @param recommendationSuggestionState the key-value mapping from index to suggestion state
      */
 
-    public async recordUserDecisionTelemetry(
+    public recordUserDecisionTelemetry(
         requestId: string,
         sessionId: string,
         recommendations: RecommendationsList,
@@ -114,28 +89,21 @@ export class TelemetryHelper {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
         recommendations.forEach((_elem, i) => {
-            let unseen = true
-            let filtered = false
-            if (recommendationSuggestionState !== undefined) {
-                if (recommendationSuggestionState.get(i) === 'Filtered') {
-                    filtered = true
-                }
-                if (recommendationSuggestionState.get(i) === 'Showed') {
-                    unseen = false
-                }
-            }
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
             if (uniqueLicenseSet.size > 0) {
                 uniqueSuggestionReferences = JSON.stringify(Array.from(uniqueLicenseSet))
             }
-            telemetry.recordCodewhispererUserDecision({
+            if (_elem.content.length === 0) {
+                recommendationSuggestionState?.set(i, 'Empty')
+            }
+            telemetry.codewhisperer_userDecision.emit({
                 codewhispererRequestId: requestId,
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
                 codewhispererTriggerType: this.triggerType,
                 codewhispererSuggestionIndex: i,
-                codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, filtered, unseen),
+                codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, recommendationSuggestionState),
                 codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 codewhispererCompletionType: this.completionType,
@@ -147,22 +115,21 @@ export class TelemetryHelper {
     public getSuggestionState(
         i: number,
         acceptIndex: number,
-        filtered: boolean = false,
-        unseen: boolean = false
-    ): telemetry.CodewhispererSuggestionState {
-        if (filtered) return 'Filter'
-        if (unseen) return 'Unseen'
-        if (acceptIndex == -1) {
-            return this.isPrefixMatched[i] ? 'Reject' : 'Discard'
+        recommendationSuggestionState?: Map<number, string>
+    ): CodewhispererSuggestionState {
+        const state = recommendationSuggestionState?.get(i)
+        if (state && ['Empty', 'Filter', 'Discard'].includes(state)) {
+            return state as CodewhispererSuggestionState
+        } else if (recommendationSuggestionState !== undefined && recommendationSuggestionState.get(i) !== 'Showed') {
+            return 'Unseen'
         }
-        if (!this.isPrefixMatched[i]) {
-            return 'Discard'
-        } else {
-            if (i == acceptIndex) {
-                return 'Accept'
-            } else {
-                return 'Ignore'
-            }
+        if (acceptIndex === -1) {
+            return 'Reject'
         }
+        return i === acceptIndex ? 'Accept' : 'Ignore'
+    }
+
+    public isTelemetryEnabled(): boolean {
+        return globals.telemetry.telemetryEnabled
     }
 }

@@ -24,7 +24,8 @@ import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { createTestWorkspaceFolder } from './testUtil'
-import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
+import { FakeAwsContext } from './utilities/fakeAwsContext'
+import { createTestRegionProvider } from './shared/regions/testUtil'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -111,7 +112,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }
-        const regionProvider = new FakeRegionProvider()
+        const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
         const outputChannel = new MockOutputChannel()
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
@@ -133,15 +134,8 @@ export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T
-    public get(key: any, defaultValue?: any) {
-        if (Object.prototype.hasOwnProperty.call(this._storage, String(key))) {
-            return this._storage[key]
-        }
-        if (defaultValue) {
-            return defaultValue
-        }
-
-        return undefined
+    public get(key: string, defaultValue?: unknown) {
+        return this._storage[key] ?? defaultValue
     }
     public update(key: string, value: any): Thenable<void> {
         this._storage[key] = value

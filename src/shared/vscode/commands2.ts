@@ -11,8 +11,8 @@ import { getLogger, NullLogger } from '../logger/logger'
 import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { recordVscodeExecuteCommand } from '../telemetry/telemetry'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
+import { telemetry } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -283,12 +283,15 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private buildTreeNode(id: string, args: unknown[]) {
         return (content: PartialTreeItem) => {
             const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
-            treeItem.command = { command: id, arguments: args, title: content.label }
+            Object.assign(treeItem, {
+                ...content,
+                command: { command: id, arguments: args, title: content.label },
+            })
 
             return {
                 id: `${id}-${(this.idCounter += 1)}`,
-                treeItem: Object.assign(treeItem, content),
                 resource: this,
+                getTreeItem: () => treeItem,
             }
         }
     }
@@ -337,7 +340,7 @@ function endRecordCommand(id: string, token: number, err?: unknown) {
 
     emitInfo.set(id, { ...data, debounceCounter: 0 })
 
-    recordVscodeExecuteCommand({
+    telemetry.vscode_executeCommand.emit({
         command: id,
         debounceCount: data.debounceCounter,
         result: getTelemetryResult(err),

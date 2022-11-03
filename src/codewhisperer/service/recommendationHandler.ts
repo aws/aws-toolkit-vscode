@@ -4,12 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { extensionVersion } from '../../shared/vscode/env'
-import { RecommendationsList, DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
+import {
+    RecommendationsList,
+    DefaultCodeWhispererClient,
+    Recommendation,
+    CognitoCredentialsError,
+} from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
-import { CodeWhispererConstants } from '../models/constants'
-import { ConfigurationEntry, vsCodeState } from '../models/model'
+import * as CodeWhispererConstants from '../models/constants'
+import { ConfigurationEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -18,6 +22,14 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodewhispererAutomatedTriggerType,
+    CodewhispererCompletionType,
+    CodewhispererTriggerType,
+    Result,
+} from '../../shared/telemetry/telemetry'
+import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -33,11 +45,13 @@ export class RecommendationHandler {
     private nextToken: string
     public errorCode: string
     public recommendations: Recommendation[]
-    public recommendationSuggestionState: Map<number, string>
+    private recommendationSuggestionState: Map<number, string>
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
     public isGenerateRecommendationInProgress: boolean
+    private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
 
     constructor() {
         this.requestId = ''
@@ -67,8 +81,16 @@ export class RecommendationHandler {
         )
     }
 
+    setSuggestionState(index: number, value: string) {
+        this.recommendationSuggestionState.set(index, value)
+    }
+
+    getSuggestionState(index: number): string | undefined {
+        return this.recommendationSuggestionState.get(index)
+    }
+
     async getServerResponse(
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         isManualTriggerOn: boolean,
         isFirstPaginationCall: boolean,
         promise: Promise<any>
@@ -104,18 +126,18 @@ export class RecommendationHandler {
     async getRecommendations(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
-        triggerType: telemetry.CodewhispererTriggerType,
+        triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.CodewhispererAutomatedTriggerType,
+        autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0
     ) {
         let recommendation: RecommendationsList = []
         let requestId = ''
         let sessionId = ''
-        let invocationResult: telemetry.Result = 'Failed'
+        let invocationResult: Result = 'Failed'
         let reason = ''
-        let completionType: telemetry.CodewhispererCompletionType = 'Line'
+        let completionType: CodewhispererCompletionType = 'Line'
         let startTime = 0
         let latency = 0
         let nextToken = ''
@@ -139,9 +161,10 @@ export class RecommendationHandler {
              * Validate request
              */
             if (EditorContext.validateRequest(req)) {
+                const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(req)
                 const codewhispererPromise = pagination
-                    ? client.listRecommendations(req)
-                    : client.generateRecommendations(req)
+                    ? client.listRecommendations(mappedReq)
+                    : client.generateRecommendations(mappedReq)
                 shouldRecordServiceInvocation = true
                 const resp = await this.getServerResponse(
                     triggerType,
@@ -169,15 +192,14 @@ export class RecommendationHandler {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
                 errorCode = `Invalid Request`
-                if (
-                    !CodeWhispererConstants.supportedLanguages.includes(
-                        req.fileContext.programmingLanguage.languageName
-                    )
-                ) {
+                if (!runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)) {
                     this.errorMessagePrompt = `${req.fileContext.programmingLanguage.languageName} is currently not supported by CodeWhisperer`
                 }
             }
         } catch (error) {
+            if (error instanceof CognitoCredentialsError) {
+                shouldRecordServiceInvocation = false
+            }
             if (latency === 0) {
                 latency = startTime !== 0 ? performance.now() - startTime : 0
             }
@@ -196,8 +218,7 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            const languageId = editor?.document?.languageId
-            const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+            const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
             getLogger().verbose(
                 `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
                     [],
@@ -220,7 +241,7 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                telemetry.recordCodewhispererServiceInvocation({
+                telemetry.codewhisperer_serviceInvocation.emit({
                     codewhispererRequestId: requestId ? requestId : undefined,
                     codewhispererSessionId: sessionId ? sessionId : undefined,
                     codewhispererLastSuggestionIndex: this.recommendations.length - 1,
@@ -238,12 +259,13 @@ export class RecommendationHandler {
                     reason: reason ? reason.substring(0, 200) : undefined,
                 })
             }
-            recommendation = recommendation.filter(r => r.content.length > 0)
-
+            if (invocationResult == 'Succeeded') {
+                CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
+            }
             if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
                 recommendation.forEach((r, index) => {
                     if (r.references !== undefined && r.references.length) {
-                        this.recommendationSuggestionState.set(index + this.recommendations.length, 'Filtered')
+                        this.setSuggestionState(index + this.recommendations.length, 'Filtered')
                     }
                 })
                 if (!pagination && recommendation.length === 0 && this.recommendationSuggestionState.size > 0) {
@@ -252,7 +274,31 @@ export class RecommendationHandler {
             }
         }
         if (recommendation.length > 0) {
+            const typedPrefix = editor.document
+                .getText(new vscode.Range(this.startPos, editor.selection.active))
+                .replace('\r\n', '\n')
+            // mark suggestions that does not match typeahead when arrival as Discard
+            // these suggestions can be marked as Showed if typeahead can be removed with new inline API
+            recommendation.forEach((r, i) => {
+                if (
+                    (!r.content.startsWith(typedPrefix) &&
+                        this.getSuggestionState(i + this.recommendations.length) === undefined) ||
+                    this.cancellationToken.token.isCancellationRequested
+                ) {
+                    this.setSuggestionState(i + this.recommendations.length, 'Discard')
+                }
+            })
             this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
+            this._onDidReceiveRecommendation.fire()
+        }
+        // send Empty userDecision event if user receives no recommendations in this session at all.
+        if (this.recommendations.length === 0 && nextToken === '') {
+            TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
+                requestId,
+                sessionId,
+                page,
+                editor.document.languageId
+            )
         }
         this.requestId = requestId
         this.sessionId = sessionId
@@ -287,12 +333,6 @@ export class RecommendationHandler {
         this.errorMessagePrompt = ''
     }
     reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
-        TelemetryHelper.instance.updatePrefixMatchArray(
-            this.recommendations,
-            this.startPos,
-            !vsCodeState.isIntelliSenseActive,
-            editor
-        )
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,
@@ -324,12 +364,17 @@ export class RecommendationHandler {
             return false
         }
         // do not show recommendation if cursor is before invocation position
+        // also mark as Discard
         if (editor.selection.active.isBefore(this.startPos)) {
+            this.recommendations.forEach((r, i) => {
+                this.setSuggestionState(i, 'Discard')
+            })
             reject()
             return false
         }
 
         // do not show recommendation if typeahead does not match
+        // also mark as Discard
         const typedPrefix = editor.document.getText(
             new vscode.Range(
                 this.startPos.line,
@@ -339,9 +384,21 @@ export class RecommendationHandler {
             )
         )
         if (!this.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
+            this.recommendations.forEach((r, i) => {
+                this.setSuggestionState(i, 'Discard')
+            })
             reject()
             return false
         }
         return true
+    }
+
+    moveStartPositionToSkipSpaces(editor: vscode.TextEditor) {
+        const start = this.startPos
+        const prefix = editor.document.getText(new vscode.Range(start, editor.selection.active))
+        // skip space from invocation position
+        if (prefix.length > 0 && prefix.trimStart().length != prefix.length) {
+            this.startPos = start.translate(undefined, prefix.length - prefix.trimStart().length)
+        }
     }
 }

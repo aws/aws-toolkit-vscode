@@ -7,74 +7,373 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
-import { resetCodeWhispererGlobalVariables } from '../testUtil'
+import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { assertTelemetryCurried } from '../../testUtil'
+import { vsCodeState } from '../../../codewhisperer/models/model'
+import { FakeMemento } from '../../fakeExtensionContext'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 
 describe('codewhispererCodecoverageTracker', function () {
-    const language = 'plaintext'
-    const mockGlobalStorage: vscode.Memento = {
-        update: sinon.spy(),
-        get: sinon.stub().returns(true),
-    }
+    const language = 'python'
 
-    describe('setAcceptedTokens', function () {
-        beforeEach(function () {
+    describe('test getTracker', function () {
+        afterEach(function () {
             resetCodeWhispererGlobalVariables()
-            CodeWhispererCodeCoverageTracker.instances.delete(language)
+            CodeWhispererCodeCoverageTracker.instances.clear()
         })
 
-        it('Should set Accepted Tokens when CodeWhisperer terms accepted', function () {
-            const suggestion = "print('Hello World!')"
-            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
-            tracker.setAcceptedTokens(suggestion)
-            assert.strictEqual(tracker.AcceptedTokensLength, 21)
+        it('unsupported language', function () {
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('cpp'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ruby'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('go'), undefined)
+        })
+
+        it('supported language', function () {
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('python'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('javascriptreact'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('java'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('javascript'), undefined)
+        })
+
+        it('supported language and should return singleton object per language', function () {
+            let instance1: CodeWhispererCodeCoverageTracker | undefined
+            let instance2: CodeWhispererCodeCoverageTracker | undefined
+            instance1 = CodeWhispererCodeCoverageTracker.getTracker('java')
+            instance2 = CodeWhispererCodeCoverageTracker.getTracker('java')
+            assert.notStrictEqual(instance1, undefined)
+            assert.strictEqual(Object.is(instance1, instance2), true)
+
+            instance1 = CodeWhispererCodeCoverageTracker.getTracker('python')
+            instance2 = CodeWhispererCodeCoverageTracker.getTracker('python')
+            assert.notStrictEqual(instance1, undefined)
+            assert.strictEqual(Object.is(instance1, instance2), true)
+
+            instance1 = CodeWhispererCodeCoverageTracker.getTracker('javascriptreact')
+            instance2 = CodeWhispererCodeCoverageTracker.getTracker('javascriptreact')
+            assert.notStrictEqual(instance1, undefined)
+            assert.strictEqual(Object.is(instance1, instance2), true)
+        })
+    })
+
+    describe('test isActive', function () {
+        const fakeMemeto = new FakeMemento()
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
+        afterEach(function () {
+            resetCodeWhispererGlobalVariables()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, undefined)
+            sinon.restore()
+        })
+
+        it('inactive case: telemetryEnable = true, termsAccepted = undefined | false', function () {
+            sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
+
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('python', fakeMemeto)
+            if (!tracker) assert.fail()
+            assert.strictEqual(tracker.isActive(), false)
+
+            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
+            assert.strictEqual(tracker.isActive(), false)
+        })
+
+        it('inactive case: telemetryEnabled = false, termsAccepted = undefined | false', function () {
+            sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(false)
+
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('java', fakeMemeto)
+            if (!tracker) assert.fail()
+            assert.strictEqual(tracker.isActive(), false)
+
+            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
+            assert.strictEqual(tracker.isActive(), false)
+        })
+
+        it('active case: telemetryEnabled = true, termsAccepted = true', function () {
+            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, true)
+            sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
+
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('javascript', fakeMemeto)
+            if (!tracker) assert.fail()
+            assert.strictEqual(tracker.isActive(), true)
+        })
+    })
+
+    describe('updateAcceptedTokensCount', function () {
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('Should compute edit distance to update the accepted tokens', function () {
+            if (!tracker) assert.fail()
+            const editor = createMockTextEditor('def addTwoNumbers(a, b):\n')
+
+            tracker.addAcceptedTokens(editor.document.fileName, {
+                range: new vscode.Range(0, 0, 0, 25),
+                text: `def addTwoNumbers(x, y):\n`,
+                accepted: 25,
+            })
+            tracker.addTotalTokens(editor.document.fileName, 100)
+            tracker.updateAcceptedTokensCount(editor)
+            assert.strictEqual(tracker?.acceptedTokens[editor.document.fileName][0].accepted, 23)
+        })
+    })
+
+    describe('getUnmodifiedAcceptedTokens', function () {
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('Should return correct unmodified accepted tokens count', function () {
+            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fou'), 2)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'f11111oo'), 3)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('foo', 'fo'), 2)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'HelloWorld'), 8)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('helloworld', 'World'), 4)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CODE'), 1)
+            assert.strictEqual(tracker?.getUnmodifiedAcceptedTokens('CodeWhisperer', 'CodeWhispererGood'), 13)
+        })
+    })
+
+    describe('countAcceptedTokens', function () {
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('Should skip when tracker is not active', function () {
+            if (!tracker) assert.fail()
+            tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'a', 'test.py')
+            const spy = sinon.spy(CodeWhispererCodeCoverageTracker.prototype, 'addAcceptedTokens')
+            assert.ok(!spy.called)
+        })
+
+        it('Should increase both AcceptedTokens and TotalTokens', function () {
+            if (!tracker) assert.fail()
+            tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'a', 'test.py')
+            assert.deepStrictEqual(tracker.acceptedTokens['test.py'][0], {
+                range: new vscode.Range(0, 0, 0, 1),
+                text: 'a',
+                accepted: 1,
+            })
+            assert.strictEqual(tracker.totalTokens['test.py'], 1)
+        })
+    })
+
+    describe('countTotalTokens', function () {
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
+        })
+
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('Should skip when user copy large files', function () {
+            if (!tracker) assert.fail()
+            tracker.countTotalTokens({
+                document: createMockDocument(),
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 30),
+                        rangeOffset: 0,
+                        rangeLength: 30,
+                        text: 'def twoSum(nums, target):\nfor',
+                    },
+                ],
+            })
+
+            const startedSpy = sinon.spy(CodeWhispererCodeCoverageTracker.prototype, 'addTotalTokens')
+            assert.ok(!startedSpy.called)
+        })
+
+        it('Should skip when CodeWhisperer is editing', function () {
+            if (!tracker) assert.fail()
+            vsCodeState.isCodeWhispererEditing = true
+            tracker.countTotalTokens({
+                document: createMockDocument(),
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 30),
+                        rangeOffset: 0,
+                        rangeLength: 30,
+                        text: 'def twoSum(nums, target):\nfor',
+                    },
+                ],
+            })
+            const startedSpy = sinon.spy(CodeWhispererCodeCoverageTracker.prototype, 'addTotalTokens')
+            assert.ok(!startedSpy.called)
+        })
+
+        it('Should reduce tokens when delete', function () {
+            if (!tracker) assert.fail()
+            const doc = createMockDocument('import math', 'test.py', 'python')
+            tracker.countTotalTokens({
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 3),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: 'aaa',
+                    },
+                ],
+            })
+            tracker.countTotalTokens({
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 1),
+                        rangeOffset: 1,
+                        rangeLength: 1,
+                        text: '',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
+        })
+
+        it('Should add tokens when type', function () {
+            if (!tracker) assert.fail()
+            const doc = createMockDocument('import math', 'test.py', 'python')
+            tracker.countTotalTokens({
+                document: doc,
+                contentChanges: [
+                    {
+                        range: new vscode.Range(0, 0, 0, 1),
+                        rangeOffset: 0,
+                        rangeLength: 0,
+                        text: 'a',
+                    },
+                ],
+            })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 1)
         })
     })
 
     describe('flush', function () {
-        const mockGlobalStorage1: vscode.Memento = {
-            update: sinon.spy(),
-            get: sinon.stub().returns(false),
-        }
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
-            CodeWhispererCodeCoverageTracker.instances.delete(language)
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
         })
 
-        it('Should not send codecoverage telemetry if CodeWhisperer is disabled', function () {
-            const suggestion1 = "print('Hello World!)"
-            const suggestion2 = "print('Hello World!)"
-            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage1)
-            tracker.setTotalTokens(suggestion1)
-            tracker.setAcceptedTokens(suggestion2)
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('Should not send codecoverage telemetry if tracker is not active', function () {
+            if (!tracker) assert.fail()
+            sinon.restore()
+            sinon.stub(tracker, 'isActive').returns(false)
+
+            tracker.addAcceptedTokens(`test.py`, { range: new vscode.Range(0, 0, 0, 7), text: `print()`, accepted: 7 })
+            tracker.addTotalTokens(`test.py`, 100)
             tracker.flush()
             const data = globals.telemetry.logger.query({
                 metricName: 'codewhisperer_codePercentage',
-                filters: ['awsAccount'],
+                excludeKeys: ['awsAccount'],
             })
             assert.strictEqual(data.length, 0)
         })
     })
 
     describe('emitCodeWhispererCodeContribution', function () {
+        let tracker: CodeWhispererCodeCoverageTracker | undefined
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
-            CodeWhispererCodeCoverageTracker.instances.delete(language)
+            tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+            if (tracker) {
+                sinon.stub(tracker, 'isActive').returns(true)
+            }
         })
 
-        it(' emits codecoverage telemetry ', function () {
-            const sample = "print('Hello World!)"
-            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
+        afterEach(function () {
+            sinon.restore()
+            CodeWhispererCodeCoverageTracker.instances.clear()
+        })
+
+        it('should emit correct code coverage telemetry in python file', function () {
+            const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
+
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
-            tracker.setAcceptedTokens(sample)
-            tracker.emitCodeWhispererCodeContribution()
+            tracker?.addAcceptedTokens(`test.py`, { range: new vscode.Range(0, 0, 0, 7), text: `print()`, accepted: 7 })
+            tracker?.addTotalTokens(`test.py`, 100)
+            tracker?.emitCodeWhispererCodeContribution()
+
             assertTelemetry({
-                codewhispererTotalTokens: 20,
-                codewhispererStartTime: 'Thu Jan 01 1970 00:00:00 GMT+0000 (Coordinated Universal Time)',
+                codewhispererTotalTokens: 100,
                 codewhispererLanguage: language,
-                codewhispererAcceptedTokens: 20,
-                codewhispererPercentage: 100,
+                codewhispererAcceptedTokens: 7,
+                codewhispererPercentage: 7,
+                successCount: 0,
+            })
+        })
+
+        it('should emit correct code coverage telemetry in java file', function () {
+            const tracker = CodeWhispererCodeCoverageTracker.getTracker('java')
+
+            const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
+            tracker?.addAcceptedTokens(`test.java`, {
+                range: new vscode.Range(0, 0, 0, 18),
+                text: `public static main`,
+                accepted: 18,
+            })
+            tracker?.addTotalTokens(`test.java`, 30)
+            tracker?.emitCodeWhispererCodeContribution()
+            assertTelemetry({
+                codewhispererTotalTokens: 30,
+                codewhispererLanguage: 'java',
+                codewhispererAcceptedTokens: 18,
+                codewhispererPercentage: 60,
+                successCount: 0,
             })
         })
     })

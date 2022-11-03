@@ -7,9 +7,11 @@ import * as assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
+import { DevSettings } from '../../shared/settings'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
+import { TestSettings } from '../utilities/testSettingsConfiguration'
 
 describe('DefaultAwsClientBuilder', function () {
     let builder: AWSClientBuilder
@@ -43,6 +45,42 @@ describe('DefaultAwsClientBuilder', function () {
             })
 
             assert.strictEqual(service.config.customUserAgent, 'CUSTOM USER AGENT')
+        })
+
+        it('can use endpoint override', async function () {
+            const settings = new TestSettings()
+            await settings.update('aws.dev.endpoints', { foo: 'http://example.com' })
+
+            const service = await builder.createAwsService(
+                Service,
+                {
+                    customUserAgent: 'CUSTOM USER AGENT',
+                    apiConfig: { metadata: { serviceId: 'foo' } },
+                } as any,
+                undefined,
+                undefined,
+                new DevSettings(settings)
+            )
+
+            assert.strictEqual(service.config.endpoint, 'http://example.com')
+        })
+
+        it('does not clobber endpoint setting if no override is present', async function () {
+            const settings = new TestSettings()
+
+            const service = await builder.createAwsService(
+                Service,
+                {
+                    customUserAgent: 'CUSTOM USER AGENT',
+                    apiConfig: { metadata: { serviceId: 'foo' } },
+                    endpoint: 'http://example.com',
+                } as any,
+                undefined,
+                undefined,
+                new DevSettings(settings)
+            )
+
+            assert.strictEqual(service.config.endpoint, 'http://example.com')
         })
 
         describe('request listeners', function () {

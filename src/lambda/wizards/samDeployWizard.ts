@@ -13,11 +13,9 @@ import * as vscode from 'vscode'
 import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
@@ -43,6 +41,7 @@ import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -351,10 +350,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForRegion(step: number, initialRegionCode?: string): Promise<string | undefined> {
-        const partitionRegions = getRegionsForActiveCredentials(
-            this.extContext.awsContext,
-            this.extContext.regionProvider
-        )
+        const partitionRegions = this.extContext.regionProvider.getRegions()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -804,13 +800,13 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 vscode.window.showInformationMessage(
                     localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
                 )
-                telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+                telemetry.s3_createBucket.emit({ result: 'Succeeded' })
             } catch (e) {
                 showViewLogsMessage(
                     localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
                     vscode.window
                 )
-                telemetry.recordS3CreateBucket({ result: 'Failed' })
+                telemetry.s3_createBucket.emit({ result: 'Failed' })
                 return WIZARD_RETRY
             }
         } else if (response === ENTER_BUCKET) {

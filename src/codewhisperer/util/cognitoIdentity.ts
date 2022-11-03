@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 
@@ -29,7 +29,6 @@ export const getCognitoCredentials = async (): Promise<CognitoIdentityCredential
         }
 
         const credentials = new CognitoIdentityCredentials({ IdentityId: identityId }, { region })
-        await credentials.getPromise()
         return credentials
     } catch (err) {
         getLogger().error(`Failed to initialize Cognito identity for CodeWhisperer: ${err} in region: ${region}`)

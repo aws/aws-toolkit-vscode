@@ -10,7 +10,7 @@ import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
 import path = require('path')
 import { tempDirPath } from '../../../shared/filesystemUtilities'
-import { CodeWhispererConstants } from '../../models/constants'
+import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
 
 export interface Truncation {

@@ -272,7 +272,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
         // user opens a template file
         vscode.workspace.onDidOpenTextDocument(
             async (doc: vscode.TextDocument) => {
-                promptInstallYamlPlugin(doc.fileName, yamlPromptDisposables)
+                promptInstallYamlPluginFromFilename(doc.fileName, yamlPromptDisposables)
             },
             undefined,
             yamlPromptDisposables
@@ -286,6 +286,46 @@ async function createYamlExtensionPrompt(): Promise<void> {
             undefined,
             yamlPromptDisposables
         )
+
+        /**
+         * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
+         * in the document
+         * @param event An vscode text document change event
+         * @returns nothing
+         */
+        async function promptOnAWSTemplateFormatVersion(event: vscode.TextDocumentChangeEvent): Promise<void> {
+            for (const change of event.contentChanges) {
+                const changedLine = event.document.lineAt(change.range.start.line)
+                if (changedLine.text.includes('AWSTemplateFormatVersion')) {
+                    promptInstallYamlPlugin(yamlPromptDisposables)
+                    return
+                }
+            }
+            return
+        }
+
+        const promptNotifications = new Map<string, Promise<unknown>>()
+        vscode.workspace.onDidChangeTextDocument(
+            (event: vscode.TextDocumentChangeEvent) => {
+                const uri = event.document.uri.toString()
+                if (
+                    event.document.languageId === 'yaml' &&
+                    !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml) &&
+                    !promptNotifications.has(uri)
+                ) {
+                    promptNotifications.set(
+                        uri,
+                        promptOnAWSTemplateFormatVersion(event).finally(() => promptNotifications.delete(uri))
+                    )
+                }
+            },
+            undefined,
+            yamlPromptDisposables
+        )
+
+        vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
+            promptNotifications.delete(event.uri.toString())
+        })
 
         // user already has an open template with focus
         // prescreen if a template.yaml is current open so we only call once
@@ -305,56 +345,62 @@ async function promptInstallYamlPluginFromEditor(
     disposables: vscode.Disposable[]
 ): Promise<void> {
     if (editor) {
-        promptInstallYamlPlugin(editor.document.fileName, disposables)
+        promptInstallYamlPluginFromFilename(editor.document.fileName, disposables)
     }
 }
 
 /**
- * Looks for template.yaml and template.yml files and disp[oses prompts
+ * Prompt user to install YAML plugin for template.yaml and template.yml files
  * @param fileName File name to check against
  * @param disposables List of disposables to dispose of when the filename is a template YAML file
  */
-async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
+async function promptInstallYamlPluginFromFilename(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
     if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
-        // immediately dispose other triggers so it doesn't flash again
-        for (const prompt of disposables) {
-            prompt.dispose()
-        }
-        const settings = PromptSettings.instance
+        promptInstallYamlPlugin(disposables)
+    }
+}
 
-        const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
-        const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
-        const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
+/**
+ * Show the install YAML extension prompt and dispose other listeners
+ * @param disposables
+ */
+async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
+    // immediately dispose other triggers so it doesn't flash again
+    for (const prompt of disposables) {
+        prompt.dispose()
+    }
+    const settings = PromptSettings.instance
 
-        const response = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.info.yaml.prompt',
-                'Install YAML extension for additional {0} features.',
-                getIdeProperties().company
-            ),
-            goToMarketplace,
-            dismiss,
-            permanentlySuppress
-        )
+    const installBtn = localize('AWS.missingExtension.install', 'Install...')
+    const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Don't show again")
 
-        switch (response) {
-            case goToMarketplace:
-                // Available options are:
-                // extension.open: opens extension page in VS Code extension marketplace view
-                // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
-                // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+    const response = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.info.yaml.prompt',
+            'Install YAML extension for more {0} features in CloudFormation templates',
+            getIdeProperties().company
+        ),
+        installBtn,
+        permanentlySuppress
+    )
 
-                // not sure if these are 100% stable.
-                // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
-                try {
-                    await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
-                } catch (e) {
-                    const err = e as Error
-                    getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
-                }
-                break
-            case permanentlySuppress:
-                settings.disablePrompt('yamlExtPrompt')
-        }
+    switch (response) {
+        case installBtn:
+            // Available options are:
+            // extension.open: opens extension page in VS Code extension marketplace view
+            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
+            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+
+            // not sure if these are 100% stable.
+            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
+            try {
+                await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
+            } catch (e) {
+                const err = e as Error
+                getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
+            }
+            break
+        case permanentlySuppress:
+            settings.disablePrompt('yamlExtPrompt')
     }
 }

@@ -110,9 +110,37 @@ export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<A
 }
 
 function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | undefined> {
-    return addTypeName(`Optional<${getTypeName(type)}>`, input =>
-        isNonNullable(input) ? cast(input, type) : undefined
+    return addTypeName(`Optional<${getTypeName(type)}>`, value =>
+        isNonNullable(value) ? cast(value, type) : undefined
     )
+}
+
+function InstanceConstructor<T>(type: new (...args: any[]) => T): TypeConstructor<T> {
+    return value => {
+        if (!(value instanceof type)) {
+            throw new TypeError('Value is not an instance of the expected type')
+        }
+
+        return value
+    }
+}
+
+export function Record<T extends PropertyKey, U>(
+    key: TypeConstructor<T>,
+    value: TypeConstructor<U>
+): TypeConstructor<Record<T, U>> {
+    return input => {
+        if (!(typeof input === 'object') || !input) {
+            throw new TypeError('Value is not a non-nullable object')
+        }
+
+        const result = {} as Record<T, U>
+        for (const [k, v] of Object.entries(input)) {
+            result[cast(k, key)] = cast(v, value)
+        }
+
+        return result
+    }
 }
 
 export type Optional<T> = TypeConstructor<T | undefined>
@@ -121,3 +149,6 @@ export const Optional = OptionalConstructor
 // Aliasing to distinguish from the concrete implementation the "primitive" object
 export type Any = any
 export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
+
+export type Instance<T extends new (...args: any[]) => unknown> = InstanceType<T>
+export const Instance = InstanceConstructor

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
@@ -17,7 +17,7 @@ export function getCompletionItems(document: vscode.TextDocument, position: vsco
     const completionItems: vscode.CompletionItem[] = []
     RecommendationHandler.instance.recommendations.forEach((recommendation, index) => {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
-        RecommendationHandler.instance.recommendationSuggestionState.set(index, 'Showed')
+        RecommendationHandler.instance.setSuggestionState(index, 'Showed')
     })
     return completionItems
 }
@@ -41,9 +41,7 @@ export function getCompletionItem(
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
-    let languageId = document.languageId
-    languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
-    const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+    const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
     let references = undefined
     if (recommendationDetail.references != undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references

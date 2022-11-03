@@ -41,7 +41,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                true,
                 extensionContext.globalState
             )
             assert.ok(commandSpy.calledWith('editor.action.format'))
@@ -75,7 +74,6 @@ describe('onAcceptance', function () {
                     language: 'javascript',
                     references: fakeReferences,
                 },
-                true,
                 extensionContext.globalState
             )
             assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
@@ -109,7 +107,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: fakeReferences,
                 },
-                true,
                 extensionContext.globalState
             )
             const actualArg = trackerSpy.getCall(0).args[0]
@@ -132,7 +129,7 @@ describe('onAcceptance', function () {
             RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
             RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
-            RecommendationHandler.instance.recommendationSuggestionState = new Map([[0, 'Showed']])
+            RecommendationHandler.instance.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
             TelemetryHelper.instance.completionType = 'Line'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
@@ -150,7 +147,6 @@ describe('onAcceptance', function () {
                     language: 'python',
                     references: undefined,
                 },
-                true,
                 extensionContext.globalState
             )
             assertTelemetry({

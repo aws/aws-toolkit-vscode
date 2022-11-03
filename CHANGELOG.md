@@ -1,3 +1,58 @@
+## 1.53.0 2022-10-24
+
+- **Bug Fix** Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials
+- **Bug Fix** CodeWhisperer auto trigger not working correctly in certain circumstances
+
+## 1.52.0 2022-10-20
+
+- **Bug Fix** CodeWhisperer left/right arrow keybinding conflict with other plugins
+- **Feature** Enable syntax features for untitled (unsaved) cloudformation/sam yaml files
+
+## 1.51.0 2022-10-01
+
+- **Bug Fix** styling issue in CodeWhisperer reference log
+- **Bug Fix** CodeWhisperer duplicate closing bracket when using recommendation inside brackets
+- **Bug Fix** CodeWhisperer triggered by React plugin generated code snippets
+- **Bug Fix** cached ECS/EC2 credentials not refreshed when expired
+- **Bug Fix** malformed ECS icons on recent versions of VS Code
+- **Bug Fix** CodeWhisperer sometimes edits user's code
+- **Feature** running commands on ECS tasks can now be cancelled
+- **Feature** "AWS (Developer)" menu now includes a "Show Global State" item
+- **Feature** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services
+- **Feature** Prompt users to install YAML plugin when AWSTemplateFormatVersion becomes available in their YAML document
+- **Feature** ECS tasks can be opened up in the terminal
+- **Feature** Improved CodeWhisperer inline suggestion experience
+
+## 1.50.0 2022-09-13
+
+- **Bug Fix** Debugging Python image-based lambdas fails with `Init failed error=exec: "-m": executable file not found`
+- **Feature** if "Create Credentials Profile" fails, error message now shows "Edit Credentials" button
+- **Feature** Decrease the amount of space SAM/CFN schemas take on the status bar
+- **Feature** CodeWhisperer now supports .jsx files
+
+## 1.49.0 2022-08-29
+
+- **Bug Fix** CodeWhisperer adds redundant closing brackets/parens/braces
+- **Feature** Don't open webviews in a split window (except SAM debug configuration editor).
+- **Removal** Python 3.6 is no longer supported
+
+## 1.48.0 2022-08-15
+
+- **Bug Fix** "API proposal" error on vscode 1.63 or older
+
+## 1.47.0 2022-08-06
+
+- **Bug Fix** Delve debugger installation fails for Go Lambdas on MacOS
+- **Bug Fix** restored `Connect to AWS` command (alias to the `Choose AWS Profile` command)
+- **Bug Fix** CodeWhisperer: when pressing up or down does not move cursor when suggestion is active
+- **Bug Fix** CodeWhisperer access token validation may sometimes fail
+- **Bug Fix** "Connect to AWS" does not handle missing credentials file
+- **Feature** basic syntax highlighting for ~/.aws/credentials and ~/.aws/config files
+- **Feature** `Choose AWS Profile` quickpick now includes an `Edit Credentials` action
+- **Feature** Add `Edit Credentials` command which opens all known credential files
+- **Feature** CodeWhisperer: References include a link to the source repository if possible.
+- **Feature** Auto-connect tries a maximum of one non-default profile instead of three
+
 ## 1.46.0 2022-07-25
 
 - **Bug Fix** "Read-only file system" error when deploying or debugging a SAM project #2395

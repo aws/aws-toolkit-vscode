@@ -40,7 +40,7 @@ describe('deleteRepositoryCommand', function () {
         assert.strictEqual(window.inputBox.options?.prompt, `Enter ${repositoryName} to confirm deletion`)
         assert.strictEqual(window.inputBox.options?.placeHolder, repositoryName)
 
-        assert.ok(window.message.information?.startsWith(`Deleted repository ${repositoryName}`))
+        assert.ok(window.message.information?.startsWith(`Deleted repository: ${repositoryName}`))
 
         assert.strictEqual(stub.calledOnce, true)
 
@@ -65,7 +65,7 @@ describe('deleteRepositoryCommand', function () {
         const commands = new FakeCommands()
         await deleteRepository(node, window, commands)
 
-        assert.ok(window.message.error?.startsWith(`Failed to delete repository ${repositoryName}`))
+        assert.ok(window.message.error?.startsWith(`Failed to delete repository: ${repositoryName}`))
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

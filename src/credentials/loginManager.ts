@@ -12,16 +12,9 @@ import * as vscode from 'vscode'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getLogger } from '../shared/logger'
-import {
-    CredentialSourceId,
-    CredentialType,
-    recordAwsRefreshCredentials,
-    recordAwsValidateCredentials,
-    recordVscodeActiveRegions,
-    Result,
-} from '../shared/telemetry/telemetry'
+import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
-import { CredentialsSettings, notifyUserInvalidCredentials } from './credentialsUtilities'
+import { CredentialsSettings, showLoginFailedMessage } from './credentialsUtilities'
 import {
     asString,
     CredentialsProvider,
@@ -39,6 +32,7 @@ import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -46,7 +40,9 @@ export class LoginManager {
     public constructor(
         private readonly awsContext: AwsContext,
         private readonly store: CredentialsStore,
-        public readonly recordAwsValidateCredentialsFn = recordAwsValidateCredentials
+        public readonly recordAwsValidateCredentialsFn = telemetry.aws_validateCredentials.emit.bind(
+            telemetry.aws_validateCredentials
+        )
     ) {}
 
     /**
@@ -76,7 +72,6 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
-            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
@@ -91,9 +86,10 @@ export class LoginManager {
         } catch (err) {
             const credentialsId = asString(args.providerId)
             if (!CancellationError.isUserCancelled(err)) {
-                const msg = `login: failed to connect with "${credentialsId}": ${(err as Error).message}`
+                const errMsg = (err as Error).message
+                const msg = `login: failed to connect with "${credentialsId}": ${errMsg}`
                 if (!args.passive) {
-                    notifyUserInvalidCredentials(credentialsId)
+                    showLoginFailedMessage(credentialsId, errMsg)
                     getLogger().error(msg)
                 }
             } else {
@@ -168,7 +164,7 @@ export async function loginWithMostRecentCredentials(
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
-        } else if (provider.canAutoConnect()) {
+        } else if (await provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
                 getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
@@ -228,7 +224,7 @@ export async function loginWithMostRecentCredentials(
     // Try to auto-connect any other non-default profile (useful for env vars, IMDS, Cloud9, ECS, …).
     const nonDefault = await findAsync(profileNames, async p => {
         const provider = await manager.getCredentialsProvider(providerMap[p])
-        return p !== defaultName && !!provider?.canAutoConnect()
+        return p !== defaultName && !!(await provider?.canAutoConnect())
     })
     if (nonDefault) {
         getLogger().info('autoconnect: trying "%s"', nonDefault)
@@ -313,7 +309,7 @@ function createCredentialsShim(
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (!provider.canAutoConnect()) {
+            if (!(await provider.canAutoConnect())) {
                 const message = localize('aws.credentials.expired', 'Credentials are expired or invalid, login again?')
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
@@ -342,7 +338,7 @@ function createCredentialsShim(
 
             throw error
         } finally {
-            recordAwsRefreshCredentials({
+            telemetry.aws_refreshCredentials.emit({
                 result,
                 passive: true,
                 credentialType,

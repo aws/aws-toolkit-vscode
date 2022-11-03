@@ -6,8 +6,9 @@
 import * as vscode from 'vscode'
 import { References } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
+import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
@@ -15,9 +16,12 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
     private _view?: vscode.WebviewView
     private _referenceLogs: string[] = []
-    private _settings: CodeWhispererSettings
-    constructor(private readonly _extensionUri: vscode.Uri, settings: CodeWhispererSettings) {
-        this._settings = settings
+    private _extensionUri: vscode.Uri = globals.context.extensionUri
+    constructor() {}
+    static #instance: ReferenceLogViewProvider
+
+    public static get instance() {
+        return (this.#instance ??= new this())
     }
 
     public resolveWebviewView(
@@ -34,7 +38,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         }
         this._view.webview.html = this.getHtml(
             webviewView.webview,
-            this._settings.isIncludeSuggestionsWithCodeReferencesEnabled()
+            CodeWhispererSettings.instance.isIncludeSuggestionsWithCodeReferencesEnabled()
         )
         this._view.webview.onDidReceiveMessage(data => {
             vscode.commands.executeCommand('aws.codeWhisperer.configure', 'codewhisperer')
@@ -43,7 +47,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
 
     public async update() {
         if (this._view) {
-            const showPrompt = this._settings.isIncludeSuggestionsWithCodeReferencesEnabled()
+            const showPrompt = CodeWhispererSettings.instance.isIncludeSuggestionsWithCodeReferencesEnabled()
             this._view.webview.html = this.getHtml(this._view.webview, showPrompt)
         }
     }
@@ -72,7 +76,6 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 editor.document.positionAt(
                     TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.end - 1
                 ).line + 1
-            const license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {
                 lineInfo = `(line at ${firstCharLineNumber})`
@@ -82,7 +85,14 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             if (text != ``) {
                 text += `And `
             }
-            const repository = reference.repository != undefined ? reference.repository : 'unknown'
+
+            let license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
+            let repository = reference.repository?.length ? reference.repository : 'unknown'
+            if (reference.url?.length) {
+                repository = `<a href=${reference.url}>${reference.repository}</a>`
+                license = `<b><i>${reference.licenseName || 'unknown'}</i></b>`
+            }
+
             text +=
                 CodeWhispererConstants.referenceLogText(
                     `<br><code>${code}</code><br>`,
@@ -102,7 +112,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     }
     private getHtml(webview: vscode.Webview, showPrompt: boolean): string {
         const styleVSCodeUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'css/codewhispererReferenceLog.css')
+            vscode.Uri.joinPath(this._extensionUri, 'src', 'codewhisperer', 'views/css/codewhispererReferenceLog.css')
         )
         const prompt = showPrompt ? CodeWhispererConstants.referenceLogPromptText : ''
         let csp = ''

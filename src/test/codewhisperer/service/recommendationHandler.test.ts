@@ -14,6 +14,8 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../test
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { stub } from '../../utilities/stubber'
+import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
+import { FakeMemento } from '../../fakeExtensionContext'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -29,6 +31,7 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
+        const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
 
@@ -37,7 +40,6 @@ describe('recommendationHandler', function () {
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
-            RecommendationHandler.instance.clearRecommendations()
         })
 
         afterEach(function () {
@@ -45,6 +47,13 @@ describe('recommendationHandler', function () {
         })
 
         it('should assign correct recommendations given input', async function () {
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
+            assert.strictEqual(
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
+                    ?.serviceInvocationCount,
+                0
+            )
+
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -56,18 +65,17 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter',
-                false
-            )
-            const actual = RecommendationHandler.instance.recommendations
-            const expected: RecommendationsList = [{ content: "print('Hello World!')" }]
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            const actual = handler.recommendations
+            const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
+            assert.strictEqual(
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
+                    ?.serviceInvocationCount,
+                1
+            )
         })
 
         it('should assign request id correctly', async function () {
@@ -82,17 +90,11 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter',
-                false
-            )
-            assert.strictEqual(RecommendationHandler.instance.requestId, 'test_request')
-            assert.strictEqual(RecommendationHandler.instance.sessionId, 'test_request')
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            assert.strictEqual(handler.requestId, 'test_request')
+            assert.strictEqual(handler.sessionId, 'test_request')
             assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
         })
 
@@ -108,17 +110,12 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
-            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
+            handler.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
-            await RecommendationHandler.instance.getRecommendations(
-                mockClient,
-                mockEditor,
-                'AutoTrigger',
-                config,
-                'Enter'
-            )
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
@@ -133,6 +130,39 @@ describe('recommendationHandler', function () {
                 codewhispererLanguage: 'python',
             })
         })
+
+        it('should call telemetry function that records a Empty userDecision event', async function () {
+            const mockServerResult = {
+                recommendations: [],
+                nextToken: '',
+                $response: {
+                    requestId: 'test_request_empty',
+                    httpResponse: {
+                        headers: {
+                            'x-amzn-sessionid': 'test_request_empty',
+                        },
+                    },
+                },
+            }
+            const handler = new RecommendationHandler()
+            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(performance, 'now').returns(0.0)
+            handler.startPos = new vscode.Position(1, 0)
+            TelemetryHelper.instance.cursorOffset = 2
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
+            assertTelemetry({
+                codewhispererRequestId: 'test_request_empty',
+                codewhispererSessionId: 'test_request_empty',
+                codewhispererPaginationProgress: 0,
+                codewhispererTriggerType: 'AutoTrigger',
+                codewhispererSuggestionIndex: -1,
+                codewhispererSuggestionState: 'Empty',
+                codewhispererSuggestionReferenceCount: 0,
+                codewhispererCompletionType: 'Line',
+                codewhispererLanguage: 'python',
+            })
+        })
     })
 
     describe('isValidResponse', function () {
@@ -140,24 +170,27 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
         it('should return true if any response is not empty', function () {
-            RecommendationHandler.instance.recommendations = [
+            const handler = new RecommendationHandler()
+            handler.recommendations = [
                 {
                     content:
                         '\n    // Use the console to output debug info…n of the command with the "command" variable',
                 },
                 { content: '' },
             ]
-            assert.ok(RecommendationHandler.instance.isValidResponse())
+            assert.ok(handler.isValidResponse())
         })
 
         it('should return false if response is empty', function () {
-            RecommendationHandler.instance.recommendations = []
-            assert.ok(!RecommendationHandler.instance.isValidResponse())
+            const handler = new RecommendationHandler()
+            handler.recommendations = []
+            assert.ok(!handler.isValidResponse())
         })
 
         it('should return false if all response has no string length', function () {
-            RecommendationHandler.instance.recommendations = [{ content: '' }, { content: '' }]
-            assert.ok(!RecommendationHandler.instance.isValidResponse())
+            const handler = new RecommendationHandler()
+            handler.recommendations = [{ content: '' }, { content: '' }]
+            assert.ok(!handler.isValidResponse())
         })
     })
 })

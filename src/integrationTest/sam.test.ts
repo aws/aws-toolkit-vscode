@@ -86,15 +86,6 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.50.0',
     },
     {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
-    {
         runtime: 'python3.7',
         displayName: 'python3.7 (ZIP)',
         path: 'hello_world/app.py',
@@ -189,16 +180,6 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'python3.6',
-        displayName: 'python3.6 (Image)',
-        baseImage: `amazon/python3.6-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
     {
@@ -508,11 +489,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(
-                        createSamApplication(testDir),
-                        /directory already exists/,
-                        'Promise was not rejected'
-                    )
+                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {

@@ -9,10 +9,14 @@ import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { vsCodeState, AcceptedSuggestionEntry } from '../../codewhisperer/models/model'
 import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
+import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
+import globals from '../../shared/extensionGlobals'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
+    CodeWhispererCodeCoverageTracker.instances.clear()
+    globals.telemetry.logger.clear()
 }
 
 export function createMockDocument(

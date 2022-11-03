@@ -12,6 +12,7 @@
 // Based on the multiStepInput code in the QuickInput VSCode extension sample.
 
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -25,7 +26,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { credentialHelpUrl } from '../constants'
 import { createHelpButton } from '../ui/buttons'
 import { recentlyUsed } from '../localizedText'
-import { getIcon, codicon } from '../icons'
+import { messages } from '../utilities/messages'
 
 interface ProfileEntry {
     profileName: string
@@ -51,7 +52,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<vscode.QuickPickItem> {
         // Remove this stub after we bump minimum to vscode 1.64
-        const QuickPickItemKind = (vscode as any).QuickPickItemKind
+        const QuickPickItemKind = semver.gte(vscode.version, '1.64.0') ? (vscode as any).QuickPickItemKind : undefined
         const menuTop: vscode.QuickPickItem[] = [
             // vscode 1.64 supports QuickPickItemKind.Separator.
             // https://github.com/microsoft/vscode/commit/eb416b4f9ebfda1c798aa7c8b2f4e81c6ce1984f
@@ -258,7 +259,7 @@ export async function credentialProfileSelector(
     ) {
         const actions = [
             {
-                label: localize('AWS.credentials.edit', '{0} Edit Credentials', codicon`${getIcon('vscode-edit')}`),
+                label: messages.editCredentials(true),
                 alwaysShow: true,
                 description: localize('AWS.credentials.edit.desc', 'open ~/.aws/credentials'),
             },

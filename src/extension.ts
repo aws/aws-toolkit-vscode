@@ -16,7 +16,6 @@ import { SharedCredentialsProviderFactory } from './credentials/providers/shared
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
-import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
@@ -32,7 +31,7 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { RegionProvider } from './shared/regions/regionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
@@ -41,7 +40,6 @@ import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import * as telemetry from './shared/telemetry/telemetry'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
@@ -67,6 +65,8 @@ import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
+import { UriHandler } from './shared/vscode/uriHandler'
+import { telemetry } from './shared/telemetry/telemetry'
 
 let localize: nls.LocalizeFunc
 
@@ -96,10 +96,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const endpointsProvider = makeEndpointsProvider()
 
-        const awsContext = new DefaultAwsContext(context)
+        const awsContext = new DefaultAwsContext()
         globals.awsContext = awsContext
-        const awsContextTrees = new AwsContextTreeCollection()
-        const regionProvider = new DefaultRegionProvider(endpointsProvider)
+        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
         const loginManager = new LoginManager(awsContext, credentialsStore)
 
@@ -112,7 +111,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         globals.regionProvider = regionProvider
-        globals.awsContextCommands = new AwsContextCommands(awsContext, awsContextTrees, regionProvider, loginManager)
+        globals.awsContextCommands = new AwsContextCommands(regionProvider, loginManager)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
@@ -124,6 +123,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
+
+        context.subscriptions.push(vscode.window.registerUriHandler(new UriHandler()))
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -157,28 +158,28 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
-                    telemetry.recordAwsCreateCredentials()
+                    telemetry.aws_createCredentials.emit()
                 }
             }),
             Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials()),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-                telemetry.recordAwsHelp()
+                telemetry.aws_help.emit()
             }),
             Commands.register('aws.github', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-                telemetry.recordAwsShowExtensionSource()
+                telemetry.aws_showExtensionSource.emit()
             }),
             Commands.register('aws.createIssueOnGitHub', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
-                telemetry.recordAwsReportPluginIssue()
+                telemetry.aws_reportPluginIssue.emit()
             }),
             Commands.register('aws.quickStart', async () => {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
-                    telemetry.recordAwsHelpQuickstart({ result: 'Succeeded' })
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
                 }
             }),
             Commands.register('aws.aboutToolkit', async () => {
@@ -190,7 +191,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             context: extContext,
-            awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
@@ -301,28 +301,6 @@ function makeEndpointsProvider(): EndpointsProvider {
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
-    // Start the load without waiting. It raises events as fetchers retrieve data.
-    provider.load().catch((err: Error) => {
-        getLogger().error('Failure while loading Endpoints Manifest: %O', err)
-
-        vscode.window.showErrorMessage(
-            `${localize(
-                'AWS.error.endpoint.load.failure',
-                'The {0} Toolkit was unable to load endpoints data.',
-                getIdeProperties().company
-            )} ${
-                isCloud9()
-                    ? localize(
-                          'AWS.error.impactedFunctionalityReset.cloud9',
-                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                      )
-                    : localize(
-                          'AWS.error.impactedFunctionalityReset.vscode',
-                          'Toolkit functionality may be impacted until VS Code is restarted.'
-                      )
-            }`
-        )
-    })
 
     return provider
 }
@@ -332,9 +310,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
         const activationFinishedOn = Date.now()
         const duration = activationFinishedOn - activationStartedOn
 
-        telemetry.recordToolkitInit({
-            duration: duration,
-        })
+        telemetry.toolkit_init.emit({ duration })
     } catch (err) {
         logger?.error(err as Error)
     }

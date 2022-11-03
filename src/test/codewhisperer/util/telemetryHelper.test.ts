@@ -16,38 +16,48 @@ describe('telemetryHelper', function () {
             telemetryHelper = new TelemetryHelper()
         })
 
-        it('user event is discard when recommendation 0 with accept index = -1 & recommendation prefix 0 does not match current code', function () {
-            telemetryHelper.isPrefixMatched = [false, true]
-            const actual = telemetryHelper.getSuggestionState(0, -1)
+        it('user event is discard when recommendation state is Discarded with accept index = -1', function () {
+            const actual = telemetryHelper.getSuggestionState(0, -1, new Map([[0, 'Discard']]))
             assert.strictEqual(actual, 'Discard')
         })
 
-        it('user event is reject when recommendation 0 with accept index = -1 & recommendation prefix 0 matches current code', function () {
-            telemetryHelper.isPrefixMatched = [true, true]
-            const actual = telemetryHelper.getSuggestionState(0, -1)
+        it('user event is reject when recommendation state is Showed with accept index = -1', function () {
+            const actual = telemetryHelper.getSuggestionState(0, -1, new Map([[0, 'Showed']]))
             assert.strictEqual(actual, 'Reject')
         })
 
-        it('user event is discard when recommendation 1 with accept index = 1 & recommendation prefix 1 does not match code', function () {
-            telemetryHelper.isPrefixMatched = [true, false]
-            const actual = telemetryHelper.getSuggestionState(1, 1)
-            assert.strictEqual(actual, 'Discard')
-        })
-
-        it('user event is Accept when recommendation 0 with accept index = 1 & recommendation prefix 0 matches code', function () {
-            telemetryHelper.isPrefixMatched = [true, true]
-            const actual = telemetryHelper.getSuggestionState(0, 0)
+        it('user event is Accept when recommendation state is Showed with accept index matches', function () {
+            const actual = telemetryHelper.getSuggestionState(0, 0, new Map([[0, 'Showed']]))
             assert.strictEqual(actual, 'Accept')
         })
 
-        it('user event is Ignore when recommendation 0 with accept index = 1 & recommendation prefix 0 matches code', function () {
-            telemetryHelper.isPrefixMatched = [true, true]
-            const actual = telemetryHelper.getSuggestionState(0, 1)
+        it('user event is Ignore when recommendation state is Showed with accept index does not match', function () {
+            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Showed']]))
             assert.strictEqual(actual, 'Ignore')
+        })
+
+        it('user event is Unseen when recommendation state is not Showed, is not Unseen when recommendation is showed', function () {
+            const actual0 = telemetryHelper.getSuggestionState(0, 1, new Map([[1, 'Showed']]))
+            assert.strictEqual(actual0, 'Unseen')
+            const actual1 = telemetryHelper.getSuggestionState(1, 1, new Map([[1, 'Showed']]))
+            assert.strictEqual(actual1, 'Accept')
+        })
+
+        it('user event is Filter when recommendation state is Filter', function () {
+            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Filter']]))
+            assert.strictEqual(actual, 'Filter')
+        })
+
+        it('user event is Empty when recommendation state is Empty', function () {
+            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Empty']]))
+            assert.strictEqual(actual, 'Empty')
         })
     })
 
     describe('recordUserDecisionTelemetry', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+        })
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]
@@ -57,22 +67,14 @@ describe('telemetryHelper', function () {
             telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const suggestionState = new Map<number, string>([[0, 'Showed']])
-            await telemetryHelper.recordUserDecisionTelemetry(
-                requestId,
-                sessionId,
-                response,
-                0,
-                'python',
-                0,
-                suggestionState
-            )
+            telemetryHelper.recordUserDecisionTelemetry(requestId, sessionId, response, 0, 'python', 0, suggestionState)
             assertTelemetry({
                 codewhispererRequestId: 'test_x',
                 codewhispererSessionId: 'test_x',
                 codewhispererPaginationProgress: 0,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererSuggestionIndex: 0,
-                codewhispererSuggestionState: 'Discard',
+                codewhispererSuggestionState: 'Accept',
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',

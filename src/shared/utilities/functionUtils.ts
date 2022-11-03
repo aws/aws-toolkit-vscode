@@ -36,8 +36,9 @@ export function shared<T, U extends any[]>(fn: (...args: U) => Promise<T>): (...
  */
 export function once<T>(fn: () => T): () => T {
     let val: T
+    let ran = false
 
-    return () => (val ??= fn())
+    return () => (ran ? val : ((val = fn()), (ran = true), val))
 }
 
 /**

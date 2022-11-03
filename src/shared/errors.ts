@@ -3,12 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Uri } from 'vscode'
 import { AWSError } from 'aws-sdk'
+import { ServiceException } from '@aws-sdk/smithy-client'
+import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
 
-interface ErrorInformation {
+export interface ErrorInformation {
     /**
      * Error names are optional, but if provided they should be generic yet self-explanatory.
      *
@@ -68,6 +71,13 @@ interface ErrorInformation {
      * Flag to determine if the error was from a user-initiated cancellation.
      */
     readonly cancelled?: boolean
+
+    /**
+     * A link to documentation relevant to this error.
+     *
+     * TODO: implement this
+     */
+    readonly documentationUri?: Uri
 }
 
 /**
@@ -280,4 +290,11 @@ function hasCode(error: Error): error is typeof error & { code: string } {
 
 export function isUserCancelledError(error: unknown): boolean {
     return CancellationError.isUserCancelled(error) || (error instanceof ToolkitError && error.cancelled)
+}
+
+/**
+ * Checks if the AWS SDK v3 error was caused by the client and not due to a service issue.
+ */
+export function isClientFault(error: ServiceException): boolean {
+    return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
 }

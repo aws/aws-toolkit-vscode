@@ -22,7 +22,6 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { Window } from '../../shared/vscode/window'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
@@ -40,6 +39,8 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result, Runtime } from '../../shared/telemetry/telemetry'
 
 interface SavedLambdas {
     [profile: string]: { [region: string]: string }
@@ -90,7 +91,7 @@ export interface LambdaFunction {
  * @param path Uri to the template.yaml file or the directory the command was invoked from
  */
 export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vscode.Uri) {
-    let result: telemetry.Result = 'Cancelled'
+    let result: Result = 'Cancelled'
     let lambda: LambdaFunction | undefined
 
     try {
@@ -118,9 +119,9 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
             getLogger().error(`Lambda upload failed: %O`, err)
         }
     } finally {
-        telemetry.recordLambdaUpdateFunctionCode({
+        telemetry.lambda_updateFunctionCode.emit({
             result,
-            runtime: lambda?.configuration?.Runtime as telemetry.Runtime | undefined,
+            runtime: lambda?.configuration?.Runtime as Runtime | undefined,
         })
         if (result === 'Succeeded') {
             const profile = globals.awsContext.getCredentialProfileName()
@@ -483,7 +484,7 @@ async function uploadZipBuffer(
     })
 
     Window.vscode().showInformationMessage(
-        localize('AWS.lambda.upload.done', 'Successfully uploaded Lambda function {0}', lambda.name)
+        localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
     )
 }
 

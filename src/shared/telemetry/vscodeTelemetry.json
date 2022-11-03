@@ -164,6 +164,71 @@
         {
             "name": "stepfunctions_previewstatemachine",
             "description": ""
+        },
+        {
+            "name": "vscode_activeRegions",
+            "description": "Record the number of active regions at startup and when regions are added/removed",
+            "unit": "Count",
+            "passive": true
+        },
+        {
+            "name": "aws_showExplorerErrorDetails",
+            "description": "Called when getting more details about errors thrown by the explorer",
+            "metadata": [{ "type": "result" }]
+        },
+        {
+            "name": "aws_showRegion",
+            "description": "Records a call to add a region to the explorer"
+        },
+        {
+            "name": "aws_hideRegion",
+            "description": "Records a call to remove a region from the explorer"
+        },
+        {
+            "name": "sam_detect",
+            "description": "Called when detecting the location of the SAM CLI",
+            "metadata": [{ "type": "result" }],
+            "passive": true
+        },
+        {
+            "name": "cdk_explorerDisabled",
+            "description": "Called when expanding the CDK explorer is disabled"
+        },
+        {
+            "name": "cdk_explorerEnabled",
+            "description": "Called when the CDK explorer is enabled"
+        },
+        {
+            "name": "cdk_appExpanded",
+            "description": "Called when the CDK explorer is expanded"
+        },
+        {
+            "name": "cdk_provideFeedback",
+            "description": "Called when providing feedback for CDK"
+        },
+        {
+            "name": "cdk_help",
+            "description": "Called when clicking on help for CDK"
+        },
+        {
+            "name": "cdk_refreshExplorer",
+            "description": "Called when refreshing the CDK explorer"
+        },
+        {
+            "name": "sam_attachDebugger",
+            "description": "Called after trying to attach a debugger to a local sam invoke",
+            "metadata": [
+                { "type": "result" },
+                { "type": "lambdaPackageType" },
+                { "type": "runtime" },
+                { "type": "attempts" },
+                { "type": "duration" },
+                { "type": "lambdaArchitecture", "required": false }
+            ]
+        },
+        {
+            "name": "sam_openConfigUi",
+            "description": "Called after opening the SAM Config UI"
         }
     ]
 }

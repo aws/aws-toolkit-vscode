@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as fs from 'fs'
 import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
-import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import { JavascriptDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/javascriptDependencyGraph'
 
 describe('javascriptDependencyGraph', function () {

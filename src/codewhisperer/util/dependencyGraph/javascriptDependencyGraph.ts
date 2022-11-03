@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
 import { getLogger } from '../../../shared/logger'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
-import { CodeWhispererConstants } from '../../models/constants'
+import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 

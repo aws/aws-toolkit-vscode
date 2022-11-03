@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "restored `Connect to AWS` command (alias to the `Choose AWS Profile` command)"
-}

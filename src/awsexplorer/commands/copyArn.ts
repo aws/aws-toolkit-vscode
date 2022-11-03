@@ -5,7 +5,6 @@
 
 import * as nls from 'vscode-nls'
 import { showLogOutputChannel } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -14,19 +13,21 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import { TreeShim } from '../../shared/treeview/utils'
 
 /**
  * Copies the arn of the resource represented by the given node.
  */
 export async function copyArnCommand(
-    node: AWSResourceNode,
+    node: AWSResourceNode | TreeShim<AWSResourceNode>,
     window = Window.vscode(),
     env = Env.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
+    node = node instanceof TreeShim ? node.node.resource : node
+
     try {
         copyToClipboard(node.arn, 'ARN', window, env)
-        recordCopyArn({ result: 'Succeeded' })
     } catch (e) {
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
         window
@@ -43,9 +44,5 @@ export async function copyArnCommand(
                     showLogOutputChannel()
                 }
             })
-        recordCopyArn({ result: 'Failed' })
     }
 }
-
-// TODO add telemetry for copy arn
-function recordCopyArn({ result }: { result: telemetry.Result }): void {}

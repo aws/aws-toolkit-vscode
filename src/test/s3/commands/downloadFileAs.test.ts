@@ -62,15 +62,15 @@ describe('downloadFileAsCommand', function () {
         assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
 
         assert.deepStrictEqual(outputChannel.lines, [
-            `Downloading file from s3://bucket-name/path/to/file.jpg to ${saveLocation}`,
-            `Successfully downloaded file ${saveLocation}`,
+            `Downloading "s3://bucket-name/path/to/file.jpg" to: ${saveLocation}`,
+            `Downloaded: ${saveLocation}`,
         ])
         assert.strictEqual(outputChannel.isShown, true)
         assert.strictEqual(outputChannel.isFocused, false)
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await downloadFileAsCommand(node, new FakeWindow())
+        await assert.rejects(() => downloadFileAsCommand(node, new FakeWindow()), /cancelled/i)
 
         verify(s3.downloadFileStream(anything(), anything())).never()
     })

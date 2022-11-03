@@ -4,9 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import globals from '../../shared/extensionGlobals'
-import { CodeWhispererConstants } from '../models/constants'
+import * as CodeWhispererConstants from '../models/constants'
 import {
     createEnableCodeSuggestionsNode,
     createEnterAccessCodeNode,
@@ -22,9 +21,9 @@ import { RootNode } from '../../awsexplorer/localExplorer'
 import { Experiments } from '../../shared/settings'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { Cloud9AccessState } from '../models/model'
+import { telemetry } from '../../shared/telemetry/telemetry'
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
-    public readonly treeItem = this.createTreeItem()
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
@@ -36,7 +35,7 @@ export class CodeWhispererNode implements RootNode {
             if (key === 'CodeWhisperer') {
                 this.onDidChangeVisibilityEmitter.fire()
                 const codewhispererEnabled = await Experiments.instance.isExperimentEnabled('CodeWhisperer')
-                telemetry.recordAwsExperimentActivation({
+                telemetry.aws_experimentActivation.emit({
                     experimentId: CodeWhispererConstants.experimentId,
                     experimentState: codewhispererEnabled ? 'activated' : 'deactivated',
                     passive: false,
@@ -45,7 +44,7 @@ export class CodeWhispererNode implements RootNode {
         })
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsCodeWhispererNode'

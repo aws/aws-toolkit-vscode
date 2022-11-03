@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -48,6 +48,8 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     iterator(): AsyncIterator<T, T | void>
 }
 
+const asyncCollection = Symbol('asyncCollection')
+
 /**
  * Converts an async generator function to an {@link AsyncCollection}
  *
@@ -73,6 +75,7 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
     }
 
     return Object.assign(iterable, {
+        [asyncCollection]: true,
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
         filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
@@ -83,6 +86,10 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
             asyncIterableToMap(iterable, selector),
         iterator: generator,
     })
+}
+
+export function isAsyncCollection<T>(iterable: AsyncIterable<T>): iterable is AsyncCollection<T> {
+    return asyncCollection in iterable
 }
 
 async function* mapGenerator<T, U, R = T>(
@@ -126,8 +133,10 @@ async function* delegateGenerator<T, U, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
     fn: (item: T | R, ret: () => void) => AsyncGenerator<U, void>
 ): AsyncGenerator<U, U | undefined> {
+    type LastValue = Readonly<{ isSet: false; value?: undefined } | { isSet: true; value: Awaited<U> }>
+    let last: LastValue = { isSet: false }
+
     while (true) {
-        let last: U | undefined
         const { value, done } = await generator.next()
         if (value !== undefined) {
             const delegate = fn(value, generator.return.bind(generator))
@@ -136,23 +145,27 @@ async function* delegateGenerator<T, U, R = T>(
                 if (sub.done) {
                     break
                 }
-                last = sub.value
-                if (!done) {
-                    yield last
+                if (last.isSet) {
+                    yield last.value
                 }
+                last = { isSet: true, value: sub.value as Awaited<U> }
             }
         }
         if (done) {
-            return last as Awaited<U | undefined>
+            break
         }
     }
+
+    // The last value is buffered by one step to ensure it is returned here
+    // rather than yielded in the while loops.
+    return last.value
 }
 
 async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
     if (isIterable<U>(item)) {
         yield* item
     } else {
-        yield item as U
+        yield item as unknown as U
     }
 }
 
@@ -165,10 +178,12 @@ function takeFrom<T>(count: number) {
     }
 }
 
-/** Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable */
+/**
+ * Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable
+ */
 type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
 
-function isIterable<T>(obj: any): obj is Iterable<T> {
+export function isIterable<T>(obj: any): obj is Iterable<T> {
     return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
 }
 

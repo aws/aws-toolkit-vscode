@@ -12,8 +12,6 @@ const localize = nls.loadMessageBundle()
 import { LoginManager } from '../credentials/loginManager'
 import { asString, CredentialsId, fromString } from '../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
-import { AwsContext } from './awsContext'
-import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
 import {
     credentialProfileSelector,
@@ -22,12 +20,12 @@ import {
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import * as localizedText from './localizedText'
 import { RegionProvider } from './regions/regionProvider'
-import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { PromptSettings } from './settings'
-import { CreateProfileWizard } from '../credentials/wizards/createProfile'
+import { isNonNullable } from './utilities/tsUtils'
 import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
+import { CreateProfileWizard } from '../credentials/wizards/createProfile'
 import { Profile } from './credentials/credentialsFile'
 import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/templates'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
@@ -36,18 +34,9 @@ import { SharedCredentialsProvider } from '../credentials/providers/sharedCreden
  * @deprecated
  */
 export class AwsContextCommands {
-    private readonly _awsContext: AwsContext
-    private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
 
-    public constructor(
-        awsContext: AwsContext,
-        awsContextTrees: AwsContextTreeCollection,
-        regionProvider: RegionProvider,
-        private readonly loginManager: LoginManager
-    ) {
-        this._awsContext = awsContext
-        this._awsContextTrees = awsContextTrees
+    public constructor(regionProvider: RegionProvider, private readonly loginManager: LoginManager) {
         this._regionProvider = regionProvider
     }
 
@@ -93,10 +82,9 @@ export class AwsContextCommands {
 
     public async onCommandShowRegion() {
         const window = vscode.window
-        const currentRegionsList = await this._awsContext.getExplorerRegions()
-        const currentRegions = new Set(currentRegionsList)
+        const currentRegions = new Set(this._regionProvider.getExplorerRegions())
         // All regions (in the current partition).
-        const allRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
+        const allRegions = this._regionProvider.getRegions()
 
         const items: vscode.QuickPickItem[] = []
         for (const r of allRegions) {
@@ -124,27 +112,13 @@ export class AwsContextCommands {
             return false // User canceled.
         }
 
-        const selected = new Set(result.map(res => res.detail))
-        const addedRegions = result.filter(o => !!o.detail && !currentRegions.has(o.detail)).map(o => o.detail ?? '')
-        const removedRegions = currentRegionsList.filter(o => !selected.has(o))
-
-        if (addedRegions.length > 0) {
-            await this._awsContext.addExplorerRegion(...addedRegions.values())
-        }
-
-        if (removedRegions.length > 0) {
-            await this._awsContext.removeExplorerRegion(...removedRegions.values())
-        }
-
-        if (addedRegions.length > 0 || removedRegions.length > 0) {
-            this.refresh()
+        const selected = result.map(res => res.detail).filter(isNonNullable)
+        if (selected.length !== currentRegions.size || selected.some(r => !currentRegions.has(r))) {
+            await this._regionProvider.updateExplorerRegions(selected)
+            await vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         }
 
         return true
-    }
-
-    private refresh() {
-        this._awsContextTrees.refreshTrees()
     }
 
     /**
@@ -196,7 +170,7 @@ export class AwsContextCommands {
      * editing their credentials file.
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
         const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
         const profileNames = Object.keys(providerMap)
         if (profileNames.length > 0) {

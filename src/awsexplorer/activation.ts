@@ -8,13 +8,10 @@ import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { AwsContext } from '../shared/awsContext'
-import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import globals from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { Commands } from '../shared/vscode/commands2'
@@ -27,13 +24,18 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
+import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { once } from '../shared/utilities/functionUtils'
+import { Auth, AuthNode } from '../credentials/auth'
+import { DevSettings } from '../shared/settings'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
  */
 export async function activate(args: {
     context: ExtContext
-    awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
@@ -56,9 +58,40 @@ export async function activate(args: {
         })
     )
 
-    args.awsContextTrees.addTree(awsExplorer)
+    telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
+    args.context.extensionContext.subscriptions.push(
+        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
+            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
+            awsExplorer.refresh()
+
+            if (credentialsChangedEvent.profileName) {
+                await checkExplorerForDefaultRegion(
+                    credentialsChangedEvent.profileName,
+                    args.regionProvider,
+                    awsExplorer
+                )
+            }
+        })
+    )
+
+    const nodes = DevSettings.instance.get('showAuthNode', false)
+        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
+        : [cdkNode, codewhispererNode]
+
+    const developerTools = createLocalExplorerView(nodes)
+    args.context.extensionContext.subscriptions.push(developerTools)
+
+    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
+    // Legacy CDK metric, remove this when we add something generic
+    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+    developerTools.onDidExpandElement(e => {
+        if (e.element.resource instanceof CdkRootNode) {
+            recordExpandCdkOnce()
+        }
+    })
 }
 
 async function registerAwsExplorerCommands(
@@ -71,8 +104,8 @@ async function registerAwsExplorerCommands(
             try {
                 await globals.awsContextCommands.onCommandShowRegion()
             } finally {
-                recordAwsShowRegion()
-                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+                telemetry.aws_setRegion.emit()
+                telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
         Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
@@ -82,7 +115,7 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh()
 
             if (!passive) {
-                recordAwsRefreshExplorer()
+                telemetry.aws_refreshExplorer.emit()
             }
         }),
         Commands.register(
@@ -120,25 +153,5 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh(element)
         }),
         loadMoreChildrenCommand.register(awsExplorer)
-    )
-
-    const developerTools = createLocalExplorerView()
-    context.extensionContext.subscriptions.push(developerTools)
-}
-
-function updateAwsExplorerWhenAwsContextCredentialsChange(
-    awsExplorer: AwsExplorer,
-    awsContext: AwsContext,
-    extensionContext: vscode.ExtensionContext
-) {
-    extensionContext.subscriptions.push(
-        awsContext.onDidChangeContext(async credentialsChangedEvent => {
-            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
-            awsExplorer.refresh()
-
-            if (credentialsChangedEvent.profileName) {
-                await checkExplorerForDefaultRegion(credentialsChangedEvent.profileName, awsContext, awsExplorer)
-            }
-        })
     )
 }
