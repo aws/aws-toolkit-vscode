@@ -3264,7 +3264,7 @@
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.1",
-        "@types/tcp-port-used": "^1.0.0",
+        "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
         "@types/vscode": "1.50.0",
         "@types/vscode-webview": "^1.57.0",
