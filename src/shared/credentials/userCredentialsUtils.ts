@@ -57,11 +57,18 @@ export class UserCredentialsUtils {
      *
      * @returns array of filenames for files found.
      */
-    public static async findExistingCredentialsFilenames(): Promise<string[]> {
+    public static async findExistingCredentialsFilenames(isCredentialsRequired = false): Promise<string[]> {
         const candidateFiles: string[] = [getCredentialsFilename(), getConfigFilename()]
 
         const existsResults: boolean[] = await Promise.all(
-            candidateFiles.map(async filename => await SystemUtilities.fileExists(filename))
+            candidateFiles.map(async filename => {
+                const exists = await SystemUtilities.fileExists(filename)
+                if (!exists || !isCredentialsRequired) {
+                    return exists
+                }
+                const contents = await SystemUtilities.readFile(filename)
+                return /aws_access_key_id|aws_secret_access_key|aws_session_token/i.test(contents)
+            })
         )
 
         return candidateFiles.filter((filename, index) => existsResults[index])
