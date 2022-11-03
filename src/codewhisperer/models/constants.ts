@@ -166,6 +166,8 @@ export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
 export const codeScanZipExt = '.zip'
