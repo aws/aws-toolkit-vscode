@@ -21,6 +21,11 @@ export function stub<T>(ctor: new (...args: any[]) => T, fields?: Fields<T>): St
                 return Reflect.get(target, prop, receiver)
             }
 
+            // For `Promise` support
+            if (prop === 'then') {
+                return undefined
+            }
+
             const previous = stubs.get(prop)
             if (previous !== undefined) {
                 return previous
