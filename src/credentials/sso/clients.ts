@@ -10,6 +10,7 @@ import {
     GetRoleCredentialsRequest,
     ListAccountRolesRequest,
     ListAccountsRequest,
+    LogoutRequest,
     RoleInfo,
     SSO,
     SSOServiceException,
@@ -159,6 +160,11 @@ export class SsoClient {
             ...response.roleCredentials,
             expiration: expiration ? new globals.clock.Date(expiration) : undefined,
         }
+    }
+
+    public async logout(request: Omit<LogoutRequest, OmittedProps> = {}) {
+        const method = this.client.logout.bind(this.client)
+        await this.call(method as ExtractOverload<typeof method>, request)
     }
 
     private call<T extends { accessToken: string | undefined }, U>(
