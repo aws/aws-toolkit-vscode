@@ -1754,7 +1754,7 @@
             "name": "DescribeSubscription",
             "http": {
                 "method": "GET",
-                "requestUri": "/v1/organizations/{organizationName}/subscription",
+                "requestUri": "/v1/organizations/{organizationName}/describeSubscription",
                 "responseCode": 200
             },
             "input": { "shape": "DescribeSubscriptionRequest" },
@@ -2527,6 +2527,24 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "GetExtensionIssue": {
+            "name": "GetExtensionIssue",
+            "http": {
+                "method": "POST",
+                "requestUri": "/TODO/257",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetExtensionIssueInput" },
+            "output": { "shape": "ExtensionIssueSummary" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "GetExtensionIssueScope": {
             "name": "GetExtensionIssueScope",
             "http": {
@@ -3197,6 +3215,24 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "GetSpaceActivityFeed": {
+            "name": "GetSpaceActivityFeed",
+            "http": {
+                "method": "POST",
+                "requestUri": "/TODO/112",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetSpaceActivityFeedRequest" },
+            "output": { "shape": "GetSpaceActivityFeedResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "GetSpaceInvitation": {
             "name": "GetSpaceInvitation",
             "http": {
@@ -3219,7 +3255,7 @@
             "name": "GetSpaceUsageReport",
             "http": {
                 "method": "POST",
-                "requestUri": "/v1/spaces/{name}/usageReport",
+                "requestUri": "/v1/spaces/{spaceName}/usageReport",
                 "responseCode": 200
             },
             "input": { "shape": "GetSpaceUsageReportRequest" },
@@ -3260,6 +3296,24 @@
             },
             "input": { "shape": "GetStaticAnalysisReportRequest" },
             "output": { "shape": "GetStaticAnalysisReportResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ValidationException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "GetSubscription": {
+            "name": "GetSubscription",
+            "http": {
+                "method": "GET",
+                "requestUri": "/v1/organizations/{organizationName}/subscription",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetSubscriptionRequest" },
+            "output": { "shape": "GetSubscriptionResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
@@ -10792,6 +10846,8 @@
                 "persistentStorage"
             ],
             "members": {
+                "organizationName": { "shape": "NameString" },
+                "projectName": { "shape": "NameString" },
                 "id": { "shape": "Uuid" },
                 "lastUpdatedTime": { "shape": "SyntheticTimestamp_date_time" },
                 "creatorId": { "shape": "DevEnvironmentSummaryCreatorIdString" },
@@ -11414,11 +11470,45 @@
                 "extensionVersion": { "shape": "ExtensionVersionString" }
             }
         },
+        "ExtensionIssueAssignees": {
+            "type": "list",
+            "member": { "shape": "String" }
+        },
         "ExtensionIssueScopeSummary": {
             "type": "structure",
             "members": {
                 "id": { "shape": "String" },
                 "name": { "shape": "String" },
+                "providerCanonicalId": { "shape": "String" },
+                "providerCanonicalUrl": { "shape": "String" }
+            }
+        },
+        "ExtensionIssueSummary": {
+            "type": "structure",
+            "required": [
+                "id",
+                "title",
+                "creator",
+                "createdTime",
+                "lastUpdatedTime",
+                "status",
+                "shortId",
+                "issueType",
+                "providerCanonicalId",
+                "providerCanonicalUrl"
+            ],
+            "members": {
+                "id": { "shape": "String" },
+                "title": { "shape": "String" },
+                "creator": { "shape": "String" },
+                "description": { "shape": "String" },
+                "createdTime": { "shape": "Timestamp" },
+                "lastUpdatedTime": { "shape": "Timestamp" },
+                "status": { "shape": "String" },
+                "shortId": { "shape": "String" },
+                "assignees": { "shape": "ExtensionIssueAssignees" },
+                "priority": { "shape": "String" },
+                "issueType": { "shape": "String" },
                 "providerCanonicalId": { "shape": "String" },
                 "providerCanonicalUrl": { "shape": "String" }
             }
@@ -12893,6 +12983,15 @@
                 }
             }
         },
+        "GetExtensionIssueInput": {
+            "type": "structure",
+            "required": ["organizationName", "projectName", "issueId"],
+            "members": {
+                "organizationName": { "shape": "NameString" },
+                "projectName": { "shape": "NameString" },
+                "issueId": { "shape": "String" }
+            }
+        },
         "GetExtensionIssueScopeInput": {
             "type": "structure",
             "required": ["organizationName", "projectName", "name"],
@@ -13821,6 +13920,46 @@
                 "provider": { "shape": "GetSourceRepositoryProvider" }
             }
         },
+        "GetSpaceActivityFeedRequest": {
+            "type": "structure",
+            "required": ["spaceName"],
+            "members": {
+                "spaceName": { "shape": "NameString" },
+                "actors": { "shape": "GetSpaceActivityFeedRequestActorsList" },
+                "participants": { "shape": "GetSpaceActivityFeedRequestParticipantsList" },
+                "types": { "shape": "GetSpaceActivityFeedRequestTypesList" },
+                "count": { "shape": "GetSpaceActivityFeedRequestCountInteger" },
+                "rangeStart": { "shape": "SyntheticTimestamp_date_time" },
+                "rangeEnd": { "shape": "SyntheticTimestamp_date_time" },
+                "sortBy": { "shape": "ActivityFeedSortBy" }
+            }
+        },
+        "GetSpaceActivityFeedRequestActorsList": {
+            "type": "list",
+            "member": { "shape": "SpaceActivityFeedParticipant" },
+            "min": 1
+        },
+        "GetSpaceActivityFeedRequestCountInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 1
+        },
+        "GetSpaceActivityFeedRequestParticipantsList": {
+            "type": "list",
+            "member": { "shape": "SpaceActivityFeedParticipant" },
+            "min": 1
+        },
+        "GetSpaceActivityFeedRequestTypesList": {
+            "type": "list",
+            "member": { "shape": "ActivityFeedEventType" },
+            "min": 1
+        },
+        "GetSpaceActivityFeedResponse": {
+            "type": "structure",
+            "members": {
+                "items": { "shape": "SpaceActivityFeedItemList" }
+            }
+        },
         "GetSpaceInvitationRequest": {
             "type": "structure",
             "required": ["spaceName", "id"],
@@ -13894,12 +14033,12 @@
         },
         "GetSpaceUsageReportRequest": {
             "type": "structure",
-            "required": ["name", "resourceTypes"],
+            "required": ["spaceName", "resourceTypes"],
             "members": {
-                "name": {
+                "spaceName": {
                     "shape": "NameString",
                     "location": "uri",
-                    "locationName": "name"
+                    "locationName": "spaceName"
                 },
                 "resourceTypes": { "shape": "GetSpaceUsageReportRequestResourceTypesList" }
             }
@@ -14048,6 +14187,24 @@
                 "directoryLevelFindings": { "shape": "StaticAnalysisDirectoryLevelFindings" },
                 "toolDetails": { "shape": "StaticAnalysisToolDetails" },
                 "scanRunTime": { "shape": "SyntheticTimestamp_date_time" }
+            }
+        },
+        "GetSubscriptionRequest": {
+            "type": "structure",
+            "required": ["organizationName"],
+            "members": {
+                "organizationName": {
+                    "shape": "NameString",
+                    "location": "uri",
+                    "locationName": "organizationName"
+                }
+            }
+        },
+        "GetSubscriptionResponse": {
+            "type": "structure",
+            "members": {
+                "subscriptionType": { "shape": "String" },
+                "awsAccountName": { "shape": "NameString" }
             }
         },
         "GetTestCaseResultRequest": {
@@ -16205,7 +16362,7 @@
         },
         "ListDevEnvironmentsResponse": {
             "type": "structure",
-            "required": ["organizationName", "projectName", "items"],
+            "required": ["items"],
             "members": {
                 "organizationName": { "shape": "NameString" },
                 "projectName": { "shape": "NameString" },
@@ -17639,7 +17796,15 @@
         },
         "ListSourcePullRequestsFilterKey": {
             "type": "string",
-            "enum": ["sourceRepositoryName", "title", "authorId", "status", "sourceBranchName", "destinationBranchName"]
+            "enum": [
+                "sourceRepositoryName",
+                "title",
+                "authorId",
+                "status",
+                "number",
+                "sourceBranchName",
+                "destinationBranchName"
+            ]
         },
         "ListSourcePullRequestsInput": {
             "type": "structure",
@@ -21212,6 +21377,32 @@
                 "absolutePath": { "shape": "String" },
                 "relativePath": { "shape": "String" },
                 "commitSha1": { "shape": "String" }
+            }
+        },
+        "SpaceActivityFeedItem": {
+            "type": "structure",
+            "required": ["type", "spaceName", "status", "title"],
+            "members": {
+                "type": { "shape": "ActivityFeedEventType" },
+                "spaceName": { "shape": "String" },
+                "projectName": { "shape": "String" },
+                "primaryActor": { "shape": "SpaceActivityFeedParticipant" },
+                "primaryResource": { "shape": "ResourceRef" },
+                "status": { "shape": "ActivityFeedItemStatus" },
+                "timestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "title": { "shape": "String" },
+                "content": { "shape": "String" }
+            }
+        },
+        "SpaceActivityFeedItemList": {
+            "type": "list",
+            "member": { "shape": "SpaceActivityFeedItem" }
+        },
+        "SpaceActivityFeedParticipant": {
+            "type": "structure",
+            "members": {
+                "type": { "shape": "ActivityFeedParticipantType" },
+                "name": { "shape": "String" }
             }
         },
         "SpaceInvitationClientToken": {

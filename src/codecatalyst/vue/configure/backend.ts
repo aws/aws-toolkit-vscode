@@ -107,7 +107,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
     ): Promise<DevEnvironmentSettings> {
         const organizationName = this.devenv.summary.org.name
         const subscriptionType = await this.client
-            .describeSubscription({ organizationName })
+            .getSubscription({ organizationName })
             .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
 
         async function prompt(prompter: Prompter<any>) {

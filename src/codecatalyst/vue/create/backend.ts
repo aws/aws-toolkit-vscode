@@ -104,7 +104,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     ): Promise<DevEnvironmentSettings> {
         const subscriptionType = isNonNullable(org)
             ? await this.client
-                  .describeSubscription({ organizationName: org.name })
+                  .getSubscription({ organizationName: org.name })
                   .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
             : 'FREE'
 

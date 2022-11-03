@@ -338,10 +338,10 @@ class CodeCatalystClientInternal {
         return this.call(this.sdkClient.createAccessToken(args), false)
     }
 
-    public async describeSubscription(
-        request: codecatalyst.DescribeSubscriptionRequest
-    ): Promise<codecatalyst.DescribeSubscriptionResponse> {
-        return this.call(this.sdkClient.describeSubscription(request), false)
+    public async getSubscription(
+        request: codecatalyst.GetSubscriptionRequest
+    ): Promise<codecatalyst.GetSubscriptionResponse> {
+        return this.call(this.sdkClient.getSubscription(request), false)
     }
 
     /**
