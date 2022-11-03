@@ -215,12 +215,28 @@ export async function prepareDevEnvConnection(
     }
 }
 
+/**
+ * Starts the given devenv, waits, and connects a new vscode instance when the devenv is ready.
+ *
+ * @param client CodeCatalyst service client
+ * @param devenv DevEnvironment to open
+ * @param targetPath vscode workspace (default: "/projects/[repo]")
+ */
 export async function openDevEnv(
     client: ConnectedCodeCatalystClient,
     devenv: DevEnvironmentId,
-    targetPath = '/projects'
+    targetPath?: string
 ): Promise<void> {
     const { SessionProcess, vscPath } = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
+    if (!targetPath) {
+        const env = await client.getDevEnvironment({
+            organizationName: devenv.org.name,
+            projectName: devenv.project.name,
+            id: devenv.id,
+        })
+        const repo = env.repositories.length == 1 ? env.repositories[0].repositoryName : undefined
+        targetPath = repo ? `/projects/${repo}` : '/projects'
+    }
     await startVscodeRemote(SessionProcess, getHostNameFromEnv(devenv), targetPath, vscPath)
 }
 
