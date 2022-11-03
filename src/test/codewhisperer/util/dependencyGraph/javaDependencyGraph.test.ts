@@ -10,7 +10,7 @@ import * as fs from 'fs'
 import { JavaDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/javaDependencyGraph'
 import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
-import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 
 describe('javaDependencyGraph', function () {
     const languageId = 'java'

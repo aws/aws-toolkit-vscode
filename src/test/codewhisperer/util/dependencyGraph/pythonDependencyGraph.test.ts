@@ -10,7 +10,7 @@ import * as fs from 'fs'
 import { PythonDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/pythonDependencyGraph'
 import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
-import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
+import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 
 describe('pythonDependencyGraph', function () {
     const languageId = 'python'
