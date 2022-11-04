@@ -1718,6 +1718,11 @@
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.logout",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@1"
                 }
             ]
         },
@@ -1814,6 +1819,11 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.auth.logout",
+                "title": "%AWS.command.logout%",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.createIssueOnGitHub",
