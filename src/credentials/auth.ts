@@ -482,6 +482,7 @@ export async function promptLogin(auth: Auth) {
 }
 
 const loginCommand = Commands.register('aws.auth.login', promptLogin)
+Commands.register('aws.auth.logout', () => Auth.instance.logout())
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
     const emitter = new vscode.EventEmitter<U>()
@@ -508,6 +509,7 @@ export class AuthNode {
         const item = new vscode.TreeItem(itemLabel)
         item.iconPath = getIcon('vscode-account')
         item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
+        item.contextValue = 'awsAuthNode'
 
         return item
     }
