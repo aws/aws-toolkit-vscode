@@ -10,5 +10,8 @@
   }, {
     "type" : "deprecation",
     "description" : "An upcoming release will remove support for IDEs based on the 2021.3 platform"
-  } ]
+  }, {
+      "type" : "bugfix",
+      "description" : "Fix `java.lang.IllegalStateException: Region provider data is missing default data` (#3264)"
+      } ]
 }
