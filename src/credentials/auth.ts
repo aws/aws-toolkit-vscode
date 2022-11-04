@@ -356,6 +356,12 @@ export class Auth implements AuthService, ConnectionManager {
         return connections.find(c => c.id === connection.id)
     }
 
+    /**
+     * Attempts to remove all auth state related to the connection.
+     *
+     * For SSO, this involves an API call to clear server-side state. The call happens
+     * before the local token(s) are cleared as they are needed in the request.
+     */
     private async invalidateConnection(id: Connection['id']) {
         const profile = this.store.getProfileOrThrow(id)
 
@@ -482,6 +488,7 @@ export async function promptLogin(auth: Auth) {
 }
 
 const loginCommand = Commands.register('aws.auth.login', promptLogin)
+Commands.register('aws.auth.logout', () => Auth.instance.logout())
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
     const emitter = new vscode.EventEmitter<U>()
@@ -508,6 +515,7 @@ export class AuthNode {
         const item = new vscode.TreeItem(itemLabel)
         item.iconPath = getIcon('vscode-account')
         item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
+        item.contextValue = 'awsAuthNode'
 
         return item
     }
