@@ -118,14 +118,6 @@
             "max": 100,
             "min": 1
         },
-        "MynahContext": {
-            "type": "structure",
-            "members": {
-                "matchPolicy": {
-                    "shape": "MatchPolicy"
-                }
-            }
-        },
         "SearchRequest": {
             "type": "structure",
             "members": {
@@ -136,12 +128,7 @@
                     "shape": "Text"
                 },
                 "context": {
-                    "shape": "Context",
-                    "deprecated": true,
-                    "deprecatedMessage": "Use `mynahContext`."
-                },
-                "mynahContext": {
-                    "shape": "MynahContext"
+                    "shape": "Context"
                 },
                 "trigger": {
                     "shape": "Trigger"
