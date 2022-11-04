@@ -34,7 +34,7 @@
 
     <settings-panel
         id="compute-settings-panel"
-        title="Compute Settings"
+        title="Dev Environment Configuration"
         description="All settings except Storage can be changed after creation."
     >
         <compute-panel v-model="compute" type="configure" @edit-settings="editCompute"></compute-panel>

@@ -3,7 +3,7 @@
         <div id="compute-grid">
             <div id="size" style="grid-area: size">
                 <div>
-                    <span class="label-context soft">Size</span>
+                    <span class="label-context soft">Compute</span>
                     <b>{{ instance.name }}</b
                     ><br />
                     {{ instance.specs }}
@@ -14,12 +14,12 @@
                     class="button-theme-secondary mt-8"
                     @click="$emit('editSettings', 'instanceType')"
                 >
-                    Edit Size
+                    Edit Compute
                 </button>
             </div>
             <div id="timeout" style="grid-area: timeout">
                 <div>
-                    <span class="label-context soft">Timeout Length</span>
+                    <span class="label-context soft">Timeout</span>
                     <b>{{ timeout }}</b>
                 </div>
                 <button
@@ -28,7 +28,7 @@
                     class="button-theme-secondary mt-8"
                     @click="$emit('editSettings', 'inactivityTimeoutMinutes')"
                 >
-                    Edit Timeout Length
+                    Edit Timeout
                 </button>
             </div>
             <div id="volume" style="grid-area: volume">
