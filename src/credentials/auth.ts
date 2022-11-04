@@ -356,6 +356,12 @@ export class Auth implements AuthService, ConnectionManager {
         return connections.find(c => c.id === connection.id)
     }
 
+    /**
+     * Attempts to remove all auth state related to the connection.
+     *
+     * For SSO, this involves an API call to clear server-side state. The call happens
+     * before the local token(s) are cleared as they are needed in the request.
+     */
     private async invalidateConnection(id: Connection['id']) {
         const profile = this.store.getProfileOrThrow(id)
 
