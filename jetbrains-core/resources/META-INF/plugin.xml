@@ -190,6 +190,11 @@ with what features/services are supported.
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialsRegionHandler"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
 
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitAuthManager"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultToolkitConnectionManager"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFileStatusHandler"/>
 
         <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
@@ -369,7 +374,16 @@ with what features/services are supported.
         <action id="aws.toolkit.open.arn.browser" class="software.aws.toolkits.jetbrains.services.federation.OpenArnInConsoleEditorPopupAction">
             <add-to-group group-id="EditorPopupMenu"/>
         </action>
-        
+
+        <action id="aws.toolkit.toolwindow.explorer.newConnection" class="software.aws.toolkits.jetbrains.core.credentials.actions.ExplorerNewConnectionAction"/>
+
+        <action id="aws.toolkit.toolwindow.credentials.rightGroup.more" class="software.aws.toolkits.jetbrains.core.credentials.actions.MoreConnectionActionsAction"/>
+        <group id="aws.toolkit.toolwindow.credentials.rightGroup.more.group">
+            <action id="aws.toolkit.toolwindow.newConnection" class="software.aws.toolkits.jetbrains.core.credentials.actions.NewConnectionAction"/>
+            <action id="aws.toolkit.toolwindow.sso.signout" class="software.aws.toolkits.jetbrains.core.credentials.actions.SsoSignoutAction"/>
+        </group>
+        <action id="aws.toolkit.toolwindow.credentials.rightGroup.help" class="software.aws.toolkits.jetbrains.core.credentials.actions.CredentialsHelpAction"/>
+
         <group id="aws.toolkit.explorer.titleBar" popup="false" compact="true">
             <reference id="aws.settings.refresh"/>
             <separator/>

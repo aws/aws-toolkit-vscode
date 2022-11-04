@@ -8,7 +8,8 @@ import com.intellij.util.messages.Topic
 import java.util.EventListener
 
 interface BearerTokenProviderListener : EventListener {
-    fun onChange(providerId: String)
+    fun onChange(providerId: String) {}
+    fun invalidate(providerId: String) {}
 
     companion object {
         @Topic.AppLevel

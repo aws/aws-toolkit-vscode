@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sso.bearer
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.util.containers.orNull
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.token.credentials.SdkToken
@@ -17,6 +19,8 @@ import software.amazon.awssdk.utils.cache.NonBlocking
 import software.amazon.awssdk.utils.cache.RefreshResult
 import software.aws.toolkits.core.ToolkitClientCustomizer
 import software.aws.toolkits.core.clients.nullDefaultProfileFile
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProviderDelegate
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
@@ -29,9 +33,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal interface BearerTokenLogoutSupport
 
-interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable {
-    val providerId: String
-
+interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBearerTokenProviderDelegate {
     /**
      * @return The best available [SdkToken] to the provider without making network calls or prompting for user input
      */
@@ -79,8 +81,10 @@ class InteractiveBearerTokenProvider(
     loginPrompt: SsoLoginCallback,
     scopes: List<String>,
     cache: DiskCache = diskCache
-) : BearerTokenProvider, BearerTokenLogoutSupport {
-    override val providerId = startUrl
+) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
+    override val id = ToolkitBearerTokenProvider.identifier(startUrl)
+    override val displayName = ToolkitBearerTokenProvider.displayName(startUrl)
+
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
     private val accessTokenProvider =
         SsoAccessTokenProvider(
@@ -96,6 +100,17 @@ class InteractiveBearerTokenProvider(
     private val lastToken = AtomicReference<AccessToken?>()
     init {
         lastToken.set(cache.loadAccessToken(accessTokenProvider.accessTokenCacheKey))
+
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun invalidate(providerId: String) {
+                    if (id == providerId) {
+                        invalidate()
+                    }
+                }
+            }
+        )
     }
 
     private fun refreshToken(): RefreshResult<out SdkToken> {
@@ -121,12 +136,16 @@ class InteractiveBearerTokenProvider(
         supplier.close()
     }
 
+    override fun dispose() {
+        close()
+    }
+
     override fun currentToken() = lastToken.get()
 
     override fun invalidate() {
         accessTokenProvider.invalidate()
         lastToken.set(null)
-        BearerTokenProviderListener.notifyCredUpdate(providerId)
+        BearerTokenProviderListener.notifyCredUpdate(id)
     }
 
     override fun reauthenticate() {
@@ -134,7 +153,7 @@ class InteractiveBearerTokenProvider(
         invalidate()
         accessTokenProvider.accessToken().also {
             lastToken.set(it)
-            BearerTokenProviderListener.notifyCredUpdate(providerId)
+            BearerTokenProviderListener.notifyCredUpdate(id)
         }
     }
 }
@@ -146,7 +165,9 @@ public enum class BearerTokenAuthState {
 }
 
 class ProfileSdkTokenProviderWrapper(region: String, private val sessionName: String) : BearerTokenProvider {
-    override val providerId = sessionName
+    override val id = sessionName
+    override val displayName = "Disk ($sessionName)"
+
     private val sdkTokenManager = OnDiskTokenManager.create(sessionName)
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
     private val tokenProvider = SsoOidcTokenProvider.builder()

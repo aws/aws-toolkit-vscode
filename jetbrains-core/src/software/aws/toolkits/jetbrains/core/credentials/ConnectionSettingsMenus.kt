@@ -5,12 +5,15 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Presentation
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbAwareToggleAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
@@ -136,7 +139,7 @@ class LocalSettingsSelector(initialRegion: AwsRegion? = null, initialCredentialI
 /**
  * Version of a [SettingsSelectorLogicBase] that stores the settings at the project level.
  */
-class ProjectLevelSettingSelector(private val project: Project, settingsMode: ChangeSettingsMode) : SettingsSelectorLogicBase(settingsMode) {
+open class ProjectLevelSettingSelector(private val project: Project, settingsMode: ChangeSettingsMode) : SettingsSelectorLogicBase(settingsMode) {
     override fun currentRegion(): AwsRegion? = AwsConnectionManager.getInstance(project).selectedRegion
 
     override fun onRegionChange(region: AwsRegion) {
@@ -151,6 +154,64 @@ class ProjectLevelSettingSelector(private val project: Project, settingsMode: Ch
 
     override fun customizeSelectionMenu(builder: ConnectionSettingsMenuBuilder) {
         builder.withRecentChoices(project)
+    }
+}
+
+class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAction(), DumbAware {
+    private val logic = object : ProjectLevelSettingSelector(project, CREDENTIALS) {
+        override fun currentCredentials(): CredentialIdentifier? {
+            val active = ToolkitConnectionManager.getInstance(project).activeConnection()
+            if (active is AwsConnectionManagerConnection) {
+                return super.currentCredentials()
+            }
+
+            return null
+        }
+
+        override fun onCredentialChange(identifier: CredentialIdentifier) {
+            super.onCredentialChange(identifier)
+            val connectionManager = ToolkitConnectionManager.getInstance(project)
+            connectionManager.switchConnection(AwsConnectionManagerConnection(project))
+        }
+    }
+
+    override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
+        val connectionManager = ToolkitConnectionManager.getInstance(project)
+        val group = DefaultActionGroup()
+        group.add(Separator.create(message("settings.credentials.individual_identity_sub_menu")))
+        group.addAll(
+            ToolkitAuthManager.getInstance().listConnections().map {
+                object : DumbAwareToggleAction(it.label) {
+                    val connection = it
+                    override fun isSelected(e: AnActionEvent): Boolean {
+                        return connectionManager.activeConnection() == connection
+                    }
+
+                    override fun setSelected(e: AnActionEvent, state: Boolean) {
+                        if (state) {
+                            connectionManager.switchConnection(connection)
+                        }
+                    }
+                }
+            }
+        )
+
+        group.addAll(
+            logic.selectionMenuActions()
+        )
+
+        return group
+    }
+
+    override fun update(e: AnActionEvent) {
+        val active = ToolkitConnectionManager.getInstance(project).activeConnection()
+        if (active is AwsConnectionManagerConnection) {
+            e.presentation.text = logic.displayValue()
+            e.presentation.description = logic.tooltip()
+        } else {
+            e.presentation.text = active?.label ?: message("settings.credentials.none_selected")
+            e.presentation.description = null
+        }
     }
 }
 
@@ -198,5 +259,38 @@ class SettingsSelectorComboLabel(private val selectorLogic: SettingsSelectorLogi
     private fun updateText() {
         label.text = selectorLogic.displayValue()
         label.toolTipText = selectorLogic.tooltip()
+    }
+}
+
+class CredsComboBoxActionGroup(private val project: Project) : DefaultActionGroup() {
+    private val toolkitConnectionAction = ToolkitConnectionComboBoxAction(project)
+    private val profileRegionSelectorGroup: Array<AnAction> by lazy {
+        arrayOf(
+            toolkitConnectionAction,
+            SettingsSelectorComboBoxAction(ProjectLevelSettingSelector(project, ChangeSettingsMode.REGIONS))
+        )
+    }
+
+    private val ssoSelectorGroup: Array<AnAction> by lazy {
+        arrayOf(
+            toolkitConnectionAction
+        )
+    }
+
+    override fun getChildren(e: AnActionEvent?): Array<AnAction> {
+        val activeConnection = ToolkitConnectionManager.getInstance(project).activeConnection()
+
+        return if (activeConnection is AwsBearerTokenConnection) {
+            ssoSelectorGroup
+        }
+        // TODO: uncomment to enable action
+//        else if (activeConnection == null) {
+//            arrayOf(
+//                ActionManager.getInstance().getAction("aws.toolkit.toolwindow.explorer.newConnection")
+//            )
+//        }
+        else {
+            profileRegionSelectorGroup
+        }
     }
 }

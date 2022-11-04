@@ -14,9 +14,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.components.BorderLayoutPanel
-import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode
-import software.aws.toolkits.jetbrains.core.credentials.ProjectLevelSettingSelector
-import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorComboBoxAction
+import software.aws.toolkits.jetbrains.core.credentials.CredsComboBoxActionGroup
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.jetbrains.services.codewhisperer.experiment.CodeWhispererExperiment
@@ -35,15 +33,36 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
         runInEdt {
             val content = BorderLayoutPanel()
             setContent(content)
-            val group = DefaultActionGroup(
-                SettingsSelectorComboBoxAction(ProjectLevelSettingSelector(project, ChangeSettingsMode.CREDENTIALS)),
-                SettingsSelectorComboBoxAction(ProjectLevelSettingSelector(project, ChangeSettingsMode.REGIONS))
-            )
+            val group = CredsComboBoxActionGroup(project)
 
-            toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).apply {
-                layoutPolicy = ActionToolbar.WRAP_LAYOUT_POLICY
-                setTargetComponent(this@AwsToolkitExplorerToolWindow)
-            }.component
+            toolbar = BorderLayoutPanel().apply {
+                addToCenter(
+                    ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).apply {
+                        layoutPolicy = ActionToolbar.WRAP_LAYOUT_POLICY
+                        setTargetComponent(this@AwsToolkitExplorerToolWindow)
+                    }.component
+                )
+
+                val moreActionAction: String? = null
+//                val moreActionAction = "aws.toolkit.toolwindow.credentials.rightGroup.more"
+                // TODO: first consumer delete this condition
+                if (moreActionAction == null) {
+                    return@apply
+                }
+                val actionManager = ActionManager.getInstance()
+                val rightActionGroup = DefaultActionGroup(
+                    actionManager.getAction("aws.toolkit.toolwindow.credentials.rightGroup.more"),
+                    actionManager.getAction("aws.toolkit.toolwindow.credentials.rightGroup.help")
+                )
+
+                addToRight(
+                    ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, rightActionGroup, true).apply {
+                        layoutPolicy = ActionToolbar.WRAP_LAYOUT_POLICY
+                        // revisit if these actions need the tool window as a data provider
+                        setTargetComponent(component)
+                    }.component
+                )
+            }
 
             // main content
             tabComponents.forEach { name, contentProvider ->

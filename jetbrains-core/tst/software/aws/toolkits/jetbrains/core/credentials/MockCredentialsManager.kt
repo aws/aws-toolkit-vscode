@@ -130,6 +130,11 @@ class MockCredentialManagerRule : ApplicationRule() {
         }
     }
 
+    fun clear() {
+        reset()
+        credentialManager.removeCredentials(DUMMY_PROVIDER_IDENTIFIER)
+    }
+
     fun reset() {
         credentialManager.reset()
     }

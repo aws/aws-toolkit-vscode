@@ -24,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
@@ -38,9 +39,11 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.ToolkitClientCustomizer
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProviderDelegate
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.anAwsRegion
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.AwsClientManager.Companion.CUSTOMIZER_EP
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
@@ -171,7 +174,7 @@ class AwsClientManagerTest {
     @Test
     fun `tokenProvider can be passed to bearer clients`() {
         val sut = getClientManager()
-        val client = sut.getClient<DummyBearerServiceClient>(TokenConnectionSettings(ToolkitBearerTokenProvider(mock()), regionProvider.createAwsRegion()))
+        val client = sut.getClient<DummyBearerServiceClient>(TokenConnectionSettings(mockTokenProvider(), regionProvider.createAwsRegion()))
 
         assertThat(client.withTokenProvider).isTrue()
     }
@@ -179,7 +182,7 @@ class AwsClientManagerTest {
     @Test
     fun `no error thrown when tokenProvider is passed to incompatible client`() {
         val sut = getClientManager()
-        sut.getClient<DummyServiceClient>(TokenConnectionSettings(ToolkitBearerTokenProvider(mock()), regionProvider.createAwsRegion()))
+        sut.getClient<DummyServiceClient>(TokenConnectionSettings(mockTokenProvider(), regionProvider.createAwsRegion()))
     }
 
     @Test
@@ -285,6 +288,12 @@ class AwsClientManagerTest {
         }
 
         wireMockRule.verify(anyRequestedFor(urlPathMatching("(.*)/functions/")).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
+    }
+
+    private fun mockTokenProvider() = mock<ToolkitBearerTokenProviderDelegate>().let {
+        whenever(it.id).thenReturn(aString())
+
+        ToolkitBearerTokenProvider(it)
     }
 
     // Test against real version so bypass ServiceManager for the client manager

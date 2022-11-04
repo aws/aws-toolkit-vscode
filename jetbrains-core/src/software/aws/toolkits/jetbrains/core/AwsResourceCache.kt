@@ -337,7 +337,6 @@ class DefaultAwsResourceCache(
     init {
         ApplicationManager.getApplication().messageBus.connect(this).apply {
             subscribe(CredentialManager.CREDENTIALS_CHANGED, this@DefaultAwsResourceCache)
-            // TODO: resource cache needs to handle bearer variant of creds
             subscribe(
                 BearerTokenProviderListener.TOPIC,
                 object : BearerTokenProviderListener {
