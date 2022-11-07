@@ -20,6 +20,7 @@ import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtili
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { hasStringProps, isNonNullable } from '../../shared/utilities/tsUtils'
 
 interface DownloadFileOptions {
     /**
@@ -119,9 +120,17 @@ export async function downloadFileAsCommand(
     const sourcePath = readablePath(node)
 
     await telemetry.s3_downloadObject.run(async () => {
-        const saveLocation = await promptForSaveLocation(file.name, window)
+        let lastUsedDownloadPath: string | undefined
+        const storedPath = globals.context.globalState.get('workbench.explorer.downloadPath')
+        if (typeof storedPath === 'object' && isNonNullable(storedPath) && hasStringProps(storedPath, 'fsPath')) {
+            lastUsedDownloadPath = path.dirname(storedPath.fsPath)
+        }
+
+        const saveLocation = await promptForSaveLocation(file.name, window, lastUsedDownloadPath)
         if (!saveLocation) {
             throw new CancellationError('user')
+        } else {
+            globals.context.globalState.update('workbench.explorer.downloadPath', saveLocation)
         }
 
         showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
@@ -140,7 +149,11 @@ export async function downloadFileAsCommand(
     })
 }
 
-async function promptForSaveLocation(fileName: string, window: Window): Promise<vscode.Uri | undefined> {
+async function promptForSaveLocation(
+    fileName: string,
+    window: Window,
+    saveLocation?: string
+): Promise<vscode.Uri | undefined> {
     const extension = path.extname(fileName)
 
     // Insertion order matters, as it determines the ordering in the filters dropdown
@@ -149,7 +162,7 @@ async function promptForSaveLocation(fileName: string, window: Window): Promise<
         ? { [`*${extension}`]: [extension.slice(1)], 'All Files': ['*'] }
         : { 'All Files': ['*'] }
 
-    const downloadPath = path.join(downloadsDir(), fileName)
+    const downloadPath = path.join(saveLocation || downloadsDir(), fileName)
     return window.showSaveDialog({
         defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
