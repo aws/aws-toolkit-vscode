@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 
 @State(name = "lambda", storages = [Storage("aws.xml")])
@@ -28,7 +28,7 @@ class LambdaSettings(private val project: Project) : PersistentStateComponent<La
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): LambdaSettings = ServiceManager.getService(project, LambdaSettings::class.java)
+        fun getInstance(project: Project): LambdaSettings = project.service()
     }
 }
 

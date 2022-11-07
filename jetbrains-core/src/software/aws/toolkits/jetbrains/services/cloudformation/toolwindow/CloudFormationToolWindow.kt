@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudformation.toolwindow
 
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 
@@ -11,6 +11,6 @@ class CloudFormationToolWindow(override val project: Project) : ToolkitToolWindo
     override val toolWindowId = "aws.cloudformation"
 
     companion object {
-        fun getInstance(project: Project) = ServiceManager.getService(project, CloudFormationToolWindow::class.java)
+        fun getInstance(project: Project) = project.service<CloudFormationToolWindow>()
     }
 }

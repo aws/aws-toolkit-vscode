@@ -9,7 +9,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.AppUIExecutor
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.ExceptionUtil
@@ -267,7 +267,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
         )
 
         @JvmStatic
-        fun getInstance(project: Project): AwsConnectionManager = ServiceManager.getService(project, AwsConnectionManager::class.java)
+        fun getInstance(project: Project): AwsConnectionManager = project.service()
 
         private val LOGGER = getLogger<AwsConnectionManager>()
         private const val MAX_HISTORY = 5

@@ -12,7 +12,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
@@ -56,7 +56,7 @@ class StackWindowManager(private val project: Project) {
     }
 
     companion object {
-        fun getInstance(project: Project): StackWindowManager = ServiceManager.getService(project, StackWindowManager::class.java)
+        fun getInstance(project: Project): StackWindowManager = project.service()
     }
 }
 

@@ -20,7 +20,7 @@ import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
@@ -312,7 +312,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     }
 
     companion object {
-        fun getInstance(project: Project): ExplorerToolWindow = ServiceManager.getService(project, ExplorerToolWindow::class.java)
+        fun getInstance(project: Project): ExplorerToolWindow = project.service()
     }
 }
 

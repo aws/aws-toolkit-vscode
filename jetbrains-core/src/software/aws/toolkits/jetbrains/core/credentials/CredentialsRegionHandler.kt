@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.notification.NotificationAction
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
@@ -21,7 +21,7 @@ interface CredentialsRegionHandler {
     fun determineSelectedRegion(identifier: CredentialIdentifier, selectedRegion: AwsRegion?): AwsRegion?
 
     companion object {
-        fun getInstance(project: Project): CredentialsRegionHandler = ServiceManager.getService(project, CredentialsRegionHandler::class.java)
+        fun getInstance(project: Project): CredentialsRegionHandler = project.service()
     }
 }
 
