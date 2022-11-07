@@ -31,6 +31,7 @@ import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
 import { DevSettings } from '../shared/settings'
 import { initNodes } from '../codecatalyst/explorer'
+import { notifyCodeCatalystBetaUsers } from '../codecatalyst/beta'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -55,6 +56,7 @@ export async function activate(args: {
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
                 await LoginManager.tryAutoConnect(args.context.awsContext)
+                await notifyCodeCatalystBetaUsers()
             }
         })
     )
