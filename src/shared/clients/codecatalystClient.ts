@@ -499,9 +499,9 @@ class CodeCatalystClientInternal {
     }
 
     public async createSourceBranch(
-        args: codecatalyst.CreateSourceBranchInput
-    ): Promise<codecatalyst.CreateSourceBranchOutput> {
-        return this.call(this.sdkClient.createSourceBranch(args), false)
+        args: codecatalyst.CreateSourceRepositoryBranchRequest
+    ): Promise<codecatalyst.CreateSourceRepositoryBranchResponse> {
+        return this.call(this.sdkClient.createSourceRepositoryBranch(args), false)
     }
 
     public async createDevEnvironment(args: codecatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {

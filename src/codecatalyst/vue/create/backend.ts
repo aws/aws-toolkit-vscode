@@ -161,11 +161,11 @@ export class CodeCatalystCreateWebview extends VueWebview {
         const isNewBranch = !!source.newBranch
         if (isNewBranch) {
             await this.client.createSourceBranch({
-                branchName: source.newBranch,
+                name: source.newBranch,
                 spaceName: source.selectedProject.org.name,
                 projectName: source.selectedProject.name,
                 sourceRepositoryName: source.selectedBranch.repo.name,
-                commitSpecifier: source.selectedBranch.headCommitId,
+                headCommitId: source.selectedBranch.headCommitId,
             })
         }
 
