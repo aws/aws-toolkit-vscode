@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { Auth, AuthNode, getSsoProfileKey, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
+import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
 import { SsoToken } from '../../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { ToolkitError } from '../../shared/errors'
@@ -80,7 +81,7 @@ describe('Auth', function () {
 
     beforeEach(function () {
         store = new ProfileStore(new FakeMemento())
-        auth = new Auth(store, getTestTokenProvider)
+        auth = new Auth(store, getTestTokenProvider, new CredentialsProviderManager())
     })
 
     it('can create a new sso connection', async function () {
@@ -139,10 +140,10 @@ describe('Auth', function () {
     })
 
     describe('useConnection', function () {
-        it('re-authenticates if the connection is invalid', async function () {
+        it('does not reauthenticate if the connection is invalid', async function () {
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
             await auth.useConnection(conn)
-            assert.strictEqual(auth.activeConnection?.state, 'valid')
+            assert.strictEqual(auth.activeConnection?.state, 'invalid')
         })
 
         it('fires an event', async function () {
@@ -230,9 +231,8 @@ describe('Auth', function () {
             const node = new AuthNode(auth)
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
             tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
-            await store.setCurrentProfileId(conn.id)
-            await auth.restorePreviousSession()
-            await assertTreeItem(node, { label: 'Connection is invalid or expired' })
+            await auth.useConnection(conn)
+            await assertTreeItem(node, { description: 'expired, click to authenticate' })
         })
     })
 })

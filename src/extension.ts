@@ -118,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const settings = Settings.instance
 
-        await initializeCredentials(context, awsContext, settings)
+        await initializeCredentials(context, awsContext, settings, loginManager)
         await activateTelemetry(context, awsContext, settings)
 
         await globals.schemaService.start()

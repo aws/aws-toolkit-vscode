@@ -23,6 +23,12 @@ import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { asString, CredentialsProvider, fromString } from './providers/credentials'
+import { once } from '../shared/utilities/functionUtils'
+import { getResourceFromTreeNode } from '../shared/treeview/utils'
+import { Instance } from '../shared/utilities/typeConstructors'
+import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -56,10 +62,15 @@ export interface SsoProfile {
     readonly scopes?: string[]
 }
 
+export interface IamProfile {
+    readonly type: 'iam'
+    readonly name: string
+}
+
 // Placeholder type.
 // Would be expanded over time to support
 // https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
-type Profile = SsoProfile
+type Profile = IamProfile | SsoProfile
 
 interface AuthService {
     /**
@@ -99,8 +110,6 @@ interface ConnectionManager {
 
     /**
      * Changes the current 'active' connection used by the Toolkit.
-     *
-     * The user may be prompted if the connection is no longer valid.
      */
     useConnection(connection: Pick<Connection, 'id'>): Promise<Connection>
 }
@@ -142,6 +151,8 @@ export class ProfileStore {
         return Object.entries(this.getData())
     }
 
+    public async addProfile(id: string, profile: SsoProfile): Promise<StoredProfile<SsoProfile>>
+    public async addProfile(id: string, profile: IamProfile): Promise<StoredProfile<IamProfile>>
     public async addProfile(id: string, profile: Profile): Promise<StoredProfile> {
         if (this.getProfile(id) !== undefined) {
             throw new Error(`Profile already exists: ${id}`)
@@ -195,6 +206,20 @@ export class ProfileStore {
     }
 }
 
+async function loadIamProfilesIntoStore(store: ProfileStore, manager: CredentialsProviderManager) {
+    const providers = await manager.getCredentialProviderNames()
+    for (const [id, profile] of store.listProfiles()) {
+        if (profile.type === 'iam' && providers[id] === undefined) {
+            await store.deleteProfile(id)
+        }
+    }
+    for (const id of Object.keys(providers)) {
+        if (store.getProfile(id) === undefined) {
+            await store.addProfile(id, { type: 'iam', name: providers[id].credentialTypeId })
+        }
+    }
+}
+
 function keyedDebounce<T, U extends any[], K extends string = string>(
     fn: (key: K, ...args: U) => Promise<T>
 ): typeof fn {
@@ -236,48 +261,52 @@ export class Auth implements AuthService, ConnectionManager {
 
     public constructor(
         private readonly store: ProfileStore,
-        private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider)
-    ) {
-        // TODO: do this lazily
-        this.restorePreviousSession().catch(err => {
-            getLogger().warn(`auth: failed to restore previous session: ${UnknownError.cast(err).message}`)
-        })
-    }
+        private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider),
+        private readonly iamProfileProvider = CredentialsProviderManager.getInstance()
+    ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined
     public get activeConnection(): StatefulConnection | undefined {
         return this.#activeConnection
     }
 
-    public async restorePreviousSession(): Promise<void> {
+    public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
         if (id === undefined) {
             return
         }
 
-        await this.setActiveConnection(id)
+        try {
+            return await this.useConnection({ id })
+        } catch (err) {
+            getLogger().warn(`auth: failed to restore previous session: ${UnknownError.cast(err).message}`)
+        }
     }
 
-    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
-        const conn = await this.setActiveConnection(id)
-        if (conn.state !== 'valid') {
-            await this.updateConnectionState(id, 'unauthenticated')
-            if (conn.type === 'sso') {
-                await conn.getToken()
-            }
+    public async reauthenticate(conn: Connection): Promise<Connection> {
+        await this.updateConnectionState(conn.id, 'unauthenticated')
+        if (conn.type === 'sso') {
+            await conn.getToken()
+        } else {
+            await conn.getCredentials()
         }
 
         return conn
     }
 
-    private async setActiveConnection(id: Connection['id']): Promise<StatefulConnection> {
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
 
         const validated = await this.validateConnection(id, profile)
-        const conn = (this.#activeConnection = this.getSsoConnection(id, validated))
+        const conn =
+            validated.type === 'sso'
+                ? this.getSsoConnection(id, validated)
+                : this.getIamConnection(id, (await this.iamProfileProvider.getCredentialsProvider(fromString(id)))!)
+
+        this.#activeConnection = conn
         this.onDidChangeActiveConnectionEmitter.fire(conn)
         await this.store.setCurrentProfileId(id)
 
@@ -296,30 +325,36 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public async listConnections(): Promise<Connection[]> {
-        return this.store.listProfiles().map(([id, profile]) => this.getSsoConnection(id, profile))
-    }
+        await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
 
-    // XXX: Used to combined scoped connections with the same startUrl into a single one
-    public async listMergedConnections(): Promise<Connection[]> {
-        return Array.from(
-            this.store
-                .listProfiles()
-                .filter((data): data is [string, StoredProfile<SsoProfile>] => data[1].type === 'sso')
-                .sort((a, b) => (a[1].scopes?.length ?? 0) - (b[1].scopes?.length ?? 0))
-                .reduce(
-                    (r, [id, profile]) => (r.set(profile.startUrl, this.getSsoConnection(id, profile)), r),
-                    new Map<string, Connection>()
-                )
-                .values()
+        const connections = await Promise.all(
+            this.store.listProfiles().map(async ([id, profile]) => {
+                if (profile.type === 'sso') {
+                    return this.getSsoConnection(id, profile)
+                } else {
+                    const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
+                    if (provider === undefined) {
+                        throw new Error('provider no found')
+                    }
+                    return this.getIamConnection(id, provider)
+                }
+            })
         )
+
+        return connections
     }
 
     public async createConnection(profile: SsoProfile): Promise<SsoConnection>
     public async createConnection(profile: Profile): Promise<Connection> {
+        if (profile.type === 'iam') {
+            throw new Error('not supported')
+        }
+
         // XXX: Scoped connections must be shared as a workaround
+        const startUrl = profile.startUrl
         if (profile.scopes) {
             const sharedProfile = sortProfilesByScope(this.store.listProfiles().map(p => p[1])).find(
-                p => p.startUrl === profile.startUrl
+                p => p.startUrl === startUrl
             )
             const scopes = Array.from(new Set([...profile.scopes, ...(sharedProfile?.scopes ?? [])]))
             profile = sharedProfile ? { ...profile, scopes } : profile
@@ -380,8 +415,12 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
-        const profile = await this.store.updateProfile(id, { connectionState })
+        const oldProfile = this.store.getProfileOrThrow(id)
+        if (oldProfile.metadata.connectionState === connectionState) {
+            return oldProfile
+        }
 
+        const profile = await this.store.updateProfile(id, { connectionState })
         if (this.#activeConnection) {
             this.#activeConnection.state = connectionState
             this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
@@ -390,10 +429,24 @@ export class Auth implements AuthService, ConnectionManager {
         return profile
     }
 
-    private async validateConnection(id: Connection['id'], profile: StoredProfile) {
-        const provider = this.getTokenProvider(id, profile)
-        if (profile.metadata.connectionState === 'valid' && (await provider.getToken()) === undefined) {
-            return this.updateConnectionState(id, 'invalid')
+    private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
+        if (profile.type === 'sso') {
+            const provider = this.getTokenProvider(id, profile)
+            if (profile.metadata.connectionState !== 'invalid' && (await provider.getToken()) === undefined) {
+                return this.updateConnectionState(id, 'invalid')
+            }
+        } else {
+            const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
+            if ((await provider?.canAutoConnect()) !== true) {
+                return this.updateConnectionState(id, 'invalid')
+            } else if (profile.metadata.connectionState !== 'invalid') {
+                try {
+                    await provider?.getCredentials()
+                    return this.updateConnectionState(id, 'valid')
+                } catch {
+                    return this.updateConnectionState(id, 'invalid')
+                }
+            }
         }
 
         return profile
@@ -409,6 +462,18 @@ export class Auth implements AuthService, ConnectionManager {
             },
             this.ssoCache
         )
+    }
+
+    private getIamConnection(id: Connection['id'], provider: CredentialsProvider): IamConnection & StatefulConnection {
+        const profile = this.store.getProfileOrThrow(id)
+
+        return {
+            id,
+            type: 'iam',
+            state: profile.metadata.connectionState,
+            label: profile.metadata.label ?? id,
+            getCredentials: () => this.debouncedGetCredentials(id, provider),
+        }
     }
 
     private getSsoConnection(
@@ -433,6 +498,19 @@ export class Auth implements AuthService, ConnectionManager {
         const token = await provider.getToken()
 
         return token ?? this.handleInvalidCredentials(id, () => provider.createToken())
+    }
+
+    private readonly debouncedGetCredentials = keyedDebounce(Auth.prototype.getCredentials.bind(this))
+    private async getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
+        if (this.store.getProfile(id)?.metadata.connectionState !== 'valid') {
+            return this.handleInvalidCredentials(id, () => provider.getCredentials())
+        }
+
+        try {
+            return await provider.getCredentials()
+        } catch (err) {
+            return this.handleInvalidCredentials(id, () => provider.getCredentials())
+        }
     }
 
     // TODO: split into 'promptInvalidCredentials' and 'authenticate' methods
@@ -467,17 +545,49 @@ export class Auth implements AuthService, ConnectionManager {
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
     }
+
+    public static readonly tryAutoConnect = once(async () => {
+        if (this.instance.activeConnection !== undefined) {
+            return
+        }
+
+        const conn = await this.instance.restorePreviousSession()
+        if (conn !== undefined) {
+            return
+        }
+
+        // TODO: try to use legacy setting
+        const defaultProfileId = asString({ credentialSource: 'profile', credentialTypeId: 'default' })
+        const ec2ProfileId = asString({ credentialSource: 'ec2', credentialTypeId: 'instance' })
+        const ecsProfileId = asString({ credentialSource: 'ecs', credentialTypeId: 'instance' })
+        const tryConnection = async (id: string) => {
+            try {
+                getLogger().info(`auth: trying to auto-connect using "${id}"`)
+                await this.instance.useConnection({ id })
+                return true
+            } catch (err) {
+                getLogger().warn(`auth: failed to auto-connect using "${id}": ${UnknownError.cast(err).message}`)
+                return false
+            }
+        }
+
+        for (const id of [defaultProfileId, ec2ProfileId, ecsProfileId]) {
+            if ((await tryConnection(id)) === true) {
+                break
+            }
+        }
+    })
 }
 
 export async function promptLogin(auth: Auth) {
     const items = (async function () {
-        const connections = await auth.listMergedConnections()
+        const connections = await auth.listConnections()
 
         return [...connections.map(c => ({ label: c.label, data: c }))]
     })()
 
     const resp = await showQuickPick(items, {
-        title: localize('aws.auth.login.title', 'Select a connection'),
+        title: localize('aws.auth.switchConnections.title', 'Select a connection'),
     })
 
     if (!isValidResponse(resp)) {
@@ -487,8 +597,44 @@ export async function promptLogin(auth: Auth) {
     await auth.useConnection(resp)
 }
 
-const loginCommand = Commands.register('aws.auth.login', promptLogin)
-Commands.register('aws.auth.logout', () => Auth.instance.logout())
+export const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+    if (auth instanceof Auth) {
+        return promptLogin(auth)
+    } else {
+        return promptLogin(getResourceFromTreeNode(auth, Instance(Auth)))
+    }
+})
+
+Commands.register('aws.auth.signout', () => Auth.instance.logout())
+Commands.register('aws.auth.addConnection', async () => {
+    // TODO: fill this out
+    ;(await Commands.get('aws.credentials.profile.create'))?.execute()
+})
+
+const reauth = Commands.register('_aws.auth.reauthenticate', (auth: Auth, conn: Connection) =>
+    auth.reauthenticate(conn)
+)
+
+Commands.register('_aws.auth.autoConnect', () => Auth.tryAutoConnect())
+
+export const selectIamCredentialsCommand = Commands.register('aws.auth.useIamCredentials', async (auth: Auth) => {
+    // TODO: list linked connections
+    const items = (async function () {
+        const connections = await auth.listConnections()
+
+        return [...connections.filter(c => c.type === 'iam').map(c => ({ label: c.label, data: c }))]
+    })()
+
+    const resp = await showQuickPick(items, {
+        title: localize('aws.auth.useIamCredentials.title', 'Select a connection'),
+    })
+
+    if (!isValidResponse(resp)) {
+        throw new CancellationError('user')
+    }
+
+    await auth.useConnection(resp)
+})
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
     const emitter = new vscode.EventEmitter<U>()
@@ -497,34 +643,30 @@ function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): 
     return emitter.event
 }
 
-export class AuthNode {
+export class AuthNode implements TreeNode<Auth> {
     public readonly id = 'auth'
     public readonly onDidChangeTreeItem = mapEventType(this.resource.onDidChangeActiveConnection)
 
     public constructor(public readonly resource: Auth) {}
 
     public getTreeItem() {
-        if (this.resource.activeConnection?.state === 'invalid') {
-            return this.createBadConnectionItem()
-        }
-
+        const conn = this.resource.activeConnection
         const itemLabel =
-            this.resource.activeConnection?.label !== undefined
-                ? localize('aws.auth.node.connected', `Connected to {0}`, this.resource.activeConnection.label)
+            conn?.label !== undefined
+                ? localize('aws.auth.node.connected', `Connected to {0}`, conn.label)
                 : localize('aws.auth.node.selectConnection', 'Select a connection...')
+
         const item = new vscode.TreeItem(itemLabel)
-        item.iconPath = getIcon('vscode-account')
-        item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
         item.contextValue = 'awsAuthNode'
 
-        return item
-    }
-
-    private createBadConnectionItem() {
-        const label = localize('aws.auth.node.invalid', 'Connection is invalid or expired')
-        const item = new vscode.TreeItem(label)
-        item.iconPath = getIcon('vscode-error')
-        item.command = loginCommand.build(this.resource).asCommand({ title: 'Login' })
+        if (conn?.state === 'invalid') {
+            item.description = 'expired, click to authenticate'
+            item.iconPath = getIcon('vscode-error')
+            item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+        } else {
+            item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })
+            item.iconPath = conn?.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
+        }
 
         return item
     }

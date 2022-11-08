@@ -1070,6 +1070,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.auth.addConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "false"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -1719,9 +1731,19 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.auth.logout",
+                    "command": "aws.auth.addConnection",
                     "when": "viewItem == awsAuthNode",
-                    "group": "inline@1"
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@3"
                 }
             ]
         },
@@ -1820,8 +1842,18 @@
                 }
             },
             {
-                "command": "aws.auth.logout",
-                "title": "%AWS.command.logout%",
+                "command": "aws.auth.addConnection",
+                "title": "%AWS.command.auth.addConnection%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.switchConnections",
+                "title": "%AWS.command.auth.switchConnections%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.signout",
+                "title": "%AWS.command.auth.signout%",
                 "category": "%AWS.title%"
             },
             {

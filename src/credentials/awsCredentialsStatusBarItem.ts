@@ -7,10 +7,11 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
+import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
 import { DevSettings } from '../shared/settings'
+import { Auth, switchConnections } from './auth'
 
 const STATUSBAR_PRIORITY = 1
 const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
@@ -24,7 +25,7 @@ export async function initializeAwsCredentialsStatusBarItem(
     context: vscode.ExtensionContext
 ): Promise<void> {
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUSBAR_PRIORITY)
-    statusBarItem.command = 'aws.login'
+    statusBarItem.command = switchConnections.build(Auth.instance).asCommand({ title: 'Switch Connections' })
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
 
@@ -34,8 +35,8 @@ export async function initializeAwsCredentialsStatusBarItem(
     handleDevSettings(devSettings, statusBarItem)
 
     context.subscriptions.push(
-        awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
-            updateCredentialsStatusBarItem(statusBarItem, ev.profileName)
+        Auth.instance.onDidChangeActiveConnection(conn => {
+            updateCredentialsStatusBarItem(statusBarItem, conn?.label)
             handleDevSettings(devSettings, statusBarItem)
         }),
         devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))

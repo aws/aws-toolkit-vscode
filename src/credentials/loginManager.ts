@@ -119,6 +119,7 @@ export class LoginManager {
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
+        this.awsContext.credentialsShim = undefined
     }
 
     private static didTryAutoConnect = false

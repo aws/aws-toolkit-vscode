@@ -4,14 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
+import { Auth, AuthNode, selectIamCredentialsCommand } from '../credentials/auth'
 import { getIdeProperties } from '../shared/extensionUtilities'
+import { getIcon } from '../shared/icons'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../shared/treeview/utils'
+import { makeChildrenNodes, TreeShim } from '../shared/treeview/utils'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
@@ -22,14 +23,6 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     private readonly logger: Logger = getLogger()
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
-
-    private readonly ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
-        undefined,
-        localize('AWS.explorerNode.connecting.label', 'Connecting...'),
-        'aws.login',
-        undefined,
-        localize('AWS.explorerNode.connecting.tooltip', 'Connecting...')
-    )
 
     private readonly ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
         undefined,
@@ -45,33 +38,19 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
     public constructor(
         private readonly extContext: vscode.ExtensionContext,
-        private readonly awsContext: AwsContext,
-        private readonly regionProvider: RegionProvider
+        private readonly regionProvider: RegionProvider,
+        private readonly auth = Auth.instance
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
-        this.extContext.subscriptions.push(
-            this.awsContext.onDidChangeContext(e => {
-                if (!e.accountId) {
-                    this.ROOT_NODE_SIGN_IN.label = localize(
-                        'AWS.explorerNode.signIn',
-                        'Connect to {0}...',
-                        getIdeProperties().company
-                    )
-                    this.ROOT_NODE_SIGN_IN.tooltip = localize(
-                        'AWS.explorerNode.signIn.tooltip',
-                        'Click here to select credentials for the {0} Toolkit',
-                        getIdeProperties().company
-                    )
-                }
-            })
-        )
+
         this.extContext.subscriptions.push(
             this.regionProvider.onDidChange(() => {
                 this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
                 this.refresh()
-            })
+            }),
+            this.auth.onDidChangeActiveConnection(() => this.refresh())
         )
     }
 
@@ -121,8 +100,20 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
-        if (!(await this.awsContext.getCredentials())) {
-            return [this.ROOT_NODE_SIGN_IN]
+        const conn = this.auth.activeConnection
+        const authNode = new TreeShim(new AuthNode(this.auth))
+        if (conn !== undefined && conn.type !== 'iam') {
+            // TODO: this should show up as a child node?
+            const selectIamNode = selectIamCredentialsCommand.build(this.auth).asTreeNode({
+                // label: `No IAM credentials linked to ${conn.label}`,
+                // iconPath: getIcon('vscode-circle-slash'),
+                label: 'Select IAM Credentials to View Resources',
+                iconPath: getIcon('vscode-sync'),
+            })
+
+            return [authNode, new TreeShim(selectIamNode)]
+        } else if (conn === undefined || conn.state !== 'valid') {
+            return [authNode]
         }
 
         const partitionRegions = this.regionProvider.getRegions()
@@ -138,10 +129,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                     key => new RegionNode(regionMap.get(key)!, this.regionProvider)
                 )
 
-                return [...this.regionNodes.values()]
+                return [authNode, ...this.regionNodes.values()]
             },
             getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
-            sort: (nodeA, nodeB) => nodeA.regionName.localeCompare(nodeB.regionName),
+            sort: (a, b) =>
+                a instanceof TreeShim ? -1 : b instanceof TreeShim ? 1 : a.regionName.localeCompare(b.regionName),
         })
     }
 }
