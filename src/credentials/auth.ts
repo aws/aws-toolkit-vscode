@@ -25,7 +25,7 @@ import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsProvider, fromString } from './providers/credentials'
-import { once } from '../shared/utilities/functionUtils'
+import { once, shared } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
@@ -690,9 +690,11 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
+    // Needed to avoid weird race conditions when rendering the node
+    private listConnections = shared(() => this.resource.listConnections())
     public async getTreeItem() {
         const conn = this.resource.activeConnection
-        if (conn === undefined && (await this.resource.listConnections()).length === 0) {
+        if (conn === undefined && (await this.listConnections()).length === 0) {
             const item = new vscode.TreeItem('Connect to AWS to Get Started...')
             item.command = addConnection.build().asCommand({ title: 'Add Connection' })
 

@@ -8,6 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { Auth, AuthNode, getSsoProfileKey, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
 import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
+import { SsoClient } from '../../credentials/sso/clients'
 import { SsoToken } from '../../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { ToolkitError } from '../../shared/errors'
@@ -82,6 +83,13 @@ describe('Auth', function () {
     beforeEach(function () {
         store = new ProfileStore(new FakeMemento())
         auth = new Auth(store, getTestTokenProvider, new CredentialsProviderManager())
+
+        sinon.replace(SsoClient, 'create', () => {
+            const s = stub(SsoClient)
+            s.logout.resolves()
+
+            return s
+        })
     })
 
     it('can create a new sso connection', async function () {
@@ -215,7 +223,13 @@ describe('Auth', function () {
     })
 
     describe('AuthNode', function () {
+        it('shows a message to create a connection if no connections exist', async function () {
+            const node = new AuthNode(auth)
+            await assertTreeItem(node, { label: 'Connect to AWS to Get Started...' })
+        })
+
         it('shows a login message if not connected', async function () {
+            await auth.createConnection(ssoProfile)
             const node = new AuthNode(auth)
             await assertTreeItem(node, { label: 'Select a connection...' })
         })
