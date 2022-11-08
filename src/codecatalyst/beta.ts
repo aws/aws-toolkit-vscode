@@ -122,6 +122,9 @@ async function promptInstallToolkit(pluginPath: vscode.Uri): Promise<void> {
 
 export async function notifyCodeCatalystBetaUsers() {
     const toolkit = globals.context.globalState.get<BetaToolkit>(BETA_TOOLKIT_KEY)
+    getLogger().verbose(
+        `codecatalyst: checking for updated beta artifact. globalState.${BETA_TOOLKIT_KEY} = ${JSON.stringify(toolkit)}`
+    )
     if (toolkit && toolkit.needUpdate) {
         await updateExtension()
     }
