@@ -77,7 +77,7 @@ describe('Connect Script', function () {
                     sessionConfiguration: { sessionType: 'SSH' },
                 }
 
-                const expectedPath = `/v1/organizations/${testDevEnv.org.name}/projects/${testDevEnv.project.name}/devEnvironments/${testDevEnv.id}/session`
+                const expectedPath = `/v1/spaces/${testDevEnv.org.name}/projects/${testDevEnv.project.name}/devEnvironments/${testDevEnv.id}/session`
 
                 assert.deepStrictEqual(body, expected)
                 assert.strictEqual(req.url, expectedPath)

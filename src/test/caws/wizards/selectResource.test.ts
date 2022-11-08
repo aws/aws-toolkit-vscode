@@ -32,7 +32,7 @@ describe('Prompts', function () {
         return instance(client)
     }
 
-    it('can list organizations', async function () {
+    it('can list spaces (organizations)', async function () {
         const prompt = createOrgPrompter(mockClient())
         const tester = createQuickPickTester(prompt)
 
@@ -42,7 +42,7 @@ describe('Prompts', function () {
         await tester.result()
     })
 
-    it('can refresh organizations', async function () {
+    it('can refresh spaces (organizations)', async function () {
         const prompt = createOrgPrompter(mockClient())
         const tester = createQuickPickTester(prompt)
         const newOrg = { type: 'org', name: 'AnotherOrg', description: 'More Text', regionName: 'region' } as const
