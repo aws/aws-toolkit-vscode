@@ -607,7 +607,7 @@ export const switchConnections = Commands.register('aws.auth.switchConnections',
 })
 
 Commands.register('aws.auth.signout', () => Auth.instance.logout())
-Commands.register('aws.auth.addConnection', async () => {
+const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const ssoItem = {
         label: codicon`${getIcon('vscode-organization')} ${localize(
             'aws.auth.ssoItem.label',
@@ -690,8 +690,15 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
-    public getTreeItem() {
+    public async getTreeItem() {
         const conn = this.resource.activeConnection
+        if (conn === undefined && (await this.resource.listConnections()).length === 0) {
+            const item = new vscode.TreeItem('Connect to AWS to Get Started...')
+            item.command = addConnection.build().asCommand({ title: 'Add Connection' })
+
+            return item
+        }
+
         const itemLabel =
             conn?.label !== undefined
                 ? localize('aws.auth.node.connected', `Connected to {0}`, conn.label)
