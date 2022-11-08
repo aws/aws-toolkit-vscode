@@ -54,7 +54,7 @@ async function updateExtension(): Promise<void> {
 
         const currentVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
         if (latestBetaVersion !== currentVersion) {
-            await promptInstallToolkit(betaPath)
+            await promptInstallToolkit(betaPath, latestBetaVersion)
         } else {
             globals.context.globalState.update(BETA_TOOLKIT_KEY, {
                 lastCheck: new Date().getTime(),
@@ -86,13 +86,14 @@ async function getBetaVersion(pluginPath: vscode.Uri): Promise<string> {
     throw new Error('Unable to verify beta toolkit version')
 }
 
-async function promptInstallToolkit(pluginPath: vscode.Uri): Promise<void> {
+async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string): Promise<void> {
     const installBtn = localize('AWS.missingExtension.install', 'Install...')
 
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.codecatalyst.beta.updatePrompt',
-            'New version of AWS Toolkit is available at the CodeCatalyst beta link. You must install the new version in order to continue using CodeCatalyst.'
+            `New version of AWS Toolkit is available at the CodeCatalyst beta URL (https://***REMOVED***.cloudfront.net/aws-toolkit-vscode.vsix). Install the new version "{0}" to continue using CodeCatalyst.`,
+            newVersion
         ),
         installBtn
     )
