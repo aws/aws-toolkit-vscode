@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
-import { getIcon } from '../shared/icons'
+import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
@@ -29,6 +29,7 @@ import { once } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { showInputBox } from '../shared/ui/inputPrompter'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -607,8 +608,48 @@ export const switchConnections = Commands.register('aws.auth.switchConnections',
 
 Commands.register('aws.auth.signout', () => Auth.instance.logout())
 Commands.register('aws.auth.addConnection', async () => {
-    // TODO: fill this out
-    ;(await Commands.get('aws.credentials.profile.create'))?.execute()
+    const ssoItem = {
+        label: codicon`${getIcon('vscode-organization')} ${localize(
+            'aws.auth.ssoItem.label',
+            "Connect with your Organization's SSO (Single-Sign-On)"
+        )}`,
+        data: 'sso' as const,
+        detail: 'For emails associated with an organization enrolled in AWS IAM Identity Center',
+    }
+
+    const iamItem = {
+        label: codicon`${getIcon('vscode-person')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+        data: 'iam' as const,
+        detail: 'Enables working with resources in Explorer',
+    }
+
+    const resp = await showQuickPick([ssoItem, iamItem], { title: 'Add a Connection to AWS' })
+    if (!isValidResponse(resp)) {
+        throw new CancellationError('user')
+    }
+
+    switch (resp) {
+        case 'iam':
+            // TODO: call `createConnection` here instead
+            return (await Commands.get('aws.credentials.profile.create'))?.execute()
+        case 'sso': {
+            const startUrl = await showInputBox({
+                title: 'SSO Connection: Enter Start URL',
+                placeholder: 'https://d-01234567890.awsapps.com/start/',
+            })
+
+            if (!isValidResponse(startUrl)) {
+                throw new CancellationError('user')
+            }
+
+            const conn = await Auth.instance.createConnection({
+                type: 'sso',
+                startUrl,
+                ssoRegion: 'us-east-1',
+            })
+            await Auth.instance.useConnection(conn)
+        }
+    }
 })
 
 const reauth = Commands.register('_aws.auth.reauthenticate', (auth: Auth, conn: Connection) =>
