@@ -166,7 +166,7 @@ async function pollDevEnvs(
             try {
                 const metadata = await client.getDevEnvironment({
                     id: id,
-                    organizationName: details.spaceName,
+                    spaceName: details.spaceName,
                     projectName: details.projectName,
                 })
 

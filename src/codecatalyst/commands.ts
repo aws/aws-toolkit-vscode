@@ -118,7 +118,7 @@ export async function stopDevEnv(
     await client.stopDevEnvironment({
         id: devenv.id,
         projectName: devenv.project.name,
-        organizationName: devenv.org.name,
+        spaceName: devenv.org.name,
     })
 }
 
@@ -126,7 +126,7 @@ export async function deleteDevEnv(client: ConnectedCodeCatalystClient, devenv: 
     await client.deleteDevEnvironment({
         id: devenv.id,
         projectName: devenv.project.name,
-        organizationName: devenv.org.name,
+        spaceName: devenv.org.name,
     })
 }
 
@@ -144,7 +144,7 @@ export async function updateDevEnv(
         ...settings,
         id: devenv.id,
         projectName: devenv.project.name,
-        organizationName: devenv.org.name,
+        spaceName: devenv.org.name,
     })
 }
 

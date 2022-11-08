@@ -24,7 +24,7 @@ function createCloneUri(target: string): vscode.Uri {
 function createConnectUri(env: DevEnvironmentId): vscode.Uri {
     const params = {
         devEnvironmentId: env.id,
-        organizationName: env.org.name,
+        spaceName: env.org.name,
         projectName: env.project.name,
     }
     const encoded = Object.entries(params)

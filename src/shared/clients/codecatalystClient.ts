@@ -97,14 +97,10 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevEnv(
-    organizationName: string,
-    projectName: string,
-    summary: codecatalyst.DevEnvironmentSummary
-): DevEnvironment {
+function toDevEnv(spaceName: string, projectName: string, summary: codecatalyst.DevEnvironmentSummary): DevEnvironment {
     return {
         type: 'devEnvironment',
-        org: { name: organizationName },
+        org: { name: spaceName },
         project: { name: projectName },
         ...summary,
     }
@@ -382,7 +378,7 @@ class CodeCatalystClientInternal {
     public async getProject(request: codecatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
 
-        return { ...resp, type: 'project', org: { name: request.organizationName } }
+        return { ...resp, type: 'project', org: { name: request.spaceName } }
     }
 
     /**
@@ -408,7 +404,7 @@ class CodeCatalystClientInternal {
             summaries =>
                 summaries?.map(s => ({
                     type: 'project',
-                    org: { name: request.organizationName },
+                    org: { name: request.spaceName },
                     ...s,
                 })) ?? []
         )
@@ -418,10 +414,10 @@ class CodeCatalystClientInternal {
      * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
     public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
-        const initRequest = { organizationName: proj.org.name, projectName: proj.name }
+        const initRequest = { spaceName: proj.org.name, projectName: proj.name }
         const requester = async (request: codecatalyst.ListDevEnvironmentsRequest) =>
             this.call(this.sdkClient.listDevEnvironments(request), true, {
-                organizationName: proj.org.name,
+                spaceName: proj.org.name,
                 projectName: proj.name,
                 items: [],
             })
@@ -443,7 +439,7 @@ class CodeCatalystClientInternal {
             summaries =>
                 summaries?.map(s => ({
                     type: 'repo',
-                    org: { name: request.organizationName },
+                    org: { name: request.spaceName },
                     project: { name: request.projectName },
                     ...s,
                 })) ?? []
@@ -459,7 +455,7 @@ class CodeCatalystClientInternal {
 
         return collection
             .filter(isNonNullable)
-            .map(items => items.map(b => intoBranch(request.organizationName, request.projectName, b)))
+            .map(items => items.map(b => intoBranch(request.spaceName, request.projectName, b)))
     }
 
     /**
@@ -490,10 +486,10 @@ class CodeCatalystClientInternal {
             case 'org':
                 return this.listSpaces()
             case 'project':
-                return mapInner(this.listResources('org'), o => this.listProjects({ organizationName: o.name }))
+                return mapInner(this.listResources('org'), o => this.listProjects({ spaceName: o.name }))
             case 'repo':
                 return mapInner(this.listResources('project'), p =>
-                    this.listSourceRepositories({ projectName: p.name, organizationName: p.org.name })
+                    this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name })
                 )
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
@@ -514,7 +510,7 @@ class CodeCatalystClientInternal {
         return this.getDevEnvironment({
             id,
             projectName: args.projectName,
-            organizationName: args.organizationName,
+            spaceName: args.spaceName,
         })
     }
 
@@ -527,7 +523,7 @@ class CodeCatalystClientInternal {
     public async createProject(args: codecatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
         await this.call(this.sdkClient.createProject(args), false)
 
-        return { ...args, type: 'project', org: { name: args.organizationName } }
+        return { ...args, type: 'project', org: { name: args.spaceName } }
     }
 
     public async startDevEnvironmentSession(
@@ -552,7 +548,7 @@ class CodeCatalystClientInternal {
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevEnvironment(a), false)
 
-        return toDevEnv(args.organizationName, args.projectName, { ...args, ...r })
+        return toDevEnv(args.spaceName, args.projectName, { ...args, ...r })
     }
 
     public async deleteDevEnvironment(

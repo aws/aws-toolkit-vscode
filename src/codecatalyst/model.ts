@@ -162,7 +162,7 @@ export async function getConnectedDevEnv(
 
     const summary = await codeCatalystClient.getDevEnvironment({
         projectName: projectName,
-        organizationName: spaceName,
+        spaceName: spaceName,
         id: devEnvId,
     })
 
@@ -189,7 +189,7 @@ export async function prepareDevEnvConnection(
     const runningDevEnv = await client.startDevEnvironmentWithProgress(
         {
             id,
-            organizationName: org.name,
+            spaceName: org.name,
             projectName: project.name,
         },
         'RUNNING'
@@ -230,7 +230,7 @@ export async function openDevEnv(
     const { SessionProcess, vscPath } = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
     if (!targetPath) {
         const env = await client.getDevEnvironment({
-            organizationName: devenv.org.name,
+            spaceName: devenv.org.name,
             projectName: devenv.project.name,
             id: devenv.id,
         })
