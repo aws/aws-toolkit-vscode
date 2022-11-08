@@ -93,6 +93,39 @@ describe('UserCredentialsUtils', function () {
             assert.strictEqual(foundFiles.length, 0)
         })
 
+        it('returns credentials files if profiles are required and config does not exist', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-exists-profiles-required-no-config-test')
+            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-config-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            createCredentialsFile(credentialsFilename, ['default'])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 1)
+        })
+
+        it('returns config files if profiles are required and credentials does not exist', async function () {
+            const credentialsFilename = path.join(
+                tempFolder,
+                'credentials-exists-profiles-required-no-credentials-test'
+            )
+            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-credentials-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            createCredentialsFile(configFilename, ['default'])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 1)
+        })
+
         it('returns empty result if files dont contain credentials', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-no-credentials-test')
             const configFilename = path.join(tempFolder, 'config-both-exist-but-no-credentials-test')
@@ -104,6 +137,22 @@ describe('UserCredentialsUtils', function () {
 
             createCredentialsFile(credentialsFilename, [])
             createCredentialsFile(configFilename, [])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 0)
+        })
+
+        it('returns empty result if files contains nonsense', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-contain-nonsense-test')
+            const configFilename = path.join(tempFolder, 'config-both-exist-but-contain-nonsense-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            fs.writeFileSync(credentialsFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
+            fs.writeFileSync(configFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
             assert.strictEqual(foundFiles.length, 0)
