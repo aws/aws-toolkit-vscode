@@ -389,7 +389,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
 
         if (errorHandler !== undefined) {
-            await errorHandler(info, error)
+            errorHandler(info, error)
         } else {
             logger.error(`command: ${label} failed without error handler: %O`, error)
             throw error
@@ -400,7 +400,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 // Error handling may involve other Toolkit modules and so it must be defined and registered at
 // the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
 // This file should contain as little application-specific logic as possible.
-let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => Promise<void> | void
+let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => void
 export function registerErrorHandler(handler: typeof errorHandler): void {
     if (errorHandler !== undefined) {
         throw new TypeError('Error handler has already been registered')

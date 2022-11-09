@@ -51,7 +51,7 @@ import { CodeCatalystConfigureWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
 import { Status } from '../../../shared/clients/devenvClient'
-import { DevEnvSettings } from '../../commands'
+import { DevEnvironmentSettings } from '../../commands'
 
 const client = WebviewClientFactory.create<CodeCatalystConfigureWebview>()
 
@@ -106,7 +106,7 @@ export default defineComponent({
         }
     },
     methods: {
-        async editCompute(key: keyof DevEnvSettings) {
+        async editCompute(key: keyof DevEnvironmentSettings) {
             const previous = this.compute[key as Exclude<typeof key, 'alias'>]
             const current = { ...this.compute, alias: this.details.alias }
             const resp = await client.editSetting(current, key)
@@ -127,10 +127,13 @@ export default defineComponent({
                 }
 
                 // SDK rejects extraneous fields
-                await client.updateDevEnv(this.details, {
+                const resp = await client.updateDevEnv(this.details, {
                     instanceType: this.compute.instanceType,
                     inactivityTimeoutMinutes: this.compute.inactivityTimeoutMinutes,
+                    // persistentStorage: this.compute.persistentStorage,
                 })
+
+                this.restarting = !!resp
             } catch {
                 this.restarting = false
                 client.showLogsMessage('Unable to update the dev Environment. View the logs for more information')

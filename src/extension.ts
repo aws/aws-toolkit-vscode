@@ -87,9 +87,9 @@ export async function activate(context: vscode.ExtensionContext) {
     )
     globals.outputChannel = toolkitOutputChannel
 
-    registerErrorHandler(async (info, error) => {
+    registerErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        await handleError(error, info.id, defaultMessage)
+        handleError(error, info.id, defaultMessage)
     })
 
     try {

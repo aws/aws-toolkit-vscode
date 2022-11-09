@@ -86,8 +86,14 @@ export class CodeCatalystConfigureWebview extends VueWebview {
         if (isLongReconnect(this.devenv.summary, settings)) {
             try {
                 await saveReconnectionInformation(id)
-                await this.commands.updateDevEnv.execute(id, settings)
-                reportClosingMessage()
+                const resp = await this.commands.updateDevEnv.execute(id, settings)
+                if (resp === undefined) {
+                    await removeReconnectionInformation(id)
+                } else {
+                    reportClosingMessage()
+                }
+
+                return resp
             } catch (err) {
                 await removeReconnectionInformation(id)
                 throw err

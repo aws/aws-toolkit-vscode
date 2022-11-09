@@ -139,8 +139,8 @@ export async function updateDevEnv(
     client: ConnectedCodeCatalystClient,
     devenv: DevEnvironmentId,
     settings: DevEnvironmentSettings
-): Promise<void> {
-    await client.updateDevEnvironment({
+) {
+    return client.updateDevEnvironment({
         ...settings,
         id: devenv.id,
         projectName: devenv.project.name,
