@@ -12,6 +12,7 @@ import * as admZip from 'adm-zip'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import { Settings } from '../shared/settings'
+import { reloadWindowPrompt } from '../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -107,6 +108,12 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string):
                     lastCheck: new Date().getTime(),
                     needUpdate: false,
                 } as BetaToolkit)
+                reloadWindowPrompt(
+                    localize(
+                        'AWS.codecatalyst.beta.reloadPrompt',
+                        'Please reload now to start using the new CodeCatalyst beta version.'
+                    )
+                )
             } catch (e) {
                 const err = e as Error
                 getLogger().error(`codecatalyst: Extension ${VSIX_LOCAL_NAME} could not be installed: %s`, err.message)

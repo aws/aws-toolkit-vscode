@@ -155,3 +155,13 @@ export function normalizeVSCodeUri(uri: vscode.Uri): string {
     }
     return pathutils.normalize(uri.fsPath)
 }
+
+export function reloadWindowPrompt(message: string): void {
+    const reload = 'Reload'
+
+    vscode.window.showInformationMessage(message, reload).then(selected => {
+        if (selected === reload) {
+            vscode.commands.executeCommand('workbench.action.reloadWindow')
+        }
+    })
+}
