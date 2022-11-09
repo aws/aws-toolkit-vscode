@@ -425,7 +425,7 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const profile = await this.store.updateProfile(id, { connectionState })
-        if (this.#activeConnection) {
+        if (this.#activeConnection?.id === id) {
             this.#activeConnection.state = connectionState
             this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
         }
@@ -644,7 +644,6 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
 
 async function signout(auth: Auth) {
     const conn = auth.activeConnection
-    await auth.logout()
 
     if (conn?.type === 'sso') {
         const iamConnections = (await auth.listConnections()).filter(c => c.type === 'iam')
@@ -652,6 +651,11 @@ async function signout(auth: Auth) {
         if (fallbackConn !== undefined) {
             await auth.useConnection(fallbackConn)
         }
+
+        // TODO: does deleting the connection make sense?
+        await auth.deleteConnection(conn)
+    } else {
+        await auth.logout()
     }
 }
 

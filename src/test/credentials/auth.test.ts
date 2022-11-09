@@ -246,7 +246,7 @@ describe('Auth', function () {
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
             tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
             await auth.useConnection(conn)
-            await assertTreeItem(node, { description: 'expired, click to authenticate' })
+            await assertTreeItem(node, { description: 'expired or invalid, click to authenticate' })
         })
     })
 })
