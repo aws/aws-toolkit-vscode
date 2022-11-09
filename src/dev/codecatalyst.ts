@@ -278,7 +278,7 @@ export async function deleteDevEnvCommand(ctx: ExtContext) {
         await client.deleteDevEnvironment({
             id: devenv.id,
             projectName: devenv.project.name,
-            organizationName: devenv.org.name,
+            spaceName: devenv.org.name,
         })
     })
 }

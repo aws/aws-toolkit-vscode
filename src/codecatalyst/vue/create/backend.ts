@@ -70,7 +70,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     public async getBranches(project: CodeCatalystProject) {
         const repos = this.client
             .listSourceRepositories({
-                organizationName: project.org.name,
+                spaceName: project.org.name,
                 projectName: project.name,
             })
             .flatten()
@@ -78,7 +78,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         const branches = repos.map(r =>
             this.client
                 .listBranches({
-                    organizationName: r.org.name,
+                    spaceName: r.org.name,
                     projectName: r.project.name,
                     sourceRepositoryName: r.name,
                 })
@@ -104,7 +104,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     ): Promise<DevEnvironmentSettings> {
         const subscriptionType = isNonNullable(org)
             ? await this.client
-                  .getSubscription({ organizationName: org.name })
+                  .getSubscription({ spaceName: org.name })
                   .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
             : 'FREE'
 
@@ -152,7 +152,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         return this.client.createDevEnvironment({
             ides: [{ name: 'VSCode' }],
             projectName: source.selectedProject.name,
-            organizationName: source.selectedProject.org.name,
+            spaceName: source.selectedProject.org.name,
             ...settings,
         })
     }
@@ -161,11 +161,11 @@ export class CodeCatalystCreateWebview extends VueWebview {
         const isNewBranch = !!source.newBranch
         if (isNewBranch) {
             await this.client.createSourceBranch({
-                branchName: source.newBranch,
-                organizationName: source.selectedProject.org.name,
+                name: source.newBranch,
+                spaceName: source.selectedProject.org.name,
                 projectName: source.selectedProject.name,
                 sourceRepositoryName: source.selectedBranch.repo.name,
-                commitSpecifier: source.selectedBranch.headCommitId,
+                headCommitId: source.selectedBranch.headCommitId,
             })
         }
 
@@ -173,7 +173,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         return this.client.createDevEnvironment({
             ides: [{ name: 'VSCode' }],
             projectName: source.selectedProject.name,
-            organizationName: source.selectedProject.org.name,
+            spaceName: source.selectedProject.org.name,
             repositories: [
                 {
                     repositoryName: source.selectedBranch.repo.name,

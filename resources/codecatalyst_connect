@@ -47,7 +47,7 @@ _start_dev_environment_session() {
     local DEVENV_ID=$5
 
     # Local variables
-    local START_SESSION_PATH="/v1/organizations/$SPACE_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
+    local START_SESSION_PATH="/v1/spaces/$SPACE_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
     local START_SESSION_QUERY=$(
         cat << EOF
 {

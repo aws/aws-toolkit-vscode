@@ -109,7 +109,7 @@ export function createProjectPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient,
     org?: codecatalyst.CodeCatalystOrg
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
-    const projects = org ? client.listProjects({ organizationName: org.name }) : client.listResources('project')
+    const projects = org ? client.listProjects({ spaceName: org.name }) : client.listResources('project')
 
     return createResourcePrompter(projects, {
         title: 'Select a CodeCatalyst Project',
@@ -122,7 +122,7 @@ export function createRepoPrompter(
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
     const repos = proj
-        ? client.listSourceRepositories({ organizationName: proj.org.name, projectName: proj.name })
+        ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name })
         : client.listResources('repo')
 
     return createResourcePrompter(repos, {

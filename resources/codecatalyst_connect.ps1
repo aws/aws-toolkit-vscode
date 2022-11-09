@@ -59,7 +59,7 @@ function StartDevEnvironmentSession {
         [string] $DevEnvId
     )
 
-    $startSessionPath = "/v1/organizations/$Space/projects/$Project/devEnvironments/$DevEnvId/session"
+    $startSessionPath = "/v1/spaces/$Space/projects/$Project/devEnvironments/$DevEnvId/session"
     $startSessionQuery = @"
 {
     "sessionConfiguration": { 
