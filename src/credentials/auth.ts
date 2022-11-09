@@ -661,15 +661,15 @@ async function signout(auth: Auth) {
     const conn = auth.activeConnection
 
     if (conn?.type === 'sso') {
+        // TODO: does deleting the connection make sense UX-wise?
+        // this makes it disappear from the list of available connections
+        await auth.deleteConnection(conn)
+
         const iamConnections = (await auth.listConnections()).filter(c => c.type === 'iam')
         const fallbackConn = iamConnections.find(c => c.id === 'profile:default') ?? iamConnections[0]
         if (fallbackConn !== undefined) {
             await auth.useConnection(fallbackConn)
         }
-
-        // TODO: does deleting the connection make sense UX-wise?
-        // this makes it disappear from the list of available connections
-        await auth.deleteConnection(conn)
     } else {
         await auth.logout()
     }
@@ -703,7 +703,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'sso': {
             const startUrl = await showInputBox({
                 title: 'SSO Connection: Enter Start URL',
-                placeholder: 'https://d-01234567890.awsapps.com/start/',
+                placeholder: "Enter start URL for your organization's SSO",
             })
 
             if (!isValidResponse(startUrl)) {
