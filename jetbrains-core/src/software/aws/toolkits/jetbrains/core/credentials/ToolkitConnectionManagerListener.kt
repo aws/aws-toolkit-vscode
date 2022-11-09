@@ -6,8 +6,9 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.util.messages.Topic
 import java.util.EventListener
 
+// TODO: unify with [ConnectionSettingsStateChangeNotifier]
 interface ToolkitConnectionManagerListener : EventListener {
-    fun activeConnectionChanged(newConnection: ToolkitConnection)
+    fun activeConnectionChanged(newConnection: ToolkitConnection?)
 
     companion object {
         @Topic.ProjectLevel

@@ -35,9 +35,11 @@ class AwsSettingsPanelInstaller : StatusBarWidgetFactory {
 private class AwsSettingsPanel(private val project: Project) :
     StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
-    ConnectionSettingsStateChangeNotifier {
+    ConnectionSettingsStateChangeNotifier,
+    ToolkitConnectionManagerListener {
     private val settingsSelector = ProjectLevelSettingSelector(project, ChangeSettingsMode.BOTH)
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)
+    private val connectionManager = ToolkitConnectionManager.getInstance(project)
     private lateinit var statusBar: StatusBar
 
     override fun ID(): String = WIDGET_ID
@@ -46,7 +48,15 @@ private class AwsSettingsPanel(private val project: Project) :
 
     override fun getTooltipText() = "${message("settings.title")} [${accountSettingsManager.connectionState.displayMessage}]"
 
-    override fun getSelectedValue() = "AWS: ${accountSettingsManager.connectionState.shortMessage}"
+    override fun getSelectedValue(): String {
+        val displayText = when (val connection = connectionManager.activeConnection()) {
+            null -> message("settings.credentials.none_selected")
+            is AwsConnectionManagerConnection -> accountSettingsManager.connectionState.shortMessage
+            else -> connection.label
+        }
+
+        return "AWS: $displayText"
+    }
 
     override fun getPopupStep(): ListPopup = settingsSelector.createPopup(DataManager.getInstance().getDataContext(statusBar.component))
 
@@ -55,6 +65,11 @@ private class AwsSettingsPanel(private val project: Project) :
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
         project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
+        project.messageBus.connect(this).subscribe(ToolkitConnectionManagerListener.TOPIC, this)
+        updateWidget()
+    }
+
+    override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
         updateWidget()
     }
 

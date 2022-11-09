@@ -31,6 +31,7 @@ import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.NonOpaquePanel
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
@@ -41,9 +42,14 @@ import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import org.jetbrains.concurrency.CancellablePromise
 import software.aws.toolkits.jetbrains.ToolkitPlaces
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManagerConnection
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
@@ -69,7 +75,11 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 import kotlin.reflect.KClass
 
-class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier, Disposable {
+class ExplorerToolWindow(project: Project) :
+    SimpleToolWindowPanel(true, true),
+    ConnectionSettingsStateChangeNotifier,
+    ToolkitConnectionManagerListener,
+    Disposable {
     private val actionManager = ActionManagerEx.getInstanceEx()
     private val treePanelWrapper = NonOpaquePanel()
     private val awsTreeModel = AwsExplorerTreeStructure(project)
@@ -79,13 +89,16 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, this))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)
+    private val connectionManager = ToolkitConnectionManager.getInstance(project)
 
     init {
         background = UIUtil.getTreeBackground()
         setContent(treePanelWrapper)
 
         project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
-        settingsStateChanged(accountSettingsManager.connectionState)
+        project.messageBus.connect(this).subscribe(ToolkitConnectionManagerListener.TOPIC, this)
+
+        connectionChanged()
     }
 
     private fun createInfoPanel(state: ConnectionState): JComponent {
@@ -139,17 +152,40 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
         return label
     }
 
+    override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+        connectionChanged()
+    }
+
     override fun settingsStateChanged(newState: ConnectionState) {
-        runInEdt {
-            treePanelWrapper.setContent(
-                when (newState) {
-                    is ConnectionState.ValidConnection -> {
-                        invalidateTree()
-                        awsTreePanel
-                    }
-                    else -> createInfoPanel(newState)
+        connectionChanged()
+    }
+
+    private fun connectionChanged() {
+        val connection = connectionManager.activeConnection()
+        val credentialstate = accountSettingsManager.connectionState
+
+        when (connection) {
+            is AwsConnectionManagerConnection -> {
+                runInEdt {
+                    treePanelWrapper.setContent(
+                        when (credentialstate) {
+                            is ConnectionState.ValidConnection -> {
+                                invalidateTree()
+                                awsTreePanel
+                            }
+                            else -> createInfoPanel(credentialstate)
+                        }
+                    )
                 }
-            )
+            }
+            null, is AwsBearerTokenConnection -> {
+                runInEdt {
+                    treePanelWrapper.setContent(buildIamHelpPanel(connection))
+                }
+            }
+            else -> {
+                // TODO: tree doesn't support other connection types yet
+            }
         }
     }
 
