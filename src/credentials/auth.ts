@@ -52,6 +52,8 @@ export interface SsoConnection {
 
 export interface IamConnection {
     readonly type: 'iam'
+    // Currently equivalent to a serialized `CredentialId`
+    // This may change in the future after refactoring legacy implementations
     readonly id: string
     readonly label: string
     getCredentials(): Promise<Credentials>
@@ -132,6 +134,13 @@ interface ProfileMetadata {
      */
     readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' // 'authenticating'
 }
+
+// Difference between "Connection" vs. "Profile":
+// * Profile - A stateless configuration that describes how to get credentials
+// * Connection - A stateful entity that can produce credentials for a specific target
+//
+// Connections are very similar to credential providers used in existing logic. The distinction
+// is that connections are (ideally) identity-orientated whereas credential providers are not.
 
 type StoredProfile<T extends Profile = Profile> = T & { readonly metadata: ProfileMetadata }
 
@@ -545,17 +554,12 @@ export class Auth implements AuthService, ConnectionManager {
         return refreshed
     }
 
-    static #instance: Auth | undefined
-    public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
-    }
-
-    public static readonly tryAutoConnect = once(async () => {
-        if (this.instance.activeConnection !== undefined) {
+    public readonly tryAutoConnect = once(async () => {
+        if (this.activeConnection !== undefined) {
             return
         }
 
-        const conn = await this.instance.restorePreviousSession()
+        const conn = await this.restorePreviousSession()
         if (conn !== undefined) {
             return
         }
@@ -567,7 +571,7 @@ export class Auth implements AuthService, ConnectionManager {
         const tryConnection = async (id: string) => {
             try {
                 getLogger().info(`auth: trying to auto-connect using "${id}"`)
-                await this.instance.useConnection({ id })
+                await this.useConnection({ id })
                 return true
             } catch (err) {
                 getLogger().warn(`auth: failed to auto-connect using "${id}": ${UnknownError.cast(err).message}`)
@@ -575,12 +579,20 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        for (const id of [legacyProfile, ec2ProfileId, ecsProfileId]) {
+        for (const id of [ec2ProfileId, ecsProfileId, legacyProfile]) {
             if ((await tryConnection(id)) === true) {
-                break
+                // Removes the setting from the UI
+                if (id === legacyProfile) {
+                    new CredentialsSettings().delete('profile')
+                }
             }
         }
     })
+
+    static #instance: Auth | undefined
+    public static get instance() {
+        return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
+    }
 }
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
@@ -590,6 +602,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     }
 
     const items = (async function () {
+        // TODO: list linked connections
         const connections = await auth.listConnections()
         connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
         const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
@@ -625,20 +638,22 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     return resp
 }
 
-export async function promptLogin(auth: Auth) {
-    const resp = await promptForConnection(auth)
-    if (!resp) {
-        throw new CancellationError('user')
-    }
+export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
+    return telemetry.aws_setCredentials.run(async span => {
+        const resp = await promptForConnection(auth, type)
+        if (!resp) {
+            throw new CancellationError('user')
+        }
 
-    await auth.useConnection(resp)
+        await auth.useConnection(resp)
+    })
 }
 
 const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
     if (auth instanceof Auth) {
-        return promptLogin(auth)
+        return promptAndUseConnection(auth)
     } else {
-        return promptLogin(getResourceFromTreeNode(auth, Instance(Auth)))
+        return promptAndUseConnection(getResourceFromTreeNode(auth, Instance(Auth)))
     }
 })
 
@@ -652,7 +667,8 @@ async function signout(auth: Auth) {
             await auth.useConnection(fallbackConn)
         }
 
-        // TODO: does deleting the connection make sense?
+        // TODO: does deleting the connection make sense UX-wise?
+        // this makes it disappear from the list of available connections
         await auth.deleteConnection(conn)
     } else {
         await auth.logout()
@@ -713,17 +729,12 @@ const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, 
     }
 })
 
-Commands.register('_aws.auth.autoConnect', () => Auth.tryAutoConnect())
+// Used to decouple from the `Commands` implementation
+Commands.register('_aws.auth.autoConnect', () => Auth.instance.tryAutoConnect())
 
-export const selectIamCredentialsCommand = Commands.register('aws.auth.useIamCredentials', async (auth: Auth) => {
-    // TODO: list linked connections
-    const resp = await promptForConnection(auth, 'iam')
-    if (!resp) {
-        throw new CancellationError('user')
-    }
-
-    await auth.useConnection(resp)
-})
+export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) =>
+    promptAndUseConnection(auth, 'iam')
+)
 
 // Legacy commands
 export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
@@ -756,9 +767,12 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
-    // Needed to avoid weird race conditions when rendering the node
+    // Guard against race conditions when rendering the node
     private listConnections = shared(() => this.resource.listConnections())
     public async getTreeItem() {
+        // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
+        await this.resource.tryAutoConnect()
+
         const conn = this.resource.activeConnection
         if (conn === undefined && (await this.listConnections()).length === 0) {
             const item = new vscode.TreeItem('Connect to AWS to Get Started...')
@@ -775,7 +789,7 @@ export class AuthNode implements TreeNode<Auth> {
         const item = new vscode.TreeItem(itemLabel)
         item.contextValue = 'awsAuthNode'
 
-        if (conn?.state === 'invalid') {
+        if (conn !== undefined && conn.state !== 'valid') {
             item.description = 'expired or invalid, click to authenticate'
             item.iconPath = getIcon('vscode-error')
             item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })

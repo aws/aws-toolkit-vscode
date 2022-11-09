@@ -687,7 +687,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             version: await getSamCliVersion(getSamCliContext()),
         })
 
-        await Auth.tryAutoConnect()
+        await Auth.instance.tryAutoConnect()
         switch (config.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 config.type = 'node'

@@ -105,7 +105,7 @@
             "properties": {
                 "aws.profile": {
                     "type": "string",
-                    "deprecationMessage": "The current profile is now stored internally by the Toolkit",
+                    "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
                 "aws.ecs.openTerminalCommand": {

@@ -48,14 +48,6 @@ export async function activate(args: {
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
 
-    globals.context.subscriptions.push(
-        view.onDidChangeVisibility(async e => {
-            if (e.visible) {
-                await Auth.tryAutoConnect()
-            }
-        })
-    )
-
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
     args.context.extensionContext.subscriptions.push(

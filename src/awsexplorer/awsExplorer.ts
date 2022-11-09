@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Auth, AuthNode, selectIamCredentialsCommand } from '../credentials/auth'
+import { Auth, AuthNode, useIamCredentials } from '../credentials/auth'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getIcon } from '../shared/icons'
 import { getLogger, Logger } from '../shared/logger'
@@ -14,6 +14,7 @@ import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes, TreeShim } from '../shared/treeview/utils'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { once } from '../shared/utilities/functionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
 
@@ -99,21 +100,21 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         this._onDidChangeTreeData.fire(node)
     }
 
-    private readonly authNode = new TreeShim(new AuthNode(this.auth))
+    private readonly getAuthNode = once(() => new TreeShim(new AuthNode(this.auth)))
     private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
         const conn = this.auth.activeConnection
         if (conn !== undefined && conn.type !== 'iam') {
             // TODO: this should show up as a child node?
-            const selectIamNode = selectIamCredentialsCommand.build(this.auth).asTreeNode({
+            const selectIamNode = useIamCredentials.build(this.auth).asTreeNode({
                 // label: `No IAM credentials linked to ${conn.label}`,
                 // iconPath: getIcon('vscode-circle-slash'),
                 label: 'Select IAM Credentials to View Resources',
                 iconPath: getIcon('vscode-sync'),
             })
 
-            return [this.authNode, new TreeShim(selectIamNode)]
+            return [this.getAuthNode(), new TreeShim(selectIamNode)]
         } else if (conn === undefined || conn.state !== 'valid') {
-            return [this.authNode]
+            return [this.getAuthNode()]
         }
 
         const partitionRegions = this.regionProvider.getRegions()
@@ -129,7 +130,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                     key => new RegionNode(regionMap.get(key)!, this.regionProvider)
                 )
 
-                return [this.authNode, ...this.regionNodes.values()]
+                return [this.getAuthNode(), ...this.regionNodes.values()]
             },
             getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
             sort: (a, b) =>

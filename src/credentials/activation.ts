@@ -17,8 +17,8 @@ export async function initialize(
     loginManager: LoginManager
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(conn => {
+        // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
         if (conn?.type === 'iam' && conn.state === 'valid') {
-            // FIXME: move logic in `LoginManager` somewhere else
             loginManager.login({ passive: true, providerId: fromString(conn.id) })
         } else {
             loginManager.logout()

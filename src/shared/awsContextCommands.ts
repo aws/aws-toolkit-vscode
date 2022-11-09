@@ -23,6 +23,7 @@ import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/te
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
+import { ToolkitError } from './errors'
 
 /**
  * @deprecated
@@ -39,7 +40,12 @@ export class AwsContextCommands {
         const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
         if (profileName) {
-            await this.auth.useConnection({ id: profileName })
+            const conn = await this.auth.getConnection({ id: profileName })
+            if (conn === undefined) {
+                throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+            }
+
+            await this.auth.useConnection(conn)
             await this.editCredentials()
         } else {
             throw new CancellationError('user')
