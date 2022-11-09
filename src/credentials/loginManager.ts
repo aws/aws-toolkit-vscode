@@ -34,6 +34,9 @@ import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 
+/**
+ * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
+ */
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
 

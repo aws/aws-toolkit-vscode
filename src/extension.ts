@@ -67,6 +67,7 @@ import { formatError, isUserCancelledError, ToolkitError, UnknownError } from '.
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
+import { Auth } from './credentials/auth'
 
 let localize: nls.LocalizeFunc
 
@@ -111,7 +112,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         globals.regionProvider = regionProvider
-        globals.awsContextCommands = new AwsContextCommands(regionProvider, loginManager)
+        globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
@@ -146,21 +147,10 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
             vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
-            Commands.register('aws.login', () => globals.awsContextCommands.onCommandLogin()),
-            // "Connect to AWS": redundant with "Choose AWS Profile", but kept to avoid confusion.
-            Commands.register('aws.login2', () => globals.awsContextCommands.onCommandLogin()),
-            Commands.register('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
             // "Show AWS Commands..."
             Commands.register('aws.listCommands', () =>
                 vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
             ),
-            Commands.register('aws.credentials.profile.create', async () => {
-                try {
-                    await globals.awsContextCommands.onCommandCreateCredentialsProfile()
-                } finally {
-                    telemetry.aws_createCredentials.emit()
-                }
-            }),
             Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials()),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {

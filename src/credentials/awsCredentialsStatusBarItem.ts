@@ -11,7 +11,7 @@ import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
 import { DevSettings } from '../shared/settings'
-import { Auth, switchConnections } from './auth'
+import { Auth, login } from './auth'
 
 const STATUSBAR_PRIORITY = 1
 const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
@@ -25,7 +25,7 @@ export async function initializeAwsCredentialsStatusBarItem(
     context: vscode.ExtensionContext
 ): Promise<void> {
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUSBAR_PRIORITY)
-    statusBarItem.command = switchConnections.build(Auth.instance).asCommand({ title: 'Switch Connections' })
+    statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
 

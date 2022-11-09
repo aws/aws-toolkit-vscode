@@ -30,6 +30,9 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { showInputBox } from '../shared/ui/inputPrompter'
+import { CredentialsSettings } from './credentialsUtilities'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { createCommonButtons } from '../shared/ui/buttons'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -557,10 +560,10 @@ export class Auth implements AuthService, ConnectionManager {
             return
         }
 
-        // TODO: try to use legacy setting
         const defaultProfileId = asString({ credentialSource: 'profile', credentialTypeId: 'default' })
         const ec2ProfileId = asString({ credentialSource: 'ec2', credentialTypeId: 'instance' })
         const ecsProfileId = asString({ credentialSource: 'ecs', credentialTypeId: 'instance' })
+        const legacyProfile = new CredentialsSettings().get('profile', defaultProfileId)
         const tryConnection = async (id: string) => {
             try {
                 getLogger().info(`auth: trying to auto-connect using "${id}"`)
@@ -572,7 +575,7 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        for (const id of [defaultProfileId, ec2ProfileId, ecsProfileId]) {
+        for (const id of [legacyProfile, ec2ProfileId, ecsProfileId]) {
             if ((await tryConnection(id)) === true) {
                 break
             }
@@ -580,25 +583,58 @@ export class Auth implements AuthService, ConnectionManager {
     })
 }
 
-export async function promptLogin(auth: Auth) {
+async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
+    const addNewConnection = {
+        label: codicon`${getIcon('vscode-plus')} Add new connection`,
+        data: 'addNewConnection' as const,
+    }
+
     const items = (async function () {
         const connections = await auth.listConnections()
+        connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
+        const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
 
-        return [...connections.map(c => ({ label: c.label, data: c }))]
+        return [
+            ...filtered.map(c => ({
+                data: c,
+                label: codicon`${getIcon(c.type === 'iam' ? 'vscode-key' : 'vscode-account')} ${c.label}`,
+                description: c.type === 'iam' ? 'IAM Credential, configured locally (~/.aws/config)' : '',
+            })),
+            addNewConnection,
+        ]
     })()
 
-    const resp = await showQuickPick(items, {
-        title: localize('aws.auth.switchConnections.title', 'Select a connection'),
+    const title =
+        type === 'iam'
+            ? localize('aws.auth.promptIamConnection.title', 'Select an IAM Credential')
+            : localize('aws.auth.promptConnection.title', 'Select a Connection')
+
+    const resp = await showQuickPick<Connection | 'addNewConnection'>(items, {
+        title,
+        buttons: createCommonButtons(),
     })
 
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
 
+    if (resp === 'addNewConnection') {
+        return addConnection.execute()
+    }
+
+    return resp
+}
+
+export async function promptLogin(auth: Auth) {
+    const resp = await promptForConnection(auth)
+    if (!resp) {
+        throw new CancellationError('user')
+    }
+
     await auth.useConnection(resp)
 }
 
-export const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
     if (auth instanceof Auth) {
         return promptLogin(auth)
     } else {
@@ -630,8 +666,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
 
     switch (resp) {
         case 'iam':
-            // TODO: call `createConnection` here instead
-            return (await Commands.get('aws.credentials.profile.create'))?.execute()
+            return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
             const startUrl = await showInputBox({
                 title: 'SSO Connection: Enter Start URL',
@@ -647,34 +682,48 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 startUrl,
                 ssoRegion: 'us-east-1',
             })
-            await Auth.instance.useConnection(conn)
+
+            return Auth.instance.useConnection(conn)
         }
     }
 })
 
-const reauth = Commands.register('_aws.auth.reauthenticate', (auth: Auth, conn: Connection) =>
-    auth.reauthenticate(conn)
-)
+const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
+    try {
+        await auth.reauthenticate(conn)
+    } catch (err) {
+        throw ToolkitError.chain(err, 'Unable to re-authenticate connection')
+    }
+})
 
 Commands.register('_aws.auth.autoConnect', () => Auth.tryAutoConnect())
 
 export const selectIamCredentialsCommand = Commands.register('aws.auth.useIamCredentials', async (auth: Auth) => {
     // TODO: list linked connections
-    const items = (async function () {
-        const connections = await auth.listConnections()
-
-        return [...connections.filter(c => c.type === 'iam').map(c => ({ label: c.label, data: c }))]
-    })()
-
-    const resp = await showQuickPick(items, {
-        title: localize('aws.auth.useIamCredentials.title', 'Select a connection'),
-    })
-
-    if (!isValidResponse(resp)) {
+    const resp = await promptForConnection(auth, 'iam')
+    if (!resp) {
         throw new CancellationError('user')
     }
 
     await auth.useConnection(resp)
+})
+
+// Legacy commands
+export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
+    const connections = await auth.listConnections()
+    if (connections.length === 0) {
+        return addConnection.execute()
+    } else {
+        return switchConnections.execute(auth)
+    }
+})
+Commands.register('aws.logout', () => Auth.instance.logout())
+Commands.register('aws.credentials.profile.create', async () => {
+    try {
+        await globals.awsContextCommands.onCommandCreateCredentialsProfile()
+    } finally {
+        telemetry.aws_createCredentials.emit()
+    }
 })
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
@@ -710,7 +759,7 @@ export class AuthNode implements TreeNode<Auth> {
         item.contextValue = 'awsAuthNode'
 
         if (conn?.state === 'invalid') {
-            item.description = 'expired, click to authenticate'
+            item.description = 'expired or invalid, click to authenticate'
             item.iconPath = getIcon('vscode-error')
             item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
         } else {
