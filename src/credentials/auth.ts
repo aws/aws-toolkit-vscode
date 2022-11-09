@@ -583,7 +583,7 @@ export class Auth implements AuthService, ConnectionManager {
     })
 }
 
-async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
+export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add new connection`,
         data: 'addNewConnection' as const,
@@ -642,7 +642,20 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
     }
 })
 
-Commands.register('aws.auth.signout', () => Auth.instance.logout())
+async function signout(auth: Auth) {
+    const conn = auth.activeConnection
+    await auth.logout()
+
+    if (conn?.type === 'sso') {
+        const iamConnections = (await auth.listConnections()).filter(c => c.type === 'iam')
+        const fallbackConn = iamConnections.find(c => c.id === 'profile:default') ?? iamConnections[0]
+        if (fallbackConn !== undefined) {
+            await auth.useConnection(fallbackConn)
+        }
+    }
+}
+
+Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const ssoItem = {
         label: codicon`${getIcon('vscode-organization')} ${localize(
@@ -717,7 +730,7 @@ export const login = Commands.register('aws.login', async (auth: Auth = Auth.ins
         return switchConnections.execute(auth)
     }
 })
-Commands.register('aws.logout', () => Auth.instance.logout())
+Commands.register('aws.logout', () => signout(Auth.instance))
 Commands.register('aws.credentials.profile.create', async () => {
     try {
         await globals.awsContextCommands.onCommandCreateCredentialsProfile()
