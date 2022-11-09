@@ -154,15 +154,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
  * Retrieves JSON property value from a remote resource
  * @param property property to retrieve
  * @param url url of JSON resource
- * @param fetcher optional HTTP resource fetcher to use
  * @returns property value if available or undefined
  */
-export async function getPropertyFromJsonUrl(
-    url: string,
-    property: string,
-    fetcher?: HttpResourceFetcher
-): Promise<any | undefined> {
-    const resourceFetcher = fetcher ?? new HttpResourceFetcher(url, { showUrl: true })
+export async function getPropertyFromJsonUrl(url: string, property: string): Promise<any | undefined> {
+    const resourceFetcher = new HttpResourceFetcher(url, { showUrl: true })
     const result = await resourceFetcher.get()
     if (result) {
         try {
@@ -174,4 +169,14 @@ export async function getPropertyFromJsonUrl(
             getLogger().error(`JSON parsing failed for "${url}": ${(err as Error).message}`)
         }
     }
+}
+
+/**
+ * Gets contents from a remote resource
+ * @param url url of the resource
+ * @returns contents from the url if available or undefined
+ */
+export async function getFromUrl(url: string): Promise<string | undefined> {
+    const resourceFetcher = new HttpResourceFetcher(url, { showUrl: true })
+    return resourceFetcher.get()
 }
