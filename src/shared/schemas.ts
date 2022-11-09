@@ -9,7 +9,7 @@ import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
-import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
+import { getFromUrl, getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
@@ -18,12 +18,13 @@ import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { CloudFormation } from './cloudformation/cloudformation'
+import { getStringHash } from './utilities/textUtilities'
 
 const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const devfileManifestURL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
-const hostedFilesCloudFrontDistribution = 'https://d3rrggjwfhwld2.cloudfront.net/'
-const hostedFilesS3Fallback = 'https://aws-vs-toolkit.s3.amazonaws.com/'
+const hostedFilesCloudFrontDistribution = 'https://d3rrggjwfhwld2.cloudfront.net'
+const hostedFilesS3Fallback = 'https://aws-vs-toolkit.s3.amazonaws.com'
 const buildSpecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
 
 export type Schemas = { [key: string]: vscode.Uri }
@@ -219,18 +220,28 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
 
     try {
         try {
+            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
+            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
                 destination: buildSpecSchemaUri,
                 url: hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath,
+                version: buildspecSchemaVersion,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',
             })
             schemas['buildspec'] = buildSpecSchemaUri
         } catch (e) {
+            getLogger().verbose(
+                'Could not download buildspec schema from CloudFront: %s. Attempting to download buildspec schema from S3',
+                (e as Error).message
+            )
+            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
+            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
                 destination: buildSpecSchemaUri,
                 url: hostedFilesS3Fallback + buildSpecHostedFilesPath,
+                version: buildspecSchemaVersion,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',
