@@ -347,6 +347,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
         }
 
+        // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
+        // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
+        // So the workaround is to do give the SDK the merged profiles directly
         const profiles = toRecord(this.allSharedCredentialProfiles.keys(), k => this.allSharedCredentialProfiles.get(k))
 
         return fromIni({
