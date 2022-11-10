@@ -33,6 +33,7 @@ import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons } from '../shared/ui/buttons'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -552,7 +553,6 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    // TODO: get rid of this?
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         const previousState = this.store.getProfile(id)?.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')
@@ -651,13 +651,14 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
         return [...filtered.map(toPickerItem), addNewConnection]
     })()
 
-    const title =
+    const placeholder =
         type === 'iam'
-            ? localize('aws.auth.promptIamConnection.title', 'Select an IAM Credential')
-            : localize('aws.auth.promptConnection.title', 'Select a Connection')
+            ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
+            : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
     const resp = await showQuickPick<Connection | 'addNewConnection'>(items, {
-        title,
+        placeholder,
+        title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
         buttons: createCommonButtons(),
     })
 
@@ -713,7 +714,8 @@ export const createSsoItem = () =>
     ({
         label: codicon`${getIcon('vscode-organization')} ${localize(
             'aws.auth.ssoItem.label',
-            'Connect using AWS IAM Identity Center'
+            'Connect using {0} IAM Identity Center',
+            getIdeProperties().company
         )}`,
         data: 'sso',
         detail: "Sign in to your company's IAM Identity Center access portal login page.",
@@ -729,7 +731,8 @@ export const createIamItem = () =>
 export const createStartUrlPrompter = (title: string) =>
     createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's SSO",
+        placeholder: 'https://d-xxxxxxxxxx.awsapps.com/start',
+        buttons: createCommonButtons(),
     })
 
 // TODO: add specific documentation URL
@@ -737,7 +740,9 @@ Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const resp = await showQuickPick([createSsoItem(), createIamItem()], {
-        title: 'Add a Connection to AWS',
+        title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
+        placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
+        buttons: createCommonButtons() as vscode.QuickInputButton[],
     })
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
@@ -817,7 +822,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         const conn = this.resource.activeConnection
         if (conn === undefined && (await this.listConnections()).length === 0) {
-            const item = new vscode.TreeItem('Connect to AWS to Get Started...')
+            const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
             item.command = addConnection.build().asCommand({ title: 'Add Connection' })
 
             return item

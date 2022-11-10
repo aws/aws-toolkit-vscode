@@ -192,7 +192,7 @@ describe('Auth', function () {
             sinon.replace(vscode, 'window', testWindow)
 
             const token = conn.getToken()
-            const message = await testWindow.waitForMessage(/credentials are expired or invalid,/i)
+            const message = await testWindow.waitForMessage(/connection is invalid or expired/i)
             message.selectItem(selection)
 
             return token
