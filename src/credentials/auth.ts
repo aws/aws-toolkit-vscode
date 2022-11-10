@@ -14,7 +14,7 @@ import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
-import { showQuickPick } from '../shared/ui/pickerPrompter'
+import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
@@ -132,7 +132,7 @@ interface ProfileMetadata {
      * * `valid` -> `invalid` -> notify that the credentials are invalid, prompt to login again
      * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
      */
-    readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' // 'authenticating'
+    readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
 }
 
 // Difference between "Connection" vs. "Profile":
@@ -296,15 +296,19 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public async reauthenticate(conn: Connection): Promise<Connection> {
-        await this.updateConnectionState(conn.id, 'unauthenticated')
-        if (conn.type === 'sso') {
-            await conn.getToken()
-        } else {
-            await conn.getCredentials()
-        }
+    public async reauthenticate({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+        const profile = this.store.getProfileOrThrow(id)
+        if (profile.type === 'sso') {
+            const provider = this.getTokenProvider(id, profile)
+            await this.authenticate(id, () => provider.createToken())
 
-        return conn
+            return this.getSsoConnection(id, profile)
+        } else {
+            const provider = await this.getCredentialsProvider(id)
+            await this.authenticate(id, () => provider.getCredentials())
+
+            return this.getIamConnection(id, provider)
+        }
     }
 
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
@@ -317,7 +321,7 @@ export class Auth implements AuthService, ConnectionManager {
         const conn =
             validated.type === 'sso'
                 ? this.getSsoConnection(id, validated)
-                : this.getIamConnection(id, (await this.iamProfileProvider.getCredentialsProvider(fromString(id)))!)
+                : this.getIamConnection(id, await this.getCredentialsProvider(id))
 
         this.#activeConnection = conn
         this.onDidChangeActiveConnectionEmitter.fire(conn)
@@ -345,11 +349,7 @@ export class Auth implements AuthService, ConnectionManager {
                 if (profile.type === 'sso') {
                     return this.getSsoConnection(id, profile)
                 } else {
-                    const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
-                    if (provider === undefined) {
-                        throw new Error('provider no found')
-                    }
-                    return this.getIamConnection(id, provider)
+                    return this.getIamConnection(id, await this.getCredentialsProvider(id))
                 }
             })
         )
@@ -360,7 +360,7 @@ export class Auth implements AuthService, ConnectionManager {
     public async createConnection(profile: SsoProfile): Promise<SsoConnection>
     public async createConnection(profile: Profile): Promise<Connection> {
         if (profile.type === 'iam') {
-            throw new Error('not supported')
+            throw new Error('Creating IAM connections is not supported')
         }
 
         // XXX: Scoped connections must be shared as a workaround
@@ -467,6 +467,15 @@ export class Auth implements AuthService, ConnectionManager {
         return profile
     }
 
+    private async getCredentialsProvider(id: Connection['id']) {
+        const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
+        if (provider === undefined) {
+            throw new Error(`Credentials provider "${id}" not found`)
+        }
+
+        return provider
+    }
+
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
         return this.createTokenProvider(
             {
@@ -509,6 +518,20 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    private async authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+        await this.updateConnectionState(id, 'authenticating')
+
+        try {
+            const result = await callback()
+            await this.updateConnectionState(id, 'valid')
+
+            return result
+        } catch (err) {
+            await this.updateConnectionState(id, 'invalid')
+            throw err
+        }
+    }
+
     private readonly debouncedGetToken = keyedDebounce(Auth.prototype.getToken.bind(this))
     private async getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken()
@@ -529,32 +552,29 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    // TODO: split into 'promptInvalidCredentials' and 'authenticate' methods
+    // TODO: get rid of this?
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         const previousState = this.store.getProfile(id)?.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')
 
         if (previousState === 'invalid') {
-            throw new ToolkitError('Credentials are invalid or expired. Try logging in again.', {
-                code: 'InvalidCredentials',
+            throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
+                code: 'InvalidConnection',
             })
         }
 
         if (previousState === 'valid') {
-            const message = localize('aws.auth.invalidCredentials', 'Credentials are expired or invalid, login again?')
+            const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
             const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
             if (resp !== localizedText.yes) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
-                    code: 'InvalidCredentials',
+                    code: 'InvalidConnection',
                 })
             }
         }
 
-        const refreshed = await refresh()
-        await this.updateConnectionState(id, 'valid')
-
-        return refreshed
+        return this.authenticate(id, refresh)
     }
 
     public readonly tryAutoConnect = once(async () => {
@@ -689,20 +709,22 @@ async function signout(auth: Auth) {
     }
 }
 
-export const createSsoItem = () => ({
-    label: codicon`${getIcon('vscode-organization')} ${localize(
-        'aws.auth.ssoItem.label',
-        'Connect using AWS IAM Identity Center'
-    )}`,
-    data: 'sso' as const,
-    detail: "Sign in to your company's IAM Identity Center access portal login page.",
-})
+export const createSsoItem = () =>
+    ({
+        label: codicon`${getIcon('vscode-organization')} ${localize(
+            'aws.auth.ssoItem.label',
+            'Connect using AWS IAM Identity Center'
+        )}`,
+        data: 'sso',
+        detail: "Sign in to your company's IAM Identity Center access portal login page.",
+    } as DataQuickPickItem<'sso'>)
 
-export const createIamItem = () => ({
-    label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
-    data: 'iam' as const,
-    detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
-})
+export const createIamItem = () =>
+    ({
+        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+        data: 'iam',
+        detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
+    } as DataQuickPickItem<'iam'>)
 
 export const createStartUrlPrompter = (title: string) =>
     createInputBox({
@@ -710,6 +732,8 @@ export const createStartUrlPrompter = (title: string) =>
         placeholder: "Enter start URL for your organization's SSO",
     })
 
+// TODO: add specific documentation URL
+Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const resp = await showQuickPick([createSsoItem(), createIamItem()], {
@@ -743,7 +767,7 @@ const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, 
     try {
         await auth.reauthenticate(conn)
     } catch (err) {
-        throw ToolkitError.chain(err, 'Unable to re-authenticate connection')
+        throw ToolkitError.chain(err, 'Unable to authenticate connection')
     }
 })
 
@@ -808,9 +832,13 @@ export class AuthNode implements TreeNode<Auth> {
         item.contextValue = 'awsAuthNode'
 
         if (conn !== undefined && conn.state !== 'valid') {
-            item.description = 'expired or invalid, click to authenticate'
             item.iconPath = getIcon('vscode-error')
-            item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+            if (conn.state === 'authenticating') {
+                item.description = 'authenticating...'
+            } else {
+                item.description = 'expired or invalid, click to authenticate'
+                item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+            }
         } else {
             item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })
             item.iconPath = conn !== undefined ? getConnectionIcon(conn) : undefined

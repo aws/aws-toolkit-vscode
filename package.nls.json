@@ -176,6 +176,7 @@
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cloudWatchLogs.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
+    "AWS.submenu.auth.title": "Authentication",
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
     "AWS.generic.close": "Close",

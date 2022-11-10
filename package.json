@@ -738,6 +738,13 @@
                 }
             ]
         },
+        "submenus": [
+            {
+                "id": "aws.auth",
+                "label": "%AWS.submenu.auth.title%",
+                "icon": "$(ellipsis)"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -1078,6 +1085,10 @@
                 },
                 {
                     "command": "aws.auth.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.help",
                     "when": "false"
                 },
                 {
@@ -1743,6 +1754,30 @@
                     "command": "aws.auth.signout",
                     "when": "viewItem == awsAuthNode",
                     "group": "0@3"
+                },
+                {
+                    "command": "aws.auth.help",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@1"
+                },
+                {
+                    "submenu": "aws.auth",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@2"
+                }
+            ],
+            "aws.auth": [
+                {
+                    "command": "aws.auth.addConnection",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "group": "0@3"
                 }
             ]
         },
@@ -1843,6 +1878,12 @@
                 "command": "aws.auth.signout",
                 "title": "%AWS.command.auth.signout%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.help",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(question)"
             },
             {
                 "command": "aws.createIssueOnGitHub",
