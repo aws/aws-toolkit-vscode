@@ -306,7 +306,7 @@ export class Auth implements AuthService, ConnectionManager {
             return this.getSsoConnection(id, profile)
         } else {
             const provider = await this.getCredentialsProvider(id)
-            await this.authenticate(id, () => provider.getCredentials())
+            await this.authenticate(id, () => this.createCachedCredentials(provider))
 
             return this.getIamConnection(id, provider)
         }
@@ -425,6 +425,8 @@ export class Auth implements AuthService, ConnectionManager {
             })
 
             return provider.invalidate()
+        } else if (profile.type === 'iam') {
+            globals.credentialsStore.invalidateCredentials(fromString(id))
         }
     }
 
@@ -452,20 +454,22 @@ export class Auth implements AuthService, ConnectionManager {
                 return this.updateConnectionState(id, 'valid')
             }
         } else {
-            const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
-            if ((await provider?.canAutoConnect()) !== true) {
-                return this.updateConnectionState(id, 'invalid')
-            } else if (profile.metadata.connectionState !== 'invalid') {
-                try {
-                    await provider?.getCredentials()
+            const provider = await this.getCredentialsProvider(id)
+            try {
+                const credentials = await this.getCachedCredentials(provider)
+                if (credentials !== undefined) {
                     return this.updateConnectionState(id, 'valid')
-                } catch {
+                } else if ((await provider.canAutoConnect()) === true) {
+                    await this.authenticate(id, () => this.createCachedCredentials(provider))
+
+                    return this.store.getProfileOrThrow(id)
+                } else {
                     return this.updateConnectionState(id, 'invalid')
                 }
+            } catch {
+                return this.updateConnectionState(id, 'invalid')
             }
         }
-
-        return profile
     }
 
     private async getCredentialsProvider(id: Connection['id']) {
@@ -533,6 +537,21 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    private async createCachedCredentials(provider: CredentialsProvider) {
+        const providerId = provider.getCredentialsId()
+        globals.credentialsStore.invalidateCredentials(providerId)
+        const { credentials } = await globals.credentialsStore.upsertCredentials(providerId, provider)
+
+        return credentials
+    }
+
+    private async getCachedCredentials(provider: CredentialsProvider) {
+        const creds = await globals.credentialsStore.getCredentials(provider.getCredentialsId())
+        if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
+            return creds.credentials
+        }
+    }
+
     private readonly debouncedGetToken = keyedDebounce(Auth.prototype.getToken.bind(this))
     private async getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken()
@@ -542,14 +561,13 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly debouncedGetCredentials = keyedDebounce(Auth.prototype.getCredentials.bind(this))
     private async getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
-        if (this.store.getProfile(id)?.metadata.connectionState !== 'valid') {
-            return this.handleInvalidCredentials(id, () => provider.getCredentials())
-        }
-
-        try {
-            return await provider.getCredentials()
-        } catch (err) {
-            return this.handleInvalidCredentials(id, () => provider.getCredentials())
+        const credentials = await this.getCachedCredentials(provider)
+        if (credentials !== undefined) {
+            return credentials
+        } else if ((await provider.canAutoConnect()) === true) {
+            return this.createCachedCredentials(provider)
+        } else {
+            return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
     }
 
