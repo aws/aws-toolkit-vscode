@@ -238,7 +238,7 @@ describe('Auth', function () {
             const node = new AuthNode(auth)
             const conn = await auth.createConnection(ssoProfile)
             await auth.useConnection(conn)
-            await assertTreeItem(node, { label: `Connected to ${conn.label}` })
+            await assertTreeItem(node, { label: `Connected with ${conn.label}` })
         })
 
         it('shows an error if the connection is invalid', async function () {
