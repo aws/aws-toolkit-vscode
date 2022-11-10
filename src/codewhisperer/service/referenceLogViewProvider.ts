@@ -102,12 +102,16 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                     lineInfo
                 ) + ' <br>'
         }
-        if (text === ``) return ''
+        if (text === ``) {
+            return ''
+        }
         return `[${time}] Accepted recommendation ${text}<br>`
     }
 
     public addReferenceLog(referenceLog: string) {
-        if (referenceLog !== '') this._referenceLogs.push(referenceLog)
+        if (referenceLog !== '') {
+            this._referenceLogs.push(referenceLog)
+        }
         this.update()
     }
     private getHtml(webview: vscode.Webview, showPrompt: boolean): string {

@@ -52,7 +52,9 @@ export async function invokeRecommendation(
         }
         KeyStrokeHandler.instance.keyStrokeCount = 0
         if (isCloud9()) {
-            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+                return
+            }
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
             try {
