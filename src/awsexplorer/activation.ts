@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
@@ -29,7 +28,6 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { DevSettings } from '../shared/settings'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -40,7 +38,7 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.context.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -49,14 +47,6 @@ export async function activate(args: {
     globals.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
-
-    globals.context.subscriptions.push(
-        view.onDidChangeVisibility(async e => {
-            if (e.visible) {
-                await LoginManager.tryAutoConnect(args.context.awsContext)
-            }
-        })
-    )
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -75,10 +65,7 @@ export async function activate(args: {
         })
     )
 
-    const nodes = DevSettings.instance.get('showAuthNode', false)
-        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
-        : [cdkNode, codewhispererNode]
-
+    const nodes = [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
