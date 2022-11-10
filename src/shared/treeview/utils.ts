@@ -124,16 +124,28 @@ export class TreeShim<T = unknown> extends AWSTreeNodeBase {
         return (this.children = children.map(n => new TreeShim(n)))
     }
 
+    private update(item: vscode.TreeItem) {
+        // We need to explicitly clear state as `vscode.TreeItem` does not need
+        // to have these keys present
+        this.label = undefined
+        this.command = undefined
+        this.tooltip = undefined
+        this.iconPath = undefined
+        this.description = undefined
+        this.contextValue = undefined
+        assign(item, this)
+    }
+
     private async updateTreeItem(): Promise<{ readonly didRefresh: boolean }> {
         const item = this.node.getTreeItem()
         if (item instanceof Promise) {
-            assign(await item, this)
+            this.update(await item)
             this.refresh()
 
             return { didRefresh: true }
         }
 
-        assign(item, this)
+        this.update(item)
         return { didRefresh: false }
     }
 }

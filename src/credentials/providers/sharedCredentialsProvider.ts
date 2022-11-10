@@ -21,6 +21,7 @@ import { getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
+import { toRecord } from '../../shared/utilities/collectionUtils'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -346,16 +347,19 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
         }
 
+        // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
+        // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
+        // So the workaround is to do give the SDK the merged profiles directly
+        const profiles = toRecord(this.allSharedCredentialProfiles.keys(), k => this.allSharedCredentialProfiles.get(k))
+
         return fromIni({
             profile: this.profileName,
             mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
             roleAssumer: assumeRole,
-            loadedConfig: loadedCreds
-                ? Promise.resolve({
-                      credentialsFile: loadedCreds,
-                      configFile: {},
-                  } as SharedConfigFiles)
-                : undefined,
+            loadedConfig: Promise.resolve({
+                credentialsFile: loadedCreds ?? profiles,
+                configFile: {},
+            } as SharedConfigFiles),
         })
     }
 
