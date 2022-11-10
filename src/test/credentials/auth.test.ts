@@ -7,6 +7,8 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { Auth, AuthNode, getSsoProfileKey, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
+import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
+import { SsoClient } from '../../credentials/sso/clients'
 import { SsoToken } from '../../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { ToolkitError } from '../../shared/errors'
@@ -80,7 +82,14 @@ describe('Auth', function () {
 
     beforeEach(function () {
         store = new ProfileStore(new FakeMemento())
-        auth = new Auth(store, getTestTokenProvider)
+        auth = new Auth(store, getTestTokenProvider, new CredentialsProviderManager())
+
+        sinon.replace(SsoClient, 'create', () => {
+            const s = stub(SsoClient)
+            s.logout.resolves()
+
+            return s
+        })
     })
 
     it('can create a new sso connection', async function () {
@@ -139,10 +148,10 @@ describe('Auth', function () {
     })
 
     describe('useConnection', function () {
-        it('re-authenticates if the connection is invalid', async function () {
+        it('does not reauthenticate if the connection is invalid', async function () {
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
             await auth.useConnection(conn)
-            assert.strictEqual(auth.activeConnection?.state, 'valid')
+            assert.strictEqual(auth.activeConnection?.state, 'invalid')
         })
 
         it('fires an event', async function () {
@@ -183,7 +192,7 @@ describe('Auth', function () {
             sinon.replace(vscode, 'window', testWindow)
 
             const token = conn.getToken()
-            const message = await testWindow.waitForMessage(/credentials are expired or invalid,/i)
+            const message = await testWindow.waitForMessage(/connection is invalid or expired/i)
             message.selectItem(selection)
 
             return token
@@ -214,7 +223,13 @@ describe('Auth', function () {
     })
 
     describe('AuthNode', function () {
+        it('shows a message to create a connection if no connections exist', async function () {
+            const node = new AuthNode(auth)
+            await assertTreeItem(node, { label: 'Connect to AWS to Get Started...' })
+        })
+
         it('shows a login message if not connected', async function () {
+            await auth.createConnection(ssoProfile)
             const node = new AuthNode(auth)
             await assertTreeItem(node, { label: 'Select a connection...' })
         })
@@ -223,16 +238,15 @@ describe('Auth', function () {
             const node = new AuthNode(auth)
             const conn = await auth.createConnection(ssoProfile)
             await auth.useConnection(conn)
-            await assertTreeItem(node, { label: `Connected to ${conn.label}` })
+            await assertTreeItem(node, { label: `Connected with ${conn.label}` })
         })
 
         it('shows an error if the connection is invalid', async function () {
             const node = new AuthNode(auth)
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
             tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
-            await store.setCurrentProfileId(conn.id)
-            await auth.restorePreviousSession()
-            await assertTreeItem(node, { label: 'Connection is invalid or expired' })
+            await auth.useConnection(conn)
+            await assertTreeItem(node, { description: 'expired or invalid, click to authenticate' })
         })
     })
 })
