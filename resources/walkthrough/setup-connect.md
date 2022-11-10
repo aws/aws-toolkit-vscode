@@ -13,7 +13,7 @@ To interact with Amazon Web Services \(AWS\) through the AWS Toolkit for Visual 
 
     > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: >Connect to AWS**\.
     >
-    > ![AWS Toolkit Command palette, Choose AWS Profile](./images/aws-toolkit-commandpalette.png)
+    > ![AWS Toolkit Command palette, Connect to AWS](./images/aws-toolkit-commandpalette.png)
 
 2. Choose a profile from the list\.
 
