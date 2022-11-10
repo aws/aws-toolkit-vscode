@@ -18,6 +18,7 @@ module.exports = {
         'prettier',
     ],
     rules: {
+        curly: 2, // Enforce braces on "if"/"for"/etc.
         // TODO reenable this rule (by removing this off)
         'no-async-promise-executor': 'off',
         // TODO reenable this rule (by removing this off)

@@ -60,7 +60,9 @@ export function createSecurityDiagnosticCollection() {
 
 export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent) {
     const uri = event.document.uri
-    if (!securityScanRender.initialized || !securityScanRender.securityDiagnosticCollection?.has(uri)) return
+    if (!securityScanRender.initialized || !securityScanRender.securityDiagnosticCollection?.has(uri)) {
+        return
+    }
     const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
     const newSecurityDiagnostics: vscode.Diagnostic[] = []
     const changedRange = event.contentChanges[0].range
