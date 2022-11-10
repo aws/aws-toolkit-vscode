@@ -34,6 +34,9 @@ import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 
+/**
+ * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
+ */
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
 
@@ -119,6 +122,7 @@ export class LoginManager {
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
+        this.awsContext.credentialsShim = undefined
     }
 
     private static didTryAutoConnect = false
