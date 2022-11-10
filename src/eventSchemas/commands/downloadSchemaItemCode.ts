@@ -371,10 +371,11 @@ export class CodeExtractor {
             localizedText.no
         )
 
-        if (!userResponse)
+        if (!userResponse) {
             throw new UserNotifiedError(
                 localize('AWS.message.error.schemas.downloadCodeBindings.cancelled', 'Download code bindings cancelled')
             )
+        }
 
         return userResponse === localizedText.yes
     }
