@@ -29,7 +29,7 @@ import { once, shared } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { showInputBox } from '../shared/ui/inputPrompter'
+import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons } from '../shared/ui/buttons'
@@ -445,8 +445,10 @@ export class Auth implements AuthService, ConnectionManager {
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         if (profile.type === 'sso') {
             const provider = this.getTokenProvider(id, profile)
-            if (profile.metadata.connectionState !== 'invalid' && (await provider.getToken()) === undefined) {
+            if ((await provider.getToken()) === undefined) {
                 return this.updateConnectionState(id, 'invalid')
+            } else {
+                return this.updateConnectionState(id, 'valid')
             }
         } else {
             const provider = await this.iamProfileProvider.getCredentialsProvider(fromString(id))
@@ -494,6 +496,7 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
+        const label = `SSO (${profile.startUrl})`
 
         return {
             id,
@@ -501,7 +504,7 @@ export class Auth implements AuthService, ConnectionManager {
             scopes: profile.scopes,
             startUrl: profile.startUrl,
             state: profile.metadata.connectionState,
-            label: profile.metadata?.label ?? `SSO (${profile.startUrl})`,
+            label: profile.metadata?.label ?? label,
             getToken: () => this.debouncedGetToken(id, provider),
         }
     }
@@ -567,10 +570,9 @@ export class Auth implements AuthService, ConnectionManager {
         const defaultProfileId = asString({ credentialSource: 'profile', credentialTypeId: 'default' })
         const ec2ProfileId = asString({ credentialSource: 'ec2', credentialTypeId: 'instance' })
         const ecsProfileId = asString({ credentialSource: 'ecs', credentialTypeId: 'instance' })
-        const legacyProfile = new CredentialsSettings().get('profile', defaultProfileId)
+        const legacyProfile = new CredentialsSettings().get('profile', defaultProfileId) || defaultProfileId
         const tryConnection = async (id: string) => {
             try {
-                getLogger().info(`auth: trying to auto-connect using "${id}"`)
                 await this.useConnection({ id })
                 return true
             } catch (err) {
@@ -579,8 +581,10 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
+        await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
         for (const id of [ec2ProfileId, ecsProfileId, legacyProfile]) {
             if ((await tryConnection(id)) === true) {
+                getLogger().info(`auth: automatically connected with "${id}"`)
                 // Removes the setting from the UI
                 if (id === legacyProfile) {
                     new CredentialsSettings().delete('profile')
@@ -592,6 +596,23 @@ export class Auth implements AuthService, ConnectionManager {
     static #instance: Auth | undefined
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
+    }
+}
+
+const getConnectionIcon = (conn: Connection) =>
+    conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
+
+function toPickerItem(conn: Connection) {
+    const label = codicon`${getConnectionIcon(conn)} ${conn.label}`
+    const descPrefix = conn.type === 'iam' ? 'IAM Credential' : undefined
+    const descSuffix = conn.id.startsWith('profile:')
+        ? 'configured locally (~/.aws/config)'
+        : 'sourced from the environment'
+
+    return {
+        label,
+        data: conn,
+        description: descPrefix !== undefined ? `${descPrefix}, ${descSuffix}` : undefined,
     }
 }
 
@@ -607,14 +628,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
         connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
         const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
 
-        return [
-            ...filtered.map(c => ({
-                data: c,
-                label: codicon`${getIcon(c.type === 'iam' ? 'vscode-key' : 'vscode-account')} ${c.label}`,
-                description: c.type === 'iam' ? 'IAM Credential, configured locally (~/.aws/config)' : '',
-            })),
-            addNewConnection,
-        ]
+        return [...filtered.map(toPickerItem), addNewConnection]
     })()
 
     const title =
@@ -675,24 +689,32 @@ async function signout(auth: Auth) {
     }
 }
 
+export const createSsoItem = () => ({
+    label: codicon`${getIcon('vscode-organization')} ${localize(
+        'aws.auth.ssoItem.label',
+        'Connect using AWS IAM Identity Center'
+    )}`,
+    data: 'sso' as const,
+    detail: "Sign in to your company's IAM Identity Center access portal login page.",
+})
+
+export const createIamItem = () => ({
+    label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+    data: 'iam' as const,
+    detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
+})
+
+export const createStartUrlPrompter = (title: string) =>
+    createInputBox({
+        title: `${title}: Enter Start URL`,
+        placeholder: "Enter start URL for your organization's SSO",
+    })
+
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
-    const ssoItem = {
-        label: codicon`${getIcon('vscode-organization')} ${localize(
-            'aws.auth.ssoItem.label',
-            "Connect with your Organization's SSO (Single-Sign-On)"
-        )}`,
-        data: 'sso' as const,
-        detail: 'For emails associated with an organization enrolled in AWS IAM Identity Center',
-    }
-
-    const iamItem = {
-        label: codicon`${getIcon('vscode-person')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
-        data: 'iam' as const,
-        detail: 'Enables working with resources in Explorer',
-    }
-
-    const resp = await showQuickPick([ssoItem, iamItem], { title: 'Add a Connection to AWS' })
+    const resp = await showQuickPick([createSsoItem(), createIamItem()], {
+        title: 'Add a Connection to AWS',
+    })
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
@@ -701,11 +723,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'iam':
             return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
-            const startUrl = await showInputBox({
-                title: 'SSO Connection: Enter Start URL',
-                placeholder: "Enter start URL for your organization's SSO",
-            })
-
+            const startUrl = await createStartUrlPrompter('SSO Connection').prompt()
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
             }
@@ -783,7 +801,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         const itemLabel =
             conn?.label !== undefined
-                ? localize('aws.auth.node.connected', `Connected to {0}`, conn.label)
+                ? localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
                 : localize('aws.auth.node.selectConnection', 'Select a connection...')
 
         const item = new vscode.TreeItem(itemLabel)
@@ -795,7 +813,7 @@ export class AuthNode implements TreeNode<Auth> {
             item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
         } else {
             item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })
-            item.iconPath = conn?.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
+            item.iconPath = conn !== undefined ? getConnectionIcon(conn) : undefined
         }
 
         return item

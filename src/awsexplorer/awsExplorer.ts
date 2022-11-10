@@ -121,18 +121,19 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         const userVisibleRegionCodes = this.regionProvider.getExplorerRegions()
         const regionMap = toMap(partitionRegions, r => r.id)
 
-        return await makeChildrenNodes({
-            getChildNodes: async () => {
-                updateInPlace(
-                    this.regionNodes,
-                    intersection(regionMap.keys(), userVisibleRegionCodes),
-                    key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-                    key => new RegionNode(regionMap.get(key)!, this.regionProvider)
-                )
+        updateInPlace(
+            this.regionNodes,
+            intersection(regionMap.keys(), userVisibleRegionCodes),
+            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
+            key => new RegionNode(regionMap.get(key)!, this.regionProvider)
+        )
 
-                return [this.getAuthNode(), ...this.regionNodes.values()]
-            },
-            getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
+        if (this.regionNodes.size === 0) {
+            return [this.getAuthNode(), this.ROOT_NODE_ADD_REGION]
+        }
+
+        return await makeChildrenNodes({
+            getChildNodes: async () => [this.getAuthNode(), ...this.regionNodes.values()],
             sort: (a, b) =>
                 a instanceof TreeShim ? -1 : b instanceof TreeShim ? 1 : a.regionName.localeCompare(b.regionName),
         })

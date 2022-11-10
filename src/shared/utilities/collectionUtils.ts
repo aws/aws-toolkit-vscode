@@ -68,7 +68,7 @@ export function toMap<TKey, TValue>(
     return result
 }
 
-export function toRecord<T, K extends PropertyKey>(keys: K[], fn: (key: K) => T): { [P in K]: T } {
+export function toRecord<T, K extends PropertyKey>(keys: Iterable<K>, fn: (key: K) => T): { [P in K]: T } {
     const result = {} as Record<K, T>
 
     for (const key of keys) {
