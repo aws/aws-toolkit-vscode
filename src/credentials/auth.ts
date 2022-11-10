@@ -793,6 +793,7 @@ export const login = Commands.register('aws.login', async (auth: Auth = Auth.ins
     }
 })
 Commands.register('aws.logout', () => signout(Auth.instance))
+Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials())
 Commands.register('aws.credentials.profile.create', async () => {
     try {
         await globals.awsContextCommands.onCommandCreateCredentialsProfile()
