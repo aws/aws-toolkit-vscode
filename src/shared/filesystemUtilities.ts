@@ -12,8 +12,10 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
+import globals from '../shared/extensionGlobals'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+export const latestDownloadPathSetting = 'aws.latestDowloadPath'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -219,4 +221,14 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
         }
     }
     return []
+}
+/**
+ * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
+ */
+export function getDefaultDownloadPath() {
+    const lastUsedPath = globals.context.globalState.get(latestDownloadPathSetting)
+    if (typeof lastUsedPath === 'string') {
+        return lastUsedPath
+    }
+    return downloadsDir()
 }
