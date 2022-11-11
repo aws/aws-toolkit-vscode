@@ -75,7 +75,9 @@ export class JavascriptDependencyGraph extends DependencyGraph {
     }
 
     parseImport(importStr: string, dirPaths: string[]): string[] {
-        if (this._parsedStatements.has(importStr)) return []
+        if (this._parsedStatements.has(importStr)) {
+            return []
+        }
         this._parsedStatements.add(importStr)
         const modulePaths = this.extractModulePaths(importStr)
         const dependencies = this.generateFilePaths(modulePaths, dirPaths)
@@ -110,12 +112,16 @@ export class JavascriptDependencyGraph extends DependencyGraph {
         const matches: Set<string> = new Set()
         if (importMatches) {
             importMatches.forEach(line => {
-                if (!matches.has(line)) matches.add(line)
+                if (!matches.has(line)) {
+                    matches.add(line)
+                }
             })
         }
         if (requireMatches) {
             requireMatches.forEach(line => {
-                if (!matches.has(line)) matches.add(line)
+                if (!matches.has(line)) {
+                    matches.add(line)
+                }
             })
         }
         return matches.size > 0 ? Array.from(matches) : []
@@ -128,10 +134,14 @@ export class JavascriptDependencyGraph extends DependencyGraph {
         while (q.length > 0) {
             let count: number = q.length
             while (count > 0) {
-                if (this.reachSizeLimit(this._totalSize)) return this._pickedSourceFiles
+                if (this.reachSizeLimit(this._totalSize)) {
+                    return this._pickedSourceFiles
+                }
                 count -= 1
                 const currentFilePath = q.shift()
-                if (currentFilePath === undefined) throw new Error('Invalid file in queue.')
+                if (currentFilePath === undefined) {
+                    throw new Error('Invalid file in queue.')
+                }
                 this._pickedSourceFiles.add(currentFilePath)
                 this._totalSize += statSync(currentFilePath).size
                 const uri = vscode.Uri.file(currentFilePath)
@@ -146,10 +156,14 @@ export class JavascriptDependencyGraph extends DependencyGraph {
     }
 
     async traverseDir(dirPath: string) {
-        if (this.reachSizeLimit(this._totalSize)) return
+        if (this.reachSizeLimit(this._totalSize)) {
+            return
+        }
         readdirSync(dirPath, { withFileTypes: true }).forEach(async file => {
             const absPath = path.join(dirPath, file.name)
-            if (file.name.charAt(0) === '.' || !existsSync(absPath)) return
+            if (file.name.charAt(0) === '.' || !existsSync(absPath)) {
+                return
+            }
             if (file.isDirectory() && !this._generatedDirs.has(file.name)) {
                 await this.traverseDir(absPath)
             } else if (file.isFile()) {

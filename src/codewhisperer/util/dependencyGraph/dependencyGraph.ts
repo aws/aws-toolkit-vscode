@@ -116,11 +116,15 @@ export abstract class DependencyGraph {
     }
 
     protected removeDir(dir: string) {
-        if (existsSync(dir)) fs.removeSync(dir)
+        if (existsSync(dir)) {
+            fs.removeSync(dir)
+        }
     }
 
     protected removeZip(zipFilePath: string) {
-        if (existsSync(zipFilePath)) fs.unlinkSync(zipFilePath)
+        if (existsSync(zipFilePath)) {
+            fs.unlinkSync(zipFilePath)
+        }
     }
 
     protected getTruncDirPath(uri: vscode.Uri) {

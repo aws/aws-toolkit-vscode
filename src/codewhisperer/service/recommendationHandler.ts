@@ -155,7 +155,9 @@ export class RecommendationHandler {
             startTime = performance.now()
             this.lastInvocationTime = startTime
             // set start pos for non pagination call or first pagination call
-            if (!pagination || (pagination && page === 0)) this.startPos = editor.selection.active
+            if (!pagination || (pagination && page === 0)) {
+                this.startPos = editor.selection.active
+            }
 
             /**
              * Validate request
