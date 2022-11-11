@@ -24,10 +24,18 @@ phases:
             choco install -y --no-progress codecov
         }
       - dotnet --list-sdks
+      - choco uninstall -y dotnet-sdk --version 5.0.100 dotnet-5.0-sdk --version 5.0.100
+      - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\5.0.100'"
+      - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\6.0.202'"
+      - choco install -y dotnet-5.0-sdk
+      - dotnet --list-sdks
 
   build:
     commands:
       - |
+        # See https://github.com/NuGet/NuGet.Client/pull/4259
+        $Env:NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY = "3,1000"
+
         $Env:JAVA_HOME = $JAVA_HOME
         if ($Env:CODEARTIFACT_DOMAIN_NAME -and $Env:CODEARTIFACT_REPO_NAME) {
           $Env:CODEARTIFACT_URL=aws codeartifact get-repository-endpoint --domain $Env:CODEARTIFACT_DOMAIN_NAME --repository $Env:CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text
