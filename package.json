@@ -252,17 +252,12 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false,
-                        "CodeWhisperer": true
+                        "jsonResourceModification": false
                     },
                     "properties": {
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
-                        },
-                        "CodeWhisperer": {
-                            "type": "boolean",
-                            "default": true
                         }
                     },
                     "additionalProperties": false

@@ -6,8 +6,14 @@
 /**
  * SDK Client
  */
+
+// TODO: Remove dev endpoints and regions
+export const endpoint_alpha = 'https://Conso-Conso-2QL1N3F7BQYY-1380812087.us-west-2.elb.amazonaws.com/'
+export const endpoint_gamma = 'https://conso-conso-1ohz4gfxol2wj-1382674778.us-west-2.elb.amazonaws.com/'
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
+export const region_alpha = 'us-west-2'
+export const region_gamma = 'us-west-2'
 export const region = 'us-east-1'
 
 /**
@@ -133,9 +139,7 @@ export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
 
-export const learnMoreUri = 'https://aws.amazon.com/codewhisperer'
-
-export const previewSignupPortal = 'https://pages.awscloud.com/codewhisperer-sign-up-form.html'
+export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
 
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
@@ -167,6 +171,8 @@ export const referenceLogText = (
 export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
 
+export const referenceLogPromptTextEnterpriseSSO =
+    'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
 /**
  * Security Scan
  */
@@ -194,20 +200,37 @@ export const artifactTypeBuild = 'BuiltJars'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-// telemetry experiment id
-export const experimentId = 'codeWhisperer'
-
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 3
-
-// cloud9 access state
-export const cloud9AccessStateKey = 'cloud9AccessStateKey'
-
-export const cloud9AccessSent = 'Access requested!'
-
-export const cloud9AccessAlreadySent = 'Access has already been requested, we are still processing it.'
 
 export const reloadWindow = 'Reload Now'
 
 export const reloadWindowPrompt =
     'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
+
+export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s Admin and has been reset to the value they\’ve specified.`
+
+export const settingsLearnMore = 'Learn more about CodeWhisperer Settings'
+
+export const accessTokenCutOffDate = new Date(2023, 0, 31)
+
+export const accessTokenMigrationWarningMessage = `To continue using free of charge you must add an AWS Builder ID or SSO connection for CodeWhisper by January 31, 2023.`
+
+export const accessTokenMigrationErrorMessage = `To continue using free of charge you must add an AWS Builder ID or SSO connection.`
+
+export const connectWithAWSBuilderId = `Connect with AWS`
+
+export const freeTierLimitReached =
+    'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
+
+export const throttlingLearnMore = `Learn more`
+
+export const throttlingMessage = `Maximum recommendation count reached for this month`
+
+export const connectionChangeMessage = `Keep using CodeWhisperer with `
+
+export const failedToConnectSso = `Failed to connect to SSO`
+
+export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
+
+export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'
