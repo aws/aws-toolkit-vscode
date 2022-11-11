@@ -131,7 +131,9 @@ export async function startSecurityScan(
          * Step 4:  Polling mechanism on scan job status
          */
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
-        if (jobStatus === 'Failed') throw new Error('Security scan job failed.')
+        if (jobStatus === 'Failed') {
+            throw new Error('Security scan job failed.')
+        }
 
         /**
          * Step 5: Process and render scan results

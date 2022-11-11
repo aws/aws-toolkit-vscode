@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { LoginWizard } from './wizards/login'
 import { selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
@@ -28,23 +27,6 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest } from '../../types/clientcodecatalyst'
-
-async function login(authProvider: CodeCatalystAuthenticationProvider, client: CodeCatalystClient) {
-    const wizard = new LoginWizard(authProvider)
-    const response = await wizard.run()
-
-    if (!response) {
-        throw new CancellationError('user')
-    }
-
-    try {
-        const { accountDetails } = response.session
-
-        return client.setCredentials(authProvider.createCredentialsProvider(), accountDetails.metadata)
-    } catch (err) {
-        throw ToolkitError.chain(err, 'Failed to connect to CodeCatalyst', { code: 'NotConnected' })
-    }
-}
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -157,7 +139,7 @@ function createClientInjector(
 
         try {
             if (!client.connected) {
-                return await command(await login(authProvider, client), ...args)
+                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection' })
             }
 
             return await command(client, ...args)
@@ -202,18 +184,10 @@ export class CodeCatalystCommands {
     public readonly bindClient = createCommandDecorator(this)
 
     public constructor(
-        private readonly authProvider: CodeCatalystAuthenticationProvider,
-        private readonly clientFactory = createClientFactory(authProvider)
+        authProvider: CodeCatalystAuthenticationProvider,
+        clientFactory = createClientFactory(authProvider)
     ) {
         this.withClient = createClientInjector(authProvider, clientFactory)
-    }
-
-    public async login() {
-        return login(this.authProvider, await this.clientFactory())
-    }
-
-    public logout() {
-        return this.authProvider.logout()
     }
 
     public listCommands() {
@@ -313,8 +287,6 @@ export class CodeCatalystCommands {
     }
 
     public static readonly declared = {
-        login: Commands.from(this).declareLogin('aws.codecatalyst.login'),
-        logout: Commands.from(this).declareLogout('aws.codecatalyst.logout'),
         openResource: Commands.from(this).declareOpenResource('aws.codecatalyst.openResource'),
         listCommands: Commands.from(this).declareListCommands('aws.codecatalyst.listCommands'),
         openSpace: Commands.from(this).declareOpenSpace('aws.codecatalyst.openOrg'),

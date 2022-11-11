@@ -31,17 +31,17 @@ export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
 
     public constructor(
         private readonly commands: Pick<CodeCatalystCommands, 'withClient'>,
-        private readonly authProvider: Pick<CodeCatalystAuthenticationProvider, 'getPat' | 'activeAccount'>
+        private readonly authProvider: Pick<CodeCatalystAuthenticationProvider, 'getPat' | 'activeConnection'>
     ) {}
 
     public get name(): string {
-        const username = this.authProvider.activeAccount?.label
+        const username = this.authProvider.activeConnection?.label
 
         return localize(
             'AWS.codecatalyst.cloneRepo.git',
             'Amazon CodeCatalyst {0}',
             username
-                ? localize('AWS.codecatalyst.cloneRepo.connected', '(connected as {0})', username)
+                ? localize('AWS.codecatalyst.cloneRepo.connected', '(connected with {0})', username)
                 : localize('AWS.credentials.statusbar.no.credentials', '(not connected)')
         )
     }

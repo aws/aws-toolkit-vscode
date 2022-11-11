@@ -63,12 +63,12 @@ import {
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
-import { LoginManager } from '../../../credentials/loginManager'
 import { Runtime, telemetry } from '../../telemetry/telemetry'
 import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl } from '../../constants'
+import { Auth } from '../../../credentials/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -687,7 +687,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             version: await getSamCliVersion(getSamCliContext()),
         })
 
-        await LoginManager.tryAutoConnect()
+        await Auth.instance.tryAutoConnect()
         switch (config.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 config.type = 'node'

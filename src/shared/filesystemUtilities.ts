@@ -34,8 +34,12 @@ export async function getDirSize(
     const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
     const fileSizes = files.map(async file => {
         const filePath = path.join(dirPath, file.name)
-        if (file.isSymbolicLink()) return 0
-        if (file.isDirectory()) return getDirSize(filePath, startTime, duration, fileExt)
+        if (file.isSymbolicLink()) {
+            return 0
+        }
+        if (file.isDirectory()) {
+            return getDirSize(filePath, startTime, duration, fileExt)
+        }
         if (file.isFile() && file.name.endsWith(fileExt)) {
             const { size } = await fsExtra.stat(filePath)
             return size

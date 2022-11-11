@@ -56,7 +56,9 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
-        if (!this.isActive()) return
+        if (!this.isActive()) {
+            return
+        }
         // generate accepted recommendation token and stored in collection
         this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
         this.addTotalTokens(filename, text.length)
@@ -127,7 +129,9 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     private tryStartTimer() {
-        if (this._timer !== undefined) return
+        if (this._timer !== undefined) {
+            return
+        }
         const currentDate = new globals.clock.Date()
         this._startTime = currentDate.getTime()
         this._timer = setTimeout(() => {
@@ -195,11 +199,14 @@ export class CodeWhispererCodeCoverageTracker {
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
             vsCodeState.isCodeWhispererEditing ||
             e.contentChanges.length !== 1
-        )
+        ) {
             return
+        }
         const content = e.contentChanges[0]
         // do not count user tokens if user copies large chunk of code
-        if (content.text.length > 20) return
+        if (content.text.length > 20) {
+            return
+        }
         this.tryStartTimer()
         // deletion events has no text.
         if (content.text.length === 0) {

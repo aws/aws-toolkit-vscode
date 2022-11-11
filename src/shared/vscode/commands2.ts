@@ -8,7 +8,6 @@ import { toTitleCase } from '../utilities/textUtilities'
 import { isAutomation, isNameMangled } from './env'
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { getLogger, NullLogger } from '../logger/logger'
-import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
@@ -378,7 +377,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     try {
         if (info.autoconnect === true) {
-            await LoginManager.tryAutoConnect()
+            await vscode.commands.executeCommand('_aws.auth.autoConnect')
         }
 
         const result = await fn(...args)

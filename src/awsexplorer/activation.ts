@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
@@ -29,9 +28,9 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { DevSettings } from '../shared/settings'
-import { initNodes } from '../codecatalyst/explorer'
 import { notifyCodeCatalystBetaUsers } from '../codecatalyst/beta'
+import { CodeCatalystRootNode } from '../codecatalyst/explorer'
+import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -42,7 +41,7 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.context.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -55,7 +54,6 @@ export async function activate(args: {
     globals.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
-                await LoginManager.tryAutoConnect(args.context.awsContext)
                 await notifyCodeCatalystBetaUsers()
             }
         })
@@ -77,11 +75,9 @@ export async function activate(args: {
             }
         })
     )
-
-    const nodes = DevSettings.instance.get('showAuthNode', false)
-        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
-        : [...initNodes(args.context.extensionContext), cdkNode, codewhispererNode]
-
+    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const codecatalystNode = new CodeCatalystRootNode(authProvider)
+    const nodes = [new AuthNode(Auth.instance), codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
