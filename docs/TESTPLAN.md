@@ -68,3 +68,6 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Missing acceptance tests:
     -   Connect to AWS
     -   Fixed credentials and fixed credentials with assume roles
+-   Testing AWS SDK client functionality is cumbersome, verbose, and low-yield.
+-   Test code uses multiple “mocking” frameworks, which is confusing, error-prone, hard to onboard, and hard to use.
+-   Coverage not counted for integ tests (because of unresolved tooling issue).

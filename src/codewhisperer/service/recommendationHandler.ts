@@ -5,7 +5,12 @@
 
 import * as vscode from 'vscode'
 import { extensionVersion } from '../../shared/vscode/env'
-import { RecommendationsList, DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
+import {
+    RecommendationsList,
+    DefaultCodeWhispererClient,
+    Recommendation,
+    CognitoCredentialsError,
+} from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry } from '../models/model'
@@ -150,7 +155,9 @@ export class RecommendationHandler {
             startTime = performance.now()
             this.lastInvocationTime = startTime
             // set start pos for non pagination call or first pagination call
-            if (!pagination || (pagination && page === 0)) this.startPos = editor.selection.active
+            if (!pagination || (pagination && page === 0)) {
+                this.startPos = editor.selection.active
+            }
 
             /**
              * Validate request
@@ -192,6 +199,9 @@ export class RecommendationHandler {
                 }
             }
         } catch (error) {
+            if (error instanceof CognitoCredentialsError) {
+                shouldRecordServiceInvocation = false
+            }
             if (latency === 0) {
                 latency = startTime !== 0 ? performance.now() - startTime : 0
             }

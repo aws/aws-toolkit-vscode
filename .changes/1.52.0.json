@@ -1,0 +1,14 @@
+{
+	"date": "2022-10-20",
+	"version": "1.52.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer left/right arrow keybinding conflict with other plugins"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable syntax features for untitled (unsaved) cloudformation/sam yaml files"
+		}
+	]
+}

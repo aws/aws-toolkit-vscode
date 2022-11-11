@@ -121,6 +121,7 @@ export async function activate(context: ExtContext): Promise<void> {
             await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
             await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
             await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
             const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
@@ -174,7 +175,9 @@ export async function activate(context: ExtContext): Promise<void> {
         acceptSuggestion.register(context),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
-            if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) return
+            if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
+                return
+            }
             RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
             RecommendationHandler.instance.clearRecommendations()
         }),
@@ -262,6 +265,7 @@ export async function activate(context: ExtContext): Promise<void> {
         updateCloud9TreeNodes.execute()
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', await getManualTriggerStatus())
     } else {
         await setSubscriptionsforVsCodeInline()
     }
@@ -411,19 +415,22 @@ export async function activate(context: ExtContext): Promise<void> {
              * Recommendation navigation
              */
             Commands.register('aws.codeWhisperer.nextCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor) {
                     InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, true)
+                }
             }),
             Commands.register('aws.codeWhisperer.previousCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor) {
                     InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, false)
+                }
             }),
             /**
              * Recommendation acceptance
              */
             Commands.register('aws.codeWhisperer.acceptCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor) {
                     await InlineCompletion.instance.acceptRecommendation(vscode.window.activeTextEditor)
+                }
             })
         )
         // If the vscode is refreshed we need to maintain the status bar
@@ -538,8 +545,9 @@ export async function shutdown() {
         await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
         await HoverConfigUtil.instance.restoreHoverConfig()
     } else {
-        if (vscode.window.activeTextEditor)
+        if (vscode.window.activeTextEditor) {
             await InlineCompletion.instance.resetInlineStates(vscode.window.activeTextEditor)
+        }
     }
     CodeWhispererTracker.getTracker().shutdown()
 }

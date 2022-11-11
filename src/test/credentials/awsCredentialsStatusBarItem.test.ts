@@ -42,12 +42,4 @@ describe('updateCredentialsStatusBarItem', async function () {
         assert(statusBarItem.tooltip)
         assert.deepStrictEqual(statusBarItem.tooltip, 'Click to connect to AWS')
     })
-
-    it('shows (connected) after a successful login', async function () {
-        updateCredentialsStatusBarItem(statusBarItem, 'myprofile')
-        assert.ok(
-            statusBarItem.text.includes('(connected)'),
-            'expected statusbar item text to indicate that the profile connected'
-        )
-    })
 })

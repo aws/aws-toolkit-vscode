@@ -72,7 +72,9 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('python', fakeMemeto)
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             assert.strictEqual(tracker.isActive(), false)
 
             fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
@@ -83,7 +85,9 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(false)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('java', fakeMemeto)
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             assert.strictEqual(tracker.isActive(), false)
 
             fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
@@ -95,7 +99,9 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('javascript', fakeMemeto)
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             assert.strictEqual(tracker.isActive(), true)
         })
     })
@@ -117,7 +123,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should compute edit distance to update the accepted tokens', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             const editor = createMockTextEditor('def addTwoNumbers(a, b):\n')
 
             tracker.addAcceptedTokens(editor.document.fileName, {
@@ -176,14 +184,18 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should skip when tracker is not active', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'a', 'test.py')
             const spy = sinon.spy(CodeWhispererCodeCoverageTracker.prototype, 'addAcceptedTokens')
             assert.ok(!spy.called)
         })
 
         it('Should increase both AcceptedTokens and TotalTokens', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             tracker.countAcceptedTokens(new vscode.Range(0, 0, 0, 1), 'a', 'test.py')
             assert.deepStrictEqual(tracker.acceptedTokens['test.py'][0], {
                 range: new vscode.Range(0, 0, 0, 1),
@@ -211,7 +223,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should skip when user copy large files', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             tracker.countTotalTokens({
                 document: createMockDocument(),
                 contentChanges: [
@@ -229,7 +243,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should skip when CodeWhisperer is editing', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             vsCodeState.isCodeWhispererEditing = true
             tracker.countTotalTokens({
                 document: createMockDocument(),
@@ -247,7 +263,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should reduce tokens when delete', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             const doc = createMockDocument('import math', 'test.py', 'python')
             tracker.countTotalTokens({
                 document: doc,
@@ -275,7 +293,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should add tokens when type', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             const doc = createMockDocument('import math', 'test.py', 'python')
             tracker.countTotalTokens({
                 document: doc,
@@ -309,7 +329,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('Should not send codecoverage telemetry if tracker is not active', function () {
-            if (!tracker) assert.fail()
+            if (!tracker) {
+                assert.fail()
+            }
             sinon.restore()
             sinon.stub(tracker, 'isActive').returns(false)
 
@@ -318,7 +340,7 @@ describe('codewhispererCodecoverageTracker', function () {
             tracker.flush()
             const data = globals.telemetry.logger.query({
                 metricName: 'codewhisperer_codePercentage',
-                filters: ['awsAccount'],
+                excludeKeys: ['awsAccount'],
             })
             assert.strictEqual(data.length, 0)
         })

@@ -139,7 +139,7 @@ export class Service {
     }
 }
 
-class Cluster {
+export class Cluster {
     public readonly id = this.cluster.clusterArn!
 
     public constructor(private readonly client: DefaultEcsClient, private readonly cluster: ECS.Cluster) {}

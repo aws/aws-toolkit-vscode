@@ -40,7 +40,9 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
     private getGhostText(prefix: string, suggestion: string): string {
         const prefixLines = prefix.split(/\r\n|\r|\n/)
         const n = prefixLines.length
-        if (n <= 1) return suggestion
+        if (n <= 1) {
+            return suggestion
+        }
         let count = 1
         for (let i = 0; i < suggestion.length; i++) {
             if (suggestion[i] === '\n') {
@@ -105,7 +107,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         const iteratingIndexes = this.getIteratingIndexes()
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
-            if (r.content.startsWith(prefix)) {
+            if (r.content.startsWith(prefix) && r.content.length > 0) {
                 this.activeItemIndex = i
                 items.push({
                     insertText: this.getGhostText(prefix, r.content),
@@ -257,7 +259,9 @@ export class InlineCompletionService {
 
     async tryShowRecommendation() {
         const editor = vscode.window.activeTextEditor
-        if (this.isSuggestionVisible() || editor === undefined) return
+        if (this.isSuggestionVisible() || editor === undefined) {
+            return
+        }
         if (
             editor.selection.active.isBefore(RecommendationHandler.instance.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
@@ -283,7 +287,9 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
-        if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning) return
+        if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning) {
+            return
+        }
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -306,7 +312,9 @@ export class InlineCompletionService {
                     this.setCodeWhispererStatusBarOk()
                     return
                 }
-                if (!RecommendationHandler.instance.hasNextToken()) break
+                if (!RecommendationHandler.instance.hasNextToken()) {
+                    break
+                }
                 page++
             }
         } catch (error) {

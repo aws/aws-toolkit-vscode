@@ -3,20 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from './extensionGlobals'
-
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { LoginManager } from '../credentials/loginManager'
-import { asString, CredentialsId, fromString } from '../credentials/providers/credentials'
-import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
+import { asString, CredentialsId } from '../credentials/providers/credentials'
 import * as extensionConstants from './constants'
-import {
-    credentialProfileSelector,
-    DefaultCredentialSelectionDataProvider,
-} from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import * as localizedText from './localizedText'
 import { RegionProvider } from './regions/regionProvider'
@@ -29,6 +21,9 @@ import { CreateProfileWizard } from '../credentials/wizards/createProfile'
 import { Profile } from './credentials/credentialsFile'
 import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/templates'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
+import { Auth } from '../credentials/auth'
+import { CancellationError } from './utilities/timeoutUtils'
+import { ToolkitError } from './errors'
 
 /**
  * @deprecated
@@ -36,18 +31,8 @@ import { SharedCredentialsProvider } from '../credentials/providers/sharedCreden
 export class AwsContextCommands {
     private readonly _regionProvider: RegionProvider
 
-    public constructor(regionProvider: RegionProvider, private readonly loginManager: LoginManager) {
+    public constructor(regionProvider: RegionProvider, private readonly auth: Auth) {
         this._regionProvider = regionProvider
-    }
-
-    public async onCommandLogin() {
-        const profileName = await this.getProfileNameFromUser()
-        if (!profileName) {
-            // user clicked away from quick pick or entered nothing
-            return
-        }
-
-        await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -55,8 +40,15 @@ export class AwsContextCommands {
         const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
         if (profileName) {
-            await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
+            const conn = await this.auth.getConnection({ id: profileName })
+            if (conn === undefined) {
+                throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+            }
+
+            await this.auth.useConnection(conn)
             await this.editCredentials()
+        } else {
+            throw new CancellationError('user')
         }
     }
 
@@ -74,10 +66,6 @@ export class AwsContextCommands {
         ) {
             await this.onCommandCreateCredentialsProfile()
         }
-    }
-
-    public async onCommandLogout() {
-        await this.loginManager.logout()
     }
 
     public async onCommandShowRegion() {
@@ -127,7 +115,7 @@ export class AwsContextCommands {
      *
      * @returns The profile name, or undefined if user cancelled
      */
-    private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
+    public async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
         const profiles = {} as Record<string, Profile>
         for (const [k, v] of (await loadSharedCredentialsProfiles()).entries()) {
             profiles[k] = v
@@ -162,32 +150,6 @@ export class AwsContextCommands {
         return asString(sharedProviderId)
     }
 
-    /**
-     * Gets a profile from the user, or runs "Create Credentials" command if there are no profiles.
-     *
-     * @returns User's selected Profile name, or undefined if none was selected.
-     * undefined is also returned if we leave the user in a state where they are
-     * editing their credentials file.
-     */
-    private async getProfileNameFromUser(): Promise<string | undefined> {
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-        const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
-        const profileNames = Object.keys(providerMap)
-        if (profileNames.length > 0) {
-            // There are credentials for the user to choose from
-            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, globals.context)
-            const state = await credentialProfileSelector(dataProvider)
-            if (state && state.credentialProfile) {
-                return state.credentialProfile.label
-            }
-        } else if (credentialsFiles.length === 0) {
-            return await this.promptAndCreateNewCredentialsFile()
-        } else {
-            await this.editCredentials()
-        }
-        return undefined
-    }
-
     private async promptCredentialsSetup(): Promise<boolean> {
         // If no credentials were found, the user should be
         // encouraged to define some.
@@ -217,7 +179,7 @@ export class AwsContextCommands {
     /**
      * @description Sets the user up to edit the credentials files.
      */
-    private async editCredentials(): Promise<void> {
+    public async editCredentials(): Promise<void> {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         let preserveFocus: boolean = false
         let viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active

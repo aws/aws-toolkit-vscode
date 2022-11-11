@@ -1,7 +1,7 @@
 # Contributing to AWS Toolkit for VS Code
 
-Thanks for taking the time to help us. We greatly value feedback and
-contributions from our community!
+Thanks for taking the time to help improve the AWS Toolkit! We greatly value
+feedback and contributions from the community.
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -19,9 +19,7 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
--   [NodeJS and NPM](https://nodejs.org/)
-    -   NodeJS Version: 12.x
-    -   NPM version: 7.x or higher
+-   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
@@ -31,7 +29,6 @@ To develop this project, install these dependencies:
 
 Then clone the repository and install NPM packages:
 
-    cd ~/repos
     git clone git@github.com:aws/aws-toolkit-vscode.git
     cd aws-toolkit-vscode
     npm install
@@ -176,24 +173,22 @@ Before sending a pull request:
 
 To send a pull request:
 
-1. Fork the repository.
+1. [Fork the repository](https://help.github.com/articles/fork-a-repo/).
 2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
-3. Ensure local tests pass.
-4. Commit to your fork using clear commit messages.
-5. Once you are done with your change, run `npm run newChange`, follow the prompts, then commit the changelog item to your fork.
-6. Send us a pull request, answering any default questions in the pull request interface.
-7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
-
-GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
-[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+    - Read the [project guidelines](#guidelines), this is very important for non-trivial changes.
+3. Commit to your fork [using clear commit messages](#commit-messages).
+4. Update the changelog by running `npm run newChange`.
+    - Note: the main purpose of the `newChange` task is to avoid merge conflicts.
+5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
+6. Pay attention to any CI failures reported in the pull request.
 
 ### Commit messages
 
-Generally, your pull request description should be a copy-paste of your commit
-message(s). If your PR description provides insight not found in a commit
-message, ask why. Source control (Git) is our source-of-truth, not GitHub.
+Generally your PR description should be a copy-paste of your commit message(s).
+If your PR description provides insight and context, that also should exist in
+the commit message. Source control (Git) is our source-of-truth, not GitHub.
 
-Quick summary of commit message guidelines:
+Follow these [commit message guidelines](https://cbea.ms/git-commit/):
 
 -   Subject: single line up to 50-72 characters
     -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
@@ -211,18 +206,11 @@ has a short subject line and unlimited detail in the body.
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
-artifact that will live longer than any code in the codebase.
+artifact that will outlive most code.
 
-Consider prefixing the subject with a topic: this again helps humans (and
-scripts) scan and omit ranges of the history at a glance. For example if I'm
-looking for a code change, I can eliminate all of the `doc:` and `test:`
-commits when inspecting this commit log:
-
-    doc: update README.md
-    test: Deploy wizard
-    SAM debug: fix bug in foo
-    doc: explain SAM debug architecture
-    Lambda: add button to thing
+Prefix the subject with `type(topic):` ([conventional
+commits](https://www.conventionalcommits.org/) format): this again helps humans
+(and scripts) scan and omit ranges of the history at a glance.
 
 ### CI artifact
 
@@ -243,6 +231,18 @@ The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30
 Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
+
+### Service Endpoints
+
+Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
+
+Example:
+
+```json
+"aws.dev.endpoints": {
+    "s3": "http://example.com"
+}
+```
 
 ### Telemetry and Automation
 

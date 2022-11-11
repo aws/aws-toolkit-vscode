@@ -120,7 +120,6 @@ export async function startSecurityScan(
          */
         serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        getLogger().debug(`Job id: ${scanJob.jobId}`)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
@@ -131,7 +130,9 @@ export async function startSecurityScan(
          * Step 4:  Polling mechanism on scan job status
          */
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
-        if (jobStatus === 'Failed') throw new Error('Security scan job failed.')
+        if (jobStatus === 'Failed') {
+            throw new Error('Security scan job failed.')
+        }
 
         /**
          * Step 5: Process and render scan results

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.52.0-SNAPSHOT",
+    "version": "1.54.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -25,10 +25,12 @@
     },
     "categories": [
         "Debuggers",
+        "Linters",
         "Other"
     ],
     "keywords": [
         "AWS",
+        "CodeWhisperer",
         "Lambda",
         "Serverless"
     ],
@@ -38,7 +40,6 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.login2",
         "onCommand:aws.credentials.profile.create",
         "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
@@ -104,7 +105,7 @@
             "properties": {
                 "aws.profile": {
                     "type": "string",
-                    "default": "",
+                    "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
                 "aws.ecs.openTerminalCommand": {
@@ -737,6 +738,13 @@
                 }
             ]
         },
+        "submenus": [
+            {
+                "id": "aws.auth",
+                "label": "%AWS.submenu.auth.title%",
+                "icon": "$(ellipsis)"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -1065,6 +1073,22 @@
                 },
                 {
                     "command": "aws.renderStateMachineGraph",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.addConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.help",
                     "when": "false"
                 },
                 {
@@ -1715,6 +1739,45 @@
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.addConnection",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.auth.help",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@1"
+                },
+                {
+                    "submenu": "aws.auth",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@2"
+                }
+            ],
+            "aws.auth": [
+                {
+                    "command": "aws.auth.addConnection",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "group": "0@3"
                 }
             ]
         },
@@ -1772,17 +1835,6 @@
                 }
             },
             {
-                "command": "aws.login2",
-                "title": "%AWS.command.login2%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.login2.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.title%",
@@ -1811,6 +1863,27 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.auth.addConnection",
+                "title": "%AWS.command.auth.addConnection%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.switchConnections",
+                "title": "%AWS.command.auth.switchConnections%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.signout",
+                "title": "%AWS.command.auth.signout%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.help",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(question)"
             },
             {
                 "command": "aws.createIssueOnGitHub",
@@ -2987,12 +3060,12 @@
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             }
         ],
         "grammars": [
@@ -3232,7 +3305,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.75",
+        "@aws-toolkits/telemetry": "^1.0.76",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
@@ -3241,17 +3314,17 @@
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
-        "@types/js-yaml": "^4.0.3",
+        "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
         "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
-        "@types/mocha": "^9.0.0",
+        "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.5",
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.1",
-        "@types/tcp-port-used": "^1.0.0",
+        "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
         "@types/vscode": "1.50.0",
         "@types/vscode-webview": "^1.57.0",
@@ -3262,8 +3335,8 @@
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
-        "esbuild-loader": "2.18.0",
-        "eslint": "^8.23.1",
+        "esbuild-loader": "2.20.0",
+        "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
@@ -3271,7 +3344,7 @@
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^11.0.2",
         "marked": "^4.0.10",
-        "mocha": "^9.1.3",
+        "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",

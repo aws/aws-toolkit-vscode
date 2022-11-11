@@ -49,18 +49,19 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         try {
-            if (!config.isAutomatedTriggerEnabled) return
+            if (!config.isAutomatedTriggerEnabled) {
+                return
+            }
 
             // Skip when output channel gains focus and invoke
-            if (editor.document.languageId === 'Log') return
+            if (editor.document.languageId === 'Log') {
+                return
+            }
 
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) return
-
-            // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters type auto trigger.
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) return
+            if (InlineCompletion.instance.isTypeaheadInProgress) {
+                return
+            }
 
             // Skip Cloud9 IntelliSense acceptance event
             if (
@@ -75,6 +76,9 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
+            // Time duration between 2 invocations should be greater than the threshold
+            // This threshold does not applies to Enter | SpecialCharacters | IntelliSenseAcceptance type auto trigger.
+            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     this.keyStrokeCount += 1
@@ -92,13 +96,22 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    this.keyStrokeCount += 1
+                    // text length can be greater than 1 in Cloud9
+                    this.keyStrokeCount += event.contentChanges[0].text.length
+                    if (
+                        this.keyStrokeCount >= 15 &&
+                        duration >= CodeWhispererConstants.invocationTimeIntervalThreshold
+                    ) {
+                        triggerType = 'KeyStrokeCount'
+                        this.keyStrokeCount = 0
+                    }
                     break
                 }
                 default: {
                     break
                 }
             }
+
             if (triggerType) {
                 this.invokeAutomatedTrigger(triggerType, editor, client, config)
             }
@@ -117,7 +130,9 @@ export class KeyStrokeHandler {
         if (editor) {
             this.keyStrokeCount = 0
             if (isCloud9()) {
-                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+                    return
+                }
                 vsCodeState.isIntelliSenseActive = false
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = true
                 try {
@@ -170,10 +185,15 @@ export abstract class DocumentChangedType {
 
     abstract checkChangeSource(): DocumentChangedSource
 
-    // Enter key should always start with ONE '\n' and potentially following spaces due to IDE reformat
+    // Enter key should always start with ONE '\n' or '\r\n' and potentially following spaces due to IDE reformat
     protected isEnterKey(str: string): boolean {
-        if (str.length === 0) return false
-        return str[0] === '\n' && str.substring(1).trim().length === 0
+        if (str.length === 0) {
+            return false
+        }
+        return (
+            (str.startsWith('\r\n') && str.substring(2).trim() === '') ||
+            (str[0] === '\n' && str.substring(1).trim() === '')
+        )
     }
 
     // Tab should consist of space char only ' ' and the length % tabSize should be 0
@@ -192,12 +212,18 @@ export abstract class DocumentChangedType {
     protected isSingleLine(str: string): boolean {
         let newLineCounts = 0
         for (const ch of str) {
-            if (ch === '\n') newLineCounts += 1
+            if (ch === '\n') {
+                newLineCounts += 1
+            }
         }
 
         // since pressing Enter key possibly will generate string like '\n        ' due to indention
-        if (this.isEnterKey(str)) return true
-        if (newLineCounts >= 1) return false
+        if (this.isEnterKey(str)) {
+            return true
+        }
+        if (newLineCounts >= 1) {
+            return false
+        }
         return true
     }
 }
@@ -212,8 +238,8 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             return DocumentChangedSource.Unknown
         }
 
-        // Case when event.contentChanges.length > 1
-        if (this.contentChanges.length > 1) {
+        // event.contentChanges.length will be 2 when user press Enter key multiple times
+        if (this.contentChanges.length > 2) {
             return DocumentChangedSource.Reformatting
         }
 
@@ -234,12 +260,12 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText)) {
+            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
                 // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
                 // multi-words code snippets
                 return DocumentChangedSource.IntelliSense
             } else {
-                return DocumentChangedSource.Unknown
+                return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
         }
 
