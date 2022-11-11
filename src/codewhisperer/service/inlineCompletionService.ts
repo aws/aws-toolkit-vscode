@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { ConfigurationEntry, vsCodeState } from '../models/model'
 import * as CodeWhispererConstants from '../models/constants'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
-import { DefaultCodeWhispererClient } from '../client/codewhisperer'
+import { DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
 import {
     telemetry,
@@ -19,6 +19,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
 import { HoverConfigUtil } from '../util/hoverConfigUtil'
+import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 
 class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
@@ -85,6 +86,54 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         return index
     }
 
+    truncateSuggestionOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
+        let rightContextRange: vscode.Range | undefined = undefined
+        const pos = RecommendationHandler.instance.startPos
+        if (suggestion.split(/\r?\n/).length > 1) {
+            rightContextRange = new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + suggestion.length))
+        } else {
+            rightContextRange = new vscode.Range(pos, document.lineAt(pos).range.end)
+        }
+        const rightContext = document.getText(rightContextRange)
+        const overlap = getPrefixSuffixOverlap(suggestion, rightContext)
+        return suggestion.slice(0, suggestion.length - overlap.length)
+    }
+
+    getInlineCompletionItem(
+        document: vscode.TextDocument,
+        r: Recommendation,
+        start: vscode.Position,
+        end: vscode.Position,
+        index: number
+    ): vscode.InlineCompletionItem | undefined {
+        const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
+        const truncatedSuggestion = this.truncateSuggestionOverlapWithRightContext(document, r.content)
+        if (!r.content.startsWith(prefix) || truncatedSuggestion.length === 0) {
+            //mark suggestion as Discard when it does not fit into the context
+            RecommendationHandler.instance.setSuggestionState(index, 'Discard')
+            return undefined
+        }
+        return {
+            insertText: this.getGhostText(prefix, truncatedSuggestion),
+            range: new vscode.Range(this.getGhostTextStartPos(start, end), end),
+            command: {
+                command: 'aws.codeWhisperer.accept',
+                title: 'On acceptance',
+                arguments: [
+                    new vscode.Range(start, end),
+                    index,
+                    truncatedSuggestion,
+                    RecommendationHandler.instance.requestId,
+                    RecommendationHandler.instance.sessionId,
+                    TelemetryHelper.instance.triggerType,
+                    TelemetryHelper.instance.completionType,
+                    runtimeLanguageContext.getLanguageContext(document.languageId).language,
+                    r.references,
+                ],
+            },
+        }
+    }
+
     // the returned completion items will always only contain one valid item
     // this is to trace the current index of visible completion item
     // so that reference tracker can show
@@ -102,42 +151,23 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         }
         const start = RecommendationHandler.instance.startPos
         const end = position
-        const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
-        const items: vscode.InlineCompletionItem[] = []
         const iteratingIndexes = this.getIteratingIndexes()
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
-            if (r.content.startsWith(prefix) && r.content.length > 0) {
-                this.activeItemIndex = i
-                items.push({
-                    insertText: this.getGhostText(prefix, r.content),
-                    range: new vscode.Range(this.getGhostTextStartPos(start, end), end),
-                    command: {
-                        command: 'aws.codeWhisperer.accept',
-                        title: 'On acceptance',
-                        arguments: [
-                            new vscode.Range(start, end),
-                            i,
-                            r.content,
-                            RecommendationHandler.instance.requestId,
-                            RecommendationHandler.instance.sessionId,
-                            TelemetryHelper.instance.triggerType,
-                            TelemetryHelper.instance.completionType,
-                            runtimeLanguageContext.getLanguageContext(document.languageId).language,
-                            r.references,
-                        ],
-                    },
-                })
-                RecommendationHandler.instance.setSuggestionState(i, 'Showed')
-                ReferenceInlineProvider.instance.setInlineReference(
-                    RecommendationHandler.instance.startPos.line,
-                    r.content,
-                    r.references
-                )
-                this.nextMove = 0
-                this._onDidShow.fire()
-                return [items[0]]
+            const item = this.getInlineCompletionItem(document, r, start, end, i)
+            if (item === undefined) {
+                continue
             }
+            this.activeItemIndex = i
+            RecommendationHandler.instance.setSuggestionState(i, 'Showed')
+            ReferenceInlineProvider.instance.setInlineReference(
+                RecommendationHandler.instance.startPos.line,
+                r.content,
+                r.references
+            )
+            this.nextMove = 0
+            this._onDidShow.fire()
+            return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
         this.activeItemIndex = undefined
