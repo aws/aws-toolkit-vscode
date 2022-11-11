@@ -219,7 +219,9 @@ export class JavaDependencyGraph extends DependencyGraph {
         }
         readdirSync(dirPath, { withFileTypes: true }).forEach(async file => {
             const fileAbsPath = path.join(dirPath, file.name)
-            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) return
+            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) {
+                return
+            }
             if (file.isDirectory()) {
                 await this.traverseDir(fileAbsPath)
             } else if (file.isFile()) {
@@ -307,7 +309,9 @@ export class JavaDependencyGraph extends DependencyGraph {
 
         readdirSync(dirPath, { withFileTypes: true }).forEach(file => {
             const fileAbsPath = path.join(dirPath, file.name)
-            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) return
+            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) {
+                return
+            }
             if (file.isDirectory()) {
                 const childPackageNode = this.detectClasspath(fileAbsPath, file.name, projectName, extension)
                 childPackageNode.paths.forEach(path => {
