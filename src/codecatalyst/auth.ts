@@ -6,10 +6,11 @@
 import * as vscode from 'vscode'
 import { ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { Auth, isBuilderIdConnection, SsoConnection } from '../credentials/auth'
+import { Auth, Connection, isBuilderIdConnection, SsoConnection } from '../credentials/auth'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { once } from '../shared/utilities/functionUtils'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -41,7 +42,7 @@ const useConnectionItem = {
 const savedConnectionKey = 'aws.codecatalyst.savedConnectionId'
 
 export class CodeCatalystAuthenticationProvider {
-    #activeConnection: SsoConnection | undefined
+    #activeConnection: Connection | undefined
     #savedConnection: SsoConnection | undefined
 
     private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<SsoConnection | undefined>()
@@ -55,7 +56,7 @@ export class CodeCatalystAuthenticationProvider {
         this.restoreSavedConnection()
         this.auth.onDidChangeActiveConnection(async conn => {
             if (conn !== undefined && !isBuilderIdConnection(conn)) {
-                if (this.#activeConnection !== undefined) {
+                if (isBuilderIdConnection(this.#activeConnection)) {
                     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
                         title: `Keep using CodeCatalyst with ${conn.label}?`,
                         placeholder: 'Confirm choice',
@@ -63,18 +64,21 @@ export class CodeCatalystAuthenticationProvider {
                     if (resp === 'yes') {
                         await this.setSavedConnection(this.#activeConnection)
                     }
-                    this.#activeConnection = undefined
                 }
-            } else {
-                this.#activeConnection = conn
+            } else if (conn === undefined && this.#activeConnection?.id === this.#savedConnection?.id) {
+                await this.removeSavedConnection()
             }
 
+            this.#activeConnection = conn
             this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
         })
     }
 
     public get activeConnection() {
-        return this.#savedConnection ?? this.#activeConnection
+        return (
+            this.#savedConnection ??
+            (isBuilderIdConnection(this.#activeConnection) ? this.#activeConnection : undefined)
+        )
     }
 
     public get isUsingSavedConnection() {
@@ -97,7 +101,6 @@ export class CodeCatalystAuthenticationProvider {
 
     public async setSavedConnection(conn: SsoConnection) {
         await this.memento.update(savedConnectionKey, conn.id)
-        this.#activeConnection = undefined
         this.#savedConnection = conn
         this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
     }
@@ -109,6 +112,11 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public restoreSavedConnection = once(async () => {
+        // XXX: don't restore in a dev env
+        if (getCodeCatalystDevEnvId() !== undefined) {
+            return
+        }
+
         const savedConnection = await getSavedConnection(this.memento, this.auth)
         if (savedConnection !== undefined) {
             this.#savedConnection = savedConnection

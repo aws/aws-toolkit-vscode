@@ -610,7 +610,7 @@ export class Auth implements AuthService, ConnectionManager {
         // Use the environment token if available
         if (getCodeCatalystDevEnvId() !== undefined) {
             const profile = {
-                scopes: ['codeaws:read_write', 'codecatalyst:read_write'],
+                scopes: ['codeaws:read_write'],
                 type: 'sso' as const,
                 startUrl: builderIdStartUrl,
                 ssoRegion: 'us-east-1',
@@ -788,7 +788,7 @@ export const createStartUrlPrompter = (title: string) =>
 
 export async function createBuilderIdConnection(auth: Auth) {
     // XXX: hard-coded scopes
-    const scopes = ['codeaws:read_write', 'codecatalyst:read_write']
+    const scopes = ['codeaws:read_write']
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
 
     // Right now users can only have 1 builder id connection
