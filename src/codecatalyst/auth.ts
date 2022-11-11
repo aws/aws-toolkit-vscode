@@ -62,9 +62,8 @@ export class CodeCatalystAuthenticationProvider {
                     })
                     if (resp === 'yes') {
                         await this.setSavedConnection(this.#activeConnection)
-                    } else {
-                        this.#activeConnection = undefined
                     }
+                    this.#activeConnection = undefined
                 }
             } else {
                 this.#activeConnection = conn
