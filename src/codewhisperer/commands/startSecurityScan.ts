@@ -120,7 +120,6 @@ export async function startSecurityScan(
          */
         serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        getLogger().debug(`Job id: ${scanJob.jobId}`)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
