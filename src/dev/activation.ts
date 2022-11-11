@@ -12,6 +12,7 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
+import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 
 interface MenuOption {
     readonly label: string
@@ -28,6 +29,24 @@ interface MenuOption {
  * feature/module as a description so it can be moved around easier.
  */
 const menuOptions: Record<string, MenuOption> = {
+    installVsix: {
+        label: 'Install VSIX on Remote Environment',
+        description: 'CodeCatalyst',
+        detail: 'Automatically upload/install a VSIX to a remote host',
+        executor: installVsixCommand,
+    },
+    openTerminal: {
+        label: 'Open Remote Terminal',
+        description: 'CodeCatalyst',
+        detail: 'Open a new terminal connected to the remote environment',
+        executor: openTerminalCommand,
+    },
+    deleteDevEnv: {
+        label: 'Delete Workspace',
+        description: 'CodeCatalyst',
+        detail: 'Deletes the selected dev environment',
+        executor: deleteDevEnvCommand,
+    },
     editStorage: {
         label: 'Edit Storage',
         description: 'VS Code',

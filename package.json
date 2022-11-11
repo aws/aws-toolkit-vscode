@@ -64,6 +64,15 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.codecatalyst.listCommands",
+        "onCommand:aws.codecatalyst.login",
+        "onCommand:aws.codecatalyst.logout",
+        "onCommand:aws.codecatalyst.openOrg",
+        "onCommand:aws.codecatalyst.openProject",
+        "onCommand:aws.codecatalyst.openRepo",
+        "onCommand:aws.codecatalyst.openDevEnv",
+        "onCommand:aws.codecatalyst.cloneRepo",
+        "onCommand:aws.codecatalyst.createDevEnv",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -242,6 +251,10 @@
                             "default": false
                         },
                         "createCredentialsProfile": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "remoteConnected": {
                             "type": "boolean",
                             "default": false
                         }
@@ -784,6 +797,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.codecatalyst.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codecatalyst.openDevEnv",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.codecatalyst.createDevEnv",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1215,6 +1240,31 @@
                     "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
+                },
+                {
+                    "command": "aws.codecatalyst.login",
+                    "when": "view == aws.codecatalyst",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.cloneRepo",
+                    "when": "view == aws.codecatalyst",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.createDevEnv",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.listCommands",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.openDevEnv",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
                 }
             ],
             "explorer/context": [
@@ -1507,7 +1557,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
                     "group": "2@2"
                 },
                 {
@@ -1853,6 +1903,54 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.codecatalyst.openOrg",
+                "title": "%AWS.command.codecatalyst.openOrg%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openProject",
+                "title": "%AWS.command.codecatalyst.openProject%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openRepo",
+                "title": "%AWS.command.codecatalyst.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openDevEnv",
+                "title": "%AWS.command.codecatalyst.openDevEnv%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.listCommands",
+                "title": "%AWS.command.codecatalyst.listCommands%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.login",
+                "title": "%AWS.command.codecatalyst.login%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.logout",
+                "title": "%AWS.command.codecatalyst.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.cloneRepo",
+                "title": "%AWS.command.codecatalyst.cloneRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.createDevEnv",
+                "title": "%AWS.command.codecatalyst.createDevEnv%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
             },
             {
                 "command": "aws.logout",
