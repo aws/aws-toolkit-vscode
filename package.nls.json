@@ -95,6 +95,7 @@
     "AWS.command.codecatalyst.listCommands": "List CodeCatalyst Commands",
     "AWS.command.codecatalyst.login": "Connect to CodeCatalyst",
     "AWS.command.codecatalyst.logout": "Sign out of CodeCatalyst",
+    "AWS.command.codecatalyst.removeConnection": "Remove Connection from Tool",
     "AWS.command.deploySamApplication": "Deploy SAM Application",
     "AWS.command.aboutToolkit": "About Toolkit",
     "AWS.command.downloadLambda": "Download...",

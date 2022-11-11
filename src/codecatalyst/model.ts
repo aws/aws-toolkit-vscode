@@ -102,37 +102,18 @@ export function getHostNameFromEnv(env: DevEnvironmentId): string {
     return `${HOST_NAME_PREFIX}${env.id}`
 }
 
-export async function autoConnect(authProvider: CodeCatalystAuthenticationProvider) {
-    const currentSession = await authProvider.getSession()
-    if (currentSession !== undefined) {
-        return currentSession
-    }
-
-    for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
-        getLogger().info(`codecatalyst: trying to auto-connect with user: ${account.label}`)
-
-        try {
-            const session = await authProvider.login(account)
-            getLogger().info(`codecatalyst: auto-connected with user: ${account.label}`)
-
-            return session
-        } catch (err) {
-            getLogger().debug(`codecatalyst: unable to auto-connect with user "${account.label}": %O`, err)
-        }
-    }
-
-    return authProvider.tryLoginFromDisk()
-}
-
 export function createClientFactory(
     authProvider: CodeCatalystAuthenticationProvider
 ): () => Promise<CodeCatalystClient> {
     return async () => {
         const client = await createClient()
-        const creds = await autoConnect(authProvider)
+        const conn = authProvider.activeConnection
 
-        if (creds) {
-            await client.setCredentials(authProvider.createCredentialsProvider(), creds.accountDetails.metadata)
+        if (conn) {
+            // TODO(sijaden): add global caching module
+            return client.setCredentials(async () => (await conn.getToken()).accessToken)
+        } else {
+            // TODO: show prompt/notification to use Builder ID
         }
 
         return client

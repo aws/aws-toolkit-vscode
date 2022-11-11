@@ -10,7 +10,6 @@ import { ExtContext } from '../shared/extensions'
 import { CodeCatalystRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { CodeCatalystCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
-import { initStatusbar } from './statusbar'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
 import { DevEnvClient } from '../shared/clients/devenvClient'
@@ -20,6 +19,7 @@ import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { watchBetaVSIX } from './beta'
+import { Commands } from '../shared/vscode/commands2'
 
 const localize = nls.loadMessageBundle()
 
@@ -32,7 +32,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const remoteSourceProvider = new CodeCatalystRemoteSourceProvider(commands, authProvider)
 
     ctx.extensionContext.subscriptions.push(
-        initStatusbar(authProvider),
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
     )
@@ -68,4 +67,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }
     }
+
+    Commands.register('aws.codecatalyst.removeConnection', () => {
+        authProvider.removeSavedConnection()
+    })
 }

@@ -5,15 +5,71 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
+import { createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { showQuickPick } from '../shared/ui/pickerPrompter'
+import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, createClientFactory, getConnectedDevEnv, getDevfileLocation } from './model'
 
-function getLocalCommands() {
+const saveConnectionItem = {
+    label: 'Yes, save this connection to this tool',
+    detail: 'This can be removed by selecting "Remove Connection from Tool" on the CodeCatalyst node.',
+    data: 'yes',
+} as const
+
+const useConnectionItem = {
+    label: 'No, use this connection for everything',
+    detail: 'This will not log you out; you can switch back at any point by selecting the profile name.',
+    data: 'no',
+} as const
+
+const getStartedCommand = Commands.register(
+    'aws.codecatalyst.getStarted',
+    async (authProvider: CodeCatalystAuthenticationProvider) => {
+        const auth = authProvider.auth
+        const conn = await createBuilderIdConnection(auth)
+
+        if (auth.activeConnection !== undefined && !isBuilderIdConnection(auth.activeConnection)) {
+            const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
+                title: `Use ${conn.label} for CodeCatalyst?`,
+            })
+            if (resp === 'yes') {
+                await authProvider.setSavedConnection(conn)
+            } else {
+                await auth.useConnection(conn)
+            }
+        }
+    }
+)
+
+const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
+    return vscode.env.openExternal(docsUrl)
+})
+
+// FIXME: use the correct url
+const codecatalystDocsUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
+)
+
+function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
+    if (!isBuilderIdConnection(auth.activeConnection)) {
+        return [
+            getStartedCommand.build(auth).asTreeNode({
+                label: 'Get Started...',
+                iconPath: getIcon('vscode-rocket'),
+            }),
+            learnMoreCommand.build(codecatalystDocsUrl).asTreeNode({
+                label: 'Learn more about CodeCatalyst',
+                iconPath: getIcon('vscode-lightbulb'),
+            }),
+        ]
+    }
+
     const cmds = [
         CodeCatalystCommands.declared.cloneRepo.build().asTreeNode({
             label: 'Clone Repository',
@@ -73,16 +129,12 @@ export class CodeCatalystRootNode implements RootNode {
     private devenv?: ConnectedDevEnv
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
-        this.authProvider.onDidChangeSession(() => this.onDidChangeEmitter.fire())
-    }
-
-    public canShow(): boolean {
-        return !!this.authProvider.activeAccount
+        this.authProvider.onDidChangeActiveConnection(() => this.onDidChangeEmitter.fire())
     }
 
     public async getChildren(): Promise<TreeNode[]> {
         if (!this.devenv) {
-            return getLocalCommands()
+            return getLocalCommands(this.authProvider)
         }
 
         const devfileLocation = await getDevfileLocation(this.devenv.devenvClient)
@@ -91,12 +143,18 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
-        const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         this.devenv = await this.getDevEnv()
+
+        const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
+        item.contextValue = this.authProvider.isUsingSavedConnection
+            ? 'awsCodeCatalystNodeSaved'
+            : 'awsCodeCatalystNode'
 
         if (this.devenv !== undefined) {
             item.description = 'Connected to Dev Environment'
             item.iconPath = addColor(getIcon('vscode-pass'), 'testing.iconPassed')
+        } else {
+            item.description = this.authProvider.isUsingSavedConnection ? 'AWS Builder ID connected' : undefined
         }
 
         return item

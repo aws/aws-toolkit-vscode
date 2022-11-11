@@ -65,8 +65,6 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onCommand:aws.codecatalyst.listCommands",
-        "onCommand:aws.codecatalyst.login",
-        "onCommand:aws.codecatalyst.logout",
         "onCommand:aws.codecatalyst.openOrg",
         "onCommand:aws.codecatalyst.openProject",
         "onCommand:aws.codecatalyst.openRepo",
@@ -809,6 +807,10 @@
                     "when": "!isCloud9"
                 },
                 {
+                    "command": "aws.codecatalyst.removeConnection",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1242,11 +1244,6 @@
                     "group": "z_about@1"
                 },
                 {
-                    "command": "aws.codecatalyst.login",
-                    "when": "view == aws.codecatalyst",
-                    "group": "1_codeCatalyst@1"
-                },
-                {
                     "command": "aws.codecatalyst.cloneRepo",
                     "when": "view == aws.codecatalyst",
                     "group": "1_codeCatalyst@1"
@@ -1283,6 +1280,11 @@
                 {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codecatalyst.removeConnection",
+                    "when": "viewItem == awsCodeCatalystNodeSaved",
                     "group": "0@1"
                 },
                 {
@@ -1932,16 +1934,6 @@
                 "enablement": "!isCloud9"
             },
             {
-                "command": "aws.codecatalyst.login",
-                "title": "%AWS.command.codecatalyst.login%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.codecatalyst.logout",
-                "title": "%AWS.command.codecatalyst.logout%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.codecatalyst.cloneRepo",
                 "title": "%AWS.command.codecatalyst.cloneRepo%",
                 "category": "AWS"
@@ -1951,6 +1943,11 @@
                 "title": "%AWS.command.codecatalyst.createDevEnv%",
                 "category": "AWS",
                 "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.removeConnection",
+                "title": "%AWS.command.codecatalyst.removeConnection%",
+                "category": "AWS"
             },
             {
                 "command": "aws.logout",
