@@ -14,7 +14,7 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { codeScanState } from '../models/model'
-import { showSsoUrlPrompt } from '../util/showSsoPrompt'
+import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
@@ -78,7 +78,7 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
 }
 
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
-    await showSsoUrlPrompt()
+    await showConnectionPrompt()
 })
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {

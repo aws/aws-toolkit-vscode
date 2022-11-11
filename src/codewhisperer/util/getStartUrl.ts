@@ -15,6 +15,7 @@ import { QuickInputLinkButton } from '../../shared/ui/buttons'
 import { isValidHttpUrl } from './commonUtil'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 export const getStartUrl = async () => {
@@ -33,10 +34,8 @@ export const getStartUrl = async () => {
     if (isValidHttpUrl(userInput)) {
         try {
             await AuthUtil.instance.connectToEnterpriseSso(userInput)
-        } catch (err) {
-            getLogger().error(`Error ${err}`)
-            vscode.window.showErrorMessage(`${CodeWhispererConstants.failedToConnectSso}: ${err}`)
-            return
+        } catch (e) {
+            throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectSso, { code: 'FailedToConnect' })
         }
     } else {
         getLogger().error('Invalid Start URL or Invalid user action')

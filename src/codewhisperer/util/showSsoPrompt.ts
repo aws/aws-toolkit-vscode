@@ -17,8 +17,9 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { codicon, getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import { ToolkitError } from '../../shared/errors'
 
-export const showSsoUrlPrompt = async () => {
+export const showConnectionPrompt = async () => {
     const resp = await showQuickPick(
         [createCodeWhispererBuilderIdItem(), createCodeWhispererSsoItem(), createCodeWhispererIamItem()],
         {
@@ -31,7 +32,7 @@ export const showSsoUrlPrompt = async () => {
     }
     switch (resp) {
         case 'iam':
-            return await iamSelect()
+            throw new Error('IAM is not supported')
         case 'sso': {
             return await getStartUrl()
         }
@@ -46,16 +47,10 @@ async function awsIdSignIn() {
     try {
         await AuthUtil.instance.connectToAwsBuilderId()
     } catch (e) {
-        getLogger().error(`Error ${e}`)
-        vscode.window.showErrorMessage(`${failedToConnectAwsBuilderId}: ${e}`)
-        return
+        throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
-}
-
-async function iamSelect() {
-    getLogger().info('clicked on IAM option')
 }
 
 export const createCodeWhispererBuilderIdItem = () =>
@@ -85,4 +80,5 @@ export const createCodeWhispererIamItem = () =>
         data: 'iam',
         detail: 'Not supported by CodeWhisperer. Activates working with resources in the Explorer. Requires an access key ID and secret access key.',
         description: 'not supported',
+        invalidSelection: true,
     } as DataQuickPickItem<'iam'>)
