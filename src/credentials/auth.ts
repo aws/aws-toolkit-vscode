@@ -725,6 +725,11 @@ async function signout(auth: Auth) {
         }
     } else {
         await auth.logout()
+
+        const fallbackConn = (await auth.listConnections()).find(c => c.type === 'sso')
+        if (fallbackConn !== undefined) {
+            await auth.useConnection(fallbackConn)
+        }
     }
 }
 
