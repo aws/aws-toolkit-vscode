@@ -30,7 +30,8 @@ export async function initializeAwsCredentialsStatusBarItem(
 
     context.subscriptions.push(
         Auth.instance.onDidChangeActiveConnection(conn => {
-            updateCredentialsStatusBarItem(statusBarItem, conn?.label)
+            const color = conn?.state === 'invalid' ? new vscode.ThemeColor('statusBarItem.errorBackground') : undefined
+            updateCredentialsStatusBarItem(statusBarItem, conn?.label, color)
             handleDevSettings(devSettings, statusBarItem)
         }),
         devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
@@ -41,19 +42,18 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
     const developerMode = Object.keys(devSettings.activeSettings)
 
     if (developerMode.length > 0) {
-        ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+        ;(statusBarItem as any).backgroundColor ??= new vscode.ThemeColor('statusBarItem.warningBackground')
 
         const devSettingsStr = developerMode.join('  \n')
         statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
-    } else {
-        ;(statusBarItem as any).backgroundColor = undefined
     }
 }
 
 // Resolves when the status bar reaches its final state
 export async function updateCredentialsStatusBarItem(
     statusBarItem: vscode.StatusBarItem,
-    credentialsId?: string
+    credentialsId?: string,
+    color?: vscode.ThemeColor
 ): Promise<void> {
     const connectedMsg = localize(
         'AWS.credentials.statusbar.connected',
@@ -70,4 +70,5 @@ export async function updateCredentialsStatusBarItem(
     const company = getIdeProperties().company
     statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
     statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company
+    ;(statusBarItem as any).backgroundColor = color
 }
