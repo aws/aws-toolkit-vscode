@@ -47,6 +47,10 @@ export const showReferenceLog = Commands.declare(
     }
 )
 
+export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+})
+
 export const showSecurityScan = Commands.declare(
     'aws.codeWhisperer.security.scan',
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>

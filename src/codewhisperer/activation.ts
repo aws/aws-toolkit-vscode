@@ -33,6 +33,7 @@ import {
     showSsoSignIn,
     showFreeTierLimit,
     updateReferenceLog,
+    showIntroduction,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -153,6 +154,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
             }
         }),
+        // show introduction
+        showIntroduction.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
