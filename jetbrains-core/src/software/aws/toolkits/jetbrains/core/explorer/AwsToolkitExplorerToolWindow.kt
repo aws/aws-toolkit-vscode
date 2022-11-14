@@ -38,7 +38,7 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
             toolbar = BorderLayoutPanel().apply {
                 addToCenter(
                     ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).apply {
-                        layoutPolicy = ActionToolbar.WRAP_LAYOUT_POLICY
+                        layoutPolicy = ActionToolbar.AUTO_LAYOUT_POLICY
                         setTargetComponent(this@AwsToolkitExplorerToolWindow)
                     }.component
                 )
@@ -57,7 +57,6 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
 
                 addToRight(
                     ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, rightActionGroup, true).apply {
-                        layoutPolicy = ActionToolbar.WRAP_LAYOUT_POLICY
                         // revisit if these actions need the tool window as a data provider
                         setTargetComponent(component)
                     }.component
