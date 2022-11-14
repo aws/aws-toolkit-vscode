@@ -148,7 +148,7 @@
             </p>
         </div>
         <div class="container">
-            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Decline</button>
+            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Reject</button>
             <button type="button" id="accept" @click="acceptCodeSuggestions">Accept and Turn On CodeWhisperer</button>
         </div>
     </div>
