@@ -45,6 +45,8 @@ const getStartedCommand = Commands.register(
             } else {
                 await auth.useConnection(conn)
             }
+        } else {
+            await auth.useConnection(conn)
         }
     }
 )

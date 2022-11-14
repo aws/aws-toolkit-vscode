@@ -28,6 +28,7 @@ import { isCodeCatalystVSCode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import * as codecatalyst from '../../types/clientcodecatalyst'
+import { Auth } from '../credentials/auth'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -107,6 +108,8 @@ export function createClientFactory(
     authProvider: CodeCatalystAuthenticationProvider
 ): () => Promise<CodeCatalystClient> {
     return async () => {
+        await Auth.instance.tryAutoConnect()
+
         const client = await createClient()
         const conn = authProvider.activeConnection
 
