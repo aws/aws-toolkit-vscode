@@ -115,8 +115,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     public get path(): string {
-        // Even though the bucket is the "root", there is no '/' prefix on objects inside
-        return ''
+        return this.bucket.uri
     }
 
     public [inspect.custom](): string {

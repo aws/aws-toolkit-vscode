@@ -20,8 +20,8 @@ describe('S3FileNode', function () {
 
     it('creates an S3 File Node', async function () {
         const node = new S3FileNode(
-            { name: 'bucket-name', region: 'region', arn: 'arn' },
-            { name, key, arn, sizeBytes, lastModified },
+            { name: 'bucket-name', region: 'region', arn: 'arn', uri: 's3://foo' },
+            { name, key, arn, sizeBytes, lastModified, uri: 's3://foo' },
             {} as S3BucketNode,
             {} as S3Client,
             now

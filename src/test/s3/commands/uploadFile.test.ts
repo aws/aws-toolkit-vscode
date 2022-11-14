@@ -42,7 +42,7 @@ describe('uploadFileCommand', function () {
         s3 = mock()
         commands = new FakeCommands()
         bucketNode = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
+            { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' },
             new S3Node(instance(s3)),
             instance(s3)
         )
@@ -55,7 +55,7 @@ describe('uploadFileCommand', function () {
             s3 = mock()
             commands = new FakeCommands()
             bucketNode = new S3BucketNode(
-                { name: bucketName, region: 'region', arn: 'arn' },
+                { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' },
                 new S3Node(instance(s3)),
                 instance(s3)
             )

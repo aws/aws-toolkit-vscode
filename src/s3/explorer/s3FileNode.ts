@@ -87,7 +87,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
     }
 
     public get path(): string {
-        return this.file.key
+        return this.file.uri
     }
 
     public [inspect.custom](): string {

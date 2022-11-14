@@ -24,8 +24,8 @@ describe('copyPathCommand', function () {
 
 function createS3FolderNode(): S3FolderNode {
     return new S3FolderNode(
-        { name: 'name', region: 'region', arn: 'arn' },
-        { name: 'name', path: 'path', arn: 'arn ' },
+        { name: 'name', region: 'region', arn: 'arn', uri: 's3://foo' },
+        { name: 'name', path: 'path', arn: 'arn ', uri: 's3://foo' },
         {} as S3Client
     )
 }

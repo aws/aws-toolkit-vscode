@@ -28,7 +28,7 @@ describe('createFolderCommand', function () {
     beforeEach(function () {
         s3 = mock()
         node = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
+            { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' },
             new S3Node(instance(s3)),
             instance(s3)
         )
@@ -36,7 +36,7 @@ describe('createFolderCommand', function () {
 
     it('prompts for folder name, creates folder, shows success, and refreshes node', async function () {
         when(s3.createFolder(deepEqual({ path: folderPath, bucketName }))).thenResolve({
-            folder: { name: folderName, path: folderPath, arn: 'arn' },
+            folder: { name: folderName, path: folderPath, arn: 'arn', uri: 's3://foo' },
         })
 
         const window = new FakeWindow({ inputBox: { input: folderName } })

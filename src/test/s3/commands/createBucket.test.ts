@@ -24,7 +24,7 @@ describe('createBucketCommand', function () {
 
     it('prompts for bucket name, creates bucket, shows success, and refreshes node', async function () {
         when(s3.createBucket(deepEqual({ bucketName }))).thenResolve({
-            bucket: { name: bucketName, region: 'region', arn: 'arn' },
+            bucket: { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' },
         })
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })

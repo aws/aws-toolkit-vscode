@@ -17,7 +17,7 @@ describe('deleteFileCommand', function () {
     const key = 'foo/bar.jpg'
     const name = 'bar.jpg'
     const bucketName = 'bucket-name'
-    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn', uri: 's3://foo' }
 
     let s3: S3Client
     let parentNode: S3BucketNode
@@ -26,7 +26,7 @@ describe('deleteFileCommand', function () {
     beforeEach(function () {
         s3 = mock()
         parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
-        node = new S3FileNode(bucket, { name, key, arn: 'arn' }, parentNode, instance(s3))
+        node = new S3FileNode(bucket, { name, key, arn: 'arn', uri: 's3://foo' }, parentNode, instance(s3))
     })
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {

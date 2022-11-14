@@ -15,6 +15,7 @@ import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
 import { DEFAULT_PARTITION } from '../regions/regionProvider'
+import { readablePath } from '../../s3/util'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -618,11 +619,14 @@ export class DefaultBucket {
     public readonly name: string
     public readonly region: string
     public readonly arn: string
+    /** s3://… URI */
+    public readonly uri: string
 
     public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
         this.name = name
         this.region = region
         this.arn = buildArn({ partitionId, bucketName: name })
+        this.uri = readablePath({ bucket: name, path: undefined })
     }
 
     public [inspect.custom](): string {
@@ -634,10 +638,13 @@ export class DefaultFolder {
     public readonly name: string
     public readonly path: string
     public readonly arn: string
+    /** s3://… URI */
+    public readonly uri: string
 
     public constructor({ partitionId, bucketName, path }: { partitionId: string; bucketName: string; path: string }) {
         this.path = path
         this.arn = buildArn({ partitionId, bucketName, key: path })
+        this.uri = readablePath({ bucket: bucketName, path: path })
         this.name = _(this.path).split(DEFAULT_DELIMITER).dropRight()!.last()!
     }
 
@@ -650,6 +657,8 @@ export class DefaultFile {
     public readonly name: string
     public readonly key: string
     public readonly arn: string
+    /** s3://… URI */
+    public readonly uri: string
     public readonly lastModified?: Date
     public readonly sizeBytes?: number
     public readonly eTag?: string
@@ -672,6 +681,7 @@ export class DefaultFile {
         this.name = _(key).split(DEFAULT_DELIMITER).last()!
         this.key = key
         this.arn = buildArn({ partitionId, bucketName, key })
+        this.uri = readablePath({ bucket: bucketName, path: key })
         this.lastModified = lastModified
         this.sizeBytes = sizeBytes
         this.eTag = eTag
