@@ -2,10 +2,13 @@
 
 To interact with Amazon Web Services \(AWS\) through the AWS Toolkit for Visual Studio Code, you must establish a connection to AWS\.
 
-## Prerequisties
+## How to connect
 
--   An AWS account. This account enables you to use AWS services. To get an AWS account, on the [AWS home page](https://aws.amazon.com), choose `Create an AWS Account`.
--   [AWS credentials](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/obtain-credentials.html). You can obtain credentials through AWS or an external credential process that isn't directly supported by AWS.
+Choose the most appropriate method based on your requirements.
+
+-   [AWS access keys](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/obtain-credentials.html)
+-   [IAM Identity Center](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html)
+-   [External credentials](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/external-credential-process.html)
 
 ## Connect to AWS through the Toolkit for VS Code
 
