@@ -18,7 +18,7 @@ import {
     ConnectedCodeCatalystClient,
     CodeCatalystResource,
 } from '../shared/clients/codecatalystClient'
-import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, openDevEnv, toCodeCatalystGitUri } from './model'
+import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, getRepoCloneUrl, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -41,23 +41,32 @@ export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient,
         return auth.getPat(client)
     }
 
+    let resource: { name: string; project: string; org: string }
     if (!url) {
         const r = await selectCodeCatalystResource(client, 'repo')
         if (!r) {
             throw new CancellationError('user')
         }
-        const resource = { name: r.name, project: r.project.name, org: r.org.name }
-        const uri = toCodeCatalystGitUri(client.identity.name, await getPat(), resource)
-        await vscode.commands.executeCommand('git.clone', uri)
+        resource = { name: r.name, project: r.project.name, org: r.org.name }
     } else {
         const [_, org, project, repo] = url.path.slice(1).split('/')
         if (!org || !project || !repo) {
             throw new Error(`Invalid CodeCatalyst URL: unable to parse repository`)
         }
-        const resource = { name: repo, project, org }
-        const uri = toCodeCatalystGitUri(client.identity.name, await getPat(), resource)
-        await vscode.commands.executeCommand('git.clone', uri)
+        resource = { name: repo, project, org }
     }
+
+    const uri = await getRepoCloneUrl(
+        client,
+        {
+            spaceName: resource.org,
+            projectName: resource.project,
+            sourceRepositoryName: resource.name,
+        },
+        client.identity.name,
+        await getPat()
+    )
+    await vscode.commands.executeCommand('git.clone', uri)
 }
 
 /**

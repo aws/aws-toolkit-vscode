@@ -27,6 +27,7 @@ import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 import { isCodeCatalystVSCode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
+import * as codecatalyst from '../../types/clientcodecatalyst'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -252,16 +253,34 @@ export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri
     return vscode.Uri.joinPath(rootDirectory, devfileLocation)
 }
 
-interface RepoIdentifier {
-    readonly name: string
-    readonly project: string
-    readonly org: string
+function toCodeCatalystGitUri(username: string, token: string, cloneUrl: string): string {
+    // "https://user@git.gamma.…" => "git.gamma.…"
+    let url = cloneUrl.replace(/https:\/\/[^@\/]+@/, '')
+    if (url === cloneUrl) {
+        // URL didn't change, so it's missing the "user@" part.
+        // "https://git.gamma.…" => "git.gamma.…"
+        url = cloneUrl.replace('https://', '')
+    }
+    return `https://${username}:${token}@${url}`
 }
 
-export function toCodeCatalystGitUri(username: string, token: string, repo: RepoIdentifier): string {
-    const { name, project, org } = repo
-
-    return `https://${username}:${token}@${getCodeCatalystConfig().gitHostname}/v1/${org}/${project}/${name}`
+/**
+ * Gets a URL including username and password (PAT) that can be used by git to clone the given CodeCatalyst repo.
+ *
+ * Example: "https://user:pass@git.gamma.…"
+ *
+ * @param args
+ * @returns Clone URL (example: "https://user:pass@git.gamma.…")
+ */
+export async function getRepoCloneUrl(
+    client: ConnectedCodeCatalystClient,
+    args: codecatalyst.GetSourceRepositoryCloneUrlsRequest,
+    user: string,
+    password: string
+): Promise<string> {
+    const url = await client.getRepoCloneUrl(args)
+    const cloneurl = toCodeCatalystGitUri(user, password, url)
+    return cloneurl
 }
 
 /**

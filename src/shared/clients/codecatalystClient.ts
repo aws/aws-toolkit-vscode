@@ -498,6 +498,14 @@ class CodeCatalystClientInternal {
         return this.call(this.sdkClient.createSourceRepositoryBranch(args), false)
     }
 
+    /**
+     * Gets the git source host URL for the given CodeCatalyst repo.
+     */
+    public async getRepoCloneUrl(args: codecatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
+        const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
+        return r.https
+    }
+
     public async createDevEnvironment(args: codecatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
         const { id } = await this.call(this.sdkClient.createDevEnvironment(fixAliasInRequest(args)), false)
 

@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { RemoteSource, RemoteSourceProvider } from '../../../types/git'
 import { CodeCatalystAuthenticationProvider } from '../auth'
 import { createRepoLabel } from '../wizards/selectResource'
-import { toCodeCatalystGitUri } from '../model'
+import { getRepoCloneUrl } from '../model'
 import { CodeCatalystCommands } from '../commands'
 import { CodeCatalystRepo } from '../../shared/clients/codecatalystClient'
 
@@ -51,11 +51,20 @@ export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
             const intoRemote = async (repo: CodeCatalystRepo): Promise<RemoteSource> => {
                 const resource = { name: repo.name, project: repo.project.name, org: repo.org.name }
                 const pat = await this.authProvider.getPat(client)
-                const cloneUrl = toCodeCatalystGitUri(client.identity.name, pat, resource)
+                const url = await getRepoCloneUrl(
+                    client,
+                    {
+                        spaceName: resource.org,
+                        projectName: resource.project,
+                        sourceRepositoryName: resource.name,
+                    },
+                    client.identity.name,
+                    pat
+                )
 
                 return {
                     name: createRepoLabel(repo),
-                    url: cloneUrl,
+                    url: url,
                     description: repo.description,
                 }
             }
