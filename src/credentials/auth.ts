@@ -764,13 +764,17 @@ export async function createStartUrlPrompter(title: string) {
         .map(conn => vscode.Uri.parse(conn.startUrl))
 
     function validateSsoUrl(url: string) {
-        if (!url.match(/^(http|https):\/\/.*\.awsapps\.com\/start$/i)) {
-            return 'Start URL must be in the form: https://SUBDOMAIN.awsapps.com/start'
+        if (!url.match(/^(http|https):\/\//i)) {
+            return 'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
         }
 
-        const uri = vscode.Uri.parse(url)
-        if (existingConnections.find(conn => conn.authority.toLowerCase() === uri.authority.toLowerCase())) {
-            return 'A connection for this start URL already exists. Sign out before creating a new one.'
+        try {
+            const uri = vscode.Uri.parse(url, true)
+            if (existingConnections.find(conn => conn.authority.toLowerCase() === uri.authority.toLowerCase())) {
+                return 'A connection for this start URL already exists. Sign out before creating a new one.'
+            }
+        } catch (err) {
+            return `URL is malformed: ${UnknownError.cast(err).message}`
         }
     }
 
