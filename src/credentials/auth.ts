@@ -514,7 +514,7 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const label = `SSO (${extractSubdomain(vscode.Uri.parse(profile.startUrl))})`
+        const label = `SSO (${profile.startUrl})`
 
         return {
             id,
@@ -754,8 +754,6 @@ export const createIamItem = () =>
         data: 'iam',
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
-
-const extractSubdomain = (url: vscode.Uri) => url.authority.split('.')[0]
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
 export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
