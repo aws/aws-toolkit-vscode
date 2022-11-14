@@ -7,8 +7,10 @@ import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
 import { createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
+import { UnknownError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
+import { getLogger } from '../shared/logger/logger'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { Commands } from '../shared/vscode/commands2'
@@ -161,7 +163,11 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     private async getDevEnv() {
-        const client = await createClientFactory(this.authProvider)()
-        return client.connected ? getConnectedDevEnv(client) : undefined
+        try {
+            const client = await createClientFactory(this.authProvider)()
+            return client.connected ? await getConnectedDevEnv(client) : undefined
+        } catch (err) {
+            getLogger().warn(`codecatalyst: failed to get dev environment: ${UnknownError.cast(err).message}`)
+        }
     }
 }

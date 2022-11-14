@@ -140,9 +140,7 @@ async function createCodeCatalystClient(
 export type UserDetails = RequiredProps<
     codecatalyst.GetUserDetailsResponse,
     'userId' | 'userName' | 'displayName' | 'primaryEmail'
-> & {
-    readonly version: '1'
-}
+>
 
 // CodeCatalyst client has two variants: 'logged-in' and 'not logged-in'
 // The 'not logged-in' variant is a subtype and has restricted functionality
@@ -361,10 +359,6 @@ class CodeCatalystClientInternal {
     private async getUserDetails(args: codecatalyst.GetUserDetailsRequest) {
         const resp = await this.call(this.sdkClient.getUserDetails(args), false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
-
-        if (resp.version !== '1') {
-            throw new Error(`CodeCatalyst 'getUserDetails' API returned an unsupported version: ${resp.version}`)
-        }
 
         return { ...resp, version: resp.version } as const
     }

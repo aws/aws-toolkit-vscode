@@ -56,7 +56,7 @@ export class CodeCatalystAuthenticationProvider {
         this.restoreSavedConnection()
         this.auth.onDidChangeActiveConnection(async conn => {
             if (conn !== undefined && !isBuilderIdConnection(conn)) {
-                if (isBuilderIdConnection(this.#activeConnection)) {
+                if (this.#savedConnection === undefined && isBuilderIdConnection(this.#activeConnection)) {
                     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
                         title: `Keep using CodeCatalyst with ${conn.label}?`,
                         placeholder: 'Confirm choice',
