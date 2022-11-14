@@ -3225,7 +3225,8 @@
                             "markdown": "resources/walkthrough/setup-connect.md"
                         },
                         "completionEvents": [
-                            "onContext:config.aws.profile"
+                            "onCommand:aws.login",
+                            "onCommand:aws.credentials.profile.create"
                         ]
                     },
                     {
