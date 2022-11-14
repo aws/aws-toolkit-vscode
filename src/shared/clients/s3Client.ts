@@ -11,10 +11,12 @@ import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
-import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
 import { DEFAULT_PARTITION } from '../regions/regionProvider'
+import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
+import { toStream } from '../utilities/collectionUtils'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -352,6 +354,32 @@ export class DefaultS3Client {
         const output = await s3.listBuckets().promise()
 
         return output.Buckets ?? []
+    }
+
+    public listAllBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
+        async function* fn(this: DefaultS3Client) {
+            const s3 = await this.createS3()
+            const buckets = await this.listAllBuckets()
+
+            yield* toStream(
+                buckets.map(async bucket => {
+                    assertHasProps(bucket, 'Name')
+                    const region = await this.lookupRegion(bucket.Name, s3)
+                    if (region) {
+                        return { ...bucket, region }
+                    }
+                })
+            )
+        }
+
+        return toCollection(fn.bind(this)).filter(isNonNullable)
+    }
+
+    /**
+     * Filters the results of {@link listAllBucketsIterable} to the region of the client
+     */
+    public listBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
+        return this.listAllBucketsIterable().filter(b => b.region === this.regionCode)
     }
 
     /**

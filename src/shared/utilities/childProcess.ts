@@ -261,7 +261,7 @@ export class ChildProcess {
      */
     public stop(force: boolean = false, signal?: NodeJS.Signals): void {
         const child = this.childProcess
-        if (!child) {
+        if (!child || child.stdin?.destroyed) {
             return
         }
         const command = this.command
@@ -306,6 +306,24 @@ export class ChildProcess {
 
         process.on('exit', dispose)
         process.on('error', dispose)
+    }
+
+    /**
+     * Sends data to the process
+     *
+     * This throws if the process hasn't started or if the write fails.
+     */
+    public async send(input: string) {
+        if (this.childProcess === undefined) {
+            throw new Error('Cannot write to non-existent process')
+        }
+
+        const stdin = this.childProcess.stdin
+        if (!stdin) {
+            throw new Error('Cannot write to non-existent writable')
+        }
+
+        return new Promise<void>((resolve, reject) => stdin.write(input, e => (e ? reject(e) : resolve())))
     }
 
     /**
