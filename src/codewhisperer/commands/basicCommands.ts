@@ -16,6 +16,7 @@ import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { codeScanState } from '../models/model'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
+import { AuthUtil } from '../util/authUtil'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -55,6 +56,9 @@ export const showSecurityScan = Commands.declare(
     'aws.codeWhisperer.security.scan',
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                await AuthUtil.instance.showReauthenticatePrompt()
+            }
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 if (!codeScanState.running) {

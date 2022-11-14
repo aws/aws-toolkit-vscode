@@ -234,3 +234,5 @@ export const failedToConnectSso = `Failed to connect to SSO`
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'
+
+export const connectionExpired = `AWS Toolkit: SSO Connection expired. Please reauthenticate to continue`

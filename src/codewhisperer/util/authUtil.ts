@@ -11,6 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 
 import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createExitButton } from '../../shared/ui/buttons'
+import { ToolkitError } from '../../shared/errors'
 
 export const awsBuilderIdSsoProfile = {
     startUrl: 'https://view.awsapps.com/start',
@@ -159,5 +160,36 @@ export class AuthUtil {
             return bearerToken.accessToken
         }
         throw Error(`Invalid connection ${this.conn}`)
+    }
+
+    public isConnectionExpired(): boolean {
+        return (
+            this.conn !== undefined &&
+            this.conn.type === 'sso' &&
+            this.conn === this.auth.activeConnection &&
+            (this.auth.activeConnection.state === 'invalid' || this.auth.activeConnection.state === 'unauthenticated')
+        )
+    }
+
+    public async reauthenticate() {
+        if (this.isConnectionExpired()) {
+            try {
+                await this.auth.reauthenticate(this.conn!)
+            } catch (err) {
+                throw ToolkitError.chain(err, 'Unable to authenticate connection')
+            }
+        }
+    }
+
+    public async showReauthenticatePrompt() {
+        await vscode.window
+            .showWarningMessage(CodeWhispererConstants.connectionExpired, 'Cancel', 'Learn More', 'Authenticate')
+            .then(async resp => {
+                if (resp === 'Learn More') {
+                    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                } else if (resp === 'Authenticate') {
+                    await AuthUtil.instance.reauthenticate()
+                }
+            })
     }
 }
