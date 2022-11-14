@@ -44,7 +44,7 @@ const menuOptions: Record<string, MenuOption> = {
     deleteDevEnv: {
         label: 'Delete Workspace',
         description: 'CodeCatalyst',
-        detail: 'Deletes the selected dev environment',
+        detail: 'Deletes the selected Dev Environment',
         executor: deleteDevEnvCommand,
     },
     editStorage: {

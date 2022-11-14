@@ -240,7 +240,7 @@ export const codeCatalystConnectCommand = Commands.register(
 export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
-        throw new Error('No root directory or dev environment folder found')
+        throw new Error('No root directory or Dev Environment folder found')
     }
 
     // TODO(sijaden): should make this load greedily and continously poll

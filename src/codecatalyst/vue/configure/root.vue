@@ -7,7 +7,7 @@
         <div id="restart-notification" class="notification" v-if="canRestart">
             <span id="notification-span">
                 <span id="info-notification-icon" class="icon icon-lg icon-vscode-info mr-8"></span>
-                <span>Restart your dev environment to update with changes.</span>
+                <span>Restart your Dev Environment to update with changes.</span>
             </span>
             <button
                 id="restart-button"

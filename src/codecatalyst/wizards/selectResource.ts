@@ -196,7 +196,7 @@ export async function selectRepoForDevEnv(
         {
             ...asQuickpickItem(repo),
             invalidSelection: repo.devEnv !== undefined,
-            description: repo.devEnv ? `Repository already has a dev environment` : '',
+            description: repo.devEnv ? `Repository already has a Dev Environment` : '',
         },
     ])
 

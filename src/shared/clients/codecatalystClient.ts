@@ -604,26 +604,26 @@ class CodeCatalystClientInternal {
 
                 const resp = await this.getDevEnvironment(args)
                 if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
-                    throw new ToolkitError('Dev environment failed to start', { code: 'BadDevEnvState' })
+                    throw new ToolkitError('Dev Environment failed to start', { code: 'BadDevEnvState' })
                 }
 
                 if (resp.status === 'STOPPED') {
                     progress.report({
-                        message: localize('AWS.codecatalyst.startMde.stopStart', 'resuming dev environment...'),
+                        message: localize('AWS.codecatalyst.startMde.stopStart', 'Resuming Dev Environment...'),
                     })
                     await this.startDevEnvironment(args)
                 } else if (resp.status === 'STOPPING') {
                     progress.report({
                         message: localize(
                             'AWS.codecatalyst.startMde.resuming',
-                            'waiting for dev environment to stop...'
+                            'Waiting for Dev Environment to stop...'
                         ),
                     })
                 } else if (resp.status === 'FAILED') {
-                    throw new ToolkitError('Dev environment failed to start', { code: 'FailedDevEnv' })
+                    throw new ToolkitError('Dev Environment failed to start', { code: 'FailedDevEnv' })
                 } else {
                     progress.report({
-                        message: localize('AWS.codecatalyst.startMde.starting', 'opening dev environment...'),
+                        message: localize('AWS.codecatalyst.startMde.starting', 'Opening Dev Environment...'),
                     })
                 }
 
@@ -636,7 +636,7 @@ class CodeCatalystClientInternal {
 
         const devenv = await waitTimeout(pollDevEnv, timeout)
         if (!devenv) {
-            throw new ToolkitError('Dev environment failed to start', { code: 'Timeout' })
+            throw new ToolkitError('Dev Environment failed to start', { code: 'Timeout' })
         }
 
         return devenv

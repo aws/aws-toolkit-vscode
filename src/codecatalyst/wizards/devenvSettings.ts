@@ -81,7 +81,7 @@ export function createAliasPrompter(): InputBoxPrompter {
         title: 'Edit Alias',
         validateInput: value => {
             if (value?.length > 128) {
-                return 'Dev environment alias cannot be longer than 128 characters'
+                return 'Dev Environment alias cannot be longer than 128 characters'
             }
         },
     })

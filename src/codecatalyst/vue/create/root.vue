@@ -1,11 +1,11 @@
 <template>
     <div id="configure-header">
-        <h1>Create a CodeCatalyst dev environment</h1>
+        <h1>Create a CodeCatalyst Dev Environment</h1>
         <!--TODO: add link-->
         <span style="font-size: 0.95em">
             Create an on-demand AWS instance to work on your code in the cloud.
             <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html">
-                Learn more about CodeCatalyst dev environments.
+                Learn more about CodeCatalyst Dev Environments.
             </a>
         </span>
     </div>
@@ -16,7 +16,7 @@
     <settings-panel
         id="alias-panel"
         title="Alias"
-        description="Enter an alias to identify the dev environment. (Optional but recommended)"
+        description="Enter an alias to identify the Dev Environment. (Optional but recommended)"
     >
         <label class="options-label soft mb-8" style="display: block" for="alias-input">Alias</label>
         <input id="alias-input" type="text" v-model="alias" />
@@ -103,7 +103,7 @@ export default defineComponent({
                 client.close()
             } catch (err) {
                 if (!(err as Error).message.match(/cancelled/i)) {
-                    client.showLogsMessage(`Failed to create dev environment: ${(err as Error).message}`)
+                    client.showLogsMessage(`Failed to create Dev Environment: ${(err as Error).message}`)
                 }
             } finally {
                 this.creating = false

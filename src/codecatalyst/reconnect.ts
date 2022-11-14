@@ -53,7 +53,7 @@ function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, env
             const devenvName = getDevEnvName(devenv.alias, envId)
             getLogger().info(`codecatalyst: ssh session reconnected to devenv: ${devenvName}`)
             vscode.window.showInformationMessage(
-                localize('AWS.codecatalyst.reconnect.success', 'Reconnected to dev environment: {0}', devenvName)
+                localize('AWS.codecatalyst.reconnect.success', 'Reconnected to Dev Environment: {0}', devenvName)
             )
             delete pendingReconnects[envId]
             memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
@@ -172,7 +172,7 @@ async function pollDevEnvs(
 
                 if (metadata?.status === 'RUNNING') {
                     progress.report({
-                        message: `Dev environment ${devenvName} is now running. Attempting to re-open`,
+                        message: `Dev Environment ${devenvName} is now running. Attempting to reconnect.`,
                     })
 
                     openReconnectedDevEnv(client, id, details, shouldCloseRootInstance)
@@ -180,11 +180,11 @@ async function pollDevEnvs(
                     // We no longer need to watch this devenv anymore because it's already being re-opened in SSH
                     delete devenvs[id]
                 } else if (isTerminating(metadata)) {
-                    progress.report({ message: `Dev environment ${devenvName} is terminating` })
+                    progress.report({ message: `Dev Environment ${devenvName} is terminating` })
                     // We no longer need to watch a devenv that is in a terminating state
                     delete devenvs[id]
                 } else if (isExpired(details.previousConnectionTimestamp)) {
-                    progress.report({ message: `Dev environment ${devenvName} has expired` })
+                    progress.report({ message: `Dev Environment ${devenvName} has expired` })
                 }
             } catch {
                 await failDevEnv(memento, id)

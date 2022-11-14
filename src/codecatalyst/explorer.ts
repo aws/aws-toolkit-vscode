@@ -167,7 +167,7 @@ export class CodeCatalystRootNode implements RootNode {
             const client = await createClientFactory(this.authProvider)()
             return client.connected ? await getConnectedDevEnv(client) : undefined
         } catch (err) {
-            getLogger().warn(`codecatalyst: failed to get dev environment: ${UnknownError.cast(err).message}`)
+            getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
         }
     }
 }

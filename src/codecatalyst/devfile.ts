@@ -18,18 +18,18 @@ import { ToolkitError } from '../shared/errors'
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
     const client = new DevEnvClient()
     if (!client.isCodeCatalystDevEnv()) {
-        throw new Error('Cannot update devfile outside a dev environment')
+        throw new Error('Cannot update devfile outside a Dev Environment')
     }
 
     // XXX: hard-coded `projects` path, waiting for CodeCatalyst to provide an environment variable
     // could also just parse the devfile...
     const location = path.relative('/projects', uri.fsPath)
 
-    const title = localize('AWS.codecatalyst.container.restart', 'Restarting dev environment container...')
+    const title = localize('AWS.codecatalyst.container.restart', 'Restarting Dev Environment container...')
     await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, async () => {
         if (checkUnsavedChanges()) {
             // TODO: show confirmation prompt instead
-            throw new ToolkitError('Cannot update devfile with unsaved changes in the dev environment')
+            throw new ToolkitError('Cannot update devfile with unsaved changes in the Dev Environment')
         }
 
         try {

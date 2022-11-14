@@ -7,7 +7,7 @@
 
         <label class="mode-container" :data-disabled="model.type !== 'none'">
             <input class="radio" type="radio" name="mode" id="from-none" v-model="model.type" value="none" />
-            <span class="ml-8 option-label" style="padding: 0px">Create an empty dev environment</span>
+            <span class="ml-8 option-label" style="padding: 0px">Create an empty Dev Environment</span>
         </label>
     </div>
 

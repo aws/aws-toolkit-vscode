@@ -55,7 +55,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
-                'Welcome to your Amazon CodeCatalyst dev environment. For more options and information, view Dev Environment settings (AWS Extension > CodeCatalyst).'
+                'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings (AWS Extension > CodeCatalyst).'
             )
             const openDevEnvSettings = localize('AWS.codecatalyst.openDevEnvSettings', 'Open Dev Environment Settings')
             vscode.window.showInformationMessage(message, dontShow, openDevEnvSettings).then(selection => {

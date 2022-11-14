@@ -97,7 +97,7 @@ export async function stopDevEnv(
         const confirmed = await showConfirmationMessage({
             prompt: localize(
                 'aws.codecatalyst.stopDevEnv.confirm',
-                'Stopping the dev environment will end all processes. Continue?'
+                'Stopping the Dev Environment will end all processes. Continue?'
             ),
         })
 

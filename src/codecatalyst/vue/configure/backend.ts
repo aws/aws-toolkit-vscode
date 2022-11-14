@@ -201,7 +201,7 @@ function reportClosingMessage(): void {
     vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: 'Session ended. Session will restore when the dev environment is available again.',
+            title: 'Session ended. Session will restore when the Dev Environment is available again.',
         },
         async (progress, token) => {
             await sleep(2500)
