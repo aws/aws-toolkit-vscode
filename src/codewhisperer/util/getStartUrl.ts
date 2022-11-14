@@ -25,7 +25,7 @@ export const getStartUrl = async () => {
             'aws.codeWhisperer.inputStartUrl.placeholder',
             "Enter start URL for your organization's SSO"
         ),
-        buttons: [createExitButton(), createStartUrlHelpButton()],
+        buttons: [createStartUrlHelpButton(), createExitButton()],
     })
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {

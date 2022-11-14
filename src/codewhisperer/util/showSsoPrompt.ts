@@ -18,6 +18,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
+import { createCommonButtons } from '../../shared/ui/buttons'
 
 export const showConnectionPrompt = async () => {
     const resp = await showQuickPick(
@@ -25,6 +26,7 @@ export const showConnectionPrompt = async () => {
         {
             title: 'CodeWhisperer: Add connection to AWS',
             placeholder: 'Select a connection option to start using CodeWhisperer',
+            buttons: createCommonButtons() as vscode.QuickInputButton[],
         }
     )
     if (!isValidResponse(resp)) {
