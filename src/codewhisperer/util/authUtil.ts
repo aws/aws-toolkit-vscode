@@ -30,22 +30,18 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeActiveConnection(async conn => this.handleConnectionChange(conn))
-        this.handleConnectionChange(this.auth.activeConnection)
     }
 
     private async handleConnectionChange(conn: Connection | undefined) {
         if (conn?.type === 'sso') {
-            if (!conn.scopes?.includes(awsBuilderIdSsoProfile.scopes[0])) {
-                // do not set this.conn
-                await this.onSwitchToUnsupportedConnection()
-            } else {
-                this.conn = conn
-                this.usingEnterpriseSSO = !conn.id.startsWith(awsBuilderIdSsoProfile.startUrl)
-                await vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog')
-                await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-                await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-            }
+            getLogger().debug(`User switch to sso`)
+            await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+            this.conn = conn
+            this.usingEnterpriseSSO = !conn.id.startsWith(awsBuilderIdSsoProfile.startUrl)
+            await vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog')
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
         } else if (conn?.type === 'iam') {
+            getLogger().debug(`User switch to iam`)
             // when user switch to iam connection,
             // do not set this.conn, continue using previous SSO connection
             await this.onSwitchToUnsupportedConnection()
@@ -162,12 +158,19 @@ export class AuthUtil {
         throw Error(`Invalid connection ${this.conn}`)
     }
 
+    public isConnectionValid(): boolean {
+        return (
+            this.conn !== undefined &&
+            this.conn.type === 'sso' &&
+            this.auth.getConnectionState(this.conn.id) === 'valid'
+        )
+    }
+
     public isConnectionExpired(): boolean {
         return (
             this.conn !== undefined &&
             this.conn.type === 'sso' &&
-            this.conn === this.auth.activeConnection &&
-            (this.auth.activeConnection.state === 'invalid' || this.auth.activeConnection.state === 'unauthenticated')
+            ['invalid', 'unauthenticated'].includes(this.auth.getConnectionState(this.conn.id))
         )
     }
 

@@ -59,7 +59,8 @@ export async function activate(context: ExtContext): Promise<void> {
     })
 
     const codewhispererSettings = CodeWhispererSettings.instance
-
+    // initialize AuthUtil earlier to make sure it can listen to connection change events.
+    const auth = AuthUtil.instance
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -88,7 +89,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
             if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer')) {
                 ReferenceLogViewProvider.instance.update()
-                if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessage,

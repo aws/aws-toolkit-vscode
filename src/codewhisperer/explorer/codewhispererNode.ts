@@ -57,7 +57,7 @@ export class CodeWhispererNode implements RootNode {
             CodeWhispererConstants.switchProfileKeepConnectionKey
         )
         if (selection === 'yes') {
-            if (AuthUtil.instance.isConnected()) {
+            if (AuthUtil.instance.isConnectionValid()) {
                 return AuthUtil.instance.isEnterpriseSsoInUse() ? 'SSO Connected' : 'AWS Builder ID Connected'
             }
         }

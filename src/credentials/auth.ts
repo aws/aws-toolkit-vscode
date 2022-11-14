@@ -633,6 +633,10 @@ export class Auth implements AuthService, ConnectionManager {
         }
     })
 
+    public getConnectionState(id: Connection['id']): ProfileMetadata['connectionState'] {
+        return this.store.getProfileOrThrow(id).metadata.connectionState
+    }
+
     static #instance: Auth | undefined
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
