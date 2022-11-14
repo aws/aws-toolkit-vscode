@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Downloading S3 files will prompt to save in the last used download path"
+}

@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { getDefaultDownloadPath, latestDownloadPathSetting } from '../../shared/filesystemUtilities'
+import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
@@ -125,7 +125,7 @@ export async function downloadFileAsCommand(
         if (!saveLocation) {
             throw new CancellationError('user')
         } else {
-            globals.context.globalState.update(latestDownloadPathSetting, path.dirname(saveLocation.fsPath))
+            setDefaultDownloadPath(saveLocation.path)
         }
 
         showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
