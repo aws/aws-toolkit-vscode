@@ -32,7 +32,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { createCommonButtons } from '../shared/ui/buttons'
+import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties } from '../shared/extensionUtilities'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
@@ -797,7 +797,7 @@ export async function createStartUrlPrompter(title: string) {
     return createInputBox({
         title: `${title}: Enter Start URL`,
         placeholder: "Enter start URL for your organization's SSO",
-        buttons: createCommonButtons(),
+        buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })
 }

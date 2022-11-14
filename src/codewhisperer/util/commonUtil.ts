@@ -49,16 +49,6 @@ export function getFileExt(languageId: string) {
     return undefined
 }
 
-export function isValidHttpUrl(s: string): boolean {
-    let url
-    try {
-        url = new URL(s)
-    } catch (_) {
-        return false
-    }
-    return url.protocol === 'http:' || url.protocol === 'https:'
-}
-
 /**
  * Returns the longest overlap between the Suffix of firstString and Prefix of second string
  * getPrefixSuffixOverlap("adwg31", "31ggrs") = "31"
