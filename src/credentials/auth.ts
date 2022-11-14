@@ -25,7 +25,7 @@ import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsProvider, fromString } from './providers/credentials'
-import { once, shared } from '../shared/utilities/functionUtils'
+import { once } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
@@ -284,6 +284,10 @@ export class Auth implements AuthService, ConnectionManager {
         return this.#activeConnection
     }
 
+    public get hasConnections() {
+        return this.store.listProfiles().length !== 0
+    }
+
     public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
         if (id === undefined) {
@@ -510,7 +514,7 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const label = `SSO (${profile.startUrl})`
+        const label = `SSO (${extractSubdomain(vscode.Uri.parse(profile.startUrl))})`
 
         return {
             id,
@@ -751,12 +755,34 @@ export const createIamItem = () =>
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
 
-export const createStartUrlPrompter = (title: string) =>
-    createInputBox({
+const extractSubdomain = (url: vscode.Uri) => url.authority.split('.')[0]
+
+export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
+export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
+
+export async function createStartUrlPrompter(title: string) {
+    const existingConnections = (await Auth.instance.listConnections())
+        .filter(isSsoConnection)
+        .map(conn => vscode.Uri.parse(conn.startUrl))
+
+    function validateSsoUrl(url: string) {
+        if (!url.match(/^(http|https):\/\/.*\.awsapps\.com\/start$/i)) {
+            return 'Start URL must be in the form: https://SUBDOMAIN.awsapps.com/start'
+        }
+
+        const uri = vscode.Uri.parse(url)
+        if (existingConnections.find(conn => conn.authority.toLowerCase() === uri.authority.toLowerCase())) {
+            return 'A connection for this start URL already exists. Sign out before creating a new one.'
+        }
+    }
+
+    return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: 'https://d-xxxxxxxxxx.awsapps.com/start',
+        placeholder: "Enter start URL for your organization's SSO",
         buttons: createCommonButtons(),
+        validateInput: validateSsoUrl,
     })
+}
 
 // TODO: add specific documentation URL
 Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
@@ -775,7 +801,8 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'iam':
             return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
-            const startUrl = await createStartUrlPrompter('SSO Connection').prompt()
+            const startUrlPrompter = await createStartUrlPrompter('SSO Connection')
+            const startUrl = await startUrlPrompter.prompt()
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
             }
@@ -838,20 +865,18 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
-    // Guard against race conditions when rendering the node
-    private listConnections = shared(() => this.resource.listConnections())
     public async getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
         await this.resource.tryAutoConnect()
 
-        const conn = this.resource.activeConnection
-        if (conn === undefined && (await this.listConnections()).length === 0) {
+        if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
             item.command = addConnection.build().asCommand({ title: 'Add Connection' })
 
             return item
         }
 
+        const conn = this.resource.activeConnection
         const itemLabel =
             conn?.label !== undefined
                 ? localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
