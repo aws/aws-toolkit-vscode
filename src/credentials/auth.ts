@@ -383,17 +383,21 @@ export class Auth implements AuthService, ConnectionManager {
 
         // XXX: `id` should be based off the resolved `idToken`, _not_ the source profile
         const id = getSsoProfileKey(profile)
-        const storedProfile = await this.store.addProfile(id, profile)
-        const conn = this.getSsoConnection(id, storedProfile)
+        const tokenProvider = this.getTokenProvider(id, {
+            ...profile,
+            metadata: { connectionState: 'unauthenticated' },
+        })
 
         try {
-            await conn.getToken()
+            ;(await tokenProvider.getToken()) ?? (await tokenProvider.createToken())
+            const storedProfile = await this.store.addProfile(id, profile)
+            await this.updateConnectionState(id, 'valid')
+
+            return this.getSsoConnection(id, storedProfile)
         } catch (err) {
             await this.store.deleteProfile(id)
             throw err
         }
-
-        return this.getSsoConnection(id, storedProfile)
     }
 
     public async deleteConnection(connection: Pick<Connection, 'id'>): Promise<void> {
