@@ -754,7 +754,7 @@ export const createBuilderIdItem = () =>
             'Use a personal email to sign up and sign in with AWS Builder ID'
         )}`,
         data: 'builderId',
-        detail: 'AWS Builder ID is a new, free personal login for builders.', // TODO: need a "Learn more" button ?
+        detail: 'AWS Builder ID is a new, personal login for builders.', // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
 export const createSsoItem = () =>
