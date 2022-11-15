@@ -21,6 +21,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { HoverConfigUtil } from '../util/hoverConfigUtil'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
+import { AuthUtil } from '../util/authUtil'
 
 class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -434,3 +435,11 @@ export class InlineCompletionService {
         }, 5 * 1000)
     }
 }
+
+export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
+    if (!AuthUtil.instance.isConnectionValid()) {
+        InlineCompletionService.instance.hideCodeWhispererStatusBar()
+    } else {
+        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+    }
+})

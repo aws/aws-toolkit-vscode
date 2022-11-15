@@ -52,6 +52,7 @@ export class AuthUtil {
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
         }
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
     private getOnSwitchConnectionQuickpick(): QuickPickPrompter<void> {
@@ -162,6 +163,8 @@ export class AuthUtil {
         return (
             this.conn !== undefined &&
             this.conn.type === 'sso' &&
+            this.conn.scopes !== undefined &&
+            this.conn.scopes.includes(awsBuilderIdSsoProfile.scopes[0]) &&
             this.auth.getConnectionState(this.conn.id) === 'valid'
         )
     }

@@ -43,7 +43,7 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
-import { InlineCompletionService } from './service/inlineCompletionService'
+import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
@@ -171,6 +171,8 @@ export async function activate(context: ExtContext): Promise<void> {
         showFreeTierLimit.register(),
         // update reference log instance
         updateReferenceLog.register(),
+        // refresh codewhisperer status bar
+        refreshStatusBar.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
