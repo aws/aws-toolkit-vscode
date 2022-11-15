@@ -30,7 +30,7 @@ function createConnectUri(env: DevEnvironmentId): vscode.Uri {
     const encoded = Object.entries(params)
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
         .join('&')
-    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/caws?${encoded}`)
+    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/codecatalyst?${encoded}`)
 }
 
 // Tests involving `UriHandler` should _not_ couple the URI paths to the implementation.

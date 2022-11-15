@@ -28,14 +28,14 @@ export function register(
 
         await commands.openDevEnv.execute({
             id: params.devEnvironmentId,
-            org: { name: params.organizationName },
+            org: { name: params.spaceName },
             project: { name: params.projectName },
         })
     }
 
     return vscode.Disposable.from(
         handler.registerHandler('/clone', cloneHandler, parseCloneParams),
-        handler.registerHandler('/connect/caws', connectHandler, parseConnectParams)
+        handler.registerHandler('/connect/codecatalyst', connectHandler, parseConnectParams)
     )
 }
 
@@ -44,5 +44,5 @@ function parseCloneParams(query: SearchParams) {
 }
 
 function parseConnectParams(query: SearchParams) {
-    return query.getFromKeysOrThrow('devEnvironmentId', 'organizationName', 'projectName')
+    return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
 }
