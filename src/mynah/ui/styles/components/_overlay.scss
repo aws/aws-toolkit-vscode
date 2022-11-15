@@ -1,0 +1,159 @@
+.mynah-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 1000000;
+    &.mynah-overlay-dim-outside {
+        &:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--mynah-color-bg);
+            transition: var(--mynah-short-transition-rev-opacity);
+            opacity: 0.45;
+        }
+    }
+    > .mynah-overlay-container {
+        --overlayLeftPos: 0;
+        --overlayTopPos: 0;
+        --overlayInnerHorizontalOrigin: left;
+        --overlayInnerVerticalOrigin: top;
+        position: absolute;
+        display: block;
+        overflow: visible;
+        border-radius: var(--mynah-card-radius);
+
+        &:before {
+            content: '';
+            background-color: transparent;
+            transition: var(--mynah-short-transition-rev);
+            position: absolute;
+            top: calc(var(--mynah-button-border-width) * -1);
+            left: calc(var(--mynah-button-border-width) * -1);
+            right: calc(var(--mynah-button-border-width) * -1);
+            bottom: calc(var(--mynah-button-border-width) * -1);
+            width: auto;
+            height: auto;
+            pointer-events: none;
+            box-sizing: border-box;
+            opacity: 0;
+            border: var(--mynah-button-border-width) solid var(--vscode-editorGroup-border);
+            box-shadow: var(--mynah-shadow-prioritization-menu);
+        }
+
+        &:after {
+            content: '';
+            position: absolute;
+            width: var(--mynah-sizing-8);
+            height: var(--mynah-sizing-8);
+            left: 0;
+            top: 0;
+            opacity: 0;
+            border: var(--mynah-sizing-4);
+            background-color: var(--mynah-card-bg);
+            border-radius: inherit;
+            transition: var(--mynah-short-transition-rev);
+            transition-delay: 20ms;
+        }
+
+        &.horizontal-direction {
+            &-to-left,
+            &-from-end-to-left {
+                --overlayLeftPos: -100%;
+                --overlayInnerHorizontalOrigin: right;
+                &:after {
+                    left: calc(100% - var(--mynah-sizing-4));
+                }
+            }
+            &-at-center {
+                --overlayInnerHorizontalOrigin: center;
+                --overlayLeftPos: -50%;
+                &:after {
+                    left: calc(50% - var(--mynah-sizing-4));
+                }
+            }
+        }
+        &.vertical-direction {
+            &-to-top,
+            &-from-end-to-top {
+                --overlayTopPos: -100%;
+                --overlayInnerVerticalOrigin: bottom;
+                &:after {
+                    top: calc(100% - var(--mynah-sizing-4));
+                }
+            }
+            &-at-center {
+                --overlayInnerVerticalOrigin: center;
+                --overlayTopPos: -50%;
+                &:after {
+                    top: calc(50% - var(--mynah-sizing-4));
+                }
+            }
+        }
+
+        > .mynah-overlay-inner-container {
+            display: inline-block;
+            overflow: hidden;
+            z-index: 10;
+            position: relative;
+            transform: translate3d(0, 0, 0) scale(0.85);
+            transform-origin: var(--overlayInnerHorizontalOrigin) var(--overlayInnerVerticalOrigin);
+            transition: var(--mynah-short-transition-rev);
+        }
+        &:before {
+            transform: translate3d(0, 0, 0) scale(0.85);
+            transition: var(--mynah-short-transition-rev);
+        }
+        > .mynah-overlay-inner-container,
+        &:before {
+            opacity: 0;
+            transition-delay: 0ms;
+        }
+
+        transform: translate3d(var(--overlayLeftPos), var(--overlayTopPos), 0);
+    }
+    &:not(.mynah-overlay-open) {
+        &,
+        & * {
+            pointer-events: none !important;
+        }
+    }
+
+    &.mynah-overlay-open {
+        > .mynah-overlay-container {
+            > .mynah-overlay-inner-container {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+            &:before {
+                transform: translate3d(0, 0, 0) scale(1);
+                transition-delay: 50ms;
+                opacity: 1;
+            }
+            > .mynah-overlay-inner-container {
+                transition-delay: 20ms;
+            }
+            > .mynah-overlay-inner-container {
+                opacity: 1;
+            }
+            &:after {
+                transition-delay: 0ms;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 1;
+            }
+        }
+        &.mynah-overlay-close-on-outside-click {
+            pointer-events: all;
+        }
+    }
+}
