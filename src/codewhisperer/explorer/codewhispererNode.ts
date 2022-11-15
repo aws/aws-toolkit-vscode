@@ -33,7 +33,7 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
-        const item = new vscode.TreeItem('Amazon CodeWhisperer (Preview)')
+        const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsCodeWhispererNode'

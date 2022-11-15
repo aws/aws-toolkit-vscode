@@ -229,8 +229,6 @@ export const throttlingMessage = `Maximum recommendation count reached for this 
 
 export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
-export const failedToConnectSso = `Failed to connect to SSO`
-
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'

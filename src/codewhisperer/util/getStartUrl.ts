@@ -12,7 +12,7 @@ import { ToolkitError } from '../../shared/errors'
 import { createStartUrlPrompter } from '../../credentials/auth'
 
 export const getStartUrl = async () => {
-    const inputBox = await createStartUrlPrompter('CodeWhisperer')
+    const inputBox = await createStartUrlPrompter('IAM Identity Center')
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {
         throw new CancellationError('user')
@@ -20,7 +20,7 @@ export const getStartUrl = async () => {
     try {
         await AuthUtil.instance.connectToEnterpriseSso(userInput)
     } catch (e) {
-        throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectSso, { code: 'FailedToConnect' })
+        throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')

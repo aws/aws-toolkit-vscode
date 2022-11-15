@@ -800,7 +800,7 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's SSO",
+        placeholder: "Enter start URL for your organization's IAM Identity Center",
         buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })
@@ -823,7 +823,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'iam':
             return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
-            const startUrlPrompter = await createStartUrlPrompter('SSO Connection')
+            const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
             const startUrl = await startUrlPrompter.prompt()
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
