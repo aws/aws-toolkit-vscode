@@ -35,6 +35,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { getConfigFilename } from './sharedCredentials'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 
@@ -492,14 +493,27 @@ export class Auth implements AuthService, ConnectionManager {
         return provider
     }
 
+    // XXX: always read from the same location in a dev environment
+    private getSsoSessionName = once(() => {
+        const configFile = getConfigFilename()
+        const contents: string = require('fs').readFileSync(configFile, 'utf-8')
+        const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
+        if (!identifier) {
+            throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
+        }
+
+        return identifier
+    })
+
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
-        // XXX: always read from the same location in a dev environment
         const shouldUseSoftwareStatement =
             getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
 
+        const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
+
         return this.createTokenProvider(
             {
-                identifier: shouldUseSoftwareStatement ? 'caws' : id,
+                identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
                 scopes: profile.scopes,
                 region: profile.ssoRegion,

@@ -23,19 +23,20 @@ export function register(
         }
     }
 
-    async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
+    async function connectHandler(params: ReturnType<typeof parseConnectParams | typeof parseConnectParamsOld>) {
         telemetry.codecatalyst_connect.record({ source: 'UriHandler' })
 
         await commands.openDevEnv.execute({
             id: params.devEnvironmentId,
-            org: { name: params.spaceName },
+            org: { name: 'spaceName' in params ? params.spaceName : params.organizationName },
             project: { name: params.projectName },
         })
     }
 
     return vscode.Disposable.from(
         handler.registerHandler('/clone', cloneHandler, parseCloneParams),
-        handler.registerHandler('/connect/codecatalyst', connectHandler, parseConnectParams)
+        handler.registerHandler('/connect/codecatalyst', connectHandler, parseConnectParams),
+        handler.registerHandler('/connect/caws', connectHandler, parseConnectParamsOld) // FIXME: remove this before GA
     )
 }
 
@@ -45,4 +46,8 @@ function parseCloneParams(query: SearchParams) {
 
 function parseConnectParams(query: SearchParams) {
     return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')
+}
+
+function parseConnectParamsOld(query: SearchParams) {
+    return query.getFromKeysOrThrow('devEnvironmentId', 'organizationName', 'projectName')
 }
