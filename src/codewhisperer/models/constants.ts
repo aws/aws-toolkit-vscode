@@ -214,9 +214,9 @@ export const settingsLearnMore = 'Learn more about CodeWhisperer Settings'
 
 export const accessTokenCutOffDate = new Date(2023, 0, 31)
 
-export const accessTokenMigrationWarningMessage = `To continue using CodeWhisperer, you must add AWS Builder ID or AWS IAM Identity center connection by January 31, 2023.`
+export const accessTokenMigrationWarningMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection by January 31, 2023.`
 
-export const accessTokenMigrationErrorMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or SSO connection.`
+export const accessTokenMigrationErrorMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection.`
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
