@@ -170,7 +170,6 @@ export class JavaDependencyGraph extends DependencyGraph {
         const javaStatement = this.extractStatement(content)
         this._buildFileRelativePaths.clear()
         const buildFileRelativePath = this.generateBuildFileRelativePath(uri, projectPath, javaStatement.packages)
-        getLogger().debug(buildFileRelativePath)
         return this.generateOneBuildFilePaths(buildFileRelativePath)
     }
 
@@ -289,14 +288,6 @@ export class JavaDependencyGraph extends DependencyGraph {
             this._outputDirs.add(compileOutput)
         }
         this.detectClasspath(projectPath, projectName, projectName, extension)
-        getLogger().debug(`Auto-detected strict classpaths:`)
-        this._outputDirs.forEach(dir => {
-            getLogger().debug(dir)
-        })
-        getLogger().debug(`Auto-detected non-strict classpaths:`)
-        this._outputNonStrictDirs.forEach(dir => {
-            getLogger().debug(dir)
-        })
     }
 
     private detectClasspath(dirPath: string, dirName: string, projectName: string, extension: string): PackageNode {
@@ -416,8 +407,6 @@ export class JavaDependencyGraph extends DependencyGraph {
             )
             const zipSourceSize = statSync(zipSourcePath).size
             const zipBuildSize = statSync(zipBuildPath).size
-            this.printTruncLogs(this._totalSize + totalBuildSize, zipSourcePath, zipBuildPath)
-
             return {
                 root: truncDirPath,
                 src: {

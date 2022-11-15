@@ -81,7 +81,6 @@ export class CodeWhispererTracker {
     public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry) {
         let percentage = 1.0
         try {
-            getLogger().verbose(`Getting the file for content: ${suggestion.fileUrl}`)
             if (suggestion.fileUrl?.scheme !== '') {
                 const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
                 if (document) {

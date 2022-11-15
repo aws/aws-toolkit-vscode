@@ -193,7 +193,6 @@ export class JavascriptDependencyGraph extends DependencyGraph {
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
-            this.printTruncLogs(this._totalSize, zipFilePath)
             return {
                 root: truncDirPath,
                 src: {

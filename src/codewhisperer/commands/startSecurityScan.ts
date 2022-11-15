@@ -71,7 +71,7 @@ export async function startSecurityScan(
         codewhispererCodeScanTotalIssues: 0,
     }
     try {
-        getLogger().info(`Starting security scan for '${vscode.workspace.name}' ...`)
+        getLogger().verbose(`Starting security scan `)
         /**
          * Step 1: Generate context truncations
          */
@@ -96,7 +96,7 @@ export async function startSecurityScan(
             CodeWhispererConstants.contextTruncationTimeoutSeconds
         )
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
-        getLogger().info(`Complete project context processing.`)
+        getLogger().verbose(`Complete project context processing.`)
         codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.src.size
         codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = truncation.build.size
         codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = truncation.src.zipSize
@@ -123,7 +123,7 @@ export async function startSecurityScan(
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
-        getLogger().info(`Created security scan job.`)
+        getLogger().verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
 
         /**
@@ -137,7 +137,7 @@ export async function startSecurityScan(
         /**
          * Step 5: Process and render scan results
          */
-        getLogger().info(`Security scan job succeeded and start processing result.`)
+        getLogger().verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -148,7 +148,7 @@ export async function startSecurityScan(
             return accumulator + current.issues.length
         }, 0)
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
-        getLogger().info(`Security scan for '${vscode.workspace.name}' totally found ${total} issues.`)
+        getLogger().verbose(`Security scan totally found ${total} issues.`)
         if (total > 0) {
             if (isCloud9()) {
                 securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
@@ -160,7 +160,7 @@ export async function startSecurityScan(
         } else {
             vscode.window.showInformationMessage(`Security scan completed and no issues were found.`)
         }
-        getLogger().info(`Security scan completed.`)
+        getLogger().verbose(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed.', error)
         errorPromptHelper(error as Error)

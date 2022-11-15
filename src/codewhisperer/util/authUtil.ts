@@ -121,7 +121,6 @@ export class AuthUtil {
         const id = getSsoProfileKey(awsBuilderIdSsoProfile)
         this.conn = await this.auth.getConnection({ id: id })
         if (this.conn === undefined) {
-            getLogger().info(`Creating connection to ${awsBuilderIdSsoProfile.startUrl}`)
             this.conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
         }
         this.auth.useConnection(this.conn)
@@ -139,7 +138,6 @@ export class AuthUtil {
         const id = getSsoProfileKey(profile)
         this.conn = await this.auth.getConnection({ id: id })
         if (this.conn === undefined) {
-            getLogger().info(`Creating connection to ${startUrl}`)
             this.conn = await this.auth.createConnection(profile)
         }
         this.auth.useConnection(this.conn)

@@ -201,7 +201,6 @@ export class PythonDependencyGraph extends DependencyGraph {
             const truncDirPath = this.getTruncDirPath(uri)
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
-            this.printTruncLogs(this._totalSize, zipFilePath)
             const zipFileSize = statSync(zipFilePath).size
             return {
                 root: truncDirPath,
