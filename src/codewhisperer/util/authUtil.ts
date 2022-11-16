@@ -16,7 +16,7 @@ import { ToolkitError } from '../../shared/errors'
 export const awsBuilderIdSsoProfile = {
     startUrl: 'https://view.awsapps.com/start',
     ssoRegion: 'us-east-1',
-    scopes: ['codewhisperer:ide:recommendations'],
+    scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
     type: 'sso' as const,
 }
 //TODO Switch between SSO & Sono profile
@@ -134,7 +134,7 @@ export class AuthUtil {
         const profile: SsoProfile = {
             startUrl: startUrl,
             ssoRegion: 'us-east-1',
-            scopes: ['codewhisperer:ide:recommendations'],
+            scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
             type: 'sso',
         }
         const id = getSsoProfileKey(profile)

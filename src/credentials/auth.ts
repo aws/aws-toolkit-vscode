@@ -836,7 +836,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 type: 'sso',
                 startUrl,
                 ssoRegion: 'us-east-1',
-                scopes: ['codewhisperer:ide:recommendations'],
+                scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
             })
 
             return Auth.instance.useConnection(conn)
@@ -852,7 +852,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                     type: 'sso',
                     startUrl: builderIdStartUrl,
                     ssoRegion: 'us-east-1',
-                    scopes: ['codewhisperer:ide:recommendations'],
+                    scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
                 }))
 
             return Auth.instance.useConnection(conn)
