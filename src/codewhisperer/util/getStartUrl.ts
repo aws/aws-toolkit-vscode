@@ -20,7 +20,9 @@ export const getStartUrl = async () => {
     try {
         await AuthUtil.instance.connectToEnterpriseSso(userInput)
     } catch (e) {
-        throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
+        throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectIamIdentityCenter, {
+            code: 'FailedToConnect',
+        })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
