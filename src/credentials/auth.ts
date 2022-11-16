@@ -518,7 +518,8 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const label = `SSO (${profile.startUrl})`
+        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*).awsapps.com\/start/)?.[1] ?? profile.startUrl
+        const label = `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -785,7 +786,7 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's SSO",
+        placeholder: "Enter start URL for your organization's AWS access portal",
         buttons: createCommonButtons(),
         validateInput: validateSsoUrl,
     })
@@ -808,7 +809,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'iam':
             return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
-            const startUrlPrompter = await createStartUrlPrompter('SSO Connection')
+            const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
             const startUrl = await startUrlPrompter.prompt()
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
