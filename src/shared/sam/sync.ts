@@ -227,12 +227,13 @@ export async function runSamSync(args?: Partial<SyncParams>) {
     if (isCloud9()) {
         globals.outputChannel.show()
 
-        const result = await sam.run({
+        const result = sam.run({
             onStdout: text => globals.outputChannel.appendLine(removeAnsi(text)),
             onStderr: text => globals.outputChannel.appendLine(removeAnsi(text)),
         })
+        sam.send('\n')
 
-        return handleResult(result)
+        return handleResult(await result)
     }
 
     const pty = new ProcessTerminal(sam)
