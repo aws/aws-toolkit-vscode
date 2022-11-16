@@ -7,9 +7,9 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'node:path'
+import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
-import { Bucket } from 'aws-sdk/clients/s3'
 import { createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -24,6 +24,11 @@ import { SystemUtilities } from '../systemUtilities'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
+import { PromptSettings } from '../settings'
+import { getLogger } from '../logger'
+import { isCloud9 } from '../extensionUtilities'
+import { removeAnsi } from '../utilities/textUtilities'
+import { createExitPrompter } from '../ui/common/exitPrompter'
 
 const generatedBucket = Symbol('generatedBucket')
 
@@ -33,8 +38,8 @@ interface SyncParams {
     readonly projectRoot: vscode.Uri
     readonly template: TemplateItem
     readonly stackName: string
-    readonly s3Bucket: Bucket | typeof generatedBucket
-    readonly ecrRepoName?: string
+    readonly bucketName: string | typeof generatedBucket
+    readonly ecrRepoUri?: string
 }
 
 /*
@@ -45,20 +50,23 @@ const useGeneratedBucketItem = {
 */
 
 function createBucketPrompter(client: DefaultS3Client) {
+    const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
     const items = client.listBucketsIterable().map(b => [
         {
             label: b.Name,
-            data: b as SyncParams['s3Bucket'],
+            data: b.Name as SyncParams['bucketName'],
+            recentlyUsed: b.Name === recentBucket,
         },
     ])
 
     return createQuickPick(items, {
-        title: 'Choose a bucket',
+        title: 'Choose a bucket to use for deployment',
         buttons: createCommonButtons(),
     })
 }
 
 function createStackPrompter(client: DefaultCloudFormationClient) {
+    const recentStack = getRecentResponse(client.regionCode, 'stackName')
     const items = client.listAllStacks().map(stacks =>
         stacks
             .filter(s => s.StackStatus.endsWith('_COMPLETE') && !s.StackStatus.includes('DELETE'))
@@ -66,6 +74,7 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
                 label: s.StackName,
                 description: s.StackStatus,
                 data: s.StackName,
+                recentlyUsed: s.StackName === recentStack,
             }))
     )
 
@@ -80,11 +89,13 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
 }
 
 function createEcrPrompter(client: DefaultEcrClient) {
+    const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
     const items = client.listAllRepositories().map(list =>
         list.map(repo => ({
             label: repo.repositoryName,
-            data: repo.repositoryName,
+            data: repo.repositoryUri,
             detail: repo.repositoryArn,
+            recentlyUsed: repo.repositoryUri === recentEcrRepo,
         }))
     )
 
@@ -134,13 +145,13 @@ function hasImageBasedResources(template: CloudFormation.Template) {
 
 class SyncWizard extends Wizard<SyncParams> {
     public constructor(state: Pick<SyncParams, 'deployType'>) {
-        super({ initState: state })
+        super({ initState: state, exitPrompterProvider: createExitPrompter })
 
         this.form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
         this.form.template.bindPrompter(() => createTemplatePrompter())
         this.form.stackName.bindPrompter(({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)))
-        this.form.s3Bucket.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)))
-        this.form.ecrRepoName.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
+        this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)))
+        this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
             showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
         })
 
@@ -172,14 +183,20 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         throw new CancellationError('user')
     }
 
-    telemetry.record({ lambdaPackageType: resp.ecrRepoName !== undefined ? 'Image' : 'Zip' })
+    telemetry.record({ lambdaPackageType: resp.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
     const data = {
         codeOnly: resp.deployType === 'code',
         templatePath: resp.template.uri.fsPath,
-        bucketName: resp.s3Bucket !== generatedBucket ? resp.s3Bucket.Name : undefined,
-        ...selectFrom(resp, 'stackName', 'ecrRepoName', 'region'),
+        bucketName: resp.bucketName !== generatedBucket ? resp.bucketName : undefined,
+        ...selectFrom(resp, 'stackName', 'ecrRepoUri', 'region'),
     }
+
+    await Promise.all([
+        updateRecentResponse(resp.region, 'stackName', data.stackName),
+        updateRecentResponse(resp.region, 'bucketName', data.bucketName),
+        updateRecentResponse(resp.region, 'ecrRepoUri', data.ecrRepoUri),
+    ])
 
     const params = bindDataToParams(data, {
         region: '--region',
@@ -187,7 +204,7 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         templatePath: '--template',
         stackName: '--stack-name',
         bucketName: '--s3-bucket',
-        ecrRepoName: '--image-repository',
+        ecrRepoUri: '--image-repository',
     })
 
     // TODO: use `SamCliContext` for the executable path
@@ -197,17 +214,39 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         },
     })
 
+    const handleResult = (result?: ChildProcessResult) => {
+        if (result && result.exitCode !== 0) {
+            const message = `SAM sync exited with a non-zero exit code: ${result.exitCode}`
+            throw ToolkitError.chain(result.error, message, {
+                code: 'NonZeroExitCode',
+            })
+        }
+    }
+
+    // `createTerminal` doesn't work on C9 so we use the output channel instead
+    if (isCloud9()) {
+        globals.outputChannel.show()
+
+        const result = await sam.run({
+            onStdout: text => globals.outputChannel.appendLine(removeAnsi(text)),
+            onStderr: text => globals.outputChannel.appendLine(removeAnsi(text)),
+        })
+
+        return handleResult(result)
+    }
+
     const pty = new ProcessTerminal(sam)
     const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
     terminal.sendText('\n')
     terminal.show()
 
     const result = await new Promise<ChildProcessResult>(resolve => pty.onDidExit(resolve))
-    if (result && result.exitCode !== 0) {
-        const message = `SAM sync exited with a non-zero exit code: ${result.exitCode}`
-        throw ToolkitError.chain(result.error, message, {
-            code: 'NonZeroExitCode',
-        })
+    if (pty.cancelled) {
+        throw result.error !== undefined
+            ? ToolkitError.chain(result.error, 'SAM CLI was cancelled before exiting', { cancelled: true })
+            : new CancellationError('user')
+    } else {
+        return handleResult(result)
     }
 }
 
@@ -245,6 +284,7 @@ export function registerSync() {
             return telemetry.sam_sync.run(async span => {
                 span.record({ syncedResources: 'AllResources' })
                 if (isValidParam(arg)) {
+                    await confirmDevStack()
                     await runSamSync({ deployType: 'infra', ...(await setupSyncParams(arg)) })
                 }
             })
@@ -260,11 +300,56 @@ export function registerSync() {
             return telemetry.sam_sync.run(async span => {
                 span.record({ syncedResources: 'CodeOnly' })
                 if (isValidParam(arg)) {
+                    await confirmDevStack()
                     await runSamSync({ deployType: 'code', ...(await setupSyncParams(arg)) })
                 }
             })
         }
     )
+}
+
+const mementoRootKey = 'samcli.sync.params'
+function getRecentResponse(region: string, key: string): string | undefined {
+    const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+
+    return root[region]?.[key]
+}
+
+async function updateRecentResponse(region: string, key: string, value: string | undefined) {
+    try {
+        const root = globals.context.workspaceState.get(mementoRootKey, {} as Record<string, Record<string, string>>)
+        await globals.context.workspaceState.update(mementoRootKey, {
+            ...root,
+            [region]: { ...root[region], [key]: value },
+        })
+    } catch (err) {
+        getLogger().warn(`sam: unable to save response at key "${key}": ${UnknownError.cast(err).message}`)
+    }
+}
+
+async function confirmDevStack() {
+    const canPrompt = await PromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
+    if (!canPrompt) {
+        return
+    }
+
+    const message = `
+The SAM CLI will use the AWS Lambda, Amazon API Gateway, and AWS StepFunctions APIs to upload your code without 
+performing a CloudFormation deployment. This will cause drift in your CloudFormation stack.
+**The sync command should only be used against a development stack**. 
+
+Confirm that you are synchronizing a development stack.    
+`.trim()
+
+    const okDontShow = "OK, and don't show this again"
+    const resp = await vscode.window.showInformationMessage(message, { modal: true }, localizedText.ok, okDontShow)
+    if (resp !== localizedText.ok && resp !== okDontShow) {
+        throw new CancellationError('user')
+    }
+
+    if (resp === okDontShow) {
+        await PromptSettings.instance.disablePrompt('samcliConfirmDevStack')
+    }
 }
 
 // This is a decent improvement over using the output channel but it isn't a tty/pty
@@ -281,6 +366,11 @@ class ProcessTerminal implements vscode.Pseudoterminal {
 
     public constructor(private readonly process: ChildProcess) {}
 
+    #cancelled = false
+    public get cancelled() {
+        return this.#cancelled
+    }
+
     public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
         this.process
             .run({
@@ -296,12 +386,13 @@ class ProcessTerminal implements vscode.Pseudoterminal {
 
     public close(): void {
         this.process.stop()
-        this.onDidCloseEmitter.fire(this.process.exitCode())
+        this.onDidCloseEmitter.fire()
     }
 
     public handleInput(data: string) {
         // EOF
         if (data === '\u0003' || this.process.stopped) {
+            this.#cancelled ||= data === '\u0003'
             return this.close()
         }
 

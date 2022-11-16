@@ -346,15 +346,36 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     private appendItems(items: DataQuickPickItem<T>[]): void {
         const picker = this.quickPick
         const recent = picker.activeItems
+        const mergedItems = picker.items.concat(items)
 
-        picker.items = picker.items.concat(items).sort(this.options.compare)
+        const recentlyUsedItem = mergedItems.find(item => item.recentlyUsed)
+        if (recentlyUsedItem !== undefined) {
+            if (items.includes(recentlyUsedItem)) {
+                const prefix = recentlyUsedItem.description
+                recentlyUsedItem.description = prefix ? `${prefix} (${recentlyUsed})` : `(${recentlyUsed})`
+            }
 
-        if (picker.items.length === 0 && !this.busy) {
-            this.isShowingPlaceholder = true
-            picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            picker.items = mergedItems.sort((a, b) => {
+                if (a === recentlyUsedItem) {
+                    return -1
+                } else if (b === recentlyUsedItem) {
+                    return 1
+                } else {
+                    return this.options.compare?.(a, b) ?? 0
+                }
+            })
+
+            picker.activeItems = [recentlyUsedItem]
+        } else {
+            picker.items = mergedItems.sort(this.options.compare)
+
+            if (picker.items.length === 0 && !this.busy) {
+                this.isShowingPlaceholder = true
+                picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            }
+
+            this.selectItems(...recent)
         }
-
-        this.selectItems(...recent)
     }
 
     // TODO: add options to this to clear items _before_ loading them
@@ -368,7 +389,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param disableInput Disables the prompter until the items have been loaded, only relevant for async loads (default: true)
      * @returns A promise that is resolved when loading has finished
      */
-    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = true): Promise<void> {
+    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = false): Promise<void> {
         // This code block assumes that callers never try to load items in parallel
         // For now this okay since we don't have any pickers that require that capability
 

@@ -136,7 +136,7 @@ const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 export class DefaultS3Client {
     public constructor(
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()

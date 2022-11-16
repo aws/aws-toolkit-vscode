@@ -250,6 +250,10 @@
                         "createCredentialsProfile": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "samcliConfirmDevStack": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -259,7 +263,8 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "CodeWhisperer": true
+                        "CodeWhisperer": true,
+                        "syncCode": false
                     },
                     "properties": {
                         "jsonResourceModification": {
@@ -269,6 +274,10 @@
                         "CodeWhisperer": {
                             "type": "boolean",
                             "default": true
+                        },
+                        "syncCode": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -956,7 +965,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "!config.aws.samcli.enableLegacyDeploy"
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy"
                 },
                 {
                     "command": "aws.s3.copyPath",
@@ -1183,7 +1192,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && view == aws.explorer",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && view == aws.explorer",
                     "group": "3_lambda@4"
                 },
                 {
@@ -1235,7 +1244,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@2"
                 },
                 {
@@ -1342,7 +1351,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@3"
                 },
                 {
