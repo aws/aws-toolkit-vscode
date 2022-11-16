@@ -436,7 +436,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return provider.invalidate()
         } else if (profile.type === 'iam') {
-            globals.credentialsStore.invalidateCredentials(fromString(id))
+            globals.loginManager.store.invalidateCredentials(fromString(id))
         }
     }
 
@@ -520,7 +520,8 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const label = profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `SSO (${profile.startUrl})`
+        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+        const label = profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -549,14 +550,15 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
-        globals.credentialsStore.invalidateCredentials(providerId)
-        const { credentials } = await globals.credentialsStore.upsertCredentials(providerId, provider)
+        globals.loginManager.store.invalidateCredentials(providerId)
+        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
+        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
 
         return credentials
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
-        const creds = await globals.credentialsStore.getCredentials(provider.getCredentialsId())
+        const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }
@@ -800,7 +802,7 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's IAM Identity Center",
+        placeholder: "Enter start URL for your organization's AWS access portal",
         buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })
