@@ -226,7 +226,9 @@ export class CodeCatalystCommands {
     }
 
     public updateDevEnv(...args: WithClient<typeof updateDevEnv>) {
-        telemetry.codecatalyst_updateWorkspaceSettings.record({ codecatalyst_updateWorkspaceLocationType: 'remote' })
+        telemetry.codecatalyst_updateDevEnvironmentSettings.record({
+            codecatalyst_updateDevEnvironmentLocationType: 'remote',
+        })
 
         return this.withClient(updateDevEnv, ...args)
     }
@@ -311,11 +313,11 @@ export class CodeCatalystCommands {
         }),
         createDevEnv: Commands.from(this).declareCreateDevEnv({
             id: 'aws.codecatalyst.createDevEnv',
-            telemetryName: 'codecatalyst_createWorkspace',
+            telemetryName: 'codecatalyst_createDevEnvironment',
         }),
         updateDevEnv: Commands.from(this).declareUpdateDevEnv({
             id: 'aws.codecatalyst.updateDevEnv',
-            telemetryName: 'codecatalyst_updateWorkspaceSettings',
+            telemetryName: 'codecatalyst_updateDevEnvironmentSettings',
         }),
         openDevEnv: Commands.from(this).declareOpenDevEnv({
             id: 'aws.codecatalyst.openDevEnv',

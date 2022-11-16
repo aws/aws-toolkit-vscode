@@ -33,13 +33,13 @@
             "description": "Installed CLI"
         },
         {
-            "name": "codecatalyst_createWorkspaceRepoType",
+            "name": "codecatalyst_createDevEnvironmentRepoType",
             "type": "string",
             "description": "Type of Git repository provided to the Code Catalyst workspace create wizard",
             "allowedValues": ["linked", "none"]
         },
         {
-            "name": "codecatalyst_updateWorkspaceLocationType",
+            "name": "codecatalyst_updateDevEnvironmentLocationType",
             "type": "string",
             "description": "Locality of the Code Catalyst update workspace request (i.e., from the thin client or the local IDE instance)",
             "allowedValues": ["remote", "local"]
@@ -258,24 +258,24 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
-            "name": "codecatalyst_createWorkspace",
-            "description": "Create a Code Catalyst Development Workspace",
+            "name": "codecatalyst_createDevEnvironment",
+            "description": "Create a Code Catalyst DevEnv",
             "metadata": [
                 { "type": "result" },
                 { "type": "userId" },
                 {
-                    "type": "codecatalyst_createWorkspaceRepoType",
+                    "type": "codecatalyst_createDevEnvironmentRepoType",
                     "required": false
                 }
             ]
         },
         {
-            "name": "codecatalyst_updateWorkspaceSettings",
+            "name": "codecatalyst_updateDevEnvironmentSettings",
             "description": "Update properties of a Code Catalyst development environment",
             "metadata": [
                 { "type": "result" },
                 { "type": "userId" },
-                { "type": "codecatalyst_updateWorkspaceLocationType" }
+                { "type": "codecatalyst_updateDevEnvironmentLocationType" }
             ]
         },
         {

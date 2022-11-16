@@ -142,7 +142,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         })()
 
         telemetry.codecatalyst_connect.record({ source: 'Webview' })
-        telemetry.codecatalyst_createWorkspace.record({ codecatalyst_createWorkspaceRepoType: source.type })
+        telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
 
         this.onComplete(devenv)
         this.commands.openDevEnv.execute(devenv)
