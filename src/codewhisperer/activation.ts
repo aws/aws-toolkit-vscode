@@ -87,7 +87,12 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
-            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer')) {
+            if (
+                configurationChangeEvent.affectsConfiguration(
+                    'aws.codeWhisperer.includeSuggestionsWithCodeReferences'
+                ) ||
+                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')
+            ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
