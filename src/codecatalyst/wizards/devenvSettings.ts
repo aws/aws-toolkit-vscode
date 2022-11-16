@@ -13,7 +13,7 @@ const devenvOptions = settings['environment']
 export type InstanceType = keyof typeof devenvOptions['instanceType']
 export type SubscriptionType = typeof subscriptionTypes[number]
 
-const subscriptionTypes = ['FREE', 'STANDARD', 'STANDARD_PLUS_WORKSPACES'] as const
+const subscriptionTypes = ['FREE', 'STANDARD'] as const
 
 export function isValidSubscriptionType(type = ''): type is SubscriptionType {
     return (subscriptionTypes as readonly string[]).includes(type)
