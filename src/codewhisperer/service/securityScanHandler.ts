@@ -129,7 +129,9 @@ export async function createScanJob(
 }
 
 export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncPaths: TruncPaths) {
-    if (truncPaths.src.zip === '') throw new Error("Truncation failure: can't find valid source zip.")
+    if (truncPaths.src.zip === '') {
+        throw new Error("Truncation failure: can't find valid source zip.")
+    }
     const srcReq: codewhispererClient.CreateUploadUrlRequest = {
         artifactType: CodeWhispererConstants.artifactTypeSource,
         contentMd5: getMd5(truncPaths.src.zip),

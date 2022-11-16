@@ -221,7 +221,9 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     }
 
     private getHtmlContent(): string {
-        if (this.persistLog.length == 0) return 'No security issues have been detected in the workspace.'
+        if (this.persistLog.length == 0) {
+            return 'No security issues have been detected in the workspace.'
+        }
         return this.persistLog.join('') + this.dynamicLog.join('')
     }
 
@@ -254,9 +256,13 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
 
     public disposeSecurityPanelItem(event: vscode.TextDocumentChangeEvent, editor: vscode.TextEditor | undefined) {
         const uri = event.document.uri
-        if (this.panelSets.length === 0) return
+        if (this.panelSets.length === 0) {
+            return
+        }
         const index = this.panelSets.findIndex(panelSet => panelSet.uri.fsPath === uri.fsPath)
-        if (index === -1) return
+        if (index === -1) {
+            return
+        }
 
         const currentPanelSet = this.panelSets[index]
         const changedRange = event.contentChanges[0].range

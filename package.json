@@ -40,7 +40,6 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.login2",
         "onCommand:aws.credentials.profile.create",
         "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
@@ -106,7 +105,7 @@
             "properties": {
                 "aws.profile": {
                     "type": "string",
-                    "default": "",
+                    "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
                 "aws.ecs.openTerminalCommand": {
@@ -753,6 +752,13 @@
                 }
             ]
         },
+        "submenus": [
+            {
+                "id": "aws.auth",
+                "label": "%AWS.submenu.auth.title%",
+                "icon": "$(ellipsis)"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -1093,6 +1099,22 @@
                 },
                 {
                     "command": "aws.renderStateMachineGraph",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.addConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.help",
                     "when": "false"
                 },
                 {
@@ -1773,6 +1795,45 @@
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.addConnection",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.auth.help",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@1"
+                },
+                {
+                    "submenu": "aws.auth",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@2"
+                }
+            ],
+            "aws.auth": [
+                {
+                    "command": "aws.auth.addConnection",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "group": "0@3"
                 }
             ]
         },
@@ -1830,17 +1891,6 @@
                 }
             },
             {
-                "command": "aws.login2",
-                "title": "%AWS.command.login2%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.login2.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.title%",
@@ -1869,6 +1919,27 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.auth.addConnection",
+                "title": "%AWS.command.auth.addConnection%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.switchConnections",
+                "title": "%AWS.command.auth.switchConnections%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.signout",
+                "title": "%AWS.command.auth.signout%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.help",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(question)"
             },
             {
                 "command": "aws.createIssueOnGitHub",
@@ -3119,7 +3190,8 @@
                             "markdown": "resources/walkthrough/setup-connect.md"
                         },
                         "completionEvents": [
-                            "onContext:config.aws.profile"
+                            "onCommand:aws.login",
+                            "onCommand:aws.credentials.profile.create"
                         ]
                     },
                     {
@@ -3330,7 +3402,7 @@
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
-        "esbuild-loader": "2.18.0",
+        "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",

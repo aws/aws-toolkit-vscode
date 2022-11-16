@@ -4,6 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { LoginManager } from '../credentials/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
@@ -59,6 +60,7 @@ interface ToolkitGlobals {
     readonly window: Window
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
+    loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider

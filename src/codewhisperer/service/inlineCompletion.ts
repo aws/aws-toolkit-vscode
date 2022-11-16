@@ -99,7 +99,9 @@ export class InlineCompletion {
     }
 
     async acceptRecommendation(editor: vscode.TextEditor) {
-        if (vsCodeState.isCodeWhispererEditing) return
+        if (vsCodeState.isCodeWhispererEditing) {
+            return
+        }
         vsCodeState.isCodeWhispererEditing = true
         await editor
             ?.edit(
@@ -142,8 +144,12 @@ export class InlineCompletion {
         isTypeAheadRejection: boolean = false,
         onDidChangeVisibleTextEditors: boolean = false
     ) {
-        if (!editor || vsCodeState.isCodeWhispererEditing) return
-        if (!isTypeAheadRejection && this.items.length === 0) return
+        if (!editor || vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        if (!isTypeAheadRejection && this.items.length === 0) {
+            return
+        }
         vsCodeState.isCodeWhispererEditing = true
         ReferenceInlineProvider.instance.removeInlineReference()
         if (onDidChangeVisibleTextEditors && this.documentUri && this.documentUri.fsPath.length > 0) {
@@ -261,8 +267,11 @@ export class InlineCompletion {
                              * When typeAhead is involved we set the position of character with one more character to net let
                              * last bracket of recommendation to be removed
                              */
-                            if (this.isTypeaheadInProgress) this.setRange(new vscode.Range(this._range.start, pos))
-                            else this.setRange(new vscode.Range(this._range.start, editor.selection.active))
+                            if (this.isTypeaheadInProgress) {
+                                this.setRange(new vscode.Range(this._range.start, pos))
+                            } else {
+                                this.setRange(new vscode.Range(this._range.start, editor.selection.active))
+                            }
                             editor.setDecorations(this.dimDecoration, [this._range])
                             // cursor position
                             const position = editor.selection.active
@@ -291,7 +300,9 @@ export class InlineCompletion {
     }
 
     async navigateRecommendation(editor: vscode.TextEditor, next: boolean) {
-        if (!this.items?.length || this.items.length === 1 || vsCodeState.isCodeWhispererEditing || !editor) return
+        if (!this.items?.length || this.items.length === 1 || vsCodeState.isCodeWhispererEditing || !editor) {
+            return
+        }
         vsCodeState.isCodeWhispererEditing = true
         if (next) {
             if (this.position === this.items.length - 1) {
@@ -348,7 +359,9 @@ export class InlineCompletion {
                     RecommendationHandler.instance.clearRecommendations()
                     break
                 }
-                if (!RecommendationHandler.instance.hasNextToken()) break
+                if (!RecommendationHandler.instance.hasNextToken()) {
+                    break
+                }
                 page++
             }
         } catch (error) {

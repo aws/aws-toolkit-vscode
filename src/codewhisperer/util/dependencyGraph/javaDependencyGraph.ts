@@ -62,7 +62,9 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private generateSourceFilePathsOfAsterisk(dirPath: string, importPath: string) {
-        if (!importPath.endsWith('*')) throw new Error('Asterisk is not found in import statement.')
+        if (!importPath.endsWith('*')) {
+            throw new Error('Asterisk is not found in import statement.')
+        }
         const targetDir = path.join(dirPath, importPath.substring(0, importPath.length - 1))
         const filePaths: string[] = []
         readdirSync(targetDir, { encoding: ENCODE, withFileTypes: true }).forEach(file => {
@@ -107,8 +109,9 @@ export class JavaDependencyGraph extends DependencyGraph {
     private generateBuildFileRelativePath(uri: vscode.Uri, projectPath: string, pacakges: RegExpMatchArray) {
         const packagePath = pacakges.length > 0 ? this.generatePackagePath(pacakges[0]) : ''
         const sourceFilePath = uri.fsPath
-        if (!sourceFilePath.startsWith(projectPath))
+        if (!sourceFilePath.startsWith(projectPath)) {
             throw new Error("Invalid source file path which doesn't contain valid workspace.")
+        }
         let buildFileRelativePath
         if (packagePath === '') {
             buildFileRelativePath = path.parse(sourceFilePath).base
@@ -132,7 +135,9 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     parseImport(importStr: string, dirPaths: string[]) {
-        if (this._parsedStatements.has(importStr)) return []
+        if (this._parsedStatements.has(importStr)) {
+            return []
+        }
         this._parsedStatements.add(importStr)
         const importPath = this.getImportPath(importStr)
         const dependencies = this.generateSourceFilePaths(dirPaths, importPath)
@@ -181,11 +186,17 @@ export class JavaDependencyGraph extends DependencyGraph {
         while (q.length > 0) {
             let count: number = q.length
             while (count > 0) {
-                if (this.reachSizeLimit(this._totalSize)) return
+                if (this.reachSizeLimit(this._totalSize)) {
+                    return
+                }
                 count -= 1
                 const currentFilePath = q.shift()
-                if (currentFilePath === undefined) throw new Error('"undefined" is invalid for queued file.')
-                if (!existsSync(currentFilePath)) continue
+                if (currentFilePath === undefined) {
+                    throw new Error('"undefined" is invalid for queued file.')
+                }
+                if (!existsSync(currentFilePath)) {
+                    continue
+                }
                 this._pickedSourceFiles.add(currentFilePath)
                 this._totalSize += statSync(currentFilePath).size
                 const uri = vscode.Uri.file(currentFilePath)
@@ -207,7 +218,9 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     async traverseDir(dirPath: string) {
-        if (!existsSync(dirPath) || this.reachSizeLimit(this._totalSize) || this._fetchedDirs.has(dirPath)) return
+        if (!existsSync(dirPath) || this.reachSizeLimit(this._totalSize) || this._fetchedDirs.has(dirPath)) {
+            return
+        }
         readdirSync(dirPath, { encoding: ENCODE, withFileTypes: true }).forEach(async file => {
             const fileAbsPath = path.join(dirPath, file.name)
             if (existsSync(fileAbsPath) && file.name.charAt(0) !== '.') {
@@ -290,7 +303,9 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private detectClasspath(dirPath: string, dirName: string, projectName: string, extension: string): PackageNode {
-        if (!existsSync(dirPath) || dirPath.indexOf(projectName) === -1) return { paths: [], valid: false }
+        if (!existsSync(dirPath) || dirPath.indexOf(projectName) === -1) {
+            return { paths: [], valid: false }
+        }
 
         const packageNode: PackageNode = { paths: [], valid: true }
         let hasBuildFile: boolean = false

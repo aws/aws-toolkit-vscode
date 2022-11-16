@@ -34,12 +34,15 @@ import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 
+/**
+ * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
+ */
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
 
     public constructor(
         private readonly awsContext: AwsContext,
-        private readonly store: CredentialsStore,
+        public readonly store: CredentialsStore,
         public readonly recordAwsValidateCredentialsFn = telemetry.aws_validateCredentials.emit.bind(
             telemetry.aws_validateCredentials
         )
@@ -66,13 +69,7 @@ export class LoginManager {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
-            const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
-            const stsClient = new DefaultStsClient(credentialsRegion, credentials)
-            const accountId = (await stsClient.getCallerIdentity()).Account
-            if (!accountId) {
-                throw new Error('Could not determine Account Id for credentials')
-            }
-
+            const accountId = await this.validateCredentials(credentials, provider.getDefaultRegion())
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
                 credentials,
@@ -112,6 +109,16 @@ export class LoginManager {
         }
     }
 
+    public async validateCredentials(credentials: Credentials, region = this.defaultCredentialsRegion) {
+        const stsClient = new DefaultStsClient(region, credentials)
+        const accountId = (await stsClient.getCallerIdentity()).Account
+        if (!accountId) {
+            throw new Error('Could not determine Account Id for credentials')
+        }
+
+        return accountId
+    }
+
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
      *
@@ -119,6 +126,7 @@ export class LoginManager {
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
+        this.awsContext.credentialsShim = undefined
     }
 
     private static didTryAutoConnect = false
