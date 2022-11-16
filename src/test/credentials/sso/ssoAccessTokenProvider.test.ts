@@ -78,6 +78,18 @@ describe('SsoAccessTokenProvider', function () {
         await tryRemoveFolder(tempDir)
     })
 
+    describe('invalidate', function () {
+        it('removes cached tokens and registrations', async function () {
+            const validToken = createToken(HOUR_IN_MS)
+            await cache.token.save(startUrl, { region, startUrl, token: validToken })
+            await cache.registration.save({ region }, createRegistration(HOUR_IN_MS))
+            await sut.invalidate()
+
+            assert.strictEqual(await cache.token.load(startUrl), undefined)
+            assert.strictEqual(await cache.registration.load({ region }), undefined)
+        })
+    })
+
     describe('getToken', function () {
         it('returns a cached token', async function () {
             const validToken = createToken(HOUR_IN_MS)
