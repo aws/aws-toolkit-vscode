@@ -30,6 +30,7 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         this.auth.onDidChangeActiveConnection(async conn => this.handleConnectionChange(conn))
+        this.handleConnectionChange(this.auth.activeConnection)
     }
 
     private async handleConnectionChange(conn: Connection | undefined) {
