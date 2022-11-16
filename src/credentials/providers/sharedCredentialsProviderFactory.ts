@@ -60,8 +60,15 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         const profileNames = Array.from(allCredentialProfiles.keys())
         getLogger().verbose(`credentials: found profiles: ${profileNames}`)
         for (const profileName of profileNames) {
-            const provider = new SharedCredentialsProvider(profileName, allCredentialProfiles)
-            await this.addProviderIfValid(profileName, provider)
+            const profile = allCredentialProfiles.get(profileName)
+            if (!profile) {
+                continue
+            }
+
+            await this.addProviderIfValid(
+                profileName,
+                new SharedCredentialsProvider(profileName, allCredentialProfiles)
+            )
         }
     }
 

@@ -4,9 +4,9 @@
  */
 
 import * as path from 'path'
+import { WatchedFiles } from './watchedFiles'
 import * as pathutils from '../utilities/pathUtils'
 import * as vscode from 'vscode'
-import { WatchedFiles } from '../watchedFiles'
 
 /**
  * CodelensRootRegistry stores the locations of files that we consider as candidates for

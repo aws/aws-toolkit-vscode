@@ -81,10 +81,10 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export const readFileAsString = async (
+export async function readFileAsString(
     pathLike: string,
     options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
-): Promise<string> => {
+): Promise<string> {
     return readFile(pathLike, options)
 }
 
