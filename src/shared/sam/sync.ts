@@ -6,7 +6,7 @@
 import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
-import * as path from 'node:path'
+import * as path from 'path'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
