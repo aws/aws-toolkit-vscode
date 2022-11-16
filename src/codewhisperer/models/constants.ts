@@ -231,8 +231,8 @@ export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
-export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'
-
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
+
+export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'
 
 export const connectionExpired = `AWS Toolkit: Connection expired. Please reauthenticate to continue`
