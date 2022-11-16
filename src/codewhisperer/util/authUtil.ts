@@ -57,10 +57,9 @@ export class AuthUtil {
 
     private getOnSwitchConnectionQuickpick(): QuickPickPrompter<void> {
         const connName = this.isEnterpriseSsoInUse() ? 'IAM Identity Center' : 'Builder ID'
-
-        const connLabel = this.conn?.label
-        const connURL = connLabel?.replace('SSO (https://', '').replace('.awsapps.com/start)', '')
-        const connLabelFull = connURL && connName == 'IAM Identity Center' ? `${connName} (${connURL})` : connName
+        const connLabel = connName == 'IAM Identity Center' ? this.conn?.label : undefined
+        const connURL = connLabel && connLabel.replace('SSO (https://', '').replace('.awsapps.com/start)', '')
+        const connStringFull = connURL && connName == 'IAM Identity Center' ? `${connName} (${connURL})` : connName
         const yesItem = {
             label: `Yes, use CodeWhisperer with ${connName} while using IAM with other services.`,
 
@@ -68,7 +67,7 @@ export class AuthUtil {
                 await globals.context.globalState.update(CodeWhispererConstants.switchProfileKeepConnectionKey, 'yes')
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
                 await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-                await vscode.window.showInformationMessage(`Codewhisperer will now always use ${connLabelFull}.`)
+                await vscode.window.showInformationMessage(`Codewhisperer will now always use ${connStringFull}.`)
             },
             detail: 'You can disconnect from CodeWhisperer later.',
         }
@@ -86,7 +85,7 @@ export class AuthUtil {
         const items = [yesItem, noItem]
 
         const prompter = createQuickPick(items, {
-            title: `Stay connected to CodeWhisperer with ${connLabelFull}?`,
+            title: `Stay connected to CodeWhisperer with ${connStringFull}?`,
             buttons: [createExitButton()],
         })
         return prompter
