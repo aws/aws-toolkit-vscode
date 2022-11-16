@@ -32,8 +32,10 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { createCommonButtons } from '../shared/ui/buttons'
+import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties } from '../shared/extensionUtilities'
+
+export const builderIdStartUrl = 'https://view.awsapps.com/start'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -519,7 +521,7 @@ export class Auth implements AuthService, ConnectionManager {
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label = `IAM Identity Center (${truncatedUrl})`
+        const label = profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -641,6 +643,10 @@ export class Auth implements AuthService, ConnectionManager {
         }
     })
 
+    public getConnectionState(id: Connection['id']): ProfileMetadata['connectionState'] {
+        return this.store.getProfileOrThrow(id).metadata.connectionState
+    }
+
     static #instance: Auth | undefined
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
@@ -743,6 +749,16 @@ async function signout(auth: Auth) {
     }
 }
 
+export const createBuilderIdItem = () =>
+    ({
+        label: codicon`${getIcon('vscode-person')} ${localize(
+            'aws.auth.builderIdItem.label',
+            'Use a personal email to sign up and sign in with AWS Builder ID'
+        )}`,
+        data: 'builderId',
+        detail: 'AWS Builder ID is a new, free personal login for builders.', // TODO: need a "Learn more" button ?
+    } as DataQuickPickItem<'builderId'>)
+
 export const createSsoItem = () =>
     ({
         label: codicon`${getIcon('vscode-organization')} ${localize(
@@ -796,7 +812,7 @@ export async function createStartUrlPrompter(title: string) {
 Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
-    const resp = await showQuickPick([createSsoItem(), createIamItem()], {
+    const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createIamItem()], {
         title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
         placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
         buttons: createCommonButtons() as vscode.QuickInputButton[],
@@ -819,7 +835,24 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 type: 'sso',
                 startUrl,
                 ssoRegion: 'us-east-1',
+                scopes: ['codewhisperer:ide:recommendations'],
             })
+
+            return Auth.instance.useConnection(conn)
+        }
+        case 'builderId': {
+            const existingConn = (await Auth.instance.listConnections()).find(
+                c => c.type === 'sso' && c.startUrl === builderIdStartUrl
+            )
+            // Right now users can only have 1 builder id connection
+            const conn =
+                existingConn ??
+                (await Auth.instance.createConnection({
+                    type: 'sso',
+                    startUrl: builderIdStartUrl,
+                    ssoRegion: 'us-east-1',
+                    scopes: ['codewhisperer:ide:recommendations'],
+                }))
 
             return Auth.instance.useConnection(conn)
         }

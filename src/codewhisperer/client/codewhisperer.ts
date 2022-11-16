@@ -5,8 +5,10 @@
 
 import { AWSError, CognitoIdentityCredentials, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
+import userApiConfig = require('./user-service-2.json')
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
+import * as CodeWhispererUserClient from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { invalidateAccessToken } from '../util/invalidateToken'
@@ -16,28 +18,55 @@ import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { getLogger } from '../../shared/logger'
 import { throttle } from 'lodash'
+import { Credentials } from 'aws-sdk'
+import { AuthUtil } from '../util/authUtil'
 
 const refreshCredentials = throttle(() => {
     getLogger().verbose('codewhisperer: invalidating expired credentials')
     globals.awsContext.credentialsShim?.refresh()
 }, 60000)
 
-export type ProgrammingLanguage = Readonly<CodeWhispererClient.ProgrammingLanguage>
-export type FileContext = Readonly<CodeWhispererClient.FileContext>
-export type ListRecommendationsRequest = Readonly<CodeWhispererClient.ListRecommendationsRequest>
+export type ProgrammingLanguage = Readonly<
+    CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
+>
+export type FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
+export type ListRecommendationsRequest = Readonly<
+    CodeWhispererClient.ListRecommendationsRequest | CodeWhispererUserClient.ListRecommendationsRequest
+>
 export type GenerateRecommendationsRequest = Readonly<CodeWhispererClient.GenerateRecommendationsRequest>
-export type RecommendationsList = CodeWhispererClient.RecommendationsList
-export type ListRecommendationsResponse = CodeWhispererClient.ListRecommendationsResponse
-export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
-export type Recommendation = CodeWhispererClient.Recommendation
-export type Reference = CodeWhispererClient.Reference
-export type References = CodeWhispererClient.References
-export type CreateUploadUrlRequest = Readonly<CodeWhispererClient.CreateUploadUrlRequest>
-export type CreateCodeScanRequest = Readonly<CodeWhispererClient.CreateCodeScanRequest>
-export type GetCodeScanRequest = Readonly<CodeWhispererClient.GetCodeScanRequest>
-export type ListCodeScanFindingsRequest = Readonly<CodeWhispererClient.ListCodeScanFindingsRequest>
-export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType>
-export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap>
+export type RecommendationsList = CodeWhispererClient.RecommendationsList | CodeWhispererUserClient.RecommendationsList
+export type ListRecommendationsResponse =
+    | CodeWhispererClient.ListRecommendationsResponse
+    | CodeWhispererUserClient.ListRecommendationsResponse
+export type GenerateRecommendationsResponse =
+    | CodeWhispererClient.GenerateRecommendationsResponse
+    | CodeWhispererUserClient.CreateUploadUrlRequest
+export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Recommendation
+export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
+export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
+export type CreateUploadUrlRequest = Readonly<
+    CodeWhispererClient.CreateUploadUrlRequest | CodeWhispererUserClient.CreateUploadUrlRequest
+>
+export type CreateCodeScanRequest = Readonly<
+    CodeWhispererClient.CreateCodeScanRequest | CodeWhispererUserClient.CreateCodeScanRequest
+>
+export type GetCodeScanRequest = Readonly<
+    CodeWhispererClient.GetCodeScanRequest | CodeWhispererUserClient.GetCodeScanRequest
+>
+export type ListCodeScanFindingsRequest = Readonly<
+    CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeScanFindingsRequest
+>
+export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
+export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
+export type ListCodeScanFindingsResponse =
+    | CodeWhispererClient.ListCodeScanFindingsResponse
+    | CodeWhispererUserClient.ListCodeScanFindingsResponse
+export type CreateUploadUrlResponse =
+    | CodeWhispererClient.CreateUploadUrlResponse
+    | CodeWhispererUserClient.CreateUploadUrlResponse
+export type CreateCodeScanResponse =
+    | CodeWhispererClient.CreateCodeScanResponse
+    | CodeWhispererUserClient.CreateCodeScanResponse
 export class DefaultCodeWhispererClient {
     private credentials?: CognitoIdentityCredentials
 
@@ -105,15 +134,53 @@ export class DefaultCodeWhispererClient {
         )) as CodeWhispererClient
     }
 
+    async createUserSdkClient(): Promise<CodeWhispererUserClient> {
+        const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
+        const bearerToken = await AuthUtil.instance.getBearerToken()
+        return (await globals.sdkClientBuilder.createAwsService(
+            Service,
+            {
+                apiConfig: userApiConfig,
+                region: CodeWhispererConstants.region_gamma,
+                endpoint: CodeWhispererConstants.endpoint_gamma,
+                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
+                onRequestSetup: [
+                    req => {
+                        req.on('build', ({ httpRequest }) => {
+                            httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+                        })
+                        if (req.operation === 'listRecommendationsUser') {
+                            req.on('build', () => {
+                                req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+                            })
+                        }
+                    },
+                ],
+            } as ServiceOptions,
+            undefined,
+            false
+        )) as CodeWhispererUserClient
+    }
+
+    private isBearerTokenAuth(): boolean {
+        // return true if access token is cleared because of SSO code path
+        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
+        if (!accessToken) {
+            return true
+        }
+        return AuthUtil.instance.isConnected()
+    }
+
     public async generateRecommendations(
-        request: CodeWhispererClient.GenerateRecommendationsRequest
-    ): Promise<CodeWhispererClient.GenerateRecommendationsResponse> {
+        request: GenerateRecommendationsRequest
+    ): Promise<GenerateRecommendationsResponse> {
         return (await this.createSdkClient()).generateRecommendations(request).promise()
     }
 
-    public async listRecommendations(
-        request: CodeWhispererClient.ListRecommendationsRequest
-    ): Promise<CodeWhispererClient.ListRecommendationsResponse> {
+    public async listRecommendations(request: ListRecommendationsRequest): Promise<ListRecommendationsResponse> {
+        if (this.isBearerTokenAuth()) {
+            return await (await this.createUserSdkClient()).listRecommendationsUser(request).promise()
+        }
         return (await this.createSdkClient()).listRecommendations(request).promise()
     }
 
@@ -124,26 +191,38 @@ export class DefaultCodeWhispererClient {
     }
 
     public async createUploadUrl(
-        request: CodeWhispererClient.CreateUploadUrlRequest
-    ): Promise<PromiseResult<CodeWhispererClient.CreateUploadUrlResponse, AWSError>> {
+        request: CreateUploadUrlRequest
+    ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
+        if (this.isBearerTokenAuth()) {
+            return (await this.createUserSdkClient()).createUploadUrlUser(request).promise()
+        }
         return (await this.createSdkClient()).createUploadUrl(request).promise()
     }
 
     public async createCodeScan(
-        request: CodeWhispererClient.CreateCodeScanRequest
-    ): Promise<PromiseResult<CodeWhispererClient.CreateCodeScanResponse, AWSError>> {
+        request: CreateCodeScanRequest
+    ): Promise<PromiseResult<CreateCodeScanResponse, AWSError>> {
+        if (this.isBearerTokenAuth()) {
+            return (await this.createUserSdkClient()).createCodeScanUser(request).promise()
+        }
         return (await this.createSdkClient()).createCodeScan(request).promise()
     }
 
     public async getCodeScan(
-        request: CodeWhispererClient.GetCodeScanRequest
+        request: GetCodeScanRequest
     ): Promise<PromiseResult<CodeWhispererClient.GetCodeScanResponse, AWSError>> {
+        if (this.isBearerTokenAuth()) {
+            return (await this.createUserSdkClient()).getCodeScanUser(request).promise()
+        }
         return (await this.createSdkClient()).getCodeScan(request).promise()
     }
 
     public async listCodeScanFindings(
-        request: CodeWhispererClient.ListCodeScanFindingsRequest
-    ): Promise<PromiseResult<CodeWhispererClient.ListCodeScanFindingsResponse, AWSError>> {
+        request: ListCodeScanFindingsRequest
+    ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
+        if (this.isBearerTokenAuth()) {
+            return (await this.createUserSdkClient()).listCodeScanFindingsUser(request).promise()
+        }
         return (await this.createSdkClient()).listCodeScanFindings(request).promise()
     }
 }

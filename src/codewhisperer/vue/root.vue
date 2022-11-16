@@ -148,8 +148,8 @@
             </p>
         </div>
         <div class="container">
-            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Cancel</button>
-            <button type="button" id="accept" @click="acceptCodeSuggestions">Accept and Enable CodeWhisperer</button>
+            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Reject</button>
+            <button type="button" id="accept" @click="acceptCodeSuggestions">Accept and Turn On CodeWhisperer</button>
         </div>
     </div>
 </template>

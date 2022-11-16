@@ -11,13 +11,12 @@ import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { showAccessTokenPrompt } from '../util/showAccessTokenPrompt'
 import { startSecurityScanWithProgress } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { showTimedMessage } from '../../shared/utilities/messages'
-import { Cloud9AccessState, codeScanState } from '../models/model'
-import * as codewhispererClient from '../client/codewhisperer'
-import { sleep } from '../../shared/utilities/timeoutUtils'
+import { codeScanState } from '../models/model'
+import { showConnectionPrompt } from '../util/showSsoPrompt'
+import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
+import { AuthUtil } from '../util/authUtil'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -42,97 +41,6 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
-export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-})
-
-export const enterAccessToken = Commands.declare(
-    'aws.codeWhisperer.enterAccessToken',
-    (globalState: vscode.Memento, client: DefaultCodeWhispererClient) => async () => {
-        const setToken = async (token: string) => {
-            try {
-                await globalState.update(CodeWhispererConstants.accessToken, token)
-            } catch (error) {
-                getLogger().error(`Failed to save access token: ${error}`)
-            }
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-            await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
-        }
-        await showAccessTokenPrompt(client, setToken)
-    }
-)
-
-export const requestAccess = Commands.declare('aws.codeWhisperer.requestAccess', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.previewSignupPortal))
-})
-
-export const requestAccessCloud9 = Commands.declare(
-    'aws.codeWhisperer.requestAccessCloud9',
-    (globalState: vscode.Memento) => async () => {
-        if (get(CodeWhispererConstants.cloud9AccessStateKey, globalState) === Cloud9AccessState.RequestedAccess) {
-            showTimedMessage(CodeWhispererConstants.cloud9AccessAlreadySent, 3000)
-        } else {
-            try {
-                await vscode.commands.executeCommand('cloud9.codeWhispererRequestAccess')
-                showTimedMessage(CodeWhispererConstants.cloud9AccessSent, 3000)
-                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, globalState)
-            } catch (e) {
-                getLogger().error(`Encountered error when requesting cloud9 access ${e}`)
-                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, globalState)
-            }
-        }
-    }
-)
-
-export const updateCloud9TreeNodes = Commands.declare(
-    { id: 'aws.codeWhisperer.updateCloud9TreeNodes', autoconnect: true },
-    (globalState: vscode.Memento) => async () => {
-        const client = new codewhispererClient.DefaultCodeWhispererClient()
-        const state = globalState.get<number | undefined>(CodeWhispererConstants.cloud9AccessStateKey)
-        if (state === Cloud9AccessState.HasAccess) {
-            return
-        }
-        const testApiCall = async () => {
-            try {
-                await client.generateRecommendations({
-                    fileContext: {
-                        filename: 'c9.py',
-                        programmingLanguage: {
-                            languageName: 'python',
-                        },
-                        leftFileContent: 'print(',
-                        rightFileContent: '',
-                    },
-                    maxResults: CodeWhispererConstants.maxRecommendations,
-                })
-            } catch (e) {
-                getLogger().verbose(`Encountered error ${e} when running test API call`)
-                return false
-            }
-            return true
-        }
-
-        try {
-            for (let i = 0; i < 3; i++) {
-                const result = await testApiCall()
-                if (result) {
-                    await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.HasAccess)
-                    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-                    return
-                }
-                sleep(1000)
-            }
-            if (state !== Cloud9AccessState.RequestedAccess) {
-                await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess)
-            }
-        } catch (e) {
-            getLogger().error(`Error when updateCloud9TreeNodes ${e}`)
-            await globalState.update(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess)
-        }
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    }
-)
-
 export const showReferenceLog = Commands.declare(
     'aws.codeWhisperer.openReferencePanel',
     (context: ExtContext) => async () => {
@@ -140,10 +48,17 @@ export const showReferenceLog = Commands.declare(
     }
 )
 
+export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+})
+
 export const showSecurityScan = Commands.declare(
     'aws.codeWhisperer.security.scan',
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                await AuthUtil.instance.showReauthenticatePrompt()
+            }
             const editor = vscode.window.activeTextEditor
             if (editor) {
                 if (!codeScanState.running) {
@@ -169,3 +84,20 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
         }
     )
 }
+
+export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
+    await showConnectionPrompt()
+})
+
+export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+})
+
+// TODO: Use a different URI
+export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+})
+
+export const updateReferenceLog = Commands.declare('aws.codeWhisperer.updateReferenceLog', () => () => {
+    ReferenceLogViewProvider.instance.update()
+})
