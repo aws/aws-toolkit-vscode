@@ -33,7 +33,7 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
-        const item = new vscode.TreeItem('Amazon CodeWhisperer (Preview)')
+        const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsCodeWhispererNode'
@@ -58,7 +58,9 @@ export class CodeWhispererNode implements RootNode {
         )
         if (selection === 'yes') {
             if (AuthUtil.instance.isConnectionValid()) {
-                return AuthUtil.instance.isEnterpriseSsoInUse() ? 'SSO Connected' : 'AWS Builder ID Connected'
+                return AuthUtil.instance.isEnterpriseSsoInUse()
+                    ? 'IAM Identity Center Connected'
+                    : 'AWS Builder ID Connected'
             }
         }
         return ''

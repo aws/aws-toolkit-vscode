@@ -521,7 +521,8 @@ export class Auth implements AuthService, ConnectionManager {
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label = profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
+        const label =
+            profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -756,7 +757,7 @@ export const createBuilderIdItem = () =>
             'Use a personal email to sign up and sign in with AWS Builder ID'
         )}`,
         data: 'builderId',
-        detail: 'AWS Builder ID is a new, free personal login for builders.', // TODO: need a "Learn more" button ?
+        detail: 'AWS Builder ID is a new, personal login for builders.', // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
 export const createSsoItem = () =>
@@ -802,7 +803,7 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's AWS access portal",
+        placeholder: "Enter start URL for your organization's IAM Identity Center",
         buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })

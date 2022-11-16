@@ -56,8 +56,10 @@ export class AuthUtil {
     }
 
     private getOnSwitchConnectionQuickpick(): QuickPickPrompter<void> {
-        const connName = this.isEnterpriseSsoInUse() ? 'SSO' : 'AWS Builder ID'
-        const connLabel = this.conn?.label && connName == 'SSO' ? this.conn?.label : connName
+        const connName = this.isEnterpriseSsoInUse() ? 'IAM Identity Center' : 'Builder ID'
+        const connLabel = this.conn?.label
+        //For field that uses label for IAM Identity Center and name for AWS Builder ID
+        const connLabelAndName = this.isEnterpriseSsoInUse() ? this.conn?.label : connName
         const yesItem = {
             label: `Yes, use CodeWhisperer with ${connName} while using IAM with other services.`,
 
@@ -83,7 +85,7 @@ export class AuthUtil {
         const items = [yesItem, noItem]
 
         const prompter = createQuickPick(items, {
-            title: `Stay connected to CodeWhisperer with ${connName}?`,
+            title: `Stay connected to CodeWhisperer with ${connLabelAndName}?`,
             buttons: [createExitButton()],
         })
         return prompter

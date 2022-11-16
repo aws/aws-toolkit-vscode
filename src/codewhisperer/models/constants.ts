@@ -229,10 +229,10 @@ export const throttlingMessage = `Maximum recommendation count reached for this 
 
 export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
-export const failedToConnectSso = `Failed to connect to SSO`
-
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
+
+export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
 export const switchProfileKeepConnectionKey = 'CODEWHISPERER_PROFILE_SWITCH_KEEP_CONNECTION'
 
-export const connectionExpired = `AWS Toolkit: SSO Connection expired. Please reauthenticate to continue`
+export const connectionExpired = `AWS Toolkit: Connection expired. Please reauthenticate to continue`
