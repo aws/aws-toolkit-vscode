@@ -49,7 +49,7 @@ export const showReferenceLog = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 export const showSecurityScan = Commands.declare(
@@ -90,7 +90,7 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 })
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 // TODO: Use a different URI
