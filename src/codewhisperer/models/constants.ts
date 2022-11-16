@@ -210,7 +210,7 @@ export const reloadWindow = 'Reload Now'
 export const reloadWindowPrompt =
     'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
 
-export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s Admin and has been reset to the value they\’ve specified.`
+export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin. Changing it here has no effect.`
 
 export const settingsLearnMore = 'Learn more about CodeWhisperer Settings'
 
