@@ -57,7 +57,7 @@ export class AuthUtil {
 
     private getOnSwitchConnectionQuickpick(): QuickPickPrompter<void> {
         const connName = this.isEnterpriseSsoInUse() ? 'IAM Identity Center' : 'Builder ID'
-        const connLabel = connName == 'IAM Identity Center' ? this.conn?.label : undefined
+        const connLabel = this.isEnterpriseSsoInUse() ? this.conn?.label : undefined
         const connURL = connLabel && connLabel.replace('SSO (https://', '').replace('.awsapps.com/start)', '')
         const connStringFull = connURL && connName == 'IAM Identity Center' ? `${connName} (${connURL})` : connName
         const yesItem = {
