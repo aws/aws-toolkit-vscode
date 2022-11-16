@@ -38,7 +38,9 @@ export class CodeWhispererTracker {
     }
 
     public enqueue(suggestion: AcceptedSuggestionEntry) {
-        if (!globals.telemetry.telemetryEnabled) return
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
 
         if (this._eventQueue.length >= 0) {
             this.startTimer()

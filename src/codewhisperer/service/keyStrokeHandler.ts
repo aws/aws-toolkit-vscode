@@ -49,13 +49,19 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         try {
-            if (!config.isAutomatedTriggerEnabled) return
+            if (!config.isAutomatedTriggerEnabled) {
+                return
+            }
 
             // Skip when output channel gains focus and invoke
-            if (editor.document.languageId === 'Log') return
+            if (editor.document.languageId === 'Log') {
+                return
+            }
 
             // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) return
+            if (InlineCompletion.instance.isTypeaheadInProgress) {
+                return
+            }
 
             // Skip Cloud9 IntelliSense acceptance event
             if (
@@ -124,7 +130,9 @@ export class KeyStrokeHandler {
         if (editor) {
             this.keyStrokeCount = 0
             if (isCloud9()) {
-                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+                    return
+                }
                 vsCodeState.isIntelliSenseActive = false
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = true
                 try {
@@ -179,7 +187,9 @@ export abstract class DocumentChangedType {
 
     // Enter key should always start with ONE '\n' or '\r\n' and potentially following spaces due to IDE reformat
     protected isEnterKey(str: string): boolean {
-        if (str.length === 0) return false
+        if (str.length === 0) {
+            return false
+        }
         return (
             (str.startsWith('\r\n') && str.substring(2).trim() === '') ||
             (str[0] === '\n' && str.substring(1).trim() === '')
@@ -202,12 +212,18 @@ export abstract class DocumentChangedType {
     protected isSingleLine(str: string): boolean {
         let newLineCounts = 0
         for (const ch of str) {
-            if (ch === '\n') newLineCounts += 1
+            if (ch === '\n') {
+                newLineCounts += 1
+            }
         }
 
         // since pressing Enter key possibly will generate string like '\n        ' due to indention
-        if (this.isEnterKey(str)) return true
-        if (newLineCounts >= 1) return false
+        if (this.isEnterKey(str)) {
+            return true
+        }
+        if (newLineCounts >= 1) {
+            return false
+        }
         return true
     }
 }
