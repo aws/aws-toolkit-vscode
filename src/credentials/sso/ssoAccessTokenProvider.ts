@@ -62,7 +62,10 @@ export class SsoAccessTokenProvider {
     ) {}
 
     public async invalidate(): Promise<void> {
-        await this.cache.token.clear(this.tokenCacheKey)
+        await Promise.all([
+            this.cache.token.clear(this.tokenCacheKey),
+            this.cache.registration.clear(this.registrationCacheKey),
+        ])
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
