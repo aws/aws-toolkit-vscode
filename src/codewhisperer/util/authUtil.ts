@@ -59,7 +59,7 @@ export class AuthUtil {
         const connName = this.isEnterpriseSsoInUse() ? 'IAM Identity Center' : 'Builder ID'
         const connLabel = this.isEnterpriseSsoInUse() ? this.conn?.label : undefined
         const connURL = connLabel?.replace('SSO (https://', '').replace('.awsapps.com/start)', '')
-        const connStringFull = connURL && connName == 'IAM Identity Center' ? `${connName} (${connURL})` : connName
+        const connStringFull = this.isEnterpriseSsoInUse() ? `${connName} (${connURL})` : connName
         const yesItem = {
             label: `Yes, use CodeWhisperer with ${connName} while using IAM with other services.`,
 
