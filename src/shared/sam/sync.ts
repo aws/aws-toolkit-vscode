@@ -228,8 +228,8 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         globals.outputChannel.show()
 
         const result = sam.run({
-            onStdout: text => globals.outputChannel.appendLine(removeAnsi(text)),
-            onStderr: text => globals.outputChannel.appendLine(removeAnsi(text)),
+            onStdout: text => globals.outputChannel.append(removeAnsi(text)),
+            onStderr: text => globals.outputChannel.append(removeAnsi(text)),
         })
         sam.send('\n')
 
