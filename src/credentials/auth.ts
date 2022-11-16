@@ -518,7 +518,7 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*).awsapps.com\/start/)?.[1] ?? profile.startUrl
+        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
         const label = `IAM Identity Center (${truncatedUrl})`
 
         return {
