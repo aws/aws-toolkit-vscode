@@ -74,7 +74,7 @@ export class ManualInputSearch extends SearchInput {
     // (possibly use events)
     public async searchText(
         newInput: string,
-        queryContext: QueryContext = { must: [], should: [], mustNot: [] },
+        queryContext: QueryContext = { must: new Set<string>(), should: new Set<string>(), mustNot: new Set<string>() },
         code?: string,
         queryId?: string,
         codeQuery?: CodeQuery,

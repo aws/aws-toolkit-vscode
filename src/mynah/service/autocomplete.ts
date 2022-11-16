@@ -18,7 +18,13 @@ export const getAutocompleteSuggestions = async (
     }
     const request: autocompleteClient.AutocompleteRequest = {
         input: query.input.length > 0 ? query.input.trim().substring(0, 1000) : undefined,
-        context: { matchPolicy: query.queryContext },
+        context: {
+            matchPolicy: {
+                should: Array.from(query.queryContext.should),
+                must: Array.from(query.queryContext.must),
+                mustNot: Array.from(query.queryContext.mustNot),
+            },
+        },
     }
 
     try {

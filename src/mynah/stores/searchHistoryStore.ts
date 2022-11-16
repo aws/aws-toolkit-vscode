@@ -6,6 +6,7 @@
 import { Memento } from 'vscode'
 import { integer } from 'vscode-languageserver-types'
 import { isManualTrigger, Query, SearchSuggestion } from '../models/model'
+import { some } from 'lodash'
 
 export const STORAGE_KEY = 'SEARCH_HISTORY'
 
@@ -102,8 +103,8 @@ export class SearchHistoryStore {
             .filter(
                 record =>
                     filters.languages.length === 0 ||
-                    record.query.queryContext.must.some(hasLanguage) ||
-                    record.query.queryContext.should.some(hasLanguage)
+                    some(record.query.queryContext.must.values(), hasLanguage) ||
+                    some(record.query.queryContext.should.values(), hasLanguage)
             )
             .filter(record => filters.text === undefined || record.query.input.includes(filters.text))
             .slice(

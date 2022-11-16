@@ -237,9 +237,9 @@ export class ResultDisplay {
         })
         const session = this.client.newSession(panelId)
         const context = {
-            should: queryContext.should,
-            must: queryContext.must,
-            mustNot: queryContext.mustNot,
+            should: Array.from(queryContext.should),
+            must: Array.from(queryContext.must),
+            mustNot: Array.from(queryContext.mustNot),
         }
         session.recordEvent(TelemetryEventName.SEARCH, {
             searchMetadata: {
@@ -581,7 +581,11 @@ export class ResultDisplay {
             query: {
                 queryId: panelId,
                 input,
-                queryContext: queryContext ?? { must: [], should: [], mustNot: [] },
+                queryContext: queryContext ?? {
+                    must: new Set<string>(),
+                    should: new Set<string>(),
+                    mustNot: new Set<string>(),
+                },
                 trigger: trigger ?? 'SearchBarRefinement',
                 codeQuery,
                 codeSelection,

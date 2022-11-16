@@ -12,24 +12,23 @@ export async function extractContext(isCodeSelected: boolean): Promise<QueryCont
     const editor = vs.window.activeTextEditor
     const languageId = editor?.document?.languageId
     const { language, otherContext } = extractLanguageAndOtherContext(languageId)
-    let should = otherContext
-    const must = []
+    const should = otherContext
+    const must = new Set<string>()
     if (language !== undefined) {
         if (isCodeSelected) {
-            must.push(language)
+            must.add(language)
         } else {
-            should.push(language)
+            should.add(language)
         }
     }
     if (editor !== undefined && languageId !== undefined) {
         const imports = await readImports(editor.document?.getText(), languageId)
-        should.push(...imports)
+        imports.forEach(importKey => should.add(importKey))
     }
 
-    should = [...new Set(should)]
     return {
         must,
         should,
-        mustNot: [],
+        mustNot: new Set<string>(),
     }
 }

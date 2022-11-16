@@ -37,15 +37,15 @@ export class DiagnosticsSearchProvider implements CodeActionProvider {
         const docContent = document.getText()
         const { language, otherContext } = extractLanguageAndOtherContext(document.languageId)
         const queryContext: QueryContext = {
-            must: [],
+            must: new Set<string>(),
             should: otherContext,
-            mustNot: [],
+            mustNot: new Set<string>(),
         }
         if (language !== undefined) {
-            queryContext.must.push(language)
+            queryContext.must.add(language)
         }
         const imports = await readImports(docContent, document.languageId)
-        queryContext.should.push(...imports)
+        imports.forEach(importKey => queryContext.should.add(importKey))
         return context.diagnostics.map((diagnostic: Diagnostic): CodeAction => {
             const title = "Get Mynah's suggestions to address diagnostic."
             const query = {

@@ -31,7 +31,13 @@ export const getSearchSuggestions = async (
     const request: mynahClient.SearchRequest = {
         input: query.input ? query.input.trim().substring(0, 1000) : undefined,
         code: query.code ? query.code.trim().substring(0, 1000) : undefined,
-        context: { matchPolicy: query.queryContext },
+        context: {
+            matchPolicy: {
+                should: Array.from(query.queryContext.should),
+                must: Array.from(query.queryContext.must),
+                mustNot: Array.from(query.queryContext.mustNot),
+            },
+        },
         codeQuery: query.codeQuery,
     }
 

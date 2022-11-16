@@ -59,16 +59,16 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
             let code
             const { language, otherContext } = extractLanguageAndOtherContext(this.language)
             const queryContext: QueryContext = {
-                must: [],
+                must: new Set<string>(),
                 should: otherContext,
-                mustNot: [],
+                mustNot: new Set<string>(),
             }
             if (language !== undefined) {
-                queryContext.must.push(language)
+                queryContext.must.add(language)
             }
             if (errorContext !== undefined) {
                 code = errorContext.code
-                queryContext.should.push(...errorContext.imports)
+                errorContext.imports.forEach(importKey => queryContext.should.add(importKey))
             }
             const errorMetadata = {
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
