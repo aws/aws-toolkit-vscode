@@ -198,4 +198,8 @@ export class AuthUtil {
                 }
             })
     }
+
+    public isToolkitConnectionUsingIam(): boolean {
+        return this.auth.activeConnection?.type === 'iam'
+    }
 }

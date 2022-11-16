@@ -56,12 +56,14 @@ export class CodeWhispererNode implements RootNode {
         const selection = globals.context.globalState.get<string | undefined>(
             CodeWhispererConstants.switchProfileKeepConnectionKey
         )
-        if (selection === 'yes') {
-            if (AuthUtil.instance.isConnectionValid()) {
-                return AuthUtil.instance.isEnterpriseSsoInUse()
-                    ? 'IAM Identity Center Connected'
-                    : 'AWS Builder ID Connected'
-            }
+        if (
+            selection === 'yes' &&
+            AuthUtil.instance.isConnectionValid() &&
+            AuthUtil.instance.isToolkitConnectionUsingIam()
+        ) {
+            return AuthUtil.instance.isEnterpriseSsoInUse()
+                ? 'IAM Identity Center Connected'
+                : 'AWS Builder ID Connected'
         }
         return ''
     }
