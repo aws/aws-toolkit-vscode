@@ -109,6 +109,10 @@ class StepExecutor(
         override fun createChildEmitter(stepName: String, hidden: Boolean): StepEmitter = StepEmitterWrapper(delegate.createChildEmitter(stepName, hidden))
 
         override fun emitMessage(message: String, isError: Boolean) {
+            if (ApplicationManager.getApplication().isUnitTestMode) {
+                print(message)
+            }
+
             delegate.emitMessage(message, isError)
             processHandler.notifyTextAvailable(message, if (isError) ProcessOutputType.STDERR else ProcessOutputType.STDOUT)
         }
