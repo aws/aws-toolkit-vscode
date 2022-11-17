@@ -10,6 +10,7 @@ import com.intellij.remoterobot.fixtures.JListFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
+import com.intellij.remoterobot.utils.waitFor
 import org.apache.commons.io.FileUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -21,6 +22,7 @@ import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.DialogFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
+import software.aws.toolkits.jetbrains.uitests.fixtures.ideMajorVersion
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
@@ -54,12 +56,14 @@ class SamRunConfigTest {
 
             idea {
                 waitForBackgroundTasks()
-                // JB can't decide if they want ellipsis or not
-                try {
-                    menuBar.select("Run", "Edit Configurations...")
-                } catch (e: Exception) {
-                    findAndClick("//div[@class='IdeRootPane']")
-                    menuBar.select("Run", "Edit Configurations…")
+                waitFor(duration = Duration.ofMinutes(2), interval = Duration.ofSeconds(5)) {
+                    isDumbMode().not()
+                }
+
+                findAndClick("//div[@class='RunConfigurationsComboBoxButton']")
+                // FIX_WHEN_MIN_IS_222
+                if (ideMajorVersion() > 221) {
+                    find<JListFixture>(byXpath("//div[@class='MyList']"), timeout = Duration.ofSeconds(5)).clickItem("Edit ", fullMatch = false)
                 }
                 step("Create and populate template based run configuration") {
                     addRunConfig()

@@ -10,7 +10,6 @@ import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.ListTableModel
-import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -39,9 +38,10 @@ class OpenLogStreamInEditorActionTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule()
 
-    @JvmField
-    @Rule
-    val timeout = CoroutinesTimeout.seconds(15)
+    // TODO: figure out why this doesn't work on 223 Windows
+//    @JvmField
+//    @Rule
+//    val timeout = CoroutinesTimeout.seconds(15)
 
     @After
     fun after() {

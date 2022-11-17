@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestActionEvent
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -19,9 +18,10 @@ class StreamLogsTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @JvmField
-    @Rule
-    val timeout = CoroutinesTimeout.seconds(10)
+    // TODO: figure out why this doesn't work on 223 Windows
+//    @JvmField
+//    @Rule
+//    val timeout = CoroutinesTimeout.seconds(10)
 
     @Test
     fun streamsWhenEnabled() {

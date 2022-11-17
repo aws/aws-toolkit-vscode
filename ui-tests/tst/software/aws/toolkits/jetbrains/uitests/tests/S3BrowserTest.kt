@@ -229,7 +229,7 @@ class S3BrowserTest {
                 }
 
                 waitFor {
-                    findAll<ComponentFixture>(byXpath("//div[@accessiblename='$newJsonName']")).isNotEmpty()
+                    findAll<ComponentFixture>(byXpath("//div[contains(@visible_text, '$newJsonName')]")).isNotEmpty()
                 }
             }
 
