@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { Command, Commands } from '../../../shared/vscode/commands2'
 
 type EventEmitters<T> = {
-    [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
+    [P in keyof T]: T[P] extends vscode.Event<any> ? P & string : never
 }[keyof T]
 
 type InterceptEmitters<T, K extends keyof T> = {
@@ -51,10 +51,18 @@ export function exposeEmitters<T extends Record<string, any>, K extends EventEmi
         }
     })
 
-    if (keys.length > 0) {
-        throw new Error(
-            `exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${String(k)}"`).join(', ')}`
-        )
+    // Patch in emitters if they weren't found
+    // The patched `fire___` method won't work on listeners
+    // subscribed prior to `exposeEmitters` being called
+    for (const key of keys) {
+        const event = obj[key] as vscode.Event<any>
+        const emitter = new vscode.EventEmitter<T[K]>()
+        event(v => emitter.fire(v))
+
+        Object.assign(obj, {
+            [key]: emitter.event,
+            [`fire${capitalize(key)}`]: emitter.fire.bind(emitter),
+        })
     }
 
     return obj as any
