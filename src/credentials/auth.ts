@@ -434,7 +434,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return provider.invalidate()
         } else if (profile.type === 'iam') {
-            globals.credentialsStore.invalidateCredentials(fromString(id))
+            globals.loginManager.store.invalidateCredentials(fromString(id))
         }
     }
 
@@ -518,7 +518,8 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const label = `SSO (${profile.startUrl})`
+        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+        const label = `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -547,14 +548,15 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
-        globals.credentialsStore.invalidateCredentials(providerId)
-        const { credentials } = await globals.credentialsStore.upsertCredentials(providerId, provider)
+        globals.loginManager.store.invalidateCredentials(providerId)
+        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
+        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
 
         return credentials
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
-        const creds = await globals.credentialsStore.getCredentials(provider.getCredentialsId())
+        const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }
@@ -784,7 +786,7 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's SSO",
+        placeholder: "Enter start URL for your organization's AWS access portal",
         buttons: createCommonButtons(),
         validateInput: validateSsoUrl,
     })
@@ -807,7 +809,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         case 'iam':
             return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
         case 'sso': {
-            const startUrlPrompter = await createStartUrlPrompter('SSO Connection')
+            const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
             const startUrl = await startUrlPrompter.prompt()
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
