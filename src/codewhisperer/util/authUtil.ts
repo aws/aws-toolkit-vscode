@@ -19,7 +19,6 @@ export const awsBuilderIdSsoProfile = {
     scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
     type: 'sso' as const,
 }
-//TODO Switch between SSO & Sono profile
 export class AuthUtil {
     static #instance: AuthUtil
 
@@ -47,7 +46,6 @@ export class AuthUtil {
             // do not set this.conn, continue using previous SSO connection
             await this.onSwitchToUnsupportedConnection()
         } else {
-            // TODO: this receiver is not getting any event
             getLogger().debug(`User sign out`)
             this.conn = undefined
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')

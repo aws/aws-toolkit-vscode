@@ -123,7 +123,6 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         let prompt = ''
         if (showPrompt) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
-                //TODO: confirm refernce log prompt text for enterprise
                 prompt = CodeWhispererConstants.referenceLogPromptTextEnterpriseSSO
             } else {
                 prompt = CodeWhispererConstants.referenceLogPromptText

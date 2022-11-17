@@ -30,7 +30,6 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import { showFreeTierLimit } from '../commands/basicCommands'
 import globals from '../../shared/extensionGlobals'
 
 /**
@@ -407,16 +406,7 @@ export class RecommendationHandler {
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)
         ) {
             if (triggerType === 'OnDemand') {
-                vscode.window
-                    .showErrorMessage(
-                        CodeWhispererConstants.freeTierLimitReached,
-                        CodeWhispererConstants.throttlingLearnMore
-                    )
-                    .then(resp => {
-                        if (resp === CodeWhispererConstants.throttlingLearnMore) {
-                            return showFreeTierLimit.execute()
-                        }
-                    })
+                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
             }
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
         }

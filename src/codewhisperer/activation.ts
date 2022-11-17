@@ -102,7 +102,6 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                //TODO: confirm settingsLearnMore button should lead to learnMoreUri (and not somewhere settings-specific)
                                 vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
