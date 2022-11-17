@@ -44,7 +44,7 @@ export function exposeEmitters<T extends Record<string, any>, K extends EventEmi
     keys: K[]
 ): ExposeEmitters<T, K> {
     Object.entries(obj).forEach(([key, value]) => {
-        if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
+        if (key.startsWith('_onDid') && 'fire' in value && typeof value.fire === 'function') {
             const targetEvent = key.slice(1).replace('Emitter', '')
             keys = keys.filter(k => k !== targetEvent)
             Object.assign(obj, { [`fire${capitalize(targetEvent)}`]: value.fire.bind(value) })
