@@ -58,7 +58,7 @@ export function exposeEmitters<T extends Record<string, any>, K extends EventEmi
 
         Object.assign(obj, {
             [key]: emitter.event,
-            [`fire${capitalize(key)}`]: emitter.fire.bind(emitter),
+            [`fire${toTitleCase(key)}`]: emitter.fire.bind(emitter),
         })
     }
 
