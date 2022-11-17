@@ -217,7 +217,7 @@ export async function runSamSync(args?: Partial<SyncParams>) {
 
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
-        throw new ToolkitError('A location for SAM CLI could not be found', { code: 'MissingExecutable' })
+        throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...params], {
