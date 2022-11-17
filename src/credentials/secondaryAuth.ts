@@ -16,7 +16,9 @@ import { UnknownError } from '../shared/errors'
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[]) {
     // Multi-select picker would be better ?
     const saveConnectionItem = {
-        label: `Yes, use ${newConn.label} with ${tools.join(', ')} while using ${oldConn.label} with other services.`,
+        label: `Yes, keep using ${newConn.label} with ${tools.join(', ')} while using ${
+            oldConn.label
+        } with other services.`,
         detail: `To remove later, select "Remove Connection from Tool" from the tool's context (right-click) menu.`,
         data: 'yes',
     } as const
