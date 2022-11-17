@@ -13,44 +13,26 @@ import { Auth, Connection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { UnknownError } from '../shared/errors'
 
-async function promptSaveConnection(newConn: Connection, oldConn: Connection, tools: string[]) {
+async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[]) {
     // Multi-select picker would be better ?
     const saveConnectionItem = {
-        label: `Keep using ${oldConn.label} with these tools: ${tools.join(', ')}.`,
-        detail: 'This can be removed by selecting "Remove Connection from Tool" on a tool node.',
+        label: `Yes, use ${newConn.label} with ${tools.join(', ')} while using ${oldConn.label} with other services.`,
+        detail: `To remove later, select "Remove Connection from Tool" from the tool's context (right-click) menu.`,
         data: 'yes',
     } as const
 
     const useConnectionItem = {
-        label: `Switch everything to authenticate with ${newConn.label}.`,
-        detail: 'This will not log you out; you can switch back at any point by selecting the connection.',
+        label: `No, switch everything to authenticate with ${newConn.label}.`,
+        detail: 'This will not log you out; you can reconnect at any time by switching connections.',
         data: 'no',
     } as const
 
     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-        title: `Some tools do not work with ${newConn.label}`,
+        title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
         placeholder: 'Confirm choice',
     })
 
     return resp
-}
-
-async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tool: string) {
-    const saveConnectionItem = {
-        label: `Yes, use ${tool} with ${newConn.label} while using ${oldConn.label} with other services.`,
-        detail: `You can disconnect from ${tool} later.`,
-        data: 'yes',
-    } as const
-
-    const useConnectionItem = {
-        label: `No, disconnect from ${tool} and use ${oldConn.label} for other services.`,
-        detail: `You can reconnect to ${tool} later.`,
-        data: 'no',
-    } as const
-
-    return showQuickPick([saveConnectionItem, useConnectionItem], {
-        title: `Stay connected to ${tool} with ${newConn.label}?`,
-    })
 }
 
 let oldConn: Auth['activeConnection']
@@ -63,7 +45,7 @@ const registerAuthListener = once(() => {
                 a => !a.isUsingSavedConnection && a.isUsable(potentialConn) && !a.isUsable(conn)
             )
             const toolNames = saveableAuths.map(a => a.toolLabel)
-            if (saveableAuths.length > 0 && (await promptSaveConnection(conn, potentialConn, toolNames)) === 'yes') {
+            if (saveableAuths.length > 0 && (await promptUseNewConnection(potentialConn, conn, toolNames)) === 'yes') {
                 await Promise.all(saveableAuths.map(a => a.saveConnection(potentialConn)))
             }
         }
@@ -150,7 +132,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     public async useNewConnection(conn: T) {
         if (this.auth.activeConnection !== undefined && !this.isUsable(this.auth.activeConnection)) {
-            if ((await promptUseNewConnection(conn, this.auth.activeConnection, this.toolLabel)) === 'yes') {
+            if ((await promptUseNewConnection(conn, this.auth.activeConnection, [this.toolLabel])) === 'yes') {
                 await this.saveConnection(conn)
             } else {
                 await this.auth.useConnection(conn)
