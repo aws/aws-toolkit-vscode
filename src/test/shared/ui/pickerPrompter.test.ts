@@ -49,13 +49,11 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
 
         resolveItems(items)
         await itemsPromise
 
         assert.strictEqual(prompter.quickPick.busy, false)
-        assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
 

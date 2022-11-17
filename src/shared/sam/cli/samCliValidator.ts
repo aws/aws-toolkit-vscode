@@ -50,6 +50,7 @@ export type SamCliVersionValidatorResult =
       }
     | {
           readonly validation: SamCliVersionValidation.VersionNotParseable
+          readonly version?: string | undefined
       }
 
 export interface SamCliValidatorResult {
@@ -91,7 +92,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             this.cachedSamCliVersionId = samCliId
         }
 
-        const version: string = this.cachedSamInfoResponse!.version
+        const version = this.cachedSamInfoResponse!.version
 
         return {
             version,

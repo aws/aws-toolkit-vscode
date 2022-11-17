@@ -414,7 +414,7 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     }
 
     public handleInput(data: string) {
-        // EOF
+        // ETX
         if (data === '\u0003' || this.process.stopped) {
             this.#cancelled ||= data === '\u0003'
             return this.close()
