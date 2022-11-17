@@ -413,6 +413,10 @@ export class Auth implements AuthService, ConnectionManager {
         return connections.find(c => c.id === connection.id)
     }
 
+    public getConnectionState(connection: Pick<Connection, 'id'>): StatefulConnection['state'] | undefined {
+        return this.store.getProfile(connection.id)?.metadata.connectionState
+    }
+
     /**
      * Attempts to remove all auth state related to the connection.
      *
@@ -666,8 +670,13 @@ function toPickerItem(conn: Connection) {
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     const addNewConnection = {
-        label: codicon`${getIcon('vscode-plus')} Add new connection`,
+        label: codicon`${getIcon('vscode-plus')} Add New Connection`,
         data: 'addNewConnection' as const,
+    }
+
+    const editCredentials = {
+        label: codicon`${getIcon('vscode-pencil')} Edit Credentials`,
+        data: 'editCredentials' as const,
     }
 
     const items = (async function () {
@@ -675,8 +684,10 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
         const connections = await auth.listConnections()
         connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
         const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
+        const items = [...filtered.map(toPickerItem), addNewConnection]
+        const canShowEdit = connections.filter(isIamConnection).filter(c => c.label.startsWith('profile')).length > 0
 
-        return [...filtered.map(toPickerItem), addNewConnection]
+        return canShowEdit ? [...items, editCredentials] : items
     })()
 
     const placeholder =
@@ -684,7 +695,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
             ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
             : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
 
-    const resp = await showQuickPick<Connection | 'addNewConnection'>(items, {
+    const resp = await showQuickPick<Connection | 'addNewConnection' | 'editCredentials'>(items, {
         placeholder,
         title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
         buttons: createCommonButtons(),
@@ -696,6 +707,10 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
 
     if (resp === 'addNewConnection') {
         return addConnection.execute()
+    }
+
+    if (resp === 'editCredentials') {
+        return globals.awsContextCommands.onCommandEditCredentials()
     }
 
     return resp
