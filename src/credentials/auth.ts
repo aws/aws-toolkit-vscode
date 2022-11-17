@@ -38,6 +38,17 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const ssoScope = 'sso:account:access'
+export const codecatalystScope = 'codecatalyst:read_write'
+
+export function createBuilderIdProfile(): SsoProfile {
+    return {
+        type: 'sso',
+        ssoRegion: 'us-east-1',
+        startUrl: builderIdStartUrl,
+        scopes: [codecatalystScope],
+    }
+}
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -544,7 +555,8 @@ export class Auth implements AuthService, ConnectionManager {
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label = profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
+        const label =
+            profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -637,13 +649,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         // Use the environment token if available
         if (getCodeCatalystDevEnvId() !== undefined) {
-            const profile = {
-                scopes: ['codeaws:read_write'],
-                type: 'sso' as const,
-                startUrl: builderIdStartUrl,
-                ssoRegion: 'us-east-1',
-            }
-
+            const profile = createBuilderIdProfile()
             const key = getSsoProfileKey(profile)
             if (this.store.getProfile(key) === undefined) {
                 await this.store.addProfile(key, profile)
@@ -855,8 +861,6 @@ export async function createStartUrlPrompter(title: string) {
 }
 
 export async function createBuilderIdConnection(auth: Auth) {
-    // XXX: hard-coded scopes
-    const scopes = ['codeaws:read_write']
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
 
     // Right now users can only have 1 builder id connection
@@ -864,12 +868,7 @@ export async function createBuilderIdConnection(auth: Auth) {
         await auth.deleteConnection(existingConn)
     }
 
-    return Auth.instance.createConnection({
-        type: 'sso',
-        startUrl: builderIdStartUrl,
-        ssoRegion: 'us-east-1',
-        scopes,
-    })
+    return Auth.instance.createConnection(createBuilderIdProfile())
 }
 
 export function isBuilderIdConnection(conn?: Connection): conn is SsoConnection {
