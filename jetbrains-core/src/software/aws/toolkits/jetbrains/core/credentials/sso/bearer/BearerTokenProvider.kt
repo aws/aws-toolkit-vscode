@@ -164,20 +164,22 @@ public enum class BearerTokenAuthState {
     NOT_AUTHENTICATED
 }
 
-class ProfileSdkTokenProviderWrapper(region: String, private val sessionName: String) : BearerTokenProvider {
-    override val id = sessionName
-    override val displayName = "Disk ($sessionName)"
+class ProfileSdkTokenProviderWrapper(private val sessionName: String, region: String) : BearerTokenProvider, Disposable {
+    override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionName)
+    override val displayName = ToolkitBearerTokenProvider.diskSessionDisplayName(sessionName)
 
     private val sdkTokenManager = OnDiskTokenManager.create(sessionName)
-    private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
-    private val tokenProvider = SsoOidcTokenProvider.builder()
-        .ssoOidcClient(ssoOidcClient)
-        .sessionName(sessionName)
-        .staleTime(DEFAULT_STALE_DURATION)
-        .prefetchTime(DEFAULT_PREFETCH_DURATION)
-        .build()
+    private val ssoOidcClient = lazy { buildUnmanagedSsoOidcClient(region) }
+    private val tokenProvider = lazy {
+        SsoOidcTokenProvider.builder()
+            .ssoOidcClient(ssoOidcClient.value)
+            .sessionName(sessionName)
+            .staleTime(DEFAULT_STALE_DURATION)
+            .prefetchTime(DEFAULT_PREFETCH_DURATION)
+            .build()
+    }
 
-    override fun resolveToken(): SdkToken = tokenProvider.resolveToken()
+    override fun resolveToken(): SdkToken = tokenProvider.value.resolveToken()
 
     override fun currentToken(): AccessToken? = sdkTokenManager.loadToken().orNull()?.let {
         // since we can't auto-refresh this, treat DNE
@@ -196,9 +198,17 @@ class ProfileSdkTokenProviderWrapper(region: String, private val sessionName: St
     }
 
     override fun close() {
-        ssoOidcClient.close()
         sdkTokenManager.close()
-        tokenProvider.close()
+        if (ssoOidcClient.isInitialized()) {
+            ssoOidcClient.value.close()
+        }
+        if (tokenProvider.isInitialized()) {
+            tokenProvider.value.close()
+        }
+    }
+
+    override fun dispose() {
+        close()
     }
 }
 

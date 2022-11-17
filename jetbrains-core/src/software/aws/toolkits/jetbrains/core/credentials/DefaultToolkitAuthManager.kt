@@ -3,15 +3,17 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 
 // TODO: unify with CredentialManager
 @State(name = "authManager", storages = [Storage("aws.xml")])
-class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<ToolkitAuthManagerState> {
+class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<ToolkitAuthManagerState>, Disposable {
     private var state = ToolkitAuthManagerState()
     private val connections = mutableListOf<ToolkitConnection>()
 
@@ -65,6 +67,14 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
         connections.clear()
         connections.addAll(newConnections)
+    }
+
+    override fun dispose() {
+        listConnections().forEach {
+            if (it is Disposable) {
+                Disposer.dispose(it)
+            }
+        }
     }
 
     private fun connectionFromProfile(profile: AuthProfile) = when (profile) {

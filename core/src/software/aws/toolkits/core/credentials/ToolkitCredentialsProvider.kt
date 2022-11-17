@@ -112,9 +112,12 @@ class ToolkitCredentialsProvider(
 
 interface ToolkitBearerTokenProviderDelegate : SdkTokenProvider, ToolkitAuthenticationProvider
 
-class ToolkitBearerTokenProvider(delegate: ToolkitBearerTokenProviderDelegate) : SdkTokenProvider by delegate, ToolkitAuthenticationProvider by delegate {
+class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegate) : SdkTokenProvider by delegate, ToolkitAuthenticationProvider by delegate {
     companion object {
         fun identifier(startUrl: String) = "sso;$startUrl"
         fun displayName(startUrl: String) = "SSO ($startUrl)"
+
+        fun diskSessionIdentifier(profileName: String) = "diskSessionProfile;$profileName"
+        fun diskSessionDisplayName(profileName: String) = "IAM Identity Center Session ($profileName)"
     }
 }

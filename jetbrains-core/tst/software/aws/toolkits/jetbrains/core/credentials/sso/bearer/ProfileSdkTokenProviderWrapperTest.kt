@@ -16,8 +16,8 @@ import org.mockito.kotlin.verifyNoInteractions
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
+import software.aws.toolkits.core.utils.createParentDirectories
 import software.aws.toolkits.core.utils.toHexString
-import software.aws.toolkits.core.utils.touch
 import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import java.nio.file.Path
@@ -62,7 +62,7 @@ class ProfileSdkTokenProviderWrapperTest {
     @Before
     fun setUp() {
         oidcClient = mockClientManager.create<SsoOidcClient>()
-        sut = ProfileSdkTokenProviderWrapper(aRegionId(), "mock")
+        sut = ProfileSdkTokenProviderWrapper(sessionName = "mock", region = aRegionId())
     }
 
     @Test
@@ -90,7 +90,7 @@ class ProfileSdkTokenProviderWrapperTest {
         val tokenPath = testHomeDir
             .resolve(Path.of(".aws", "sso", "cache"))
             .resolve(MessageDigest.getInstance("SHA-1").digest("mock".toByteArray()).toHexString() + ".json")
-        tokenPath.touch()
+        tokenPath.createParentDirectories()
         tokenPath.writeText(
             // doesn't match what SDK actually uses, but we only care about a subset of fields at the moment
             // language=JSON
