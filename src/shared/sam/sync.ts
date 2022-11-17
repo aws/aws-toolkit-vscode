@@ -29,6 +29,7 @@ import { getLogger } from '../logger'
 import { isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
+import { StackSummary } from 'aws-sdk/clients/cloudformation'
 
 const generatedBucket = Symbol('generatedBucket')
 
@@ -65,17 +66,20 @@ function createBucketPrompter(client: DefaultS3Client) {
     })
 }
 
+const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
+const canShowStack = (s: StackSummary) =>
+    (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
+
 function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
     const items = client.listAllStacks().map(stacks =>
-        stacks
-            .filter(s => s.StackStatus.endsWith('_COMPLETE') && !s.StackStatus.includes('DELETE'))
-            .map(s => ({
-                label: s.StackName,
-                description: s.StackStatus,
-                data: s.StackName,
-                recentlyUsed: s.StackName === recentStack,
-            }))
+        stacks.filter(canShowStack).map(s => ({
+            label: s.StackName,
+            data: s.StackName,
+            invalidSelection: !canPickStack(s),
+            recentlyUsed: s.StackName === recentStack,
+            description: !canPickStack(s) ? 'stack create/update already in progress' : undefined,
+        }))
     )
 
     return createQuickPick(items, {
