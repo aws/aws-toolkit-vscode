@@ -30,6 +30,7 @@ import { isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
+import { SamCliSettings } from './cli/samCliSettings'
 
 const generatedBucket = Symbol('generatedBucket')
 
@@ -61,7 +62,7 @@ function createBucketPrompter(client: DefaultS3Client) {
     ])
 
     return createQuickPick(items, {
-        title: 'Choose a bucket to use for deployment',
+        title: 'Select an S3 Bucket for Deployment',
         buttons: createCommonButtons(),
     })
 }
@@ -83,9 +84,9 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
     )
 
     return createQuickPick(items, {
-        title: 'Select a stack or create a new one by entering a name',
+        title: 'Select a CloudFormation Stack or Enter a Name to Create One',
         filterBoxInputSettings: {
-            label: 'Create a new stack',
+            label: 'Create a New Stack',
             transform: v => v,
         },
         buttons: createCommonButtons(),
@@ -104,7 +105,7 @@ function createEcrPrompter(client: DefaultEcrClient) {
     )
 
     return createQuickPick(items, {
-        title: 'Select an ECR repo to deploy images to',
+        title: 'Select an ECR Repository for Deployment',
         buttons: createCommonButtons(),
     })
 }
@@ -116,6 +117,7 @@ interface TemplateItem {
 
 function createTemplatePrompter() {
     const folders = new Set<string>()
+    const recentTemplatePath = getRecentResponse('global', 'templatePath')
     const items = globals.templateRegistry.registeredItems.map(({ item, path: filePath }) => {
         const uri = vscode.Uri.file(filePath)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
@@ -126,12 +128,13 @@ function createTemplatePrompter() {
             label,
             data: { uri, data: item },
             description: workspaceFolder?.name,
+            recentlyUsed: recentTemplatePath === uri.fsPath,
         }
     })
 
     const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
-        title: 'Select a template',
+        title: 'Select a CloudFormation Template',
         buttons: createCommonButtons(),
     })
 }
@@ -200,6 +203,7 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         updateRecentResponse(resp.region, 'stackName', data.stackName),
         updateRecentResponse(resp.region, 'bucketName', data.bucketName),
         updateRecentResponse(resp.region, 'ecrRepoUri', data.ecrRepoUri),
+        updateRecentResponse('global', 'templatePath', data.templatePath),
     ])
 
     const params = bindDataToParams(data, {
@@ -211,8 +215,12 @@ export async function runSamSync(args?: Partial<SyncParams>) {
         ecrRepoUri: '--image-repository',
     })
 
-    // TODO: use `SamCliContext` for the executable path
-    const sam = new ChildProcess('sam', ['sync', ...params], {
+    const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
+    if (samCliPath === undefined) {
+        throw new ToolkitError('A location for SAM CLI could not be found', { code: 'MissingExecutable' })
+    }
+
+    const sam = new ChildProcess(samCliPath, ['sync', ...params], {
         spawnOptions: {
             cwd: resp.projectRoot.fsPath,
         },
@@ -220,7 +228,7 @@ export async function runSamSync(args?: Partial<SyncParams>) {
 
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
-            const message = `SAM sync exited with a non-zero exit code: ${result.exitCode}`
+            const message = `sam sync exited with a non-zero exit code: ${result.exitCode}`
             throw ToolkitError.chain(result.error, message, {
                 code: 'NonZeroExitCode',
             })
@@ -311,6 +319,17 @@ export function registerSync() {
             })
         }
     )
+
+    const settings = SamCliSettings.instance
+    settings.onDidChange(({ key }) => {
+        if (key === 'enableLegacyDeploy') {
+            telemetry.aws_modifySetting.run(span => {
+                span.record({ settingId: 'sam_legacyDeploy' })
+                const state = settings.get('enableLegacyDeploy')
+                span.record({ settingState: state ? 'Enabled' : 'Disabled' })
+            })
+        }
+    })
 }
 
 const mementoRootKey = 'samcli.sync.params'
