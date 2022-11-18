@@ -104,7 +104,7 @@ function resolveIconId(
         ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
         : undefined
 
-    return new Icon(id, source)
+    return new Icon(namespace === 'vscode' ? name : id, source)
 }
 
 function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
