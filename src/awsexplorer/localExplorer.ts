@@ -28,10 +28,14 @@ function throttle<T>(cb: () => T | Promise<T>, delay: number): () => Promise<T> 
     return () => {
         timer?.refresh()
 
-        return (promise ??= new Promise<T>(resolve => {
-            timer = setTimeout(() => {
-                resolve(cb())
+        return (promise ??= new Promise<T>((resolve, reject) => {
+            timer = setTimeout(async () => {
                 timer = promise = undefined
+                try {
+                    resolve(await cb())
+                } catch (err) {
+                    reject(err)
+                }
             }, delay)
         }))
     }
@@ -53,7 +57,7 @@ export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
         rootNodes.forEach(node => {
-            const refresh = throttle(() => treeDataProvider.refresh(node), 25)
+            const refresh = throttle(() => treeDataProvider.refresh(node), 10)
             node.onDidChangeTreeItem?.(() => refresh())
             node.onDidChangeChildren?.(() => refresh())
         })

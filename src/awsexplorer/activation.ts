@@ -28,6 +28,7 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -65,7 +66,8 @@ export async function activate(args: {
         })
     )
 
-    const nodes = [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
+    // The auth node looks bad on C9 right now due to sorting issues
+    const nodes = !isCloud9() ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode] : [cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 

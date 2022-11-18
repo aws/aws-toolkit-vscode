@@ -33,7 +33,7 @@ import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons } from '../shared/ui/buttons'
-import { getIdeProperties } from '../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -911,9 +911,9 @@ export class AuthNode implements TreeNode<Auth> {
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
             if (conn.state === 'authenticating') {
-                item.description = 'authenticating...'
+                this.setDescription(item, 'authenticating...')
             } else {
-                item.description = 'expired or invalid, click to authenticate'
+                this.setDescription(item, 'expired or invalid, click to authenticate')
                 item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
             }
         } else {
@@ -922,5 +922,13 @@ export class AuthNode implements TreeNode<Auth> {
         }
 
         return item
+    }
+
+    private setDescription(item: vscode.TreeItem, text: string) {
+        if (isCloud9()) {
+            item.label = typeof item.label === 'string' ? `${item.label} (${text})` : item.label
+        } else {
+            item.description = text
+        }
     }
 }
