@@ -926,7 +926,7 @@ export class AuthNode implements TreeNode<Auth> {
 
     private setDescription(item: vscode.TreeItem, text: string) {
         if (isCloud9()) {
-            item.label = typeof item.label === 'string' ? `${item.label} (${text})` : item.label
+            item.tooltip = item.tooltip ?? text
         } else {
             item.description = text
         }
