@@ -49,13 +49,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         }
         if (this.extensionContext) {
             this.codiconUri = webviewView.webview.asWebviewUri(
-                vscode.Uri.joinPath(
-                    this.extensionContext.extensionUri,
-                    'node_modules',
-                    '@vscode/codicons',
-                    'dist',
-                    'codicon.css'
-                )
+                vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'css', 'icons.css')
             )
             this.cssUri = webviewView.webview.asWebviewUri(
                 vscode.Uri.joinPath(

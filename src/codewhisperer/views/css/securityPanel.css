@@ -48,15 +48,15 @@ body {
 }
 
 .accordion .handle label:before {
-    font-family: 'codicon';
-    content: '\eab6';
+    font-family: 'aws-toolkit-icons';
+    content: '\1ab6'; /* icon-vscode-chevron-right */
     display: inline-block;
     margin-right: 5px;
     vertical-align: middle;
 }
 
 .accordion > input[type='checkbox']:checked ~ .handle label:before {
-    content: '\eab4';
+    content: '\1ab4'; /* icon-vscode-chevron-down */
 }
 
 .content {
@@ -65,8 +65,8 @@ body {
 }
 
 .warning::before {
-    font-family: 'codicon';
-    content: '\ea6c';
+    font-family: 'aws-toolkit-icons';
+    content: '\1a6c'; /* icon-vscode-warning */
     display: inline-block;
     vertical-align: middle;
     color: goldenrod;
@@ -74,8 +74,8 @@ body {
 }
 
 .info::before {
-    font-family: 'codicon';
-    content: '\eba8';
+    font-family: 'aws-toolkit-icons';
+    content: '\1ba8'; /* icon-vscode-debug-alt-small */
     display: inline-block;
     vertical-align: middle;
     color: lightcoral;
@@ -83,8 +83,8 @@ body {
 }
 
 .rerun::before {
-    font-family: 'codicon';
-    content: '\eba8';
+    font-family: 'aws-toolkit-icons';
+    content: '\1ba8'; /* icon-vscode-debug-alt-small */
     display: inline-block;
     vertical-align: middle;
     color: lightgreen;
