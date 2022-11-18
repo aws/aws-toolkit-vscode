@@ -100,12 +100,11 @@ function resolveIconId(
 
     // TODO: potentially embed the icon source in `package.json` to avoid this messy mapping
     // of course, doing that implies we must always bundle both the original icon files and the font file
-    const mappedId = namespace === 'vscode' ? name.replace('codicons-', '') : id
     const source = !['cloud9', 'vscode'].includes(namespace)
         ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
         : undefined
 
-    return new Icon(mappedId, source)
+    return new Icon(id, source)
 }
 
 function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
