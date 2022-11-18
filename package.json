@@ -3439,6 +3439,7 @@
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
+        "@iarna/toml": "^2.2.5",
         "@vscode/codicons": "^0.0.29",
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.7.2",

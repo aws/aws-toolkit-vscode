@@ -17,7 +17,7 @@ import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
-import { selectFrom } from '../utilities/tsUtils'
+import { keys, selectFrom } from '../utilities/tsUtils'
 import { Commands } from '../vscode/commands2'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { SystemUtilities } from '../systemUtilities'
@@ -31,8 +31,11 @@ import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { SamCliSettings } from './cli/samCliSettings'
+import { SamConfig } from './config'
+import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
+import { pushIf, toRecord } from '../utilities/collectionUtils'
 
-interface SyncParams {
+export interface SyncParams {
     readonly region: string
     readonly deployType: 'infra' | 'code'
     readonly projectRoot: vscode.Uri
@@ -53,7 +56,8 @@ function createBucketPrompter(client: DefaultS3Client) {
     ])
 
     return createQuickPick(items, {
-        title: 'Select an S3 Bucket or Enter a Name to Create One',
+        title: 'Select an S3 Bucket',
+        placeholder: 'Filter or enter a new bucket name',
         buttons: createCommonButtons(),
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
@@ -80,7 +84,8 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
     )
 
     return createQuickPick(items, {
-        title: 'Select a CloudFormation Stack or Enter a Name to Create One',
+        title: 'Select a CloudFormation Stack',
+        placeholder: 'Filter or enter a new stack name',
         filterBoxInputSettings: {
             label: 'Create a New Stack',
             transform: v => v,
@@ -101,8 +106,13 @@ function createEcrPrompter(client: DefaultEcrClient) {
     )
 
     return createQuickPick(items, {
-        title: 'Select an ECR Repository for Deployment',
+        title: 'Select an ECR Repository',
+        placeholder: 'Filter or enter an existing repository URI',
         buttons: createCommonButtons(),
+        filterBoxInputSettings: {
+            label: 'Existing repository URI',
+            transform: v => v,
+        },
     })
 }
 
@@ -146,8 +156,8 @@ function hasImageBasedResources(template: CloudFormation.Template) {
               .some(it => it === 'Image')
 }
 
-class SyncWizard extends Wizard<SyncParams> {
-    public constructor(state: Pick<SyncParams, 'deployType'>) {
+export class SyncWizard extends Wizard<SyncParams> {
+    public constructor(state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
         this.form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
@@ -180,38 +190,35 @@ function bindDataToParams<T extends BindableData>(data: T, bindings: { [P in key
     return params
 }
 
-export async function runSamSync(args?: Partial<SyncParams>) {
-    const resp = await new SyncWizard({ deployType: 'infra', ...args }).run()
-    if (resp === undefined) {
-        throw new CancellationError('user')
+async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
+    const newBucketName = resp.bucketName.match(/^newbucket:(.*)/)?.[1]
+    if (newBucketName === undefined) {
+        return resp.bucketName
     }
 
-    telemetry.record({ lambdaPackageType: resp.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
-    const newBucketName = resp.bucketName.match(/^newbucket:(.*)/)?.[1]
-    const bucketName =
-        newBucketName === undefined
-            ? resp.bucketName
-            : await (async function () {
-                  try {
-                      await new DefaultS3Client(resp.region).createBucket({ bucketName: newBucketName })
+    try {
+        await new DefaultS3Client(resp.region).createBucket({ bucketName: newBucketName })
 
-                      return newBucketName
-                  } catch (err) {
-                      throw ToolkitError.chain(err, `Failed to create new bucket "${newBucketName}"`)
-                  }
-              })()
+        return newBucketName
+    } catch (err) {
+        throw ToolkitError.chain(err, `Failed to create new bucket "${newBucketName}"`)
+    }
+}
+
+export async function runSamSync(args: SyncParams) {
+    telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
     const data = {
-        codeOnly: resp.deployType === 'code',
-        templatePath: resp.template.uri.fsPath,
-        bucketName: bucketName,
-        ...selectFrom(resp, 'stackName', 'ecrRepoUri', 'region'),
+        codeOnly: args.deployType === 'code',
+        templatePath: args.template.uri.fsPath,
+        bucketName: await ensureBucket(args),
+        ...selectFrom(args, 'stackName', 'ecrRepoUri', 'region'),
     }
 
     await Promise.all([
-        updateRecentResponse(resp.region, 'stackName', data.stackName),
-        updateRecentResponse(resp.region, 'bucketName', data.bucketName),
-        updateRecentResponse(resp.region, 'ecrRepoUri', data.ecrRepoUri),
+        updateRecentResponse(args.region, 'stackName', data.stackName),
+        updateRecentResponse(args.region, 'bucketName', data.bucketName),
+        updateRecentResponse(args.region, 'ecrRepoUri', data.ecrRepoUri),
         updateRecentResponse('global', 'templatePath', data.templatePath),
     ])
 
@@ -231,7 +238,7 @@ export async function runSamSync(args?: Partial<SyncParams>) {
 
     const sam = new ChildProcess(samCliPath, ['sync', ...params], {
         spawnOptions: {
-            cwd: resp.projectRoot.fsPath,
+            cwd: args.projectRoot.fsPath,
         },
     })
 
@@ -272,7 +279,56 @@ export async function runSamSync(args?: Partial<SyncParams>) {
     }
 }
 
-async function setupSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined) {
+async function tryGetConfig(projectUri: vscode.Uri): Promise<SamConfig | undefined> {
+    const configUri = vscode.Uri.joinPath(projectUri, 'samconfig.toml')
+
+    try {
+        if (await SystemUtilities.fileExists(configUri)) {
+            return SamConfig.fromUri(configUri)
+        } else {
+            getLogger().verbose(`sam: no "samconfig.toml" found at ${projectUri.path}`)
+        }
+    } catch (err) {
+        getLogger().warn(
+            `sam: failed to parse "samconfig.toml" in ${projectUri.path}: ${UnknownError.cast(err).message}`
+        )
+    }
+}
+
+const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
+const getStringParam = (config: SamConfig, key: string) => {
+    try {
+        return cast(config.getParam('sync', key), Optional(String))
+    } catch (err) {
+        throw ToolkitError.chain(err, `Unable to read "${key}" in config file`, {
+            details: { location: config.location.path },
+        })
+    }
+}
+
+const configKeyMapping = {
+    region: 'region',
+    stackName: 'stack_name',
+    bucketName: 's3_bucket',
+    ecrRepoUri: 'image_repository',
+}
+
+function getSyncParamsFromConfig(config: SamConfig) {
+    const samConfigParams: string[] = []
+    const params = toRecord(keys(configKeyMapping), k => {
+        const key = configKeyMapping[k]!
+        const param = getStringParam(config, key)
+        pushIf(samConfigParams, param !== undefined, key)
+
+        return param
+    })
+
+    telemetry.record({ samConfigParams: samConfigParams.join(',') } as any)
+
+    return params
+}
+
+export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined): Promise<Partial<SyncParams>> {
     const region = arg instanceof AWSTreeNodeBase ? arg.regionCode : undefined
     const template =
         arg instanceof vscode.Uri
@@ -282,19 +338,43 @@ async function setupSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined) {
               }
             : undefined
 
-    // TODO: dedupe
-    const configFile = template !== undefined ? vscode.Uri.joinPath(template.uri, '..', 'samconfig.toml') : undefined
-    const projectRoot =
-        configFile !== undefined && (await SystemUtilities.fileExists(configFile))
-            ? vscode.Uri.joinPath(configFile, '..')
-            : undefined
+    if (template !== undefined) {
+        const workspaceUri = getWorkspaceUri(template)
+        const config =
+            (await tryGetConfig(vscode.Uri.joinPath(template.uri, '..'))) ??
+            (workspaceUri !== undefined ? await tryGetConfig(workspaceUri) : undefined)
 
-    return { region, template, projectRoot }
+        if (config !== undefined) {
+            const params = getSyncParamsFromConfig(config)
+            const projectRoot = vscode.Uri.joinPath(config.location, '..')
+
+            return { ...params, template, projectRoot }
+        } else {
+            return { region, template }
+        }
+    }
+
+    return { region }
 }
 
 export function registerSync() {
-    function isValidParam(arg?: unknown): arg is vscode.Uri | AWSTreeNodeBase | undefined {
-        return arg === undefined || arg instanceof vscode.Uri || arg instanceof AWSTreeNodeBase
+    async function runSync(deployType: SyncParams['deployType'], arg?: unknown) {
+        telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
+
+        const Uri = vscode.Uri as unknown as abstract new () => vscode.Uri
+        const input = cast(arg, Optional(Union(Instance(Uri), Instance(AWSTreeNodeBase))))
+
+        await confirmDevStack()
+        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(input)) }).run()
+        if (params === undefined) {
+            throw new CancellationError('user')
+        }
+
+        try {
+            await runSamSync(params)
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
+        }
     }
 
     Commands.register(
@@ -302,15 +382,7 @@ export function registerSync() {
             id: 'aws.samcli.sync',
             autoconnect: true,
         },
-        async (arg?: unknown) => {
-            return telemetry.sam_sync.run(async span => {
-                span.record({ syncedResources: 'AllResources' })
-                if (isValidParam(arg)) {
-                    await confirmDevStack()
-                    await runSamSync({ deployType: 'infra', ...(await setupSyncParams(arg)) })
-                }
-            })
-        }
+        (arg?: unknown) => telemetry.sam_sync.run(() => runSync('infra', arg))
     )
 
     Commands.register(
@@ -318,15 +390,7 @@ export function registerSync() {
             id: 'aws.samcli.syncCode',
             autoconnect: true,
         },
-        async (arg?: unknown) => {
-            return telemetry.sam_sync.run(async span => {
-                span.record({ syncedResources: 'CodeOnly' })
-                if (isValidParam(arg)) {
-                    await confirmDevStack()
-                    await runSamSync({ deployType: 'code', ...(await setupSyncParams(arg)) })
-                }
-            })
-        }
+        (arg?: unknown) => telemetry.sam_sync.run(() => runSync('code', arg))
     )
 
     const settings = SamCliSettings.instance

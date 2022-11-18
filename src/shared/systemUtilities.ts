@@ -51,6 +51,17 @@ export class SystemUtilities {
         return decoder.decode(await vscode.workspace.fs.readFile(uri))
     }
 
+    public static async writeFile(file: string | vscode.Uri, data: string | Buffer): Promise<void> {
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
+
+        if (isCloud9()) {
+            return fs.writeFile(uri.fsPath, content)
+        }
+
+        return vscode.workspace.fs.writeFile(uri, content)
+    }
+
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 
