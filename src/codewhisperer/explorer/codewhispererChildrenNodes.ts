@@ -59,7 +59,7 @@ export const createSecurityScanNode = () => {
 
 export const createSsoSignIn = () =>
     showSsoSignIn.build().asTreeNode({
-        label: localize('AWS.explorerNode.sSoSignInNode.label', 'Get Started...'),
+        label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
         iconPath: getIcon('vscode-debug-start'),
     })
 
