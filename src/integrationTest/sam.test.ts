@@ -79,7 +79,7 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs18.x',
         displayName: 'nodejs18.x (ZIP)',
-        path: 'hello-world/app.js',
+        path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
@@ -176,7 +176,7 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs18.x',
         displayName: 'nodejs18.x (Image)',
         baseImage: `amazon/nodejs18.x-base`,
-        path: 'hello-world/app.js',
+        path: 'hello-world/app.mjs',
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
