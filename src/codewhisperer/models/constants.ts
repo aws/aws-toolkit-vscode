@@ -212,7 +212,7 @@ export const reloadWindowPrompt =
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin. Changing it here has no effect.`
 
-export const settingsLearnMore = 'Learn more about CodeWhisperer Settings'
+export const settingsLearnMore = 'Learn More About CodeWhisperer Settings'
 
 export const accessTokenCutOffDate = new Date(2023, 0, 31)
 
@@ -225,7 +225,7 @@ export const connectWithAWSBuilderId = `Connect with AWS`
 export const freeTierLimitReached =
     'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
 
-export const throttlingLearnMore = `Learn more`
+export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
 

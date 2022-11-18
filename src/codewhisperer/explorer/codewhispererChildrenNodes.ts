@@ -65,7 +65,7 @@ export const createSsoSignIn = () =>
 
 export const createLearnMore = () =>
     showLearnMore.build().asTreeNode({
-        label: localize('AWS.explorerNode.codewhispererLearnMore.label', 'Learn more about CodeWhisperer'),
+        label: localize('AWS.explorerNode.codewhispererLearnMore.label', 'Learn More About CodeWhisperer'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsCodeWhispererLearnMoreNode',
     })
@@ -74,7 +74,7 @@ export const createFreeTierLimitMetNode = () => {
     const now = new Date()
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US')
     return showFreeTierLimit.build().asTreeNode({
-        label: localize('AWS.explorerNode.freeTierLimitMet.label', 'Free tier limit met'),
+        label: localize('AWS.explorerNode.freeTierLimitMet.label', 'Free Tier Limit Met'),
         iconPath: getIcon('vscode-error'),
         description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
     })
