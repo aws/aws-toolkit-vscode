@@ -26,7 +26,6 @@ import {
     getIdeProperties,
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
-    isCloud9,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -229,10 +228,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateEcs(extContext)
 
-        // Features which aren't currently functional in Cloud9
-        if (!isCloud9()) {
-            await activateSchemas(extContext)
-        }
+        await activateSchemas(extContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
