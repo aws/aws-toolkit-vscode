@@ -172,6 +172,7 @@
     "AWS.command.resources.configure": "Show Resources...",
     "AWS.command.codewhisperer.introduction": "What is CodeWhisperer?",
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
+    "AWS.command.codewhisperer.removeConnection": "Remove Connection from Tool",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cloudWatchLogs.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",

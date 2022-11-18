@@ -33,10 +33,16 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
+        if (!isCloud9()) {
+            AuthUtil.instance.restore()
+        }
+
         const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
-        item.contextValue = 'awsCodeWhispererNode'
+        item.contextValue = AuthUtil.instance.isUsingSavedConnection
+            ? 'awsCodeWhispererNodeSaved'
+            : 'awsCodeWhispererNode'
         return item
     }
 
@@ -53,14 +59,7 @@ export class CodeWhispererNode implements RootNode {
         if (accessToken) {
             return 'Access Token'
         }
-        const selection = globals.context.globalState.get<string | undefined>(
-            CodeWhispererConstants.switchProfileKeepConnectionKey
-        )
-        if (
-            selection === 'yes' &&
-            AuthUtil.instance.isConnectionValid() &&
-            AuthUtil.instance.isToolkitConnectionUsingIam()
-        ) {
+        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'
                 : 'AWS Builder ID Connected'
@@ -109,7 +108,6 @@ export class CodeWhispererNode implements RootNode {
 export const codewhispererNode = new CodeWhispererNode()
 export const refreshCodeWhisperer = Commands.register('aws.codeWhisperer.refresh', (showFreeTierLimitNode = false) => {
     codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
-    codewhispererNode.refresh.bind(codewhispererNode)
     codewhispererNode.refresh()
 })
 

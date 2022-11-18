@@ -33,9 +33,29 @@ import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
-import { getIdeProperties } from '../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const ssoAccountAccessScopes = ['sso:account:access']
+export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+
+export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
+    return {
+        type: 'sso',
+        ssoRegion: 'us-east-1',
+        startUrl: builderIdStartUrl,
+        scopes: codewhispererScopes,
+    }
+}
+
+export function createSsoProfile(startUrl: string, region = 'us-east-1'): SsoProfile & { readonly scopes: string[] } {
+    return {
+        type: 'sso',
+        startUrl,
+        ssoRegion: region,
+        scopes: codewhispererScopes,
+    }
+}
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -648,10 +668,6 @@ export class Auth implements AuthService, ConnectionManager {
         }
     })
 
-    public getConnectionState(id: Connection['id']): ProfileMetadata['connectionState'] {
-        return this.store.getProfileOrThrow(id).metadata.connectionState
-    }
-
     static #instance: Auth | undefined
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
@@ -795,6 +811,8 @@ export const createIamItem = () =>
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
 export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
+export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
+    isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
 
 export async function createStartUrlPrompter(title: string) {
     const existingConnections = (await Auth.instance.listConnections())
@@ -828,7 +846,12 @@ export async function createStartUrlPrompter(title: string) {
 Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
-    const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createIamItem()], {
+    const c9IamItem = createIamItem()
+    c9IamItem.detail =
+        'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+    const items = isCloud9() ? [createSsoItem(), c9IamItem] : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+
+    const resp = await showQuickPick(items, {
         title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
         placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
         buttons: createCommonButtons() as vscode.QuickInputButton[],
@@ -847,28 +870,14 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 throw new CancellationError('user')
             }
 
-            const conn = await Auth.instance.createConnection({
-                type: 'sso',
-                startUrl,
-                ssoRegion: 'us-east-1',
-                scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-            })
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
 
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
-            const existingConn = (await Auth.instance.listConnections()).find(
-                c => c.type === 'sso' && c.startUrl === builderIdStartUrl
-            )
+            const existingConn = (await Auth.instance.listConnections()).find(isBuilderIdConnection)
             // Right now users can only have 1 builder id connection
-            const conn =
-                existingConn ??
-                (await Auth.instance.createConnection({
-                    type: 'sso',
-                    startUrl: builderIdStartUrl,
-                    ssoRegion: 'us-east-1',
-                    scopes: ['codewhisperer:completions', 'codewhisperer:analysis'],
-                }))
+            const conn = existingConn ?? (await Auth.instance.createConnection(createBuilderIdProfile()))
 
             return Auth.instance.useConnection(conn)
         }
