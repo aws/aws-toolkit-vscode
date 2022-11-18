@@ -124,8 +124,6 @@ export async function downloadFileAsCommand(
         const saveLocation = await promptForSaveLocation(file.name, window, downloadPath)
         if (!saveLocation) {
             throw new CancellationError('user')
-        } else {
-            setDefaultDownloadPath(saveLocation.path)
         }
 
         showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
@@ -139,6 +137,8 @@ export async function downloadFileAsCommand(
                 progressLocation: vscode.ProgressLocation.Notification,
             }
         )
+
+        setDefaultDownloadPath(saveLocation.fsPath)
 
         showOutputMessage(`Downloaded: ${saveLocation}`, outputChannel)
     })

@@ -230,15 +230,20 @@ export function getDefaultDownloadPath(): string {
         if (typeof lastUsedPath === 'string') {
             return lastUsedPath
         }
-        getLogger().warn("Expected stored 'aws.downloadPath' to return a string")
+        getLogger().error('Expected "aws.downloadPath" to be string, got %O', typeof lastUsedPath)
     }
     return downloadsDir()
 }
 
-export function setDefaultDownloadPath(downloadPath: string) {
-    if (fs.statSync(downloadPath).isDirectory()) {
-        globals.context.globalState.update('aws.downloadPath', downloadPath)
-    } else {
-        globals.context.globalState.update('aws.downloadPath', path.dirname(downloadPath))
+export async function setDefaultDownloadPath(downloadPath: string) {
+    try {
+        const savePath = await stat(downloadPath)
+        if (savePath.isDirectory()) {
+            globals.context.globalState.update('aws.downloadPath', downloadPath)
+        } else {
+            globals.context.globalState.update('aws.downloadPath', path.dirname(downloadPath))
+        }
+    } catch (err) {
+        getLogger().error('Error while setting "aws.downloadPath"', err as Error)
     }
 }
