@@ -138,10 +138,10 @@
                     "default": 90000,
                     "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
                 },
-                "aws.samcli.enableLegacyDeploy": {
+                "aws.samcli.legacyDeploy": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%AWS.configuration.description.samcli.enableLegacyDeploy%"
+                    "markdownDescription": "%AWS.configuration.description.samcli.legacyDeploy%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -963,15 +963,15 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "config.aws.samcli.enableLegacyDeploy"
+                    "when": "config.aws.samcli.legacyDeploy"
                 },
                 {
                     "command": "aws.samcli.sync",
-                    "when": "!config.aws.samcli.enableLegacyDeploy"
+                    "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy"
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy"
                 },
                 {
                     "command": "aws.s3.copyPath",
@@ -1204,17 +1204,17 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "config.aws.samcli.enableLegacyDeploy && view == aws.explorer",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@3"
                 },
                 {
                     "command": "aws.samcli.sync",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && view == aws.explorer",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@3"
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && view == aws.explorer",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@4"
                 },
                 {
@@ -1256,17 +1256,17 @@
             "explorer/context": [
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "config.aws.samcli.enableLegacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
                 },
                 {
                     "command": "aws.samcli.sync",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@2"
                 },
                 {
@@ -1363,17 +1363,17 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "config.aws.samcli.enableLegacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
                 },
                 {
                     "command": "aws.samcli.sync",
-                    "when": "!config.aws.samcli.enableLegacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.enableLegacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@3"
                 },
                 {

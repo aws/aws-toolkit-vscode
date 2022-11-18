@@ -79,7 +79,7 @@ const description = {
     lambdaTimeout: Number,
     enableCodeLenses: Boolean,
     manuallySelectedBuckets: SavedBuckets,
-    enableLegacyDeploy: Boolean,
+    legacyDeploy: Boolean,
 }
 
 export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {

@@ -395,10 +395,10 @@ export function registerSync() {
 
     const settings = SamCliSettings.instance
     settings.onDidChange(({ key }) => {
-        if (key === 'enableLegacyDeploy') {
+        if (key === 'legacyDeploy') {
             telemetry.aws_modifySetting.run(span => {
                 span.record({ settingId: 'sam_legacyDeploy' })
-                const state = settings.get('enableLegacyDeploy')
+                const state = settings.get('legacyDeploy')
                 span.record({ settingState: state ? 'Enabled' : 'Disabled' })
             })
         }
