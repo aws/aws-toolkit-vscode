@@ -19,6 +19,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
+import { telemetry } from '../../shared/telemetry/telemetry'
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
     public readonly resource = this
@@ -40,9 +41,11 @@ export class CodeWhispererNode implements RootNode {
         const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+        item.command = clickParentNode.build().asCommand({ title: '' })
         item.contextValue = AuthUtil.instance.isUsingSavedConnection
             ? 'awsCodeWhispererNodeSaved'
             : 'awsCodeWhispererNode'
+
         return item
     }
 
@@ -114,3 +117,11 @@ export const refreshCodeWhisperer = Commands.register('aws.codeWhisperer.refresh
 export const refreshCodeWhispererRootNode = Commands.register('aws.codeWhisperer.refreshRootNode', () => {
     codewhispererNode.refreshRootNode()
 })
+
+const clickParentNode = Commands.register(
+    {
+        id: '_aws.codeWhisperer.clickParentNode',
+        logging: false,
+    },
+    () => telemetry.ui_click.emit({ elementId: 'cw_parentNode' })
+)

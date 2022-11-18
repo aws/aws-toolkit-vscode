@@ -751,6 +751,8 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
 }
 
 const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+    telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
+
     if (auth instanceof Auth) {
         return promptAndUseConnection(auth)
     } else {
@@ -788,6 +790,7 @@ export const createBuilderIdItem = () =>
             'Use a personal email to sign up and sign in with AWS Builder ID'
         )}`,
         data: 'builderId',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionBuilderID' }),
         detail: 'AWS Builder ID is a new, personal login for builders.', // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
@@ -799,6 +802,7 @@ export const createSsoItem = () =>
             getIdeProperties().company
         )}`,
         data: 'sso',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionSSO' }),
         detail: "Sign in to your company's IAM Identity Center access portal login page.",
     } as DataQuickPickItem<'sso'>)
 
@@ -844,7 +848,11 @@ export async function createStartUrlPrompter(title: string) {
 
 // TODO: add specific documentation URL
 Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
-Commands.register('aws.auth.signout', () => signout(Auth.instance))
+Commands.register('aws.auth.signout', () => {
+    telemetry.ui_click.emit({ elementId: 'devtools_signout' })
+
+    return signout(Auth.instance)
+})
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const c9IamItem = createIamItem()
     c9IamItem.detail =
@@ -857,6 +865,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         buttons: createCommonButtons() as vscode.QuickInputButton[],
     })
     if (!isValidResponse(resp)) {
+        telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
         throw new CancellationError('user')
     }
 
@@ -870,8 +879,9 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 throw new CancellationError('user')
             }
 
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
+            telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
 
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
@@ -895,9 +905,11 @@ const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, 
 // Used to decouple from the `Commands` implementation
 Commands.register('_aws.auth.autoConnect', () => Auth.instance.tryAutoConnect())
 
-export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) =>
-    promptAndUseConnection(auth, 'iam')
-)
+export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) => {
+    telemetry.ui_click.emit({ elementId: 'explorer_IAMselect_VSCode' })
+
+    return promptAndUseConnection(auth, 'iam')
+})
 
 // Legacy commands
 export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {

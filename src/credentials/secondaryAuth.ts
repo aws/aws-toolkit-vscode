@@ -12,6 +12,8 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth, Connection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { UnknownError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
@@ -29,10 +31,29 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
         data: 'no',
     } as const
 
+    const helpButton = createHelpButton()
+    const openLink = () => helpButton.onClick()
+    helpButton.onClick = () => {
+        telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_help' })
+        openLink()
+    }
+
     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
         title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
         placeholder: 'Confirm choice',
+        buttons: [helpButton, createExitButton()],
     })
+
+    switch (resp) {
+        case 'yes':
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_yes' })
+            break
+        case 'no':
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_no' })
+            break
+        default:
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_exit' })
+    }
 
     return resp
 }

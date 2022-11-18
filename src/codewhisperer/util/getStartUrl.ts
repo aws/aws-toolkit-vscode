@@ -10,6 +10,7 @@ import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 import { createStartUrlPrompter } from '../../credentials/auth'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {
     const inputBox = await createStartUrlPrompter('IAM Identity Center')
@@ -17,6 +18,8 @@ export const getStartUrl = async () => {
     if (!isValidResponse(userInput)) {
         throw new CancellationError('user')
     }
+    telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
+
     try {
         await AuthUtil.instance.connectToEnterpriseSso(userInput)
     } catch (e) {
