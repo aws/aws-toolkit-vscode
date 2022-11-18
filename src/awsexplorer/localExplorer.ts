@@ -57,6 +57,8 @@ export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
         rootNodes.forEach(node => {
+            // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
+            // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
             const refresh = throttle(() => treeDataProvider.refresh(node), 10)
             node.onDidChangeTreeItem?.(() => refresh())
             node.onDidChangeChildren?.(() => refresh())
