@@ -56,7 +56,7 @@ body {
 }
 
 .accordion > input[type='checkbox']:checked ~ .handle label:before {
-    content: '\1ab4';
+    content: '\1ab4'; /* icon-vscode-chevron-down */
 }
 
 .content {
