@@ -32,24 +32,15 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { SamCliSettings } from './cli/samCliSettings'
 
-const generatedBucket = Symbol('generatedBucket')
-
 interface SyncParams {
     readonly region: string
     readonly deployType: 'infra' | 'code'
     readonly projectRoot: vscode.Uri
     readonly template: TemplateItem
     readonly stackName: string
-    readonly bucketName: string | typeof generatedBucket
+    readonly bucketName: string
     readonly ecrRepoUri?: string
 }
-
-/*
-const useGeneratedBucketItem = {
-    label: 'Generate one for me',
-    data: generatedBucket,
-}
-*/
 
 function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
@@ -62,8 +53,13 @@ function createBucketPrompter(client: DefaultS3Client) {
     ])
 
     return createQuickPick(items, {
-        title: 'Select an S3 Bucket for Deployment',
+        title: 'Select an S3 Bucket or Enter a Name to Create One',
         buttons: createCommonButtons(),
+        filterBoxInputSettings: {
+            label: 'Create a New Bucket',
+            // This is basically a hack. I need to refactor `createQuickPick` a bit.
+            transform: v => `newbucket:${v}`,
+        },
     })
 }
 
@@ -191,11 +187,24 @@ export async function runSamSync(args?: Partial<SyncParams>) {
     }
 
     telemetry.record({ lambdaPackageType: resp.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
+    const newBucketName = resp.bucketName.match(/^newbucket:(.*)/)?.[1]
+    const bucketName =
+        newBucketName === undefined
+            ? resp.bucketName
+            : await (async function () {
+                  try {
+                      await new DefaultS3Client(resp.region).createBucket({ bucketName: newBucketName })
+
+                      return newBucketName
+                  } catch (err) {
+                      throw ToolkitError.chain(err, `Failed to create new bucket "${newBucketName}"`)
+                  }
+              })()
 
     const data = {
         codeOnly: resp.deployType === 'code',
         templatePath: resp.template.uri.fsPath,
-        bucketName: resp.bucketName !== generatedBucket ? resp.bucketName : undefined,
+        bucketName: bucketName,
         ...selectFrom(resp, 'stackName', 'ecrRepoUri', 'region'),
     }
 
