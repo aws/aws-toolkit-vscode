@@ -263,7 +263,7 @@
                     "default": {
                         "jsonResourceModification": false,
                         "CodeWhisperer": true,
-                        "syncCode": false
+                        "samSyncCode": false
                     },
                     "properties": {
                         "jsonResourceModification": {
@@ -274,7 +274,7 @@
                             "type": "boolean",
                             "default": true
                         },
-                        "syncCode": {
+                        "samSyncCode": {
                             "type": "boolean",
                             "default": false
                         }
@@ -971,7 +971,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy"
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
                 },
                 {
                     "command": "aws.s3.copyPath",
@@ -1214,7 +1214,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@4"
                 },
                 {
@@ -1266,7 +1266,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@2"
                 },
                 {
@@ -1373,7 +1373,7 @@
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.syncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@3"
                 },
                 {
