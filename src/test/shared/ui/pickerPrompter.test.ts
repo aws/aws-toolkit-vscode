@@ -18,7 +18,6 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
-import { recentlyUsed } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
