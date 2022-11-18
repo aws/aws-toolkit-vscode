@@ -8,12 +8,16 @@ import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as packageJson from '../../package.json'
 
-const FONT_ID = 'aws-toolkit-icons'
-const ROOT_DIR = process.cwd()
-const ICONS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'icons')
-const FONT_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'fonts')
-const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'css')
-const ICON_SOURCES = [`resources/icons/**/*.svg`, '!**/{cloud9,dark,light}/**']
+const fontId = 'aws-toolkit-icons'
+const projectDir = process.cwd()
+const iconsDir = path.join(projectDir, 'resources', 'icons')
+const fontsDir = path.join(projectDir, 'resources', 'fonts')
+const stylesheetsDir = path.join(projectDir, 'resources', 'css')
+const iconSources = [
+    `resources/icons/**/*.svg`,
+    `node_modules/@vscode/codicons/src/icons/**/*.svg`,
+    '!**/{cloud9,dark,light}/**',
+]
 
 interface PackageIcon {
     readonly description: string
@@ -63,7 +67,7 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
 
     // prettier adds a newline to JSON files
     const newPackage = `${JSON.stringify(packageJson, undefined, 4)}\n`
-    await fs.writeFile(path.join(ROOT_DIR, 'package.json'), newPackage)
+    await fs.writeFile(path.join(projectDir, 'package.json'), newPackage)
     console.log('Updated package.json')
 }
 
@@ -88,15 +92,15 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
     }
 }
 
-async function generate() {
-    const dest = path.join(FONT_ROOT_DIR, `${FONT_ID}.woff`)
-    const relativeDest = path.relative(ROOT_DIR, dest)
+async function generate(mappings: Record<string, number | undefined> = {}) {
+    const dest = path.join(fontsDir, `${fontId}.woff`)
+    const relativeDest = path.relative(projectDir, dest)
     const icons: { name: string; path: string; data?: PackageIcon }[] = []
     const generated = new GeneratedFilesManifest()
 
     const result = await webfont({
-        files: ICON_SOURCES,
-        fontName: FONT_ID,
+        files: iconSources,
+        fontName: fontId,
         formats: ['woff'],
         startUnicode: 0xe000,
         verbose: true,
@@ -105,7 +109,7 @@ async function generate() {
         fontHeight: 1000,
         template: 'css',
         templateClassName: 'icon',
-        templateFontPath: path.relative(STYLESHEETS_ROOT_DIR, FONT_ROOT_DIR),
+        templateFontPath: path.relative(stylesheetsDir, fontsDir),
         glyphTransformFn: obj => {
             const filePath = (obj as { path?: string }).path
 
@@ -117,8 +121,19 @@ async function generate() {
                 throw new Error(`Expected glyph "${obj.name}" to have the unicode property.`)
             }
 
-            const parts = path.relative(ICONS_ROOT_DIR, filePath).split(path.sep)
-            obj.name = parts.join('-').replace('.svg', '')
+            // If icon came from `node_modules` -> it's a codicon
+            if (filePath.includes('node_modules')) {
+                obj.name = `vscode-${path.basename(filePath).replace('.svg', '')}`
+                const mapping = mappings[obj.name]
+                if (mapping === undefined) {
+                    throw new Error(`No unicode mapping found for icon "${obj.name}"`)
+                }
+
+                obj.unicode = [String.fromCharCode(mapping)]
+            } else {
+                const parts = path.relative(iconsDir, filePath).split(path.sep)
+                obj.name = parts.join('-').replace('.svg', '')
+            }
 
             if (!obj.name.startsWith('vscode')) {
                 icons.push({
@@ -127,7 +142,6 @@ async function generate() {
                     data: createPackageIcon(`./${relativeDest}`, obj.unicode[0]),
                 })
             } else {
-                obj.name = obj.name.replace('codicons-', '')
                 icons.push({ name: obj.name, path: filePath })
             }
             return obj
@@ -139,17 +153,17 @@ async function generate() {
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. 
  * SPDX-License-Identifier: Apache-2.0 
  * 
- * This style sheet was generated using "${path.relative(ROOT_DIR, __filename)}". 
+ * This style sheet was generated using "${path.relative(projectDir, __filename)}". 
  */ 
 
 ${result.template}
 `.trim()
 
-    const stylesheetPath = path.join(STYLESHEETS_ROOT_DIR, 'icons.css')
-    const cloud9Dest = path.join(ICONS_ROOT_DIR, 'cloud9', 'generated')
+    const stylesheetPath = path.join(stylesheetsDir, 'icons.css')
+    const cloud9Dest = path.join(iconsDir, 'cloud9', 'generated')
     const isValidIcon = (i: typeof icons[number]): i is Required<typeof i> => i.data !== undefined
 
-    await fs.mkdirp(FONT_ROOT_DIR)
+    await fs.mkdirp(fontsDir)
     await fs.writeFile(dest, result.woff)
     await fs.writeFile(stylesheetPath, template)
     await updatePackage(
@@ -162,7 +176,7 @@ ${result.template}
     generated.addEntry(stylesheetPath)
     generated.addEntry(cloud9Dest)
 
-    await generated.emit(path.join(ROOT_DIR, 'dist'))
+    await generated.emit(path.join(projectDir, 'dist'))
 }
 
 class GeneratedFilesManifest {
@@ -180,6 +194,22 @@ class GeneratedFilesManifest {
     }
 }
 
-generate().catch(error => {
-    console.error('Failed to generate icons: %s', (error as Error).message)
-})
+async function loadCodiconMappings(): Promise<Record<string, number | undefined>> {
+    const codicons = path.join(projectDir, 'node_modules', '@vscode', 'codicons', 'src')
+    const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
+    const mappings: Record<string, number | undefined> = {}
+    for (const [k, v] of Object.entries(data)) {
+        if (typeof k === 'string' && typeof v === 'number') {
+            mappings[`vscode-${k}`] = v - 0xd000
+        }
+    }
+
+    return mappings
+}
+
+async function main() {
+    const mappings = await loadCodiconMappings()
+    await generate(mappings)
+}
+
+main()
