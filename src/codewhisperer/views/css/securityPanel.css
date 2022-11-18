@@ -49,7 +49,7 @@ body {
 
 .accordion .handle label:before {
     font-family: 'aws-toolkit-icons';
-    content: '\1ab6';
+    content: '\1ab6'; /* icon-vscode-chevron-right */
     display: inline-block;
     margin-right: 5px;
     vertical-align: middle;
@@ -66,7 +66,7 @@ body {
 
 .warning::before {
     font-family: 'aws-toolkit-icons';
-    content: '\1a6c';
+    content: '\1a6c'; /* icon-vscode-warning */
     display: inline-block;
     vertical-align: middle;
     color: goldenrod;
@@ -75,7 +75,7 @@ body {
 
 .info::before {
     font-family: 'aws-toolkit-icons';
-    content: '\1ba8';
+    content: '\1ba8'; /* icon-vscode-debug-alt-small */
     display: inline-block;
     vertical-align: middle;
     color: lightcoral;
@@ -84,7 +84,7 @@ body {
 
 .rerun::before {
     font-family: 'aws-toolkit-icons';
-    content: '\1ba8';
+    content: '\1ba8'; /* icon-vscode-debug-alt-small */
     display: inline-block;
     vertical-align: middle;
     color: lightgreen;
