@@ -148,7 +148,7 @@ export class DefaultCodeWhispererClient {
                         req.on('build', ({ httpRequest }) => {
                             httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
                         })
-                        if (req.operation === 'listRecommendationsUser') {
+                        if (req.operation === 'generateCompletions') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
                             })
