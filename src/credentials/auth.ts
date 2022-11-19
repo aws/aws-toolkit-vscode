@@ -34,6 +34,21 @@ import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { getConfigFilename } from './sharedCredentials'
+
+export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const ssoScope = 'sso:account:access'
+export const codecatalystScope = 'codecatalyst:read_write'
+
+export function createBuilderIdProfile(): SsoProfile {
+    return {
+        type: 'sso',
+        ssoRegion: 'us-east-1',
+        startUrl: builderIdStartUrl,
+        scopes: [codecatalystScope],
+    }
+}
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -401,7 +416,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (connection.id === this.#activeConnection?.id) {
             await this.logout()
         } else {
-            this.invalidateConnection(connection.id)
+            await this.invalidateConnection(connection.id)
         }
 
         await this.store.deleteProfile(connection.id)
@@ -493,10 +508,27 @@ export class Auth implements AuthService, ConnectionManager {
         return provider
     }
 
+    // XXX: always read from the same location in a dev environment
+    private getSsoSessionName = once(() => {
+        const configFile = getConfigFilename()
+        const contents: string = require('fs').readFileSync(configFile, 'utf-8')
+        const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
+        if (!identifier) {
+            throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
+        }
+
+        return identifier
+    })
+
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+        const shouldUseSoftwareStatement =
+            getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
+
+        const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
+
         return this.createTokenProvider(
             {
-                identifier: id,
+                identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
                 scopes: profile.scopes,
                 region: profile.ssoRegion,
@@ -523,7 +555,8 @@ export class Auth implements AuthService, ConnectionManager {
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label = `IAM Identity Center (${truncatedUrl})`
+        const label =
+            profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -612,6 +645,16 @@ export class Auth implements AuthService, ConnectionManager {
     public readonly tryAutoConnect = once(async () => {
         if (this.activeConnection !== undefined) {
             return
+        }
+
+        // Use the environment token if available
+        if (getCodeCatalystDevEnvId() !== undefined) {
+            const profile = createBuilderIdProfile()
+            const key = getSsoProfileKey(profile)
+            if (this.store.getProfile(key) === undefined) {
+                await this.store.addProfile(key, profile)
+            }
+            await this.store.setCurrentProfileId(key)
         }
 
         const conn = await this.restorePreviousSession()
@@ -758,6 +801,16 @@ async function signout(auth: Auth) {
     }
 }
 
+export const createBuilderIdItem = () =>
+    ({
+        label: codicon`${getIcon('vscode-person')} ${localize(
+            'aws.auth.builderIdItem.label',
+            'Use a personal email to sign up and sign in with AWS Builder ID'
+        )}`,
+        data: 'builderId',
+        detail: 'AWS Builder ID is a new, free personal login for builders.', // TODO: need a "Learn more" button ?
+    } as DataQuickPickItem<'builderId'>)
+
 export const createSsoItem = () =>
     ({
         label: codicon`${getIcon('vscode-organization')} ${localize(
@@ -807,11 +860,26 @@ export async function createStartUrlPrompter(title: string) {
     })
 }
 
+export async function createBuilderIdConnection(auth: Auth) {
+    const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
+
+    // Right now users can only have 1 builder id connection
+    if (existingConn !== undefined) {
+        await auth.deleteConnection(existingConn)
+    }
+
+    return Auth.instance.createConnection(createBuilderIdProfile())
+}
+
+export function isBuilderIdConnection(conn?: Connection): conn is SsoConnection {
+    return conn?.type === 'sso' && conn.startUrl === builderIdStartUrl
+}
+
 // TODO: add specific documentation URL
 Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
-    const resp = await showQuickPick([createSsoItem(), createIamItem()], {
+    const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createIamItem()], {
         title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
         placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
         buttons: createCommonButtons() as vscode.QuickInputButton[],
@@ -835,6 +903,11 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 startUrl,
                 ssoRegion: 'us-east-1',
             })
+
+            return Auth.instance.useConnection(conn)
+        }
+        case 'builderId': {
+            const conn = await createBuilderIdConnection(Auth.instance)
 
             return Auth.instance.useConnection(conn)
         }

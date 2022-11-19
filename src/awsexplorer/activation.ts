@@ -28,7 +28,9 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { notifyCodeCatalystBetaUsers } from '../codecatalyst/beta'
+import { CodeCatalystRootNode } from '../codecatalyst/explorer'
+import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -49,6 +51,14 @@ export async function activate(args: {
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
 
+    globals.context.subscriptions.push(
+        view.onDidChangeVisibility(async e => {
+            if (e.visible) {
+                await notifyCodeCatalystBetaUsers()
+            }
+        })
+    )
+
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
     args.context.extensionContext.subscriptions.push(
@@ -66,8 +76,9 @@ export async function activate(args: {
         })
     )
 
-    // The auth node looks bad on C9 right now due to sorting issues
-    const nodes = !isCloud9() ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode] : [cdkNode, codewhispererNode]
+    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const codecatalystNode = new CodeCatalystRootNode(authProvider)
+    const nodes = [new AuthNode(Auth.instance), codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 

@@ -291,7 +291,9 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
 }
 
 /** Recursively delete undefined key/value pairs */
-export function stripUndefined(obj: any): void {
+export function stripUndefined<T extends Record<string, any>>(
+    obj: T
+): asserts obj is { [P in keyof T]-?: NonNullable<T[P]> } {
     Object.keys(obj).forEach(key => {
         if (obj[key] === undefined) {
             delete obj[key]
