@@ -130,7 +130,7 @@ describe('prepareSyncParams', function () {
 
         it('can load an absolute template param', async function () {
             const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "${template.uri.fsPath}"`)
+            const params = await getParams(`template = '${template.uri.fsPath}'`)
             assert.deepStrictEqual(params.template?.data, template.data)
         })
 
