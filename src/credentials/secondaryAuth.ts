@@ -12,8 +12,10 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth, Connection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { UnknownError } from '../shared/errors'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 
-async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[]) {
+async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
     const saveConnectionItem = {
         label: `Yes, keep using ${newConn.label} with ${tools.join(', ')} while using ${
@@ -24,15 +26,34 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     } as const
 
     const useConnectionItem = {
-        label: `No, switch everything to authenticate with ${newConn.label}.`,
+        label: `No, switch everything to authenticate with ${(swapNo ? newConn : oldConn).label}.`,
         detail: 'This will not log you out; you can reconnect at any time by switching connections.',
         data: 'no',
     } as const
 
+    const helpButton = createHelpButton()
+    const openLink = () => helpButton.onClick()
+    helpButton.onClick = () => {
+        telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_help' })
+        openLink()
+    }
+
     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
         title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
         placeholder: 'Confirm choice',
+        buttons: [helpButton, createExitButton()],
     })
+
+    switch (resp) {
+        case 'yes':
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_yes' })
+            break
+        case 'no':
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_no' })
+            break
+        default:
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_exit' })
+    }
 
     return resp
 }
@@ -47,7 +68,10 @@ const registerAuthListener = once(() => {
                 a => !a.isUsingSavedConnection && a.isUsable(potentialConn) && !a.isUsable(conn)
             )
             const toolNames = saveableAuths.map(a => a.toolLabel)
-            if (saveableAuths.length > 0 && (await promptUseNewConnection(potentialConn, conn, toolNames)) === 'yes') {
+            if (
+                saveableAuths.length > 0 &&
+                (await promptUseNewConnection(potentialConn, conn, toolNames, false)) === 'yes'
+            ) {
                 await Promise.all(saveableAuths.map(a => a.saveConnection(potentialConn)))
             }
         }
@@ -134,7 +158,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     public async useNewConnection(conn: T) {
         if (this.auth.activeConnection !== undefined && !this.isUsable(this.auth.activeConnection)) {
-            if ((await promptUseNewConnection(conn, this.auth.activeConnection, [this.toolLabel])) === 'yes') {
+            if ((await promptUseNewConnection(conn, this.auth.activeConnection, [this.toolLabel], true)) === 'yes') {
                 await this.saveConnection(conn)
             } else {
                 await this.auth.useConnection(conn)

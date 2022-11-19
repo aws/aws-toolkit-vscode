@@ -7,13 +7,12 @@ import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import {
     enableCodeSuggestions,
-    enterAccessToken,
-    requestAccess,
-    showIntroduction,
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
-    requestAccessCloud9,
+    showLearnMore,
+    showSsoSignIn,
+    showFreeTierLimit,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
 
@@ -28,42 +27,22 @@ export const createAutoSuggestionsNode = (pause: boolean) =>
     toggleCodeSuggestions.build().asTreeNode(
         pause
             ? {
-                  label: localize('AWS.explorerNode.pauseCodeWhispererNode.label', 'Pause Auto-suggestions'),
+                  label: localize('AWS.explorerNode.pauseCodeWhispererNode.label', 'Pause Auto-Suggestions'),
                   iconPath: getIcon('vscode-debug-pause'),
               }
             : {
-                  label: localize('AWS.explorerNode.resumeCodeWhispererNode.label', 'Resume Auto-suggestions'),
+                  label: localize('AWS.explorerNode.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions'),
                   iconPath: getIcon('vscode-debug-start'),
               }
     )
 
-export const createIntroductionNode = () =>
-    showIntroduction.build().asTreeNode({
-        label: localize('AWS.explorerNode.codewhispererIntroductionNode.label', 'What is CodeWhisperer?'),
-        iconPath: getIcon('vscode-help'),
-        tooltip: localize('AWS.explorerNode.codewhispererIntroductionNode.tooltip', 'Click to open the node'),
-        contextValue: 'awsCodeWhispererIntroductionNode',
-    })
-
-export const createEnterAccessCodeNode = () =>
-    enterAccessToken.build().asTreeNode({
-        label: localize('AWS.explorerNode.enterCodeWhispererAccessTokenNode.label', 'Enter Preview Access Code'),
-        iconPath: getIcon('vscode-mail'),
-    })
-
-export const createRequestAccessNode = () =>
-    requestAccess.build().asTreeNode({
-        label: localize('AWS.explorerNode.requestCodeWhispererAccessNode.label', 'Request Preview Access'),
-        iconPath: getIcon('vscode-megaphone'),
-    })
-
 export const createOpenReferenceLogNode = () =>
     showReferenceLog.build().asTreeNode({
-        label: localize('AWS.explorerNode.codewhispererOpenReferenceLogNode.label', 'Open Code Reference Panel'),
-        iconPath: getIcon('vscode-file'),
+        label: localize('AWS.explorerNode.codewhispererOpenReferenceLogNode.label', 'Open Code Reference Log'),
+        iconPath: getIcon('vscode-remote'),
         tooltip: localize(
             'AWS.explorerNode.codewhispererOpenReferenceLogNode.tooltip',
-            'Click to open Code Reference Panel'
+            'Click to open Code Reference Log'
         ),
         contextValue: 'awsCodeWhispererOpenReferenceLogNode',
     })
@@ -78,11 +57,25 @@ export const createSecurityScanNode = () => {
     })
 }
 
-export const createRequestAccessNodeCloud9 = () => {
-    return requestAccessCloud9.build().asTreeNode({
-        label: `Request Access`,
-        iconPath: getIcon('vscode-megaphone'),
-        tooltip: `Request Access`,
-        contextValue: `awsCodeWhispererRequestAccessNodeCloud9`,
+export const createSsoSignIn = () =>
+    showSsoSignIn.build().asTreeNode({
+        label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
+        iconPath: getIcon('vscode-debug-start'),
+    })
+
+export const createLearnMore = () =>
+    showLearnMore.build().asTreeNode({
+        label: localize('AWS.explorerNode.codewhispererLearnMore.label', 'Learn More About CodeWhisperer'),
+        iconPath: getIcon('vscode-question'),
+        contextValue: 'awsCodeWhispererLearnMoreNode',
+    })
+
+export const createFreeTierLimitMetNode = () => {
+    const now = new Date()
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US')
+    return showFreeTierLimit.build().asTreeNode({
+        label: localize('AWS.explorerNode.freeTierLimitMet.label', 'Free Tier Limit Met'),
+        iconPath: getIcon('vscode-error'),
+        description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
     })
 }
