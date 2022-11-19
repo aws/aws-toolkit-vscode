@@ -20,7 +20,6 @@ import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
 import { keys, selectFrom } from '../utilities/tsUtils'
 import { Commands } from '../vscode/commands2'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
-import { SystemUtilities } from '../systemUtilities'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
@@ -34,6 +33,8 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { SamConfig } from './config'
 import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
+import { Auth, IamConnection } from '../../credentials/auth'
+import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 
 export interface SyncParams {
     readonly region: string
@@ -43,6 +44,7 @@ export interface SyncParams {
     readonly stackName: string
     readonly bucketName: string
     readonly ecrRepoUri?: string
+    readonly connection: IamConnection
 }
 
 function createBucketPrompter(client: DefaultS3Client) {
@@ -205,6 +207,11 @@ async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
     }
 }
 
+async function injectCredentials(conn: IamConnection, env = process.env) {
+    const creds = await conn.getCredentials()
+    return { ...env, ...asEnvironmentVariables(creds) }
+}
+
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
@@ -239,6 +246,7 @@ export async function runSamSync(args: SyncParams) {
     const sam = new ChildProcess(samCliPath, ['sync', ...params], {
         spawnOptions: {
             cwd: args.projectRoot.fsPath,
+            env: await injectCredentials(args.connection),
         },
     })
 
@@ -276,22 +284,6 @@ export async function runSamSync(args: SyncParams) {
             : new CancellationError('user')
     } else {
         return handleResult(result)
-    }
-}
-
-export async function tryGetConfig(projectUri: vscode.Uri): Promise<SamConfig | undefined> {
-    const configUri = vscode.Uri.joinPath(projectUri, 'samconfig.toml')
-
-    try {
-        if (await SystemUtilities.fileExists(configUri)) {
-            return SamConfig.fromUri(configUri)
-        } else {
-            getLogger().verbose(`sam: no "samconfig.toml" found at ${projectUri.path}`)
-        }
-    } catch (err) {
-        getLogger().warn(
-            `sam: failed to parse "samconfig.toml" in ${projectUri.path}: ${UnknownError.cast(err).message}`
-        )
     }
 }
 
@@ -363,6 +355,11 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
 
 export function registerSync() {
     async function runSync(deployType: SyncParams['deployType'], arg?: unknown) {
+        const connection = Auth.instance.activeConnection
+        if (connection?.type !== 'iam') {
+            throw new ToolkitError('Syncing SAM applications requires IAM credentials', { code: 'NoIAMCredentials' })
+        }
+
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
         const Uri = vscode.Uri as unknown as abstract new () => vscode.Uri
@@ -375,7 +372,7 @@ export function registerSync() {
         }
 
         try {
-            await runSamSync(params)
+            await runSamSync({ ...params, connection })
         } catch (err) {
             throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
         }
