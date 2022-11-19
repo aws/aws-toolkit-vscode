@@ -114,3 +114,7 @@ export const apprunnerCreateServiceDocsUrl: string = isCloud9()
 // URLs for S3
 // TODO: update docs to add the file viewer feature
 export const s3FileViewerHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/s3.html'
+
+// URL for SAM docs
+export const samDocsUrl =
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html'

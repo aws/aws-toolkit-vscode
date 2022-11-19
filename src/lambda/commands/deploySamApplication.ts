@@ -25,6 +25,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { samDocsUrl } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -71,6 +72,7 @@ export async function deploySamApplication(
     let deployResult: Result = 'Succeeded'
     let samVersion: string | undefined
     let deployFolder: string | undefined
+    const noTemplatesMessage = 'No template files found'
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
@@ -78,6 +80,12 @@ export async function deploySamApplication(
         }
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
+
+        const templateUris = globals.templateRegistry.registeredItems
+
+        if (templateUris.length === 0) {
+            throw new Error(noTemplatesMessage)
+        }
 
         const deployWizardResponse = await samDeployWizard()
 
@@ -129,10 +137,32 @@ export async function deploySamApplication(
         }
     } catch (err) {
         deployResult = 'Failed'
+        const moreInfo = localize('AWS.generic.message.learnMore', 'Learn More')
+        const createSamApp = localize('AWS.command.createNewSamApp', 'Create Lambda SAM Application')
         outputDeployError(err as Error)
-        vscode.window.showErrorMessage(
-            localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
-        )
+        if ((err as Error).message === noTemplatesMessage) {
+            vscode.window
+                .showErrorMessage(
+                    localize(
+                        'AWS.samcli.deploy.error.noTemplatesFound',
+                        'SAM applications require a "template.yaml" to deploy, but none were found.'
+                    ),
+                    moreInfo,
+                    createSamApp
+                )
+                .then(async button => {
+                    if (button === moreInfo) {
+                        vscode.env.openExternal(vscode.Uri.parse(samDocsUrl))
+                    }
+                    if (button === createSamApp) {
+                        await vscode.commands.executeCommand('aws.lambda.createNewSamApp')
+                    }
+                })
+        } else {
+            vscode.window.showErrorMessage(
+                localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
+            )
+        }
     } finally {
         await tryRemoveFolder(deployFolder)
         telemetry.sam_deploy.emit({ result: deployResult, version: samVersion })
