@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "New credentials experience. Includes the ability to set up SSO (\"IAM Identity Center\") from AWS Toolkit (`AWS: Connect to AWS` > `Add New Connection`)"
-}
