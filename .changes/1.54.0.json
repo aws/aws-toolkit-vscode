@@ -1,0 +1,22 @@
+{
+	"date": "2022-11-19",
+	"version": "1.54.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "JSON-schemas download logic is brittle #2957"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"Connect\" and \"Choose Profile\" open create credentials wizard/profile selector when credentials aren't present in aws configs"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: create, run and debug nodejs18.x Lambdas"
+		},
+		{
+			"type": "Feature",
+			"description": "New credentials experience. Includes the ability to set up SSO (\"IAM Identity Center\") from AWS Toolkit (`AWS: Connect to AWS` > `Add New Connection`)"
+		}
+	]
+}
