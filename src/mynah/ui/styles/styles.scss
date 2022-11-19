@@ -1,0 +1,50 @@
+@import 'mixins';
+@import 'icons';
+@import 'variables';
+@import 'animations';
+@import 'dark';
+
+// Components
+@import './components/main-container';
+@import './components/search-block';
+@import './components/search-history';
+@import './components/context-pill';
+@import './components/prioritization-menu';
+@import './components/button';
+@import './components/toggle';
+@import './components/card';
+@import './components/feedback-form';
+@import './components/overlay';
+@import './components/notification';
+@import './components/autocomplete';
+@import './components/syntax-highlighter';
+
+body,
+html {
+    background-color: var(--mynah-color-bg);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 600;
+    color: var(--mynah-color-text-strong);
+}
+
+::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+    opacity: 0.5;
+}
+
+*:focus {
+    outline: none;
+}

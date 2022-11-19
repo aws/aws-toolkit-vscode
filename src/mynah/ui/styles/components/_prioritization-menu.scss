@@ -1,0 +1,42 @@
+.mynah-prioritization-menu-buttons-container {
+    display: inline-flex;
+    flex-flow: column nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--mynah-sizing-2);
+    padding: var(--mynah-sizing-4) var(--mynah-sizing-3) var(--mynah-sizing-4) var(--mynah-sizing-3);
+    overflow: hidden;
+    position: relative;
+    > .mynah-prioritise-button {
+        width: auto;
+        transition: var(--mynah-long-transition);
+        padding-left: var(--mynah-sizing-3);
+        padding-right: var(--mynah-sizing-3);
+        font-size: var(--mynah-font-size-small);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        justify-content: flex-start;
+        overflow: hidden;
+        box-shadow: none;
+        > i {
+            font-size: var(--mynah-font-size-medium);
+            margin-left: calc(-1 * var(--mynah-sizing-1));
+        }
+        &.mynah-must-contain {
+            background: var(--mynah-color-context-must-contain);
+            color: var(--mynah-color-context-reverse);
+        }
+        &.mynah-should-contain {
+            background: var(--mynah-color-context-should-contain);
+            color: var(--mynah-color-context-reverse);
+            > span {
+                padding-left: 0;
+            }
+            @include lighten-darken();
+        }
+        &.mynah-must-not-contain {
+            background: var(--mynah-color-context-must-not-contain);
+            color: var(--mynah-color-context-reverse);
+        }
+    }
+}

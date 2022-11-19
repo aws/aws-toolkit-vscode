@@ -1,0 +1,131 @@
+button.mynah-button {
+    border: none;
+    min-width: var(--mynah-sizing-8);
+    height: var(--mynah-sizing-8);
+    border-radius: var(--mynah-button-radius);
+    background-color: var(--mynah-color-button);
+    color: var(--mynah-color-button-reverse);
+    box-shadow: var(--mynah-shadow-generic);
+    cursor: pointer;
+    transition: var(--mynah-very-short-transition);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+    overflow: hidden;
+    position: relative;
+    transform: translate3d(0, 0, 0) scale(1.00001);
+    padding: 0;
+    &.mynah-button-secondary {
+        background-color: transparent;
+        color: inherit;
+        box-shadow: none;
+        opacity: 0.85;
+        &:focus-visible,
+        &:hover {
+            background-color: var(--mynah-color-bg);
+        }
+        &:active {
+            box-shadow: none;
+        }
+    }
+    &:focus-visible,
+    &:hover {
+        filter: brightness(0.925);
+    }
+    &:active {
+        box-shadow: 0 3px 10px -7px var(--mynah-color-button);
+        filter: brightness(0.875);
+    }
+    &.mynah-icon-button {
+        width: var(--mynah-sizing-10);
+        height: var(--mynah-sizing-10);
+    }
+    > .mynah-mutating-next-icon {
+        width: var(--mynah-sizing-6);
+        height: var(--mynah-sizing-6);
+        transform: translate3d(0, 0, 0) rotateZ(0deg);
+        transition: var(--mynah-short-transition-turbo);
+        transform-origin: center center;
+        display: inline-flex;
+        flex-flow: row nowrap;
+        box-sizing: border-box;
+        overflow: hidden;
+        justify-content: center;
+        align-items: center;
+        > i {
+            font-size: var(--mynah-font-size-xlarge);
+            &.mynah-loading-spinner {
+                min-width: var(--mynah-sizing-5);
+                min-height: var(--mynah-sizing-5);
+                border: 3px solid currentColor;
+                opacity: 0.5;
+                box-sizing: border-box;
+                border-top-color: rgba(0, 0, 0, 0);
+                border-radius: var(--mynah-sizing-5);
+                animation: spin 1s infinite linear;
+            }
+            &:nth-child(2) {
+                display: none;
+            }
+        }
+    }
+    > .mynah-search-history-icon {
+        width: var(--mynah-sizing-6);
+        height: var(--mynah-sizing-6);
+        transform: translate3d(0, 0, 0) rotateZ(0deg);
+        transition: var(--mynah-short-transition-turbo);
+        transform-origin: center center;
+        display: inline-flex;
+        flex-flow: row nowrap;
+        box-sizing: border-box;
+        overflow: hidden;
+        justify-content: center;
+        align-items: center;
+        > i {
+            font-size: 2rem;
+            &.mynah-history-icon {
+                min-width: var(--mynah-sizing-5);
+                min-height: var(--mynah-sizing-5);
+                border: 3px solid currentColor;
+                opacity: 0.5;
+                box-sizing: border-box;
+                border-top-color: rgba(0, 0, 0, 0);
+                border-radius: var(--mynah-button-radius);
+                animation: spin 1s infinite linear;
+            }
+            &:nth-child(2) {
+                display: none;
+            }
+        }
+    }
+    &.mynah-button-wait {
+        background-color: var(--mynah-color-light);
+        color: var(--mynah-color-text-default);
+        box-shadow: 0 5px 10px -10px var(--mynah-color-light);
+        pointer-events: none;
+        > .mynah-mutating-next-icon > i {
+            &:first-child {
+                display: none;
+            }
+            &:nth-child(2) {
+                display: block;
+            }
+        }
+    }
+    > span {
+        white-space: nowrap;
+        font-size: var(--mynah-font-size-small);
+        max-width: 35vw;
+        transition: var(--mynah-very-long-transition);
+        overflow: hidden;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-left: var(--mynah-sizing-3);
+        padding-right: var(--mynah-sizing-3);
+    }
+    > i + span {
+        padding-left: var(--mynah-sizing-base);
+    }
+}

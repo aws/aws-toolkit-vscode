@@ -1,0 +1,68 @@
+@keyframes glass-reflection {
+    0% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes move-to-middle {
+    0% {
+        transform: translate3d(-10%, 0, 0);
+        opacity: 0;
+    }
+    100% {
+        transform: translate3d(0, 0, 0);
+        opacity: 1;
+    }
+}
+@keyframes move-to-right {
+    0% {
+        transform: translate3d(0, 0, 0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate3d(10%, 0, 0);
+        opacity: 0;
+    }
+}
+
+@keyframes shake {
+    0% {
+        transform: translate3d(0, 0, 0);
+        border-color: red;
+    }
+    10% {
+        transform: translate3d(5px, 0, 0);
+    }
+    20% {
+        transform: translate3d(-5px, 0, 0);
+    }
+    30% {
+        transform: translate3d(5px, 0, 0);
+    }
+    40% {
+        transform: translate3d(-5px, 0, 0);
+    }
+    50% {
+        transform: translate3d(5px, 0, 0);
+    }
+    60% {
+        transform: translate3d(-5px, 0, 0);
+    }
+    70% {
+        transform: translate3d(5px, 0, 0);
+    }
+    80% {
+        transform: translate3d(-5px, 0, 0);
+    }
+    90% {
+        transform: translate3d(5px, 0, 0);
+        border-color: red;
+    }
+    100% {
+        transform: translate3d(0, 0, 0);
+        border-color: rgba(0, 0, 0, 0);
+    }
+}

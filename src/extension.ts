@@ -50,6 +50,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateMynah } from './mynah/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -212,6 +213,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateIot(extContext)
 
         await activateEcs(extContext)
+
+        await activateMynah(extContext.extensionContext)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
