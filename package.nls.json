@@ -73,7 +73,7 @@
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",
-    "AWS.command.auth.addConnection": "Add new Connection",
+    "AWS.command.auth.addConnection": "Add New Connection",
     "AWS.command.auth.switchConnections": "Switch Connections",
     "AWS.command.auth.signout": "Sign out",
     "AWS.command.github": "View Source on GitHub",

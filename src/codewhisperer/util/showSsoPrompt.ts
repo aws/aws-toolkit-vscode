@@ -24,7 +24,7 @@ export const showConnectionPrompt = async () => {
     const resp = await showQuickPick(
         [createCodeWhispererBuilderIdItem(), createCodeWhispererSsoItem(), createCodeWhispererIamItem()],
         {
-            title: 'CodeWhisperer: Add connection to AWS',
+            title: 'CodeWhisperer: Add Connection to AWS',
             placeholder: 'Select a connection option to start using CodeWhisperer',
             buttons: createCommonButtons() as vscode.QuickInputButton[],
         }
@@ -62,7 +62,7 @@ export const createCodeWhispererBuilderIdItem = () =>
             'Use a personal email to sign up and sign in with AWS Builder ID'
         )}`,
         data: 'builderId',
-        detail: 'Create or sign in with AWS Builder ID - a new, personal login for builders.',
+        detail: 'Create or sign in with AWS Builder ID - a new, personal profile for builders.',
     } as DataQuickPickItem<'builderId'>)
 
 export const createCodeWhispererSsoItem = () =>
@@ -78,9 +78,9 @@ export const createCodeWhispererSsoItem = () =>
 
 export const createCodeWhispererIamItem = () =>
     ({
-        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
-        detail: 'Not supported by CodeWhisperer. Activates working with resources in the Explorer. Requires an access key ID and secret access key.',
+        detail: 'Not supported by CodeWhisperer.',
         description: 'not supported',
         invalidSelection: true,
     } as DataQuickPickItem<'iam'>)

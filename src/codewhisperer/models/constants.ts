@@ -210,15 +210,19 @@ export const reloadWindow = 'Reload Now'
 export const reloadWindowPrompt =
     'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
 
-export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin. Changing it here has no effect.`
+export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
 
-export const settingsLearnMore = 'Learn More About CodeWhisperer Settings'
+export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
 export const accessTokenCutOffDate = new Date(2023, 0, 31)
 
 export const accessTokenMigrationWarningMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection by January 31, 2023.`
 
 export const accessTokenMigrationErrorMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection.`
+
+export const accessTokenMigrationWarningButtonMessage = `Connect with AWS to Continue`
+
+export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
@@ -235,4 +239,4 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `AWS Toolkit: Connection expired. Please reauthenticate to continue`
+export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`

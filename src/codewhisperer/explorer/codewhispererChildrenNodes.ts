@@ -65,7 +65,7 @@ export const createSsoSignIn = () =>
 
 export const createLearnMore = () =>
     showLearnMore.build().asTreeNode({
-        label: localize('AWS.explorerNode.codewhispererLearnMore.label', 'Learn More About CodeWhisperer'),
+        label: localize('AWS.explorerNode.codewhispererLearnMore.label', 'Learn More about CodeWhisperer'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsCodeWhispererLearnMoreNode',
     })

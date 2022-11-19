@@ -791,7 +791,7 @@ export const createBuilderIdItem = () =>
         )}`,
         data: 'builderId',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionBuilderID' }),
-        detail: 'AWS Builder ID is a new, personal login for builders.', // TODO: need a "Learn more" button ?
+        detail: 'AWS Builder ID is a new, personal profile for builders.', // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
 export const createSsoItem = () =>
@@ -808,7 +808,7 @@ export const createSsoItem = () =>
 
 export const createIamItem = () =>
     ({
-        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)

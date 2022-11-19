@@ -235,7 +235,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         CodeWhispererConstants.connectWithAWSBuilderId
                     )
                     .then(async resp => {
-                        if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
+                        if (resp === CodeWhispererConstants.accessTokenMigrationWarningButtonMessage) {
                             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                             await showSsoSignIn.execute()
                         }
@@ -249,7 +249,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         CodeWhispererConstants.connectWithAWSBuilderId
                     )
                     .then(async resp => {
-                        if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
+                        if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
                             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                             await showSsoSignIn.execute()
                         }
