@@ -68,7 +68,7 @@ function StartDevEnvironmentSession {
 }
 "@
 
-    $webRequest = Invoke-WebRequest -Method 'POST' -Uri "$Endpoint$startSessionPath" -Headers @{"Content-Type" = "application/json"; "Authorization" = "Bearer $Token" } -Body "$startSessionQuery"
+    $webRequest = Invoke-WebRequest -Method 'PUT' -Uri "$Endpoint$startSessionPath" -Headers @{"Content-Type" = "application/json"; "Authorization" = "Bearer $Token" } -Body "$startSessionQuery"
     ConvertFrom-Json -InputObject $webRequest
 }
 

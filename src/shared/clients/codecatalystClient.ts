@@ -82,7 +82,7 @@ export interface CodeCatalystRepo extends codecatalyst.ListSourceRepositoriesIte
     readonly project: Pick<CodeCatalystProject, 'name'>
 }
 
-export interface CodeCatalystBranch extends codecatalyst.SourceBranchSummary {
+export interface CodeCatalystBranch extends codecatalyst.ListSourceRepositoryBranchesItem {
     readonly type: 'branch'
     readonly name: string
     readonly repo: Pick<CodeCatalystRepo, 'name'>
@@ -106,13 +106,17 @@ function toDevEnv(spaceName: string, projectName: string, summary: codecatalyst.
     }
 }
 
-function intoBranch(org: string, project: string, branch: codecatalyst.SourceBranchSummary): CodeCatalystBranch {
-    assertHasProps(branch, 'branchName', 'sourceRepositoryName')
+function intoBranch(
+    org: string,
+    project: string,
+    repo: string,
+    branch: codecatalyst.ListSourceRepositoryBranchesItem
+): CodeCatalystBranch {
+    assertHasProps(branch, 'name')
 
     return {
         type: 'branch',
-        name: branch.branchName,
-        repo: { name: branch.sourceRepositoryName },
+        repo: { name: repo },
         org: { name: org },
         project: { name: project },
         ...branch,
@@ -411,8 +415,8 @@ class CodeCatalystClientInternal {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
         const requester = async (request: codecatalyst.ListDevEnvironmentsRequest) =>
             this.call(this.sdkClient.listDevEnvironments(request), true, {
-                spaceName: proj.org.name,
-                projectName: proj.name,
+                // spaceName: proj.org.name,
+                // projectName: proj.name,
                 items: [],
             })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
@@ -444,12 +448,14 @@ class CodeCatalystClientInternal {
         request: codecatalyst.ListSourceRepositoryBranchesRequest
     ): AsyncCollection<CodeCatalystBranch[]> {
         const requester = async (request: codecatalyst.ListSourceRepositoryBranchesRequest) =>
-            this.call(this.sdkClient.listSourceBranches(request), true, { items: [] })
+            this.call(this.sdkClient.listSourceRepositoryBranches(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection
             .filter(isNonNullable)
-            .map(items => items.map(b => intoBranch(request.spaceName, request.projectName, b)))
+            .map(items =>
+                items.map(b => intoBranch(request.spaceName, request.projectName, request.sourceRepositoryName, b))
+            )
     }
 
     /**
@@ -525,7 +531,7 @@ class CodeCatalystClientInternal {
     public async createProject(args: codecatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
         await this.call(this.sdkClient.createProject(args), false)
 
-        return { ...args, type: 'project', org: { name: args.spaceName } }
+        return { ...args, name: args.displayName, type: 'project', org: { name: args.spaceName } }
     }
 
     public async startDevEnvironmentSession(

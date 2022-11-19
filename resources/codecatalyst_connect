@@ -58,7 +58,7 @@ _start_dev_environment_session() {
 EOF
     )
 
-    curl -s -X POST \
+    curl -s -X PUT \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $BEARER_TOKEN" \
         -d "$START_SESSION_QUERY" \
