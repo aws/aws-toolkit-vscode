@@ -75,6 +75,7 @@ export async function activate(args: {
             }
         })
     )
+
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
     const codecatalystNode = new CodeCatalystRootNode(authProvider)
     const nodes = [new AuthNode(Auth.instance), codecatalystNode, cdkNode, codewhispererNode]
