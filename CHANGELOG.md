@@ -1,3 +1,10 @@
+## 1.54.0 2022-11-19
+
+- **Bug Fix** JSON-schemas download logic is brittle #2957
+- **Bug Fix** "Connect" and "Choose Profile" open create credentials wizard/profile selector when credentials aren't present in aws configs
+- **Feature** SAM: create, run and debug nodejs18.x Lambdas
+- **Feature** New credentials experience. Includes the ability to set up SSO ("IAM Identity Center") from AWS Toolkit (`AWS: Connect to AWS` > `Add New Connection`)
+
 ## 1.53.0 2022-10-24
 
 - **Bug Fix** Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials
