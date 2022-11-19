@@ -53,6 +53,16 @@ describe('SyncWizard', function () {
 })
 
 describe('prepareSyncParams', function () {
+    let tempDir: vscode.Uri
+
+    beforeEach(async function () {
+        tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
+    })
+
+    afterEach(async function () {
+        await SystemUtilities.remove(tempDir)
+    })
+
     it('uses region if given a tree node', async function () {
         const params = await prepareSyncParams(
             new (class extends AWSTreeNodeBase {
@@ -72,7 +82,6 @@ describe('prepareSyncParams', function () {
     }
 
     it('loads template if given a URI', async function () {
-        const tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
         const template = await makeTemplateItem(tempDir)
 
         const params = await prepareSyncParams(template.uri)
@@ -92,9 +101,8 @@ describe('prepareSyncParams', function () {
             return uri
         }
 
-        async function getParams(body: string, dir?: vscode.Uri) {
-            const tempDir = dir ?? vscode.Uri.file(await makeTemporaryToolkitFolder())
-            const config = await makeDefaultConfig(tempDir, body)
+        async function getParams(body: string, dir = tempDir) {
+            const config = await makeDefaultConfig(dir, body)
 
             return prepareSyncParams(config)
         }
@@ -115,9 +123,26 @@ describe('prepareSyncParams', function () {
         })
 
         it('can load a relative template param', async function () {
-            const tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
             const template = await makeTemplateItem(tempDir)
-            const params = await getParams(`template = "./template.yaml"`, tempDir)
+            const params = await getParams(`template = "./template.yaml"`)
+            assert.deepStrictEqual(params.template?.data, template.data)
+        })
+
+        it('can load an absolute template param', async function () {
+            const template = await makeTemplateItem(tempDir)
+            const params = await getParams(`template = "${template.uri.fsPath}"`)
+            assert.deepStrictEqual(params.template?.data, template.data)
+        })
+
+        it('can load a relative template param without a path seperator', async function () {
+            const template = await makeTemplateItem(tempDir)
+            const params = await getParams(`template = "template.yaml"`)
+            assert.deepStrictEqual(params.template?.data, template.data)
+        })
+
+        it('can load a template param using an alternate key', async function () {
+            const template = await makeTemplateItem(tempDir)
+            const params = await getParams(`template_file = "template.yaml"`)
             assert.deepStrictEqual(params.template?.data, template.data)
         })
 

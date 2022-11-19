@@ -118,6 +118,21 @@ function createEcrPrompter(client: DefaultEcrClient) {
     })
 }
 
+// unused
+export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
+    const recentEnvironmentName = getRecentResponse(config.location.fsPath, 'environmentName')
+    const items = environments.map(env => ({
+        label: env.name,
+        data: env,
+        recentlyUsed: env.name === recentEnvironmentName,
+    }))
+
+    return createQuickPick(items, {
+        title: 'Select an Environment to Use',
+        buttons: createCommonButtons(),
+    })
+}
+
 interface TemplateItem {
     readonly uri: vscode.Uri
     readonly data: CloudFormation.Template
@@ -298,22 +313,32 @@ const getStringParam = (config: SamConfig, key: string) => {
     }
 }
 
-const configKeyMapping = {
+const configKeyMapping: Record<string, string | string[]> = {
     region: 'region',
     stackName: 'stack_name',
     bucketName: 's3_bucket',
     ecrRepoUri: 'image_repository',
-    templatePath: 'template',
+    templatePath: ['template', 'template_file'],
 }
 
 function getSyncParamsFromConfig(config: SamConfig) {
     const samConfigParams: string[] = []
     const params = toRecord(keys(configKeyMapping), k => {
-        const key = configKeyMapping[k]!
-        const param = getStringParam(config, key)
-        pushIf(samConfigParams, param !== undefined, key)
+        const key = configKeyMapping[k]
+        if (typeof key === 'string') {
+            const param = getStringParam(config, key)
+            pushIf(samConfigParams, param !== undefined, key)
 
-        return param
+            return param
+        } else {
+            for (const alt of key) {
+                const param = getStringParam(config, alt)
+                if (param !== undefined) {
+                    samConfigParams.push(alt)
+                    return param
+                }
+            }
+        }
     })
 
     telemetry.record({ samConfigParams: samConfigParams.join(',') } as any)
@@ -355,12 +380,12 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
 
 export function registerSync() {
     async function runSync(deployType: SyncParams['deployType'], arg?: unknown) {
+        telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
+
         const connection = Auth.instance.activeConnection
         if (connection?.type !== 'iam') {
             throw new ToolkitError('Syncing SAM applications requires IAM credentials', { code: 'NoIAMCredentials' })
         }
-
-        telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
 
         const Uri = vscode.Uri as unknown as abstract new () => vscode.Uri
         const input = cast(arg, Optional(Union(Instance(Uri), Instance(AWSTreeNodeBase))))

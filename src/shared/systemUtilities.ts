@@ -62,6 +62,16 @@ export class SystemUtilities {
         return vscode.workspace.fs.writeFile(uri, content)
     }
 
+    public static async remove(dir: string | vscode.Uri): Promise<void> {
+        const uri = typeof dir === 'string' ? vscode.Uri.file(dir) : dir
+
+        if (isCloud9()) {
+            return fs.remove(uri.fsPath)
+        }
+
+        return vscode.workspace.fs.delete(uri, { recursive: true })
+    }
+
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 

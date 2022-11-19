@@ -9,7 +9,7 @@ import { SystemUtilities } from '../systemUtilities'
 import { cast, Optional } from '../utilities/typeConstructors'
 
 export interface Config {
-    readonly environments: Record<string, Omit<Environment, 'name'> | undefined>
+    readonly environments: Record<string, Omit<Environment, 'name'>>
 }
 
 interface Environment {
@@ -62,6 +62,12 @@ export class SamConfig {
         const globalSection = env?.commands['global']
 
         return primarySection?.parameters?.[key] ?? globalSection?.parameters?.[key]
+    }
+
+    public listEnvironments(): Environment[] {
+        const envs = this.config.environments
+
+        return Object.entries(envs).map(([name, data]) => ({ name, ...data }))
     }
 
     public static async fromUri(uri: vscode.Uri) {
