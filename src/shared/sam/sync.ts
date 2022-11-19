@@ -169,7 +169,7 @@ export class SyncWizard extends Wizard<SyncParams> {
         })
 
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? vscode.workspace.getWorkspaceFolder(template.uri)?.uri : undefined
+            template ? getWorkspaceUri(template) : undefined
 
         this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
     }
@@ -279,7 +279,7 @@ export async function runSamSync(args: SyncParams) {
     }
 }
 
-async function tryGetConfig(projectUri: vscode.Uri): Promise<SamConfig | undefined> {
+export async function tryGetConfig(projectUri: vscode.Uri): Promise<SamConfig | undefined> {
     const configUri = vscode.Uri.joinPath(projectUri, 'samconfig.toml')
 
     try {
@@ -311,6 +311,7 @@ const configKeyMapping = {
     stackName: 'stack_name',
     bucketName: 's3_bucket',
     ecrRepoUri: 'image_repository',
+    templatePath: 'template',
 }
 
 function getSyncParamsFromConfig(config: SamConfig) {
@@ -329,32 +330,35 @@ function getSyncParamsFromConfig(config: SamConfig) {
 }
 
 export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined): Promise<Partial<SyncParams>> {
-    const region = arg instanceof AWSTreeNodeBase ? arg.regionCode : undefined
-    const template =
-        arg instanceof vscode.Uri
-            ? {
-                  uri: arg,
-                  data: await CloudFormation.load(arg.fsPath),
-              }
-            : undefined
-
-    if (template !== undefined) {
-        const workspaceUri = getWorkspaceUri(template)
-        const config =
-            (await tryGetConfig(vscode.Uri.joinPath(template.uri, '..'))) ??
-            (workspaceUri !== undefined ? await tryGetConfig(workspaceUri) : undefined)
-
-        if (config !== undefined) {
+    if (arg instanceof AWSTreeNodeBase) {
+        return { region: arg.regionCode }
+    } else if (arg instanceof vscode.Uri) {
+        if (arg.path.endsWith('samconfig.toml')) {
+            const config = await SamConfig.fromUri(arg)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
+            const templateUri = params.templatePath
+                ? vscode.Uri.file(path.resolve(projectRoot.fsPath, params.templatePath))
+                : undefined
+            const template = templateUri
+                ? {
+                      uri: templateUri,
+                      data: await CloudFormation.load(templateUri.fsPath),
+                  }
+                : undefined
 
             return { ...params, template, projectRoot }
-        } else {
-            return { region, template }
         }
+
+        const template = {
+            uri: arg,
+            data: await CloudFormation.load(arg.fsPath),
+        }
+
+        return { template }
     }
 
-    return { region }
+    return {}
 }
 
 export function registerSync() {

@@ -1261,12 +1261,12 @@
                 },
                 {
                     "command": "aws.samcli.sync",
-                    "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
                     "group": "z_aws@1"
                 },
                 {
                     "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
                     "group": "z_aws@2"
                 },
                 {

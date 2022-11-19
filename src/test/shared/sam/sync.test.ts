@@ -94,10 +94,9 @@ describe('prepareSyncParams', function () {
 
         async function getParams(body: string, dir?: vscode.Uri) {
             const tempDir = dir ?? vscode.Uri.file(await makeTemporaryToolkitFolder())
-            const template = await makeTemplateItem(tempDir)
-            await makeDefaultConfig(tempDir, body)
+            const config = await makeDefaultConfig(tempDir, body)
 
-            return prepareSyncParams(template.uri)
+            return prepareSyncParams(config)
         }
 
         it('throws on non-string values', async function () {
@@ -113,6 +112,13 @@ describe('prepareSyncParams', function () {
             const tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
             const params = await getParams(`region = "bar"`, tempDir)
             assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
+        })
+
+        it('can load a relative template param', async function () {
+            const tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
+            const template = await makeTemplateItem(tempDir)
+            const params = await getParams(`template = "./template.yaml"`, tempDir)
+            assert.deepStrictEqual(params.template?.data, template.data)
         })
 
         it('can use global params', async function () {
