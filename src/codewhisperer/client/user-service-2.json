@@ -1,53 +1,19 @@
 {
     "version": "2.0",
     "metadata": {
-        "apiVersion": "2022-09-28",
-        "endpointPrefix": "awscodewhispereruserservice",
+        "apiVersion": "2022-11-11",
+        "endpointPrefix": "amazoncodewhispererservice",
         "jsonVersion": "1.0",
         "protocol": "json",
-        "serviceFullName": "AWS CodeWhisperer User Client",
-        "serviceId": "CodeWhispererUser",
-        "signingName": "awscodewhispereruserservice",
-        "targetPrefix": "AWSCodeWhispererUserService",
-        "uid": "codewhispereruser-2022-09-28"
+        "serviceFullName": "Amazon CodeWhisperer",
+        "serviceId": "CodeWhispererRuntime",
+        "signingName": "amazoncodewhispererservice",
+        "targetPrefix": "AmazonCodeWhispererService",
+        "uid": "codewhispererruntime-2022-11-11"
     },
     "operations": {
-        "CreateCodeScanUser": {
-            "name": "CreateCodeScanUser",
-            "http": {
-                "method": "POST",
-                "requestUri": "/"
-            },
-            "input": {
-                "shape": "CreateCodeScanRequest"
-            },
-            "output": {
-                "shape": "CreateCodeScanResponse"
-            },
-            "errors": [
-                {
-                    "shape": "ThrottlingException"
-                },
-                {
-                    "shape": "ConflictException"
-                },
-                {
-                    "shape": "ResourceNotFoundException"
-                },
-                {
-                    "shape": "InternalServerException"
-                },
-                {
-                    "shape": "ValidationException"
-                },
-                {
-                    "shape": "AccessDeniedException"
-                }
-            ],
-            "idempotent": true
-        },
-        "CreateUploadUrlUser": {
-            "name": "CreateUploadUrlUser",
+        "CreateArtifactUploadUrl": {
+            "name": "CreateArtifactUploadUrl",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
@@ -74,17 +40,44 @@
             ],
             "idempotent": true
         },
-        "GetCodeScanUser": {
-            "name": "GetCodeScanUser",
+        "GenerateCompletions": {
+            "name": "GenerateCompletions",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
             "input": {
-                "shape": "GetCodeScanRequest"
+                "shape": "GenerateCompletionsRequest"
             },
             "output": {
-                "shape": "GetCodeScanResponse"
+                "shape": "GenerateCompletionsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
+        "GetCodeAnalysis": {
+            "name": "GetCodeAnalysis",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetCodeAnalysisRequest"
+            },
+            "output": {
+                "shape": "GetCodeAnalysisResponse"
             },
             "errors": [
                 {
@@ -104,17 +97,17 @@
                 }
             ]
         },
-        "ListCodeScanFindingsUser": {
-            "name": "ListCodeScanFindingsUser",
+        "ListCodeAnalysisFindings": {
+            "name": "ListCodeAnalysisFindings",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
             "input": {
-                "shape": "ListCodeScanFindingsRequest"
+                "shape": "ListCodeAnalysisFindingsRequest"
             },
             "output": {
-                "shape": "ListCodeScanFindingsResponse"
+                "shape": "ListCodeAnalysisFindingsResponse"
             },
             "errors": [
                 {
@@ -134,21 +127,27 @@
                 }
             ]
         },
-        "ListRecommendationsUser": {
-            "name": "ListRecommendationsUser",
+        "StartCodeAnalysis": {
+            "name": "StartCodeAnalysis",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
             "input": {
-                "shape": "ListRecommendationsRequest"
+                "shape": "StartCodeAnalysisRequest"
             },
             "output": {
-                "shape": "ListRecommendationsResponse"
+                "shape": "StartCodeAnalysisResponse"
             },
             "errors": [
                 {
                     "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ConflictException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
                 },
                 {
                     "shape": "InternalServerException"
@@ -159,7 +158,8 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ]
+            ],
+            "idempotent": true
         }
     },
     "shapes": {
@@ -188,13 +188,39 @@
             "type": "string",
             "enum": ["SourceCode", "BuiltJars"]
         },
-        "CodeScanFindingsSchema": {
+        "CodeAnalysisFindingsSchema": {
             "type": "string",
-            "enum": ["codescan/findings/1.0"]
+            "enum": ["codeanalysis/findings/1.0"]
         },
-        "CodeScanStatus": {
+        "CodeAnalysisStatus": {
             "type": "string",
             "enum": ["Completed", "Pending", "Failed"]
+        },
+        "Completion": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "content": {
+                    "shape": "CompletionContentString"
+                },
+                "references": {
+                    "shape": "References"
+                }
+            }
+        },
+        "CompletionContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1,
+            "sensitive": true
+        },
+        "Completions": {
+            "type": "list",
+            "member": {
+                "shape": "Completion"
+            },
+            "max": 10,
+            "min": 0
         },
         "ConflictException": {
             "type": "structure",
@@ -205,47 +231,6 @@
                 }
             },
             "exception": true
-        },
-        "CreateCodeScanRequest": {
-            "type": "structure",
-            "required": ["artifacts", "programmingLanguage"],
-            "members": {
-                "artifacts": {
-                    "shape": "ArtifactMap"
-                },
-                "programmingLanguage": {
-                    "shape": "ProgrammingLanguage"
-                },
-                "clientToken": {
-                    "shape": "CreateCodeScanRequestClientTokenString",
-                    "idempotencyToken": true
-                }
-            }
-        },
-        "CreateCodeScanRequestClientTokenString": {
-            "type": "string",
-            "max": 256,
-            "min": 1
-        },
-        "CreateCodeScanResponse": {
-            "type": "structure",
-            "required": ["jobId", "status"],
-            "members": {
-                "jobId": {
-                    "shape": "CreateCodeScanResponseJobIdString"
-                },
-                "status": {
-                    "shape": "CodeScanStatus"
-                },
-                "errorMessage": {
-                    "shape": "String"
-                }
-            }
-        },
-        "CreateCodeScanResponseJobIdString": {
-            "type": "string",
-            "max": 256,
-            "min": 1
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
@@ -311,26 +296,67 @@
             "min": 0,
             "sensitive": true
         },
-        "GetCodeScanRequest": {
+        "GenerateCompletionsRequest": {
+            "type": "structure",
+            "required": ["fileContext"],
+            "members": {
+                "fileContext": {
+                    "shape": "FileContext"
+                },
+                "maxResults": {
+                    "shape": "GenerateCompletionsRequestMaxResultsInteger"
+                },
+                "nextToken": {
+                    "shape": "GenerateCompletionsRequestNextTokenString"
+                },
+                "referenceTrackerConfiguration": {
+                    "shape": "ReferenceTrackerConfiguration"
+                }
+            }
+        },
+        "GenerateCompletionsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 10,
+            "min": 1
+        },
+        "GenerateCompletionsRequestNextTokenString": {
+            "type": "string",
+            "max": 2048,
+            "min": 0,
+            "pattern": "(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
+        },
+        "GenerateCompletionsResponse": {
+            "type": "structure",
+            "members": {
+                "completions": {
+                    "shape": "Completions"
+                },
+                "nextToken": {
+                    "shape": "String"
+                }
+            }
+        },
+        "GetCodeAnalysisRequest": {
             "type": "structure",
             "required": ["jobId"],
             "members": {
                 "jobId": {
-                    "shape": "GetCodeScanRequestJobIdString"
+                    "shape": "GetCodeAnalysisRequestJobIdString"
                 }
             }
         },
-        "GetCodeScanRequestJobIdString": {
+        "GetCodeAnalysisRequestJobIdString": {
             "type": "string",
             "max": 256,
             "min": 1
         },
-        "GetCodeScanResponse": {
+        "GetCodeAnalysisResponse": {
             "type": "structure",
             "required": ["status"],
             "members": {
                 "status": {
-                    "shape": "CodeScanStatus"
+                    "shape": "CodeAnalysisStatus"
                 },
                 "errorMessage": {
                     "shape": "String"
@@ -351,75 +377,34 @@
                 "throttling": false
             }
         },
-        "ListCodeScanFindingsRequest": {
+        "ListCodeAnalysisFindingsRequest": {
             "type": "structure",
-            "required": ["jobId", "codeScanFindingsSchema"],
+            "required": ["jobId", "codeAnalysisFindingsSchema"],
             "members": {
                 "jobId": {
-                    "shape": "ListCodeScanFindingsRequestJobIdString"
+                    "shape": "ListCodeAnalysisFindingsRequestJobIdString"
                 },
                 "nextToken": {
                     "shape": "PaginationToken"
                 },
-                "codeScanFindingsSchema": {
-                    "shape": "CodeScanFindingsSchema"
+                "codeAnalysisFindingsSchema": {
+                    "shape": "CodeAnalysisFindingsSchema"
                 }
             }
         },
-        "ListCodeScanFindingsRequestJobIdString": {
+        "ListCodeAnalysisFindingsRequestJobIdString": {
             "type": "string",
             "max": 256,
             "min": 1
         },
-        "ListCodeScanFindingsResponse": {
+        "ListCodeAnalysisFindingsResponse": {
             "type": "structure",
-            "required": ["codeScanFindings"],
+            "required": ["codeAnalysisFindings"],
             "members": {
                 "nextToken": {
                     "shape": "PaginationToken"
                 },
-                "codeScanFindings": {
-                    "shape": "String"
-                }
-            }
-        },
-        "ListRecommendationsRequest": {
-            "type": "structure",
-            "required": ["fileContext"],
-            "members": {
-                "fileContext": {
-                    "shape": "FileContext"
-                },
-                "maxResults": {
-                    "shape": "ListRecommendationsRequestMaxResultsInteger",
-                    "box": true
-                },
-                "nextToken": {
-                    "shape": "ListRecommendationsRequestNextTokenString"
-                },
-                "referenceTrackerConfiguration": {
-                    "shape": "ReferenceTrackerConfiguration"
-                }
-            }
-        },
-        "ListRecommendationsRequestMaxResultsInteger": {
-            "type": "integer",
-            "max": 10,
-            "min": 1
-        },
-        "ListRecommendationsRequestNextTokenString": {
-            "type": "string",
-            "max": 2048,
-            "min": 0,
-            "pattern": "(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
-        },
-        "ListRecommendationsResponse": {
-            "type": "structure",
-            "members": {
-                "recommendations": {
-                    "shape": "RecommendationsList"
-                },
-                "nextToken": {
+                "codeAnalysisFindings": {
                     "shape": "String"
                 }
             }
@@ -449,32 +434,6 @@
             "max": 128,
             "min": 1,
             "pattern": "(python|javascript|java|csharp|typescript)"
-        },
-        "Recommendation": {
-            "type": "structure",
-            "required": ["content"],
-            "members": {
-                "content": {
-                    "shape": "RecommendationContentString"
-                },
-                "references": {
-                    "shape": "References"
-                }
-            }
-        },
-        "RecommendationContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 1,
-            "sensitive": true
-        },
-        "RecommendationsList": {
-            "type": "list",
-            "member": {
-                "shape": "Recommendation"
-            },
-            "max": 10,
-            "min": 0
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
@@ -543,22 +502,63 @@
             "type": "structure",
             "members": {
                 "start": {
-                    "shape": "SpanStartInteger",
-                    "box": true
+                    "shape": "SpanStartInteger"
                 },
                 "end": {
-                    "shape": "SpanEndInteger",
-                    "box": true
+                    "shape": "SpanEndInteger"
                 }
             }
         },
         "SpanEndInteger": {
             "type": "integer",
+            "box": true,
             "min": 0
         },
         "SpanStartInteger": {
             "type": "integer",
+            "box": true,
             "min": 0
+        },
+        "StartCodeAnalysisRequest": {
+            "type": "structure",
+            "required": ["artifacts", "programmingLanguage"],
+            "members": {
+                "artifacts": {
+                    "shape": "ArtifactMap"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
+                },
+                "clientToken": {
+                    "shape": "StartCodeAnalysisRequestClientTokenString",
+                    "idempotencyToken": true
+                }
+            }
+        },
+        "StartCodeAnalysisRequestClientTokenString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "StartCodeAnalysisResponse": {
+            "type": "structure",
+            "required": ["jobId", "status"],
+            "members": {
+                "jobId": {
+                    "shape": "StartCodeAnalysisResponseJobIdString"
+                },
+                "status": {
+                    "shape": "CodeAnalysisStatus"
+                },
+                "errorMessage": {
+                    "shape": "String"
+                }
+            }
+        },
+        "StartCodeAnalysisResponseJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
         },
         "String": {
             "type": "string"

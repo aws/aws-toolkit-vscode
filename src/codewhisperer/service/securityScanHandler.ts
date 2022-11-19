@@ -7,12 +7,12 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
 import { AggregatedCodeScanIssue } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { TruncPaths } from '../util/dependencyGraph/dependencyGraph'
 import { existsSync, statSync, readFileSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
 import got from 'got'
-import * as codewhispererClient from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
@@ -31,7 +31,10 @@ export async function listScanResults(
         .flatten()
         .map(resp => {
             getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-            return resp.codeScanFindings
+            if ('codeScanFindings' in resp) {
+                return resp.codeScanFindings
+            }
+            return resp.codeAnalysisFindings
         })
         .promise()
     issues.forEach(issue => {

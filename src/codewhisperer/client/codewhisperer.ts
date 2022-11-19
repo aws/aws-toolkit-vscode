@@ -31,42 +31,41 @@ export type ProgrammingLanguage = Readonly<
 >
 export type FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
 export type ListRecommendationsRequest = Readonly<
-    CodeWhispererClient.ListRecommendationsRequest | CodeWhispererUserClient.ListRecommendationsRequest
+    CodeWhispererClient.ListRecommendationsRequest | CodeWhispererUserClient.GenerateCompletionsRequest
 >
 export type GenerateRecommendationsRequest = Readonly<CodeWhispererClient.GenerateRecommendationsRequest>
-export type RecommendationsList = CodeWhispererClient.RecommendationsList | CodeWhispererUserClient.RecommendationsList
+export type RecommendationsList = CodeWhispererClient.RecommendationsList | CodeWhispererUserClient.Completions
 export type ListRecommendationsResponse =
     | CodeWhispererClient.ListRecommendationsResponse
-    | CodeWhispererUserClient.ListRecommendationsResponse
-export type GenerateRecommendationsResponse =
-    | CodeWhispererClient.GenerateRecommendationsResponse
-    | CodeWhispererUserClient.CreateUploadUrlRequest
-export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Recommendation
+    | CodeWhispererUserClient.GenerateCompletionsResponse
+export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
+export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
 export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
 export type CreateUploadUrlRequest = Readonly<
     CodeWhispererClient.CreateUploadUrlRequest | CodeWhispererUserClient.CreateUploadUrlRequest
 >
 export type CreateCodeScanRequest = Readonly<
-    CodeWhispererClient.CreateCodeScanRequest | CodeWhispererUserClient.CreateCodeScanRequest
+    CodeWhispererClient.CreateCodeScanRequest | CodeWhispererUserClient.StartCodeAnalysisRequest
 >
 export type GetCodeScanRequest = Readonly<
-    CodeWhispererClient.GetCodeScanRequest | CodeWhispererUserClient.GetCodeScanRequest
+    CodeWhispererClient.GetCodeScanRequest | CodeWhispererUserClient.GetCodeAnalysisRequest
 >
 export type ListCodeScanFindingsRequest = Readonly<
-    CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeScanFindingsRequest
+    CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
 >
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
 export type ListCodeScanFindingsResponse =
     | CodeWhispererClient.ListCodeScanFindingsResponse
-    | CodeWhispererUserClient.ListCodeScanFindingsResponse
+    | CodeWhispererUserClient.ListCodeAnalysisFindingsResponse
 export type CreateUploadUrlResponse =
     | CodeWhispererClient.CreateUploadUrlResponse
     | CodeWhispererUserClient.CreateUploadUrlResponse
 export type CreateCodeScanResponse =
     | CodeWhispererClient.CreateCodeScanResponse
-    | CodeWhispererUserClient.CreateCodeScanResponse
+    | CodeWhispererUserClient.StartCodeAnalysisResponse
+
 export class DefaultCodeWhispererClient {
     private credentials?: CognitoIdentityCredentials
 
@@ -179,7 +178,7 @@ export class DefaultCodeWhispererClient {
 
     public async listRecommendations(request: ListRecommendationsRequest): Promise<ListRecommendationsResponse> {
         if (this.isBearerTokenAuth()) {
-            return await (await this.createUserSdkClient()).listRecommendationsUser(request).promise()
+            return await (await this.createUserSdkClient()).generateCompletions(request).promise()
         }
         return (await this.createSdkClient()).listRecommendations(request).promise()
     }
@@ -194,7 +193,7 @@ export class DefaultCodeWhispererClient {
         request: CreateUploadUrlRequest
     ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createUploadUrlUser(request).promise()
+            return (await this.createUserSdkClient()).createArtifactUploadUrl(request).promise()
         }
         return (await this.createSdkClient()).createUploadUrl(request).promise()
     }
@@ -203,7 +202,7 @@ export class DefaultCodeWhispererClient {
         request: CreateCodeScanRequest
     ): Promise<PromiseResult<CreateCodeScanResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createCodeScanUser(request).promise()
+            return (await this.createUserSdkClient()).startCodeAnalysis(request).promise()
         }
         return (await this.createSdkClient()).createCodeScan(request).promise()
     }
@@ -212,7 +211,7 @@ export class DefaultCodeWhispererClient {
         request: GetCodeScanRequest
     ): Promise<PromiseResult<CodeWhispererClient.GetCodeScanResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).getCodeScanUser(request).promise()
+            return (await this.createUserSdkClient()).getCodeAnalysis(request).promise()
         }
         return (await this.createSdkClient()).getCodeScan(request).promise()
     }
@@ -221,9 +220,16 @@ export class DefaultCodeWhispererClient {
         request: ListCodeScanFindingsRequest
     ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).listCodeScanFindingsUser(request).promise()
+            const req = {
+                jobId: request.jobId,
+                nextToken: request.nextToken,
+                codeAnalysisFindingsSchema: 'codeanalysis/findings/1.0',
+            } as CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
+            return (await this.createUserSdkClient()).listCodeAnalysisFindings(req).promise()
         }
-        return (await this.createSdkClient()).listCodeScanFindings(request).promise()
+        return (await this.createSdkClient())
+            .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
+            .promise()
     }
 }
 

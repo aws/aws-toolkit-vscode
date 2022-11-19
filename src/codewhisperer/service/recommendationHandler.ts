@@ -180,7 +180,11 @@ export class RecommendationHandler {
                     codewhispererPromise
                 )
                 latency = startTime !== 0 ? performance.now() - startTime : 0
-                recommendation = (resp && resp.recommendations) || []
+                if ('recommendations' in resp) {
+                    recommendation = (resp && resp.recommendations) || []
+                } else {
+                    recommendation = (resp && resp.completions) || []
+                }
                 invocationResult = 'Succeeded'
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
