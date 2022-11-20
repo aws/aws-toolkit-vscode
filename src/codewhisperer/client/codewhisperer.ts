@@ -140,8 +140,8 @@ export class DefaultCodeWhispererClient {
             Service,
             {
                 apiConfig: userApiConfig,
-                region: CodeWhispererConstants.region_gamma,
-                endpoint: CodeWhispererConstants.endpoint_gamma,
+                region: CodeWhispererConstants.region,
+                endpoint: CodeWhispererConstants.endpoint,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
                     req => {
