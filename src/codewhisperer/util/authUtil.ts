@@ -20,6 +20,7 @@ import { getSecondaryAuth } from '../../credentials/secondaryAuth'
 import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { TelemetryHelper } from './telemetryHelper'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
@@ -52,7 +53,7 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-
+            TelemetryHelper.instance.startUrl = this.conn?.startUrl
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),

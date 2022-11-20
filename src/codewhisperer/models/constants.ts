@@ -7,13 +7,8 @@
  * SDK Client
  */
 
-// TODO: Remove dev endpoints and regions
-export const endpoint_alpha = 'https://Conso-Conso-2QL1N3F7BQYY-1380812087.us-west-2.elb.amazonaws.com/'
-export const endpoint_gamma = 'https://conso-conso-1ohz4gfxol2wj-1382674778.us-west-2.elb.amazonaws.com/'
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
-export const region_alpha = 'us-west-2'
-export const region_gamma = 'us-west-2'
 export const region = 'us-east-1'
 
 /**

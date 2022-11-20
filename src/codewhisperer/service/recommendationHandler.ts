@@ -269,6 +269,7 @@ export class RecommendationHandler {
                         : 0,
                     codewhispererLanguage: languageContext.language,
                     reason: reason ? reason.substring(0, 200) : undefined,
+                    credentialStartUrl: TelemetryHelper.instance.startUrl,
                 })
             }
             if (invocationResult == 'Succeeded') {

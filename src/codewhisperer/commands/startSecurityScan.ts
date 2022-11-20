@@ -26,6 +26,7 @@ import { statSync } from 'fs'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -69,6 +70,7 @@ export async function startSecurityScan(
         codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
+        credentialStartUrl: TelemetryHelper.instance.startUrl,
     }
     try {
         getLogger().verbose(`Starting security scan `)
