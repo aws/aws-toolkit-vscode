@@ -232,7 +232,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 vscode.window
                     .showWarningMessage(
                         CodeWhispererConstants.accessTokenMigrationWarningMessage,
-                        CodeWhispererConstants.connectWithAWSBuilderId
+                        CodeWhispererConstants.accessTokenMigrationWarningButtonMessage
                     )
                     .then(async resp => {
                         if (resp === CodeWhispererConstants.accessTokenMigrationWarningButtonMessage) {
@@ -246,7 +246,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 vscode.window
                     .showErrorMessage(
                         CodeWhispererConstants.accessTokenMigrationErrorMessage,
-                        CodeWhispererConstants.connectWithAWSBuilderId
+                        CodeWhispererConstants.accessTokenMigrationErrorButtonMessage
                     )
                     .then(async resp => {
                         if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
