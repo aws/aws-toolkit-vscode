@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ToolkitError } from '../errors'
 import { isNameMangled } from '../vscode/env'
 import { isNonNullable } from './tsUtils'
 
@@ -94,7 +93,8 @@ export function cast<T>(input: any, type: TypeConstructor<T>): T {
     try {
         return type(input) ?? input
     } catch (error) {
-        throw ToolkitError.chain(error, `Failed to cast type "${typeof input}" to ${typeName}`)
+        // TODO: add chainable error that isn't `ToolkitError`
+        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}`)
     }
 }
 
