@@ -282,14 +282,14 @@ export async function runSamSync(args: SyncParams) {
             onStdout: text => globals.outputChannel.append(removeAnsi(text)),
             onStderr: text => globals.outputChannel.append(removeAnsi(text)),
         })
-        sam.send('\n')
+        sam.send('Y\n')
 
         return handleResult(await result)
     }
 
     const pty = new ProcessTerminal(sam)
     const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
-    terminal.sendText('\n')
+    terminal.sendText('Y\n')
     terminal.show()
 
     const result = await new Promise<ChildProcessResult>(resolve => pty.onDidExit(resolve))
@@ -387,6 +387,7 @@ export function registerSync() {
             throw new ToolkitError('Syncing SAM applications requires IAM credentials', { code: 'NoIAMCredentials' })
         }
 
+        // Constructor of `vscode.Uri` is marked private but that shouldn't matter when checking the instance type
         const Uri = vscode.Uri as unknown as abstract new () => vscode.Uri
         const input = cast(arg, Optional(Union(Instance(Uri), Instance(AWSTreeNodeBase))))
 
@@ -446,7 +447,7 @@ async function updateRecentResponse(region: string, key: string, value: string |
             [region]: { ...root[region], [key]: value },
         })
     } catch (err) {
-        getLogger().warn(`sam: unable to save response at key "${key}": ${UnknownError.cast(err).message}`)
+        getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
     }
 }
 
@@ -521,7 +522,7 @@ class ProcessTerminal implements vscode.Pseudoterminal {
 
         // enter
         if (data === '\u000D') {
-            this.process.send('\n') // is CRLF ok here?
+            this.process.send('\n')
             this.onDidWriteEmitter.fire('\r\n')
         } else {
             this.process.send(data)
