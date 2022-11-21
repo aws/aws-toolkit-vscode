@@ -45,6 +45,7 @@ export interface SyncParams {
     readonly bucketName: string
     readonly ecrRepoUri?: string
     readonly connection: IamConnection
+    readonly skipDependencyLayer?: boolean
 }
 
 function createBucketPrompter(client: DefaultS3Client) {
@@ -234,7 +235,7 @@ export async function runSamSync(args: SyncParams) {
         codeOnly: args.deployType === 'code',
         templatePath: args.template.uri.fsPath,
         bucketName: await ensureBucket(args),
-        ...selectFrom(args, 'stackName', 'ecrRepoUri', 'region'),
+        ...selectFrom(args, 'stackName', 'ecrRepoUri', 'region', 'skipDependencyLayer'),
     }
 
     await Promise.all([
@@ -251,6 +252,7 @@ export async function runSamSync(args: SyncParams) {
         stackName: '--stack-name',
         bucketName: '--s3-bucket',
         ecrRepoUri: '--image-repository',
+        skipDependencyLayer: '--no-dependency-layer',
     })
 
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
@@ -347,8 +349,11 @@ function getSyncParamsFromConfig(config: SamConfig) {
 }
 
 export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | undefined): Promise<Partial<SyncParams>> {
+    // Skip creating dependency layers by default for backwards compat
+    const baseParams: Partial<SyncParams> = { skipDependencyLayer: true }
+
     if (arg instanceof AWSTreeNodeBase) {
-        return { region: arg.regionCode }
+        return { ...baseParams, region: arg.regionCode }
     } else if (arg instanceof vscode.Uri) {
         if (arg.path.endsWith('samconfig.toml')) {
             const config = await SamConfig.fromUri(arg)
@@ -363,8 +368,10 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
                       data: await CloudFormation.load(templateUri.fsPath),
                   }
                 : undefined
+            // Always use the dependency layer if the user specified to do so
+            const skipDependencyLayer = !config.getParam('sync', 'dependency_layer')
 
-            return { ...params, template, projectRoot }
+            return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer }
         }
 
         const template = {
@@ -372,10 +379,10 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
             data: await CloudFormation.load(arg.fsPath),
         }
 
-        return { template }
+        return { ...baseParams, template }
     }
 
-    return {}
+    return baseParams
 }
 
 export function registerSync() {
