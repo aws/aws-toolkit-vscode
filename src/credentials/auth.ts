@@ -856,6 +856,7 @@ export const createIamItem = () =>
     ({
         label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
 

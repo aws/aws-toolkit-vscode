@@ -20,6 +20,7 @@ import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { getIcon } from '../../shared/icons'
 
 export class CodeWhispererNode implements RootNode {
     private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
@@ -37,6 +38,14 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
+        if (!this.isAvailable) {
+            const item = new vscode.TreeItem('CodeWhisperer (Preview)')
+            item.description = 'Unavailable in Dev Environment'
+            item.iconPath = getIcon('vscode-circle-slash')
+
+            return item
+        }
+
         if (!isCloud9()) {
             AuthUtil.instance.restore()
         }

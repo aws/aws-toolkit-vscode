@@ -44,7 +44,7 @@ export class AuthUtil {
 
     public constructor(public readonly auth = Auth.instance) {
         // codewhisperer uses sigv4 creds on C9
-        if (isCloud9()) {
+        if (isCloud9() || !this.isAvailable) {
             return
         }
 
@@ -71,7 +71,7 @@ export class AuthUtil {
 
     // current active cwspr connection
     public get conn() {
-        return this.secondaryAuth.activeConnection
+        return this.isAvailable ? this.secondaryAuth.activeConnection : undefined
     }
 
     public get isUsingSavedConnection() {
