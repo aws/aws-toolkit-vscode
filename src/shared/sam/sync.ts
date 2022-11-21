@@ -118,7 +118,7 @@ function createEcrPrompter(client: DefaultEcrClient) {
     })
 }
 
-// unused
+// TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
     const recentEnvironmentName = getRecentResponse(config.location.fsPath, 'environmentName')
     const items = environments.map(env => ({
