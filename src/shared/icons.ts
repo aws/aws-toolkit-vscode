@@ -12,7 +12,6 @@ import { Uri, ThemeIcon } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { UnknownError } from './errors'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
