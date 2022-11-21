@@ -39,14 +39,14 @@ import { getConfigFilename } from './sharedCredentials'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
-export const codecatalystScope = 'codecatalyst:read_write'
+export const codecatalystScopes = ['codecatalyst:read_write']
 
 export function createBuilderIdProfile(): SsoProfile {
     return {
         type: 'sso',
         ssoRegion: 'us-east-1',
         startUrl: builderIdStartUrl,
-        scopes: [codecatalystScope],
+        scopes: [...codecatalystScopes],
     }
 }
 

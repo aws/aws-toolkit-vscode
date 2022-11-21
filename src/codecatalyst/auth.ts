@@ -6,11 +6,8 @@
 import * as vscode from 'vscode'
 import { ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { Auth, Connection, isBuilderIdConnection, SsoConnection } from '../credentials/auth'
-import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { showQuickPick } from '../shared/ui/pickerPrompter'
-import { once } from '../shared/utilities/functionUtils'
-import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { Auth, isBuilderIdConnection, Connection, SsoConnection, codecatalystScopes } from '../credentials/auth'
+import { getSecondaryAuth } from '../credentials/secondaryAuth'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -27,62 +24,25 @@ export class CodeCatalystAuthStorage {
     }
 }
 
-const saveConnectionItem = {
-    label: 'Yes, use CodeCatalyst with AWS Builder ID while I switch connections.',
-    detail: 'This can be removed by selecting "Remove Connection from Tool" on the CodeCatalyst node.',
-    data: 'yes',
-} as const
-
-const useConnectionItem = {
-    label: 'No, switch everything to authenticate with new selection.',
-    detail: 'This will not log you out; you can switch back at any point by selecting the profile name.',
-    data: 'no',
-} as const
-
-const savedConnectionKey = 'aws.codecatalyst.savedConnectionId'
+const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
+    isBuilderIdConnection(conn) && codecatalystScopes.every(s => conn.scopes?.includes(s))
 
 export class CodeCatalystAuthenticationProvider {
-    #activeConnection: Connection | undefined
-    #savedConnection: SsoConnection | undefined
-
-    private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<SsoConnection | undefined>()
-    public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
 
     public constructor(
         protected readonly storage: CodeCatalystAuthStorage,
         protected readonly memento: vscode.Memento,
-        public readonly auth = Auth.instance
-    ) {
-        this.restoreSavedConnection()
-        this.auth.onDidChangeActiveConnection(async conn => {
-            if (conn !== undefined && !isBuilderIdConnection(conn)) {
-                if (this.#savedConnection === undefined && isBuilderIdConnection(this.#activeConnection)) {
-                    const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-                        title: `Keep using CodeCatalyst with ${conn.label}?`,
-                        placeholder: 'Confirm choice',
-                    })
-                    if (resp === 'yes') {
-                        await this.setSavedConnection(this.#activeConnection)
-                    }
-                }
-            } else if (conn === undefined && this.#activeConnection?.id === this.#savedConnection?.id) {
-                await this.removeSavedConnection()
-            }
-
-            this.#activeConnection = conn
-            this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
-        })
-    }
+        public readonly auth = Auth.instance,
+        public readonly secondaryAuth = getSecondaryAuth('codecatalyst', 'CodeCatalyst', isValidCodeCatalystConnection)
+    ) {}
 
     public get activeConnection() {
-        return (
-            this.#savedConnection ??
-            (isBuilderIdConnection(this.#activeConnection) ? this.#activeConnection : undefined)
-        )
+        return this.secondaryAuth.activeConnection
     }
 
     public get isUsingSavedConnection() {
-        return this.#savedConnection !== undefined
+        return this.secondaryAuth.isUsingSavedConnection
     }
 
     // Get rid of this? Not sure where to put PAT code.
@@ -99,34 +59,13 @@ export class CodeCatalystAuthenticationProvider {
         return resp.secret
     }
 
-    public async setSavedConnection(conn: SsoConnection) {
-        await this.memento.update(savedConnectionKey, conn.id)
-        this.#savedConnection = conn
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
-    }
-
     public async removeSavedConnection() {
-        await this.memento.update(savedConnectionKey, undefined)
-        this.#savedConnection = undefined
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+        await this.secondaryAuth.removeConnection()
     }
 
-    public restoreSavedConnection = once(async () => {
-        // XXX: don't restore in a dev env
-        if (getCodeCatalystDevEnvId() !== undefined) {
-            return
-        }
-
-        const savedConnection = await getSavedConnection(this.memento, this.auth)
-        if (savedConnection !== undefined) {
-            this.#savedConnection = savedConnection
-            this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
-
-            return savedConnection
-        }
-
-        return this.#savedConnection
-    })
+    public async restore() {
+        await this.secondaryAuth.restoreConnection()
+    }
 
     private static instance: CodeCatalystAuthenticationProvider
 
@@ -167,23 +106,5 @@ class SecretMemento implements vscode.SecretStorage {
 
     private getSecrets(): Record<string, string | undefined> {
         return this.memento.get('__secrets', {})
-    }
-}
-
-export async function getSavedConnection(memento: vscode.Memento, auth: Auth) {
-    const id = cast(memento.get(savedConnectionKey), Optional(String))
-    if (id !== undefined) {
-        const conn = await auth.getConnection({ id })
-        if (conn === undefined) {
-            await memento.update(savedConnectionKey, undefined)
-            // throw new TypeError('Connection no longer exists')
-            return
-        }
-        if (!isBuilderIdConnection(conn)) {
-            await memento.update(savedConnectionKey, undefined)
-            throw new TypeError('Connection is not a Builder ID connection')
-        }
-
-        return conn
     }
 }

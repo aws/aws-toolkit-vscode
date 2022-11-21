@@ -12,42 +12,16 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { getLogger } from '../shared/logger/logger'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, createClientFactory, getConnectedDevEnv, getDevfileLocation } from './model'
 
-const saveConnectionItem = {
-    label: 'Yes, save this connection to this tool',
-    detail: 'This can be removed by selecting "Remove Connection from Tool" on the CodeCatalyst node.',
-    data: 'yes',
-} as const
-
-const useConnectionItem = {
-    label: 'No, use this connection for everything',
-    detail: 'This will not log you out; you can switch back at any point by selecting the profile name.',
-    data: 'no',
-} as const
-
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
     async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const auth = authProvider.auth
-        const conn = await createBuilderIdConnection(auth)
-
-        if (auth.activeConnection !== undefined && !isBuilderIdConnection(auth.activeConnection)) {
-            const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-                title: `Use ${conn.label} for CodeCatalyst?`,
-            })
-            if (resp === 'yes') {
-                await authProvider.setSavedConnection(conn)
-            } else {
-                await auth.useConnection(conn)
-            }
-        } else {
-            await auth.useConnection(conn)
-        }
+        const conn = await createBuilderIdConnection(authProvider.auth)
+        await authProvider.secondaryAuth.useNewConnection(conn)
     }
 )
 
@@ -64,12 +38,12 @@ function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (!isBuilderIdConnection(auth.activeConnection)) {
         return [
             getStartedCommand.build(auth).asTreeNode({
-                label: 'Get Started...',
-                iconPath: getIcon('vscode-rocket'),
+                label: 'Start',
+                iconPath: getIcon('vscode-debug-start'),
             }),
             learnMoreCommand.build(codecatalystDocsUrl).asTreeNode({
-                label: 'Learn more about CodeCatalyst',
-                iconPath: getIcon('vscode-lightbulb'),
+                label: 'Learn More about CodeCatalyst',
+                iconPath: getIcon('vscode-question'),
             }),
         ]
     }
@@ -158,7 +132,7 @@ export class CodeCatalystRootNode implements RootNode {
             item.description = 'Connected to Dev Environment'
             item.iconPath = addColor(getIcon('vscode-pass'), 'testing.iconPassed')
         } else {
-            item.description = this.authProvider.isUsingSavedConnection ? 'AWS Builder ID connected' : undefined
+            item.description = this.authProvider.isUsingSavedConnection ? 'AWS Builder ID Connected' : undefined
         }
 
         return item
