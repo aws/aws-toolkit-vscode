@@ -48,7 +48,7 @@ export async function deleteCertCommand(
             return
         }
     } catch (e) {
-        getLogger().error(`Failed to retrieve Things attached to cert ${node.certificate.id}: %O`, e)
+        getLogger().error(`Failed to retrieve Things attached to cert ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'Things'),
             window
@@ -95,7 +95,7 @@ export async function deleteCertCommand(
             }
         }
     } catch (e) {
-        getLogger().error(`Failed to retrieve Policies attached to cert ${node.certificate.id}: %O`, e)
+        getLogger().error(`Failed to retrieve Policies attached to cert ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'policies'),
             window
@@ -111,7 +111,7 @@ export async function deleteCertCommand(
             localize('AWS.iot.deleteCert.success', 'Deleted certificate: {0}', node.certificate.id)
         )
     } catch (e) {
-        getLogger().error(`Failed to delete Certificate ${node.certificate.id}: %O`, e)
+        getLogger().error(`Failed to delete Certificate ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.deleteCert.error', 'Failed to delete certificate: {0}', node.certificate.id),
             window

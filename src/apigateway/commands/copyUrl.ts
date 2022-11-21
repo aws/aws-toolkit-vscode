@@ -47,7 +47,7 @@ export async function copyUrlCommand(
             }
         )
     } catch (e) {
-        getLogger().error(`Failed to load stages: %O`, e)
+        getLogger().error(`Failed to load stages: %s`, e)
         telemetry.apigateway_copyUrl.emit({ result: 'Failed' })
         return
     }

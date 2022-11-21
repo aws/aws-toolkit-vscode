@@ -69,7 +69,7 @@ export class DefaultLambdaClient {
             })
             return response
         } catch (e) {
-            getLogger().error('Failed to get function: %O', e)
+            getLogger().error('Failed to get function: %s', e)
             throw e
         }
     }
@@ -91,7 +91,7 @@ export class DefaultLambdaClient {
 
             return response
         } catch (e) {
-            getLogger().error('Failed to run updateFunctionCode: %O', e)
+            getLogger().error('Failed to run updateFunctionCode: %s', e)
             throw e
         }
     }
