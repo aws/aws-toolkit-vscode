@@ -13,26 +13,33 @@ import { createRepoLabel } from '../wizards/selectResource'
 import { getRepoCloneUrl } from '../model'
 import { CodeCatalystCommands } from '../commands'
 import { CodeCatalystRepo } from '../../shared/clients/codecatalystClient'
+import { getIcon, Icon } from '../../shared/icons'
 
 function showQuickPickLoadingBar<T>(title: string, task: () => Promise<T>): Promise<T> {
     const picker = vscode.window.createQuickPick()
+    picker.show() // `show` must happen first on C9 before assigning fields
     picker.placeholder = title
     picker.busy = true
     picker.enabled = false
     picker.ignoreFocusOut = true
-    picker.show()
 
     return task().finally(() => picker.hide())
 }
 
 export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
-    public readonly icon = 'git-merge' // TODO: find a correct icon. I don't think we can provide a custom one...
     public readonly supportsQuery = false // TODO(sijaden): implement query
 
     public constructor(
         private readonly commands: Pick<CodeCatalystCommands, 'withClient'>,
         private readonly authProvider: Pick<CodeCatalystAuthenticationProvider, 'getPat' | 'activeConnection'>
     ) {}
+
+    // Must be a `codicon` id
+    public get icon() {
+        const icon = getIcon('aws-codecatalyst-logo')
+
+        return icon instanceof Icon ? icon.id : undefined
+    }
 
     public get name(): string {
         const username = this.authProvider.activeConnection?.label
