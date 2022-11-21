@@ -282,14 +282,14 @@ export async function runSamSync(args: SyncParams) {
             onStdout: text => globals.outputChannel.append(removeAnsi(text)),
             onStderr: text => globals.outputChannel.append(removeAnsi(text)),
         })
-        sam.send('Y\n')
+        sam.send('\n')
 
         return handleResult(await result)
     }
 
     const pty = new ProcessTerminal(sam)
     const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
-    terminal.sendText('Y\n')
+    terminal.sendText('\n')
     terminal.show()
 
     const result = await new Promise<ChildProcessResult>(resolve => pty.onDidExit(resolve))
