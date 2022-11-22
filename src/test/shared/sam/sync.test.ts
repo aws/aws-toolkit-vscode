@@ -89,6 +89,13 @@ describe('prepareSyncParams', function () {
         assert.deepStrictEqual(params.template?.data, template.data)
     })
 
+    it('skips dependency layers by default', async function () {
+        const template = await makeTemplateItem(tempDir)
+
+        const params = await prepareSyncParams(template.uri)
+        assert.strictEqual(params.skipDependencyLayer, true)
+    })
+
     describe('samconfig.toml', function () {
         async function makeDefaultConfig(dir: vscode.Uri, body: string) {
             const uri = vscode.Uri.joinPath(dir, 'samconfig.toml')
@@ -117,9 +124,13 @@ describe('prepareSyncParams', function () {
         })
 
         it('sets the project root as the parent directory', async function () {
-            const tempDir = vscode.Uri.file(await makeTemporaryToolkitFolder())
             const params = await getParams(`region = "bar"`, tempDir)
             assert.strictEqual(params.projectRoot?.fsPath, tempDir.fsPath)
+        })
+
+        it('uses the depdency layer option if provided', async function () {
+            const params = await getParams(`dependency_layer = true`, tempDir)
+            assert.strictEqual(params.skipDependencyLayer, false)
         })
 
         it('can load a relative template param', async function () {
