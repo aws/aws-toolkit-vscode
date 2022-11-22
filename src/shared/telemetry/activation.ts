@@ -16,7 +16,6 @@ import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilit
 import { openSettings, Settings } from '../settings'
 import { TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
-import { UnknownError } from '../errors'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -62,7 +61,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
             throw e
         }
 
-        getLogger().error(`telemetry: failed to activate: ${UnknownError.cast(e).message}`)
+        getLogger().error(`telemetry: failed to activate: %s`, e)
     }
 }
 

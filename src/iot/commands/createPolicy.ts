@@ -44,7 +44,7 @@ export async function createPolicyCommand(
         await node.iot.createPolicy({ policyName, policyDocument: JSON.stringify(policyJSON) })
         window.showInformationMessage(localize('AWS.iot.createPolicy.success', 'Created Policy {0}', policyName))
     } catch (e) {
-        getLogger().error('Failed to create policy document: %O', e)
+        getLogger().error('Failed to create policy document: %s', e)
         showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to create policy {0}', policyName), window)
         return
     }
@@ -72,7 +72,7 @@ export async function getPolicyDocument(window: Window): Promise<Buffer | undefi
     try {
         data = await fs.readFile(policyLocation.fsPath)
     } catch (e) {
-        getLogger().error('Failed to read policy document: %O', e)
+        getLogger().error('Failed to read policy document: %s', e)
         showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'), window)
         return undefined
     }
