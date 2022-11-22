@@ -35,6 +35,8 @@ import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
 import { Auth, IamConnection } from '../../credentials/auth'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
+import { SamCliInfoInvocation } from './cli/samCliInfo'
+import { parse } from 'semver'
 
 export interface SyncParams {
     readonly region: string
@@ -258,6 +260,12 @@ export async function runSamSync(args: SyncParams) {
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
         throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
+    }
+    const info = await new SamCliInfoInvocation(samCliPath).execute()
+    telemetry.record({ version: info.version })
+
+    if (parse(info.version)?.compare('1.53.0') === -1) {
+        throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...params], {
