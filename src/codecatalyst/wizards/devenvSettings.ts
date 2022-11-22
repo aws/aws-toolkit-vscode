@@ -59,7 +59,7 @@ export function createInstancePrompter(subscriptionType: SubscriptionType): Quic
     const items = entries(devenvOptions.instanceType).map(([name, desc]) => ({
         data: name,
         label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
-        description: isSupported(name) ? '' : 'unavailable in current organization billing tier',
+        description: isSupported(name) ? '' : 'unavailable in current billing tier',
         invalidSelection: !isSupported(name),
     }))
 

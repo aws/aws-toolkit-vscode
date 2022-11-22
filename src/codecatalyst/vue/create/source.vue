@@ -85,9 +85,11 @@ type SourceModel = Partial<SourceResponse & { branchError: string }>
 export function isValidSource(source: SourceModel): source is SourceResponse {
     if (source.type === 'linked') {
         return !!source.selectedProject && !!source.selectedBranch && !source.branchError
-    } else {
-        return source.type === 'none'
+    } else if (source.type === 'none') {
+        return !!source.selectedProject
     }
+
+    return false
 }
 
 export const VueModel = createClass<SourceModel>({ type: 'linked' })
