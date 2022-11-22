@@ -59,6 +59,13 @@ export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
 }
 
 /**
+ * Returns true when source mapping is available
+ */
+export function isSourceMappingAvailable(): boolean {
+    return extensionVersion === TEST_VERSION
+}
+
+/**
  * Returns true if the extension is being ran from automation.
  */
 export function isAutomation(): boolean {

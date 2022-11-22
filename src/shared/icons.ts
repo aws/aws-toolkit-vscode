@@ -12,7 +12,6 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { UnknownError } from './errors'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
@@ -127,7 +126,6 @@ function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: 
             return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
         }
     } catch (error) {
-        const message = UnknownError.cast(error).message
-        getLogger().warn(`icons: path resolution failed for "${target}": ${message}`)
+        getLogger().warn(`icons: path resolution failed for "${target}": %s`, error)
     }
 }

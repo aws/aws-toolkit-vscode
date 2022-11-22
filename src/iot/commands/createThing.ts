@@ -42,7 +42,7 @@ export async function createThingCommand(
         getLogger().info('Created thing: %O', thing)
         window.showInformationMessage(localize('AWS.iot.createThing.success', 'Created Thing {0}', thingName))
     } catch (e) {
-        getLogger().error(`Failed to create Thing ${thingName}: %O`, e)
+        getLogger().error(`Failed to create Thing ${thingName}: %s`, e)
         showViewLogsMessage(localize('AWS.iot.createThing.error', 'Failed to create Thing: {0}', thingName), window)
     }
 

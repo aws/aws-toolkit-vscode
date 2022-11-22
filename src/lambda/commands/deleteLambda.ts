@@ -51,7 +51,7 @@ export async function deleteLambda(
         }
     } catch (err) {
         deleteResult = 'Failed'
-        getLogger().error(`Failed to delete lambda function "${lambda.FunctionName}": %O`, err)
+        getLogger().error(`Failed to delete lambda function "${lambda.FunctionName}": %s`, err)
         const message = localize(
             'AWS.command.deleteLambda.error',
             "There was an error deleting lambda function '{0}'",

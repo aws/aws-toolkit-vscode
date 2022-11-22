@@ -60,7 +60,7 @@ export async function deactivateCertificateCommand(
             localize('AWS.iot.deactivateCert.success', 'Deactivated: {0}', node.certificate.id)
         )
     } catch (e) {
-        getLogger().error(`Failed to deactivate certificate ${certId}: %O`, e)
+        getLogger().error(`Failed to deactivate certificate ${certId}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.deactivateCert.error', 'Failed to deactivate: {0}', node.certificate.id),
             window
@@ -114,7 +114,7 @@ export async function activateCertificateCommand(
         getLogger().info(`activated certificate: ${certId}`)
         window.showInformationMessage(localize('AWS.iot.activateCert.success', 'Activated: {0}', node.certificate.id))
     } catch (e) {
-        getLogger().error(`Failed to activate certificate ${certId}: %O`, e)
+        getLogger().error(`Failed to activate certificate ${certId}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.activateCert.error', 'Failed to activate: {0}', node.certificate.id),
             window
@@ -164,7 +164,7 @@ export async function revokeCertificateCommand(
         getLogger().info(`revoked certificate: ${certId}`)
         window.showInformationMessage(localize('AWS.iot.revokeCert.success', 'Revoked: {0}', node.certificate.id))
     } catch (e) {
-        getLogger().error(`Failed to revoke certificate ${certId}: %O`, e)
+        getLogger().error(`Failed to revoke certificate ${certId}: %s`, e)
         showViewLogsMessage(localize('AWS.iot.revokeCert.error', 'Failed to revoke: {0}', node.certificate.id), window)
     }
 

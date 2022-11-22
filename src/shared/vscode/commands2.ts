@@ -390,7 +390,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         if (errorHandler !== undefined) {
             errorHandler(info, error)
         } else {
-            logger.error(`command: ${label} failed without error handler: %O`, error)
+            logger.error(`command: ${label} failed without error handler: %s`, error)
             throw error
         }
     }

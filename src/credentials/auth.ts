@@ -313,7 +313,7 @@ export class Auth implements AuthService, ConnectionManager {
         try {
             return await this.useConnection({ id })
         } catch (err) {
-            getLogger().warn(`auth: failed to restore previous session: ${UnknownError.cast(err).message}`)
+            getLogger().warn(`auth: failed to restore previous session: %s`, err)
         }
     }
 
@@ -449,7 +449,7 @@ export class Auth implements AuthService, ConnectionManager {
             // TODO: this seems to fail on the backend for scoped tokens
             await client.logout().catch(err => {
                 const name = profile.metadata.label ?? id
-                getLogger().warn(`auth: failed to logout of connection "${name}": ${UnknownError.cast(err)}`)
+                getLogger().warn(`auth: failed to logout of connection "${name}": %s`, err)
             })
 
             return provider.invalidate()
@@ -672,7 +672,7 @@ export class Auth implements AuthService, ConnectionManager {
                 await this.useConnection({ id })
                 return true
             } catch (err) {
-                getLogger().warn(`auth: failed to auto-connect using "${id}": ${UnknownError.cast(err).message}`)
+                getLogger().warn(`auth: failed to auto-connect using "${id}": %s`, err)
                 return false
             }
         }

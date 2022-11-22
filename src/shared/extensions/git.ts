@@ -268,7 +268,7 @@ export class GitExtension {
                     }))
                     .filter(branch => !!branch.name)
             } catch (err) {
-                getLogger().verbose(`git: failed to get branches for remote "${remote.fetchUrl}": %O`, err)
+                getLogger().verbose(`git: failed to get branches for remote "${remote.fetchUrl}": %s`, err)
                 return []
             }
         }
@@ -286,7 +286,7 @@ export class GitExtension {
             ;(await repository.getConfigs()).forEach(({ key, value }) => (config[key] = value))
         } else {
             const { stdout } = await execFileAsync(api.git.path, ['config', '--list', `--global`]).catch(err => {
-                getLogger().verbose(`git: failed to read config: %O`, err)
+                getLogger().verbose(`git: failed to read config: %s`, err)
                 return { stdout: '' }
             })
 
@@ -314,7 +314,7 @@ export class GitExtension {
             }
             return semverParse(match[0]) as SemVer | undefined
         } catch (err) {
-            getLogger().verbose('git: failed to retrieve version: %O', err)
+            getLogger().verbose('git: failed to retrieve version: %s', err)
         }
     }
 

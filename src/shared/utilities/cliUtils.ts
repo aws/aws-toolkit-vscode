@@ -457,7 +457,7 @@ export async function getOrInstallCli(
 //         fs.link(existingPath, newPath, err => {
 //             if (err) {
 //                 const message = `Toolkit could not create a hard link for ${existingPath} to ${newPath}`
-//                 getLogger().error(`${message}: %O`, err)
+//                 getLogger().error(`${message}: %s`, err)
 //                 reject(new InstallerError(message))
 //             }
 //             resolve()
