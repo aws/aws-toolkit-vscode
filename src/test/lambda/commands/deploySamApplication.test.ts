@@ -137,7 +137,8 @@ describe('deploySamApplication', async function () {
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')
-        writeFile(templatePath)
+        fs.writeFileSync(templatePath, "AWSTemplateFormatVersion: '2010-09-09'")
+        await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(templatePath))
 
         // TODO: is this safe? will add output channel across all tests
         // we are using this pattern in other tests...
@@ -584,8 +585,4 @@ function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
             .some(e => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
         `Expected to find "${text}" in the error logs, but not as a thrown error`
     )
-}
-
-function writeFile(filename: string): void {
-    fs.writeFileSync(filename, '')
 }
