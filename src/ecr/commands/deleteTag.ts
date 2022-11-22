@@ -50,7 +50,7 @@ export async function deleteTag(
         )
         telemetry.ecr_deleteTags.emit({ result: 'Succeeded', value: 1 })
     } catch (e) {
-        getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %O`, e)
+        getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %s`, e)
         showViewLogsMessage(
             localize(
                 'AWS.ecr.deleteTag.failure',

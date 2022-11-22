@@ -60,7 +60,7 @@ export async function deleteThingCommand(
         getLogger().info(`deleted Thing: ${thingName}`)
         window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing: {0}', thingName))
     } catch (e) {
-        getLogger().error(`Failed to delete Thing: ${thingName}: %O`, e)
+        getLogger().error(`Failed to delete Thing: ${thingName}: %s`, e)
         showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName), window)
     }
 

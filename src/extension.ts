@@ -60,10 +60,10 @@ import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
-import { Settings } from './shared/settings'
+import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
-import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
+import { isUserCancelledError, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
@@ -119,9 +119,18 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.resourceManager = new AwsResourceManager(context)
 
         const settings = Settings.instance
+        const experiments = Experiments.instance
 
         await initializeCredentials(context, awsContext, settings, loginManager)
         await activateTelemetry(context, awsContext, settings)
+
+        experiments.onDidChange(({ key }) => {
+            telemetry.aws_experimentActivation.run(span => {
+                // Record the key prior to reading the setting as `get` may throw
+                span.record({ experimentId: key })
+                span.record({ experimentState: experiments.get(key) ? 'activated' : 'deactivated' })
+            })
+        })
 
         await globals.schemaService.start()
         awsFiletypes.activate()
@@ -256,8 +265,7 @@ async function handleError(error: unknown, topic: string, defaultMessage: string
     }
 
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logMessage = error instanceof ToolkitError ? error.trace : formatError(UnknownError.cast(error))
-    const logId = getLogger().error(`${topic}: ${logMessage}`)
+    const logId = getLogger().error(`${topic}: %s`, error)
     const message = error instanceof ToolkitError ? error.message : defaultMessage
 
     await vscode.window.showErrorMessage(message, logsItem).then(async resp => {

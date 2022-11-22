@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { types } from 'util'
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
@@ -11,6 +10,8 @@ import { ConsoleLogTransport } from './consoleLogTransport'
 import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
+import { isSourceMappingAvailable } from '../vscode/env'
+import { formatError, ToolkitError, UnknownError } from '../errors'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
@@ -117,16 +118,22 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
               })
     }
 
+    private mapError(level: LogLevel, err: Error): Error | string {
+        if (isSourceMappingAvailable() && level === 'error') {
+            return err
+        }
+
+        return err instanceof ToolkitError ? err.trace : formatError(UnknownError.cast(err))
+    }
+
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
-        meta.filter(item => types.isNativeError(item))
+        meta = meta.map(o => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (types.isNativeError(message)) {
-            // `vslsStack` appears to be added by VS Code ?
-            delete (message as { vslsStack?: any[] }).vslsStack
+        if (message instanceof Error) {
             this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
         } else {
             this.logger.log(level, message, ...meta, { logID: this.idCounter })

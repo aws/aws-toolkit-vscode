@@ -116,7 +116,7 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
             getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
         } else {
             showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
-            getLogger().error(`Lambda upload failed: %O`, err)
+            getLogger().error(`Lambda upload failed: %s`, err)
         }
     } finally {
         telemetry.lambda_updateFunctionCode.emit({

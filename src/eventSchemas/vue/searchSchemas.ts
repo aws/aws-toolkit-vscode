@@ -137,7 +137,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
-        logger.error('Error searching schemas: %O', error)
+        logger.error('Error searching schemas: %s', error)
     } finally {
         telemetry.schemas_search.emit({ result: webviewResult })
     }

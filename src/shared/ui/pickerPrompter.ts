@@ -426,7 +426,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                         break
                     }
                 } catch (err) {
-                    getLogger().error('QuickPickPrompter: loading items from AsyncIterable failed: %O', err)
+                    getLogger().error('QuickPickPrompter: loading items from AsyncIterable failed: %s', err)
                     addErrorItem(err as Error)
                     break
                 }
@@ -436,7 +436,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             try {
                 this.appendItems(await items)
             } catch (err) {
-                getLogger().error('QuickPickPrompter: loading items from Promise failed: %O', err)
+                getLogger().error('QuickPickPrompter: loading items from Promise failed: %s', err)
                 addErrorItem(err as Error)
             }
         } else {

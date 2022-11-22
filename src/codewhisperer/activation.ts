@@ -53,7 +53,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export async function activate(context: ExtContext): Promise<void> {
     // No need to await. This can be removed once the 'hover.enabled' hack is no longer needed.
     HoverConfigUtil.instance.restoreHoverConfig().catch(err => {
-        getLogger().warn('codewhisperer: failed to restore "editor.hover.enabled" setting: %O', err)
+        getLogger().warn('codewhisperer: failed to restore "editor.hover.enabled" setting: %s', err)
     })
 
     const codewhispererSettings = CodeWhispererSettings.instance
