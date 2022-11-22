@@ -11,7 +11,7 @@ import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
-import { UnknownError } from './errors'
+import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -63,7 +63,7 @@ export class Settings {
 
             return true
         } catch (error) {
-            getLogger().warn(`Settings: failed to update "${key}": ${error}`)
+            getLogger().warn(`Settings: failed to update "${key}": %s`, error)
 
             return false
         }
@@ -169,10 +169,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     // Class names are not always stable, especially when bundling
     function makeLogger(name = 'Settings', loglevel: 'debug' | 'error') {
         const prefix = `${isNameMangled() ? 'Settings' : name} (${section})`
-        return (message: string) =>
+        return (message: string, ...meta: any[]) =>
             loglevel === 'debug'
-                ? getLogger().debug(`${prefix}: ${message}`)
-                : getLogger().error(`${prefix}: ${message}`)
+                ? getLogger().debug(`${prefix}: ${message}`, ...meta)
+                : getLogger().error(`${prefix}: ${message}`, ...meta)
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
@@ -192,12 +192,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return this.getOrThrow(key, defaultValue)
             } catch (e) {
-                const message = UnknownError.cast(e)
                 if (arguments.length === 1) {
-                    throw new Error(`Failed to read key "${section}.${key}": ${message}`)
+                    throw ToolkitError.chain(e, `Failed to read key "${section}.${key}"`)
                 }
 
-                this.logErr(`using default for key "${key}", read failed: ${message}`)
+                this.logErr(`using default for key "${key}", read failed: %s`, e)
 
                 return defaultValue as Inner[K]
             }
@@ -209,7 +208,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (error) {
-                this.log(`failed to update field "${key}": ${error}`)
+                this.log(`failed to update field "${key}": %s`, error)
 
                 return false
             }
@@ -221,7 +220,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (error) {
-                this.log(`failed to delete field "${key}": ${error}`)
+                this.log(`failed to delete field "${key}": %s`, error)
 
                 return false
             }
@@ -231,7 +230,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return await this.config.reset()
             } catch (error) {
-                this.log(`failed to reset settings: ${error}`)
+                this.log(`failed to reset settings: %s`, error)
             }
         }
 
@@ -462,7 +461,7 @@ export class PromptSettings extends Settings.define(
         try {
             return !this.getOrThrow(promptName, false)
         } catch (error) {
-            this.log(`prompt check for "${promptName}" failed: ${error}`)
+            this.log(`prompt check for "${promptName}" failed: %s`, error)
             await this.reset()
 
             return true
@@ -516,7 +515,7 @@ export class Experiments extends Settings.define(
         try {
             return this.getOrThrow(name, false)
         } catch (error) {
-            this.log(`experiment check for ${name} failed: ${error}`)
+            this.log(`experiment check for ${name} failed: %s`, error)
             await this.reset()
 
             return false
@@ -637,7 +636,7 @@ export async function migrateSetting<T, U = T>(
 
         return true
     } catch (error) {
-        getLogger().verbose(`${logPrefix}: failed: ${error}`)
+        getLogger().verbose(`${logPrefix}: failed: %s`, error)
 
         return false
     }

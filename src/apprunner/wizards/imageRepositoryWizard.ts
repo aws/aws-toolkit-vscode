@@ -81,7 +81,7 @@ function createImagePrompter(
                 return repos
             })
             .catch(err => {
-                getLogger().error(`Unabled to list repositories: %O`, err)
+                getLogger().error(`Unabled to list repositories: %s`, err)
                 return [
                     {
                         label: localize(
@@ -187,7 +187,7 @@ function createTagPrompter(
                 return tagT
             })
             .catch(err => {
-                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %O`, err)
+                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %s`, err)
                 return [
                     {
                         label: localize(
