@@ -23,7 +23,7 @@ export async function copyEndpointCommand(node: IotNode, window = Window.vscode(
     try {
         endpoint = await node.getEndpoint()
     } catch (e) {
-        getLogger().error('Failed to retrieve endpoint: %O', e)
+        getLogger().error('Failed to retrieve endpoint: %s', e)
         showViewLogsMessage(localize('AWS.iot.copyEndpoint.error', 'Failed to retrieve endpoint'), window)
         return
     }

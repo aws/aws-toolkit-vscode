@@ -65,7 +65,7 @@ export async function openResource(
                 )
 
                 window.showErrorMessage(errorMessage)
-                getLogger().error('Error opening resource: %O', error)
+                getLogger().error('Error opening resource: %s', error)
                 result = 'Failed'
             } finally {
                 telemetry.dynamicresource_getResource.emit({

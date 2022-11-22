@@ -53,7 +53,7 @@ export async function detachThingCertCommand(
         getLogger().info(`detached certificate from Thing: ${thingName}`)
         window.showInformationMessage(localize('AWS.iot.detachCert.success', 'Detached: {0}', certId))
     } catch (e) {
-        getLogger().error(`Failed to detach certificate: ${certId}: %O`, e)
+        getLogger().error(`Failed to detach certificate: ${certId}: %s`, e)
         showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach: {0}', certId), window)
     }
 

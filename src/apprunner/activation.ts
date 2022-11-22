@@ -85,7 +85,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 try {
                     await command(...args)
                 } catch (err) {
-                    getLogger().error(`${tuple[1]}: %O`, err)
+                    getLogger().error(`${tuple[1]}: %s`, err)
                     showViewLogsMessage(tuple[1])
                 }
             })

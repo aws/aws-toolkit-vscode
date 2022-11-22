@@ -152,11 +152,15 @@ async function buildLambdaHandler(
         .execute(timer)
         .then(() => {})
         .catch(e => UnknownError.cast(e))
-    const failureMessage = err?.message ?? samBuild.failure()
-    if (failureMessage) {
+    const failure = err ?? samBuild.failure()
+    if (failure) {
         // TODO(sijaden): ask SAM CLI for a way to map exit codes to error codes
         // We can also scrape the debug output though that won't be as reliable
-        throw new ToolkitError(failureMessage, { code: 'BuildFailure' })
+        if (typeof failure === 'string') {
+            throw new ToolkitError(failure, { code: 'BuildFailure' })
+        } else {
+            throw ToolkitError.chain(failure, 'Failed to build SAM application', { code: 'BuildFailure' })
+        }
     }
     getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
 

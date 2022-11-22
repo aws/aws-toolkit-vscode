@@ -38,7 +38,7 @@ export async function deleteRepository(
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to delete repository ${repositoryName}: %O`, e)
+        getLogger().error(`Failed to delete repository ${repositoryName}: %s`, e)
         showViewLogsMessage(
             localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository: {0}', repositoryName),
             window

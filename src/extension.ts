@@ -63,7 +63,7 @@ import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
-import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
+import { isUserCancelledError, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
@@ -265,8 +265,7 @@ async function handleError(error: unknown, topic: string, defaultMessage: string
     }
 
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logMessage = error instanceof ToolkitError ? error.trace : formatError(UnknownError.cast(error))
-    const logId = getLogger().error(`${topic}: ${logMessage}`)
+    const logId = getLogger().error(`${topic}: %s`, error)
     const message = error instanceof ToolkitError ? error.message : defaultMessage
 
     await vscode.window.showErrorMessage(message, logsItem).then(async resp => {

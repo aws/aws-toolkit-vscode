@@ -37,7 +37,7 @@ export abstract class AbstractAslVisualizationManager<T extends AslVisualization
         )
 
         logger.debug(`${this.name}: Unable to setup webview panel.`)
-        logger.error(`${this.name}: unexpected exception: %O`, err)
+        logger.error(`${this.name}: unexpected exception: %s`, err)
     }
 
     public getManagedVisualizations(): Map<string, T> {

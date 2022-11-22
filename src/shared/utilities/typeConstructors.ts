@@ -93,7 +93,8 @@ export function cast<T>(input: any, type: TypeConstructor<T>): T {
     try {
         return type(input) ?? input
     } catch (error) {
-        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}: ${error}`)
+        // TODO: add chainable error that isn't `ToolkitError`
+        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}`)
     }
 }
 

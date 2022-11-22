@@ -60,7 +60,7 @@ export async function deletePolicyVersionCommand(
             )
         )
     } catch (e) {
-        getLogger().error(`Failed to delete Policy Version: ${policyVersionId}: %O`, e)
+        getLogger().error(`Failed to delete Policy Version: ${policyVersionId}: %s`, e)
         showViewLogsMessage(
             localize(
                 'AWS.iot.deletePolicyVersion.error',
