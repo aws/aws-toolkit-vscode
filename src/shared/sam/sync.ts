@@ -37,6 +37,7 @@ import { Auth, IamConnection } from '../../credentials/auth'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
+import { isAutomation } from '../vscode/env'
 
 export interface SyncParams {
     readonly region: string
@@ -49,6 +50,8 @@ export interface SyncParams {
     readonly connection: IamConnection
     readonly skipDependencyLayer?: boolean
 }
+
+export const prefixNewBucketName = (name: string) => `newbucket:${name}`
 
 function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
@@ -67,7 +70,7 @@ function createBucketPrompter(client: DefaultS3Client) {
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
-            transform: v => `newbucket:${v}`,
+            transform: v => prefixNewBucketName(v),
         },
     })
 }
@@ -230,9 +233,7 @@ async function injectCredentials(conn: IamConnection, env = process.env) {
     return { ...env, ...asEnvironmentVariables(creds) }
 }
 
-export async function runSamSync(args: SyncParams) {
-    telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
-
+async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
     const data = {
         codeOnly: args.deployType === 'code',
         templatePath: args.template.uri.fsPath,
@@ -247,7 +248,7 @@ export async function runSamSync(args: SyncParams) {
         updateRecentResponse('global', 'templatePath', data.templatePath),
     ])
 
-    const params = bindDataToParams(data, {
+    const boundArgs = bindDataToParams(data, {
         region: '--region',
         codeOnly: '--code',
         templatePath: '--template',
@@ -257,10 +258,15 @@ export async function runSamSync(args: SyncParams) {
         skipDependencyLayer: '--no-dependency-layer',
     })
 
+    return { boundArgs }
+}
+
+async function getSamCliPath() {
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
         throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
     }
+
     const info = await new SamCliInfoInvocation(samCliPath).execute()
     telemetry.record({ version: info.version })
 
@@ -268,13 +274,10 @@ export async function runSamSync(args: SyncParams) {
         throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
     }
 
-    const sam = new ChildProcess(samCliPath, ['sync', ...params], {
-        spawnOptions: {
-            cwd: args.projectRoot.fsPath,
-            env: await injectCredentials(args.connection),
-        },
-    })
+    return samCliPath
+}
 
+async function runSyncInTerminal(proc: ChildProcess) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
             const message = `sam sync exited with a non-zero exit code: ${result.exitCode}`
@@ -288,16 +291,16 @@ export async function runSamSync(args: SyncParams) {
     if (isCloud9()) {
         globals.outputChannel.show()
 
-        const result = sam.run({
+        const result = proc.run({
             onStdout: text => globals.outputChannel.append(removeAnsi(text)),
             onStderr: text => globals.outputChannel.append(removeAnsi(text)),
         })
-        sam.send('\n')
+        proc.send('\n')
 
         return handleResult(await result)
     }
 
-    const pty = new ProcessTerminal(sam)
+    const pty = new ProcessTerminal(proc)
     const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
     terminal.sendText('\n')
     terminal.show()
@@ -310,6 +313,21 @@ export async function runSamSync(args: SyncParams) {
     } else {
         return handleResult(result)
     }
+}
+
+export async function runSamSync(args: SyncParams) {
+    telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
+
+    const samCliPath = await getSamCliPath()
+    const { boundArgs } = await saveAndBindArgs(args)
+    const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
+        spawnOptions: {
+            cwd: args.projectRoot.fsPath,
+            env: await injectCredentials(args.connection),
+        },
+    })
+
+    await runSyncInTerminal(sam)
 }
 
 const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
@@ -345,6 +363,7 @@ function getSyncParamsFromConfig(config: SamConfig) {
                 const param = getStringParam(config, alt)
                 if (param !== undefined) {
                     samConfigParams.push(alt)
+
                     return param
                 }
             }
@@ -387,7 +406,7 @@ export async function prepareSyncParams(arg: vscode.Uri | AWSTreeNodeBase | unde
             data: await CloudFormation.load(arg.fsPath),
         }
 
-        return { ...baseParams, template }
+        return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
     }
 
     return baseParams
@@ -503,7 +522,12 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     public readonly onDidClose = this.onDidCloseEmitter.event
     public readonly onDidExit = this.onDidExitEmitter.event
 
-    public constructor(private readonly process: ChildProcess) {}
+    public constructor(private readonly process: ChildProcess) {
+        // Used in integration tests
+        if (isAutomation()) {
+            this.onDidWrite(text => console.log(text.trim()))
+        }
+    }
 
     #cancelled = false
     public get cancelled() {
