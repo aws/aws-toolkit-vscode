@@ -36,6 +36,7 @@ import { createCommonButtons } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
+import { credentialHelpUrl } from '../shared/constants'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
@@ -808,7 +809,7 @@ export const createBuilderIdItem = () =>
             'Use a personal email to sign up and sign in with AWS Builder ID'
         )}`,
         data: 'builderId',
-        detail: 'AWS Builder ID is a new, free personal login for builders.', // TODO: need a "Learn more" button ?
+        detail: 'AWS Builder ID is a new personal profile for builders.', // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
 export const createSsoItem = () =>
@@ -875,8 +876,10 @@ export function isBuilderIdConnection(conn?: Connection): conn is SsoConnection 
     return conn?.type === 'sso' && conn.startUrl === builderIdStartUrl
 }
 
-// TODO: add specific documentation URL
-Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
+Commands.register('aws.auth.help', async () => {
+    vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+    telemetry.aws_help.emit()
+})
 Commands.register('aws.auth.signout', () => signout(Auth.instance))
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createIamItem()], {

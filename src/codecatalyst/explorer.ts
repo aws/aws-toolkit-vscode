@@ -16,6 +16,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, createClientFactory, getConnectedDevEnv, getDevfileLocation } from './model'
+import * as codecatalyst from './model'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
@@ -29,19 +30,15 @@ const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vsco
     return vscode.env.openExternal(docsUrl)
 })
 
-// FIXME: use the correct url
-const codecatalystDocsUrl = vscode.Uri.parse(
-    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
-)
-
 function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
+    const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection)) {
         return [
             getStartedCommand.build(auth).asTreeNode({
                 label: 'Start',
                 iconPath: getIcon('vscode-debug-start'),
             }),
-            learnMoreCommand.build(codecatalystDocsUrl).asTreeNode({
+            learnMoreCommand.build(docsUrl).asTreeNode({
                 label: 'Learn More about CodeCatalyst',
                 iconPath: getIcon('vscode-question'),
             }),

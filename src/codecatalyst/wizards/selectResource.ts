@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import { isCloud9 } from '../../shared/extensionUtilities'
 import * as codecatalyst from '../../shared/clients/codecatalystClient'
 import { createCommonButtons, createRefreshButton } from '../../shared/ui/buttons'
 import {
@@ -14,7 +16,7 @@ import {
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { associateDevEnv } from '../model'
+import { associateDevEnv, docs } from '../model'
 import { getHelpUrl, isCodeCatalystVSCode } from '../utils'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
@@ -80,12 +82,13 @@ function fromDevEnv(env: codecatalyst.DevEnvironment): Omit<DataQuickPickItem<un
 
 function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
     resources: AsyncCollection<T[]>,
+    helpUri: vscode.Uri,
     presentation: Omit<ExtendedQuickPickOptions<T>, 'buttons'>
 ): QuickPickPrompter<T> {
     const refresh = createRefreshButton()
     const items = resources.map(p => p.map(asQuickpickItem))
     const prompter = createQuickPick(items, {
-        buttons: [refresh, ...createCommonButtons(getHelpUrl())],
+        buttons: [refresh, ...createCommonButtons(helpUri)],
         ...presentation,
     })
 
@@ -99,7 +102,8 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
 export function createOrgPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient
 ): QuickPickPrompter<codecatalyst.CodeCatalystOrg> {
-    return createResourcePrompter(client.listSpaces(), {
+    const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
+    return createResourcePrompter(client.listSpaces(), helpUri, {
         title: 'Select a CodeCatalyst Organization',
         placeholder: 'Search for an Organization',
     })
@@ -109,9 +113,10 @@ export function createProjectPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient,
     org?: codecatalyst.CodeCatalystOrg
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
+    const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
     const projects = org ? client.listProjects({ spaceName: org.name }) : client.listResources('project')
 
-    return createResourcePrompter(projects, {
+    return createResourcePrompter(projects, helpUri, {
         title: 'Select a CodeCatalyst Project',
         placeholder: 'Search for a Project',
     })
@@ -121,11 +126,12 @@ export function createRepoPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
+    const helpUri = isCloud9() ? docs.cloud9.cloneRepo : docs.vscode.main
     const repos = proj
         ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name })
         : client.listResources('repo')
 
-    return createResourcePrompter(repos, {
+    return createResourcePrompter(repos, helpUri, {
         title: 'Select a CodeCatalyst Repository',
         placeholder: 'Search for a Repository',
     })
@@ -135,13 +141,14 @@ export function createDevEnvPrompter(
     client: codecatalyst.ConnectedCodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
+    const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
     const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
     const filtered = envs.map(arr => arr.filter(env => isCodeCatalystVSCode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }
 
-    return createResourcePrompter(filtered, {
+    return createResourcePrompter(filtered, helpUri, {
         title: 'Select a CodeCatalyst Dev Environment',
         placeholder: 'Search for a Dev Environment',
         compare: (a, b) => {

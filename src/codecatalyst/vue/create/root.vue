@@ -4,7 +4,7 @@
         <!--TODO: add link-->
         <span style="font-size: 0.95em">
             Create an on-demand AWS instance to work on your code in the cloud.
-            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html">
+            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-devenvironment.html">
                 Learn more about CodeCatalyst Dev Environments.
             </a>
         </span>
