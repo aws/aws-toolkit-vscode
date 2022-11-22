@@ -26,7 +26,7 @@ describe('detectCdkProjects', function () {
                     return await detectCdkProjects(dirs)
                 },
                 {
-                    timeout: 3000,
+                    timeout: 10000,
                     interval: 250,
                     truthy: true,
                 }
