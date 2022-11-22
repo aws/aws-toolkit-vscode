@@ -95,7 +95,7 @@ describe('GitExtension', function () {
         try {
             execFileSync(git.$api.git.path, ['config', '--global', '--unset', CONFIG_KEY])
         } catch (err) {
-            getLogger().warn(`Unable to unset test git config value ${CONFIG_KEY}: %O`, err)
+            getLogger().warn(`Unable to unset test git config value ${CONFIG_KEY}: %s`, err)
         }
     })
 

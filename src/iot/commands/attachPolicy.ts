@@ -45,7 +45,7 @@ export async function attachPolicyCommand(
     try {
         await node.iot.attachPolicy({ policyName: policy.policyName!, target: certArn })
     } catch (e) {
-        getLogger().error(`Failed to attach policy ${policy.policyName}: %O`, e)
+        getLogger().error(`Failed to attach policy ${policy.policyName}: %s`, e)
         showViewLogsMessage(
             localize('AWS.iot.attachCert.error', 'Failed to attach policy {0}', policy.policyName),
             window
@@ -108,7 +108,7 @@ async function* getPolicyList(iot: IotClient, window?: Window) {
              * above API, but we filter here anyway for when we use ! later. */
             filteredPolicies = policyResponse.policies?.filter(policy => policy.policyArn && policy.policyName) ?? []
         } catch (e) {
-            getLogger().error(`Failed to retrieve policies: %O`, e)
+            getLogger().error(`Failed to retrieve policies: %s`, e)
             showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'), window)
             return
         }

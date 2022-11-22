@@ -153,7 +153,7 @@ export class RegionProvider {
                 instance.onDidChangeEmitter.fire()
             })
             .catch(err => {
-                getLogger().error('Failure while loading Endpoints Manifest: %O', err)
+                getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
                 vscode.window.showErrorMessage(
                     `${localize(

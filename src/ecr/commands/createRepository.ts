@@ -41,7 +41,7 @@ export async function createRepository(
         )
         telemetry.ecr_createRepository.emit({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to create repository ${repositoryName}: %O`, e)
+        getLogger().error(`Failed to create repository ${repositoryName}: %s`, e)
         showViewLogsMessage(
             localize('AWS.ecr.createRepository.failure', 'Failed to create repository: {0}', repositoryName),
             window
