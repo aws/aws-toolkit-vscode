@@ -47,7 +47,7 @@ export class Logging {
         const text = editor.document.getText()
         const textStart = text.indexOf(msg)
         if (textStart === -1) {
-            this.logger.warn(`logging: unable to find message with id "${logId}"`)
+            this.logger.debug(`logging: unable to find message with id "${logId}"`)
             return
         }
 
