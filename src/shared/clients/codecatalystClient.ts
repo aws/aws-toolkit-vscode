@@ -48,7 +48,7 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
             region: 'us-east-1',
             endpoint: 'https://public.codecatalyst.global.api.aws',
             hostname: 'codecatalyst.aws',
-            gitHostname: 'git.service.REMOVED.codes',
+            gitHostname: 'codecatalyst.aws',
         }
     }
 }
