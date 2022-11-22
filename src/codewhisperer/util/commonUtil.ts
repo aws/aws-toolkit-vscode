@@ -48,3 +48,18 @@ export function getFileExt(languageId: string) {
     }
     return undefined
 }
+
+/**
+ * Returns the longest overlap between the Suffix of firstString and Prefix of second string
+ * getPrefixSuffixOverlap("adwg31", "31ggrs") = "31"
+ */
+export function getPrefixSuffixOverlap(firstString: string, secondString: string) {
+    let i = Math.min(firstString.length, secondString.length)
+    while (i > 0) {
+        if (secondString.slice(0, i) === firstString.slice(-i)) {
+            break
+        }
+        i--
+    }
+    return secondString.slice(0, i)
+}
