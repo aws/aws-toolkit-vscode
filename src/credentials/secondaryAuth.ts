@@ -11,7 +11,6 @@ import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth, Connection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
-import { UnknownError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 
