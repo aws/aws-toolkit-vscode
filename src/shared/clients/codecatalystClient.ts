@@ -333,7 +333,14 @@ class CodeCatalystClientInternal {
     public async createAccessToken(
         args: codecatalyst.CreateAccessTokenRequest
     ): Promise<codecatalyst.CreateAccessTokenResponse> {
-        return this.call(this.sdkClient.createAccessToken(args), false)
+        try {
+            return this.call(this.sdkClient.createAccessToken(args), false)
+        } catch (e) {
+            if ((e as Error).name === 'ServiceQuotaExceededException') {
+                throw new ToolkitError('Access token limit exceeded', { code: 'ServiceQuotaExceeded' })
+            }
+            throw e
+        }
     }
 
     public async getSubscription(
