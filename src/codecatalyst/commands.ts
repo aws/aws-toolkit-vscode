@@ -153,7 +153,7 @@ function createClientInjector(
 
             return await command(client, ...args)
         } finally {
-            const userId = client.connected ? `codecatalyst;${client.identity.id}` : AccountStatus.NotApplicable
+            const userId = client.connected ? client.identity.id : AccountStatus.NotApplicable
 
             // TODO(sijaden): should this mark only instantiated spans or future spans as well?
             // right now it won't mark spans if they're created and emitted prior to the command finishing
