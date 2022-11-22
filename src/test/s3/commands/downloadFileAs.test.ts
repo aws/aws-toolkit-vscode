@@ -17,6 +17,7 @@ import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, verify } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import globals from '../../../shared/extensionGlobals'
+import { assertEqualPaths } from '../../testUtil'
 
 describe('downloadFileAsCommand', function () {
     const bucketName = 'bucket-name'
@@ -59,12 +60,9 @@ describe('downloadFileAsCommand', function () {
 
         await downloadFileAsCommand(node, window, outputChannel)
 
-        assert.ok(window.dialog.saveOptions?.defaultUri?.path?.endsWith(fileName))
-        // VS Code nomalizes drive letters to lower case
-        assert.strictEqual(
-            window.dialog.saveOptions?.defaultUri?.fsPath.toLowerCase(),
-            path.join(temp, 'file.jpg').toLowerCase()
-        )
+        assert.ok(window.dialog.saveOptions?.defaultUri?.fsPath)
+        assertEqualPaths(window.dialog.saveOptions.defaultUri.fsPath, path.join(temp, 'file.jpg'))
+
         assert.strictEqual(window.dialog.saveOptions?.saveLabel, 'Download')
         assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
 
