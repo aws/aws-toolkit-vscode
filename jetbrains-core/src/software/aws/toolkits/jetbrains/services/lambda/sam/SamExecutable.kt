@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
+import software.aws.toolkits.jetbrains.services.lambda.sam.sync.SyncServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
@@ -257,5 +258,54 @@ fun GeneralCommandLine.samInitCommand(
 
         addParameter("--extra-context")
         addParameter(extraContextAsJson)
+    }
+}
+
+fun GeneralCommandLine.samSyncCommand(
+    environmentVariables: Map<String, String>,
+    templatePath: Path,
+    settings: SyncServerlessApplicationSettings,
+    syncOnlyCode: Boolean
+) = this.apply {
+    withEnvironment(environmentVariables)
+    withWorkDirectory(templatePath.toAbsolutePath().parent.toString())
+    addParameter("sync")
+    addParameter("--stack-name")
+    addParameter(settings.stackName)
+    addParameter("--template-file")
+    addParameter(templatePath.toString())
+    addParameter("--s3-bucket")
+    addParameter(settings.bucket)
+    settings.ecrRepo?.let {
+        addParameter("--image-repository")
+        addParameter(it)
+    }
+    if (settings.capabilities.isNotEmpty()) {
+        addParameter("--capabilities")
+        addParameters(settings.capabilities.map { it.capability })
+    }
+    if (settings.parameters.isNotEmpty()) {
+        addParameter("--parameter-overrides")
+        settings.parameters.forEach { (key, value) ->
+            addParameter(
+                "${escapeParameter(key)}=${escapeParameter(value)}"
+            )
+        }
+    }
+
+    if (settings.tags.isNotEmpty()) {
+        addParameter("--tags")
+        settings.tags.forEach { (key, value) ->
+            addParameter(
+                "${escapeParameter(key)}=${escapeParameter(value)}"
+            )
+        }
+    }
+    if (settings.useContainer) {
+        addParameter("--use-container")
+    }
+    addParameter("--no-dependency-layer")
+    if (syncOnlyCode) {
+        addParameter("--code")
     }
 }

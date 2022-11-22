@@ -172,6 +172,7 @@ with what features/services are supported.
                             testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings" />
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamDisplayDevModeWarningSettings"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultDynamicResourcesSettings"/>
@@ -179,6 +180,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
+        <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.SyncSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.UpdateLambdaState"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings"/>
@@ -363,6 +365,8 @@ with what features/services are supported.
         <experiment implementation="software.aws.toolkits.jetbrains.services.codewhisperer.experiment.CodeWhispererExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment"/>
+        <experiment implementation="software.aws.toolkits.jetbrains.services.lambda.sam.sync.SyncServerlessApplicationExperiment"/>
+        <experiment implementation="software.aws.toolkits.jetbrains.services.lambda.sam.sync.SyncServerlessApplicationCodeExperiment"/>
 
         <tool implementation="software.aws.toolkits.jetbrains.services.ssm.SsmPlugin"/>
     </extensions>
@@ -584,6 +588,9 @@ with what features/services are supported.
         <action class="software.aws.toolkits.jetbrains.core.credentials.ConfigureAwsConnectionAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction" id="serverless.application.deploy" />
+        <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessApplicationCodeAction" id="serverless.sync.code"/>
+        <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessApplicationAction" id="serverless.sync.infra"/>
+        <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessAppAction" id="serverless.sync.app"/>
         <action class="software.aws.toolkits.jetbrains.settings.ShowSettingsAction" id="aws.settings.show" icon="AllIcons.General.Settings"/>
 
         <group id="aws.toolkit.serverless.template">
@@ -594,7 +601,11 @@ with what features/services are supported.
             <separator/>
             <reference id="serverless.application.deploy"/>
             <separator/>
+            <reference id="serverless.sync.infra"/>
+            <reference id="serverless.sync.code"/>
+            <separator/>
         </group>
+
 
         <group id="aws.toolkit.s3viewer.transferActions">
             <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction"/>

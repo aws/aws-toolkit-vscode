@@ -1,10 +1,10 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.deploy
+package software.aws.toolkits.jetbrains.services.lambda.sam.sync
 
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.ui.validation.DialogValidation
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.RuleChain
@@ -30,7 +30,7 @@ import software.aws.toolkits.resources.message
 import java.nio.file.Files
 
 @RunsInEdt
-class DeploySamApplicationValidatorTest {
+class SyncSamApplicationValidatorTest {
     private val projectRule = JavaCodeInsightTestFixtureRule()
 
     @Rule
@@ -45,7 +45,7 @@ class DeploySamApplicationValidatorTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule()
 
-    private lateinit var sut: DeployServerlessApplicationDialog
+    private lateinit var sut: SyncServerlessApplicationDialog
     private lateinit var sutPanel: DialogPanel
 
     private val parameters = listOf<Parameter>(
@@ -62,14 +62,19 @@ class DeploySamApplicationValidatorTest {
         }
 
         val dir = Files.createDirectory(tempDir.newPath()).toAbsolutePath()
-
         runInEdtAndWait {
-            sut = DeployServerlessApplicationDialog(
-                projectRule.project,
-                VfsUtil.findFileByIoFile(dir.writeChild("path.yaml", byteArrayOf()).toFile(), true)!!,
-                loadResourcesOnCreate = false
-            )
-            sutPanel = sut.buildPanel()
+            val template = VfsUtil.findFileByIoFile(dir.writeChild("path.yaml", byteArrayOf()).toFile(), true)
+
+            if (template != null) {
+                sut = SyncServerlessApplicationDialog(
+                    projectRule.project,
+                    template,
+                    emptyList<StackSummary>(),
+                    loadResourcesOnCreate = false
+                )
+            }
+
+            sutPanel = sut.getParameterDialog()
         }
 
         val repo = Repository("repoName", "arn", "repositoryuri")
@@ -83,25 +88,24 @@ class DeploySamApplicationValidatorTest {
             stackName = "stack123",
             bucket = "bucket123",
             ecrRepo = repo.repositoryName,
-            autoExecute = false,
             useContainer = true
         )
         sut.populateParameters(parameters, parameters)
     }
 
     @Test
-    fun validInputsReturnsNull() {
+    fun `Valid inputs returns null`() {
         assertThat(validateAll()).isEmpty()
     }
 
     @Test
-    fun validInputsNoRepoReturnsNull() {
+    fun `valid inputs no repo returns null`() {
         sut.forceUi(sutPanel, forceEcrRepo = true, ecrRepo = null)
         assertThat(validateAll()).isEmpty()
     }
 
     @Test
-    fun validInputsWithNewStackReturnsNull() {
+    fun `valid inputs with new stack returns null`() {
         sut.forceUi(sutPanel, isCreateStack = true, stackName = "createStack")
         assertThat(validateAll()).isEmpty()
 
@@ -113,36 +117,36 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun validInputsWithImageReturnsNull() {
+    fun `valid inputs with image returns null`() {
         sut.forceUi(sutPanel, hasImageFunctions = true)
         assertThat(validateAll()).isEmpty()
     }
 
     @Test
-    fun stackMustBeSelected() {
+    fun `stack must be selected`() {
         sut.forceUi(sutPanel, isCreateStack = false, forceStackName = true, stackName = null)
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.stack.missing")) }
+            .matches { it.validate()?.message?.contains(message("serverless.application.sync.validation.stack.missing")) == true }
     }
 
     @Test
-    fun newStackNameMustBeSpecified() {
+    fun `new stack name must be specified`() {
         sut.forceUi(sutPanel, isCreateStack = true, forceStackName = true, stackName = null)
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.new.stack.name.missing")) }
+            .matches { it.validate()?.message?.contains(message("serverless.application.sync.validation.new.stack.name.missing")) == true }
     }
 
     @Test
-    fun invalidStackName_TooLong() {
+    fun `invalid stack name too long`() {
         val maxLength = ValidateSamParameters.MAX_STACK_NAME_LENGTH
         sut.forceUi(sutPanel, isCreateStack = true, stackName = "x".repeat(maxLength + 1))
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.new.stack.name.too.long", maxLength)) }
+            .matches { it.validate()?.message?.contains(message("serverless.application.deploy.validation.new.stack.name.too.long", maxLength)) == true }
     }
 
     @Test
-    fun invalidStackName_Duplicate() {
+    fun `invalid stack name duplicate`() {
         sut.forceUi(
             sutPanel,
             isCreateStack = true, stackName = "bar",
@@ -154,11 +158,11 @@ class DeploySamApplicationValidatorTest {
         )
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.new.stack.name.duplicate")) }
+            .matches { it.validate()?.message?.contains(message("serverless.application.deploy.validation.new.stack.name.duplicate")) == true }
     }
 
     @Test
-    fun invalidStackName_InvalidChars() {
+    fun `invalid stack name invalid chars`() {
         val invalid = listOf(
             "stack_1",
             "stack#1",
@@ -166,16 +170,18 @@ class DeploySamApplicationValidatorTest {
             " stack",
             "stack!@#$%^&*()_+-="
         )
-        invalid.forEach {
-            sut.forceUi(sutPanel, isCreateStack = true, stackName = it)
+        invalid.forEach { stackName ->
+            sut.forceUi(sutPanel, isCreateStack = true, stackName = stackName)
             assertThat(validateAll())
                 .singleElement()
-                .matches({ it.message.contains(message("serverless.application.deploy.validation.new.stack.name.invalid")) }, "for input $it")
+                .matches({
+                    it.validate()?.message?.contains(message("serverless.application.deploy.validation.new.stack.name.invalid")) == true
+                }, "for input $stackName")
         }
     }
 
     @Test
-    fun templateParameterAllTypesValid_hasValues() {
+    fun `template parameter all types valid has values`() {
         val parameters = listOf<Parameter>(
             TestParameter(logicalName = "param1", type = "String", defaultValue = "value1"),
             TestParameter(logicalName = "param2", type = "Number", defaultValue = "1"),
@@ -193,7 +199,7 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun templateParameterAllTypesValid_noValues() {
+    fun `template parameter all types valid no values`() {
         val parameters = listOf<Parameter>(
             TestParameter(logicalName = "param1", type = "String", defaultValue = ""),
             TestParameter(logicalName = "param4", type = "List<Number>", defaultValue = ""),
@@ -208,7 +214,7 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun templateParameter_stringRegex() {
+    fun `template parameterstring regex`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "goodRegex",
@@ -225,7 +231,7 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun templateParameter_stringTooShort() {
+    fun `template parameterstring too short`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "tooShort",
@@ -240,11 +246,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("tooShort does not meet MinLength") }
+            .matches { it.validate()?.message?.contains("tooShort does not meet MinLength") == true }
     }
 
     @Test
-    fun templateParameter_stringTooLong() {
+    fun `template parameter string too long`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "tooLong",
@@ -259,11 +265,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("tooLong exceeds MaxLength") }
+            .matches { it.validate()?.message?.contains("tooLong exceeds MaxLength") == true }
     }
 
     @Test
-    fun templateParameter_stringFailsRegex() {
+    fun `template parameter string fails regex`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "regexFail",
@@ -278,11 +284,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("regexFail does not match AllowedPattern") }
+            .matches { it.validate()?.message?.contains("regexFail does not match AllowedPattern") == true }
     }
 
     @Test
-    fun templateParameter_stringConstraintsInvalid() {
+    fun `template parameter string constraints invalid`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "badRegex",
@@ -305,11 +311,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("AllowedPattern for badRegex is not valid") }
+            .matches { it.validate()?.message?.contains("AllowedPattern for badRegex is not valid") == true }
     }
 
     @Test
-    fun templateParameter_numberInvalid() {
+    fun `template parameter number invalid`() {
         val parameters = listOf<Parameter>(
             TestParameter(logicalName = "notANumber", type = "Number", defaultValue = "f"),
             TestParameter(logicalName = "notANumber2", type = "Number", defaultValue = "")
@@ -317,11 +323,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("not a number") }
+            .matches { it.validate()?.message?.contains("not a number") == true }
     }
 
     @Test
-    fun templateParameter_numberTooSmall() {
+    fun `template parameter number too small`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "tooSmall",
@@ -336,11 +342,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("tooSmall is smaller than MinValue") }
+            .matches { it.validate()?.message?.contains("tooSmall is smaller than MinValue") == true }
     }
 
     @Test
-    fun templateParameter_numberTooBig() {
+    fun `template parameter number too big`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "tooBig",
@@ -355,11 +361,11 @@ class DeploySamApplicationValidatorTest {
         sut.populateParameters(parameters, parameters)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains("tooBig is larger than MaxValue") }
+            .matches { it.validate()?.message?.contains("tooBig is larger than MaxValue") == true }
     }
 
     @Test
-    fun templateParameter_numberConstraintsInvalid() {
+    fun `template parameter number constraints invalid`() {
         val parameters = listOf<Parameter>(
             TestParameter(
                 logicalName = "badValueConstraints",
@@ -377,22 +383,15 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun s3BucketMustBeSpecified() {
+    fun `s3 bucket must be specified`() {
         sut.forceUi(sutPanel, forceBucket = true, bucket = null)
-        assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.s3.bucket.empty")) }
-    }
-
-    @Test
-    fun ecrRepoMustBeSpecifiedWithImages() {
-        sut.forceUi(sutPanel, hasImageFunctions = true, forceEcrRepo = true, ecrRepo = null)
 
         assertThat(validateAll()).singleElement()
-            .matches { it.message.contains(message("serverless.application.deploy.validation.ecr.repo.empty")) }
+            .matches { it.validate()?.message?.contains(message("serverless.application.sync.validation.s3.bucket.empty")) == true }
     }
 
-    private fun validateAll(): List<ValidationInfo> =
-        sutPanel.validateCallbacks.mapNotNull { it.invoke() }
+    private fun validateAll(): List<DialogValidation> =
+        sutPanel.validationsOnApply.flatMap { it.value }.filter { it.validate() != null }
 
     private class TestParameter(
         override val logicalName: String,
@@ -400,13 +399,13 @@ class DeploySamApplicationValidatorTest {
         private val defaultValue: String?,
         private val additionalProperties: Map<String, String> = emptyMap()
     ) : Parameter {
-        override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key)!!
+        override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key) ?: throw Exception("Cannot be null")
 
         override fun getOptionalScalarProperty(key: String): String? {
             if (key == "Type") {
                 return type
             }
-            return additionalProperties.get(key)
+            return additionalProperties[key]
         }
 
         override fun setScalarProperty(key: String, value: String) {

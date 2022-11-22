@@ -20,6 +20,7 @@ import com.intellij.ui.JreHiDpiUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.dsl.builder.MutableProperty
 import com.intellij.ui.layout.Cell
 import com.intellij.ui.layout.CellBuilder
 import com.intellij.ui.layout.ComponentPredicate
@@ -301,6 +302,13 @@ fun Cell.contextualHelp(description: String): CellBuilder<JBLabel> {
 
 fun CellBuilder<KeyValueTextField>.withBinding(binding: PropertyBinding<Map<String, String>>) =
     this.withBinding(
+        componentGet = { component -> component.envVars },
+        componentSet = { component, value -> component.envVars = value },
+        binding
+    )
+
+fun com.intellij.ui.dsl.builder.Cell<KeyValueTextField>.withBinding(binding: MutableProperty<Map<String, String>>) =
+    this.bind(
         componentGet = { component -> component.envVars },
         componentSet = { component, value -> component.envVars = value },
         binding

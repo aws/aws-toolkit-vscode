@@ -12,6 +12,7 @@ import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
+import software.aws.toolkits.jetbrains.services.lambda.sam.sync.SyncServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
@@ -609,6 +610,268 @@ class SamExecutableTest {
                 "HelloWorldTemplate",
                 "--extra-context",
                 """{\"Foo\":\"Bar\"}"""
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync command is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = emptyMap(),
+                tags = emptyMap(),
+                useContainer = false,
+                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = false
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+                "--no-dependency-layer"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync with parameters is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = mapOf(
+                    "Hello1" to "World",
+                    "Hello2" to "Wor ld",
+                    "Hello3" to "\"Wor ld\"",
+                    "Hello4" to "It's",
+                    "Hello5" to "2+2=22"
+                ),
+                tags = emptyMap(),
+                useContainer = false,
+                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = false
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+                "--parameter-overrides",
+                """ \"Hello1\"=\"World\" """.trim(),
+                """ "\"Hello2\"=\"Wor ld\"" """.trim(),
+                """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
+                """ \"Hello4\"=\"It's\" """.trim(),
+                """ \"Hello5\"=\"2+2=22\" """.trim(),
+                "--no-dependency-layer"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync command with tags is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = emptyMap(),
+                tags = mapOf(
+                    "Hello1" to "World",
+                    "Hello2" to "Wor ld",
+                    "Hello3" to "\"Wor ld\"",
+                    "Hello4" to "It's",
+                    "Hello5" to "2+2=22",
+                    "Hello;6" to "World",
+                ),
+                useContainer = false,
+                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = false
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+                "--tags",
+                """ \"Hello1\"=\"World\" """.trim(),
+                """ "\"Hello2\"=\"Wor ld\"" """.trim(),
+                """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
+                """ \"Hello4\"=\"It's\" """.trim(),
+                """ \"Hello5\"=\"2+2=22\" """.trim(),
+                """ \"Hello;6\"=\"World\" """.trim(),
+                "--no-dependency-layer"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync command code only is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = emptyMap(),
+                tags = emptyMap(),
+                useContainer = false,
+                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = true
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+                "--no-dependency-layer",
+                "--code"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync command with use container option checked is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = emptyMap(),
+                tags = emptyMap(),
+                useContainer = true,
+                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = false
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+                "--use-container",
+                "--no-dependency-layer"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam sync command with capabilities added is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+
+        val cmd = GeneralCommandLine("sam").samSyncCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            SyncServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                parameters = emptyMap(),
+                tags = emptyMap(),
+                useContainer = true,
+                capabilities = listOf(CreateCapabilities.AUTO_EXPAND)
+            ),
+            syncOnlyCode = false
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "sync",
+                "--stack-name",
+                "MyStack",
+                "--template-file",
+                "$templatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--capabilities",
+                "CAPABILITY_AUTO_EXPAND",
+                "--use-container",
+                "--no-dependency-layer"
             ).joinToString(separator = " ")
         )
     }
