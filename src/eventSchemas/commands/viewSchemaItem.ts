@@ -30,7 +30,7 @@ export async function viewSchemaItem(node: SchemaItemNode) {
                 node.schemaName
             )
         )
-        logger.error('Error on schema preview: %O', error)
+        logger.error('Error on schema preview: %s', error)
     } finally {
         telemetry.schemas_view.emit({ result: viewResult })
     }

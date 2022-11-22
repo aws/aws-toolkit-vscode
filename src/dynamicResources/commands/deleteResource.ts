@@ -77,7 +77,7 @@ export async function deleteResource(
                     return false
                 }
                 result = 'Failed'
-                getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %O`, e)
+                getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %s`, e)
                 showViewLogsMessage(
                     localize(
                         'aws.resources.deleteResource.failure',

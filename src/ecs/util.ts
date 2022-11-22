@@ -80,7 +80,7 @@ export async function prepareCommand(
         ssm.terminateSession({ SessionId: sessionId })
             .promise()
             .catch(err => {
-                getLogger().warn(`ecs: failed to terminate session "${sessionId}": %O`, err)
+                getLogger().warn(`ecs: failed to terminate session "${sessionId}": %s`, err)
             })
     }
 

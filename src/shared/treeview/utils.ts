@@ -64,7 +64,7 @@ export function createThemeIcon(id: string, color?: string) {
 
 export function createErrorItem(error: Error, message?: string): TreeNode {
     const command = Logging.declared.viewLogsAtMessage
-    const logId = message ? getLogger().error(message) : getLogger().error(error)
+    const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
 
     return command.build(logId).asTreeNode({
         label: localize('AWS.explorerNode.error.label', 'Failed to load resources (click for logs)'),
