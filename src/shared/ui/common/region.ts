@@ -32,12 +32,14 @@ export function createRegionPrompter(
         r => !options.serviceFilter || globals.regionProvider.isServiceInRegion(options.serviceFilter, r.id)
     )
 
+    const lastRegion = globals.context.globalState.get<Region>(lastRegionKey)
     const items = filteredRegions.map(region => ({
         label: region.name,
         detail: region.id,
         data: region,
         skipEstimate: true,
         description: '',
+        recentlyUsed: region.id === lastRegion?.id,
     }))
 
     const defaultRegionItem = items.find(item => item.detail === defaultRegion)
@@ -55,13 +57,6 @@ export function createRegionPrompter(
         },
     })
 
-    const lastRegion = globals.context.globalState.get<Region>(lastRegionKey)
-    if (lastRegion !== undefined && (lastRegion as any).id) {
-        const found = filteredRegions.find(val => val.id === lastRegion.id)
-        if (found) {
-            prompter.recentItem = lastRegion
-        }
-    }
     return prompter.transform(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
         globals.context.globalState.update(lastRegionKey, item)

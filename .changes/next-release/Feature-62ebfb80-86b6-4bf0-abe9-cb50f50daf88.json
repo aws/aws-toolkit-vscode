@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM: deployment of CloudFormation templates now uses `sam sync` by default, reducing the amount of time it takes to deploy to AWS. The `aws.samcli.legacyDeploy` setting can be used to revert to the old experience."
+}
