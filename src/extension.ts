@@ -61,7 +61,7 @@ import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
-import { Settings } from './shared/settings'
+import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
@@ -120,9 +120,18 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.resourceManager = new AwsResourceManager(context)
 
         const settings = Settings.instance
+        const experiments = Experiments.instance
 
         await initializeCredentials(context, awsContext, settings, loginManager)
         await activateTelemetry(context, awsContext, settings)
+
+        experiments.onDidChange(({ key }) => {
+            telemetry.aws_experimentActivation.run(span => {
+                // Record the key prior to reading the setting as `get` may throw
+                span.record({ experimentId: key })
+                span.record({ experimentState: experiments.get(key) ? 'activated' : 'deactivated' })
+            })
+        })
 
         await globals.schemaService.start()
         awsFiletypes.activate()
