@@ -277,6 +277,7 @@ async function getSamCliPath() {
     return samCliPath
 }
 
+let oldTerminal: ProcessTerminal | undefined
 async function runSyncInTerminal(proc: ChildProcess) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
@@ -300,7 +301,11 @@ async function runSyncInTerminal(proc: ChildProcess) {
         return handleResult(await result)
     }
 
-    const pty = new ProcessTerminal(proc)
+    // The most recent terminal won't get garbage collected until the next run
+    if (oldTerminal?.stopped === true) {
+        oldTerminal.close()
+    }
+    const pty = (oldTerminal = new ProcessTerminal(proc))
     const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
     terminal.sendText('\n')
     terminal.show()
@@ -532,6 +537,10 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     #cancelled = false
     public get cancelled() {
         return this.#cancelled
+    }
+
+    public get stopped() {
+        return this.process.stopped
     }
 
     public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
