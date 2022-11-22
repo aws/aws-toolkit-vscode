@@ -38,10 +38,10 @@ describe('samCliConfiguration', function () {
 
         const config = new SamCliSettings(
             {
-                getLocation: async (): Promise<string | undefined> => {
+                getLocation: async () => {
                     timesCalled++
 
-                    return Promise.resolve(undefined)
+                    return undefined
                 },
             },
             settingsConfiguration
@@ -57,9 +57,7 @@ describe('samCliConfiguration', function () {
 
         const config = new SamCliSettings(
             {
-                getLocation: async (): Promise<string | undefined> => {
-                    return Promise.resolve(fakeCliLocation)
-                },
+                getLocation: async () => ({ path: fakeCliLocation, version: '' }),
             },
             settingsConfiguration
         )
@@ -71,9 +69,7 @@ describe('samCliConfiguration', function () {
     it('location provider does not detect a file', async function () {
         const config = new SamCliSettings(
             {
-                getLocation: async (): Promise<string | undefined> => {
-                    return Promise.resolve(undefined)
-                },
+                getLocation: async () => undefined,
             },
             settingsConfiguration
         )

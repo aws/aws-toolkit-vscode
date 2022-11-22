@@ -21,13 +21,7 @@ describe('createRegionPrompter', function () {
         })
         const tester = createQuickPickTester(p)
         tester.assertItems(['FOO', 'PDX', 'IAD'])
-        tester.acceptItem({
-            label: regions[1].name,
-            detail: regions[1].id,
-            data: regions[1],
-            skipEstimate: true,
-            description: '',
-        })
+        tester.acceptItem(regions[1].name)
         await tester.result(regions[1])
     })
 })
