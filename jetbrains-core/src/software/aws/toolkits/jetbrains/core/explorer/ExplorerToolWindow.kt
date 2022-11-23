@@ -180,7 +180,11 @@ class ExplorerToolWindow(project: Project) :
             }
             null, is AwsBearerTokenConnection -> {
                 runInEdt {
-                    treePanelWrapper.setContent(buildIamHelpPanel(connection))
+                    treePanelWrapper.setContent(
+                        buildIamHelpPanel(connection).apply {
+                            isOpaque = false
+                        }
+                    )
                 }
             }
             else -> {

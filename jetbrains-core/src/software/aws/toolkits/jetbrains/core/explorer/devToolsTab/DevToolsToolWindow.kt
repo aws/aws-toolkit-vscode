@@ -22,6 +22,7 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.concurrency.Invoker
+import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractActionTreeNode
@@ -36,6 +37,8 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     private val tree = Tree(AsyncTreeModel(treeModel, true, this))
 
     init {
+        background = UIUtil.getTreeBackground()
+
         TreeUIHelper.getInstance().installTreeSpeedSearch(tree)
         tree.isRootVisible = false
         tree.autoscrolls = true
