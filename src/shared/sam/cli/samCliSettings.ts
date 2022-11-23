@@ -79,6 +79,7 @@ const description = {
     lambdaTimeout: Number,
     enableCodeLenses: Boolean,
     manuallySelectedBuckets: SavedBuckets,
+    legacyDeploy: Boolean,
 }
 
 export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {
@@ -87,10 +88,6 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
         settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(settings)
-    }
-
-    public async detectLocation(): Promise<string | undefined> {
-        return this.locationProvider.getLocation()
     }
 
     /**
@@ -106,8 +103,8 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             return { path: fromConfig, autoDetected: false }
         }
 
-        const fromSearch = await this.detectLocation()
-        return { path: fromSearch, autoDetected: true }
+        const fromSearch = await this.locationProvider.getLocation()
+        return { path: fromSearch?.path, autoDetected: true }
     }
 
     public getSavedBuckets(): SavedBuckets | undefined {

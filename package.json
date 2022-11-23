@@ -145,6 +145,11 @@
                     "default": 90000,
                     "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
                 },
+                "aws.samcli.legacyDeploy": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "%AWS.configuration.description.samcli.legacyDeploy%"
+                },
                 "aws.logLevel": {
                     "type": "string",
                     "default": "info",
@@ -252,6 +257,10 @@
                             "type": "boolean",
                             "default": false
                         },
+                        "samcliConfirmDevStack": {
+                           "type": "boolean",
+                            "default": false
+                        },
                         "remoteConnected": {
                             "type": "boolean",
                             "default": false
@@ -264,7 +273,8 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "CodeWhisperer": true
+                        "CodeWhisperer": true,
+                        "samSyncCode": false
                     },
                     "properties": {
                         "jsonResourceModification": {
@@ -274,6 +284,10 @@
                         "CodeWhisperer": {
                             "type": "boolean",
                             "default": true
+                        },
+                        "samSyncCode": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -975,6 +989,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.deploySamApplication",
+                    "when": "config.aws.samcli.legacyDeploy"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
+                },
+                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1205,8 +1231,18 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@3"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer",
+                    "group": "3_lambda@3"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
+                    "group": "3_lambda@4"
                 },
                 {
                     "command": "aws.quickStart",
@@ -1267,13 +1303,23 @@
             "explorer/context": [
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
+                    "group": "z_aws@2"
                 },
                 {
                     "command": "aws.uploadLambda",
                     "when": "explorerResourceIsFolder || isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
-                    "group": "z_aws@2"
+                    "group": "z_aws@3"
                 }
             ],
             "view/item/context": [
@@ -1374,8 +1420,18 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -3017,6 +3073,16 @@
                 }
             },
             {
+                "command": "aws.samcli.sync",
+                "title": "%AWS.command.samcli.sync%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.samcli.syncCode",
+                "title": "%AWS.command.samcli.syncCode%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.codeWhisperer",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
@@ -3414,7 +3480,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.76",
+        "@aws-toolkits/telemetry": "^1.0.79",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
@@ -3482,6 +3548,7 @@
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
+        "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.7.2",
         "async-lock": "^1.3.0",

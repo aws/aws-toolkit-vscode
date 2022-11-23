@@ -146,7 +146,7 @@ function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | u
     )
 }
 
-function InstanceConstructor<T>(type: new (...args: any[]) => T): TypeConstructor<T> {
+function InstanceConstructor<T>(type: abstract new (...args: any[]) => T): TypeConstructor<T> {
     return value => {
         if (!(value instanceof type)) {
             throw new TypeError('Value is not an instance of the expected type')
@@ -181,8 +181,20 @@ export const Optional = OptionalConstructor
 export type Any = any
 export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
 
+export type Instance<T extends abstract new (...args: any[]) => unknown> = InstanceType<T>
+export const Instance = InstanceConstructor
+
 export type NonNullObject = Record<any, unknown>
 export const NonNullObject = addTypeName('Object', checkForObject)
 
-export type Instance<T extends new (...args: any[]) => unknown> = InstanceType<T>
-export const Instance = InstanceConstructor
+export type Union<T, U> = TypeConstructor<T | U>
+export function Union<T, U>(left: TypeConstructor<T>, right: TypeConstructor<U>): Union<T, U> {
+    return input => {
+        try {
+            return cast(input, left)
+        } catch {
+            // TODO: chain errors up
+            return cast(input, right)
+        }
+    }
+}

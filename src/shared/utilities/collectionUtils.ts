@@ -344,3 +344,23 @@ export function pageableToCollection<
 
     return toCollection(gen)
 }
+
+/**
+ * Converts an iterable of promises into an unordered stream of values.
+ *
+ * The resulting stream will throw if any of the promises are rejected.
+ */
+export async function* toStream<T>(values: Iterable<Promise<T>>): AsyncGenerator<T, void> {
+    const unresolved = new Map<number, Promise<T>>()
+    for (const promise of values) {
+        const index = unresolved.size
+        unresolved.set(
+            index,
+            promise.then(val => (unresolved.delete(index), val))
+        )
+    }
+
+    while (unresolved.size > 0) {
+        yield Promise.race(unresolved.values())
+    }
+}
