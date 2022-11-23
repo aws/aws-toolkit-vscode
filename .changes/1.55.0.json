@@ -1,0 +1,18 @@
+{
+	"date": "2022-11-23",
+	"version": "1.55.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: the `Sync SAM Application` command remembers your most recent selections per-region."
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: deployment of CloudFormation templates now uses `sam sync` by default, reducing the amount of time it takes to deploy to AWS. The `aws.samcli.legacyDeploy` setting can be used to revert to the old experience."
+		}
+	]
+}
