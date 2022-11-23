@@ -614,8 +614,25 @@ export class Auth implements AuthService, ConnectionManager {
             return
         }
 
+        // Legacy codepaths are mostly decoupled from `Auth`, however, to stop race conditions
+        // we cannot rely solely on `onDidChangeActiveConnection`. `login` **must** occur to put
+        // `AwsContext` in the expected state. Otherwise commands that use `autoconnect` might not
+        // work on the first execution.
+        //
+        // Right now `login` is eventually called twice on autoconnect for valid IAM connections.
+        // Not the most optimal solution, but it is by far the least riskiest.
+        const updateLoginManager = async (conn: Connection) => {
+            if (conn.type === 'iam' && this.getConnectionState(conn) === 'valid') {
+                await globals.loginManager.login({ passive: true, providerId: fromString(conn.id) })
+            }
+        }
+
         const conn = await this.restorePreviousSession()
         if (conn !== undefined) {
+            await updateLoginManager(conn).catch(err => {
+                getLogger().warn(`auth: failed to login during auto-connect using "${conn.label}": %s`, err)
+            })
+
             return
         }
 
@@ -625,7 +642,8 @@ export class Auth implements AuthService, ConnectionManager {
         const legacyProfile = new CredentialsSettings().get('profile', defaultProfileId) || defaultProfileId
         const tryConnection = async (id: string) => {
             try {
-                await this.useConnection({ id })
+                const conn = await this.useConnection({ id })
+                await updateLoginManager(conn)
                 return true
             } catch (err) {
                 getLogger().warn(`auth: failed to auto-connect using "${id}": %s`, err)
