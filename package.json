@@ -258,7 +258,7 @@
                             "default": false
                         },
                         "samcliConfirmDevStack": {
-                           "type": "boolean",
+                            "type": "boolean",
                             "default": false
                         },
                         "remoteConnected": {
@@ -1865,7 +1865,7 @@
                 },
                 {
                     "command": "aws.auth.signout",
-                    "when": "viewItem == awsAuthNode",
+                    "when": "viewItem == awsAuthNode && !isCloud9",
                     "group": "0@3"
                 },
                 {
@@ -1890,6 +1890,7 @@
                 },
                 {
                     "command": "aws.auth.signout",
+                    "enablement": "!isCloud9",
                     "group": "0@3"
                 }
             ]
@@ -2034,7 +2035,8 @@
             {
                 "command": "aws.auth.signout",
                 "title": "%AWS.command.auth.signout%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "enablement": "!isCloud9"
             },
             {
                 "command": "aws.auth.help",
