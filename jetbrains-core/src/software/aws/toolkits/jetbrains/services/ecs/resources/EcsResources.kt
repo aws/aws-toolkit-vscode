@@ -27,7 +27,7 @@ object EcsResources {
     fun describeService(clusterArn: String, serviceArn: String): Resource.Cached<Service> =
         ClientBackedCachedResource(EcsClient::class, "ecs.describe_service.$clusterArn.$serviceArn") {
             describeServices { it.cluster(clusterArn).services(serviceArn) }.services().firstOrNull()
-                ?: throw ServiceNotFoundException.builder().message(message("cloud_debug.ecs.service.not_found", serviceArn, clusterArn)).build()
+                ?: throw ServiceNotFoundException.builder().message(message("ecs.service.not_found", serviceArn, clusterArn)).build()
         }
 
     fun describeTaskDefinition(familyName: String): Resource.Cached<TaskDefinition> =

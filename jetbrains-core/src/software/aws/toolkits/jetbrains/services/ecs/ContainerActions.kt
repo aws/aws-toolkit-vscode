@@ -60,7 +60,7 @@ class ServiceContainerActions : SingleExplorerNodeActionGroup<EcsServiceNode>("C
         val containers = try {
             selected.nodeProject.getResourceNow(EcsResources.listContainers(selected.value.taskDefinition()))
         } catch (e: Exception) {
-            e.notifyError(message("cloud_debug.ecs.run_config.container.loading.error", e.localizedMessage), selected.nodeProject)
+            e.notifyError(message("ecs.run_config.container.loading.error", e.localizedMessage), selected.nodeProject)
             return emptyList()
         }
 
