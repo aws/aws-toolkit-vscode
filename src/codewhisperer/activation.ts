@@ -25,15 +25,15 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import {
     enableCodeSuggestions,
     toggleCodeSuggestions,
-    showIntroduction,
     showReferenceLog,
     set,
     get,
-    enterAccessToken,
-    requestAccess,
     showSecurityScan,
-    requestAccessCloud9,
-    updateCloud9TreeNodes,
+    showLearnMore,
+    showSsoSignIn,
+    showFreeTierLimit,
+    updateReferenceLog,
+    showIntroduction,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -43,10 +43,12 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
-import { InlineCompletionService } from './service/inlineCompletionService'
+import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
+import { AuthUtil } from './util/authUtil'
+import globals from '../shared/extensionGlobals'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -57,10 +59,8 @@ export async function activate(context: ExtContext): Promise<void> {
     })
 
     const codewhispererSettings = CodeWhispererSettings.instance
-    if (!codewhispererSettings.isEnabled()) {
-        return
-    }
-
+    // initialize AuthUtil earlier to make sure it can listen to connection change events.
+    const auth = AuthUtil.instance
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -87,19 +87,25 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
-            if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
-                const codewhispererEnabled = await codewhispererSettings.isEnabled()
-                if (!codewhispererEnabled) {
-                    await set(CodeWhispererConstants.termsAcceptedKey, false, context.extensionContext.globalState)
-                    await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
-                    if (!isCloud9()) {
-                        hideStatusBar()
-                    }
-                }
-                vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-            }
-            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer')) {
+            if (
+                configurationChangeEvent.affectsConfiguration(
+                    'aws.codeWhisperer.includeSuggestionsWithCodeReferences'
+                ) ||
+                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')
+            ) {
                 ReferenceLogViewProvider.instance.update()
+                if (auth.isEnterpriseSsoInUse()) {
+                    await vscode.window
+                        .showInformationMessage(
+                            CodeWhispererConstants.ssoConfigAlertMessage,
+                            CodeWhispererConstants.settingsLearnMore
+                        )
+                        .then(async resp => {
+                            if (resp === CodeWhispererConstants.settingsLearnMore) {
+                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                            }
+                        })
+                }
             }
             if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
@@ -150,7 +156,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     `@id:aws.codeWhisperer.includeSuggestionsWithCodeReferences`
                 )
             } else {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
+                await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
             }
         }),
         // show introduction
@@ -159,12 +165,18 @@ export async function activate(context: ExtContext): Promise<void> {
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
         enableCodeSuggestions.register(context),
-        // enter access token
-        enterAccessToken.register(context.extensionContext.globalState, client),
-        // request access
-        requestAccess.register(),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+        // sign in with sso or AWS ID
+        showSsoSignIn.register(),
+        // learn more about CodeWhisperer
+        showLearnMore.register(),
+        // show free tier limit
+        showFreeTierLimit.register(),
+        // update reference log instance
+        updateReferenceLog.register(),
+        // refresh codewhisperer status bar
+        refreshStatusBar.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
@@ -210,11 +222,39 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    function hideStatusBar() {
-        if (isInlineCompletionEnabled()) {
-            InlineCompletionService.instance.hideCodeWhispererStatusBar()
-        } else {
-            InlineCompletion.instance.hideCodeWhispererStatusBar()
+    async function showAccessTokenMigrationDialogue() {
+        // TODO: Change the color of the buttons
+        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
+        if (accessToken) {
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
+            const t = new Date()
+            if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
+                vscode.window
+                    .showWarningMessage(
+                        CodeWhispererConstants.accessTokenMigrationWarningMessage,
+                        CodeWhispererConstants.accessTokenMigrationWarningButtonMessage
+                    )
+                    .then(async resp => {
+                        if (resp === CodeWhispererConstants.accessTokenMigrationWarningButtonMessage) {
+                            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                            await showSsoSignIn.execute()
+                        }
+                    })
+            } else {
+                await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+                await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
+                vscode.window
+                    .showErrorMessage(
+                        CodeWhispererConstants.accessTokenMigrationErrorMessage,
+                        CodeWhispererConstants.accessTokenMigrationErrorButtonMessage
+                    )
+                    .then(async resp => {
+                        if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
+                            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                            await showSsoSignIn.execute()
+                        }
+                    })
+            }
         }
     }
 
@@ -235,10 +275,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     async function getManualTriggerStatus(): Promise<boolean> {
-        const codewhispererEnabled = await codewhispererSettings.isEnabled()
-        const acceptedTerms: boolean =
-            context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
-        return acceptedTerms && codewhispererEnabled
+        return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
     }
 
     function getAutoTriggerStatus(): boolean {
@@ -262,12 +299,14 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (isCloud9()) {
         setSubscriptionsforCloud9()
-        updateCloud9TreeNodes.execute()
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', await getManualTriggerStatus())
     } else {
         await setSubscriptionsforVsCodeInline()
+    }
+    if (!isCloud9()) {
+        showAccessTokenMigrationDialogue()
     }
 
     async function setSubscriptionsforInlineCompletion() {
@@ -445,9 +484,6 @@ export async function activate(context: ExtContext): Promise<void> {
          * Manual trigger
          */
         context.extensionContext.subscriptions.push(
-            // request access C9
-            requestAccessCloud9.register(context.extensionContext.globalState),
-            updateCloud9TreeNodes.register(context.extensionContext.globalState),
             vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.supportedLanguages], {
                 async provideCompletionItems(
                     document: vscode.TextDocument,

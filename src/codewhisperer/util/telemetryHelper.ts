@@ -33,11 +33,14 @@ export class TelemetryHelper {
      */
     public cursorOffset: number
 
+    public startUrl: string | undefined
+
     constructor() {
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
         this.completionType = 'Line'
         this.cursorOffset = 0
+        this.startUrl = ''
     }
 
     static #instance: TelemetryHelper
@@ -64,6 +67,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: this.completionType,
             codewhispererLanguage: languageContext.language,
+            credentialStartUrl: TelemetryHelper.instance.startUrl,
         })
     }
 
@@ -108,6 +112,7 @@ export class TelemetryHelper {
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 codewhispererCompletionType: this.completionType,
                 codewhispererLanguage: languageContext.language,
+                credentialStartUrl: TelemetryHelper.instance.startUrl,
             })
         })
     }

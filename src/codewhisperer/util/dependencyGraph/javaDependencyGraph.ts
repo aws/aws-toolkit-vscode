@@ -4,32 +4,25 @@
  */
 import { existsSync, statSync, readdirSync, readlinkSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraph, TruncPaths } from './dependencyGraph'
+import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
 
-export const IMPORT = 'import'
-export const STATIC = 'static'
-export const PACKAGE = 'package'
-export const SEMICOLON = ';'
-export const ENCODE = 'utf8'
-export const IMPORT_REGEX = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
-export const PACKAGE_REGEX = /^package\s+([\w\.]+)\s*;/gm
-export const BUILD_EXT = '.class'
-export const FILE_EXT = '.java'
-
-interface PackageNode {
+export interface PackageNode {
     paths: string[]
     valid: boolean
 }
 
-interface JavaStatement {
+export interface JavaStatement {
     imports: string[]
     packages: string[]
 }
+
+export const IMPORT_REGEX = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
+export const PACKAGE_REGEX = /^package\s+([\w\.]+)\s*;/gm
 
 export class JavaDependencyGraph extends DependencyGraph {
     private _outputDirs: Set<string> = new Set<string>()
@@ -57,7 +50,7 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private generateSourceFilePath(dirPath: string, importPath: string) {
-        const filePath = path.join(dirPath, importPath + FILE_EXT)
+        const filePath = path.join(dirPath, importPath + DependencyGraphConstants.javaExt)
         return existsSync(filePath) ? filePath : ''
     }
 
@@ -67,9 +60,9 @@ export class JavaDependencyGraph extends DependencyGraph {
         }
         const targetDir = path.join(dirPath, importPath.substring(0, importPath.length - 1))
         const filePaths: string[] = []
-        readdirSync(targetDir, { encoding: ENCODE, withFileTypes: true }).forEach(file => {
+        readdirSync(targetDir, { withFileTypes: true }).forEach(file => {
             const fileAbsPath = path.join(dirPath, file.name)
-            if (existsSync(fileAbsPath) && file.isFile() && file.name.endsWith(FILE_EXT)) {
+            if (existsSync(fileAbsPath) && file.isFile() && file.name.endsWith(DependencyGraphConstants.javaExt)) {
                 filePaths.push(fileAbsPath)
             }
         })
@@ -95,9 +88,11 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private generatePackagePath(packageStr: string) {
-        const packagePos = packageStr.indexOf(PACKAGE)
-        const semicolonPos = packageStr.indexOf(SEMICOLON)
-        const rawPackagePath = packageStr.substring(packagePos + PACKAGE.length, semicolonPos).trim()
+        const packagePos = packageStr.indexOf(DependencyGraphConstants.package)
+        const semicolonPos = packageStr.indexOf(DependencyGraphConstants.semicolon)
+        const rawPackagePath = packageStr
+            .substring(packagePos + DependencyGraphConstants.package.length, semicolonPos)
+            .trim()
         this._packageStrs.add(rawPackagePath)
         let packagePath = ''
         rawPackagePath.split('.').forEach(rpp => {
@@ -119,15 +114,15 @@ export class JavaDependencyGraph extends DependencyGraph {
             const pos = sourceFilePath.lastIndexOf(packagePath)
             buildFileRelativePath = sourceFilePath.substring(pos)
         }
-        return buildFileRelativePath.replace(path.extname(sourceFilePath), BUILD_EXT)
+        return buildFileRelativePath.replace(path.extname(sourceFilePath), DependencyGraphConstants.javaBuildExt)
     }
 
     private getImportPath(importStr: string) {
-        const importPos = importStr.indexOf(IMPORT)
-        const semicolonPos = importStr.indexOf(SEMICOLON)
-        let rawImportPath = importStr.substring(importPos + IMPORT.length, semicolonPos).trim()
-        if (rawImportPath.startsWith(STATIC + ' ')) {
-            const start = STATIC.length
+        const importPos = importStr.indexOf(DependencyGraphConstants.import)
+        const semicolonPos = importStr.indexOf(DependencyGraphConstants.semicolon)
+        let rawImportPath = importStr.substring(importPos + DependencyGraphConstants.import.length, semicolonPos).trim()
+        if (rawImportPath.startsWith(DependencyGraphConstants.static + ' ')) {
+            const start = DependencyGraphConstants.static.length
             const end = rawImportPath.lastIndexOf('.')
             rawImportPath = rawImportPath.substring(start, end).trim()
         }
@@ -171,15 +166,14 @@ export class JavaDependencyGraph extends DependencyGraph {
         this._pickedSourceFiles.add(filePath)
         this._totalSize = statSync(filePath).size
         const content = await readFileAsString(uri.fsPath)
-        this._totalLines = content.split('\n').length
+        this._totalLines = content.split(DependencyGraphConstants.newlineRegex).length
         const javaStatement = this.extractStatement(content)
         this._buildFileRelativePaths.clear()
         const buildFileRelativePath = this.generateBuildFileRelativePath(uri, projectPath, javaStatement.packages)
-        getLogger().debug(buildFileRelativePath)
         return this.generateOneBuildFilePaths(buildFileRelativePath)
     }
 
-    async searchDependency(uri: vscode.Uri) {
+    async searchDependency(uri: vscode.Uri): Promise<Set<string>> {
         const filePath = uri.fsPath
         const q: string[] = []
         q.push(filePath)
@@ -187,7 +181,7 @@ export class JavaDependencyGraph extends DependencyGraph {
             let count: number = q.length
             while (count > 0) {
                 if (this.reachSizeLimit(this._totalSize)) {
-                    return
+                    return this._pickedSourceFiles
                 }
                 count -= 1
                 const currentFilePath = q.shift()
@@ -201,7 +195,7 @@ export class JavaDependencyGraph extends DependencyGraph {
                 this._totalSize += statSync(currentFilePath).size
                 const uri = vscode.Uri.file(currentFilePath)
                 const content = await readFileAsString(uri.fsPath)
-                this._totalLines += content.split('\n').length
+                this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
                 const javaStatement = this.extractStatement(content)
                 const buildFileRelativePath = this.generateBuildFileRelativePath(
                     uri,
@@ -215,26 +209,28 @@ export class JavaDependencyGraph extends DependencyGraph {
                 })
             }
         }
+        return this._pickedSourceFiles
     }
 
     async traverseDir(dirPath: string) {
         if (!existsSync(dirPath) || this.reachSizeLimit(this._totalSize) || this._fetchedDirs.has(dirPath)) {
             return
         }
-        readdirSync(dirPath, { encoding: ENCODE, withFileTypes: true }).forEach(async file => {
+        readdirSync(dirPath, { withFileTypes: true }).forEach(async file => {
             const fileAbsPath = path.join(dirPath, file.name)
-            if (existsSync(fileAbsPath) && file.name.charAt(0) !== '.') {
-                if (file.isDirectory()) {
-                    await this.traverseDir(fileAbsPath)
-                } else if (file.isFile()) {
-                    if (
-                        file.name.endsWith(FILE_EXT) &&
-                        !this.reachSizeLimit(this._totalSize) &&
-                        !this.willReachSizeLimit(this._totalSize, statSync(fileAbsPath).size) &&
-                        !this._pickedSourceFiles.has(fileAbsPath)
-                    ) {
-                        await this.searchDependency(vscode.Uri.file(fileAbsPath))
-                    }
+            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) {
+                return
+            }
+            if (file.isDirectory()) {
+                await this.traverseDir(fileAbsPath)
+            } else if (file.isFile()) {
+                if (
+                    file.name.endsWith(DependencyGraphConstants.javaExt) &&
+                    !this.reachSizeLimit(this._totalSize) &&
+                    !this.willReachSizeLimit(this._totalSize, statSync(fileAbsPath).size) &&
+                    !this._pickedSourceFiles.has(fileAbsPath)
+                ) {
+                    await this.searchDependency(vscode.Uri.file(fileAbsPath))
                 }
             }
         })
@@ -292,14 +288,6 @@ export class JavaDependencyGraph extends DependencyGraph {
             this._outputDirs.add(compileOutput)
         }
         this.detectClasspath(projectPath, projectName, projectName, extension)
-        getLogger().debug(`Auto-detected strict classpaths:`)
-        this._outputDirs.forEach(dir => {
-            getLogger().debug(dir)
-        })
-        getLogger().debug(`Auto-detected non-strict classpaths:`)
-        this._outputNonStrictDirs.forEach(dir => {
-            getLogger().debug(dir)
-        })
     }
 
     private detectClasspath(dirPath: string, dirName: string, projectName: string, extension: string): PackageNode {
@@ -310,31 +298,32 @@ export class JavaDependencyGraph extends DependencyGraph {
         const packageNode: PackageNode = { paths: [], valid: true }
         let hasBuildFile: boolean = false
 
-        readdirSync(dirPath, { encoding: ENCODE, withFileTypes: true }).forEach(file => {
+        readdirSync(dirPath, { withFileTypes: true }).forEach(file => {
             const fileAbsPath = path.join(dirPath, file.name)
-            if (existsSync(fileAbsPath) && file.name.charAt(0) !== '.') {
-                if (file.isDirectory()) {
+            if (file.name.charAt(0) === '.' || !existsSync(fileAbsPath)) {
+                return
+            }
+            if (file.isDirectory()) {
+                const childPackageNode = this.detectClasspath(fileAbsPath, file.name, projectName, extension)
+                childPackageNode.paths.forEach(path => {
+                    packageNode.paths.push(path)
+                })
+                packageNode.valid = packageNode.valid && childPackageNode.valid
+            } else if (file.isSymbolicLink()) {
+                const linkPath = readlinkSync(fileAbsPath)
+                if (existsSync(linkPath) && statSync(linkPath).isDirectory()) {
                     const childPackageNode = this.detectClasspath(fileAbsPath, file.name, projectName, extension)
                     childPackageNode.paths.forEach(path => {
                         packageNode.paths.push(path)
                     })
                     packageNode.valid = packageNode.valid && childPackageNode.valid
-                } else if (file.isSymbolicLink()) {
-                    const linkPath = readlinkSync(fileAbsPath)
-                    if (existsSync(linkPath) && statSync(linkPath).isDirectory()) {
-                        const childPackageNode = this.detectClasspath(fileAbsPath, file.name, projectName, extension)
-                        childPackageNode.paths.forEach(path => {
-                            packageNode.paths.push(path)
-                        })
-                        packageNode.valid = packageNode.valid && childPackageNode.valid
-                    }
-                } else if (file.isFile()) {
-                    hasBuildFile = hasBuildFile || file.name.endsWith(extension)
                 }
+            } else if (file.isFile()) {
+                hasBuildFile = hasBuildFile || file.name.endsWith(extension)
+            }
 
-                if (!packageNode.valid) {
-                    return { paths: [], valid: false }
-                }
+            if (!packageNode.valid) {
+                return { paths: [], valid: false }
             }
         })
 
@@ -387,7 +376,7 @@ export class JavaDependencyGraph extends DependencyGraph {
             await this.searchDependency(uri)
             this._sysPaths.forEach(async dir => await this.traverseDir(dir))
             await sleep(1000)
-            this.autoDetectClasspath(projectPath, projectName, BUILD_EXT)
+            this.autoDetectClasspath(projectPath, projectName, DependencyGraphConstants.javaBuildExt)
             if (this._outputDirs.size === 0 && this._outputNonStrictDirs.size === 0) {
                 throw new Error(`Classpath auto-detection failed.`)
             }
@@ -402,15 +391,9 @@ export class JavaDependencyGraph extends DependencyGraph {
             const truncSourceDirPath = this.getTruncSourceDirPath(uri)
             const truncBuildDirPath = this.getTruncBuildDirPath(uri)
             getLogger().debug(`Picked source files:`)
-            this._pickedSourceFiles.forEach(sourceFilePath => {
-                getLogger().debug(sourceFilePath)
-                this.copyFileToTmp(vscode.Uri.file(sourceFilePath), truncSourceDirPath)
-            })
+            this.copyFilesToTmpDir(this._pickedSourceFiles, truncSourceDirPath)
             getLogger().debug(`Picked build artifacts:`)
-            buildFiles.forEach(buildFilePath => {
-                getLogger().debug(buildFilePath)
-                this.copyFileToTmp(vscode.Uri.file(buildFilePath), truncBuildDirPath)
-            })
+            this.copyFilesToTmpDir(buildFiles, truncBuildDirPath)
             const totalBuildSize = this.getFilesTotalSize(Array.from(buildFiles.values()))
             const zipSourcePath = this.zipDir(
                 truncSourceDirPath,
@@ -424,12 +407,6 @@ export class JavaDependencyGraph extends DependencyGraph {
             )
             const zipSourceSize = statSync(zipSourcePath).size
             const zipBuildSize = statSync(zipBuildPath).size
-            getLogger().debug(`Complete Java dependency graph.`)
-            getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
-            getLogger().debug(`Total size: ${((this._totalSize + totalBuildSize) / 1024).toFixed(2)}kb`)
-            getLogger().debug(`Total lines: ${this._totalLines}`)
-            getLogger().debug(`Source zip file: ${zipSourcePath}`)
-            getLogger().debug(`Build zip file: ${zipBuildPath}`)
             return {
                 root: truncDirPath,
                 src: {
@@ -447,8 +424,8 @@ export class JavaDependencyGraph extends DependencyGraph {
                 lines: this._totalLines,
             }
         } catch (error) {
-            getLogger().error('Java dependency graph error:', error)
-            throw new JavaDependencyGraphError('Java context processing failed.')
+            getLogger().error(`${this._languageId} dependency graph error caused by:`, error)
+            throw new JavaDependencyGraphError(`${this._languageId} context processing failed.`)
         }
     }
 }
