@@ -579,7 +579,7 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Best-effort attempt to start a devenv given an ID, showing a progress notifcation with a cancel button
+     * Best-effort attempt to start a devenv given an ID, showing a progress notification with a cancel button
      * TODO: may combine this progress stuff into some larger construct
      *
      * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
@@ -610,6 +610,11 @@ class CodeCatalystClientInternal {
 
         const pollDevEnv = waitUntil(
             async () => {
+                this.log.debug(
+                    'devenv not started, waiting (time: %d seconds): %s',
+                    timeout.elapsedTime / 1000,
+                    args.id
+                )
                 // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
                     return
@@ -644,13 +649,14 @@ class CodeCatalystClientInternal {
                 return resp.status === 'RUNNING' ? resp : undefined
             },
             // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
-            { interval: 5000, timeout: timeout.remainingTime, truthy: true }
+            { interval: 1000, timeout: timeout.remainingTime, truthy: true }
         )
 
         const devenv = await waitTimeout(pollDevEnv, timeout)
         if (!devenv) {
             throw new ToolkitError('Dev Environment failed to start', { code: 'Timeout' })
         }
+        this.log.info('devenv started after %d seconds: %s', timeout.elapsedTime / 1000, args.id)
 
         return devenv
     }
