@@ -38,6 +38,7 @@ import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
+import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 
 export interface SyncParams {
     readonly region: string
@@ -320,11 +321,32 @@ async function runSyncInTerminal(proc: ChildProcess) {
     }
 }
 
+async function loadLegacyParameterOverrides(template: TemplateItem) {
+    try {
+        const params = await getOverriddenParameters(template.uri)
+        if (!params) {
+            return
+        }
+
+        return [...params.entries()].map(([k, v]) => `${k}=${v}`)
+    } catch (err) {
+        getLogger().warn(`sam: unable to load legacy parameter overrides: %s`, err)
+    }
+}
+
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
     const samCliPath = await getSamCliPath()
     const { boundArgs } = await saveAndBindArgs(args)
+    const overrides = await loadLegacyParameterOverrides(args.template)
+    if (overrides !== undefined) {
+        // Undocumented attribute: `legacyFeatures` is a comma-delimited array of strings describing
+        // which legacy features are being supported for backwards compatability
+        telemetry.record({ legacyFeatures: 'templates.json' } as any)
+        boundArgs.push('--parameter-overrides', ...overrides)
+    }
+
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
         spawnOptions: {
             cwd: args.projectRoot.fsPath,
