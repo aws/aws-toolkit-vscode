@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as fs from 'fs-extra'
 
-import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'

@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from './logger/logger'
-import * as pathutils from './utilities/pathUtils'
+import { getLogger } from '../logger/logger'
+import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
-import { isUntitledScheme, normalizeVSCodeUri } from './utilities/vsCodeUtils'
+import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
 export interface WatchedItem<T> {
     /**
