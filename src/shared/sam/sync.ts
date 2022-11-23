@@ -341,9 +341,9 @@ export async function runSamSync(args: SyncParams) {
     const { boundArgs } = await saveAndBindArgs(args)
     const overrides = await loadLegacyParameterOverrides(args.template)
     if (overrides !== undefined) {
-        // Undocumented attribute: `legacyFeatures` is a comma-delimited array of strings describing
-        // which legacy features are being supported for backwards compatability
-        telemetry.record({ legacyFeatures: 'templates.json' } as any)
+        // Leaving this out of the definitions file as this is _very_ niche and specific to the
+        // implementation. Plus we would have to redefine `sam_sync` to add it.
+        telemetry.record({ isUsingTemplatesJson: true } as any)
         boundArgs.push('--parameter-overrides', ...overrides)
     }
 
