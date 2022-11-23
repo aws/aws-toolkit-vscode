@@ -1,8 +1,13 @@
+# _1.53_ (2022-11-23)
+- **(Feature)** Sync Serverless Application(SAM Accelerate)
+- **(Feature)** New experiment to allow injection of AWS Connection details (region/credentials) into Golang Run Configurations
+- **(Removal)** Removed support for 2021.3.x IDEs
+
 # _1.52_ (2022-10-19)
 - **(Feature)** Added 2022.3 support
 - **(Bug Fix)** Fix `credential_process` retrieval when command contains quoted arguments on Windows ([#3322](https://github.com/aws/aws-toolkit-jetbrains/issues/3322))
-- **(Bug Fix)** Fix `java.lang.IllegalStateException: Region provider data is missing default data` ([#3264](https://github.com/aws/aws-toolkit-jetbrains/issues/3264))
 - **(Deprecation)** An upcoming release will remove support for IDEs based on the 2021.3 platform
+- **(Bug Fix)** Fix `java.lang.IllegalStateException: Region provider data is missing default data` ([#3264](https://github.com/aws/aws-toolkit-jetbrains/issues/3264))
 
 # _1.51_ (2022-09-22)
 - **(Feature)** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services

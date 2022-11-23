@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "New experiment to allow injection of AWS Connection details (region/credentials) into Golang Run Configurations"
-}

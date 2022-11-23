@@ -1,0 +1,14 @@
+{
+  "date" : "2022-11-23",
+  "version" : "1.53",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Sync Serverless Application(SAM Accelerate)"
+  }, {
+    "type" : "feature",
+    "description" : "New experiment to allow injection of AWS Connection details (region/credentials) into Golang Run Configurations"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2021.3.x IDEs"
+  } ]
+}
