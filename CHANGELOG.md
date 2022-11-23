@@ -1,3 +1,9 @@
+## 1.55.0 2022-11-23
+
+- **Bug Fix** logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found
+- **Feature** SAM: the `Sync SAM Application` command remembers your most recent selections per-region.
+- **Feature** SAM: deployment of CloudFormation templates now uses `sam sync` by default, reducing the amount of time it takes to deploy to AWS. The `aws.samcli.legacyDeploy` setting can be used to revert to the old experience.
+
 ## 1.54.0 2022-11-19
 
 - **Bug Fix** JSON-schemas download logic is brittle #2957
