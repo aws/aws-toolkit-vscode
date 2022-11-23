@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "auth: auto-connecting using IAM credential profiles now succeeds when running commands outside of the AWS Explorer."
+}
