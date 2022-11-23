@@ -23,6 +23,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
@@ -30,6 +31,7 @@ const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection
     !isCloud9() && conn.type === 'sso' && codewhispererScopes.every(s => conn.scopes?.includes(s))
 
 export class AuthUtil {
+    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
     static #instance: AuthUtil
 
     private usingEnterpriseSSO: boolean = false

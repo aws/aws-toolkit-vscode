@@ -19,8 +19,11 @@ import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
+import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
 export class CodeWhispererNode implements RootNode {
+    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
+
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -70,6 +73,10 @@ export class CodeWhispererNode implements RootNode {
     }
 
     public getChildren() {
+        if (!this.isAvailable) {
+            return []
+        }
+
         const termsAccepted = globals.context.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey)
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
