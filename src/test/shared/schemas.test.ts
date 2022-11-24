@@ -133,4 +133,127 @@ describe('SchemaService', function () {
         await service.processUpdates()
         verify(fakeYamlExtension.assignSchema(anything(), anything())).never()
     })
+
+    it('processes no updates if owner is different', async function () {
+        const testUri = vscode.Uri.parse('/foo')
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+                owner: 'different_test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+    })
+
+    it('processes updates if owner is the same', async function () {
+        const testUri = vscode.Uri.parse('/foo')
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'sam',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
+    })
+
+    it('processes updates if schema type changed', async function () {
+        const testUri = vscode.Uri.parse('/foo')
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'sam',
+                owner: 'different_test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
+    })
+
+    it('processes updates if file becomes owned', async function () {
+        const testUri = vscode.Uri.parse('/foo')
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'sam',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
+    })
+
+    it('processes no updates if non owner tries to change file', async function () {
+        const testUri = vscode.Uri.parse('/foo')
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'cfn',
+                owner: 'test_registry',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
+
+        service.registerMapping(
+            {
+                uri: testUri,
+                type: 'yaml',
+                schema: 'sam',
+            },
+            true
+        )
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).never()
+    })
 })

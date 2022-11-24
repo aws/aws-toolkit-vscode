@@ -122,6 +122,7 @@
     "AWS.command.viewLogs": "View Toolkit Logs",
     "AWS.command.sam.newTemplate": "Create new SAM Template",
     "AWS.command.cloudFormation.newTemplate": "Create new CloudFormation Template",
+    "AWS.command.buildspec.newTemplate": "Create new Buildspec Template",
     "AWS.command.quickStart": "View Quick Start",
     "AWS.command.iot.createThing": "Create Thing...",
     "AWS.command.iot.createCert": "Create Certificate...",

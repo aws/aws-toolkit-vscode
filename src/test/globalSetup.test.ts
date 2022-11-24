@@ -51,7 +51,7 @@ after(async function () {
 beforeEach(async function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    globals.templateRegistry = new CloudFormationTemplateRegistry()
+    globals.templateRegistry.cfn = new CloudFormationTemplateRegistry()
     globals.codelensRootRegistry = new CodelensRootRegistry()
 
     // Enable telemetry features for tests. The metrics won't actually be posted.
@@ -67,7 +67,7 @@ afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
-    globals.templateRegistry.dispose()
+    globals.templateRegistry.cfn.dispose()
     globals.codelensRootRegistry.dispose()
 })
 

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
-import * as vscode from 'vscode'
 import { writeFile } from 'fs-extra'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
@@ -13,7 +11,6 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
-import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -804,23 +801,36 @@ export namespace CloudFormation {
     export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
     }
-}
 
-/**
- * Creates a starter YAML template file.
- * @param isSam: Create a SAM template instead of a CFN template
- */
-export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
-    const content = createStarterTemplateYaml(isSam)
-    const wsFolder = vscode.workspace.workspaceFolders
-    const loc = await window.showSaveDialog({
-        filters: { YAML: ['yaml'] },
-        defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
-    })
-    if (loc) {
-        fs.writeFileSync(loc.fsPath, content)
-        await vscode.commands.executeCommand('vscode.open', loc)
-    }
+    export const cloudFormationTags = [
+        '!And',
+        '!And sequence',
+        '!If',
+        '!If sequence',
+        '!Not',
+        '!Not sequence',
+        '!Equals',
+        '!Equals sequence',
+        '!Or',
+        '!Or sequence',
+        '!FindInMap',
+        '!FindInMap sequence',
+        '!Base64',
+        '!Join',
+        '!Join sequence',
+        '!Cidr',
+        '!Ref',
+        '!Sub',
+        '!Sub sequence',
+        '!GetAtt',
+        '!GetAZs',
+        '!ImportValue',
+        '!ImportValue sequence',
+        '!Select',
+        '!Select sequence',
+        '!Split',
+        '!Split sequence',
+    ]
 }
 
 /**
@@ -828,7 +838,7 @@ export async function createStarterTemplateFile(isSam?: boolean, window: Window 
  * TODO: Remove `isCloud9` when Cloud9 gets YAML code completion
  * @param isSam Create a SAM or CFN template
  */
-function createStarterTemplateYaml(isSam?: boolean): string {
+export function createCloudFormationTemplateYaml(isSam: boolean): string {
     return `AWSTemplateFormatVersion: '2010-09-09'
 ${isSam ? 'Transform: AWS::Serverless-2016-10-31\n' : ''}
 Description: <your stack description here>

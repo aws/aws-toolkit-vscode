@@ -132,7 +132,7 @@ describe('isImageLambdaConfig', function () {
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
-        registry = globals.templateRegistry
+        registry = globals.templateRegistry.cfn
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 

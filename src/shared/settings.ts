@@ -536,6 +536,7 @@ const DEV_SETTINGS = {
     telemetryEndpoint: String,
     telemetryUserPool: String,
     endpoints: Record(String, String),
+    buildspecSchemaUrl: String
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>

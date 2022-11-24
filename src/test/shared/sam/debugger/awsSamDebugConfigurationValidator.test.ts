@@ -107,18 +107,18 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     let savedRegistry: CloudFormationTemplateRegistry
 
     before(function () {
-        savedRegistry = globals.templateRegistry
+        savedRegistry = globals.templateRegistry.cfn
     })
 
     after(function () {
-        globals.templateRegistry = savedRegistry
+        globals.templateRegistry.cfn = savedRegistry
     })
 
     beforeEach(function () {
         when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
         when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
 
-        globals.templateRegistry = mockRegistry
+        globals.templateRegistry.cfn = mockRegistry
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
