@@ -13,6 +13,7 @@ import {
     codewhispererScopes,
     isBuilderIdConnection,
     createSsoProfile,
+    isSsoConnection,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
@@ -21,6 +22,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
@@ -92,10 +94,44 @@ export class AuthUtil {
 
     public async connectToEnterpriseSso(startUrl: string) {
         const existingConn = (await this.auth.listConnections()).find(
-            (conn): conn is SsoConnection => isValidCodeWhispererConnection(conn) && conn.startUrl === startUrl
+            (conn): conn is SsoConnection =>
+                isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
-        const conn = existingConn ?? (await this.auth.createConnection(createSsoProfile(startUrl)))
-        await this.secondaryAuth.useNewConnection(conn)
+
+        if (!existingConn) {
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl))
+            return this.secondaryAuth.useNewConnection(conn)
+        } else if (isValidCodeWhispererConnection(existingConn)) {
+            return this.secondaryAuth.useNewConnection(existingConn)
+        } else {
+            const resp = await vscode.window.showInformationMessage(
+                'The provided start URL is associated with a connection that lacks permissions required by CodeWhisper. Upgrading the connection will require another login.\n\nUpgrade now?',
+                {
+                    modal: true,
+                },
+                { title: 'Yes' },
+                { title: 'No', isCloseAffordance: true }
+            )
+            if (resp?.title !== 'Yes') {
+                throw new CancellationError('user')
+            }
+
+            const upgradedConn = await this.auth.createConnection(createSsoProfile(startUrl))
+            try {
+                if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
+                    await this.auth.useConnection(upgradedConn)
+                } else {
+                    await this.secondaryAuth.useNewConnection(upgradedConn)
+                }
+            } catch (err) {
+                // Don't allow duplicates to exist on errors
+                await this.auth.deleteConnection(upgradedConn)
+                throw err
+            }
+
+            // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
+            await this.auth.deleteConnection(existingConn)
+        }
     }
 
     public static get instance() {
