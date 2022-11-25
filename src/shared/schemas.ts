@@ -20,6 +20,7 @@ import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
+export const samSchemaUri = () => vscode.Uri.joinPath(globals.context.globalStorageUri, 'sam.schema.json')
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -140,7 +141,7 @@ export class SchemaService {
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const samUri = samSchemaUri()
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 
@@ -162,14 +163,14 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
 
     try {
         await updateSchemaFromRemote({
-            destination: samSchemaUri,
+            destination: samUri,
             version: goformationSchemaVersion,
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
             title: SCHEMA_PREFIX + 'sam.schema.json',
         })
-        schemas['sam'] = samSchemaUri
+        schemas['sam'] = samUri
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
     }

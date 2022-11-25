@@ -10,6 +10,7 @@ import { getLogger } from '../logger/logger'
 import { getIdeProperties } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { AWS_SCHEME } from '../constants'
+import { samSchemaUri } from '../schemas'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -46,7 +47,17 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     yamlExt.exports.registerContributor(
         AWS_SCHEME,
         resource => {
-            return schemaMap.get(resource)?.toString()
+            const schema = schemaMap.get(resource)?.toString()
+
+            // Temporary hack that makes it so modelines will take precendence over the register contributor api for sam files
+            if (schema === samSchemaUri().with({ scheme: AWS_SCHEME }).toString()) {
+                const file = readFileSync(vscode.Uri.parse(resource).fsPath).toString()
+                if (file.startsWith('# yaml-language-server')) {
+                    throw new Error('Ensure modelines take precendence over registerContributor for SAM files')
+                }
+            }
+
+            return schema
         },
         uri => {
             try {
