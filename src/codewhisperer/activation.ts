@@ -47,8 +47,11 @@ import { InlineCompletionService, refreshStatusBar } from './service/inlineCompl
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil } from './util/authUtil'
+import { AuthUtil, isUpgradeableConnection } from './util/authUtil'
 import globals from '../shared/extensionGlobals'
+import { Auth } from '../credentials/auth'
+import { isUserCancelledError } from '../shared/errors'
+import { showViewLogsMessage } from '../shared/utilities/messages'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -224,8 +227,24 @@ export async function activate(context: ExtContext): Promise<void> {
 
     async function showAccessTokenMigrationDialogue() {
         // TODO: Change the color of the buttons
-        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-        if (accessToken) {
+        if (AuthUtil.instance.hasAccessToken()) {
+            await Auth.instance.tryAutoConnect()
+            const conn = Auth.instance.activeConnection
+            if (isUpgradeableConnection(conn)) {
+                const didUpgrade = await AuthUtil.instance.promptUpgrade(conn, 'passive').catch(err => {
+                    if (!isUserCancelledError(err)) {
+                        getLogger().error('codewhisperer: failed to upgrade connection: %s', err)
+                        showViewLogsMessage('Failed to upgrade current connection.')
+                    }
+
+                    return false
+                })
+
+                if (didUpgrade) {
+                    return
+                }
+            }
+
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
             const t = new Date()
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {

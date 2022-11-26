@@ -946,9 +946,9 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
-    public async getTreeItem() {
+    public getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
-        await this.resource.tryAutoConnect()
+        this.resource.tryAutoConnect()
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)

@@ -103,34 +103,8 @@ export class AuthUtil {
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
-        } else {
-            const resp = await vscode.window.showInformationMessage(
-                'The provided start URL is associated with a connection that lacks permissions required by CodeWhisper. Upgrading the connection will require another login.\n\nUpgrade now?',
-                {
-                    modal: true,
-                },
-                { title: 'Yes' },
-                { title: 'No', isCloseAffordance: true }
-            )
-            if (resp?.title !== 'Yes') {
-                throw new CancellationError('user')
-            }
-
-            const upgradedConn = await this.auth.createConnection(createSsoProfile(startUrl))
-            try {
-                if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
-                    await this.auth.useConnection(upgradedConn)
-                } else {
-                    await this.secondaryAuth.useNewConnection(upgradedConn)
-                }
-            } catch (err) {
-                // Don't allow duplicates to exist on errors
-                await this.auth.deleteConnection(upgradedConn)
-                throw err
-            }
-
-            // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
-            await this.auth.deleteConnection(existingConn)
+        } else if (isSsoConnection(existingConn)) {
+            return this.promptUpgrade(existingConn, 'startUrl')
         }
     }
 
@@ -178,4 +152,53 @@ export class AuthUtil {
                 }
             })
     }
+
+    #hasSeenUpgradeNotification = false
+    public async promptUpgrade(existingConn: SsoConnection, upgradeType: 'current' | 'startUrl' | 'passive') {
+        const modal = upgradeType === 'current' || upgradeType === 'startUrl'
+        if (upgradeType !== 'startUrl' && this.#hasSeenUpgradeNotification) {
+            return false
+        }
+        this.#hasSeenUpgradeNotification = upgradeType === 'startUrl' ? this.#hasSeenUpgradeNotification : true
+
+        const message =
+            upgradeType === 'startUrl'
+                ? 'The provided start URL is associated with a connection that lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
+                : 'The current connection lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
+
+        const resp = await vscode.window.showWarningMessage(
+            message,
+            { modal },
+            { title: 'Yes' },
+            { title: 'No', isCloseAffordance: true }
+        )
+        if (resp?.title !== 'Yes') {
+            throw new CancellationError('user')
+        }
+
+        const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
+        try {
+            if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
+                await this.auth.useConnection(upgradedConn)
+            } else {
+                await this.secondaryAuth.useNewConnection(upgradedConn)
+            }
+        } catch (err) {
+            // Don't allow duplicates to exist on errors
+            await this.auth.deleteConnection(upgradedConn)
+            throw err
+        }
+
+        // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
+        await this.auth.deleteConnection(existingConn)
+
+        return true
+    }
+
+    public hasAccessToken() {
+        return !!globals.context.globalState.get(CodeWhispererConstants.accessToken)
+    }
 }
+
+export const isUpgradeableConnection = (conn?: Connection): conn is SsoConnection =>
+    !!conn && !isValidCodeWhispererConnection(conn) && isSsoConnection(conn)

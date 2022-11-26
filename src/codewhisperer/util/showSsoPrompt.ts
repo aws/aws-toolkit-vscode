@@ -10,17 +10,35 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { getStartUrl } from './getStartUrl'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
-import { AuthUtil } from './authUtil'
+import { AuthUtil, isUpgradeableConnection } from './authUtil'
 import { failedToConnectAwsBuilderId } from '../models/constants'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { codicon, getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { getIdeProperties } from '../../shared/extensionUtilities'
-import { ToolkitError } from '../../shared/errors'
+import { isUserCancelledError, ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
+import { Auth } from '../../credentials/auth'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export const showConnectionPrompt = async () => {
+    const currentConn = Auth.instance.activeConnection
+    if (isUpgradeableConnection(currentConn)) {
+        const didUpgrade = await AuthUtil.instance.promptUpgrade(currentConn, 'current').catch(err => {
+            if (!isUserCancelledError(err)) {
+                getLogger().error('codewhisperer: failed to upgrade connection: %s', err)
+                showViewLogsMessage('Failed to upgrade current connection.')
+            }
+
+            return false
+        })
+
+        if (didUpgrade) {
+            return
+        }
+    }
+
     const resp = await showQuickPick(
         [createCodeWhispererBuilderIdItem(), createCodeWhispererSsoItem(), createCodeWhispererIamItem()],
         {
