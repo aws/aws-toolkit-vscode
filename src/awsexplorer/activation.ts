@@ -8,6 +8,7 @@ import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -77,8 +78,8 @@ export async function activate(args: {
     )
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
-    const codecatalystNode = new CodeCatalystRootNode(authProvider)
-    const nodes = [new AuthNode(Auth.instance), codecatalystNode, cdkNode, codewhispererNode]
+    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
+    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
