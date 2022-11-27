@@ -8,6 +8,7 @@ import { ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClien
 import { isCloud9 } from '../shared/extensionUtilities'
 import { Auth, isBuilderIdConnection, Connection, SsoConnection, codecatalystScopes } from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
+import { getLogger } from '../shared/logger'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -15,12 +16,12 @@ import { getSecondaryAuth } from '../credentials/secondaryAuth'
 export class CodeCatalystAuthStorage {
     public constructor(private readonly secrets: vscode.SecretStorage) {}
 
-    public async getPat(id: string): Promise<string | undefined> {
-        return this.secrets.get(`codecatalyst.pat.${id}`)
+    public async getPat(username: string): Promise<string | undefined> {
+        return this.secrets.get(`codecatalyst.pat.${username}`)
     }
 
-    public async storePat(id: string, pat: string): Promise<void> {
-        await this.secrets.store(`codecatalyst.pat.${id}`, pat)
+    public async storePat(username: string, pat: string): Promise<void> {
+        await this.secrets.store(`codecatalyst.pat.${username}`, pat)
     }
 }
 
@@ -46,17 +47,32 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     // Get rid of this? Not sure where to put PAT code.
-    public async getPat(client: ConnectedCodeCatalystClient): Promise<string> {
-        const stored = await this.storage.getPat(client.identity.id)
+    public async getPat(client: ConnectedCodeCatalystClient, username = client.identity.name): Promise<string> {
+        const stored = await this.storage.getPat(username)
 
         if (stored) {
             return stored
         }
 
         const resp = await client.createAccessToken({ name: 'aws-toolkits-vscode-token' })
-        await this.storage.storePat(client.identity.id, resp.secret)
+        await this.storage.storePat(username, resp.secret)
 
         return resp.secret
+    }
+
+    public async getCredentialsForGit(client: ConnectedCodeCatalystClient) {
+        getLogger().verbose(`codecatalyst (git): attempting to provide credentials`)
+
+        const username = client.identity.name
+
+        try {
+            return {
+                username,
+                password: await this.getPat(client, username),
+            }
+        } catch (err) {
+            getLogger().verbose(`codecatalyst (git): failed to get credentials for user "${username}": %s`, err)
+        }
     }
 
     public async removeSavedConnection() {

@@ -390,4 +390,14 @@ export class GitExtension {
 
         return api.registerRemoteSourceProvider(provider)
     }
+
+    public async registerCredentialsProvider(provider: GitTypes.CredentialsProvider): Promise<vscode.Disposable> {
+        const api = await this.validateApi('git: extension disabled, unable to register credentials provider')
+
+        if (!api) {
+            return { dispose: () => {} }
+        }
+
+        return api.registerCredentialsProvider(provider)
+    }
 }

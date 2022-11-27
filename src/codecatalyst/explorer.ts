@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
+import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { UnknownError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -30,6 +30,14 @@ const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vsco
     return vscode.env.openExternal(docsUrl)
 })
 
+// Only used in rare cases on C9
+const reauth = Commands.register(
+    '_aws.codecatalyst.reauthenticate',
+    async (conn: Connection, authProvider: CodeCatalystAuthenticationProvider) => {
+        await authProvider.auth.reauthenticate(conn)
+    }
+)
+
 function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection)) {
@@ -45,19 +53,20 @@ function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
         ]
     }
 
-    const cmds = [
+    if (isCloud9()) {
+        const item = reauth.build(auth.activeConnection, auth).asTreeNode({
+            label: 'Failed to get the current Dev Environment. Click to try again.',
+            iconPath: getIcon(`vscode-error`),
+        })
+
+        return [item]
+    }
+
+    return [
         CodeCatalystCommands.declared.cloneRepo.build().asTreeNode({
             label: 'Clone Repository',
             iconPath: getIcon('vscode-symbol-namespace'),
         }),
-    ]
-
-    if (isCloud9()) {
-        return cmds
-    }
-
-    return [
-        ...cmds,
         CodeCatalystCommands.declared.openDevEnv.build().asTreeNode({
             label: 'Open Dev Environment',
             iconPath: getIcon('vscode-vm-connect'),

@@ -516,7 +516,9 @@ class CodeCatalystClientInternal {
      */
     public async getRepoCloneUrl(args: codecatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
         const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
-        return r.https
+
+        // The git extension skips over credential providers if the username is included in the authority
+        return `https://${r.https.replace(/.*@/, '')}`
     }
 
     public async createDevEnvironment(args: codecatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {

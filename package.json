@@ -1281,7 +1281,7 @@
                 },
                 {
                     "command": "aws.codecatalyst.cloneRepo",
-                    "when": "view == aws.codecatalyst",
+                    "when": "view == aws.codecatalyst && !isCloud9",
                     "group": "1_codeCatalyst@1"
                 },
                 {
@@ -1998,7 +1998,8 @@
             {
                 "command": "aws.codecatalyst.cloneRepo",
                 "title": "%AWS.command.codecatalyst.cloneRepo%",
-                "category": "AWS"
+                "category": "AWS",
+                "enablement": "!isCloud9"
             },
             {
                 "command": "aws.codecatalyst.createDevEnv",

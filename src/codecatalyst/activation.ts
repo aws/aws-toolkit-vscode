@@ -20,6 +20,7 @@ import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { watchBetaVSIX } from './beta'
 import { Commands } from '../shared/vscode/commands2'
+import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,11 +37,21 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
     )
 
-    GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
-        ctx.extensionContext.subscriptions.push(disposable)
-    })
-
     if (!isCloud9()) {
+        GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
+            ctx.extensionContext.subscriptions.push(disposable)
+        })
+
+        GitExtension.instance
+            .registerCredentialsProvider({
+                getCredentials(uri: vscode.Uri) {
+                    if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
+                        return commands.withClient(client => authProvider.getCredentialsForGit(client))
+                    }
+                },
+            })
+            .then(disposable => ctx.extensionContext.subscriptions.push(disposable))
+
         watchRestartingDevEnvs(ctx, authProvider)
         watchBetaVSIX()
     }

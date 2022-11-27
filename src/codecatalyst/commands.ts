@@ -18,7 +18,7 @@ import {
     ConnectedCodeCatalystClient,
     CodeCatalystResource,
 } from '../shared/clients/codecatalystClient'
-import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, getRepoCloneUrl, openDevEnv } from './model'
+import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -35,12 +35,6 @@ export async function listCommands(): Promise<void> {
 
 /** "Clone CodeCatalyst Repository" command. */
 export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient, url?: vscode.Uri): Promise<void> {
-    async function getPat() {
-        // FIXME: make it easier to go from auth -> client so we don't need to do this
-        const auth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
-        return auth.getPat(client)
-    }
-
     let resource: { name: string; project: string; org: string }
     if (!url) {
         const r = await selectCodeCatalystResource(client, 'repo')
@@ -56,16 +50,11 @@ export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient,
         resource = { name: repo, project, org }
     }
 
-    const uri = await getRepoCloneUrl(
-        client,
-        {
-            spaceName: resource.org,
-            projectName: resource.project,
-            sourceRepositoryName: resource.name,
-        },
-        client.identity.name,
-        await getPat()
-    )
+    const uri = await client.getRepoCloneUrl({
+        spaceName: resource.org,
+        projectName: resource.project,
+        sourceRepositoryName: resource.name,
+    })
     await vscode.commands.executeCommand('git.clone', uri)
 }
 
