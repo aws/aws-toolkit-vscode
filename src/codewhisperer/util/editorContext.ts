@@ -53,27 +53,36 @@ export function getFileName(editor: vscode.TextEditor): string {
 
 export function buildListRecommendationRequest(
     editor: vscode.TextEditor,
-    nextToken: string
+    nextToken: string,
+    allowCodeWithReference: boolean | undefined = undefined
 ): codewhispererClient.ListRecommendationsRequest {
-    let req: codewhispererClient.ListRecommendationsRequest = {
-        fileContext: {
+    let fileContext: codewhispererClient.FileContext
+    if (editor !== undefined) {
+        fileContext = extractContextForCodeWhisperer(editor)
+    } else {
+        fileContext = {
             filename: '',
             programmingLanguage: {
                 languageName: '',
             },
             leftFileContent: '',
             rightFileContent: '',
-        },
-        nextToken: '',
+        }
     }
-    if (editor !== undefined) {
-        const fileContext = extractContextForCodeWhisperer(editor)
-        req = {
+
+    if (allowCodeWithReference === undefined) {
+        return {
             fileContext: fileContext,
             nextToken: nextToken,
         }
     }
-    return req
+    return {
+        fileContext: fileContext,
+        nextToken: nextToken,
+        referenceTrackerConfiguration: {
+            recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+        },
+    }
 }
 
 export function buildGenerateRecommendationRequest(

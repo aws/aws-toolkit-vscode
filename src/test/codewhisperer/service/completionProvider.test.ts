@@ -66,7 +66,7 @@ describe('completionProviderService', function () {
                         'mock_sessionId_getCompletionItem',
                         'OnDemand',
                         'Line',
-                        'javascript',
+                        'typescript',
                         undefined,
                     ],
                 },

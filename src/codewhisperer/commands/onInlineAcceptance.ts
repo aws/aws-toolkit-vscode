@@ -95,7 +95,13 @@ export async function onInlineAcceptance(
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         try {
-            await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
+            // Do not handle extra bracket if there is a right context merge
+            if (
+                acceptanceEntry.recommendation ===
+                RecommendationHandler.instance.recommendations[acceptanceEntry.acceptIndex].content
+            ) {
+                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
+            }
         } catch (error) {
             getLogger().error(`${error} in handling right contexts`)
         }
