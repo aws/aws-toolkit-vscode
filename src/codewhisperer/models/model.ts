@@ -101,6 +101,7 @@ export interface CodeScanTelemetryEntry {
     result: Result
     reason?: string
     codewhispererCodeScanTotalIssues: number
+    credentialStartUrl: string | undefined
 }
 
 export interface RawCodeScanIssue {

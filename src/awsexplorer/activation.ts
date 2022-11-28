@@ -26,7 +26,7 @@ import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
-import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
 import { notifyCodeCatalystBetaUsers } from '../codecatalyst/beta'
@@ -88,9 +88,12 @@ export async function activate(args: {
 
     // Legacy CDK metric, remove this when we add something generic
     const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
     developerTools.onDidExpandElement(e => {
         if (e.element.resource instanceof CdkRootNode) {
             recordExpandCdkOnce()
+        } else if (e.element.resource instanceof CodeWhispererNode) {
+            onDidExpandCodeWhisperer()
         }
     })
 }

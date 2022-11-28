@@ -30,6 +30,7 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -146,7 +147,12 @@ export class RecommendationHandler {
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
-            req = EditorContext.buildListRecommendationRequest(editor as vscode.TextEditor, this.nextToken)
+            const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
+            req = EditorContext.buildListRecommendationRequest(
+                editor as vscode.TextEditor,
+                this.nextToken,
+                accessToken ? undefined : config.isIncludeSuggestionsWithCodeReferencesEnabled
+            )
         } else {
             req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
@@ -158,7 +164,6 @@ export class RecommendationHandler {
             if (!pagination || (pagination && page === 0)) {
                 this.startPos = editor.selection.active
             }
-
             /**
              * Validate request
              */
@@ -175,7 +180,11 @@ export class RecommendationHandler {
                     codewhispererPromise
                 )
                 latency = startTime !== 0 ? performance.now() - startTime : 0
-                recommendation = (resp && resp.recommendations) || []
+                if ('recommendations' in resp) {
+                    recommendation = (resp && resp.recommendations) || []
+                } else {
+                    recommendation = (resp && resp.completions) || []
+                }
                 invocationResult = 'Succeeded'
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
@@ -213,6 +222,7 @@ export class RecommendationHandler {
                 requestId = awsError.requestId || ''
                 errorCode = awsError.code
                 reason = `CodeWhisperer Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
+                await this.onThrottlingException(awsError, triggerType)
             } else {
                 errorCode = error as string
                 reason = error ? String(error) : 'unknown'
@@ -259,20 +269,11 @@ export class RecommendationHandler {
                         : 0,
                     codewhispererLanguage: languageContext.language,
                     reason: reason ? reason.substring(0, 200) : undefined,
+                    credentialStartUrl: TelemetryHelper.instance.startUrl,
                 })
             }
             if (invocationResult == 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
-            }
-            if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
-                recommendation.forEach((r, index) => {
-                    if (r.references !== undefined && r.references.length) {
-                        this.setSuggestionState(index + this.recommendations.length, 'Filtered')
-                    }
-                })
-                if (!pagination && recommendation.length === 0 && this.recommendationSuggestionState.size > 0) {
-                    this.errorMessagePrompt = CodeWhispererConstants.licenseFilter
-                }
             }
         }
         if (recommendation.length > 0) {
@@ -401,6 +402,18 @@ export class RecommendationHandler {
         // skip space from invocation position
         if (prefix.length > 0 && prefix.trimStart().length != prefix.length) {
             this.startPos = start.translate(undefined, prefix.length - prefix.trimStart().length)
+        }
+    }
+
+    async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {
+        if (
+            awsError.code === 'ThrottlingException' &&
+            awsError.message.includes(CodeWhispererConstants.throttlingMessage)
+        ) {
+            if (triggerType === 'OnDemand') {
+                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReached)
+            }
+            await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
         }
     }
 }

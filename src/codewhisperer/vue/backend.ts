@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { VueWebview } from '../../webviews/main'
 
 export class CodeWhispererWebview extends VueWebview {
@@ -15,11 +16,15 @@ export class CodeWhispererWebview extends VueWebview {
     public readonly onDidChangeKeyBinding = new vscode.EventEmitter<string>()
 
     public async controlTrigger() {
+        telemetry.ui_click.emit({ elementId: 'cwToS_accept' })
+
         await vscode.commands.executeCommand('aws.codeWhisperer.acceptTermsOfService')
         this.dispose()
     }
 
     public async cancelCodeSuggestion() {
+        telemetry.ui_click.emit({ elementId: 'cwToS_cancel' })
+
         await vscode.commands.executeCommand('aws.codeWhisperer.cancelTermsOfService')
         this.dispose()
     }
