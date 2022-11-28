@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block."
-}

@@ -1,3 +1,10 @@
+# _1.54_ (2022-11-28)
+- **(Feature)** Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities.
+- **(Feature)** Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block.
+- **(Feature)** Amazon CodeWhisperer now supports TypeScript and C# programming languages.
+- **(Feature)** Amazon CodeWhisperer is now available as a supported feature and no longer an experimental feature.
+- **(Feature)** Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started.
+
 # _1.53_ (2022-11-23)
 - **(Feature)** Sync Serverless Application(SAM Accelerate)
 - **(Feature)** New experiment to allow injection of AWS Connection details (region/credentials) into Golang Run Configurations

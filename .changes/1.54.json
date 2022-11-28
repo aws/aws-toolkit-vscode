@@ -1,0 +1,20 @@
+{
+  "date" : "2022-11-28",
+  "version" : "1.54",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeWhisperer now supports TypeScript and C# programming languages."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeWhisperer is now available as a supported feature and no longer an experimental feature."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started."
+  } ]
+}
