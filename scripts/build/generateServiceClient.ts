@@ -214,6 +214,10 @@ ${fileContents}
             serviceJsonPath: 'src/codewhisperer/client/service-2.json',
             serviceName: 'CodeWhispererClient',
         },
+        {
+            serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
+            serviceName: 'CodeWhispererUserClient',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

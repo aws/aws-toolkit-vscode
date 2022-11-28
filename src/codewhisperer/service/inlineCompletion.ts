@@ -419,6 +419,7 @@ export class InlineCompletion {
                             codewhispererLanguage: languageContext.language,
                             duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                             passive: true,
+                            credentialStartUrl: TelemetryHelper.instance.startUrl,
                         })
                     } catch (error) {
                         getLogger().error(`Failed to show suggestion ${error}`)

@@ -13,6 +13,7 @@ import { RecommendationHandler } from '../service/recommendationHandler'
 import { KeyStrokeHandler } from '../service/keyStrokeHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
+import { AuthUtil } from '../util/authUtil'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -77,6 +78,9 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                await AuthUtil.instance.showReauthenticatePrompt()
+            }
             InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {
             if (
