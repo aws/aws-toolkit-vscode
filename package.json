@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.56.0-SNAPSHOT",
+    "version": "1.57.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -273,17 +273,12 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "CodeWhisperer": true,
                         "samSyncCode": false
                     },
                     "properties": {
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
-                        },
-                        "CodeWhisperer": {
-                            "type": "boolean",
-                            "default": true
                         },
                         "samSyncCode": {
                             "type": "boolean",
@@ -822,6 +817,10 @@
                 },
                 {
                     "command": "aws.codecatalyst.removeConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
                     "when": "false"
                 },
                 {
@@ -1830,13 +1829,23 @@
                 },
                 {
                     "command": "aws.codeWhisperer.configure",
-                    "when": "viewItem == awsCodeWhispererNode && !isCloud9",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9",
                     "group": "inline@2"
                 },
                 {
                     "command": "aws.codeWhisperer.introduction",
-                    "when": "viewItem == awsCodeWhispererNode && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
+                    "when": "viewItem == awsCodeWhispererNodeSaved",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
+                    "when": "viewItem == awsCodeWhispererNodeSaved",
+                    "group": "inline@3"
                 },
                 {
                     "command": "aws.cdk.refresh",
@@ -3113,6 +3122,12 @@
                 }
             },
             {
+                "command": "aws.codeWhisperer.removeConnection",
+                "title": "%AWS.command.codewhisperer.removeConnection%",
+                "category": "%AWS.title%",
+                "icon": "$(debug-disconnect)"
+            },
+            {
                 "command": "aws.dev.openMenu",
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
@@ -3483,7 +3498,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.79",
+        "@aws-toolkits/telemetry": "^1.0.80",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",

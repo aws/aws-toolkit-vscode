@@ -39,7 +39,6 @@ import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 
 const BACKOFF_DELAY_MS = 5000
-
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
