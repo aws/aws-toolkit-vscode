@@ -865,9 +865,7 @@ export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection 
     isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
 
 export async function createStartUrlPrompter(title: string, ignoreScopes = true) {
-    const existingConnections = (await Auth.instance.listConnections())
-        .filter(isSsoConnection)
-        .map(conn => vscode.Uri.parse(conn.startUrl))
+    const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
     const requiredScopes = createSsoProfile('').scopes
 
     function validateSsoUrl(url: string) {
@@ -952,11 +950,6 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             const existingConn = (await Auth.instance.listConnections()).find(isBuilderIdConnection)
             // Right now users can only have 1 builder id connection
             const conn = existingConn ?? (await Auth.instance.createConnection(createBuilderIdProfile()))
-
-            return Auth.instance.useConnection(conn)
-        }
-        case 'builderId': {
-            const conn = await createBuilderIdConnection(Auth.instance)
 
             return Auth.instance.useConnection(conn)
         }
