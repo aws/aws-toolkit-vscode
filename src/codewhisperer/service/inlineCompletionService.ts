@@ -171,7 +171,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
             )
             this.nextMove = 0
             this._onDidShow.fire()
-            if (matchedCount >= 2) {
+            if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
                 return [item, { insertText: 'x' }]
             }
             return [item]
