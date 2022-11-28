@@ -1,6 +1,6 @@
 <template id="codewhispererTOSTemplate">
     <div>
-        <h1 class="codewhisperer-preview-terms">Amazon CodeWhisperer Preview Terms</h1>
+        <h1 class="codewhisperer-preview-terms">Amazon CodeWhisperer Terms of Service</h1>
         <div style="width: 100%">
             <p>
                 The Amazon CodeWhisperer service is provided as a 'Beta Service' and an 'AI Service' as defined in the
@@ -148,8 +148,8 @@
             </p>
         </div>
         <div class="container">
-            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Cancel</button>
-            <button type="button" id="accept" @click="acceptCodeSuggestions">Accept and Enable CodeWhisperer</button>
+            <button type="button" id="cancel" class="block" @click="cancelCodeSuggestion">Reject</button>
+            <button type="button" id="accept" @click="acceptCodeSuggestions">Accept and Turn on CodeWhisperer</button>
         </div>
     </div>
 </template>

@@ -24,8 +24,10 @@ export class RuntimeLanguageContext {
             java: 'java',
             python: 'python',
             javascriptreact: 'jsx',
-            typescript: 'javascript',
             javascript: 'javascript',
+            typescript: 'typescript',
+            typescriptreact: 'tsx',
+            csharp: 'csharp',
         })
 
         const values = Array.from(this.supportedLanguageMap.values())
@@ -64,8 +66,8 @@ export class RuntimeLanguageContext {
         const childLanguage = request.fileContext.programmingLanguage
         let parentLanguage: codewhispererClient.ProgrammingLanguage
         switch (childLanguage.languageName) {
-            case 'typescript':
-                parentLanguage = { languageName: CodeWhispererConstants.javascript }
+            case 'tsx':
+                parentLanguage = { languageName: CodeWhispererConstants.typescript }
                 break
             case 'jsx':
                 parentLanguage = { languageName: CodeWhispererConstants.javascript }

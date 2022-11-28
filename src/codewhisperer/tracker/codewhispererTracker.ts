@@ -9,6 +9,7 @@ import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -81,7 +82,6 @@ export class CodeWhispererTracker {
     public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry) {
         let percentage = 1.0
         try {
-            getLogger().verbose(`Getting the file for content: ${suggestion.fileUrl}`)
             if (suggestion.fileUrl?.scheme !== '') {
                 const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
                 if (document) {
@@ -102,6 +102,7 @@ export class CodeWhispererTracker {
                 codewhispererModificationPercentage: percentage ? percentage : 0,
                 codewhispererCompletionType: suggestion.completionType,
                 codewhispererLanguage: suggestion.language,
+                credentialStartUrl: TelemetryHelper.instance.startUrl,
             })
         }
     }
