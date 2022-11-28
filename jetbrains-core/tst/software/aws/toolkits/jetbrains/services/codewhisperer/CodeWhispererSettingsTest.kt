@@ -20,17 +20,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
-import software.aws.toolkits.core.utils.replace
 import software.aws.toolkits.jetbrains.core.ToolWindowHeadlessManagerImpl
-import software.aws.toolkits.jetbrains.core.experiments.ExperimentState
-import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentManager
-import software.aws.toolkits.jetbrains.core.experiments.isEnabled
-import software.aws.toolkits.jetbrains.core.experiments.setState
 import software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerFactory
 import software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow
-import software.aws.toolkits.jetbrains.services.codewhisperer.experiment.CodeWhispererExperiment
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreActionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfiguration
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
@@ -91,9 +86,9 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
     }
 
     @Test
-    fun `test disable manual trigger should make user not able to trigger CodeWhisperer manually`() {
-        stateManager.setManualEnabled(false)
-        assertThat(stateManager.isManualEnabled()).isFalse
+    fun `when isCodeWhispererEnabled is false, user not able to trigger CodeWhisperer manually`() {
+        stateManager.setHasAcceptedTermsOfService(false)
+        assertThat(isCodeWhispererEnabled(projectRule.project)).isFalse
         invokeCodeWhispererService()
         verify(codewhispererServiceSpy, never()).showRecommendationsInPopup(any(), any())
     }
@@ -109,22 +104,8 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
     }
 
     @Test
-    fun `test CodeWhisperer Experiment should be turned on by default`() {
-        assertThat(CodeWhispererExperiment.default).isTrue
-
-        // Start with empty persistent state for experiment
-        val startStateWithoutCodeWhisperer = ExperimentState().apply {
-            value.replace(ToolkitExperimentManager.getInstance().state.value)
-            value.remove(CodeWhispererExperiment.id)
-        }
-        ToolkitExperimentManager.getInstance().loadState(startStateWithoutCodeWhisperer)
-        assertThat(CodeWhispererExperiment.isEnabled()).isTrue
-    }
-
-    @Test
     fun `test CodeWhisperer components should have correct states on initialization with no persistent states`() {
         stateManager.loadState(CodeWhispererExploreActionState())
-        ToolkitExperimentManager.getInstance().loadState(ExperimentState())
         CodeWhispererSettings.getInstance().loadState(CodeWhispererConfiguration())
 
         val problemsWindow = ProblemsView.getToolWindow(projectRule.project) ?: fail("Problems window not found")
@@ -143,25 +124,6 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
             assertThat(codeReferenceWindow.isAvailable).isFalse
             assertThat(statusBarWidgetFactory.isAvailable(projectRule.project)).isFalse
             assertThat(settingsManager.isIncludeCodeWithReference()).isFalse
-        }
-    }
-
-    @Test
-    fun `test enable CodeWhisperer experiment will show dev tool pane and vice-versa`() {
-        CodeWhispererExperiment.setState(false)
-        runInEdtAndWait {
-            assertThat(
-                AwsToolkitExplorerToolWindow.getInstance(projectRule.project)
-                    .getTabLabelComponent(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
-            ).isNull()
-        }
-
-        CodeWhispererExperiment.setState(true)
-        runInEdtAndWait {
-            assertThat(
-                AwsToolkitExplorerToolWindow.getInstance(projectRule.project)
-                    .getTabLabelComponent(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID)
-            ).isNotNull()
         }
     }
 

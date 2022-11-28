@@ -5,6 +5,7 @@ package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
+import software.aws.toolkits.resources.message
 
 enum class CredentialType {
     StaticProfile,
@@ -88,7 +89,7 @@ interface ToolkitAuthenticationProvider {
 
 class ToolkitCredentialsProvider(
     val identifier: CredentialIdentifier,
-    delegate: AwsCredentialsProvider
+    val delegate: AwsCredentialsProvider
 ) : ToolkitAuthenticationProvider, AwsCredentialsProvider by delegate {
     override val id: String = identifier.id
     override val displayName = identifier.displayName
@@ -114,10 +115,20 @@ interface ToolkitBearerTokenProviderDelegate : SdkTokenProvider, ToolkitAuthenti
 
 class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegate) : SdkTokenProvider by delegate, ToolkitAuthenticationProvider by delegate {
     companion object {
-        fun identifier(startUrl: String) = "sso;$startUrl"
-        fun displayName(startUrl: String) = "SSO ($startUrl)"
+        fun ssoIdentifier(startUrl: String) = "sso;$startUrl"
+
+        // TODO: For AWS Builder ID, we only have startUrl for now instead of each users' metadata data i.e. Email address
+        fun ssoDisplayName(startUrl: String) = if (startUrl == SONO_URL) {
+            message("aws_builder_id.service_name")
+        } else {
+            message("iam_identity_center.service_name", extractOrgID(startUrl))
+        }
 
         fun diskSessionIdentifier(profileName: String) = "diskSessionProfile;$profileName"
         fun diskSessionDisplayName(profileName: String) = "IAM Identity Center Session ($profileName)"
     }
 }
+
+private const val SONO_URL = "https://view.awsapps.com/start"
+
+private fun extractOrgID(startUrl: String) = startUrl.removePrefix("https://").removeSuffix(".awsapps.com/start")

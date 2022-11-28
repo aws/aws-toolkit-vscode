@@ -9,6 +9,10 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.ActionLink
 import software.amazon.awssdk.services.codewhisperer.model.Reference
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.addHorizontalGlue
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.addVerticalGlue
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.horizontalPanelConstraints
@@ -59,6 +63,34 @@ class CodeWhispererCodeReferenceComponents(private val project: Project) {
         get() = JLabel().apply {
             text = message("codewhisperer.toolwindow.entry.prefix", LocalTime.now().format(codeReferenceTimeFormatter))
         }.asCodeReferencePanelFont()
+
+    init {
+        repaint(project)
+
+        // set the reference panel text different for SSO users vs AWS Builder ID / Accless users
+        project.messageBus.connect().subscribe(
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    repaint(project)
+                }
+            }
+        )
+    }
+
+    // TODO: figure out how to have a different view for SSO user in a cleaner way, maybe have 2 sets of components stored in [ReferenceManager]?
+    private fun repaint(project: Project) {
+        val loginType = CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)
+        settingsLabelPrefixText as JLabel
+        settingsLabelLink as ActionLink
+        if (loginType == CodeWhispererLoginType.SSO) {
+            settingsLabelPrefixText.text = message("codewhisperer.toolwindow.settings.prefix_sso")
+            settingsLabelLink.isVisible = false
+        } else {
+            settingsLabelPrefixText.text = message("codewhisperer.toolwindow.settings.prefix")
+            settingsLabelLink.isVisible = true
+        }
+    }
 
     private fun licenseNameLink(licenseName: String) = ActionLink(licenseName) {
         BrowserUtil.browse(CodeWhispererLicenseInfoManager.getInstance().getLicenseLink(licenseName))

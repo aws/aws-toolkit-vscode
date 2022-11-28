@@ -35,6 +35,10 @@
         <sam.projectWizard id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
     </extensions>
 
+    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp"/>
+    </extensions>
+
     <actions>
         <unregister id="serverless.application.deploy"/>
         <group id="aws.toolkit.serverless.template.rider">

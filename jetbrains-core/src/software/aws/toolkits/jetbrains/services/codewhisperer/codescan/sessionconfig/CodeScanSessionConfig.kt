@@ -177,6 +177,7 @@ internal sealed class CodeScanSessionConfig(
         fun create(file: VirtualFile, project: Project): CodeScanSessionConfig = when (file.programmingLanguage().toTelemetryType()) {
             CodewhispererLanguage.Java -> JavaCodeScanSessionConfig(file, project)
             CodewhispererLanguage.Python -> PythonCodeScanSessionConfig(file, project)
+            CodewhispererLanguage.Javascript -> JavaScriptCodeScanSessionConfig(file, project)
             else -> fileFormatNotSupported(file.extension ?: "")
         }
     }

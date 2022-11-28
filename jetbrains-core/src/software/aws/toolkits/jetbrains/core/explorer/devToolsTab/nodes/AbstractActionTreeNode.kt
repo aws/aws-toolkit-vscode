@@ -7,6 +7,7 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
+import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
 import javax.swing.Icon
 
 abstract class AbstractActionTreeNode(project: Project, value: String, private val awsIcon: Icon?) : AbstractTreeNode<String>(project, value) {
@@ -28,4 +29,8 @@ abstract class AbstractActionTreeNode(project: Project, value: String, private v
 
 interface ActionGroupOnRightClick {
     fun actionGroupName(): String
+}
+
+interface PinnedConnectionNode {
+    fun feature(): FeatureWithPinnedConnection
 }

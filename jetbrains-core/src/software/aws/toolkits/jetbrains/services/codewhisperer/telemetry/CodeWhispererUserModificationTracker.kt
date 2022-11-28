@@ -16,6 +16,8 @@ import com.intellij.util.AlarmFactory
 import info.debatty.java.stringsimilarity.Levenshtein
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererLanguage
@@ -40,7 +42,8 @@ data class AcceptedSuggestionEntry(
     val completionType: CodewhispererCompletionType,
     val codewhispererLanguage: CodewhispererLanguage,
     val codewhispererRuntime: CodewhispererRuntime?,
-    val codewhispererRuntimeSource: String?
+    val codewhispererRuntimeSource: String?,
+    val connection: ToolkitConnection?
 )
 
 class CodeWhispererUserModificationTracker(private val project: Project) : Disposable {
@@ -135,6 +138,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
 
     private fun sendModificationTelemetry(suggestion: AcceptedSuggestionEntry, percentage: Double) {
         LOG.debug { "Sending user modification telemetry. Request Id: ${suggestion.requestId}" }
+        val startUrl = getConnectionStartUrl(suggestion.connection)
         CodewhispererTelemetry.userModification(
             project = project,
             codewhispererCompletionType = suggestion.completionType,
@@ -146,6 +150,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             codewhispererSessionId = suggestion.sessionId,
             codewhispererSuggestionIndex = suggestion.index,
             codewhispererTriggerType = suggestion.triggerType,
+            credentialStartUrl = startUrl
         )
     }
 

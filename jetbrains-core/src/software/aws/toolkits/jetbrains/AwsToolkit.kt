@@ -8,7 +8,7 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.util.registry.Registry
 
 object AwsToolkit {
-    private const val PLUGIN_ID = "aws.toolkit"
+    const val PLUGIN_ID = "aws.toolkit"
 
     val PLUGIN_VERSION: String by lazy {
         PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "Unknown"

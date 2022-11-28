@@ -26,12 +26,22 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         return connection
     }
 
+    private fun deleteConnection(predicate: (ToolkitConnection) -> Boolean) {
+        connections.removeAll { connection ->
+            predicate(connection).also {
+                if (it && connection is Disposable) {
+                    Disposer.dispose(connection)
+                }
+            }
+        }
+    }
+
     override fun deleteConnection(connection: ToolkitConnection) {
-        connections.removeAll { it == connection }
+        deleteConnection { it == connection }
     }
 
     override fun deleteConnection(connectionId: String) {
-        connections.removeAll { it.id == connectionId }
+        deleteConnection { it.id == connectionId }
     }
 
     override fun getConnection(connectionId: String) = connections.firstOrNull { it.id == connectionId }

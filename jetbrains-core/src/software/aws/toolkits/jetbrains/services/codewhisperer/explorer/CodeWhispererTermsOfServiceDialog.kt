@@ -47,6 +47,7 @@ class CodeWhispererTermsOfServiceDialog(project: Project?) : DialogWrapper(proje
     }
     private val component by lazy {
         setOKButtonText(message("codewhisperer.explorer.tos.ok_button"))
+        setCancelButtonText(message("general.reject"))
         panel {
             row {
                 heading(grow)

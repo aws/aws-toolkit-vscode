@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
@@ -209,7 +210,10 @@ class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAc
             e.presentation.text = logic.displayValue()
             e.presentation.description = logic.tooltip()
         } else {
-            e.presentation.text = active?.label ?: message("settings.credentials.none_selected")
+            e.presentation.text = active?.label?.let {
+                "Connected with $it"
+            } ?: message("settings.credentials.none_selected")
+
             e.presentation.description = null
         }
     }
@@ -282,14 +286,11 @@ class CredsComboBoxActionGroup(private val project: Project) : DefaultActionGrou
 
         return if (activeConnection is AwsBearerTokenConnection) {
             ssoSelectorGroup
-        }
-        // TODO: uncomment to enable action
-//        else if (activeConnection == null) {
-//            arrayOf(
-//                ActionManager.getInstance().getAction("aws.toolkit.toolwindow.explorer.newConnection")
-//            )
-//        }
-        else {
+        } else if (activeConnection == null) {
+            arrayOf(
+                ActionManager.getInstance().getAction("aws.toolkit.toolwindow.explorer.newConnection")
+            )
+        } else {
             profileRegionSelectorGroup
         }
     }

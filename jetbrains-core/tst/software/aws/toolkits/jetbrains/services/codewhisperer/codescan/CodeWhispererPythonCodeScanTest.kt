@@ -9,21 +9,22 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PythonCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
 import kotlin.test.assertNotNull
 
-class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
-
-    internal lateinit var testPy: VirtualFile
-    internal lateinit var utilsPy: VirtualFile
-    internal lateinit var helperPy: VirtualFile
-    internal lateinit var sessionConfigSpy: PythonCodeScanSessionConfig
+class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
+    private lateinit var testPy: VirtualFile
+    private lateinit var utilsPy: VirtualFile
+    private lateinit var helperPy: VirtualFile
+    private lateinit var sessionConfigSpy: PythonCodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
@@ -32,10 +33,17 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
 
     @Before
     override fun setup() {
-        setupPythonProject()
-        project = pythonProjectRule.project
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project) as PythonCodeScanSessionConfig)
         super.setup()
+        setupPythonProject()
+        setupResponse()
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(testPy, project) as PythonCodeScanSessionConfig)
+
+        mockClient.stub {
+            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
+            onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
+        }
     }
 
     @Test
@@ -134,11 +142,11 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, pythonProjectRule.project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 3, totalSize, 2)
     }
 
     private fun setupPythonProject() {
-        testPy = pythonProjectRule.fixture.addFileToProject(
+        testPy = projectRule.fixture.addFileToProject(
             "/test.py",
             """
             import numpy as np
@@ -156,7 +164,7 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += testPy.length
         totalLines += testPy.toNioPath().toFile().readLines().size
 
-        utilsPy = pythonProjectRule.fixture.addFileToProject(
+        utilsPy = projectRule.fixture.addFileToProject(
             "/utils.py",
             """
             def add(num1, num2
@@ -197,7 +205,7 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += utilsPy.length
         totalLines += utilsPy.toNioPath().toFile().readLines().size
 
-        helperPy = pythonProjectRule.fixture.addFileToProject(
+        helperPy = projectRule.fixture.addFileToProject(
             "/helpers/helper.py",
             """
             from helpers import helper as h
@@ -214,6 +222,6 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += helperPy.length
         totalLines += helperPy.toNioPath().toFile().readLines().size
 
-        pythonProjectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
     }
 }

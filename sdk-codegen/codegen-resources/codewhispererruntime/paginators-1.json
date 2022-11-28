@@ -1,0 +1,13 @@
+{
+  "pagination": {
+    "GenerateCompletions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "ListCodeAnalysisFindings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken"
+    }
+  }
+}

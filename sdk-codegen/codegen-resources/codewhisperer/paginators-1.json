@@ -1,13 +1,13 @@
 {
-  "pagination": {
-    "ListCodeScanFindings": {
-      "input_token": "nextToken",
-      "output_token": "nextToken"
-    },
-    "ListRecommendations": {
-      "input_token": "nextToken",
-      "output_token": "nextToken",
-      "limit_key": "maxResults"
+    "pagination": {
+        "ListCodeScanFindings": {
+            "input_token": "nextToken",
+            "output_token": "nextToken"
+        },
+        "ListRecommendations": {
+            "input_token": "nextToken",
+            "output_token": "nextToken",
+            "limit_key": "maxResults"
+        }
     }
-  }
 }

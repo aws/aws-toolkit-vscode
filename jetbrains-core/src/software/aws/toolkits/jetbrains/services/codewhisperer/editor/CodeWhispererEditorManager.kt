@@ -84,7 +84,11 @@ class CodeWhispererEditorManager {
         }
     }
 
-    fun getMatchingSymbolsFromRecommendation(editor: Editor, recommendation: String): Pair<List<Pair<Int, Int>>, Boolean> {
+    fun getMatchingSymbolsFromRecommendation(
+        editor: Editor,
+        recommendation: String,
+        isTruncatedOnRight: Boolean
+    ): Pair<List<Pair<Int, Int>>, Boolean> {
         val result = mutableListOf<Pair<Int, Int>>()
         val bracketsStack = Stack<Char>()
         val quotesStack = Stack<Pair<Char, Pair<Int, Int>>>()
@@ -98,6 +102,8 @@ class CodeWhispererEditorManager {
 
         result.add(0 to caretOffset)
         result.add(recommendation.length + 1 to lineEndOffset)
+
+        if (isTruncatedOnRight) return result to true
 
         while (current < recommendation.length &&
             totalDocLengthChecked < lineText.length &&
@@ -170,8 +176,15 @@ class CodeWhispererEditorManager {
         editor: Editor,
         recommendationLines: List<String>,
         isFirstLineFullMatching: Boolean,
-        popup: JBPopup
+        isTruncatedOnRight: Boolean,
+        popup: JBPopup,
     ): Int {
+        if (isTruncatedOnRight) {
+            // insertEnd value only makes sense when there are matching closing brackets, if there's right context
+            // resolution applied, set this value to null
+            editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, null)
+            return 0
+        }
         val text = editor.document.charsSequence
         val caretOffset = editor.caretModel.offset
         val document = editor.document

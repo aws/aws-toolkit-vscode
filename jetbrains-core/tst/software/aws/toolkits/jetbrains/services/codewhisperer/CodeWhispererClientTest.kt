@@ -34,6 +34,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererEndpointCustomizer
 
+/**
+ * If this test class failed, highly likely because the endpoint is overwritten by [CodeWhispererEndpointCustomizer]
+ */
 class CodeWhispererClientTest {
     val applicationRule = ApplicationRule()
     val mockCredentialManager = MockCredentialManagerRule()
@@ -59,6 +62,7 @@ class CodeWhispererClientTest {
     fun setUp() {
         MockClientManager.useRealImplementations(disposable.disposable)
 
+        // Endpoint will be override by CodeWhispererEndpointCustomizer if there is one, i.e. will call real one instead of localhost
         mockClient = AwsClientManager.getInstance().createUnmanagedClient(
             mockCredentialManager.createCredentialProvider(),
             Region.US_WEST_2,

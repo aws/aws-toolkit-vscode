@@ -50,6 +50,18 @@ tasks.jar {
     }
 }
 
+val codewhispererReadmeAssets = tasks.register<Sync>("codewhispererReadmeAssets") {
+    from("${project.projectDir}/assets")
+    into("$buildDir/assets")
+}
+
+tasks.prepareSandbox {
+    dependsOn(codewhispererReadmeAssets)
+    from(codewhispererReadmeAssets) {
+        into("aws-toolkit-jetbrains/assets")
+    }
+}
+
 tasks.testJar {
     // classpath.index is a duplicated
     duplicatesStrategy = DuplicatesStrategy.INCLUDE

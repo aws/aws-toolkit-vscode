@@ -22,11 +22,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.core.compileProjectAndWait
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.JavaCodeScanSessionConfig
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
@@ -34,22 +36,28 @@ import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
 import kotlin.test.assertNotNull
 
-class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
-
-    internal lateinit var utilsJava: VirtualFile
-    internal lateinit var test1Java: VirtualFile
-    internal lateinit var test2Java: VirtualFile
-    internal lateinit var sessionConfigSpy: JavaCodeScanSessionConfig
+class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCodeInsightTestFixtureRule()) {
+    private lateinit var utilsJava: VirtualFile
+    private lateinit var test1Java: VirtualFile
+    private lateinit var test2Java: VirtualFile
+    private lateinit var sessionConfigSpy: JavaCodeScanSessionConfig
 
     private var totalSize: Long = 0
     private var totalLines: Long = 0
 
     @Before
     override fun setup() {
-        project = javaProjectRule.project
-        setupJavaProject()
-        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project) as JavaCodeScanSessionConfig)
         super.setup()
+        setupJavaProject()
+        setupResponse()
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project) as JavaCodeScanSessionConfig)
+
+        mockClient.stub {
+            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
+            onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
+        }
     }
 
     override fun setupCodeScanFindings(): String = defaultCodeScanFindings(utilsJava)
@@ -155,30 +163,29 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, javaProjectRule.project, totalLines, 3, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 3, totalSize, 2)
     }
 
     private fun compileProject() {
         setUpCompiler()
-        compileProjectAndWait(javaProjectRule.project)
+        compileProjectAndWait(project)
     }
 
     private fun setUpCompiler() {
-        val project = javaProjectRule.project
         val modules = ModuleManager.getInstance(project).modules
 
         WriteCommandAction.writeCommandAction(project).run<Nothing> {
             val compilerExtension = CompilerProjectExtension.getInstance(project)
             assertNotNull(compilerExtension)
-            compilerExtension.compilerOutputUrl = javaProjectRule.fixture.tempDirFixture.findOrCreateDir("out").url
+            compilerExtension.compilerOutputUrl = projectRule.fixture.tempDirFixture.findOrCreateDir("out").url
             val jdkHome = IdeaTestUtil.requireRealJdkHome()
-            VfsRootAccess.allowRootAccess(javaProjectRule.fixture.testRootDisposable, jdkHome)
+            VfsRootAccess.allowRootAccess(projectRule.fixture.testRootDisposable, jdkHome)
             val jdkHomeDir = LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)
             assertNotNull(jdkHomeDir)
             val jdkName = "Real JDK"
             val jdk = SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)
             assertNotNull(jdk)
-            ProjectJdkTable.getInstance().addJdk(jdk, javaProjectRule.fixture.testRootDisposable)
+            ProjectJdkTable.getInstance().addJdk(jdk, projectRule.fixture.testRootDisposable)
 
             for (module in modules) {
                 ModuleRootModificationUtil.setModuleSdk(module, jdk)
@@ -192,9 +199,10 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
     }
 
     private fun setupJavaProject() {
-        val module = javaProjectRule.fixture.addModule("main")
+        projectRule as HeavyJavaCodeInsightTestFixtureRule
+        val module = projectRule.fixture.addModule("main")
 
-        val utilsClass = javaProjectRule.fixture.addClass(
+        val utilsClass = projectRule.fixture.addClass(
             module,
             """
             package com.example;
@@ -219,7 +227,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += utilsJava.length
         totalLines += utilsJava.toNioPath().toFile().readLines().size
 
-        val test1Class = javaProjectRule.fixture.addClass(
+        val test1Class = projectRule.fixture.addClass(
             module,
             """
             package com.example2;
@@ -261,7 +269,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += test1Java.length
         totalLines += test1Java.toNioPath().toFile().readLines().size
 
-        val test2Class = javaProjectRule.fixture.addClass(
+        val test2Class = projectRule.fixture.addClass(
             module,
             """
             package com.example2;
@@ -284,7 +292,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase() {
         totalSize += test2Java.length
         totalLines += test2Java.toNioPath().toFile().readLines().size
 
-        javaProjectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
+        projectRule.fixture.addFileToProject("/notIncluded.md", "### should NOT be included")
 
         compileProject()
     }

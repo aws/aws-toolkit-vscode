@@ -28,9 +28,8 @@ internal class PythonCodeScanSessionConfig(
 
     fun parseImports(file: VirtualFile): List<String> {
         val imports = mutableSetOf<String>()
-        val inputStream = file.inputStream
         try {
-            inputStream.use {
+            file.inputStream.use {
                 it.bufferedReader().lines().forEach { line ->
                     val importMatcher = importRegex.toPattern().matcher(line)
                     if (importMatcher.find()) {
@@ -50,8 +49,6 @@ internal class PythonCodeScanSessionConfig(
             }
         } catch (e: IOException) {
             error(message("codewhisperer.codescan.cannot_read_file", file.path))
-        } finally {
-            inputStream.close()
         }
         return imports.toList()
     }

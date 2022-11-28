@@ -20,10 +20,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
-import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest
-import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
-import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.Payload
@@ -31,15 +28,16 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PythonCodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_MILLIS_IN_SECOND
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
+import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.io.FileInputStream
 import java.util.Base64
 import kotlin.test.assertNotNull
 
-class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
-    internal lateinit var psifile: PsiFile
-    internal lateinit var file: File
+class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
+    private lateinit var psifile: PsiFile
+    private lateinit var file: File
     private lateinit var sessionConfigSpy: PythonCodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
@@ -47,8 +45,8 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
 
     @Before
     override fun setup() {
-        project = pythonProjectRule.project
-        psifile = pythonProjectRule.fixture.addFileToProject(
+        super.setup()
+        psifile = projectRule.fixture.addFileToProject(
             "/test.py",
             """import numpy as np
                import from module1 import helper
@@ -59,17 +57,24 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
             """.trimMargin()
         )
         file = psifile.virtualFile.toNioPath().toFile()
+        setupResponse()
 
         sessionConfigSpy = spy(CodeScanSessionConfig.create(psifile.virtualFile, project) as PythonCodeScanSessionConfig)
         sessionConfigSpy.stub {
             onGeneric { sessionConfigSpy.createPayload() }.thenReturn(Payload(payloadContext, file))
         }
 
-        super.setup()
         // Mock CodeWhispererClient needs to be setup before initializing CodeWhispererCodeScanSession
         codeScanSessionContext = CodeScanSessionContext(project, sessionConfigSpy)
         codeScanSessionSpy = spy(CodeWhispererCodeScanSession(codeScanSessionContext))
         doNothing().`when`(codeScanSessionSpy).uploadArtifactTOS3(any(), any(), any())
+
+        mockClient.stub {
+            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
+            onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
+        }
     }
 
     override fun setupCodeScanFindings(): String = defaultCodeScanFindings(psifile.virtualFile)
@@ -94,7 +99,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
         val response = codeScanSessionSpy.createUploadUrl("md5", "type")
 
         argumentCaptor<CreateUploadUrlRequest>().apply {
-            verify(mockClient, Times(1)).createUploadUrl(capture())
+            verify(mockClient).createUploadUrl(capture(), any())
             assertThat(response.uploadUrl()).isEqualTo(s3endpoint)
             assertThat(response.uploadId()).isEqualTo(UPLOAD_ID)
             assertThat(firstValue.contentMd5()).isEqualTo("md5")
@@ -130,7 +135,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
     @Test
     fun `test run() - createCodeScan failed`() {
         mockClient.stub {
-            onGeneric { createCodeScan(any<CreateCodeScanRequest>()) }.thenReturn(fakeCreateCodeScanResponseFailed)
+            onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponseFailed)
         }
 
         runBlocking {
@@ -144,7 +149,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
     @Test
     fun `test run() - createCodeScan error`() {
         mockClient.stub {
-            onGeneric { createCodeScan(any<CreateCodeScanRequest>()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererException::class.java)
         }
 
         runBlocking {
@@ -158,7 +163,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
     @Test
     fun `test run() - getCodeScan failed`() {
         mockClient.stub {
-            onGeneric { getCodeScan(any<GetCodeScanRequest>()) }.thenReturn(fakeGetCodeScanResponseFailed)
+            onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponseFailed)
         }
 
         runBlocking {
@@ -175,7 +180,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
             onGeneric { overallJobTimeoutInSeconds() }.thenReturn(5)
         }
         mockClient.stub {
-            onGeneric { getCodeScan(any<GetCodeScanRequest>()) }.thenAnswer {
+            onGeneric { getCodeScan(any(), any()) }.thenAnswer {
                 runBlocking {
                     delay(TIMEOUT)
                 }
@@ -194,7 +199,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
     @Test
     fun `test run() - getCodeScan error`() {
         mockClient.stub {
-            onGeneric { getCodeScan(any<GetCodeScanRequest>()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { getCodeScan(any(), any()) }.thenThrow(CodeWhispererException::class.java)
         }
 
         runBlocking {
@@ -208,7 +213,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase() {
     @Test
     fun `test run() - listCodeScanFindings error`() {
         mockClient.stub {
-            onGeneric { listCodeScanFindings(any<ListCodeScanFindingsRequest>()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenThrow(CodeWhispererException::class.java)
         }
 
         runBlocking {

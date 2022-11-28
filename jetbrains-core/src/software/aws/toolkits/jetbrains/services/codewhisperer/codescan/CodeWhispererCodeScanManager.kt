@@ -44,15 +44,19 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanDocumentListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanEditorMouseMotionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -103,6 +107,12 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
     fun runCodeScan() {
         // Return if a scan is already in progress.
         if (isCodeScanInProgress.getAndSet(true)) return
+        if (CodeWhispererUtil.isConnectionExpired(project)) {
+            promptReAuth(project) {
+                isCodeScanInProgress.set(false)
+            }
+            return
+        }
         // Prepare for a code scan
         beforeCodeScan()
         // launch code scan coroutine
@@ -114,6 +124,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         val startTime = Instant.now().toEpochMilli()
         var codeScanResponseContext = defaultCodeScanResponseContext()
         var getProjectSize: Deferred<Long?> = async { null }
+        val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         try {
             val file = FileEditorManager.getInstance(project).selectedEditor?.file
                 ?: noFileOpenError()
@@ -150,7 +161,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
             launch {
                 val duration = (Instant.now().toEpochMilli() - startTime).toDouble()
                 CodeWhispererTelemetryService.getInstance().sendSecurityScanEvent(
-                    CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus, getProjectSize.await()?.toDouble())
+                    CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus, getProjectSize.await()?.toDouble(), connection)
                 )
             }
         }
@@ -299,7 +310,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
 
     private fun beforeCodeScan() {
         // Refresh CodeWhisperer Explorer tree node to reflect scan in progress.
-        CodeWhispererExplorerActionManager.getInstance().refreshCodeWhispererNode(project)
+        project.refreshDevToolTree()
         addCodeScanUI(setSelected = true)
         // Show in progress indicator
         codeScanResultsPanel.showInProgressIndicator()
@@ -309,7 +320,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
 
     private fun afterCodeScan() {
         isCodeScanInProgress.set(false)
-        CodeWhispererExplorerActionManager.getInstance().refreshCodeWhispererNode(project)
+        project.refreshDevToolTree()
     }
 
     /**

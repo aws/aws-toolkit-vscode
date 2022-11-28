@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.explorer
 
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererActionNode
 
 class CodeWhispererExplorerTreeStructureProvider : DevToolsTreeStructureProvider() {
     override fun modify(parent: AbstractTreeNode<*>, children: MutableCollection<AbstractTreeNode<*>>): MutableCollection<AbstractTreeNode<*>> =

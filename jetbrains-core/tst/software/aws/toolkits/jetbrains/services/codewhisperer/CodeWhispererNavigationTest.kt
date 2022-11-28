@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
@@ -41,10 +40,8 @@ class CodeWhispererNavigationTest : CodeWhispererTestBase() {
                 expectedSelectedIndex = 0
             }
             if (isReverse) {
-                runInEdtAndWait {
-                    repeat(expectedCount - 1) {
-                        oppositeButton.doClick()
-                    }
+                repeat(expectedCount - 1) {
+                    oppositeButton.doClick()
                 }
             }
 
@@ -53,9 +50,7 @@ class CodeWhispererNavigationTest : CodeWhispererTestBase() {
 
             repeat(expectedCount - 1) {
                 assertThat(navigationButton.isEnabled).isEqualTo(true)
-                runInEdtAndWait {
-                    navigationButton.doClick()
-                }
+                navigationButton.doClick()
                 assertThat(oppositeButton.isEnabled).isEqualTo(true)
                 expectedSelectedIndex = (expectedSelectedIndex + indexChange) % expectedCount
                 assertThat(popupManagerSpy.sessionContext.selectedIndex).isEqualTo(expectedSelectedIndex)

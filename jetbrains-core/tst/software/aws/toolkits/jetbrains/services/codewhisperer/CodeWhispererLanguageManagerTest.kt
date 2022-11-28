@@ -16,11 +16,14 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
@@ -72,6 +75,14 @@ class CodeWhispererLanguageManagerTest {
 
         testGetProgrammingLanguageUtil("jsx harmony", CodeWhispererJsx::class.java)
 
+        testGetProgrammingLanguageUtil("typescript jsx", CodeWhispererTsx::class.java)
+
+        testGetProgrammingLanguageUtil("typescript", CodeWhispererTypeScript::class.java)
+        testGetProgrammingLanguageUtil("TypeScript", CodeWhispererTypeScript::class.java)
+
+        testGetProgrammingLanguageUtil("c#", CodeWhispererCsharp::class.java)
+        testGetProgrammingLanguageUtil("C#", CodeWhispererCsharp::class.java)
+
         testGetProgrammingLanguageUtil("plain_text", CodeWhispererPlainText::class.java)
 
         testGetProgrammingLanguageUtil("cpp", CodeWhispererUnknownLanguage::class.java)
@@ -115,6 +126,9 @@ class CodeWhispererProgrammingLanguageTest {
                 CodewhispererLanguage.Jsx -> true
                 CodewhispererLanguage.Javascript -> true
                 CodewhispererLanguage.Python -> true
+                CodewhispererLanguage.Typescript -> true
+                CodewhispererLanguage.Tsx -> true
+                CodewhispererLanguage.Csharp -> true
                 else -> false
             }
 

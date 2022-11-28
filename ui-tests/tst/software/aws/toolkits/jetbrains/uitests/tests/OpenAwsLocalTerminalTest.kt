@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.uitests.tests
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
@@ -26,6 +27,7 @@ class OpenAwsLocalTerminalTest {
     @TempDir
     lateinit var tempDir: Path
 
+    @Disabled("CodeWhisperer new feature tooltip blocks the button")
     @Test
     @CoreTest
     fun `can open a terminal from explorer`() = uiTest {

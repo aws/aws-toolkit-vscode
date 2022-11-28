@@ -82,8 +82,8 @@ class InteractiveBearerTokenProvider(
     scopes: List<String>,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
-    override val id = ToolkitBearerTokenProvider.identifier(startUrl)
-    override val displayName = ToolkitBearerTokenProvider.displayName(startUrl)
+    override val id = ToolkitBearerTokenProvider.ssoIdentifier(startUrl)
+    override val displayName = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
     private val accessTokenProvider =

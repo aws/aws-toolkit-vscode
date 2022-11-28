@@ -8,8 +8,12 @@ import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
+import software.amazon.awssdk.services.codewhisperer.model.FileContext
+import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
+import software.amazon.awssdk.services.codewhisperer.model.ProgrammingLanguage
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
+import software.amazon.awssdk.services.codewhisperer.model.RecommendationsWithReferencesPreference
 import software.amazon.awssdk.services.codewhisperer.model.Reference
 import software.amazon.awssdk.services.codewhisperer.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
@@ -42,6 +46,23 @@ object CodeWhispererTestUtil {
         .requestId(testRequestIdForCodeWhispererException)
         .awsErrorDetails(errorDetail)
         .build() as CodeWhispererException
+
+    val pythonRequest: ListRecommendationsRequest = ListRecommendationsRequest.builder()
+        .fileContext(
+            FileContext.builder()
+                .filename("test.py")
+                .programmingLanguage(
+                    ProgrammingLanguage.builder()
+                        .languageName("python")
+                        .build()
+                )
+                .build()
+        )
+        .nextToken("")
+        .referenceTrackerConfiguration { it.recommendationsWithReferences(RecommendationsWithReferencesPreference.ALLOW) }
+        .maxResults(5)
+        .build()
+
     val pythonResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
         .recommendations(
             generateMockRecommendationDetail("(x, y):\n    return x + y"),

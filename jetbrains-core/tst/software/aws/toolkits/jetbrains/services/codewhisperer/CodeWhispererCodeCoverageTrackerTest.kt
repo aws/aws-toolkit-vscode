@@ -147,11 +147,11 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             mock(),
             mock(),
             FileContextInfo(mock(), pythonFileName, CodeWhispererPython.INSTANCE),
-            mock()
+            null
         )
         val responseContext = ResponseContext("sessionId", CodewhispererCompletionType.Block)
         val recommendationContext = RecommendationContext(
-            listOf(DetailContext("requestId", pythonResponse.recommendations()[0], pythonResponse.recommendations()[0], false)),
+            listOf(DetailContext("requestId", pythonResponse.recommendations()[0], pythonResponse.recommendations()[0], false, false)),
             "x, y",
             "x, y",
             mock()

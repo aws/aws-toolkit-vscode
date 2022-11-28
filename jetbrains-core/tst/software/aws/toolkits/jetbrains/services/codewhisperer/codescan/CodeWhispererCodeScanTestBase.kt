@@ -21,41 +21,34 @@ import org.junit.Before
 import org.junit.Rule
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
-import org.mockito.kotlin.stub
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
-import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanStatus
-import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlResponse
-import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
-import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import kotlin.test.assertNotNull
 
-open class CodeWhispererCodeScanTestBase {
+open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule) {
     @Rule
     @JvmField
     val applicationRule = ApplicationRule()
 
     @Rule
     @JvmField
-    val pythonProjectRule = PythonCodeInsightTestFixtureRule()
-
-    @Rule
-    @JvmField
-    val javaProjectRule = HeavyJavaCodeInsightTestFixtureRule()
+    val projectRule: CodeInsightTestFixtureRule = projectRule
 
     @Rule
     @JvmField
@@ -69,7 +62,8 @@ open class CodeWhispererCodeScanTestBase {
     @JvmField
     val wireMock = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
 
-    internal lateinit var mockClient: CodeWhispererClient
+    protected lateinit var mockClient: CodeWhispererClientAdaptor
+
     internal lateinit var s3endpoint: String
 
     internal lateinit var fakeCreateUploadUrlResponse: CreateUploadUrlResponse
@@ -90,19 +84,23 @@ open class CodeWhispererCodeScanTestBase {
 
     @Before
     open fun setup() {
-        scanManagerSpy = spy(CodeWhispererCodeScanManager.getInstance(project))
-        doNothing().`when`(scanManagerSpy).addCodeScanUI(any())
-        mockClient = mockClientManagerRule.create()
+        project = projectRule.project
         s3endpoint = "http://127.0.0.1:${wireMock.port()}"
-        setupClient()
-        setupResponse()
 
-        mockClient.stub {
-            onGeneric { createUploadUrl(any<CreateUploadUrlRequest>()) }.thenReturn(fakeCreateUploadUrlResponse)
-            onGeneric { createCodeScan(any<CreateCodeScanRequest>()) }.thenReturn(fakeCreateCodeScanResponse)
-            onGeneric { getCodeScan(any<GetCodeScanRequest>()) }.thenReturn(fakeGetCodeScanResponse)
-            onGeneric { listCodeScanFindings(any<ListCodeScanFindingsRequest>()) }.thenReturn(fakeListCodeScanFindingsResponse)
+        scanManagerSpy = spy(CodeWhispererCodeScanManager.getInstance(project))
+        doNothing().whenever(scanManagerSpy).addCodeScanUI(any())
+
+        mockClient = mock<CodeWhispererClientAdaptor>().also {
+            project.replaceService(CodeWhispererClientAdaptor::class.java, it, disposableRule.disposable)
         }
+
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererExplorerActionManager::class.java,
+            mock {
+                on { checkActiveCodeWhispererConnectionType(any()) } doReturn CodeWhispererLoginType.Accountless
+            },
+            disposableRule.disposable
+        )
     }
 
     open fun setupCodeScanFindings() = defaultCodeScanFindings()
@@ -132,14 +130,7 @@ open class CodeWhispererCodeScanTestBase {
         ]
     """
 
-    private fun setupClient() {
-        val clientManager = spy(CodeWhispererClientManager.getInstance())
-        doNothing().`when`(clientManager).dispose()
-        whenever(clientManager.getClient()).thenReturn(mockClient)
-        ApplicationManager.getApplication().replaceService(CodeWhispererClientManager::class.java, clientManager, disposableRule.disposable)
-    }
-
-    private fun setupResponse() {
+    protected fun setupResponse() {
         fakeCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
             .uploadId(UPLOAD_ID)
             .uploadUrl(s3endpoint)

@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.ui.popup.JBPopup
 import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
@@ -34,7 +35,8 @@ data class DetailContext(
     val requestId: String,
     val recommendation: Recommendation,
     val reformatted: Recommendation,
-    val isDiscarded: Boolean
+    val isDiscarded: Boolean,
+    val isTruncatedOnRight: Boolean
 )
 
 data class SessionContext(
@@ -74,7 +76,8 @@ data class CodeScanTelemetryEvent(
     val codeScanResponseContext: CodeScanResponseContext,
     val duration: Double,
     val result: Result,
-    val totalProjectSizeInBytes: Double?
+    val totalProjectSizeInBytes: Double?,
+    val connection: ToolkitConnection?
 )
 
 data class CodeScanServiceInvocationContext(

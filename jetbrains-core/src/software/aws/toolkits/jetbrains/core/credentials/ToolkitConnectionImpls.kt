@@ -7,20 +7,23 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallback
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenPrompt
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ProfileSdkTokenProviderWrapper
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 class ManagedBearerSsoConnection(
     val startUrl: String,
     val region: String,
     override val scopes: List<String>,
-    private val prompt: SsoPrompt = SsoPrompt
+    private val prompt: SsoLoginCallback = BearerTokenPrompt
 ) : BearerSsoConnection, Disposable {
-    override val id: String = ToolkitBearerTokenProvider.identifier(startUrl)
-    override val label: String = ToolkitBearerTokenProvider.displayName(startUrl)
+    override val id: String = ToolkitBearerTokenProvider.ssoIdentifier(startUrl)
+    override val label: String = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
-    private val provider = lazy {
+    private val provider =
         tokenConnection(
             InteractiveBearerTokenProvider(
                 startUrl,
@@ -30,14 +33,34 @@ class ManagedBearerSsoConnection(
             ),
             region
         )
-    }
 
-    override fun getConnectionSettings(): TokenConnectionSettings = provider.value
+    override fun getConnectionSettings(): TokenConnectionSettings = provider
 
     override fun dispose() {
-        if (provider.isInitialized()) {
-            disposeProviderIfRequired(provider.value)
-        }
+        disposeProviderIfRequired(provider)
+    }
+}
+
+class DiskSsoSessionConnection(
+    val sessionProfileName: String,
+    val region: String
+) : AwsBearerTokenConnection, Disposable {
+    override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionProfileName)
+    override val label = ToolkitBearerTokenProvider.diskSessionDisplayName(sessionProfileName)
+
+    private val provider =
+        tokenConnection(
+            ProfileSdkTokenProviderWrapper(
+                sessionName = sessionProfileName,
+                region = region
+            ),
+            region
+        )
+
+    override fun getConnectionSettings(): TokenConnectionSettings = provider
+
+    override fun dispose() {
+        disposeProviderIfRequired(provider)
     }
 }
 

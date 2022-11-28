@@ -56,7 +56,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
-import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.AcceptedSuggestionEntry
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererCodeCoverageTracker
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
@@ -141,7 +140,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 CodewhispererCompletionType.Line,
                 CodewhispererLanguage.Java,
                 CodewhispererRuntime.Java11,
-                ""
+                "",
+                null
             )
             trackerSpy.stub {
                 onGeneric {
@@ -153,10 +153,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
 
         withCodeWhispererServiceInvokedAndWait {
-            runInEdtAndWait {
-                popupManagerSpy.popupComponents.acceptButton.doClick()
-                trackerSpy.dispose()
-            }
+            popupManagerSpy.popupComponents.acceptButton.doClick()
+            trackerSpy.dispose()
         }
         val count = pythonResponse.recommendations().size
         argumentCaptor<MetricEvent>().apply {
@@ -187,14 +185,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test cancelling popup will send user decision event for all unseen but one rejected`() {
-        val statesCaptor = argumentCaptor<InvocationContext>()
-
-        withCodeWhispererServiceInvokedAndWait {
-            verify(popupManagerSpy).render(statesCaptor.capture(), any(), any())
-
-            runInEdtAndWait {
-                popupManagerSpy.cancelPopup(statesCaptor.firstValue.popup)
-            }
+        withCodeWhispererServiceInvokedAndWait { states ->
+            popupManagerSpy.cancelPopup(states.popup)
 
             val count = pythonResponse.recommendations().size
             argumentCaptor<MetricEvent>().apply {
@@ -358,24 +350,6 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     }
 
     @Test
-    fun `test enable CodeWhisperer license filters will send user decision events with state Filter`() {
-        CodeWhispererSettings.getInstance().toggleIncludeCodeWithReference(false)
-        invokeCodeWhispererService()
-        runInEdtAndWait {
-            verify(popupManagerSpy, timeout(5000)).cancelPopup(any())
-        }
-        argumentCaptor<MetricEvent>().apply {
-            verify(batcher, atLeast(1 + pythonResponse.recommendations().size)).enqueue(capture())
-            assertEventsContainsFieldsAndCount(
-                allValues,
-                userDecision,
-                pythonResponse.recommendations().size,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Filter.toString()
-            )
-        }
-    }
-
-    @Test
     fun `test user Decision events record CodeWhisperer reference info`() {
         withCodeWhispererServiceInvokedAndWait {}
         argumentCaptor<MetricEvent>().apply {
@@ -395,10 +369,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test invoking CodeWhisperer will send service invocation event with sessionId and requestId from response`() {
-        val statesCaptor = argumentCaptor<InvocationContext>()
-        withCodeWhispererServiceInvokedAndWait {
-            verify(popupManagerSpy, timeout(5000).atLeastOnce()).render(statesCaptor.capture(), any(), any())
-            val states = statesCaptor.lastValue
+        withCodeWhispererServiceInvokedAndWait { states ->
             val metricCaptor = argumentCaptor<MetricEvent>()
             verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
             assertEventsContainsFieldsAndCount(
@@ -513,13 +484,11 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         // (x, y):\n    return x + y
         val deletedTokenByUser = 4
         withCodeWhispererServiceInvokedAndWait {
-            runInEdtAndWait {
-                popupManagerSpy.popupComponents.acceptButton.doClick()
-                val offset = fixture.caretOffset
-                WriteCommandAction.runWriteCommandAction(project) {
-                    fixture.editor.document.deleteString(offset - deletedTokenByUser, offset)
-                    fixture.editor.caretModel.moveToOffset(fixture.editor.document.textLength)
-                }
+            popupManagerSpy.popupComponents.acceptButton.doClick()
+            val offset = fixture.caretOffset
+            WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.document.deleteString(offset - deletedTokenByUser, offset)
+                fixture.editor.caretModel.moveToOffset(fixture.editor.document.textLength)
             }
         }
 
@@ -557,17 +526,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         // (x, y):\n    return x + y
         val anotherCodeSnippet = "\ndef functionWritenByMyself():\n\tpass()"
         withCodeWhispererServiceInvokedAndWait {
-            runInEdtAndWait {
-                popupManagerSpy.popupComponents.acceptButton.doClick()
-                WriteCommandAction.runWriteCommandAction(project) {
-                    fixture.editor.appendString(anotherCodeSnippet)
-                    val currentOffset = fixture.editor.caretModel.offset
-                    // delete 1 char
-                    fixture.editor.document.deleteString(currentOffset - 1, currentOffset)
-                }
-                // use dispose() to force tracker to emit telemetry
-                CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
+            popupManagerSpy.popupComponents.acceptButton.doClick()
+            WriteCommandAction.runWriteCommandAction(project) {
+                fixture.editor.appendString(anotherCodeSnippet)
+                val currentOffset = fixture.editor.caretModel.offset
+                // delete 1 char
+                fixture.editor.document.deleteString(currentOffset - 1, currentOffset)
             }
+            // use dispose() to force tracker to emit telemetry
+            CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
         }
 
         val acceptedTokensSize = pythonResponse.recommendations()[0].content().length
@@ -601,9 +568,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         // accept recommendation in file1.py
         withCodeWhispererServiceInvokedAndWait {
-            runInEdtAndWait {
-                popupManagerSpy.popupComponents.acceptButton.doClick()
-            }
+            popupManagerSpy.popupComponents.acceptButton.doClick()
         }
 
         // switch to file2.py and delete code there
@@ -658,9 +623,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
 
         withCodeWhispererServiceInvokedAndWait {
-            runInEdtAndWait {
-                popupManagerSpy.popupComponents.acceptButton.doClick()
-            }
+            popupManagerSpy.popupComponents.acceptButton.doClick()
         }
         CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
 

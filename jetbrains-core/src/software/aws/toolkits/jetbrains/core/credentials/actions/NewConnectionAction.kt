@@ -4,10 +4,16 @@
 package software.aws.toolkits.jetbrains.core.credentials.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAddConnectionDialog
 
 class NewConnectionAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
-        TODO("Not yet implemented")
+        e.project?.let {
+            runInEdt {
+                ToolkitAddConnectionDialog(it).showAndGet()
+            }
+        }
     }
 }

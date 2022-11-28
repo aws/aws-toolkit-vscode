@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.codewhisperer.model.Reference
 import software.amazon.awssdk.services.codewhisperer.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationChunk
-import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import kotlin.math.max
 
 class CodeWhispererRecommendationManager {
     fun reformat(requestContext: RequestContext, recommendation: Recommendation): Recommendation {
@@ -112,11 +112,58 @@ class CodeWhispererRecommendationManager {
         userInput: String,
         recommendations: List<Recommendation>,
         requestId: String,
-    ): List<DetailContext> = recommendations.map {
-        val isDiscarded = !it.content().startsWith(userInput)
-        val isDiscardedByReferenceFilter = it.hasReferences() &&
-            !CodeWhispererSettings.getInstance().isIncludeCodeWithReference()
-        DetailContext(requestId, it, reformat(requestContext, it), isDiscarded || isDiscardedByReferenceFilter)
+    ): List<DetailContext> {
+        val seen = mutableSetOf<String>()
+        return recommendations.map {
+            val isDiscardedByUserInput = !it.content().startsWith(userInput)
+            val truncated = truncateRecommendationUsingRightContext(requestContext, it)
+            val reformatted = reformat(requestContext, truncated)
+            val isDiscardedByRightContextTruncationDedupe = truncated.content().isEmpty() || !seen.add(reformatted.content())
+            DetailContext(
+                requestId,
+                it,
+                reformatted,
+                isDiscardedByUserInput || isDiscardedByRightContextTruncationDedupe,
+                truncated.content().length != it.content().length
+            )
+        }
+    }
+
+    private fun truncateRecommendationUsingRightContext(
+        requestContext: RequestContext,
+        recommendation: Recommendation
+    ): Recommendation {
+        val document = requestContext.editor.document
+        val caret = requestContext.editor.caretModel.primaryCaret
+        val rightContext = document.charsSequence.subSequence(caret.offset, document.charsSequence.length).toString()
+        val recommendationContent = recommendation.content()
+        val rightContextFirstLine = rightContext.substringBefore("\n")
+        val overlap =
+            if (recommendationContent.none { it == '\n' }) {
+                overlap(recommendationContent, rightContextFirstLine)
+            } else if (rightContextFirstLine.isEmpty()) {
+                overlap(recommendationContent, rightContext)
+            } else {
+                val tempOverlap = overlap(recommendationContent, rightContext)
+                if (recommendationContent.substring(0, recommendationContent.length - tempOverlap.length).none { it == '\n' }) {
+                    tempOverlap
+                } else {
+                    ""
+                }
+            }
+        return recommendation.toBuilder()
+            .content(recommendation.content().subSequence(0, recommendationContent.length - overlap.length).toString())
+            .build()
+    }
+
+    fun overlap(first: String, second: String): String {
+        for (i in max(0, first.length - second.length) until first.length) {
+            val suffix = first.substring(i)
+            if (second.startsWith(suffix)) {
+                return suffix
+            }
+        }
+        return ""
     }
 
     companion object {

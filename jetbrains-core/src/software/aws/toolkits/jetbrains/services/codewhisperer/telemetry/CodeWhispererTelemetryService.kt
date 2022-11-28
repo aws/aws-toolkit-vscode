@@ -16,7 +16,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.Recommendati
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
@@ -57,6 +57,7 @@ class CodeWhispererTelemetryService {
         val (triggerType, automatedTriggerType) = triggerTypeInfo
         val (offset, line) = caretPosition
         val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
+        val startUrl = getConnectionStartUrl(requestContext.connection)
         CodewhispererTelemetry.serviceInvocation(
             project = project,
             codewhispererAutomatedTriggerType = automatedTriggerType,
@@ -70,7 +71,8 @@ class CodeWhispererTelemetryService {
             codewhispererTriggerType = triggerType,
             duration = latency,
             reason = exceptionType,
-            success = invocationSuccess
+            success = invocationSuccess,
+            credentialStartUrl = startUrl
         )
     }
 
@@ -93,6 +95,7 @@ class CodeWhispererTelemetryService {
                 "Request ID: $requestId, " +
                 "Recommendation: ${detail.content()}"
         }
+        val startUrl = getConnectionStartUrl(requestContext.connection)
         CodewhispererTelemetry.userDecision(
             project = project,
             codewhispererCompletionType = responseContext.completionType,
@@ -104,16 +107,17 @@ class CodeWhispererTelemetryService {
             codewhispererSuggestionReferenceCount = detail.references().size,
             codewhispererSuggestionReferences = jacksonObjectMapper().writeValueAsString(detail.references().map { it.licenseName() }.toSet().toList()),
             codewhispererSuggestionState = suggestionState,
-            codewhispererTriggerType = triggerTypeInfo.triggerType
+            codewhispererTriggerType = triggerTypeInfo.triggerType,
+            credentialStartUrl = startUrl
         )
     }
 
     fun sendSecurityScanEvent(codeScanEvent: CodeScanTelemetryEvent, project: Project? = null) {
         val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext
+        val startUrl = getConnectionStartUrl(codeScanEvent.connection)
 
         LOG.debug {
             "Recording code security scan event. \n" +
-                "Security scan job id: $codeScanJobId, \n" +
                 "Total number of security scan issues found: $totalIssues, \n" +
                 "Language: ${payloadContext.language}, \n" +
                 "Uncompressed source payload size in bytes: ${payloadContext.srcPayloadSize}, \n" +
@@ -144,7 +148,8 @@ class CodeWhispererTelemetryService {
             artifactsUploadDuration = serviceInvocationContext.artifactsUploadDuration.toInt(),
             codeScanServiceInvocationsDuration = serviceInvocationContext.serviceInvocationDuration.toInt(),
             reason = reason,
-            result = codeScanEvent.result
+            result = codeScanEvent.result,
+            credentialStartUrl = startUrl
         )
     }
 
@@ -158,14 +163,14 @@ class CodeWhispererTelemetryService {
         suggestion: String,
         selectedIndex: Int
     ) {
-        val (project, _, triggerTypeInfo) = requestContext
         val (sessionId, completionType) = responseContext
         val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
-        CodeWhispererUserModificationTracker.getInstance(project).enqueue(
+        CodeWhispererUserModificationTracker.getInstance(requestContext.project).enqueue(
             AcceptedSuggestionEntry(
                 time, vFile, range, suggestion, sessionId, requestId, selectedIndex,
-                triggerTypeInfo.triggerType, completionType,
-                codewhispererLanguage, null, null
+                requestContext.triggerTypeInfo.triggerType, completionType,
+                codewhispererLanguage, null, null,
+                requestContext.connection
             )
         )
     }
@@ -186,7 +191,6 @@ class CodeWhispererTelemetryService {
                 sessionContext.seen.contains(index),
                 hasUserAccepted,
                 isDiscarded,
-                detail.hasReferences(),
                 detail.content().isEmpty()
             )
             sendUserDecisionEvent(requestId, requestContext, responseContext, detail, index, suggestionState, detailContexts.size)
@@ -201,6 +205,7 @@ class CodeWhispererTelemetryService {
     ) {
         val (project, _, triggerTypeInfo) = requestContext
         val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
+        val startUrl = getConnectionStartUrl(requestContext.connection)
         CodewhispererTelemetry.perceivedLatency(
             project = project,
             codewhispererCompletionType = responseContext.completionType,
@@ -209,7 +214,8 @@ class CodeWhispererTelemetryService {
             codewhispererSessionId = responseContext.sessionId,
             codewhispererTriggerType = triggerTypeInfo.triggerType,
             duration = latency,
-            passive = true
+            passive = true,
+            credentialStartUrl = startUrl
         )
     }
 
@@ -219,13 +225,10 @@ class CodeWhispererTelemetryService {
         hasSeen: Boolean,
         hasUserAccepted: Boolean,
         isDiscarded: Boolean,
-        hasReference: Boolean,
         isEmpty: Boolean
     ): CodewhispererSuggestionState =
         if (isEmpty) {
             CodewhispererSuggestionState.Empty
-        } else if (!CodeWhispererSettings.getInstance().isIncludeCodeWithReference() && hasReference) {
-            CodewhispererSuggestionState.Filter
         } else if (isDiscarded) {
             CodewhispererSuggestionState.Discard
         } else if (!hasSeen) {

@@ -4,8 +4,8 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -23,17 +23,21 @@ import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
 import software.amazon.awssdk.services.codewhisperer.paginators.ListRecommendationsIterable
+import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.codeWhispererRecommendationActionId
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testValidAccessToken
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreActionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreStateType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererRecommendationManager
@@ -45,23 +49,22 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 
+// TODO: restructure testbase, too bulky and hard to debug
 open class CodeWhispererTestBase {
-    @Rule
-    @JvmField
     var projectRule = PythonCodeInsightTestFixtureRule()
-
-    @Rule
-    @JvmField
     val mockClientManagerRule = MockClientManagerRule()
-
-    @Rule
-    @JvmField
+    val mockCredentialRule = MockCredentialManagerRule()
     val disposableRule = DisposableRule()
 
+    @Rule
+    @JvmField
+    val ruleChain = RuleChain(projectRule, mockCredentialRule, mockClientManagerRule, disposableRule)
+
     protected lateinit var mockClient: CodeWhispererClient
+    protected lateinit var mockUserClient: CodeWhispererRuntimeClient
 
     protected lateinit var popupManagerSpy: CodeWhispererPopupManager
-    protected lateinit var clientManagerSpy: CodeWhispererClientManager
+    protected lateinit var clientAdaptorSpy: CodeWhispererClientAdaptor
     protected lateinit var invocationStatusSpy: CodeWhispererInvocationStatus
     internal lateinit var stateManager: CodeWhispererExplorerActionManager
     protected lateinit var recommendationManager: CodeWhispererRecommendationManager
@@ -74,6 +77,7 @@ open class CodeWhispererTestBase {
     @Before
     open fun setUp() {
         mockClient = mockClientManagerRule.create()
+        mockUserClient = mockClientManagerRule.create()
         val requestCaptor = argumentCaptor<ListRecommendationsRequest>()
         mockClient.stub {
             on {
@@ -89,17 +93,6 @@ open class CodeWhispererTestBase {
                 pythonResponse
             }
         }
-
-        clientManagerSpy = spy(CodeWhispererClientManager.getInstance())
-        doNothing().`when`(clientManagerSpy).dispose()
-        clientManagerSpy.stub {
-            onGeneric {
-                getClient()
-            } doAnswer {
-                mockClient
-            }
-        }
-        ApplicationManager.getApplication().replaceService(CodeWhispererClientManager::class.java, clientManagerSpy, disposableRule.disposable)
 
         popupManagerSpy = spy(CodeWhispererPopupManager.getInstance())
         popupManagerSpy.reset()
@@ -139,6 +132,9 @@ open class CodeWhispererTestBase {
                 value[CodeWhispererConfigurationType.IsIncludeCodeWithReference] = true
             }
         )
+
+        clientAdaptorSpy = spy(CodeWhispererClientAdaptorImpl(projectRule.project))
+        projectRule.project.replaceService(CodeWhispererClientAdaptor::class.java, clientAdaptorSpy, disposableRule.disposable)
     }
 
     @After
@@ -148,18 +144,18 @@ open class CodeWhispererTestBase {
         popupManagerSpy.reset()
     }
 
-    fun withCodeWhispererServiceInvokedAndWait(runnable: () -> Unit) {
-        val popupCaptor = argumentCaptor<JBPopup>()
+    fun withCodeWhispererServiceInvokedAndWait(runnable: (InvocationContext) -> Unit) {
+        val statesCaptor = argumentCaptor<InvocationContext>()
         invokeCodeWhispererService()
         verify(popupManagerSpy, timeout(5000).atLeastOnce())
-            .showPopup(any(), any(), popupCaptor.capture(), any(), any())
-        val popup = popupCaptor.lastValue
+            .showPopup(statesCaptor.capture(), any(), any(), any(), any())
+        val states = statesCaptor.lastValue
 
-        try {
-            runnable()
-        } finally {
-            runInEdtAndWait {
-                CodeWhispererPopupManager.getInstance().closePopup(popup)
+        runInEdtAndWait {
+            try {
+                runnable(states)
+            } finally {
+                CodeWhispererPopupManager.getInstance().closePopup(states.popup)
             }
         }
     }

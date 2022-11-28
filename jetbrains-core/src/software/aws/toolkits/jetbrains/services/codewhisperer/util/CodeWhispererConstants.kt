@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
 import java.awt.Font
+import java.text.SimpleDateFormat
 
 object CodeWhispererConstants {
     const val CHARACTERS_LIMIT = 10240
@@ -25,7 +26,9 @@ object CodeWhispererConstants {
     const val POPUP_DELAY_CHECK_INTERVAL: Long = 25
 
     const val CODEWHISPERER_LEARN_MORE_URI = "https://aws.amazon.com/codewhisperer"
-    const val CODEWHISPERER_TOKEN_REQUEST_LINK = "https://pages.awscloud.com/codewhisperer-sign-up-form.html"
+    const val CODEWHISPERER_LOGIN_HELP_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer.html"
+
+    const val THROTTLING_MESSAGE = "Maximum recommendation count reached for this month."
 
     // Code scan feature constants
     val ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES = TextAttributes(null, null, JBColor.YELLOW, EffectType.WAVE_UNDERSCORE, Font.PLAIN)
@@ -33,12 +36,18 @@ object CodeWhispererConstants {
     const val JAVA_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
     const val PYTHON_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val PYTHON_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
+    const val JS_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
+    const val JS_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val CODE_SCAN_POLLING_INTERVAL_IN_SECONDS: Long = 5
     const val CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS: Long = 10
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
     const val TOTAL_MILLIS_IN_SECOND = 1000
     const val TOTAL_SECONDS_IN_MINUTE: Long = 60L
+    const val ACCOUNTLESS_START_URL = "accountless"
+
+    // Date when Accountless is not supported
+    val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")
 
     object AutoSuggestion {
         const val SETTING_ID = "codewhisperer_autoSuggestionActivation"
@@ -48,7 +57,10 @@ object CodeWhispererConstants {
 
     object Config {
         const val CODEWHISPERER_ENDPOINT = "https://codewhisperer.us-east-1.amazonaws.com/"
+
         const val CODEWHISPERER_IDPOOL_ID = "us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9"
-        val REGION = Region.US_EAST_1
+
+        val Sigv4ClientRegion = Region.US_EAST_1
+        val BearerClientRegion = Region.US_EAST_1
     }
 }

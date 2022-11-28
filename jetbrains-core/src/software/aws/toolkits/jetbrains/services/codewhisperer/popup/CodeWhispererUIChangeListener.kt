@@ -16,10 +16,11 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val editorManager = CodeWhispererEditorManager.getInstance()
         val selectedIndex = sessionContext.selectedIndex
         val typeahead = sessionContext.typeahead
+        val detail = states.recommendationContext.details[selectedIndex]
 
         // get matching brackets from recommendations to the brackets after caret position
         val remaining = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            states.recommendationContext.details[selectedIndex], states.recommendationContext.userInputSinceInvocation
+            detail, states.recommendationContext.userInputSinceInvocation
         ).substring(typeahead.length)
 
         val remainingLines = remaining.split("\n")
@@ -28,7 +29,7 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
 
         // process first line inlays, where we do subsequence matching as much as possible
         val (matchingSymbols, isFirstLineFullMatching) = editorManager.getMatchingSymbolsFromRecommendation(
-            editor, firstLineOfRemaining
+            editor, firstLineOfRemaining, detail.isTruncatedOnRight
         )
         val chunks = CodeWhispererRecommendationManager.getInstance().buildRecommendationChunks(
             firstLineOfRemaining,
@@ -40,7 +41,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
             editor,
             otherLinesOfRemaining,
             isFirstLineFullMatching,
-            states.popup
+            detail.isTruncatedOnRight,
+            states.popup,
         )
 
         var otherLinesInlayText = ""
@@ -60,10 +62,11 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val editorManager = CodeWhispererEditorManager.getInstance()
         val selectedIndex = sessionContext.selectedIndex
         val typeahead = sessionContext.typeahead
+        val detail = states.recommendationContext.details[selectedIndex]
 
         // get matching brackets from recommendations to the brackets after caret position
         val remaining = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            states.recommendationContext.details[selectedIndex], states.recommendationContext.userInputSinceInvocation
+            detail, states.recommendationContext.userInputSinceInvocation
         ).substring(typeahead.length)
 
         val remainingLines = remaining.split("\n")
@@ -72,7 +75,7 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
 
         // process first line inlays, where we do subsequence matching as much as possible
         val (_, isFirstLineFullMatching) = editorManager.getMatchingSymbolsFromRecommendation(
-            editor, firstLineOfRemaining
+            editor, firstLineOfRemaining, detail.isTruncatedOnRight
         )
 
         // process other lines inlays, where we do tail-head matching as much as possible
@@ -80,6 +83,7 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
             editor,
             otherLinesOfRemaining,
             isFirstLineFullMatching,
+            detail.isTruncatedOnRight,
             states.popup
         )
 
