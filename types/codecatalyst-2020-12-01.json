@@ -255,7 +255,7 @@
             "name": "ListDevEnvironments",
             "http": {
                 "method": "POST",
-                "requestUri": "/v1/spaces/{spaceName}/projects/{projectName}/devEnvironments/",
+                "requestUri": "/v1/spaces/{spaceName}/projects/{projectName}/devEnvironments",
                 "responseCode": 200
             },
             "input": { "shape": "ListDevEnvironmentsRequest" },
@@ -1092,16 +1092,8 @@
         "ListAccessTokensRequest": {
             "type": "structure",
             "members": {
-                "maxResults": {
-                    "shape": "ListAccessTokensRequestMaxResultsInteger",
-                    "location": "querystring",
-                    "locationName": "maxResults"
-                },
-                "nextToken": {
-                    "shape": "ListAccessTokensRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                }
+                "maxResults": { "shape": "ListAccessTokensRequestMaxResultsInteger" },
+                "nextToken": { "shape": "ListAccessTokensRequestNextTokenString" }
             }
         },
         "ListAccessTokensRequestMaxResultsInteger": {
@@ -1111,7 +1103,7 @@
         },
         "ListAccessTokensRequestNextTokenString": {
             "type": "string",
-            "max": 4000,
+            "max": 10000,
             "min": 1
         },
         "ListAccessTokensResponse": {
@@ -1119,13 +1111,8 @@
             "required": ["items"],
             "members": {
                 "items": { "shape": "AccessTokenSummaries" },
-                "nextToken": { "shape": "ListAccessTokensResponseNextTokenString" }
+                "nextToken": { "shape": "String" }
             }
-        },
-        "ListAccessTokensResponseNextTokenString": {
-            "type": "string",
-            "max": 4000,
-            "min": 1
         },
         "ListDevEnvironmentsRequest": {
             "type": "structure",
@@ -1154,7 +1141,7 @@
         },
         "ListDevEnvironmentsRequestNextTokenString": {
             "type": "string",
-            "max": 2048,
+            "max": 10000,
             "min": 1
         },
         "ListDevEnvironmentsResponse": {
@@ -1162,13 +1149,8 @@
             "required": ["items"],
             "members": {
                 "items": { "shape": "DevEnvironmentSummaryList" },
-                "nextToken": { "shape": "ListDevEnvironmentsResponseNextTokenString" }
+                "nextToken": { "shape": "String" }
             }
-        },
-        "ListDevEnvironmentsResponseNextTokenString": {
-            "type": "string",
-            "max": 2048,
-            "min": 1
         },
         "ListEventLogsRequest": {
             "type": "structure",
@@ -1179,31 +1161,11 @@
                     "location": "uri",
                     "locationName": "spaceName"
                 },
-                "startTime": {
-                    "shape": "SyntheticTimestamp_date_time",
-                    "location": "querystring",
-                    "locationName": "startTime"
-                },
-                "endTime": {
-                    "shape": "SyntheticTimestamp_date_time",
-                    "location": "querystring",
-                    "locationName": "endTime"
-                },
-                "eventName": {
-                    "shape": "String",
-                    "location": "querystring",
-                    "locationName": "eventName"
-                },
-                "nextToken": {
-                    "shape": "ListEventLogsRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                },
-                "maxResults": {
-                    "shape": "ListEventLogsRequestMaxResultsInteger",
-                    "location": "querystring",
-                    "locationName": "maxResults"
-                }
+                "startTime": { "shape": "SyntheticTimestamp_date_time" },
+                "endTime": { "shape": "SyntheticTimestamp_date_time" },
+                "eventName": { "shape": "String" },
+                "nextToken": { "shape": "ListEventLogsRequestNextTokenString" },
+                "maxResults": { "shape": "ListEventLogsRequestMaxResultsInteger" }
             }
         },
         "ListEventLogsRequestMaxResultsInteger": {
@@ -1214,7 +1176,7 @@
         },
         "ListEventLogsRequestNextTokenString": {
             "type": "string",
-            "max": 2048,
+            "max": 10000,
             "min": 1
         },
         "ListEventLogsResponse": {
@@ -1234,16 +1196,8 @@
                     "location": "uri",
                     "locationName": "spaceName"
                 },
-                "nextToken": {
-                    "shape": "ListProjectsRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                },
-                "maxResults": {
-                    "shape": "ListProjectsRequestMaxResultsInteger",
-                    "location": "querystring",
-                    "locationName": "maxResults"
-                },
+                "nextToken": { "shape": "ListProjectsRequestNextTokenString" },
+                "maxResults": { "shape": "ListProjectsRequestMaxResultsInteger" },
                 "filters": { "shape": "ProjectListFilters" }
             }
         },
@@ -1255,6 +1209,7 @@
         },
         "ListProjectsRequestNextTokenString": {
             "type": "string",
+            "max": 10000,
             "min": 1
         },
         "ListProjectsResponse": {
@@ -1293,16 +1248,8 @@
                     "location": "uri",
                     "locationName": "projectName"
                 },
-                "nextToken": {
-                    "shape": "ListSourceRepositoriesRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                },
-                "maxResults": {
-                    "shape": "ListSourceRepositoriesRequestMaxResultsInteger",
-                    "location": "querystring",
-                    "locationName": "maxResults"
-                }
+                "nextToken": { "shape": "ListSourceRepositoriesRequestNextTokenString" },
+                "maxResults": { "shape": "ListSourceRepositoriesRequestMaxResultsInteger" }
             }
         },
         "ListSourceRepositoriesRequestMaxResultsInteger": {
@@ -1313,6 +1260,7 @@
         },
         "ListSourceRepositoriesRequestNextTokenString": {
             "type": "string",
+            "max": 10000,
             "min": 1
         },
         "ListSourceRepositoriesResponse": {
@@ -1354,16 +1302,8 @@
                     "location": "uri",
                     "locationName": "sourceRepositoryName"
                 },
-                "nextToken": {
-                    "shape": "ListSourceRepositoryBranchesRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                },
-                "maxResults": {
-                    "shape": "ListSourceRepositoryBranchesRequestMaxResultsInteger",
-                    "location": "querystring",
-                    "locationName": "maxResults"
-                }
+                "nextToken": { "shape": "ListSourceRepositoryBranchesRequestNextTokenString" },
+                "maxResults": { "shape": "ListSourceRepositoryBranchesRequestMaxResultsInteger" }
             }
         },
         "ListSourceRepositoryBranchesRequestMaxResultsInteger": {
@@ -1374,6 +1314,7 @@
         },
         "ListSourceRepositoryBranchesRequestNextTokenString": {
             "type": "string",
+            "max": 10000,
             "min": 1
         },
         "ListSourceRepositoryBranchesResponse": {
@@ -1386,15 +1327,12 @@
         "ListSpacesRequest": {
             "type": "structure",
             "members": {
-                "nextToken": {
-                    "shape": "ListSpacesRequestNextTokenString",
-                    "location": "querystring",
-                    "locationName": "nextToken"
-                }
+                "nextToken": { "shape": "ListSpacesRequestNextTokenString" }
             }
         },
         "ListSpacesRequestNextTokenString": {
             "type": "string",
+            "max": 10000,
             "min": 1
         },
         "ListSpacesResponse": {
