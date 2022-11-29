@@ -397,6 +397,30 @@ describe('SAM Integration Tests', async function () {
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
+    describe('SAM install test', async () => {
+        let runtimeTestRoot: string
+        let randomTestScenario: TestScenario
+
+        before(async function () {
+            if (scenarios.length == 0) {
+                throw new Error('There are no scenarios available.')
+            }
+            randomTestScenario = scenarios[0]
+
+            runtimeTestRoot = path.join(testSuiteRoot, 'randomScenario')
+            mkdirpSync(runtimeTestRoot)
+        })
+
+        after(async function () {
+            await tryRemoveFolder(runtimeTestRoot)
+        })
+
+        it('produces an error when creating a SAM Application to the same location', async function () {
+            await createSamApplication(runtimeTestRoot, randomTestScenario)
+            await assert.rejects(createSamApplication(runtimeTestRoot, randomTestScenario), 'Promise was not rejected')
+        })
+    })
+
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
@@ -436,7 +460,7 @@ describe('SAM Integration Tests', async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
-                    await createSamApplication(testDir)
+                    await createSamApplication(testDir, scenario)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
 
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
@@ -462,10 +486,6 @@ describe('SAM Integration Tests', async function () {
                     if (scenario.language !== 'java') {
                         await tryRemoveFolder(testDir)
                     }
-                })
-
-                it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
@@ -598,22 +618,6 @@ describe('SAM Integration Tests', async function () {
             })
         })
 
-        async function createSamApplication(location: string): Promise<void> {
-            const initArguments: SamCliInitArgs = {
-                name: samApplicationName,
-                location: location,
-                dependencyManager: scenario.dependencyManager,
-            }
-            if (scenario.baseImage) {
-                initArguments.baseImage = scenario.baseImage
-            } else {
-                initArguments.runtime = scenario.runtime
-                initArguments.template = helloWorldTemplate
-            }
-            const samCliContext = getSamCliContext()
-            await runSamCliInit(initArguments, samCliContext)
-        }
-
         function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
             assert.ok(codeLens.command, 'CodeLens did not have a command')
             const command = codeLens.command!
@@ -627,5 +631,21 @@ describe('SAM Integration Tests', async function () {
 
             assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
         }
+    }
+
+    async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
+        const initArguments: SamCliInitArgs = {
+            name: samApplicationName,
+            location: location,
+            dependencyManager: scenario.dependencyManager,
+        }
+        if (scenario.baseImage) {
+            initArguments.baseImage = scenario.baseImage
+        } else {
+            initArguments.runtime = scenario.runtime
+            initArguments.template = helloWorldTemplate
+        }
+        const samCliContext = getSamCliContext()
+        await runSamCliInit(initArguments, samCliContext)
     }
 })
