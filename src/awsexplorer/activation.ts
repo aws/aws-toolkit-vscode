@@ -29,7 +29,6 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { notifyCodeCatalystBetaUsers } from '../codecatalyst/beta'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
@@ -51,14 +50,6 @@ export async function activate(args: {
     globals.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
-
-    globals.context.subscriptions.push(
-        view.onDidChangeVisibility(async e => {
-            if (e.visible) {
-                await notifyCodeCatalystBetaUsers()
-            }
-        })
-    )
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 

@@ -18,7 +18,6 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { watchBetaVSIX } from './beta'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 
@@ -53,7 +52,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
             .then(disposable => ctx.extensionContext.subscriptions.push(disposable))
 
         watchRestartingDevEnvs(ctx, authProvider)
-        watchBetaVSIX()
     }
 
     const devenvClient = new DevEnvClient()
