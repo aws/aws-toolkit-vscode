@@ -62,6 +62,10 @@ export function createSsoProfile(startUrl: string, region = 'us-east-1'): SsoPro
     }
 }
 
+export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
+    return scopes?.every(s => target.scopes?.includes(s))
+}
+
 export interface SsoConnection {
     readonly type: 'sso'
     readonly id: string
@@ -343,6 +347,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
@@ -522,14 +528,21 @@ export class Auth implements AuthService, ConnectionManager {
 
     // XXX: always read from the same location in a dev environment
     private getSsoSessionName = once(() => {
-        const configFile = getConfigFilename()
-        const contents: string = require('fs').readFileSync(configFile, 'utf-8')
-        const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
-        if (!identifier) {
-            throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
-        }
+        try {
+            const configFile = getConfigFilename()
+            const contents: string = require('fs').readFileSync(configFile, 'utf-8')
+            const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
+            if (!identifier) {
+                throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
+            }
 
-        return identifier
+            return identifier
+        } catch (err) {
+            const defaultName = 'codecatalyst'
+            getLogger().warn(`auth: unable to get an sso session name, defaulting to "${defaultName}": %s`, err)
+
+            return defaultName
+        }
     })
 
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
@@ -657,20 +670,6 @@ export class Auth implements AuthService, ConnectionManager {
     public readonly tryAutoConnect = once(async () => {
         if (this.activeConnection !== undefined) {
             return
-        }
-
-        // Remove connections that do not have the required scopes
-        const requiredScopes = createBuilderIdProfile().scopes
-        for (const [id, profile] of this.store.listProfiles()) {
-            if (
-                profile.type === 'sso' &&
-                profile.startUrl === builderIdStartUrl &&
-                !requiredScopes?.every(s => profile.scopes?.includes(s))
-            ) {
-                await this.store.deleteProfile(id).catch(err => {
-                    getLogger().warn(`auth: failed to remove profile ${id}: %s`, err)
-                })
-            }
         }
 
         // Use the environment token if available
@@ -880,7 +879,7 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
                 a.authority.toLowerCase() === b.authority.toLowerCase()
             const oldConn = existingConnections.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
 
-            if (oldConn && (ignoreScopes || requiredScopes?.every(s => oldConn.scopes?.includes(s)))) {
+            if (oldConn && (ignoreScopes || hasScopes(oldConn, requiredScopes))) {
                 return 'A connection for this start URL already exists. Sign out before creating a new one.'
             }
         } catch (err) {
@@ -897,14 +896,13 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
 }
 
 export async function createBuilderIdConnection(auth: Auth) {
+    const newProfile = createBuilderIdProfile()
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
-
-    // Right now users can only have 1 builder id connection
-    if (existingConn !== undefined) {
-        await auth.deleteConnection(existingConn)
+    if (existingConn && !hasScopes(existingConn, newProfile.scopes)) {
+        return migrateBuilderId(auth, existingConn, newProfile)
     }
 
-    return Auth.instance.createConnection(createBuilderIdProfile())
+    return existingConn ?? (await auth.createConnection(newProfile))
 }
 
 Commands.register('aws.auth.help', async () => {
@@ -916,6 +914,23 @@ Commands.register('aws.auth.signout', () => {
 
     return signout(Auth.instance)
 })
+
+// XXX: right now users can only have 1 builder id connection, so de-dupe
+// This logic can be removed or re-purposed once we have access to identities
+async function migrateBuilderId(auth: Auth, existingConn: SsoConnection, newProfile: SsoProfile) {
+    const newConn = await auth.createConnection(newProfile)
+    const shouldUseConnection = auth.activeConnection?.id === existingConn.id
+    await auth.deleteConnection(existingConn).catch(err => {
+        getLogger().warn(`auth: failed to remove old connection "${existingConn.id}": %s`, err)
+    })
+
+    if (shouldUseConnection) {
+        return auth.useConnection(newConn)
+    }
+
+    return newConn
+}
+
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const c9IamItem = createIamItem()
     c9IamItem.detail =
@@ -948,11 +963,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
-            const existingConn = (await Auth.instance.listConnections()).find(isBuilderIdConnection)
-            // Right now users can only have 1 builder id connection
-            const conn = existingConn ?? (await Auth.instance.createConnection(createBuilderIdProfile()))
-
-            return Auth.instance.useConnection(conn)
+            return createBuilderIdConnection(Auth.instance)
         }
     }
 })

@@ -6,7 +6,14 @@
 import * as vscode from 'vscode'
 import { ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { Auth, isBuilderIdConnection, Connection, SsoConnection, codecatalystScopes } from '../credentials/auth'
+import {
+    Auth,
+    isBuilderIdConnection,
+    Connection,
+    SsoConnection,
+    codecatalystScopes,
+    hasScopes,
+} from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
 
@@ -26,7 +33,7 @@ export class CodeCatalystAuthStorage {
 }
 
 const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
-    isBuilderIdConnection(conn) && codecatalystScopes.every(s => conn.scopes?.includes(s))
+    isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
 
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection

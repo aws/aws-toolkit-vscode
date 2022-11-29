@@ -14,6 +14,7 @@ import {
     isBuilderIdConnection,
     createSsoProfile,
     isSsoConnection,
+    hasScopes,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
@@ -28,7 +29,7 @@ import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
 const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
-    !isCloud9() && conn.type === 'sso' && codewhispererScopes.every(s => conn.scopes?.includes(s))
+    !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
 
 export class AuthUtil {
     private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
