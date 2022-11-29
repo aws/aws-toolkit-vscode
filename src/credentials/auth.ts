@@ -36,7 +36,7 @@ import { createCommonButtons, createExitButton, createHelpButton } from '../shar
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
-import { credentialHelpUrl } from '../shared/constants'
+import { authHelpUrl } from '../shared/constants'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
@@ -906,7 +906,7 @@ export async function createBuilderIdConnection(auth: Auth) {
 }
 
 Commands.register('aws.auth.help', async () => {
-    vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+    vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
 })
 Commands.register('aws.auth.signout', () => {
