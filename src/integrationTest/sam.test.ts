@@ -421,33 +421,6 @@ describe('SAM Integration Tests', async function () {
             }
 
             /**
-             * This suite cleans up at the end of each test.
-             */
-            describe('Starting from scratch', async function () {
-                let testDir: string
-
-                beforeEach(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
-                    log(`testDir: ${testDir}`)
-                })
-
-                afterEach(async function () {
-                    // don't clean up after java tests so the java language server doesn't freak out
-                    if (scenario.language !== 'java') {
-                        await tryRemoveFolder(testDir)
-                    }
-                })
-
-                it('creates a new SAM Application (happy path)', async function () {
-                    await createSamApplication(testDir)
-
-                    // Check for readme file
-                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
-                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
-                })
-            })
-
-            /**
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
@@ -465,8 +438,11 @@ describe('SAM Integration Tests', async function () {
 
                     await createSamApplication(testDir)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
+
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
 
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
