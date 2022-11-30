@@ -235,3 +235,7 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
 export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
+
+export const accessTokenMigrationDoNotShowAgain = `Don\'t show again`
+
+export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
