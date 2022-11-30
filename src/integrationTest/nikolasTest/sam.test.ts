@@ -9,25 +9,25 @@ import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
-import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
-import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
-import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
-import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { Language } from '../shared/codelens/codeLensUtils'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
-import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
-import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import * as testUtils from './integrationTestsUtilities'
-import { setTestTimeout } from './globalSetup.test'
-import { waitUntil } from '../shared/utilities/timeoutUtils'
-import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
-import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
-import { insertTextIntoFile } from '../shared/utilities/textUtilities'
-import { sleep } from '../shared/utilities/timeoutUtils'
-import globals from '../shared/extensionGlobals'
-import { closeAllEditors } from '../test/testUtil'
+import * as vscodeUtils from '../../shared/utilities/vsCodeUtils'
+import { DependencyManager } from '../../lambda/models/samLambdaRuntime'
+import { helloWorldTemplate } from '../../lambda/models/samTemplates'
+import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
+import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
+import { Language } from '../../shared/codelens/codeLensUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { AddSamDebugConfigurationInput } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { findParentProjectFile } from '../../shared/utilities/workspaceUtils'
+import * as testUtils from '../integrationTestsUtilities'
+import { setTestTimeout } from '../globalSetup.test'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration.gen'
+import { AwsSamTargetType } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import { insertTextIntoFile } from '../../shared/utilities/textUtilities'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import globals from '../../shared/extensionGlobals'
+import { closeAllEditors } from '../../test/testUtil'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -94,74 +94,74 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
+    // // {
+    // //     runtime: 'python3.8',
+    // //     displayName: 'python3.8 (ZIP)',
+    // //     path: 'hello_world/app.py',
+    // //     debugSessionType: 'python',
+    // //     language: 'python',
+    // //     dependencyManager: 'pip',
+    // //     vscodeMinimum: '1.50.0',
+    // // },
+    // // TODO: Add Python3.9 support to integration test hosts
+    // // {
+    // //     runtime: 'python3.9',
+    // //     displayName: 'python3.9 (ZIP)',
+    // //     path: 'hello_world/app.py',
+    // //     debugSessionType: 'python',
+    // //     language: 'python',
+    // //     dependencyManager: 'pip',
+    // // },
     // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (ZIP)',
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
+    //     runtime: 'java8',
+    //     displayName: 'java8 (Gradle ZIP)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'gradle',
     //     vscodeMinimum: '1.50.0',
     // },
-    // TODO: Add Python3.9 support to integration test hosts
     // {
-    //     runtime: 'python3.9',
-    //     displayName: 'python3.9 (ZIP)',
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
+    //     runtime: 'java8.al2',
+    //     displayName: 'java8.al2 (Maven ZIP)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'maven',
+    //     vscodeMinimum: '1.50.0',
     // },
-    {
-        runtime: 'java8',
-        displayName: 'java8 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Maven ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Gradle ZIP)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'go1.x',
-        displayName: 'go1.x (ZIP)',
-        path: 'hello-world/main.go',
-        debugSessionType: 'delve',
-        language: 'go',
-        dependencyManager: 'mod',
-        // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
-    },
-    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+    // {
+    //     runtime: 'java11',
+    //     displayName: 'java11 (Gradle ZIP)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'gradle',
+    //     vscodeMinimum: '1.50.0',
+    // },
+    // {
+    //     runtime: 'go1.x',
+    //     displayName: 'go1.x (ZIP)',
+    //     path: 'hello-world/main.go',
+    //     debugSessionType: 'delve',
+    //     language: 'go',
+    //     dependencyManager: 'mod',
+    //     // https://github.com/golang/vscode-go/blob/master/package.json
+    //     vscodeMinimum: '1.59.0',
+    // },
+    // // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
-    // images
-    {
-        runtime: 'nodejs14.x',
-        displayName: 'nodejs14.x (Image)',
-        baseImage: `amazon/nodejs14.x-base`,
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
+    // // images
+    // {
+    //     runtime: 'nodejs14.x',
+    //     displayName: 'nodejs14.x (Image)',
+    //     baseImage: `amazon/nodejs14.x-base`,
+    //     path: 'hello-world/app.js',
+    //     debugSessionType: 'pwa-node',
+    //     language: 'javascript',
+    //     dependencyManager: 'npm',
+    //     vscodeMinimum: '1.50.0',
+    // },
     {
         runtime: 'nodejs16.x',
         displayName: 'nodejs16.x (Image)',
@@ -172,88 +172,88 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'nodejs18.x',
-        displayName: 'nodejs18.x (Image)',
-        baseImage: `amazon/nodejs18.x-base`,
-        path: 'hello-world/app.mjs',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'python3.7',
-        displayName: 'python3.7 (Image)',
-        baseImage: `amazon/python3.7-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
     // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (Image)',
-    //     baseImage: `amazon/python3.8-base`,
+    //     runtime: 'nodejs18.x',
+    //     displayName: 'nodejs18.x (Image)',
+    //     baseImage: `amazon/nodejs18.x-base`,
+    //     path: 'hello-world/app.mjs',
+    //     debugSessionType: 'pwa-node',
+    //     language: 'javascript',
+    //     dependencyManager: 'npm',
+    //     vscodeMinimum: '1.50.0',
+    // },
+    // {
+    //     runtime: 'python3.7',
+    //     displayName: 'python3.7 (Image)',
+    //     baseImage: `amazon/python3.7-base`,
     //     path: 'hello_world/app.py',
     //     debugSessionType: 'python',
     //     language: 'python',
     //     dependencyManager: 'pip',
     //     vscodeMinimum: '1.50.0',
     // },
-    // TODO: Add Python3.9 support to integration test hosts
+    // // {
+    // //     runtime: 'python3.8',
+    // //     displayName: 'python3.8 (Image)',
+    // //     baseImage: `amazon/python3.8-base`,
+    // //     path: 'hello_world/app.py',
+    // //     debugSessionType: 'python',
+    // //     language: 'python',
+    // //     dependencyManager: 'pip',
+    // //     vscodeMinimum: '1.50.0',
+    // // },
+    // // TODO: Add Python3.9 support to integration test hosts
+    // // {
+    // //     runtime: 'python3.9',
+    // //     displayName: 'python3.9 (Image)',
+    // //     baseImage: `amazon/python3.9-base`,
+    // //     path: 'hello_world/app.py',
+    // //     debugSessionType: 'python',
+    // //     language: 'python',
+    // //     dependencyManager: 'pip',
+    // // },
     // {
-    //     runtime: 'python3.9',
-    //     displayName: 'python3.9 (Image)',
-    //     baseImage: `amazon/python3.9-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
+    //     runtime: 'go1.x',
+    //     displayName: 'go1.x (Image)',
+    //     baseImage: 'amazon/go1.x-base',
+    //     path: 'hello-world/main.go',
+    //     debugSessionType: 'delve',
+    //     language: 'go',
+    //     dependencyManager: 'mod',
+    //     // https://github.com/golang/vscode-go/blob/master/package.json
+    //     vscodeMinimum: '1.59.0',
     // },
-    {
-        runtime: 'go1.x',
-        displayName: 'go1.x (Image)',
-        baseImage: 'amazon/go1.x-base',
-        path: 'hello-world/main.go',
-        debugSessionType: 'delve',
-        language: 'go',
-        dependencyManager: 'mod',
-        // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
-    },
-    {
-        runtime: 'java8',
-        displayName: 'java8 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: `amazon/java8-base`,
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java8.al2',
-        displayName: 'java8.al2 (Gradle Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: `amazon/java8.al2-base`,
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'gradle',
-        vscodeMinimum: '1.50.0',
-    },
-    {
-        runtime: 'java11',
-        displayName: 'java11 (Maven Image)',
-        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
-        baseImage: `amazon/java11-base`,
-        debugSessionType: 'java',
-        language: 'java',
-        dependencyManager: 'maven',
-        vscodeMinimum: '1.50.0',
-    },
-    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+    // {
+    //     runtime: 'java8',
+    //     displayName: 'java8 (Maven Image)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     baseImage: `amazon/java8-base`,
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'maven',
+    //     vscodeMinimum: '1.50.0',
+    // },
+    // {
+    //     runtime: 'java8.al2',
+    //     displayName: 'java8.al2 (Gradle Image)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     baseImage: `amazon/java8.al2-base`,
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'gradle',
+    //     vscodeMinimum: '1.50.0',
+    // },
+    // {
+    //     runtime: 'java11',
+    //     displayName: 'java11 (Maven Image)',
+    //     path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+    //     baseImage: `amazon/java11-base`,
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'maven',
+    //     vscodeMinimum: '1.50.0',
+    // },
+    // // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
@@ -420,32 +420,32 @@ describe('SAM Integration Tests', async function () {
                 console.log(`sam.test.ts: scenario ${scenarioIndex} (${scenario.displayName}): ${o}`)
             }
 
-            /**
-             * This suite cleans up at the end of each test.
-             */
-            describe('Starting from scratch', async function () {
-                let testDir: string
+            // /**
+            //  * This suite cleans up at the end of each test.
+            //  */
+            // describe('Starting from scratch', async function () {
+            //     let testDir: string
 
-                beforeEach(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
-                    log(`testDir: ${testDir}`)
-                })
+            //     beforeEach(async function () {
+            //         testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
+            //         log(`testDir: ${testDir}`)
+            //     })
 
-                afterEach(async function () {
-                    // don't clean up after java tests so the java language server doesn't freak out
-                    if (scenario.language !== 'java') {
-                        await tryRemoveFolder(testDir)
-                    }
-                })
+            //     afterEach(async function () {
+            //         // don't clean up after java tests so the java language server doesn't freak out
+            //         if (scenario.language !== 'java') {
+            //             await tryRemoveFolder(testDir)
+            //         }
+            //     })
 
-                it('creates a new SAM Application (happy path)', async function () {
-                    await createSamApplication(testDir)
+            //     it('creates a new SAM Application (happy path)', async function () {
+            //         await createSamApplication(testDir)
 
-                    // Check for readme file
-                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
-                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
-                })
-            })
+            //         // Check for readme file
+            //         const readmePath = path.join(testDir, samApplicationName, 'README.md')
+            //         assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
+            //     })
+            // })
 
             /**
              * This suite makes a sam app that all tests operate on.
@@ -488,9 +488,9 @@ describe('SAM Integration Tests', async function () {
                     }
                 })
 
-                it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
-                })
+                // it('produces an error when creating a SAM Application to the same location', async function () {
+                //     await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
+                // })
 
                 it('produces an Add Debug Configuration codelens', async function () {
                     if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
@@ -533,92 +533,92 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
-                    assert.ok(projectRoot, 'projectRoot not found')
+                    assert.ok(projectRoot, `projectRoot not found for ${samAppCodeUri}`)
                     for (const codeLens of codeLenses) {
                         assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                     }
                 })
 
-                it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (SKIP_LANGUAGES_ON_API.includes(scenario.language)) {
-                        this.skip()
-                    }
+                // it('target=api: invokes and attaches on debug request (F5)', async function () {
+                //     if (SKIP_LANGUAGES_ON_API.includes(scenario.language)) {
+                //         this.skip()
+                //     }
 
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
-                    await testTarget('api', {
-                        api: {
-                            path: '/hello',
-                            httpMethod: 'get',
-                            headers: { 'accept-language': 'fr-FR' },
-                        },
-                    })
-                })
+                //     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                //     await testTarget('api', {
+                //         api: {
+                //             path: '/hello',
+                //             httpMethod: 'get',
+                //             headers: { 'accept-language': 'fr-FR' },
+                //         },
+                //     })
+                // })
 
-                it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
-                    await testTarget('template')
-                })
+                // it('target=template: invokes and attaches on debug request (F5)', async function () {
+                //     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                //     await testTarget('template')
+                // })
 
-                async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
-                    // Allow previous sessions to go away.
-                    await waitUntil(async () => vscode.debug.activeDebugSession === undefined, {
-                        timeout: NO_DEBUG_SESSION_TIMEOUT,
-                        interval: NO_DEBUG_SESSION_INTERVAL,
-                        truthy: true,
-                    })
+                // async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
+                //     // Allow previous sessions to go away.
+                //     await waitUntil(async () => vscode.debug.activeDebugSession === undefined, {
+                //         timeout: NO_DEBUG_SESSION_TIMEOUT,
+                //         interval: NO_DEBUG_SESSION_INTERVAL,
+                //         truthy: true,
+                //     })
 
-                    // We exclude the Node debug type since it causes the most erroneous failures with CI.
-                    // However, the fact that there are sessions from previous tests is still an issue, so
-                    // a warning will be logged under the current session.
-                    if (vscode.debug.activeDebugSession) {
-                        assert.strictEqual(
-                            vscode.debug.activeDebugSession.type,
-                            'pwa-node',
-                            `unexpected debug session in progress: ${JSON.stringify(
-                                vscode.debug.activeDebugSession,
-                                undefined,
-                                2
-                            )}`
-                        )
+                //     // We exclude the Node debug type since it causes the most erroneous failures with CI.
+                //     // However, the fact that there are sessions from previous tests is still an issue, so
+                //     // a warning will be logged under the current session.
+                //     if (vscode.debug.activeDebugSession) {
+                //         assert.strictEqual(
+                //             vscode.debug.activeDebugSession.type,
+                //             'pwa-node',
+                //             `unexpected debug session in progress: ${JSON.stringify(
+                //                 vscode.debug.activeDebugSession,
+                //                 undefined,
+                //                 2
+                //             )}`
+                //         )
 
-                        sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession.name}`)
-                    }
+                //         sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession.name}`)
+                //     }
 
-                    const testConfig = {
-                        type: 'aws-sam',
-                        request: 'direct-invoke',
-                        name: `test-config-${scenarioIndex}`,
-                        invokeTarget: {
-                            target: target,
-                            // Resource defined in `src/testFixtures/.../template.yaml`.
-                            logicalId: 'HelloWorldFunction',
-                            templatePath: cfnTemplatePath,
-                        },
-                        sam: {
-                            containerBuild: true,
-                        },
-                        ...extraConfig,
-                    } as AwsSamDebuggerConfiguration
+                //     const testConfig = {
+                //         type: 'aws-sam',
+                //         request: 'direct-invoke',
+                //         name: `test-config-${scenarioIndex}`,
+                //         invokeTarget: {
+                //             target: target,
+                //             // Resource defined in `src/testFixtures/.../template.yaml`.
+                //             logicalId: 'HelloWorldFunction',
+                //             templatePath: cfnTemplatePath,
+                //         },
+                //         sam: {
+                //             containerBuild: true,
+                //         },
+                //         ...extraConfig,
+                //     } as AwsSamDebuggerConfiguration
 
-                    // runtime is optional for ZIP, but required for image-based
-                    if (scenario.baseImage) {
-                        testConfig.lambda = {
-                            runtime: scenario.runtime,
-                        }
+                //     // runtime is optional for ZIP, but required for image-based
+                //     if (scenario.baseImage) {
+                //         testConfig.lambda = {
+                //             runtime: scenario.runtime,
+                //         }
 
-                        // HACK: set GOPROXY=direct or it will fail to build. https://golang.org/ref/mod#module-proxy
-                        // This only applies for our internal systems
-                        if (scenario.language === 'go') {
-                            const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
-                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
-                        }
-                    }
+                //         // HACK: set GOPROXY=direct or it will fail to build. https://golang.org/ref/mod#module-proxy
+                //         // This only applies for our internal systems
+                //         if (scenario.language === 'go') {
+                //             const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
+                //             insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                //         }
+                //     }
 
-                    // XXX: force load since template registry seems a bit flakey
-                    await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
+                //     // XXX: force load since template registry seems a bit flakey
+                //     await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
-                    await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
-                }
+                //     await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
+                // }
             })
         })
 

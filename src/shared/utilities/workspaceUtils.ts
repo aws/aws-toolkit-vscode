@@ -93,15 +93,17 @@ export async function findParentProjectFile(
     sourceCodeUri: vscode.Uri,
     projectFile: RegExp
 ): Promise<vscode.Uri | undefined> {
+    log('findParentProjectFile', `sourceCodeUri: '${sourceCodeUri}'\nprojectFile: ${projectFile}`)
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(sourceCodeUri)
     if (!workspaceFolder) {
+        log('findParentProjectFile', 'No workspace folder was found')
         return undefined
     }
 
     const workspaceProjectFiles = globals.codelensRootRegistry.registeredItems
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
-
+    log('findParentProjectFile', `workspaceProjectFiles:\n ${workspaceProjectFiles.join('\n')}`)
     // Use the project file "closest" in the parent chain to sourceCodeUri
     const parentProjectFiles = workspaceProjectFiles
         .filter(uri => {
@@ -117,11 +119,18 @@ export async function findParentProjectFile(
             return -1
         })
 
+    log('findParentProjectFile', `parentProjectFiles:\n ${parentProjectFiles.join('\n')}`)
+
     if (parentProjectFiles.length === 0) {
+        log('findParentProjectFile', 'No parent project files')
         return undefined
     }
 
     return vscode.Uri.file(parentProjectFiles[0])
+}
+
+function log(name: string, message: string): void {
+    console.log(`\n[${name}]: ${message}\n`)
 }
 
 /**
