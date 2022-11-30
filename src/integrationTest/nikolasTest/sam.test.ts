@@ -20,14 +20,16 @@ import { fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../../shared/utilities/workspaceUtils'
 import * as testUtils from '../integrationTestsUtilities'
-import { setTestTimeout } from '../globalSetup.test'
-import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration.gen'
-import { AwsSamTargetType } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { insertTextIntoFile } from '../../shared/utilities/textUtilities'
-import { sleep } from '../../shared/utilities/timeoutUtils'
-import globals from '../../shared/extensionGlobals'
+// import { setTestTimeout } from './globalSetup.test'
+// import { waitUntil } from '../../shared/utilities/timeoutUtils'
+// import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration.gen'
+// import { AwsSamTargetType } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+// import { insertTextIntoFile } from '../../shared/utilities/textUtilities'
+// import { sleep } from '../../shared/utilities/timeoutUtils'
+// import globals from '../../shared/extensionGlobals'
 import { closeAllEditors } from '../../test/testUtil'
+import directoryTree = require('directory-tree')
+import globals from '../../shared/extensionGlobals'
 
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
@@ -35,12 +37,12 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 // note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 240000
-const NO_DEBUG_SESSION_TIMEOUT: number = 5000
-const NO_DEBUG_SESSION_INTERVAL: number = 100
+// const DEBUG_TIMEOUT: number = 240000
+// const NO_DEBUG_SESSION_TIMEOUT: number = 5000
+// const NO_DEBUG_SESSION_INTERVAL: number = 100
 
-/** Go can't handle API tests yet */
-const SKIP_LANGUAGES_ON_API = ['go']
+// /** Go can't handle API tests yet */
+// const SKIP_LANGUAGES_ON_API = ['go']
 
 interface TestScenario {
     displayName: string
@@ -265,20 +267,20 @@ async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
 /**
  * Returns a string if there is a validation issue, undefined if there is no issue.
  */
-function validateSamDebugSession(
-    debugSession: vscode.DebugSession,
-    expectedName: string,
-    expectedRuntime: string
-): string | undefined {
-    const runtime = (debugSession.configuration as any).runtime
-    const name = (debugSession.configuration as any).name
-    if (name !== expectedName || runtime !== expectedRuntime) {
-        const failMsg =
-            `Unexpected DebugSession (expected name="${expectedName}" runtime="${expectedRuntime}"):` +
-            `\n${JSON.stringify(debugSession)}`
-        return failMsg
-    }
-}
+// function validateSamDebugSession(
+//     debugSession: vscode.DebugSession,
+//     expectedName: string,
+//     expectedRuntime: string
+// ): string | undefined {
+//     const runtime = (debugSession.configuration as any).runtime
+//     const name = (debugSession.configuration as any).name
+//     if (name !== expectedName || runtime !== expectedRuntime) {
+//         const failMsg =
+//             `Unexpected DebugSession (expected name="${expectedName}" runtime="${expectedRuntime}"):` +
+//             `\n${JSON.stringify(debugSession)}`
+//         return failMsg
+//     }
+// }
 
 /**
  * Simulates pressing 'F5' to start debugging. Sets up events to see if debugging was successful
@@ -291,62 +293,62 @@ function validateSamDebugSession(
  * @param testDisposables All events registered by this function are pushed here to be removed later
  * @param sessionLog An array where session logs are stored
  */
-async function startDebugger(
-    scenario: TestScenario,
-    scenarioIndex: number,
-    target: AwsSamTargetType,
-    testConfig: vscode.DebugConfiguration,
-    testDisposables: vscode.Disposable[],
-    sessionLog: string[]
-) {
-    function logSession(startEnd: 'START' | 'END' | 'EXIT' | 'FAIL', name: string) {
-        sessionLog.push(
-            `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
-                scenario.displayName
-            }: ${name}`
-        )
-    }
+// async function startDebugger(
+//     scenario: TestScenario,
+//     scenarioIndex: number,
+//     target: AwsSamTargetType,
+//     testConfig: vscode.DebugConfiguration,
+//     testDisposables: vscode.Disposable[],
+//     sessionLog: string[]
+// ) {
+//     function logSession(startEnd: 'START' | 'END' | 'EXIT' | 'FAIL', name: string) {
+//         sessionLog.push(
+//             `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
+//                 scenario.displayName
+//             }: ${name}`
+//         )
+//     }
 
-    // Create a Promise that encapsulates our success critera
-    const success = new Promise<void>((resolve, reject) => {
-        testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async session => {
-                logSession('END', session.name)
-                const sessionRuntime = (session.configuration as any).runtime
-                if (!sessionRuntime) {
-                    // It's a coprocess, ignore it.
-                    return
-                }
-                const failMsg = validateSamDebugSession(session, testConfig.name, scenario.runtime)
-                if (failMsg) {
-                    reject(new Error(failMsg))
-                }
-                resolve()
-                await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
-            })
-        )
-    })
+//     // Create a Promise that encapsulates our success critera
+//     const success = new Promise<void>((resolve, reject) => {
+//         testDisposables.push(
+//             vscode.debug.onDidTerminateDebugSession(async session => {
+//                 logSession('END', session.name)
+//                 const sessionRuntime = (session.configuration as any).runtime
+//                 if (!sessionRuntime) {
+//                     // It's a coprocess, ignore it.
+//                     return
+//                 }
+//                 const failMsg = validateSamDebugSession(session, testConfig.name, scenario.runtime)
+//                 if (failMsg) {
+//                     reject(new Error(failMsg))
+//                 }
+//                 resolve()
+//                 await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
+//             })
+//         )
+//     })
 
-    // Executes the 'F5' action
-    await vscode.debug.startDebugging(undefined, testConfig)
-    if (!vscode.debug.activeDebugSession) {
-        logSession('EXIT', `${testConfig.name} (exited immediately)`)
-        return
-    }
-    logSession('START', vscode.debug.activeDebugSession.name)
-    await sleep(400)
-    await continueDebugger()
-    await sleep(400)
-    await continueDebugger()
-    await sleep(400)
-    await continueDebugger()
+//     // Executes the 'F5' action
+//     await vscode.debug.startDebugging(undefined, testConfig)
+//     if (!vscode.debug.activeDebugSession) {
+//         logSession('EXIT', `${testConfig.name} (exited immediately)`)
+//         return
+//     }
+//     logSession('START', vscode.debug.activeDebugSession.name)
+//     await sleep(400)
+//     await continueDebugger()
+//     await sleep(400)
+//     await continueDebugger()
+//     await sleep(400)
+//     await continueDebugger()
 
-    return success
-}
+//     return success
+// }
 
-async function continueDebugger(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.debug.continue')
-}
+// async function continueDebugger(): Promise<void> {
+//     await vscode.commands.executeCommand('workbench.action.debug.continue')
+// }
 
 async function stopDebugger(logMsg: string | undefined): Promise<void> {
     if (logMsg) {
@@ -469,6 +471,7 @@ describe('SAM Integration Tests', async function () {
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
 
                     samAppCodeUri = await openSamAppFile(appPath)
+                    globals.codelensRootRegistry.registeredItems
                 })
 
                 beforeEach(async function () {
@@ -532,6 +535,8 @@ describe('SAM Integration Tests', async function () {
                             assert.fail('invalid scenario language')
                     }
 
+                    // console.log(`[code lens test]:\n${treePathString(testDir)}\n`)
+                    await globals.codelensRootRegistry.rebuild()
                     const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
                     assert.ok(projectRoot, `projectRoot not found for ${samAppCodeUri}`)
                     for (const codeLens of codeLenses) {
@@ -622,6 +627,23 @@ describe('SAM Integration Tests', async function () {
             })
         })
 
+        function treePathString(path: string): string {
+            const paths = treePaths(directoryTree(path))
+            const pathsSorted = paths.sort((a, b) => (a > b ? 1 : -1))
+            return pathsSorted.join('\n')
+        }
+
+        function treePaths(d: directoryTree.DirectoryTree): string[] {
+            let paths = [d.path]
+            if (d.children == undefined) {
+                return paths
+            }
+            d.children.forEach(c => {
+                paths = paths.concat(treePaths(c))
+            })
+            return paths
+        }
+
         async function createSamApplication(location: string): Promise<void> {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
@@ -636,6 +658,8 @@ describe('SAM Integration Tests', async function () {
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)
+
+            console.log(`[createSamApplication]:\n${treePathString(location)}\n`)
         }
 
         function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {

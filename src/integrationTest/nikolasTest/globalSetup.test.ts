@@ -7,10 +7,10 @@
  * Before/After hooks for all integration tests.
  */
 import * as assert from 'assert'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { getLogger } from '../shared/logger'
-import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { getLogger } from '../../shared/logger'
+import { WinstonToolkitLogger } from '../../shared/logger/winstonToolkitLogger'
+import { activateExtension } from '../../shared/utilities/vsCodeUtils'
 
 // ASSUMPTION: Tests are not run concurrently
 

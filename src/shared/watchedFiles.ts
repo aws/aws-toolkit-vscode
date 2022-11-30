@@ -221,14 +221,19 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Rebuilds registry using current glob and exclusion patterns.
      * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
      */
-    private async rebuild(): Promise<void> {
+    public async rebuild(): Promise<void> {
         this.reset()
         for (const glob of this.globs) {
             const itemUris = await vscode.workspace.findFiles(glob)
+            console.log(`[rebuild]:\n${this.getUriStrings(itemUris).join('\n')}\n`)
             for (const item of itemUris) {
                 await this.addItemToRegistry(item, true)
             }
         }
+    }
+
+    getUriStrings(uris: vscode.Uri[]): string[] {
+        return uris.map(uri => uri.fsPath).sort((a, b) => (a > b ? 1 : -1))
     }
 
     /**
