@@ -27,6 +27,8 @@ import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 import { isCodeCatalystVSCode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
+import { areEqual } from '../shared/utilities/pathUtils'
+import { fileExists } from '../shared/filesystemUtilities'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -289,14 +291,47 @@ export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri
         throw new Error('No root directory or Dev Environment folder found')
     }
 
+    async function checkDefaultLocations(rootDirectory: vscode.Uri): Promise<vscode.Uri> {
+        // Check the projects root location
+        const devfileRoot = vscode.Uri.joinPath(vscode.Uri.parse('/projects'), 'devfile.yaml')
+        if (await fileExists(devfileRoot.fsPath)) {
+            return devfileRoot
+        }
+
+        // Check the location relative to the current directory
+        const projectRoot = vscode.Uri.joinPath(rootDirectory, 'devfile.yaml')
+        if (await fileExists(projectRoot.fsPath)) {
+            return projectRoot
+        }
+
+        throw new Error('Devfile location was not found')
+    }
+
     // TODO(sijaden): should make this load greedily and continously poll
     // latency is very high for some reason
     const devfileLocation = await client.getStatus().then(r => r.location)
     if (!devfileLocation) {
-        throw new Error('Devfile location was not found')
+        return checkDefaultLocations(rootDirectory)
     }
 
-    return vscode.Uri.joinPath(rootDirectory, devfileLocation)
+    if (areEqual(undefined, rootDirectory.fsPath, '/projects')) {
+        return vscode.Uri.joinPath(rootDirectory, devfileLocation)
+    }
+
+    // we have /projects/repo, where MDE may or may not return [repo]/devfile.yaml
+    const repo = path.basename(rootDirectory.fsPath)
+    const splitDevfilePath = devfileLocation.split('/')
+    const devfilePath = vscode.Uri.joinPath(rootDirectory, 'devfile.yaml')
+    if (repo === splitDevfilePath[0] && (await fileExists(devfilePath.fsPath))) {
+        return devfilePath
+    }
+
+    const baseLocation = vscode.Uri.joinPath(rootDirectory, devfileLocation)
+    if (await fileExists(baseLocation.fsPath)) {
+        return baseLocation
+    }
+
+    return checkDefaultLocations(rootDirectory)
 }
 
 /**
