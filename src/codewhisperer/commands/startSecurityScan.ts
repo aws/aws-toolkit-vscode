@@ -26,6 +26,7 @@ import { statSync } from 'fs'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -69,9 +70,10 @@ export async function startSecurityScan(
         codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
+        credentialStartUrl: TelemetryHelper.instance.startUrl,
     }
     try {
-        getLogger().info(`Starting security scan for '${vscode.workspace.name}' ...`)
+        getLogger().verbose(`Starting security scan `)
         /**
          * Step 1: Generate context truncations
          */
@@ -96,7 +98,7 @@ export async function startSecurityScan(
             CodeWhispererConstants.contextTruncationTimeoutSeconds
         )
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
-        getLogger().info(`Complete project context processing.`)
+        getLogger().verbose(`Complete project context processing.`)
         codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.src.size
         codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = truncation.build.size
         codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = truncation.src.zipSize
@@ -120,23 +122,24 @@ export async function startSecurityScan(
          */
         serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
-        getLogger().debug(`Job id: ${scanJob.jobId}`)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }
-        getLogger().info(`Created security scan job.`)
+        getLogger().verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
 
         /**
          * Step 4:  Polling mechanism on scan job status
          */
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId)
-        if (jobStatus === 'Failed') throw new Error('Security scan job failed.')
+        if (jobStatus === 'Failed') {
+            throw new Error('Security scan job failed.')
+        }
 
         /**
          * Step 5: Process and render scan results
          */
-        getLogger().info(`Security scan job succeeded and start processing result.`)
+        getLogger().verbose(`Security scan job succeeded and start processing result.`)
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -147,7 +150,7 @@ export async function startSecurityScan(
             return accumulator + current.issues.length
         }, 0)
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
-        getLogger().info(`Security scan for '${vscode.workspace.name}' totally found ${total} issues.`)
+        getLogger().verbose(`Security scan totally found ${total} issues.`)
         if (total > 0) {
             if (isCloud9()) {
                 securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
@@ -159,7 +162,7 @@ export async function startSecurityScan(
         } else {
             vscode.window.showInformationMessage(`Security scan completed and no issues were found.`)
         }
-        getLogger().info(`Security scan completed.`)
+        getLogger().verbose(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed.', error)
         errorPromptHelper(error as Error)

@@ -7,12 +7,12 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
 import { AggregatedCodeScanIssue } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { TruncPaths } from '../util/dependencyGraph/dependencyGraph'
 import { existsSync, statSync, readFileSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
 import got from 'got'
-import * as codewhispererClient from '../client/codewhisperer'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
@@ -31,7 +31,10 @@ export async function listScanResults(
         .flatten()
         .map(resp => {
             getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-            return resp.codeScanFindings
+            if ('codeScanFindings' in resp) {
+                return resp.codeScanFindings
+            }
+            return resp.codeAnalysisFindings
         })
         .promise()
     issues.forEach(issue => {
@@ -129,12 +132,14 @@ export async function createScanJob(
 }
 
 export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncPaths: TruncPaths) {
-    if (truncPaths.src.zip === '') throw new Error("Truncation failure: can't find valid source zip.")
+    if (truncPaths.src.zip === '') {
+        throw new Error("Truncation failure: can't find valid source zip.")
+    }
     const srcReq: codewhispererClient.CreateUploadUrlRequest = {
         artifactType: CodeWhispererConstants.artifactTypeSource,
         contentMd5: getMd5(truncPaths.src.zip),
     }
-    getLogger().verbose(`Getting presigned Url for uploading src context...`)
+    getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
@@ -149,7 +154,7 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
             artifactType: CodeWhispererConstants.artifactTypeBuild,
             contentMd5: getMd5(truncPaths.build.zip),
         }
-        getLogger().verbose(`Getting presigned Url for uploading build context...`)
+        getLogger().verbose(`Prepare for uploading build context...`)
         const buildResp = await client.createUploadUrl(buildReq)
         getLogger().verbose(`Request id: ${buildResp.$response.requestId}`)
         getLogger().verbose(`Complete Getting presigned Url for uploading build context.`)

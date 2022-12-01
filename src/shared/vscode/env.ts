@@ -59,6 +59,13 @@ export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
 }
 
 /**
+ * Returns true when source mapping is available
+ */
+export function isSourceMappingAvailable(): boolean {
+    return extensionVersion === TEST_VERSION
+}
+
+/**
  * Returns true if the extension is being ran from automation.
  */
 export function isAutomation(): boolean {
@@ -94,4 +101,17 @@ export function getMinVscodeVersion(): string {
  */
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
+}
+
+export function getCodeCatalystDevEnvId(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_ID']
+}
+
+export function getCodeCatalystProjectName(): string | undefined {
+    return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
+}
+
+export function getCodeCatalystSpaceName(): string | undefined {
+    // TODO: remove legacy __DEV_ENVIRONMENT_ORGANIZATION_NAME
+    return process.env['__DEV_ENVIRONMENT_SPACE_NAME'] || process.env['__DEV_ENVIRONMENT_ORGANIZATION_NAME']
 }

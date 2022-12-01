@@ -11,6 +11,7 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -102,19 +103,32 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                     lineInfo
                 ) + ' <br>'
         }
-        if (text === ``) return ''
+        if (text === ``) {
+            return ''
+        }
         return `[${time}] Accepted recommendation ${text}<br>`
     }
 
     public addReferenceLog(referenceLog: string) {
-        if (referenceLog !== '') this._referenceLogs.push(referenceLog)
+        if (referenceLog !== '') {
+            this._referenceLogs.push(referenceLog)
+        }
         this.update()
     }
     private getHtml(webview: vscode.Webview, showPrompt: boolean): string {
         const styleVSCodeUri = webview.asWebviewUri(
             vscode.Uri.joinPath(this._extensionUri, 'src', 'codewhisperer', 'views/css/codewhispererReferenceLog.css')
         )
-        const prompt = showPrompt ? CodeWhispererConstants.referenceLogPromptText : ''
+
+        let prompt = ''
+        if (showPrompt) {
+            if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                prompt = CodeWhispererConstants.referenceLogPromptTextEnterpriseSSO
+            } else {
+                prompt = CodeWhispererConstants.referenceLogPromptText
+            }
+        }
+
         let csp = ''
         if (isCloud9()) {
             csp = `<meta

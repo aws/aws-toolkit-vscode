@@ -35,8 +35,12 @@ export async function getDirSize(
     const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
     const fileSizes = files.map(async file => {
         const filePath = path.join(dirPath, file.name)
-        if (file.isSymbolicLink()) return 0
-        if (file.isDirectory()) return getDirSize(filePath, startTime, duration, fileExt)
+        if (file.isSymbolicLink()) {
+            return 0
+        }
+        if (file.isDirectory()) {
+            return getDirSize(filePath, startTime, duration, fileExt)
+        }
         if (file.isFile() && file.name.endsWith(fileExt)) {
             const { size } = await fsExtra.stat(filePath)
             return size
@@ -78,10 +82,10 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export const readFileAsString = async (
+export async function readFileAsString(
     pathLike: string,
     options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
-): Promise<string> => {
+): Promise<string> {
     return readFile(pathLike, options)
 }
 

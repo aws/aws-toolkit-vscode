@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import * as sinon from 'sinon'
 
 import { Uri } from 'vscode'
 import { loadSharedConfigFiles } from '../../../shared/credentials/credentialsFile'
@@ -23,9 +24,7 @@ describe('UserCredentialsUtils', function () {
     })
 
     afterEach(async function () {
-        const env = process.env as EnvironmentVariables
-        delete env.AWS_SHARED_CREDENTIALS_FILE
-        delete env.AWS_CONFIG_FILE
+        sinon.restore()
     })
 
     after(async function () {
@@ -37,15 +36,15 @@ describe('UserCredentialsUtils', function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-test')
             const configFilename = path.join(tempFolder, 'config-both-exist-test')
 
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            env.AWS_CONFIG_FILE = configFilename
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
 
             createCredentialsFile(credentialsFilename, ['default'])
             createCredentialsFile(configFilename, ['default'])
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-            assert(foundFiles)
             assert.strictEqual(foundFiles.length, 2)
         })
 
@@ -53,14 +52,14 @@ describe('UserCredentialsUtils', function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-exist-test')
             const configFilename = path.join(tempFolder, 'config-not-exist-test')
 
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            env.AWS_CONFIG_FILE = configFilename
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
 
             createCredentialsFile(credentialsFilename, ['default'])
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-            assert(foundFiles)
             assert.strictEqual(foundFiles.length, 1)
             assert.strictEqual(foundFiles[0], credentialsFilename)
         })
@@ -69,14 +68,14 @@ describe('UserCredentialsUtils', function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-not-exist-test')
             const configFilename = path.join(tempFolder, 'config-exist-test')
 
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            env.AWS_CONFIG_FILE = configFilename
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
 
             createCredentialsFile(configFilename, ['default'])
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-            assert(foundFiles)
             assert.strictEqual(foundFiles.length, 1)
             assert.strictEqual(foundFiles[0], configFilename)
         })
@@ -85,12 +84,77 @@ describe('UserCredentialsUtils', function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-not-exist-test')
             const configFilename = path.join(tempFolder, 'config-not-exist-test')
 
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            env.AWS_CONFIG_FILE = configFilename
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-            assert(foundFiles)
+            assert.strictEqual(foundFiles.length, 0)
+        })
+
+        it('returns credentials files if profiles are required and config does not exist', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-exists-profiles-required-no-config-test')
+            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-config-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            createCredentialsFile(credentialsFilename, ['default'])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 1)
+        })
+
+        it('returns config files if profiles are required and credentials does not exist', async function () {
+            const credentialsFilename = path.join(
+                tempFolder,
+                'credentials-exists-profiles-required-no-credentials-test'
+            )
+            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-credentials-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            createCredentialsFile(configFilename, ['default'])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 1)
+        })
+
+        it('returns empty result if files dont contain credentials', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-no-credentials-test')
+            const configFilename = path.join(tempFolder, 'config-both-exist-but-no-credentials-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            createCredentialsFile(credentialsFilename, [])
+            createCredentialsFile(configFilename, [])
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
+            assert.strictEqual(foundFiles.length, 0)
+        })
+
+        it('returns empty result if files contains nonsense', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-contain-nonsense-test')
+            const configFilename = path.join(tempFolder, 'config-both-exist-but-contain-nonsense-test')
+
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+                AWS_CONFIG_FILE: configFilename,
+            } as EnvironmentVariables)
+
+            fs.writeFileSync(credentialsFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
+            fs.writeFileSync(configFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
+
+            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
             assert.strictEqual(foundFiles.length, 0)
         })
     })
@@ -100,8 +164,9 @@ describe('UserCredentialsUtils', function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
             const profileName = 'someRandomProfileName'
 
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+            } as EnvironmentVariables)
             const creds = {
                 accessKey: '123',
                 profileName: profileName,

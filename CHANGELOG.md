@@ -1,3 +1,30 @@
+## 1.57.0 2022-12-01
+
+- **Feature** Amazon CodeCatalyst: Connect VS Code to your remote Dev Environments.
+- **Feature** Amazon CodeCatalyst: Clone your repositories to your local workspace.
+- **Feature** Amazon CodeCatalyst: Connect using your AWS Builder ID.
+
+## 1.56.0 2022-11-28
+
+- **Feature** Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started. 
+- **Feature** Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block.
+- **Feature** Amazon CodeWhisperer now supports TypeScript and C# programming languages.
+- **Feature** Amazon CodeWhisperer is now available as a supported feature and no longer an experimental feature.
+- **Feature** Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities.
+
+## 1.55.0 2022-11-23
+
+- **Bug Fix** logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found
+- **Feature** SAM: the `Sync SAM Application` command remembers your most recent selections per-region.
+- **Feature** SAM: deployment of CloudFormation templates now uses `sam sync` by default, reducing the amount of time it takes to deploy to AWS. The `aws.samcli.legacyDeploy` setting can be used to revert to the old experience.
+
+## 1.54.0 2022-11-19
+
+- **Bug Fix** JSON-schemas download logic is brittle #2957
+- **Bug Fix** "Connect" and "Choose Profile" open create credentials wizard/profile selector when credentials aren't present in aws configs
+- **Feature** SAM: create, run and debug nodejs18.x Lambdas
+- **Feature** New credentials experience. Includes the ability to set up SSO ("IAM Identity Center") from AWS Toolkit (`AWS: Connect to AWS` > `Add New Connection`)
+
 ## 1.53.0 2022-10-24
 
 - **Bug Fix** Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials

@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -26,10 +26,11 @@ import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
-import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { DevSettings } from '../shared/settings'
+import { CodeCatalystRootNode } from '../codecatalyst/explorer'
+import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -40,7 +41,7 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.context.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -49,14 +50,6 @@ export async function activate(args: {
     globals.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
-
-    globals.context.subscriptions.push(
-        view.onDidChangeVisibility(async e => {
-            if (e.visible) {
-                await LoginManager.tryAutoConnect(args.context.awsContext)
-            }
-        })
-    )
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -75,10 +68,9 @@ export async function activate(args: {
         })
     )
 
-    const nodes = DevSettings.instance.get('showAuthNode', false)
-        ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode]
-        : [cdkNode, codewhispererNode]
-
+    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
+    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
@@ -87,9 +79,12 @@ export async function activate(args: {
 
     // Legacy CDK metric, remove this when we add something generic
     const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
     developerTools.onDidExpandElement(e => {
         if (e.element.resource instanceof CdkRootNode) {
             recordExpandCdkOnce()
+        } else if (e.element.resource instanceof CodeWhispererNode) {
+            onDidExpandCodeWhisperer()
         }
     })
 }

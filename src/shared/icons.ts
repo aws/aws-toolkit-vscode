@@ -8,17 +8,13 @@ import globals from './extensionGlobals'
 import type * as packageJson from '../../package.json'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Uri, ThemeIcon } from 'vscode'
+import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { UnknownError } from './errors'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
-
-// Colors:
-// https://code.visualstudio.com/api/references/contribution-points#contributes.colors
 
 type ContributedIcon = keyof typeof packageJson.contributes.icons
 type IconPath = { light: Uri; dark: Uri } | Icon
@@ -64,13 +60,27 @@ export function codicon(parts: TemplateStringsArray, ...components: (string | Ic
  * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
-    public constructor(public readonly id: string, public readonly source?: Uri) {
+    public constructor(public readonly id: string, public readonly source?: Uri, public readonly color?: ThemeColor) {
         super(id)
     }
 
     public toString() {
         return `$(${this.id})`
     }
+}
+
+/**
+ * Adds a new {@link ThemeColor} to an existing icon.
+ *
+ * You can find theme color identifiers
+ * {@link https://code.visualstudio.com/api/references/contribution-points#contributes.colors here}
+ */
+export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
+    if (isCloud9() || !(icon instanceof Icon)) {
+        return icon
+    }
+
+    return new Icon(icon.id, icon.source, typeof color === 'string' ? new ThemeColor(color) : color)
 }
 
 function resolveIconId(
@@ -100,12 +110,11 @@ function resolveIconId(
 
     // TODO: potentially embed the icon source in `package.json` to avoid this messy mapping
     // of course, doing that implies we must always bundle both the original icon files and the font file
-    const mappedId = namespace === 'vscode' ? name.replace('codicons-', '') : id
     const source = !['cloud9', 'vscode'].includes(namespace)
         ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
         : undefined
 
-    return new Icon(mappedId, source)
+    return new Icon(namespace === 'vscode' ? name : id, source)
 }
 
 function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
@@ -117,7 +126,6 @@ function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: 
             return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
         }
     } catch (error) {
-        const message = UnknownError.cast(error).message
-        getLogger().warn(`icons: path resolution failed for "${target}": ${message}`)
+        getLogger().warn(`icons: path resolution failed for "${target}": %s`, error)
     }
 }

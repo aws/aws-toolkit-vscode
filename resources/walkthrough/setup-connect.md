@@ -2,30 +2,33 @@
 
 To interact with Amazon Web Services \(AWS\) through the AWS Toolkit for Visual Studio Code, you must establish a connection to AWS\.
 
-## Prerequisties
+## How to connect
 
--   An AWS account. This account enables you to use AWS services. To get an AWS account, on the [AWS home page](https://aws.amazon.com), choose `Create an AWS Account`.
--   [AWS credentials](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/obtain-credentials.html). You can obtain credentials through AWS or an external credential process that isn't directly supported by AWS.
+Choose the most appropriate method based on your requirements.
+
+-   [AWS access keys](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/obtain-credentials.html)
+-   [IAM Identity Center](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html)
+-   [External credentials](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/external-credential-process.html)
 
 ## Connect to AWS through the Toolkit for VS Code
 
 1. [Click here](command:aws.login) to open the configuration wizard to connect to AWS.
 
-    > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: >Choose AWS Profile...**\.
+    > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: >Connect to AWS**\.
     >
-    > ![AWS Toolkit Command palette, Choose AWS Profile](./images/aws-toolkit-commandpalette.png)
+    > ![AWS Toolkit Command palette, Connect to AWS](./images/aws-toolkit-commandpalette.png)
 
-2. Choose a profile from the list\.
+2. Choose a connection from the list\.
 
-    ![AWS Toolkit command palette choose profile window](./images/aws-toolkit-choose-profile.png)
+    ![AWS Toolkit command palette choose profile window](./images/aws-toolkit-choose-connection.png)
 
-    If you don't have a credentials profile set up, you are prompted to set one up\. Look for a pop\-up in the lower\-right corner of the editor\. Choose **Yes**, and then follow the setup wizard to enter a profile name, your access key ID, and your secret access key\.
+    If you don't have a connection set up, you are prompted to set one up\. Choose **Enter IAM Credentials** in order to view resources in the AWS Explorer. SSO connections cannot be used to view resources in the AWS Explorer at this time.
 
-    ![AWS Toolkit setup profile prompt.](./images/aws-toolkit-cred-prompt.png)
+    ![AWS Toolkit setup profile prompt.](./images/aws-toolkit-add-connection.png)
 
     > **Note**
     >
-    > If you want to provide an external credential process instead of using AWS\-supported credentials, choose **No** and see [Using an external credential process](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/external-credential-process.html) instead\.
+    > If you want to provide an external credential process instead of using AWS\-supported credentials, exit the wizard and see [Using an external credential process](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/external-credential-process.html) instead\.
 
 3. Open the **AWS: Explorer** Side Bar, which we call the **_AWS Explorer_**, to verify the connection\. You will see either a list of AWS Regions \(if you have made any Regions visible in the **AWS Explorer**\) or a message to add Regions to the **AWS Explorer**\.
 

@@ -127,7 +127,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
                 getLogger().warn(
                     `Failed to list operations for service "${this._info.ServiceName}", service may be in an unstable state.`
                 )
-                getLogger().debug(`Failed to list operations for service "${this.arn}": %O`, err)
+                getLogger().debug(`Failed to list operations for service "${this.arn}": %s`, err)
             })
     }
 

@@ -18,7 +18,6 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
-import { recentlyUsed } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -49,13 +48,11 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
 
         resolveItems(items)
         await itemsPromise
 
         assert.strictEqual(prompter.quickPick.busy, false)
-        assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
 
@@ -176,8 +173,6 @@ describe('QuickPickPrompter', function () {
     it('can set recent item', async function () {
         testPrompter.recentItem = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
-        // setRecentItem() puts the item at the top of the list. #2148
-        assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
     })
 
     it('tries to recover recent item from partial data', async function () {
@@ -188,13 +183,6 @@ describe('QuickPickPrompter', function () {
     it('shows first item if recent item does not exist', async function () {
         testPrompter.recentItem = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
-    })
-
-    it('adds a message to the description when an item has been previously selected', async function () {
-        testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
-        testPrompter.recentItem = { label: 'item1', data: 0 }
-        const description = ` (${recentlyUsed})`
-        assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
     it('shows a `noItemsFound` item if no items are loaded', async function () {
@@ -286,6 +274,14 @@ describe('QuickPickPrompter', function () {
         unlock()
         await new Promise(r => setImmediate(r))
         assert.strictEqual(picker.items.length, 1)
+    })
+
+    it('loads `recentlyUsed` items at the top', async function () {
+        await testPrompter.loadItems([{ label: 'item4', data: 4, recentlyUsed: true }])
+        assert.strictEqual(picker.items[0].label, 'item4')
+        await testPrompter.loadItems([{ label: 'item5', data: 5 }])
+        assert.strictEqual(picker.items[0].label, 'item4')
+        assert.strictEqual(picker.items.length, 5)
     })
 })
 

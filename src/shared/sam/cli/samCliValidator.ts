@@ -43,10 +43,15 @@ export enum SamCliVersionValidation {
     VersionNotParseable = 'VersionNotParseable',
 }
 
-export interface SamCliVersionValidatorResult {
-    version?: string
-    validation: SamCliVersionValidation
-}
+export type SamCliVersionValidatorResult =
+    | {
+          readonly validation: Exclude<SamCliVersionValidation, SamCliVersionValidation.VersionNotParseable>
+          readonly version: string
+      }
+    | {
+          readonly validation: SamCliVersionValidation.VersionNotParseable
+          readonly version?: string | undefined
+      }
 
 export interface SamCliValidatorResult {
     samCliFound: boolean
@@ -87,7 +92,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             this.cachedSamCliVersionId = samCliId
         }
 
-        const version: string = this.cachedSamInfoResponse!.version
+        const version = this.cachedSamInfoResponse!.version
 
         return {
             version,

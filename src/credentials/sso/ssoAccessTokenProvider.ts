@@ -62,7 +62,10 @@ export class SsoAccessTokenProvider {
     ) {}
 
     public async invalidate(): Promise<void> {
-        await this.cache.token.clear(this.tokenCacheKey)
+        await Promise.all([
+            this.cache.token.clear(this.tokenCacheKey),
+            this.cache.registration.clear(this.registrationCacheKey),
+        ])
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
@@ -101,7 +104,7 @@ export class SsoAccessTokenProvider {
             return await this.authorize(registration)
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
-                this.cache.registration.clear(cacheKey)
+                await this.cache.registration.clear(cacheKey)
             }
 
             throw err
@@ -116,7 +119,7 @@ export class SsoAccessTokenProvider {
             return this.formatToken(response, registration)
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
-                this.cache.token.clear(this.tokenCacheKey)
+                await this.cache.token.clear(this.tokenCacheKey)
             }
 
             throw err

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.54.0-SNAPSHOT",
+    "version": "1.58.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -30,6 +30,7 @@
     ],
     "keywords": [
         "AWS",
+        "CodeCatalyst",
         "CodeWhisperer",
         "Lambda",
         "Serverless"
@@ -40,7 +41,6 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.login2",
         "onCommand:aws.credentials.profile.create",
         "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
@@ -65,6 +65,13 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.codecatalyst.listCommands",
+        "onCommand:aws.codecatalyst.openOrg",
+        "onCommand:aws.codecatalyst.openProject",
+        "onCommand:aws.codecatalyst.openRepo",
+        "onCommand:aws.codecatalyst.openDevEnv",
+        "onCommand:aws.codecatalyst.cloneRepo",
+        "onCommand:aws.codecatalyst.createDevEnv",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -106,7 +113,7 @@
             "properties": {
                 "aws.profile": {
                     "type": "string",
-                    "default": "",
+                    "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
                 "aws.ecs.openTerminalCommand": {
@@ -138,6 +145,11 @@
                     "type": "number",
                     "default": 90000,
                     "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
+                },
+                "aws.samcli.legacyDeploy": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "%AWS.configuration.description.samcli.legacyDeploy%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -245,6 +257,14 @@
                         "createCredentialsProfile": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "samcliConfirmDevStack": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "remoteConnected": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -254,16 +274,16 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "CodeWhisperer": true
+                        "samSyncCode": false
                     },
                     "properties": {
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
                         },
-                        "CodeWhisperer": {
+                        "samSyncCode": {
                             "type": "boolean",
-                            "default": true
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -739,6 +759,13 @@
                 }
             ]
         },
+        "submenus": [
+            {
+                "id": "aws.auth",
+                "label": "%AWS.submenu.auth.title%",
+                "icon": "$(ellipsis)"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -775,6 +802,26 @@
                 },
                 {
                     "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codecatalyst.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codecatalyst.openDevEnv",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.codecatalyst.createDevEnv",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.codecatalyst.removeConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
                     "when": "false"
                 },
                 {
@@ -942,6 +989,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.deploySamApplication",
+                    "when": "config.aws.samcli.legacyDeploy"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
+                },
+                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1070,6 +1129,22 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.auth.addConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.auth.help",
+                    "when": "false"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -1156,8 +1231,18 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer",
                     "group": "3_lambda@3"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer",
+                    "group": "3_lambda@3"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
+                    "group": "3_lambda@4"
                 },
                 {
                     "command": "aws.quickStart",
@@ -1193,18 +1278,48 @@
                     "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
+                },
+                {
+                    "command": "aws.codecatalyst.cloneRepo",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.createDevEnv",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.listCommands",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.openDevEnv",
+                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "group": "1_codeCatalyst@1"
                 }
             ],
             "explorer/context": [
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "when": "config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
+                    "group": "z_aws@2"
                 },
                 {
                     "command": "aws.uploadLambda",
                     "when": "explorerResourceIsFolder || isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
-                    "group": "z_aws@2"
+                    "group": "z_aws@3"
                 }
             ],
             "view/item/context": [
@@ -1212,6 +1327,16 @@
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.codecatalyst.removeConnection",
+                    "when": "viewItem == awsCodeCatalystNodeSaved",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codecatalyst.removeConnection",
+                    "when": "viewItem == awsCodeCatalystNodeSaved",
+                    "group": "inline@1"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1295,8 +1420,18 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
+                },
+                {
+                    "command": "aws.samcli.sync",
+                    "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.samcli.syncCode",
+                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1485,7 +1620,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
                     "group": "2@2"
                 },
                 {
@@ -1695,13 +1830,23 @@
                 },
                 {
                     "command": "aws.codeWhisperer.configure",
-                    "when": "viewItem == awsCodeWhispererNode && !isCloud9",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9",
                     "group": "inline@2"
                 },
                 {
                     "command": "aws.codeWhisperer.introduction",
-                    "when": "viewItem == awsCodeWhispererNode && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
+                    "when": "viewItem == awsCodeWhispererNodeSaved",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.removeConnection",
+                    "when": "viewItem == awsCodeWhispererNodeSaved",
+                    "group": "inline@3"
                 },
                 {
                     "command": "aws.cdk.refresh",
@@ -1717,6 +1862,46 @@
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.addConnection",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "when": "viewItem == awsAuthNode && !isCloud9",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.auth.help",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@1"
+                },
+                {
+                    "submenu": "aws.auth",
+                    "when": "viewItem == awsAuthNode",
+                    "group": "inline@2"
+                }
+            ],
+            "aws.auth": [
+                {
+                    "command": "aws.auth.addConnection",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.auth.switchConnections",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.auth.signout",
+                    "enablement": "!isCloud9",
+                    "group": "0@3"
                 }
             ]
         },
@@ -1774,17 +1959,6 @@
                 }
             },
             {
-                "command": "aws.login2",
-                "title": "%AWS.command.login2%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.login2.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.title%",
@@ -1805,6 +1979,51 @@
                 }
             },
             {
+                "command": "aws.codecatalyst.openOrg",
+                "title": "%AWS.command.codecatalyst.openOrg%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openProject",
+                "title": "%AWS.command.codecatalyst.openProject%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openRepo",
+                "title": "%AWS.command.codecatalyst.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.codecatalyst.openDevEnv",
+                "title": "%AWS.command.codecatalyst.openDevEnv%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.listCommands",
+                "title": "%AWS.command.codecatalyst.listCommands%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.cloneRepo",
+                "title": "%AWS.command.codecatalyst.cloneRepo%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.createDevEnv",
+                "title": "%AWS.command.codecatalyst.createDevEnv%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.codecatalyst.removeConnection",
+                "title": "%AWS.command.codecatalyst.removeConnection%",
+                "category": "AWS",
+                "icon": "$(debug-disconnect)"
+            },
+            {
                 "command": "aws.logout",
                 "title": "%AWS.command.logout%",
                 "category": "%AWS.title%",
@@ -1813,6 +2032,28 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.auth.addConnection",
+                "title": "%AWS.command.auth.addConnection%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.switchConnections",
+                "title": "%AWS.command.auth.switchConnections%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.signout",
+                "title": "%AWS.command.auth.signout%",
+                "category": "%AWS.title%",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.auth.help",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(question)"
             },
             {
                 "command": "aws.createIssueOnGitHub",
@@ -2845,6 +3086,16 @@
                 }
             },
             {
+                "command": "aws.samcli.sync",
+                "title": "%AWS.command.samcli.sync%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.samcli.syncCode",
+                "title": "%AWS.command.samcli.syncCode%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.codeWhisperer",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
@@ -2870,6 +3121,12 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.codeWhisperer.removeConnection",
+                "title": "%AWS.command.codewhisperer.removeConnection%",
+                "category": "%AWS.title%",
+                "icon": "$(debug-disconnect)"
             },
             {
                 "command": "aws.dev.openMenu",
@@ -3053,7 +3310,8 @@
                             "markdown": "resources/walkthrough/setup-connect.md"
                         },
                         "completionEvents": [
-                            "onContext:config.aws.profile"
+                            "onCommand:aws.login",
+                            "onCommand:aws.credentials.profile.create"
                         ]
                     },
                     {
@@ -3081,126 +3339,133 @@
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e000"
+                    "fontCharacter": "\\e1a5"
                 }
             },
             "aws-cdk-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e001"
+                    "fontCharacter": "\\e1a6"
                 }
             },
             "aws-cloudformation-stack": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e002"
+                    "fontCharacter": "\\e1a7"
                 }
             },
             "aws-cloudwatch-log-group": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e003"
+                    "fontCharacter": "\\e1a8"
+                }
+            },
+            "aws-codecatalyst-logo": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e1a9"
                 }
             },
             "aws-ecr-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e004"
+                    "fontCharacter": "\\e1aa"
                 }
             },
             "aws-ecs-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e005"
+                    "fontCharacter": "\\e1ab"
                 }
             },
             "aws-ecs-container": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e006"
+                    "fontCharacter": "\\e1ac"
                 }
             },
             "aws-ecs-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e007"
+                    "fontCharacter": "\\e1ad"
                 }
             },
             "aws-generic-attach-file": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e008"
+                    "fontCharacter": "\\e1ae"
                 }
             },
             "aws-iot-certificate": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e009"
+                    "fontCharacter": "\\e1af"
                 }
             },
             "aws-iot-policy": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00a"
+                    "fontCharacter": "\\e1b0"
                 }
             },
             "aws-iot-thing": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00b"
+                    "fontCharacter": "\\e1b1"
                 }
             },
             "aws-lambda-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00c"
+                    "fontCharacter": "\\e1b2"
                 }
             },
             "aws-s3-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00d"
+                    "fontCharacter": "\\e1b3"
                 }
             },
             "aws-s3-create-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00e"
+                    "fontCharacter": "\\e1b4"
                 }
             },
             "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e00f"
+                    "fontCharacter": "\\e1b5"
                 }
             },
             "aws-schemas-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e010"
+                    "fontCharacter": "\\e1b6"
                 }
             },
             "aws-stepfunctions-preview": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e011"
+                    "fontCharacter": "\\e1b7"
                 }
             }
         }
@@ -3234,7 +3499,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.76",
+        "@aws-toolkits/telemetry": "^1.0.80",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
@@ -3243,7 +3508,7 @@
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
-        "@types/js-yaml": "^4.0.3",
+        "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
         "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
@@ -3253,18 +3518,19 @@
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^8.1.1",
-        "@types/tcp-port-used": "^1.0.0",
+        "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
         "@types/vscode": "1.50.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^5.38.0",
         "@typescript-eslint/parser": "^5.38.0",
+        "@vscode/codicons": "^0.0.32",
         "@vscode/test-electron": "^2.1.5",
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
-        "esbuild-loader": "2.18.0",
+        "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
@@ -3301,7 +3567,7 @@
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@vscode/codicons": "^0.0.29",
+        "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.7.2",
         "async-lock": "^1.3.0",

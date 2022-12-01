@@ -27,7 +27,12 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs16.x', 'nodejs14.x', 'nodejs12.x'])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'nodejs18.x',
+    'nodejs16.x',
+    'nodejs14.x',
+    'nodejs12.x',
+])
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['python3.9', 'python3.8', 'python3.7'])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
@@ -69,6 +74,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
+    'nodejs18.x',
     'nodejs16.x',
     'nodejs14.x',
     'nodejs12.x',

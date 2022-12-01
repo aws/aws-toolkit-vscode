@@ -4,18 +4,13 @@
  */
 import { existsSync, statSync, readdirSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraph, TruncPaths } from './dependencyGraph'
+import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
 import { getLogger } from '../../../shared/logger'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
-export const IMPORT = 'import'
-export const FROM = 'from'
-export const AS = 'as'
-export const FILE_EXT = '.py'
-export const ENCODE = 'utf8'
 export const IMPORT_REGEX =
     /^(?:from[ ]+(\S+)[ ]+)?import[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*([,]*[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*)*$/gm
 
@@ -34,7 +29,7 @@ export class PythonDependencyGraph extends DependencyGraph {
 
     private async readImports(uri: vscode.Uri) {
         const content: string = await readFileAsString(uri.fsPath)
-        this._totalLines += content.split('\n').length
+        this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
         const regExp = new RegExp(IMPORT_REGEX)
         return content.match(regExp) ?? []
     }
@@ -46,7 +41,7 @@ export class PythonDependencyGraph extends DependencyGraph {
             rawModulePath = rawModulePath.substring(0, pos)
         }
         const modulePath = path.join(...rawModulePath.split('.'))
-        const filePath = path.join(dirPath, modulePath, importPath + FILE_EXT)
+        const filePath = path.join(dirPath, modulePath, importPath + DependencyGraphConstants.pythonExt)
         return existsSync(filePath) ? filePath : ''
     }
 
@@ -67,12 +62,12 @@ export class PythonDependencyGraph extends DependencyGraph {
 
     private getImportPaths(importStr: string) {
         const importPaths: string[] = ['']
-        if (importStr.startsWith(FROM)) {
-            let pos = importStr.indexOf(IMPORT)
-            const extractImportStr = importStr.substring(pos + IMPORT.length).trim()
+        if (importStr.startsWith(DependencyGraphConstants.from)) {
+            let pos = importStr.indexOf(DependencyGraphConstants.import)
+            const extractImportStr = importStr.substring(pos + DependencyGraphConstants.import.length).trim()
             const allImports: string[] = extractImportStr.split(',')
             allImports.forEach(singleImport => {
-                pos = singleImport.indexOf(' ' + AS + ' ')
+                pos = singleImport.indexOf(' ' + DependencyGraphConstants.as + ' ')
                 if (pos !== -1) {
                     const importPath = singleImport.substring(0, pos)
                     importPaths.push(importPath.trim())
@@ -85,20 +80,22 @@ export class PythonDependencyGraph extends DependencyGraph {
     }
 
     private getModulePath(modulePathStr: string) {
-        const pos = modulePathStr.indexOf(' ' + AS + ' ')
-        if (pos !== -1) modulePathStr = modulePathStr.substring(0, pos)
+        const pos = modulePathStr.indexOf(' ' + DependencyGraphConstants.as + ' ')
+        if (pos !== -1) {
+            modulePathStr = modulePathStr.substring(0, pos)
+        }
         return modulePathStr.trim()
     }
 
     private extractModulePaths(importStr: string) {
         const modulePaths: string[] = []
-        if (importStr.startsWith(FROM)) {
-            const pos = importStr.indexOf(IMPORT)
-            const modulePathStr = importStr.substring(FROM.length, pos).trim()
+        if (importStr.startsWith(DependencyGraphConstants.from)) {
+            const pos = importStr.indexOf(DependencyGraphConstants.import)
+            const modulePathStr = importStr.substring(DependencyGraphConstants.from.length, pos).trim()
             modulePaths.push(this.getModulePath(modulePathStr))
         } else {
-            const pos = importStr.indexOf(IMPORT)
-            const extractImportStr = importStr.substring(pos + IMPORT.length).trim()
+            const pos = importStr.indexOf(DependencyGraphConstants.import)
+            const extractImportStr = importStr.substring(pos + DependencyGraphConstants.import.length).trim()
             const modulePathStrs: string[] = extractImportStr.split(',')
             modulePathStrs.forEach(modulePathStr => {
                 modulePaths.push(this.getModulePath(modulePathStr))
@@ -108,7 +105,9 @@ export class PythonDependencyGraph extends DependencyGraph {
     }
 
     parseImport(importStr: string, dirPaths: string[]) {
-        if (this._parsedStatements.has(importStr)) return []
+        if (this._parsedStatements.has(importStr)) {
+            return []
+        }
         this._parsedStatements.add(importStr)
         const modulePaths = this.extractModulePaths(importStr)
         const importPaths = this.getImportPaths(importStr)
@@ -137,17 +136,21 @@ export class PythonDependencyGraph extends DependencyGraph {
         return dependencies
     }
 
-    async searchDependency(uri: vscode.Uri) {
+    async searchDependency(uri: vscode.Uri): Promise<Set<string>> {
         const filePath = uri.fsPath
         const q: string[] = []
         q.push(filePath)
         while (q.length > 0) {
             let count: number = q.length
             while (count > 0) {
-                if (this.reachSizeLimit(this._totalSize)) return
+                if (this.reachSizeLimit(this._totalSize)) {
+                    return this._pickedSourceFiles
+                }
                 count -= 1
                 const currentFilePath = q.shift()
-                if (currentFilePath === undefined) throw new Error('"undefined" is invalid for queued file.')
+                if (currentFilePath === undefined) {
+                    throw new Error('"undefined" is invalid for queued file.')
+                }
                 this._pickedSourceFiles.add(currentFilePath)
                 this._totalSize += statSync(currentFilePath).size
                 const uri = vscode.Uri.file(currentFilePath)
@@ -158,18 +161,23 @@ export class PythonDependencyGraph extends DependencyGraph {
                 })
             }
         }
+        return this._pickedSourceFiles
     }
 
     async traverseDir(dirPath: string) {
-        if (this.reachSizeLimit(this._totalSize)) return
-        readdirSync(dirPath, { encoding: ENCODE, withFileTypes: true }).forEach(async file => {
+        if (this.reachSizeLimit(this._totalSize)) {
+            return
+        }
+        readdirSync(dirPath, { withFileTypes: true }).forEach(async file => {
             const absPath = path.join(dirPath, file.name)
-            if (!existsSync(absPath)) return
+            if (file.name.charAt(0) === '.' || !existsSync(absPath)) {
+                return
+            }
             if (file.isDirectory()) {
                 await this.traverseDir(absPath)
             } else if (file.isFile()) {
                 if (
-                    file.name.endsWith(FILE_EXT) &&
+                    file.name.endsWith(DependencyGraphConstants.pythonExt) &&
                     !this.reachSizeLimit(this._totalSize) &&
                     !this.willReachSizeLimit(this._totalSize, statSync(absPath).size) &&
                     !this._pickedSourceFiles.has(absPath)
@@ -191,17 +199,9 @@ export class PythonDependencyGraph extends DependencyGraph {
             }
             await sleep(1000)
             const truncDirPath = this.getTruncDirPath(uri)
-            this._pickedSourceFiles.forEach(sourceFilePath => {
-                getLogger().debug(sourceFilePath)
-                this.copyFileToTmp(vscode.Uri.file(sourceFilePath), truncDirPath)
-            })
+            this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
-            getLogger().debug(`Complete Python dependency graph.`)
-            getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
-            getLogger().debug(`Total size: ${(this._totalSize / 1024).toFixed(2)}kb`)
-            getLogger().debug(`Total lines: ${this._totalLines}`)
-            getLogger().debug(`Zip file: ${zipFilePath}`)
             return {
                 root: truncDirPath,
                 src: {
@@ -219,8 +219,8 @@ export class PythonDependencyGraph extends DependencyGraph {
                 lines: this._totalLines,
             }
         } catch (error) {
-            getLogger().error('Python dependency graph error caused by:', error)
-            throw new Error('Python context processing failed.')
+            getLogger().error(`${this._languageId} dependency graph error caused by:`, error)
+            throw new Error(`${this._languageId} context processing failed.`)
         }
     }
 }

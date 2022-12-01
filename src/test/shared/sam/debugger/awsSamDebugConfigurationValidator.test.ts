@@ -8,15 +8,15 @@ import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
 import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
-import { WatchedItem } from '../../../../shared/watchedFiles'
 import globals from '../../../../shared/extensionGlobals'
+import { WatchedItem } from '../../../../shared/fs/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {

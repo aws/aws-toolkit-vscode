@@ -18,6 +18,9 @@ describe('runtimeLanguageContext', function () {
             ['typescript', true],
             ['jsx', true],
             ['javascriptreact', true],
+            ['typescriptreact', true],
+            ['tsx', true],
+            ['csharp', true],
             ['python', true],
             ['ruby', false],
             ['plaintext', false],
@@ -44,8 +47,10 @@ describe('runtimeLanguageContext', function () {
             ['java', 'java'],
             ['python', 'python'],
             ['javascript', 'javascript'],
-            ['typescript', 'javascript'],
+            ['typescript', 'typescript'],
             ['javascriptreact', 'jsx'],
+            ['typescriptreact', 'tsx'],
+            ['csharp', 'csharp'],
             ['plaintext', 'plaintext'],
             ['ruby', 'plaintext'],
             ['cpp', 'plaintext'],
@@ -66,8 +71,10 @@ describe('runtimeLanguageContext', function () {
     describe('mapVscLanguageToCodeWhispererLanguage', function () {
         const cases = [
             [undefined, undefined],
-            ['typescript', 'javascript'],
+            ['typescript', 'typescript'],
             ['javascriptreact', 'jsx'],
+            ['typescriptreact', 'tsx'],
+            ['csharp', 'csharp'],
             ['go', undefined],
             ['java', 'java'],
             ['javascript', 'javascript'],
@@ -88,7 +95,7 @@ describe('runtimeLanguageContext', function () {
         }
     })
 
-    // for now we will only have typescript, jsx mapped to javascript, all other language should remain the same
+    // for now we will only jsx mapped to javascript, tsx mapped to typescript, all other language should remain the same
     describe('test covertCwsprRequest', function () {
         const leftFileContent = 'left'
         const rightFileContent = 'right'
@@ -98,7 +105,9 @@ describe('runtimeLanguageContext', function () {
             ['python', 'python'],
             ['javascript', 'javascript'],
             ['jsx', 'javascript'],
-            ['typescript', 'javascript'],
+            ['typescript', 'typescript'],
+            ['tsx', 'typescript'],
+            ['csharp', 'csharp'],
             ['plaintext', 'plaintext'],
             ['arbitrary string', 'arbitrary string'],
         ]

@@ -4,10 +4,11 @@
  */
 
 import * as vscode from 'vscode'
+import { toTitleCase } from '../../../shared/utilities/textUtilities'
 import { Command, Commands } from '../../../shared/vscode/commands2'
 
 type EventEmitters<T> = {
-    [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
+    [P in keyof T]: T[P] extends vscode.Event<any> ? P & string : never
 }[keyof T]
 
 type InterceptEmitters<T, K extends keyof T> = {
@@ -17,10 +18,6 @@ type InterceptEmitters<T, K extends keyof T> = {
 } & T // prettier really wants to keep this T separate
 type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
 type NoNever<T> = Pick<T, FilteredKeys<T>>
-
-function capitalize<S extends string>(s: S): Capitalize<S> {
-    return `${s[0].toUpperCase()}${s.slice(1)}` as any
-}
 
 /**
  * Adds references to event emitters for all known public events as specified by the generic K type.
@@ -47,14 +44,22 @@ export function exposeEmitters<T extends Record<string, any>, K extends EventEmi
         if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
             const targetEvent = key.slice(1).replace('Emitter', '')
             keys = keys.filter(k => k !== targetEvent)
-            Object.assign(obj, { [`fire${capitalize(targetEvent)}`]: value.fire.bind(value) })
+            Object.assign(obj, { [`fire${toTitleCase(targetEvent)}`]: value.fire.bind(value) })
         }
     })
 
-    if (keys.length > 0) {
-        throw new Error(
-            `exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${String(k)}"`).join(', ')}`
-        )
+    // Patch in emitters if they weren't found
+    // The patched `fire___` method won't work on listeners
+    // subscribed prior to `exposeEmitters` being called
+    for (const key of keys) {
+        const event = obj[key] as vscode.Event<any>
+        const emitter = new vscode.EventEmitter<T[K]>()
+        event(v => emitter.fire(v))
+
+        Object.assign(obj, {
+            [key]: emitter.event,
+            [`fire${toTitleCase(key)}`]: emitter.fire.bind(emitter),
+        })
     }
 
     return obj as any

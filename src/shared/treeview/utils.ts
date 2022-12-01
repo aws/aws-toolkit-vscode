@@ -7,13 +7,13 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../errors'
 import { Logging } from '../logger/commands'
 import { isTreeNode, TreeNode } from './resourceTreeDataProvider'
 import { assign } from '../utilities/collectionUtils'
+import { addColor, getIcon } from '../icons'
 import { cast, TypeConstructor } from '../utilities/typeConstructors'
 
 /**
@@ -45,31 +45,14 @@ export async function makeChildrenNodes<T extends AWSTreeNodeBase, P extends AWS
     }
 }
 
-/**
- * Creates a new {@link vscode.ThemeIcon} with an optional theme color.
- * Only used to maintain backwards compatability with C9.
- *
- * Refer to https://code.visualstudio.com/api/references/theme-color for a list of theme colors.
- */
-export function createThemeIcon(id: string, color?: string) {
-    if (!color || isCloud9()) {
-        return new vscode.ThemeIcon(id)
-    } else {
-        const themeColor = new vscode.ThemeColor(color)
-        const ThemeIcon = vscode.ThemeIcon as new (id: string, theme: typeof themeColor) => vscode.ThemeIcon
-
-        return new ThemeIcon(id, themeColor)
-    }
-}
-
 export function createErrorItem(error: Error, message?: string): TreeNode {
     const command = Logging.declared.viewLogsAtMessage
-    const logId = message ? getLogger().error(message) : getLogger().error(error)
+    const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
 
     return command.build(logId).asTreeNode({
         label: localize('AWS.explorerNode.error.label', 'Failed to load resources (click for logs)'),
         tooltip: `${error.name}: ${error.message}`,
-        iconPath: createThemeIcon('error', 'testing.iconErrored'),
+        iconPath: addColor(getIcon('vscode-error'), 'testing.iconErrored'),
         contextValue: 'awsErrorNode',
     })
 }
@@ -124,16 +107,28 @@ export class TreeShim<T = unknown> extends AWSTreeNodeBase {
         return (this.children = children.map(n => new TreeShim(n)))
     }
 
+    private update(item: vscode.TreeItem) {
+        // We need to explicitly clear state as `vscode.TreeItem` does not need
+        // to have these keys present
+        this.label = undefined
+        this.command = undefined
+        this.tooltip = undefined
+        this.iconPath = undefined
+        this.description = undefined
+        this.contextValue = undefined
+        assign(item, this)
+    }
+
     private async updateTreeItem(): Promise<{ readonly didRefresh: boolean }> {
         const item = this.node.getTreeItem()
         if (item instanceof Promise) {
-            assign(await item, this)
+            this.update(await item)
             this.refresh()
 
             return { didRefresh: true }
         }
 
-        assign(item, this)
+        this.update(item)
         return { didRefresh: false }
     }
 }

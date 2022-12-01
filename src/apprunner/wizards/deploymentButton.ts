@@ -10,6 +10,7 @@ import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/button
 import { apprunnerPricingUrl } from '../../shared/constants'
 import { PromptSettings } from '../../shared/settings'
 import { getIcon } from '../../shared/icons'
+import { dontShow } from '../../shared/localizedText'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,7 +37,6 @@ async function showDeploymentCostNotification(): Promise<void> {
             'App Runner automatic deployments incur an additional cost.'
         )
         const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
-        const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
         const pricingUri = vscode.Uri.parse(apprunnerPricingUrl)
 
         vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {

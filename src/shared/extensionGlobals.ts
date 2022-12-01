@@ -4,17 +4,19 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { LoginManager } from '../credentials/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
-import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
-import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
+import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
     typeof globalThis,
@@ -59,6 +61,7 @@ interface ToolkitGlobals {
     readonly window: Window
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
+    loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider
@@ -68,6 +71,7 @@ interface ToolkitGlobals {
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
+    uriHandler: UriHandler
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.

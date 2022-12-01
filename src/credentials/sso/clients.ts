@@ -10,6 +10,7 @@ import {
     GetRoleCredentialsRequest,
     ListAccountRolesRequest,
     ListAccountsRequest,
+    LogoutRequest,
     RoleInfo,
     SSO,
     SSOServiceException,
@@ -38,7 +39,6 @@ import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 
 const BACKOFF_DELAY_MS = 5000
-
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
@@ -109,24 +109,30 @@ export class OidcClient {
 }
 
 type OmittedProps = 'accessToken' | 'nextToken'
-type ExtractOverload<T> = T extends {
-    (this: void, ...args: infer P1): infer R1
-    (this: void, ...args: infer P2): infer R2
-    (this: void, ...args: infer P3): infer R3
+type ExtractOverload<T, U> = T extends {
+    (...args: infer P1): infer R1
+    (...args: infer P2): infer R2
+    (...args: infer P3): infer R3
 }
-    ? (...args: P1) => R1
+    ? (this: U, ...args: P1) => R1
     : never
 
+// Removes all methods that use callbacks instead of promises
+type PromisifyClient<T> = {
+    [P in keyof T]: T[P] extends (...args: any[]) => any ? ExtractOverload<T[P], PromisifyClient<T>> : T[P]
+}
+
 export class SsoClient {
-    public constructor(private readonly client: SSO, private readonly provider: SsoAccessTokenProvider) {}
+    public constructor(
+        private readonly client: PromisifyClient<SSO>,
+        private readonly provider: SsoAccessTokenProvider
+    ) {}
 
     public listAccounts(
         request: Omit<ListAccountsRequest, OmittedProps> = {}
     ): AsyncCollection<RequiredProps<AccountInfo, 'accountId'>[]> {
-        const method = this.client.listAccounts.bind(this.client)
         const requester = (request: Omit<ListAccountsRequest, 'accessToken'>) =>
-            this.call(method as ExtractOverload<typeof method>, request)
-
+            this.call(this.client.listAccounts, request)
         const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
 
         return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
@@ -135,10 +141,8 @@ export class SsoClient {
     public listAccountRoles(
         request: Omit<ListAccountRolesRequest, OmittedProps>
     ): AsyncCollection<Required<RoleInfo>[]> {
-        const method = this.client.listAccountRoles.bind(this.client)
         const requester = (request: Omit<ListAccountRolesRequest, 'accessToken'>) =>
-            this.call(method as ExtractOverload<typeof method>, request)
-
+            this.call(this.client.listAccountRoles, request)
         const collection = pageableToCollection(requester, request, 'nextToken', 'roleList')
 
         return collection
@@ -147,8 +151,7 @@ export class SsoClient {
     }
 
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
-        const method = this.client.getRoleCredentials.bind(this.client)
-        const response = await this.call(method as ExtractOverload<typeof method>, request)
+        const response = await this.call(this.client.getRoleCredentials, request)
 
         assertHasProps(response, 'roleCredentials')
         assertHasProps(response.roleCredentials, 'accessKeyId', 'secretAccessKey')
@@ -161,8 +164,12 @@ export class SsoClient {
         }
     }
 
+    public async logout(request: Omit<LogoutRequest, OmittedProps> = {}) {
+        await this.call(this.client.logout, request)
+    }
+
     private call<T extends { accessToken: string | undefined }, U>(
-        method: (request: T) => Promise<U>,
+        method: (this: typeof this.client, request: T) => Promise<U>,
         request: Omit<T, 'accessToken'>
     ): Promise<U> {
         const requester = async (req: T) => {
@@ -170,7 +177,7 @@ export class SsoClient {
             assertHasProps(token, 'accessToken')
 
             try {
-                return await method({ ...req, accessToken: token.accessToken })
+                return await method.call(this.client, { ...req, accessToken: token.accessToken })
             } catch (error) {
                 await this.handleError(error)
                 throw error
