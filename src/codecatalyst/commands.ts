@@ -137,7 +137,8 @@ function createClientInjector(
 
         try {
             if (!client.connected) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection' })
+                const conn = await authProvider.promptNotConnected()
+                await client.setCredentials(async () => (await conn.getToken()).accessToken)
             }
 
             return await command(client, ...args)

@@ -13,9 +13,12 @@ import {
     SsoConnection,
     codecatalystScopes,
     hasScopes,
+    createBuilderIdConnection,
 } from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
+import * as localizedText from '../shared/localizedText'
+import { ToolkitError } from '../shared/errors'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -88,6 +91,45 @@ export class CodeCatalystAuthenticationProvider {
 
     public async restore() {
         await this.secondaryAuth.restoreConnection()
+    }
+
+    public async promptNotConnected(): Promise<SsoConnection> {
+        const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
+
+        if (conn === undefined || !isValidCodeCatalystConnection(conn)) {
+            const message =
+                conn === undefined
+                    ? 'CodeCatalyst requires an AWS Builder ID connection. Set one up now?'
+                    : 'Your AWS Builder ID connection does not have access to CodeCatalyst. You will need to reauthenticate in the browser. Reauthenticate now?'
+            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
+            if (resp !== localizedText.yes) {
+                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
+            }
+
+            const newConn = await createBuilderIdConnection(this.auth)
+            if (this.auth.activeConnection?.id !== newConn.id) {
+                await this.secondaryAuth.useNewConnection(newConn)
+            }
+
+            return newConn
+        }
+
+        if (this.auth.activeConnection?.id !== conn.id) {
+            const resp = await vscode.window.showInformationMessage(
+                'CodeCatalyst requires an AWS Builder ID connection. Switch to it now?',
+                localizedText.yes,
+                localizedText.no
+            )
+            if (resp !== localizedText.yes) {
+                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
+            }
+
+            await this.secondaryAuth.useNewConnection(conn)
+
+            return conn
+        }
+
+        throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
     }
 
     private static instance: CodeCatalystAuthenticationProvider
