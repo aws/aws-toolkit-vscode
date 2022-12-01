@@ -19,6 +19,7 @@ import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
 import { ToolkitError } from '../shared/errors'
+import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -94,13 +95,19 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async promptNotConnected(): Promise<SsoConnection> {
+        type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
+            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade'
+        }
+
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (conn === undefined || !isValidCodeCatalystConnection(conn)) {
-            const message =
-                conn === undefined
-                    ? 'CodeCatalyst requires an AWS Builder ID connection. Set one up now?'
-                    : 'Your AWS Builder ID connection does not have access to CodeCatalyst. You will need to reauthenticate in the browser. Reauthenticate now?'
+            const isNewUser = conn === undefined
+            telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'New' : 'Upgrade' } as ConnectionFlowEvent)
+
+            const message = isNewUser
+                ? 'CodeCatalyst requires an AWS Builder ID connection. Set one up now?'
+                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. You will need to reauthenticate in the browser. Reauthenticate now?'
             const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
             if (resp !== localizedText.yes) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
@@ -115,6 +122,8 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         if (this.auth.activeConnection?.id !== conn.id) {
+            telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
+
             const resp = await vscode.window.showInformationMessage(
                 'CodeCatalyst requires an AWS Builder ID connection. Switch to it now?',
                 localizedText.yes,
