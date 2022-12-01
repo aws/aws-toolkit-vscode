@@ -101,16 +101,18 @@ export class CodeCatalystAuthenticationProvider {
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
         const isNewUser = conn === undefined
+        const okItem: vscode.MessageItem = { title: localizedText.ok }
+        const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
         if (isNewUser || !isValidCodeCatalystConnection(conn)) {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'Create' : 'Upgrade' } as ConnectionFlowEvent)
 
             const message = isNewUser
-                ? 'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login. Create one now?'
-                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login. Upgrade now?'
-            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
-            if (resp !== localizedText.yes) {
+                ? 'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login.\n\n Create one now?'
+                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login.\n\n Upgrade now?'
+            const resp = await vscode.window.showInformationMessage(message, { modal: true }, okItem, cancelItem)
+            if (resp !== okItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
             }
 
@@ -127,11 +129,12 @@ export class CodeCatalystAuthenticationProvider {
             telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
 
             const resp = await vscode.window.showInformationMessage(
-                'CodeCatalyst requires an AWS Builder ID connection. Switch to it now?',
-                localizedText.yes,
-                localizedText.no
+                'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
+                { modal: true },
+                okItem,
+                cancelItem
             )
-            if (resp !== localizedText.yes) {
+            if (resp !== okItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
             }
 
