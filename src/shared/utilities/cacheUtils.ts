@@ -4,6 +4,7 @@
  */
 
 import * as fs from 'fs-extra'
+import * as vscode from 'vscode'
 import { dirname } from 'path'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
@@ -146,6 +147,64 @@ export function createDiskCache<T, K>(
         clear: async key => {
             try {
                 await fs.unlink(mapKey(key))
+            } catch (error) {
+                logFailure('clear failed', key, error)
+                return false
+            }
+
+            logSuccess('clear succeeded', key)
+            return true
+        },
+    }
+}
+
+export function createSecretsCache(
+    secrets: vscode.SecretStorage,
+    logger?: (message: string) => void
+): KeyedCache<string> {
+    function logSuccess(prefix: string, key: string): void {
+        if (logger) {
+            logger(`${prefix} for key '${key}'`)
+        }
+    }
+
+    function logFailure(prefix: string, key: string, error: unknown): void {
+        if (logger) {
+            const errorMessage = error instanceof Error ? error.message : error
+            logger(`${prefix} for key '${key}': ${errorMessage}`)
+        }
+    }
+
+    return {
+        load: async key => {
+            try {
+                const value = await secrets.get(key)
+
+                if (value === undefined) {
+                    logSuccess('load missed', key)
+                    return
+                }
+
+                logSuccess('load succeeded', key)
+                return value
+            } catch (error) {
+                logFailure('load failed', key, error)
+            }
+        },
+        save: async (key, data) => {
+            try {
+                await secrets.store(key, data)
+            } catch (error) {
+                logFailure('save failed', key, error)
+                return false
+            }
+
+            logSuccess('save succeeded', key)
+            return true
+        },
+        clear: async key => {
+            try {
+                await secrets.delete(key)
             } catch (error) {
                 logFailure('clear failed', key, error)
                 return false
