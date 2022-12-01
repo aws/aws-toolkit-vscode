@@ -1485,17 +1485,17 @@
                 },
                 {
                     "command": "aws.searchSchema",
-                    "when": "view == aws.explorer && viewItem == awsSchemasNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsSchemasNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.searchSchemaPerRegistry",
-                    "when": "view == aws.explorer && viewItem == awsRegistryItemNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsRegistryItemNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.viewSchemaItem",
-                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "0@1"
                 },
                 {
@@ -1680,7 +1680,7 @@
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
-                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "1@1"
                 },
                 {
