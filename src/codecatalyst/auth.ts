@@ -103,7 +103,8 @@ export class CodeCatalystAuthenticationProvider {
 
         if (conn === undefined || !isValidCodeCatalystConnection(conn)) {
             const isNewUser = conn === undefined
-            telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'New' : 'Upgrade' } as ConnectionFlowEvent)
+            // TODO: change to `satisfies` on TS 4.9
+            telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'Create' : 'Upgrade' } as ConnectionFlowEvent)
 
             const message = isNewUser
                 ? 'CodeCatalyst requires an AWS Builder ID connection. Set one up now?'
@@ -122,6 +123,7 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         if (this.auth.activeConnection?.id !== conn.id) {
+            // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
 
             const resp = await vscode.window.showInformationMessage(
