@@ -8,6 +8,7 @@ import { isCloud9 } from './extensionUtilities'
 export const extensionSettingsPrefix = 'aws'
 export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
+export const productName: string = 'aws-toolkit-vscode'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
@@ -21,8 +22,16 @@ export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
+/**
+ * General help page to help users understand the different ways of connecting to AWS (AWS ID, IAM credentials, SSO).
+ *
+ * - alternative?: codecatalyst/latest/userguide/sign-up-create-resources.html
+ */
+export const authHelpUrl = 'https://docs.aws.amazon.com/general/latest/gr/differences-aws_builder_id.html'
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
+export const ssoCredentialsHelpUrl: string =
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html'
 
 export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'

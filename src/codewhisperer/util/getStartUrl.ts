@@ -16,6 +16,7 @@ export const getStartUrl = async () => {
     const inputBox = await createStartUrlPrompter('IAM Identity Center', false)
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {
+        telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
         throw new CancellationError('user')
     }
     telemetry.ui_click.emit({ elementId: 'connection_startUrl' })

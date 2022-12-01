@@ -103,9 +103,10 @@ export function createQuickPickTester<T>(
     prompter: QuickPickPrompter<T>,
     options: TestOptions = {}
 ): QuickPickTester<T> {
+    type AssertionParams = ConstructorParameters<typeof AssertionError>[0]
     const actions: Action<T>[] = []
     const errors: Error[] = []
-    const traces: AssertionError[] = []
+    const traces: AssertionParams[] = []
     const testPicker = exposeEmitters(prompter.quickPick, ['onDidAccept', 'onDidTriggerButton'])
     const resolvedOptions = { ...TEST_DEFAULTS, ...options }
     let running = false
@@ -172,13 +173,13 @@ export function createQuickPickTester<T>(
         })
     }
 
-    function throwErrorWithTrace(trace: AssertionError, message: string, actual?: any, expected?: any) {
-        errors.push(Object.assign(trace, { message, actual, expected }))
+    function throwErrorWithTrace(trace: AssertionParams, message: string, actual?: any, expected?: any) {
+        errors.push(new AssertionError({ ...trace, message, actual, expected }))
         testPicker.hide()
     }
 
     /* Executes a test action. Immediately hides the picker on any error */
-    async function executeAction(action: Action<T>, trace: AssertionError): Promise<void> {
+    async function executeAction(action: Action<T>, trace: AssertionParams): Promise<void> {
         const throwError = throwErrorWithTrace.bind(undefined, trace)
 
         function assertItems(actual: DataQuickPickItem<T>[], expected: (string | DataQuickPickItem<T>)[]): void {
@@ -306,7 +307,7 @@ export function createQuickPickTester<T>(
 
     const withTrace = <T extends (...args: any[]) => any>(f: T, name: string) => {
         const traceWrapper = (...args: any[]) => {
-            traces.push(new AssertionError({ stackStartFn: traceWrapper, operator: name, message: name }))
+            traces.push({ stackStartFn: traceWrapper, operator: name, message: name })
             f(...args)
         }
         return Object.defineProperty(traceWrapper, 'name', { value: name, configurable: true, writable: false })

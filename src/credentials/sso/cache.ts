@@ -104,7 +104,7 @@ export function getTokenCache(directory = CACHE_DIR): KeyedCache<SsoAccess> {
         return {
             ...registration,
             ...selectFrom(data, 'region', 'startUrl'),
-            ...selectFrom(data.token, 'accessToken', 'refreshToken', 'tokenType'),
+            ...selectFrom(data.token, 'accessToken', 'refreshToken'),
             expiresAt: data.token.expiresAt.toISOString(),
             registrationExpiresAt: data.registration?.expiresAt.toISOString(),
         }
