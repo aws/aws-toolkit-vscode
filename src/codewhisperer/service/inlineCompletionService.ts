@@ -21,6 +21,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
+import { NavigationHintProvider } from './navigationHintProvider'
 
 class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -146,6 +147,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(RecommendationHandler.instance.startPos)) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            NavigationHintProvider.instance.removeNavigationHints()
             this.activeItemIndex = undefined
             return
         }
@@ -172,11 +174,13 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
             this.nextMove = 0
             this._onDidShow.fire()
             if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
+                NavigationHintProvider.instance.setNavigationHints(position)
                 return [item, { insertText: 'x' }]
             }
             return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
+        NavigationHintProvider.instance.removeNavigationHints()
         this.activeItemIndex = undefined
         return []
     }
@@ -265,16 +269,19 @@ export class InlineCompletionService {
     async onEditorChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        NavigationHintProvider.instance.removeNavigationHints()
     }
 
     async onFocusChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        NavigationHintProvider.instance.removeNavigationHints()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            NavigationHintProvider.instance.removeNavigationHints()
         }
     }
 
@@ -282,6 +289,7 @@ export class InlineCompletionService {
         try {
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
+            NavigationHintProvider.instance.removeNavigationHints()
             RecommendationHandler.instance.cancelPaginatedRequest()
             RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()

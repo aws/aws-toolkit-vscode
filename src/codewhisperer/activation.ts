@@ -51,6 +51,7 @@ import globals from '../shared/extensionGlobals'
 import { Auth } from '../credentials/auth'
 import { isUserCancelledError } from '../shared/errors'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import { NavigationHintProvider } from './service/navigationHintProvider'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -200,6 +201,10 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
             ReferenceInlineProvider.instance
+        ),
+        vscode.languages.registerCodeLensProvider(
+            [...CodeWhispererConstants.supportedLanguages],
+            NavigationHintProvider.instance
         )
     )
 
