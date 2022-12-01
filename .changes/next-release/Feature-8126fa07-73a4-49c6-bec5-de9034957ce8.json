@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Downloading S3 files will prompt to save in the last used download path"
+	"description": "S3: \"Download As\" action defaults to the last-used download path."
 }
