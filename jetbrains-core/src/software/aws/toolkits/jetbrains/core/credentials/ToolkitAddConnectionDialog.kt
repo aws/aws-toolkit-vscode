@@ -4,11 +4,14 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.ui.Messages
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
 import com.intellij.ui.dsl.builder.Cell
@@ -24,9 +27,9 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
-import software.aws.toolkits.core.utils.debug
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.sono.ALL_AVAILABLE_SCOPES
@@ -34,17 +37,26 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.ALL_SSO_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.UiTelemetry
 import javax.swing.JComponent
 
-class ToolkitAddConnectionDialog(private val project: Project, connection: ToolkitConnection? = null) : DialogWrapper(project), Disposable {
+data class ConnectionDialogCustomizer(
+    val title: String? = null,
+    val header: String? = null,
+    val helpId: HelpIds? = null,
+    val replaceIamComment: String? = null,
+)
+
+open class ToolkitAddConnectionDialog(
+    private val project: Project,
+    connection: ToolkitConnection? = null,
+    private val customizer: ConnectionDialogCustomizer? = null
+) : DialogWrapper(project), Disposable {
     // TODO: update fields
     private class Modal {
         // Default option AWS Builder ID to be selected
         var loginType: LoginOptions = LoginOptions.AWS_BUILDER_ID
         var startUrl: String = ""
-        var secretAccessKey: String = ""
-        var accessKeyID: String = ""
-        var secretAccessKey2: String = ""
     }
 
     private enum class LoginOptions {
@@ -58,7 +70,7 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
     private val panel: DialogPanel by lazy { createPanel() }
 
     init {
-        title = message("toolkit.login.dialog.title")
+        title = customizer?.title ?: message("toolkit.login.dialog.title")
         setOKButtonText(message("toolkit.login.dialog.connect_button"))
 
         // Fill in login metadata for users to reauthenticate
@@ -78,7 +90,17 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
 
     override fun createCenterPanel(): JComponent = panel
 
-    override fun getHelpId(): String = HelpIds.TOOLKIT_ADD_CONNECTIONS_DIALOG.id
+    override fun getHelpId(): String = (customizer?.helpId ?: HelpIds.TOOLKIT_ADD_CONNECTIONS_DIALOG).id
+
+    override fun doHelpAction() {
+        UiTelemetry.click(project, "connection_help")
+        super.doHelpAction()
+    }
+
+    override fun doCancelAction() {
+        UiTelemetry.click(project, "connection_optionescapecancel")
+        super.doCancelAction()
+    }
 
     override fun doOKAction() {
         if (!isOKActionEnabled) {
@@ -109,24 +131,27 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
                 withContext(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                 }
-            } catch (e: ProcessCanceledException) {
-                LOG.debug(e) { "${e.message}" }
-                setErrorText(message("codewhisperer.credential.login.dialog.exception.cancel_login"))
-            } catch (e: InvalidGrantException) {
-                LOG.debug(e) { "${e.message}" }
-                setErrorText(message("codewhisperer.credential.login.exception.invalid_grant"))
-            } catch (e: InvalidRequestException) {
-                LOG.debug(e) { "${e.message}" }
-                setErrorText(message("codewhisperer.credential.login.exception.invalid_input"))
-            } catch (e: SsoOidcException) {
-                LOG.debug(e) { "${e.message}" }
-                setErrorText(message("codewhisperer.credential.login.exception.general.oidc"))
             } catch (e: Exception) {
-                LOG.error(e) { "${e.message}" }
-                setErrorText(message("codewhisperer.credential.login.exception.general"))
+                val message = when (e) {
+                    is ProcessCanceledException -> message("codewhisperer.credential.login.dialog.exception.cancel_login")
+                    is InvalidGrantException -> message("codewhisperer.credential.login.exception.invalid_grant")
+                    is InvalidRequestException -> message("codewhisperer.credential.login.exception.invalid_input")
+                    is SsoOidcException -> message("codewhisperer.credential.login.exception.general.oidc")
+                    else -> message("codewhisperer.credential.login.exception.general")
+                }
+                LOG.warn(e) { message }
+                setErrorText(message)
             } finally {
                 setOKButtonText(message("codewhisperer.credential.login.dialog.ok_button"))
                 isOKActionEnabled = true
+
+                val credType = when (loginType) {
+                    LoginOptions.AWS_BUILDER_ID -> "connection_optionBuilderID"
+                    LoginOptions.SSO -> "connection_optionSSO"
+                    else -> null
+                }
+
+                credType?.let { UiTelemetry.click(project, it) }
             }
         }
     }
@@ -137,13 +162,12 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
 
     private fun createPanel() = panel {
         row {
-            label(message("toolkit.login.dialog.label"))
+            label(customizer?.header ?: message("toolkit.login.dialog.label"))
                 .bold()
         }
 
         buttonsGroup {
             // AWS Builder ID
-            lateinit var ssoCheckBox: Cell<JBRadioButton>
             row {
                 radioButton(message("toolkit.login.dialog.aws_builder_id.title"), LoginOptions.AWS_BUILDER_ID)
                     .comment(
@@ -153,8 +177,9 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
             }
 
             // SSO
+            lateinit var ssoRadioButton: Cell<JBRadioButton>
             row {
-                ssoCheckBox = radioButton(message("toolkit.login.dialog.sso.title"), LoginOptions.SSO)
+                ssoRadioButton = radioButton(message("toolkit.login.dialog.sso.title"), LoginOptions.SSO)
                     .comment(
                         message("toolkit.login.dialog.sso.comment"),
                         commentMaxLength
@@ -168,45 +193,28 @@ class ToolkitAddConnectionDialog(private val project: Project, connection: Toolk
                         bindText(modal::startUrl)
                     }
                 }
-                    .enabledIf(ssoCheckBox.selected)
+                    .enabledIf(ssoRadioButton.selected)
                     .layout(RowLayout.INDEPENDENT)
             }
 
             // IAM
-            lateinit var iamCheckBox: Cell<JBRadioButton>
             row {
-                iamCheckBox = radioButton(message("toolkit.login.dialog.iam.title"), LoginOptions.IAM)
+                radioButton(message("toolkit.login.dialog.iam.title"), LoginOptions.IAM)
                     .enabled(false)
                     .comment(
-                        message("toolkit.login.dialog.iam.comment"),
+                        customizer?.replaceIamComment ?: "<a>${message("configure.toolkit.upsert_credentials.action")}</a>",
                         commentMaxLength
-                    ) {
-                        // TODO: update this action and enable IAM button
-                        Messages.showMessageDialog("${it.description} is clicked", "Message", null)
+                    ) { hyperlinkEvent ->
+                        close(OK_EXIT_CODE)
+                        val actionEvent = AnActionEvent.createFromInputEvent(
+                            hyperlinkEvent.inputEvent,
+                            ToolkitPlaces.ADD_CONNECTION_DIALOG,
+                            null,
+                            DataContext { if (PlatformDataKeys.PROJECT.`is`(it)) project else null }
+                        )
+                        ActionManager.getInstance().getAction("aws.settings.upsertCredentials").actionPerformed(actionEvent)
                     }
             }.topGap(TopGap.MEDIUM)
-
-            // TODO: update these field name
-            indent {
-                row(message("toolkit.login.dialog.iam.text_field.secret_access_key")) {
-                    textField()
-                        .columns(COLUMNS_MEDIUM)
-                        .bindText(modal::secretAccessKey)
-                }.enabledIf(iamCheckBox.selected)
-
-                row(message("toolkit.login.dialog.iam.text_field.access_key_id")) {
-                    textField()
-                        .columns(COLUMNS_MEDIUM)
-                        .bindText(modal::accessKeyID)
-                }.enabledIf(iamCheckBox.selected)
-
-                // TODO: confirm what's this field in the mock?
-                row(message("toolkit.login.dialog.iam.text_field.secret_access_key")) {
-                    textField()
-                        .columns(COLUMNS_MEDIUM)
-                        .bindText(modal::secretAccessKey2)
-                }.enabledIf(iamCheckBox.selected)
-            }
         }.bind(modal::loginType)
 
         separator().topGap(TopGap.MEDIUM)

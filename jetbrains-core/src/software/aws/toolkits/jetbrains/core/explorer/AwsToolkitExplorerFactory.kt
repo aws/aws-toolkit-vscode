@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.experiments.ExperimentsActionGroup
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
@@ -28,21 +29,21 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
                     add(
                         OpenBrowserAction(
                             title = message("explorer.view_documentation"),
-                            url = "https://docs.aws.amazon.com/console/toolkit-for-jetbrains"
+                            url = AwsToolkit.AWS_DOCS_URL
                         )
                     )
                     add(
                         OpenBrowserAction(
                             title = message("explorer.view_source"),
                             icon = AllIcons.Vcs.Vendors.Github,
-                            url = "https://github.com/aws/aws-toolkit-jetbrains"
+                            url = AwsToolkit.GITHUB_URL
                         )
                     )
                     add(
                         OpenBrowserAction(
                             title = message("explorer.create_new_issue"),
                             icon = AllIcons.Vcs.Vendors.Github,
-                            url = "https://github.com/aws/aws-toolkit-jetbrains/issues/new/choose"
+                            url = "${AwsToolkit.GITHUB_URL}/issues/new/choose"
                         )
                     )
                     add(actionManager.getAction("aws.toolkit.showFeedback"))

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
@@ -12,14 +13,22 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinne
 
 // TODO: unify with AwsConnectionManager
 @State(name = "connectionManager", storages = [Storage("aws.xml")])
-class DefaultToolkitConnectionManager(private val project: Project) : ToolkitConnectionManager, PersistentStateComponent<ToolkitConnectionManagerState> {
+class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStateComponent<ToolkitConnectionManagerState> {
+    private val project: Project?
+    constructor(project: Project) {
+        this.project = project
+    }
+    constructor() {
+        this.project = null
+    }
+
     private var connection: ToolkitConnection? = null
-    private val pinningManager: ConnectionPinningManager
-        get() = ConnectionPinningManager.getInstance(project)
+    private val pinningManager: ConnectionPinningManager?
+        get() = project?.let { ConnectionPinningManager.getInstance(it) }
 
     private val defaultConnection: ToolkitConnection?
         get() {
-            if (CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()) {
+            if (CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty() && project != null) {
                 return AwsConnectionManagerConnection(project)
             }
 
@@ -35,12 +44,18 @@ class DefaultToolkitConnectionManager(private val project: Project) : ToolkitCon
 
     @Synchronized
     override fun activeConnectionForFeature(feature: FeatureWithPinnedConnection): ToolkitConnection? {
-        val pinnedConnection = pinningManager.getPinnedConnection(feature)
+        val pinnedConnection = pinningManager?.getPinnedConnection(feature)
         if (pinnedConnection != null) {
             return pinnedConnection
         }
 
         return connection?.let {
+            if (feature.supportsConnectionType(it)) {
+                return it
+            }
+
+            null
+        } ?: defaultConnection?.let {
             if (feature.supportsConnectionType(it)) {
                 return it
             }
@@ -67,7 +82,8 @@ class DefaultToolkitConnectionManager(private val project: Project) : ToolkitCon
         if (oldConnection != newConnection) {
             this.connection = newConnection
 
-            if (oldConnection != null && newConnection != null) {
+            val pinningManager = pinningManager
+            if (oldConnection != null && newConnection != null && pinningManager != null) {
                 val featuresToPin = mutableListOf<FeatureWithPinnedConnection>()
                 FeatureWithPinnedConnection.EP_NAME.forEachExtensionSafe {
                     if (!pinningManager.isFeaturePinned(it) && it.supportsConnectionType(oldConnection) && !it.supportsConnectionType(newConnection)) {
@@ -80,7 +96,7 @@ class DefaultToolkitConnectionManager(private val project: Project) : ToolkitCon
                 }
             }
 
-            project.messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC).activeConnectionChanged(connection)
+            ApplicationManager.getApplication().messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC).activeConnectionChanged(connection)
         }
     }
 }

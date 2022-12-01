@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core.clients
 
+import software.amazon.awssdk.core.client.builder.SdkClientBuilder
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.profiles.ProfileFile
 import java.io.InputStream
@@ -13,3 +14,12 @@ fun ClientOverrideConfiguration.Builder.nullDefaultProfileFile() = defaultProfil
         .type(ProfileFile.Type.CONFIGURATION)
         .build()
 )
+
+/**
+ * Only use if this is the only [overrideConfiguration] block used by the [SdkClientBuilder]
+ */
+fun<C> SdkClientBuilder<*, C>.nullDefaultProfileFile() = apply {
+    overrideConfiguration {
+        it.nullDefaultProfileFile()
+    }
+}

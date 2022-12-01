@@ -25,6 +25,7 @@ abstract class ToolkitIntelliJExtension(private val providers: ProviderFactory) 
             IdeFlavor.IC -> ideProfile().map { it.community }
             IdeFlavor.IU -> ideProfile().map { it.ultimate }
             IdeFlavor.RD -> ideProfile().map { it.rider }
+            IdeFlavor.GW -> ideProfile().map { it.gateway!! }
         }
     }
 }

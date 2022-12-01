@@ -8,7 +8,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 
 abstract class Step {
-    protected abstract val stepName: String
+    public abstract val stepName: String
     protected open val hidden: Boolean = false
 
     fun run(context: Context, parentEmitter: StepEmitter, ignoreCancellation: Boolean = false) {

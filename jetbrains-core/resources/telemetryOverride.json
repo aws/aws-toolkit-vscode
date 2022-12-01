@@ -1,5 +1,39 @@
 {
     "types": [
+        {
+            "name": "codecatalyst_createDevEnvironmentRepoType",
+            "type": "string",
+            "description": "Type of Git repository provided to the Amazon CodeCatalyst dev environment create wizard",
+            "allowedValues": [
+                "linked",
+                "unlinked",
+                "none"
+            ]
+        },
+        {
+            "name": "codecatalyst_updateDevEnvironmentLocationType",
+            "type": "string",
+            "description": "Locality of the Amazon CodeCatalyst update dev environment request (i.e., from the thin client or the local IDE instance)",
+            "allowedValues": [
+                "remote",
+                "local"
+            ]
+        },
+        {
+            "name": "userId",
+            "type": "string",
+            "description": "Opaque AWS ID identifier"
+        },
+        {
+            "name": "codecatalyst_devEnvironmentWorkflowError",
+            "type": "string",
+            "description": "Workflow error name"
+        },
+        {
+            "name": "codecatalyst_devEnvironmentWorkflowStep",
+            "type": "string",
+            "description": "Workflow step name"
+        }
     ],
     "metrics": [
         {
@@ -9,6 +43,63 @@
                 {
                     "type": "result"
                 }
+            ]
+        },
+
+        {
+            "name": "codecatalyst_createDevEnvironment",
+            "description": "Create an Amazon CodeCatalyst Dev Environment",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" },
+                {
+                    "type": "codecatalyst_createDevEnvironmentRepoType",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "codecatalyst_updateDevEnvironmentSettings",
+            "description": "Update properties of a Amazon CodeCatalyst Dev Environment",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" },
+                { "type": "codecatalyst_updateDevEnvironmentLocationType" }
+            ]
+        },
+        {
+            "name": "codecatalyst_updateDevfile",
+            "description": "Trigger a devfile update on a Amazon CodeCatalyst dev environment",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" }
+            ]
+        },
+        {
+            "name": "codecatalyst_localClone",
+            "description": "Clone a Amazon CodeCatalyst code repository locally",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" }
+            ]
+        },
+        {
+            "name": "codecatalyst_connect",
+            "description": "Connect to a Amazon CodeCatalyst dev environment",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" }
+            ]
+        },
+        {
+            "name": "codecatalyst_devEnvironmentWorkflowStatistic",
+            "description": "Workflow statistic for connecting to a dev environment",
+            "metadata": [
+                { "type": "userId" },
+                { "type": "result" },
+                { "type": "duration"},
+                { "type": "codecatalyst_devEnvironmentWorkflowStep"},
+                { "type": "codecatalyst_devEnvironmentWorkflowError", "required": false }
             ]
         }
     ]

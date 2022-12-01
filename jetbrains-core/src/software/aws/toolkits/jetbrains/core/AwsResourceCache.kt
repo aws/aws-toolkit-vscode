@@ -337,6 +337,7 @@ class DefaultAwsResourceCache(
     init {
         ApplicationManager.getApplication().messageBus.connect(this).apply {
             subscribe(CredentialManager.CREDENTIALS_CHANGED, this@DefaultAwsResourceCache)
+
             subscribe(
                 BearerTokenProviderListener.TOPIC,
                 object : BearerTokenProviderListener {

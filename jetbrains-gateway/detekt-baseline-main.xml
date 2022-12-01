@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>BannedImports:CawsConnectionProvider.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:WorkspaceConfigurationDialog.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>ForbiddenVoid:CawsLoadingPanel.kt$CawsLoadingPanel$Void</ID>
+    <ID>ImplicitDefaultLocale:Workspace.kt$Workspace$productCode.substringBefore("@sha").toUpperCase()</ID>
+    <ID>LoopWithTooManyJumpStatements:StartBackend.kt$StartBackend$while (lifetime.isAlive) { // delay is same as JetBrains' backend watcher delay(5_000) // we expect the IDE to come up relatively quickly: // * devfile restarts don't occur until the new environment is cached // * IDE backend restarts shouldn't take too long since the binaries should be warm val status = tryOrNull { // we don't immediately return non-running state to give some leeway on network flake spinUntilValue(Duration.ofSeconds(5), interval = Duration.ofSeconds(1)) { ideActions.getStatus() as? IdeBackendStatus.BackendRunning } } ?: ideActions.getStatus(Duration.ofSeconds(15)) when (status) { is IdeBackendStatus.BackendRunning -> { val currentPid = status.hostStatus.appPid if (pid == null) { pid = currentPid } if (currentPid != pid) { stepEmitter.emitMessageLine("Current backend doesn't match initial state. Reconnecting.", isError = false) LOG.info { "Found new backend PID: $currentPid. Was previously: $pid" } reconnect() break } } // host is alive but backend isn't running anymore // need this for devfile restart, but also don't want to cause infinite loop // this will also be a transient state for ide-triggered self-restarts // or if the backend is already in the process of starting // TODO: we can handle case where backend is in process of starting better (user sees: "Project is already opened. Will not open anything") is IdeBackendStatus.HostAlive -> { if (clientHandle.lifetime.isAlive) { val message = "Thin client is still running but backend could not be found. Reconnecting." stepEmitter.emitMessageLine(message, isError = false) LOG.info { message } reconnect() break } else { LOG.info { "Thin client no longer running. Terminating Gateway handle." } gatewayHandle.terminate() break } } is IdeBackendStatus.HostNotAlive -> { val message = "Backend does not appear to be running. Reconnecting." LOG.info { message } stepEmitter.emitMessageLine(message, isError = false) reconnect() break } } }</ID>
+    <ID>UnnecessaryApply:CawsConnectionProvider.kt$CawsConnectionProvider.&lt;no name provided>$apply { expanded = false }</ID>
+    <ID>UnusedPrivateMember:InstallPluginBackend.kt$InstallPluginBackend.InstallMarketplacePluginBackend$private val ideProduct: GatewayProduct?</ID>
+    <ID>UnusedPrivateMember:InstallPluginBackend.kt$InstallPluginBackend.InstallMarketplacePluginBackend$private val marketplaceUrl: String = "https://plugins.jetbrains.com"</ID>
+    <ID>UnusedPrivateMember:PatchBackend.kt$PatchBackend$private val gatewayHandle: GatewayConnectionHandle</ID>
+    <ID>UnusedPrivateMember:SshCommandLine.kt$SshCommandLine.Companion$private const val ADDITIONAL_OPTIONS = "sshAdditionalOptions"</ID>
+    <ID>UnusedPrivateMember:WorkspaceDetails.kt$e: AnActionEvent</ID>
+    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS environment id")</ID>
+    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS organization name")</ID>
+    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS project name")</ID>
+    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionProvider$throw IllegalStateException("Environment is deleted, unable to start")</ID>
+    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionProvider$throw IllegalStateException("Unknown state $status")</ID>
+    <ID>UseCheckOrError:GatewayEcrVersions.kt$GatewayProduct.Companion$throw IllegalStateException("Could not parse runtime for build: ${ide.runtime()}")</ID>
+    <ID>UseCheckOrError:IdeBackendActions.kt$IdeBackendActions.Companion$throw IllegalStateException("IDE runtime was not provided")</ID>
+    <ID>UseCheckOrError:IdeBackendActions.kt$IdeBackendActions.Companion$throw IllegalStateException("Project was not provided")</ID>
+    <ID>UseCheckOrError:StartBackend.kt$StartBackend$throw IllegalStateException( "Starting the IDE backend failed with exit code ${backend.exitCode}. Any available backend logs are available above." )</ID>
+    <ID>UseCheckOrError:StartBackend.kt$StartBackend$throw IllegalStateException("Backend did not start within $duration")</ID>
+    <ID>UseCheckOrError:WorkspaceActions.kt$WorkspaceActions$throw IllegalStateException("Environment did not start: ${response.status()}")</ID>
+    <ID>UseCheckOrError:WorkspaceActions.kt$WorkspaceActions$throw IllegalStateException("Environment did not stop: ${response.status()}")</ID>
+    <ID>UseOrEmpty:WorkspaceConfigurationDialog.kt$ReconfigureWorkspaceSettings$ws.alias ?: ""</ID>
+    <ID>UseOrEmpty:WorkspaceDetails.kt$ShellAction.Companion$nullize(nullizeSpaces = true)?.split(',')?.map { it.toInt() } ?: emptyList()</ID>
+    <ID>UseOrEmpty:WorkspaceDetails.kt$WorkspaceDetails$ws.alias?.let { listOf(it) } ?: emptyList()</ID>
+    <ID>UseOrEmpty:WorkspaceGroupsPanel.kt$WorkspaceGroupsPanel$this.workspaces.codeRepos()[project] ?: emptyList()</ID>
+    <ID>UseOrEmpty:WorkspaceGroupsPanel.kt$WorkspaceGroupsPanel$workspaceGroup.repoName ?: ""</ID>
+  </CurrentIssues>
+</SmellBaseline>

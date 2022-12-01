@@ -4,7 +4,9 @@
 package software.aws.toolkits.jetbrains
 
 object ToolkitPlaces {
+    const val DEVTOOLS_TOOL_WINDOW = "DevToolsToolWindow"
     const val EXPLORER_TOOL_WINDOW = "ExplorerToolWindow"
     const val EDITOR_PSI_REFERENCE = "Editor"
     const val DEV_TOOL_WINDOW = "DeveloperToolsWindow"
+    const val ADD_CONNECTION_DIALOG = "ToolkitAddConnectionDialog"
 }

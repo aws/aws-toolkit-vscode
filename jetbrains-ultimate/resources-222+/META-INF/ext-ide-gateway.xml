@@ -1,0 +1,10 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <actions>
+        <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.OpenWorkspaceInGateway" id="aws.caws.devtools.actions.openGateway">
+            <add-to-group group-id="aws.caws.devtools.actions.loggedin" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

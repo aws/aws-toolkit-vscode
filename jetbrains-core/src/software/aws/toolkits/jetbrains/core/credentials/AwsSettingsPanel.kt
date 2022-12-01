@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.ide.DataManager
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.ListPopup
 import com.intellij.openapi.util.Disposer
@@ -65,7 +66,7 @@ private class AwsSettingsPanel(private val project: Project) :
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
         project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
-        project.messageBus.connect(this).subscribe(ToolkitConnectionManagerListener.TOPIC, this)
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(ToolkitConnectionManagerListener.TOPIC, this)
         updateWidget()
     }
 

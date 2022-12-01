@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry
 import software.amazon.awssdk.services.toolkittelemetry.model.MetricDatum
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
+import software.aws.toolkits.core.clients.nullDefaultProfileFile
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -106,11 +107,12 @@ class DefaultTelemetryPublisher(
                         .credentialsProvider(AnonymousCredentialsProvider.create())
                         .region(region)
                         .httpClient(sdkClient.sharedSdkClient())
+                        .nullDefaultProfileFile()
                         .build()
                 ),
                 region = region,
                 endpointOverride = Registry.get("aws.telemetry.endpoint").asString()
-            )
+            ) { _, _, _, _, clientOverrideConfiguration -> clientOverrideConfiguration.nullDefaultProfileFile() }
         }
     }
 }

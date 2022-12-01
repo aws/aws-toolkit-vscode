@@ -14,8 +14,10 @@ import com.intellij.ui.layout.PropertyBinding
 import com.intellij.ui.layout.Row
 import com.intellij.ui.layout.ValidationInfoBuilder
 import com.intellij.ui.layout.applyToComponent
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialType
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.resources.message
 import javax.swing.JList
@@ -139,3 +141,11 @@ class CredentialIdentifierSelector(identifiers: List<CredentialIdentifier> = Cre
         }
     }
 }
+
+fun tryResolveConnectionSettings(credentialsIdentifier: CredentialIdentifier?, region: AwsRegion?) =
+    credentialsIdentifier?.let { credId ->
+        region?.let { region ->
+            val credentialProvider = CredentialManager.getInstance().getAwsCredentialProvider(credentialsIdentifier, region)
+            ConnectionSettings(credentialProvider, region)
+        }
+    }

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.ClientConnectionSettings
@@ -41,12 +42,25 @@ interface BearerSsoConnection : AwsBearerTokenConnection {
 sealed interface AuthProfile
 
 data class ManagedSsoProfile(
-    var ssoRegion: String,
-    var startUrl: String,
-    var scopes: List<String>
-) : AuthProfile {
-    // only used for deserialization
-    constructor() : this("", "", emptyList())
+    var ssoRegion: String = "",
+    var startUrl: String = "",
+    var scopes: List<String> = emptyList()
+) : AuthProfile
+
+data class DiskSsoSessionProfile(
+    var profileName: String = "",
+    var ssoRegion: String = ""
+) : AuthProfile
+
+/**
+ * Used to contribute connections to [ToolkitAuthManager] on service initialization
+ */
+interface ToolkitStartupAuthFactory {
+    fun buildConnections(): List<ToolkitConnection>
+
+    companion object {
+        val EP_NAME = ExtensionPointName.create<ToolkitStartupAuthFactory>("aws.toolkit.startupAuthFactory")
+    }
 }
 
 interface ToolkitAuthManager {
@@ -72,14 +86,14 @@ interface ToolkitConnectionManager {
     fun switchConnection(connection: ToolkitConnection?)
 
     companion object {
-        fun getInstance(project: Project) = project.service<ToolkitConnectionManager>()
+        fun getInstance(project: Project?) = project?.let { it.service<ToolkitConnectionManager>() } ?: service()
     }
 }
 
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
-fun loginSso(project: Project, startUrl: String, scopes: List<String> = ALL_AVAILABLE_SCOPES): BearerTokenProvider {
+fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_AVAILABLE_SCOPES): BearerTokenProvider {
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl)
     val manager = ToolkitAuthManager.getInstance()
 
@@ -119,7 +133,7 @@ fun loginSso(project: Project, startUrl: String, scopes: List<String> = ALL_AVAI
     }
 }
 
-fun reauthProviderIfNeeded(connection: ToolkitConnection): BearerTokenProvider {
+private fun reauthProviderIfNeeded(connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
     val state = tokenProvider.state()
     runUnderProgressIfNeeded(null, message("settings.states.validating.short"), false) {

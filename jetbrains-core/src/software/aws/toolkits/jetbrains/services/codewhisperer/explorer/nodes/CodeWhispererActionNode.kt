@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractActionTreeNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import java.awt.event.MouseEvent
 import javax.swing.Icon
 
 abstract class CodeWhispererActionNode(
@@ -25,7 +26,7 @@ abstract class CodeWhispererActionNode(
 
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
-    override fun onDoubleClick() {
+    override fun onDoubleClick(event: MouseEvent) {
         CodeWhispererExplorerActionManager.getInstance().performAction(nodeProject, actionId)
     }
 }

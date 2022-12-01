@@ -10,6 +10,8 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.filter
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.lambda.upload.LAMBDA_PRINCIPAL
 
 data class IamRole(val arn: String) {

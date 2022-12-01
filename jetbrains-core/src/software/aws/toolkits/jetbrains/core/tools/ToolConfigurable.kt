@@ -20,6 +20,7 @@ class ToolConfigurable : BoundConfigurable(message("executableCommon.configurabl
     private val panel = ClearableLazyValue.create {
         ValidatingPanel(
             disposable ?: throw RuntimeException("Should never happen as `createPanel` is called after disposable is assigned"),
+            checkContinuously = false,
             panel {
                 ToolType.EP_NAME.extensionList.forEach { toolType ->
                     row(toolType.displayName) {

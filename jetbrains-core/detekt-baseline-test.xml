@@ -129,6 +129,7 @@
     <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager!!</ID>
     <ID>UnsafeCallOnNullableType:WrapLogsActionTest.kt$WrapLogsActionTest$model.columnInfos[1].getRenderer(null)!!</ID>
     <ID>UnsafeCallOnNullableType:YamlCloudFormationTemplateTest.kt$YamlCloudFormationTemplateTest$resource!!</ID>
+    <ID>UnusedPrivateMember:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$val file1 = fixture.configureByText("/file1.py", pythonTestLeftContext)</ID>
     <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate $it")</ID>
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate gradlew")</ID>

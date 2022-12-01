@@ -16,6 +16,7 @@ import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.http.SdkHttpClient
+import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.ToolkitClientCustomizer
@@ -88,3 +89,8 @@ inline fun <reified T : SdkClient> Project.awsClient(): T {
 inline fun <reified T : SdkClient> ConnectionSettings.awsClient(): T = AwsClientManager.getInstance().getClient(credentials, region)
 
 inline fun <reified T : SdkClient> TokenConnectionSettings.awsClient(): T = AwsClientManager.getInstance().getClient(this)
+
+inline fun <reified T : SdkClient> ClientConnectionSettings<*>.awsClient(): T = when (this) {
+    is ConnectionSettings -> awsClient<T>()
+    is TokenConnectionSettings -> awsClient<T>()
+}

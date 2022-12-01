@@ -7,6 +7,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import java.io.OutputStream
@@ -46,6 +47,8 @@ class StepExecutor(
 
         return processHandler
     }
+
+    fun<T : Any> addContext(key: AttributeBagKey<T>, value: T) = context.putAttribute(key, value)
 
     private fun startWorkflow() {
         ApplicationManager.getApplication().executeOnPooledThread {

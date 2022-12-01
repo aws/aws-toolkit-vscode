@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
@@ -18,18 +17,15 @@ import com.intellij.openapi.project.DumbAwareToggleAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
-import com.intellij.ui.components.JBLabel
 import com.intellij.util.EventDispatcher
-import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.BOTH
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.CREDENTIALS
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.REGIONS
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsMenuBuilder.Companion.connectionSettingsMenuBuilder
+import software.aws.toolkits.jetbrains.ui.ActionPopupComboLogic
 import software.aws.toolkits.resources.message
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
@@ -49,18 +45,18 @@ enum class ChangeSettingsMode(val showRegions: Boolean, val showCredentials: Boo
  * @see ProjectLevelSettingSelector
  * @see SettingsSelectorComboBoxAction
  */
-abstract class SettingsSelectorLogicBase(private val menuMode: ChangeSettingsMode) {
+abstract class SettingsSelectorLogicBase(private val menuMode: ChangeSettingsMode) : ActionPopupComboLogic {
     private val listeners by lazy {
         EventDispatcher.create(ChangeListener::class.java)
     }
 
-    fun displayValue(): String = when (menuMode) {
+    override fun displayValue(): String = when (menuMode) {
         CREDENTIALS -> credentialsDisplay()
         REGIONS -> regionDisplay()
         BOTH -> "${credentialsDisplay()}@${regionDisplay()}"
     }
 
-    fun tooltip(): String? = when (menuMode) {
+    override fun tooltip(): String? = when (menuMode) {
         CREDENTIALS -> credentialsTooltip()
         REGIONS -> regionTooltip()
         BOTH -> null
@@ -108,8 +104,12 @@ abstract class SettingsSelectorLogicBase(private val menuMode: ChangeSettingsMod
 
     protected open fun customizeSelectionMenu(builder: ConnectionSettingsMenuBuilder) {}
 
-    fun addChangeListener(changeListener: ChangeListener) {
+    override fun addChangeListener(changeListener: ChangeListener) {
         listeners.addListener(changeListener)
+    }
+
+    override fun showPopup(sourceComponent: JComponent) {
+        createPopup(DataManager.getInstance().getDataContext(sourceComponent)).showUnderneathOf(sourceComponent)
     }
 }
 
@@ -120,9 +120,17 @@ abstract class SettingsSelectorLogicBase(private val menuMode: ChangeSettingsMod
 class LocalSettingsSelector(initialRegion: AwsRegion? = null, initialCredentialIdentifier: CredentialIdentifier? = null, settingsMode: ChangeSettingsMode) :
     SettingsSelectorLogicBase(settingsMode) {
     var currentRegion: AwsRegion? = initialRegion
-        private set
+        set(value) {
+            if (field == value) return
+            field = value
+            value?.let { onRegionChange(it) }
+        }
     var currentCredentials: CredentialIdentifier? = initialCredentialIdentifier
-        private set
+        set(value) {
+            if (field == value) return
+            field = value
+            value?.let { onCredentialChange(it) }
+        }
 
     override fun currentRegion(): AwsRegion? = currentRegion
 
@@ -231,38 +239,6 @@ class SettingsSelectorComboBoxAction(private val selectorLogic: SettingsSelector
     private fun updatePresentation(presentation: Presentation) {
         presentation.text = selectorLogic.displayValue()
         presentation.description = selectorLogic.tooltip()
-    }
-}
-
-class SettingsSelectorComboLabel(private val selectorLogic: SettingsSelectorLogicBase) : BorderLayoutPanel() {
-    private val label = JBLabel()
-
-    init {
-        val arrowLabel = JBLabel(AllIcons.General.ArrowDown)
-        addToCenter(label)
-        addToRight(arrowLabel)
-
-        val clickAdapter = object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                showPopup()
-            }
-        }
-        label.addMouseListener(clickAdapter)
-        arrowLabel.addMouseListener(clickAdapter)
-        selectorLogic.addChangeListener {
-            updateText()
-        }
-
-        updateText()
-    }
-
-    private fun showPopup() {
-        selectorLogic.createPopup(DataManager.getInstance().getDataContext(this)).showUnderneathOf(this)
-    }
-
-    private fun updateText() {
-        label.text = selectorLogic.displayValue()
-        label.toolTipText = selectorLogic.tooltip()
     }
 }
 

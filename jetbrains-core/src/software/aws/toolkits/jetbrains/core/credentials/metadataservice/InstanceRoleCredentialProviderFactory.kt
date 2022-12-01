@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.metadataservice
 
+import com.intellij.openapi.extensions.ExtensionNotApplicableException
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
 import software.amazon.awssdk.core.SdkSystemSetting
@@ -17,8 +18,15 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 
 class InstanceRoleCredentialProviderFactory : CredentialProviderFactory {
+    init {
+        if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) {
+            throw ExtensionNotApplicableException.INSTANCE
+        }
+    }
+
     override val id = FACTORY_ID
     override val credentialSourceId: CredentialSourceId = CredentialSourceId.Ec2
 

@@ -43,10 +43,11 @@ class ManagedBearerSsoConnection(
 
 class DiskSsoSessionConnection(
     val sessionProfileName: String,
-    val region: String
+    val region: String,
+    displayNameOverride: String? = null
 ) : AwsBearerTokenConnection, Disposable {
     override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionProfileName)
-    override val label = ToolkitBearerTokenProvider.diskSessionDisplayName(sessionProfileName)
+    override val label = displayNameOverride ?: ToolkitBearerTokenProvider.diskSessionDisplayName(sessionProfileName)
 
     private val provider =
         tokenConnection(

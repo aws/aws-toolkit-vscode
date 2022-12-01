@@ -1,0 +1,18 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <openapi.vcs.ui.cloneDialog.VcsCloneDialogExtension implementation="software.aws.toolkits.jetbrains.services.caws.CawsCloneDialogExtension" />
+    </extensions>
+
+    <extensions defaultExtensionNs="Git4Idea">
+        <GitHttpAuthDataProvider implementation="software.aws.toolkits.jetbrains.services.caws.CawsHttpAuthProvider"/>
+    </extensions>
+
+    <actions>
+        <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.CloneCawsRepository" id="aws.caws.devtools.actions.clone">
+            <add-to-group group-id="aws.caws.devtools.actions.loggedin" anchor="first" />
+        </action>
+    </actions>
+</idea-plugin>

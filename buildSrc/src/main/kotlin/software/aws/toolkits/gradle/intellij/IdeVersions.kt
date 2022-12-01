@@ -7,13 +7,22 @@ import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
-enum class IdeFlavor { IC, IU, RD }
+enum class IdeFlavor { GW, IC, IU, RD }
 
 object IdeVersions {
     private val commonPlugins = arrayOf(
+        "git4idea",
         "org.jetbrains.plugins.terminal",
         "org.jetbrains.plugins.yaml"
     )
+
+    // FIX_WHEN_MIN_IS_223
+    private val commonPlugins223 = commonPlugins.map {
+        when (it) {
+            "git4idea" -> "vcs-git"
+            else -> it
+        }
+    }.toTypedArray()
 
     private val ideProfiles = listOf(
         Profile(
@@ -75,6 +84,7 @@ object IdeVersions {
                     // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
                     "com.intellij.css",
                     "JavaScriptDebugger",
+                    "com.jetbrains.codeWithMe",
                     "com.intellij.database",
                     "Pythonid:221.5080.212",
                     "org.jetbrains.plugins.go:221.5080.210"
@@ -92,6 +102,11 @@ object IdeVersions {
         ),
         Profile(
             name = "2022.2",
+            gateway = ProductProfile(
+                sdkFlavor = IdeFlavor.GW,
+                sdkVersion = "222.4459-EAP-CANDIDATE-SNAPSHOT",
+                plugins = arrayOf("org.jetbrains.plugins.terminal")
+            ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
                 sdkVersion = "2022.2",
@@ -113,6 +128,7 @@ object IdeVersions {
                     "com.intellij.css",
                     "JavaScriptDebugger",
                     "com.intellij.database",
+                    "com.jetbrains.codeWithMe",
                     "Pythonid:222.3345.118",
                     "org.jetbrains.plugins.go:222.3345.118",
                     // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
@@ -131,10 +147,18 @@ object IdeVersions {
         ),
         Profile(
             name = "2022.3",
+            // allow the next MV so customers potentially don't need to wait for us to deploy new EAP
+            // also gateway:latest can point to next MV and we don't have a good strategy to support this yet
+            untilVersion = "224.*",
+            gateway = ProductProfile(
+                sdkFlavor = IdeFlavor.GW,
+                sdkVersion = "223.7571-EAP-CANDIDATE-SNAPSHOT",
+                plugins = arrayOf("org.jetbrains.plugins.terminal")
+            ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
                 sdkVersion = "223.7571-EAP-CANDIDATE-SNAPSHOT",
-                plugins = commonPlugins + listOf(
+                plugins = commonPlugins223 + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
@@ -145,13 +169,14 @@ object IdeVersions {
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
                 sdkVersion = "223.7571-EAP-CANDIDATE-SNAPSHOT",
-                plugins = commonPlugins + listOf(
+                plugins = commonPlugins223 + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
                     // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
                     "com.intellij.css",
                     "JavaScriptDebugger",
                     "com.intellij.database",
+                    "com.jetbrains.codeWithMe",
                     "Pythonid:223.7571.4",
                     "org.jetbrains.plugins.go:223.7571.4",
                     // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
@@ -160,14 +185,14 @@ object IdeVersions {
             ),
             rider = RiderProfile(
                 sdkVersion = "2022.3-EAP6-SNAPSHOT",
-                plugins = commonPlugins + listOf(
+                plugins = commonPlugins223 + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
                 netFrameworkTarget = "net472",
                 rdGenVersion = "2022.3.4",
                 nugetVersion = "2022.3.0-eap06"
             )
-        )
+        ),
 
     ).associateBy { it.name }
 
@@ -183,7 +208,7 @@ object IdeVersions {
 open class ProductProfile(
     val sdkFlavor: IdeFlavor,
     val sdkVersion: String,
-    val plugins: Array<String>
+    val plugins: Array<String> = emptyArray()
 ) {
     fun version(): String? = if (!isLocalPath(sdkVersion)) {
         sdkFlavor.name + "-" + sdkVersion
@@ -211,6 +236,7 @@ class Profile(
     val shortName: String = shortenedIdeProfileName(name),
     val sinceVersion: String = shortName,
     val untilVersion: String = "$sinceVersion.*",
+    val gateway: ProductProfile? = null,
     val community: ProductProfile,
     val ultimate: ProductProfile,
     val rider: RiderProfile,

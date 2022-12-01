@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>BannedImports:CawsCloneDialogComponent.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:CodeWhispererConfigurable.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:CodeWhispererTermsOfServiceDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:CreateEcrRepoDialog.kt$import com.intellij.ui.layout.panel</ID>
@@ -23,6 +24,7 @@
     <ID>BannedImports:SchemaSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:SdkSelectionPanel.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:SearchPanel.kt$import com.intellij.ui.layout.panel</ID>
+    <ID>BannedImports:SonoLoginOverlay.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:TaskRoleNotFoundWarningDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:TokenDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>BannedImports:ToolConfigurable.kt$import com.intellij.ui.layout.panel</ID>
@@ -119,18 +121,23 @@
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
     <ID>UnusedPrivateMember:AwsLocalTerminalRunner.kt$AwsLocalTerminalRunner$private val termName: String</ID>
+    <ID>UnusedPrivateMember:CawsCloneDialogComponent.kt$CawsCloneDialogComponent$private val modalityState: ModalityState</ID>
+    <ID>UnusedPrivateMember:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$val file1 = fixture.configureByText("/file1.py", pythonTestLeftContext)</ID>
     <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")</ID>
     <ID>UseCheckOrError:AwsConnectionManager.kt$throw IllegalStateException("Connection settings are not configured")</ID>
     <ID>UseCheckOrError:AwsConsoleUrlFactory.kt$AwsConsoleUrlFactory$throw IllegalStateException("Partition '${region.partitionId}' is not supported")</ID>
     <ID>UseCheckOrError:AwsRegionProvider.kt$AwsRegionProvider$throw IllegalStateException("Region provider data is missing default data")</ID>
     <ID>UseCheckOrError:AwsRegionProviderTest.kt$AwsRegionProviderTest$throw IllegalStateException("Bad test data")</ID>
+    <ID>UseCheckOrError:CawsParameterDescriptions.kt$throw IllegalStateException("Failed to locate parameterDescriptions.json")</ID>
     <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitial")</ID>
     <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialFilter")</ID>
     <ID>UseCheckOrError:CloudWatchActor.kt$CloudWatchLogsActor$throw IllegalStateException("Table does not support loadInitialRange")</ID>
+    <ID>UseCheckOrError:CopyCawsRepositoryUrl.kt$CopyCawsRepositoryUrl.Companion$throw IllegalStateException("Unable to cast popup in type: '${popup.javaClass}' to ${ListPopupImpl::class.qualifiedName}")</ID>
     <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Failed to locate module for $element")</ID>
     <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("LambdaBuilder for $runtime not found")</ID>
     <ID>UseCheckOrError:CreateFunctionDialog.kt$CreateFunctionDialog$throw IllegalStateException("Runtime is missing when package type is Zip")</ID>
     <ID>UseCheckOrError:CreationDialog.kt$CreationDialog$throw IllegalStateException("AppRunner creation dialog had no type selected!")</ID>
+    <ID>UseCheckOrError:CredentialChoice.kt$CredentialProviderSelector2$throw IllegalStateException("Can't get credential identifier when the selection is an invalid one")</ID>
     <ID>UseCheckOrError:DataContextUtils.kt$throw IllegalStateException("Required dataId '${dataId.name}` was missing")</ID>
     <ID>UseCheckOrError:DetailedLogRecord.kt$DetailedLogRecord.Companion$throw IllegalStateException("$log format does not appear to be in a valid format (&lt;account-id>:&lt;log-group-name>)")</ID>
     <ID>UseCheckOrError:DownloadLogStream.kt$LogStreamDownloadToFileTask.&lt;no name provided>$throw IllegalStateException("Log Stream was downloaded but does not exist on disk!")</ID>
@@ -187,7 +194,8 @@
     <ID>UseCheckOrError:SchemaCodeDownloader.kt$SchemaCodeDownloader.Companion$throw IllegalStateException("Attempting to use SchemaCodeDownload without valid AWS connection")</ID>
     <ID>UseCheckOrError:SchemaSelectionPanel.kt$SchemaSelectionPanel$throw IllegalStateException("Schemas is not supported by $this")</ID>
     <ID>UseCheckOrError:SingleS3ObjectAction.kt$SingleS3ObjectAction$throw IllegalStateException("SingleActionNode should only have a single node, got $nodes")</ID>
-    <ID>UseCheckOrError:SpinUtils.kt$throw IllegalStateException("Condition not reached within $duration")</ID>
+    <ID>UseCheckOrError:SonoCredentialIdentifier.kt$SonoCredentialIdentifier$throw IllegalStateException("ID cred id should not be passed to CredentialManager")</ID>
+    <ID>UseCheckOrError:SonoCredentialProvider.kt$SonoCredentialProvider$throw IllegalStateException("Token refresh started before session initialized")</ID>
     <ID>UseCheckOrError:SqsWindowFactory.kt$SqsWindowFactory.Companion$throw IllegalStateException("Can't find tool window $TOOL_WINDOW_ID")</ID>
     <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to extract $displayName\nSTDOUT:${processOutput.stdout}\nSTDERR:${processOutput.stderr}")</ID>
     <ID>UseCheckOrError:SsmPlugin.kt$SsmPlugin$throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")</ID>

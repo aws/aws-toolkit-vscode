@@ -17,7 +17,7 @@ internal val ALL_SSO_SCOPES = listOf(
 )
 
 internal val ALL_AVAILABLE_SCOPES = ALL_SSO_SCOPES + listOf(
-    // sono-only scopes here
+    "codecatalyst:read_write"
 )
 
 fun ToolkitConnection?.isSono() = if (this == null) {

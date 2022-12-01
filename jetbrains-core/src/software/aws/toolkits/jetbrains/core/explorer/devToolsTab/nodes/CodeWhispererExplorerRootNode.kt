@@ -6,9 +6,14 @@ package software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererServiceNode
+import software.aws.toolkits.jetbrains.utils.disableExtensionIfRemoteBackend
 import software.aws.toolkits.resources.message
 
 class CodeWhispererExplorerRootNode : DevToolsServiceNode {
-    override val serviceId: String = CodeWhispererClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project): AbstractActionTreeNode = CodeWhispererServiceNode(project, message("explorer.node.codewhisperer"))
+    init {
+        disableExtensionIfRemoteBackend()
+    }
+
+    override val serviceId = CodeWhispererClient.SERVICE_NAME
+    override fun buildServiceRootNode(nodeProject: Project) = CodeWhispererServiceNode(nodeProject, message("explorer.node.codewhisperer"))
 }

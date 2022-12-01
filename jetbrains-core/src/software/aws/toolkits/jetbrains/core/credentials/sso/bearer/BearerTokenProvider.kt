@@ -182,12 +182,6 @@ class ProfileSdkTokenProviderWrapper(private val sessionName: String, region: St
     override fun resolveToken(): SdkToken = tokenProvider.value.resolveToken()
 
     override fun currentToken(): AccessToken? = sdkTokenManager.loadToken().orNull()?.let {
-        // since we can't auto-refresh this, treat DNE
-        val expiration = it.expirationTime().orNull() ?: return@let null
-        if (Instant.now().isAfter(expiration)) {
-            return@let null
-        }
-
         AccessToken(
             startUrl = it.startUrl(),
             region = it.region(),

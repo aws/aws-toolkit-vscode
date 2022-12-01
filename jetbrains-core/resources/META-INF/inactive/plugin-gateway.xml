@@ -1,0 +1,17 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <depends>com.intellij.modules.platform</depends>
+    <!-- doesn't actually work
+    <depends>com.jetbrains.gateway</depends> -->
+
+    <!-- since we can't declare 'only compatible with gateway', enumerate all the IDEs that we shouldn't be able to install into -->
+    <incompatible-with>com.intellij.modules.androidstudio</incompatible-with>
+    <incompatible-with>com.intellij.modules.idea</incompatible-with>
+    <incompatible-with>com.intellij.modules.java</incompatible-with>
+    <incompatible-with>com.intellij.modules.mps</incompatible-with>
+    <incompatible-with>com.intellij.modules.python</incompatible-with>
+    <incompatible-with>com.intellij.modules.ultimate</incompatible-with>
+    <incompatible-with>com.intellij.java</incompatible-with>
+</idea-plugin>

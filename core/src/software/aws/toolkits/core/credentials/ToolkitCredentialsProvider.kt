@@ -111,10 +111,12 @@ class ToolkitCredentialsProvider(
     override fun toString(): String = "${this::class.simpleName}(identifier='$identifier')"
 }
 
+// TODO: try to get rid of this because it's really annoying casting the delegate everywhere
 interface ToolkitBearerTokenProviderDelegate : SdkTokenProvider, ToolkitAuthenticationProvider
 
 class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegate) : SdkTokenProvider by delegate, ToolkitAuthenticationProvider by delegate {
     companion object {
+        // TODO: is there a better place for this
         fun ssoIdentifier(startUrl: String) = "sso;$startUrl"
 
         // TODO: For AWS Builder ID, we only have startUrl for now instead of each users' metadata data i.e. Email address

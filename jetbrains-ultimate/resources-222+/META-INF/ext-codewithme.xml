@@ -1,0 +1,22 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <depends optional="true" config-file="ext-codewithme-git.xml">Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <gateway.customization.metrics implementation="software.aws.toolkits.jetbrains.services.caws.RebuildDevfileRequiredNotification"/>
+        <gateway.customization.name implementation="software.aws.toolkits.jetbrains.services.caws.GatewayNameCustomizer"/>
+
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
+        <dynamicActionConfigurationCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.RebuildActionConfigurationCustomizer"/>
+        <gateway.customization.tab implementation="software.aws.toolkits.jetbrains.services.caws.UpdateWorkspaceSettingsTab"/>
+    </extensions>
+
+    <actions>
+        <action class="software.aws.toolkits.jetbrains.services.caws.RebuildAction" id="aws.caws.rebuildAction" />
+        <action class="software.aws.toolkits.jetbrains.services.caws.UpdateDevfileAction" id="aws.caws.updateDevfile" />
+    </actions>
+
+</idea-plugin>

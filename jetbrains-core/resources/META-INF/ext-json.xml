@@ -5,4 +5,10 @@
     <extensions defaultExtensionNs="com.intellij">
         <psi.referenceContributor implementation="software.aws.toolkits.jetbrains.services.federation.psireferences.JsonArnPsiReferenceContributor"/>
     </extensions>
+
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.ecs.TaskSchemaProviderFactory"/>
+        <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.caws.DevFileSchemaProviderFactory"/>
+        <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceSchemaProviderFactory"/>
+    </extensions>
 </idea-plugin>

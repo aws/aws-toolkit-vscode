@@ -1,0 +1,28 @@
+{
+    "environment": {
+        "instanceType": {
+            "dev.standard1.small": {
+                "vcpus" : 2,
+                "ram": { "value": 4, "unit": "gigabyte" },
+                "arch": "x86_64"
+            },
+            "dev.standard1.medium": {
+                "vcpus" : 4,
+                "ram": { "value": 8, "unit": "gigabyte" },
+                "arch": "x86_64"
+            },
+            "dev.standard1.large": {
+                "vcpus" : 8,
+                "ram": { "value": 16, "unit": "gigabyte" },
+                "arch": "x86_64"
+            },
+            "dev.standard1.xlarge": {
+                "vcpus" : 16,
+                "ram": { "value": 32, "unit": "gigabyte" },
+                "arch": "x86_64"
+            }
+        },
+        "persistentStorageSize": [ 16, 32, 64 ],
+        "defaultDevfileLocation": "https://registry.devfile.io/devfiles/nodejs"
+    }
+}

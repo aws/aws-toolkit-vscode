@@ -28,6 +28,7 @@ import com.intellij.ui.layout.PropertyBinding
 import com.intellij.ui.layout.Row
 import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.toBinding
+import com.intellij.ui.layout.withSelectedBinding
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
@@ -48,6 +49,7 @@ import java.awt.event.MouseEvent
 import java.awt.geom.RoundRectangle2D
 import java.text.SimpleDateFormat
 import javax.swing.AbstractButton
+import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JTable
@@ -332,3 +334,19 @@ fun <T : JComponent> CellBuilder<T>.toolTipText(@Nls text: String): CellBuilder<
 
     return this
 }
+
+fun JButton.setEnabledAndVisible(state: Boolean) {
+    isEnabled = state
+    isVisible = state
+}
+
+fun<T> CellBuilder<JBRadioButton>.enumBinding(property: KMutableProperty0<T>, buttonValue: T) = this
+    .withSelectedBinding(
+        PropertyBinding(
+            get = { property.get() == buttonValue },
+            set = { if (it) property.set(buttonValue) }
+        )
+    )
+    .applyToComponent {
+        isSelected = property.get() == buttonValue
+    }

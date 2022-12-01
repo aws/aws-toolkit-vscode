@@ -1,9 +1,17 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
+import software.aws.toolkits.gradle.intellij.IdeVersions
+import software.aws.toolkits.gradle.isCi
+import software.aws.toolkits.gradle.jvmTarget
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
+
+val toolkitVersion: String by project
+val ideProfile = IdeVersions.ideProfile(project)
 
 plugins {
     id("toolkit-kotlin-conventions")
@@ -44,10 +52,56 @@ val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
 
 tasks.jar {
     dependsOn(changelog)
-    archiveBaseName.set("aws-intellij-toolkit-core")
     from(changelog) {
         into("META-INF")
     }
+}
+
+val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXmlForGateway") {
+    pluginXmlFiles.set(tasks.patchPluginXml.map { it.pluginXmlFiles }.get())
+    destinationDir.set(project.buildDir.resolve("patchedPluginXmlFilesGW"))
+
+    val buildSuffix = if (!project.isCi()) "+${buildMetadata()}" else ""
+    version.set("GW-$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+}
+
+val gatewayArtifacts by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    // share same dependencies as default configuration
+    extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(KotlinPlatformType.Companion.attribute, KotlinPlatformType.jvm)
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, project.jvmTarget().get().majorVersion.toInt())
+        attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment.STANDARD_JVM))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named("gateway-instrumented-jar"))
+    }
+}
+
+val gatewayJar = tasks.create<Jar>("gatewayJar") {
+    archiveBaseName.set("aws-toolkit-jetbrains-IC-GW")
+    from(sourceSets.main.get().output) {
+        exclude("**/plugin.xml")
+        exclude("**/plugin-intellij.xml")
+        exclude("**/inactive")
+    }
+
+    from(gatewayPluginXml) {
+        into("META-INF")
+    }
+
+    val pluginGateway = sourceSets.main.get().resources.first { it.name == "plugin-gateway.xml" }
+    from(pluginGateway) {
+        into("META-INF")
+    }
+}
+
+artifacts {
+    add("gatewayArtifacts", gatewayJar)
 }
 
 val codewhispererReadmeAssets = tasks.register<Sync>("codewhispererReadmeAssets") {

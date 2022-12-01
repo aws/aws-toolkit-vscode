@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.explorer
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.text.DateTimeFormatManager
@@ -27,6 +28,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.Res
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.RunCodeScanNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.WhatIsCodeWhispererNode
 import software.aws.toolkits.resources.message
+import java.awt.event.MouseEvent
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
@@ -55,7 +57,7 @@ class CodeWhispererServiceNode(
     }
 
     init {
-        project.messageBus.connect().subscribe(
+        ApplicationManager.getApplication().messageBus.connect().subscribe(
             ToolkitConnectionManagerListener.TOPIC,
             object : ToolkitConnectionManagerListener {
                 override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
@@ -69,7 +71,7 @@ class CodeWhispererServiceNode(
         )
     }
 
-    override fun onDoubleClick() {}
+    override fun onDoubleClick(event: MouseEvent) {}
 
     override fun getChildren(): Collection<AbstractTreeNode<*>> {
         val manager = CodeWhispererExplorerActionManager.getInstance()

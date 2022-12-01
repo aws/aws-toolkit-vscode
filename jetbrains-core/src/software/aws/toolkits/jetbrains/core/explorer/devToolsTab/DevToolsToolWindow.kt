@@ -62,7 +62,7 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 val path = tree.getPathForLocation(event.x, event.y)
-                ((path?.lastPathComponent as? DefaultMutableTreeNode)?.userObject as? AbstractActionTreeNode)?.onDoubleClick()
+                ((path?.lastPathComponent as? DefaultMutableTreeNode)?.userObject as? AbstractActionTreeNode)?.onDoubleClick(event)
                 return true
             }
         }.installOn(tree)

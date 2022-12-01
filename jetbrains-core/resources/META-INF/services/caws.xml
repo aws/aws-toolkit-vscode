@@ -1,0 +1,30 @@
+<!-- Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <depends optional="true" config-file="services/caws-ext-git.xml">Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.envclient.CawsEnvironmentClient"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CawsSpaceTracker"/>
+
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.projectstate.CawsProjectSettings"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit">
+        <startupAuthFactory implementation="software.aws.toolkits.jetbrains.core.credentials.sono.SonoDiskProfileAuthFactory"/>
+    </extensions>
+
+    <actions>
+        <group id="aws.caws.devtools.actions.loggedin">
+            <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.CopyCawsRepositoryUrl" id="aws.caws.devtools.actions.copyCloneUrl"/>
+        </group>
+
+        <group id="aws.caws.devtools.actions.loggedout">
+            <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.SonoLogin" id="aws.caws.devtools.actions.login"/>
+            <action class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.CawsLearnMore" id="aws.caws.devtools.actions.learnMore"/>
+        </group>
+    </actions>
+</idea-plugin>

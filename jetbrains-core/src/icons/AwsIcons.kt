@@ -14,7 +14,11 @@ import javax.swing.Icon
 object AwsIcons {
     object Logos {
         @JvmField val AWS = load("/icons/logos/AWS.svg") // 13x13
+        @JvmField val AWS_SMILE_SMALL = load("/icons/logos/AWS_smile.svg") // 16x16
+        @JvmField val AWS_SMILE_LARGE = load("/icons/logos/AWS_smile_Large.svg") // 64x64
         @JvmField val CLOUD_FORMATION_TOOL = load("/icons/logos/CloudFormationTool.svg") // 13x13
+        @JvmField val CODE_CATALYST_MEDIUM = load("/icons/logos/Amazon_CodeCatalyst_Medium.svg") // 32x32
+        @JvmField val CODE_CATALYST_SMALL = load("/icons/logos/Amazon_CodeCatalyst_Small.svg") // 16x16
         @JvmField val EVENT_BRIDGE = load("/icons/logos/EventBridge.svg") // 13x13
     }
 

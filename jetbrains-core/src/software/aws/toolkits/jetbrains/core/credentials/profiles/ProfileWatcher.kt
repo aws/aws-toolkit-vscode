@@ -21,6 +21,7 @@ import java.nio.file.Paths
 
 interface ProfileWatcher {
     fun addListener(listener: () -> Unit)
+    fun forceRefresh() {}
 
     companion object {
         fun getInstance() = service<ProfileWatcher>()
@@ -77,6 +78,10 @@ class DefaultProfileWatcher : AsyncFileListener, Disposable, ProfileWatcher {
         } else {
             null
         }
+    }
+
+    override fun forceRefresh() {
+        listeners.forEach { it() }
     }
 
     override fun addListener(listener: () -> Unit) {

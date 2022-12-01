@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.AnimatedIcon
 import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.components.JBLabel
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import kotlinx.coroutines.launch
@@ -18,21 +19,26 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.utils.ui.selected
+import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JList
+import javax.swing.ListCellRenderer
 import javax.swing.MutableComboBoxModel
 import javax.swing.event.ListDataListener
 
-class AsyncComboBox<T>(
-    private val comboBoxModel: MutableComboBoxModel<T> = DefaultComboBoxModel(),
-    customizer: SimpleListCellRenderer.Customizer<in T>? = null
+class AsyncComboBox<T> private constructor(
+    private val comboBoxModel: MutableComboBoxModel<T>
 ) : ComboBox<T>(comboBoxModel), Disposable {
     private val loading = AtomicBoolean(false)
     private val scope = disposableCoroutineScope(this)
-    init {
+
+    constructor(
+        comboBoxModel: MutableComboBoxModel<T> = DefaultComboBoxModel(),
+        customizer: SimpleListCellRenderer.Customizer<in T>? = null
+    ) : this(comboBoxModel) {
         renderer = object : SimpleListCellRenderer<T>() {
             override fun getListCellRendererComponent(
                 list: JList<out T>?,
@@ -45,7 +51,7 @@ class AsyncComboBox<T>(
 
                 if (loading.get() && index == -1) {
                     component.icon = AnimatedIcon.Default.INSTANCE
-                    component.text = "Loading"
+                    component.text = message("loading_resource.loading")
                 }
 
                 return component
@@ -57,6 +63,26 @@ class AsyncComboBox<T>(
         }
     }
 
+    constructor(
+        comboBoxModel: MutableComboBoxModel<T> = DefaultComboBoxModel(),
+        customRenderer: ListCellRenderer<T>
+    ) : this(comboBoxModel) {
+        renderer = ListCellRenderer { list, value, index, selected, hasFocus ->
+            if (loading.get() && index == -1) {
+                val component = JBLabel(AnimatedIcon.Default.INSTANCE)
+                component.text = message("loading_resource.loading")
+
+                return@ListCellRenderer component
+            }
+
+            customRenderer.getListCellRendererComponent(list, value, index, selected, hasFocus)
+        }
+    }
+
+    init {
+        putClientProperty(AnimatedIcon.ANIMATION_IN_RENDERER_ALLOWED, true)
+    }
+
     private val reloadAlarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.SWING_THREAD, this)
     private var currentIndicator: ProgressIndicator? = null
 
@@ -66,7 +92,8 @@ class AsyncComboBox<T>(
         currentIndicator?.cancel()
         loading.set(true)
         removeAllItems()
-        val indicator = EmptyProgressIndicator(ModalityState.NON_MODAL).also {
+        repaint()
+        val indicator = EmptyProgressIndicator(ModalityState.any()).also {
             currentIndicator = it
         }
         // delay with magic number to debounce
@@ -76,7 +103,7 @@ class AsyncComboBox<T>(
                     {
                         scope.launch {
                             newModel.invoke(delegatedComboBoxModel(indicator))
-                            indicator.checkCanceled()
+                        }.invokeOnCompletion {
                             loading.set(false)
                             repaint()
                         }
@@ -84,7 +111,8 @@ class AsyncComboBox<T>(
                     indicator
                 )
             },
-            350
+            350,
+            ModalityState.any()
         )
     }
 

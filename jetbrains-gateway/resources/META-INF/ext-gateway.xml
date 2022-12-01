@@ -1,0 +1,17 @@
+<!-- Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
+    <depends>org.jetbrains.plugins.terminal</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.gateway.connection.SshAgentService" />
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.gateway.connection.ThinClientTrackerService" />
+    </extensions>
+
+    <extensions defaultExtensionNs="com.jetbrains">
+        <gatewayConnector implementation="software.aws.toolkits.jetbrains.gateway.CawsConnector" />
+        <gatewayConnectionProvider implementation="software.aws.toolkits.jetbrains.gateway.CawsConnectionProvider" />
+    </extensions>
+</idea-plugin>

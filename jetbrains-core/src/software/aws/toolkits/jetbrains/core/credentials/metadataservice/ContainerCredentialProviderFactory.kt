@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.metadataservice
 
+import com.intellij.openapi.extensions.ExtensionNotApplicableException
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.core.SdkSystemSetting
@@ -15,19 +16,20 @@ import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 
 class ContainerCredentialProviderFactory : CredentialProviderFactory {
+    init {
+        if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) {
+            throw ExtensionNotApplicableException.INSTANCE
+        }
+    }
+
     override val id = "ContainerCredentialProviderFactory"
     override val credentialSourceId: CredentialSourceId = CredentialSourceId.Ecs
 
-    private val containerCredIdentifier: CredentialIdentifier by lazy {
-        object : CredentialIdentifier {
-            override val id: String = "containerRoleCredential"
-            override val displayName = "ecs:containerRole"
-            override val factoryId = FACTORY_ID
-            override val credentialType = CredentialType.EcsMetadata
-            override val defaultRegionId = System.getenv("AWS_REGION")
-        }
+    private val containerCredIdentifier by lazy {
+        credentialId()
     }
 
     override fun setUp(credentialLoadCallback: CredentialsChangeListener) {
@@ -57,5 +59,13 @@ class ContainerCredentialProviderFactory : CredentialProviderFactory {
 
     companion object {
         const val FACTORY_ID = "ContainerCredentialProviderFactory"
+
+        fun credentialId() = object : CredentialIdentifier {
+            override val id: String = "containerRoleCredential"
+            override val displayName = "ecs:containerRole"
+            override val factoryId = FACTORY_ID
+            override val credentialType = CredentialType.EcsMetadata
+            override val defaultRegionId = System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())
+        }
     }
 }

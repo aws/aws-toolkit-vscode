@@ -11,7 +11,7 @@ interface ToolkitConnectionManagerListener : EventListener {
     fun activeConnectionChanged(newConnection: ToolkitConnection?)
 
     companion object {
-        @Topic.ProjectLevel
+        @Topic.AppLevel
         val TOPIC = Topic.create("ToolkitConnectionManagerListener active connection change", ToolkitConnectionManagerListener::class.java)
     }
 }

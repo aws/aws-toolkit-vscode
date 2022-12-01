@@ -6,15 +6,15 @@ package software.aws.toolkits.jetbrains.utils.execution.steps
 /**
  * This is the hidden step that is the root of the tree of [Step] in the workflow. The children [topLevelSteps] are ran sequentially.
  */
-open class StepWorkflow(private val topLevelSteps: List<Step>) : Step() {
+open class StepWorkflow(protected val topLevelSteps: List<Step>) : Step() {
     constructor(vararg topLevelSteps: Step) : this(topLevelSteps.toList())
 
     override val stepName = "StepWorkflow"
     override val hidden = true
 
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         topLevelSteps.forEach {
-            it.run(context, messageEmitter)
+            it.run(context, stepEmitter)
         }
     }
 }
