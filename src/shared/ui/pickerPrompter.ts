@@ -105,7 +105,7 @@ export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'but
 
 export const CUSTOM_USER_INPUT = Symbol()
 
-function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
+export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
 }
 
@@ -329,7 +329,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         // selectedItems will change as options are clicked (and not when accepting).
         this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
 
-        if (this.quickPick.activeItems.length === 0 && this.quickPick.items.length > 0) {
+        if (!items.length || (this.quickPick.activeItems.length === 0 && this.quickPick.items.length > 0)) {
             this.quickPick.activeItems = [this.quickPick.items[0]]
         }
     }
@@ -368,7 +368,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                 picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
             }
 
-            this.selectItems(...recent)
+            this.selectItems(...recent.filter(i => !i.invalidSelection))
         }
     }
 

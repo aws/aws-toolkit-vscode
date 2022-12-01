@@ -75,7 +75,11 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
  * @param confirmBefore Prompt before starting install?
  * @returns CLI Path
  */
-export async function installCli(cli: AwsClis, confirm: boolean, window: Window = Window.vscode()): Promise<string> {
+export async function installCli(
+    cli: AwsClis,
+    confirm: boolean,
+    window: Window = Window.vscode()
+): Promise<string | never> {
     const cliToInstall = AWS_CLIS[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -319,12 +323,11 @@ export async function getOrInstallCli(
     confirm: boolean,
     window: Window = Window.vscode()
 ): Promise<string> {
-    let cliCommand: string | undefined
-    if (!DevSettings.instance.get('forceInstallTools', false)) {
-        cliCommand = await getCliCommand(AWS_CLIS[cli])
+    if (DevSettings.instance.get('forceInstallTools', false)) {
+        return installCli(cli, confirm, window)
+    } else {
+        return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)
     }
-
-    return cliCommand ?? (await installCli(cli, confirm, window))
 }
 
 // TODO: uncomment for AWS CLI installation
