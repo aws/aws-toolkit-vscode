@@ -100,15 +100,15 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        const isNewUser = conn === undefined
 
-        if (conn === undefined || !isValidCodeCatalystConnection(conn)) {
-            const isNewUser = conn === undefined
+        if (isNewUser || !isValidCodeCatalystConnection(conn)) {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'Create' : 'Upgrade' } as ConnectionFlowEvent)
 
             const message = isNewUser
-                ? 'CodeCatalyst requires an AWS Builder ID connection. Set one up now?'
-                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. You will need to reauthenticate in the browser. Reauthenticate now?'
+                ? 'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login. Create one now?'
+                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login. Upgrade now?'
             const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
             if (resp !== localizedText.yes) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
