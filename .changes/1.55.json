@@ -1,0 +1,14 @@
+{
+  "date" : "2022-12-01",
+  "version" : "1.55",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon CodeCatalyst: Connect JetBrains to your remote Dev Environments."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeCatalyst: Clone your repositories to your local machine."
+  }, {
+    "type" : "feature",
+    "description" : "Amazon CodeCatalyst: Connect using your AWS Builder ID."
+  } ]
+}

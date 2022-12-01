@@ -1,3 +1,8 @@
+# _1.55_ (2022-12-01)
+- **(Feature)** Amazon CodeCatalyst: Connect JetBrains to your remote Dev Environments.
+- **(Feature)** Amazon CodeCatalyst: Clone your repositories to your local machine.
+- **(Feature)** Amazon CodeCatalyst: Connect using your AWS Builder ID.
+
 # _1.54_ (2022-11-28)
 - **(Feature)** Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities.
 - **(Feature)** Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block.
