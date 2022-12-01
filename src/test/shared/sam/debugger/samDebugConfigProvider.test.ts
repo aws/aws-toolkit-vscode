@@ -142,18 +142,11 @@ describe('SamDebugConfigurationProvider', async function () {
     const fakeCredentials: Credentials = {
         accessKeyId: 'fake-access-id',
         secretAccessKey: 'fake-secret',
-        sessionToken: 'fake-session',
     }
 
     beforeEach(async function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
-        fakeContext.awsContext.setCredentials({
-            accountId: '9888888',
-            credentials: fakeCredentials,
-            credentialsId: 'profile:fake',
-            defaultRegion: 'us-west-2',
-        })
-        debugConfigProvider = new SamDebugConfigProvider(fakeContext)
+        debugConfigProvider = new SamDebugConfigProvider(fakeContext, await testutil.createTestAuth())
         sandbox = sinon.createSandbox()
 
         fakeWorkspaceFolder = await testutil.createTestWorkspaceFolder()
@@ -347,10 +340,13 @@ describe('SamDebugConfigurationProvider', async function () {
             )
             getCredentialsProviderStub.resolves(credentialsProvider)
             sandbox.stub(mockCredentialsStore, 'upsertCredentials').throws()
-            const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
-                ...fakeContext,
-                credentialsStore: mockCredentialsStore,
-            })
+            const debugConfigProviderMockCredentials = new SamDebugConfigProvider(
+                {
+                    ...fakeContext,
+                    credentialsStore: mockCredentialsStore,
+                },
+                await testutil.createTestAuth()
+            )
 
             await assert.rejects(() =>
                 debugConfigProviderMockCredentials.makeConfig(config.folder, {
@@ -2831,10 +2827,13 @@ describe('SamDebugConfigurationProvider', async function () {
                 credentials: configCredentials,
                 credentialsHashCode: 'unimportant',
             })
-            const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
-                ...fakeContext,
-                credentialsStore: mockCredentialsStore,
-            })
+            const debugConfigProviderMockCredentials = new SamDebugConfigProvider(
+                {
+                    ...fakeContext,
+                    credentialsStore: mockCredentialsStore,
+                },
+                await testutil.createTestAuth()
+            )
 
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')

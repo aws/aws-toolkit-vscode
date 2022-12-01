@@ -66,6 +66,6 @@ export class DefaultAppRunnerClient {
     }
 
     protected async createSdkClient(): Promise<AppRunner> {
-        return await globals.sdkClientBuilder.createAwsService(AppRunner, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(AppRunner, { region: this.regionCode })
     }
 }

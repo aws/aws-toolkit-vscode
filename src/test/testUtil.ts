@@ -8,6 +8,7 @@ import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
+import * as sinon from 'sinon'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
@@ -15,6 +16,12 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
+import { Auth, ProfileStore } from '../credentials/auth'
+import { FakeMemento } from './fakeExtensionContext'
+import { DEFAULT_TEST_REGION_CODE } from './shared/regions/testUtil'
+import { DefaultStsClient } from '../shared/clients/stsClient'
+import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
+import { CredentialsStore } from '../credentials/credentialsStore'
 
 const testTempDirs: string[] = []
 
@@ -308,4 +315,48 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
             vscode.Disposable.from(...listeners).dispose()
         },
     }
+}
+
+/**
+ * Creates an {@link Auth} instance with a single connection: `profile:qwerty`
+ *
+ * The connection is already logged-in with an account ID of `123456789012`.
+ */
+export async function createTestAuth(): Promise<Auth> {
+    const store = new ProfileStore(new FakeMemento())
+    await store.addProfile('profile:qwerty', {
+        type: 'iam',
+        name: 'qwerty',
+        region: DEFAULT_TEST_REGION_CODE,
+    })
+
+    const stub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity').resolves({
+        Account: '123456789012',
+        Arn: 'arn',
+        UserId: 'user',
+    })
+
+    const manager = new CredentialsProviderManager()
+    manager.addProvider({
+        getCredentials: async () => ({
+            accessKeyId: 'fake-access-id',
+            secretAccessKey: 'fake-secret',
+        }),
+        getCredentialsId: () => ({
+            credentialSource: 'profile',
+            credentialTypeId: 'qwerty',
+        }),
+        canAutoConnect: async () => true,
+        getHashCode: () => '1',
+        isAvailable: async () => true,
+        getDefaultRegion: () => DEFAULT_TEST_REGION_CODE,
+        getProviderType: () => 'profile',
+        getTelemetryType: () => 'staticProfile',
+    })
+
+    const auth = new Auth(store, undefined, manager, new CredentialsStore())
+    await auth.useConnection({ id: 'profile:qwerty' })
+    stub.restore()
+
+    return auth
 }

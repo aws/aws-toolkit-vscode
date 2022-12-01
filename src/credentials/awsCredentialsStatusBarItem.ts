@@ -7,17 +7,13 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { DevSettings } from '../shared/settings'
 import { Auth, login } from './auth'
 
 const STATUSBAR_PRIORITY = 1
 
-export async function initializeAwsCredentialsStatusBarItem(
-    awsContext: AwsContext,
-    context: vscode.ExtensionContext
-): Promise<void> {
+export async function initializeAwsCredentialsStatusBarItem(context: vscode.ExtensionContext): Promise<void> {
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUSBAR_PRIORITY)
     statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()

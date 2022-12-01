@@ -19,8 +19,6 @@ import {
     SchemaTemplateParameters,
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
-import { AwsContext } from '../../shared/awsContext'
-
 import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -131,7 +129,6 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
-    const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'unknown'
@@ -144,15 +141,11 @@ export async function createNewSamApplication(
     try {
         await validateSamCli(samCliContext.validator)
 
-        const credentials = await awsContext.getCredentials()
         samVersion = await getSamCliVersion(samCliContext)
         const schemaRegions = regionProvider.getRegions().filter(r => regionProvider.isServiceInRegion('schemas', r.id))
-        const defaultRegion = awsContext.getCredentialDefaultRegion()
 
         const config = await new CreateNewSamAppWizard({
-            credentials,
             schemaRegions,
-            defaultRegion,
             samCliVersion: samVersion,
         }).run()
 

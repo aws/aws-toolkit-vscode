@@ -6,7 +6,6 @@
 import { load } from 'js-yaml'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { AwsContext } from '../../shared/awsContext'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { getLogger, Logger } from '../../shared/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -15,11 +14,7 @@ import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
 import { PublishStateMachineWizard, PublishStateMachineWizardState } from '../wizards/publishStateMachineWizard'
 const localize = nls.loadMessageBundle()
 
-export async function publishStateMachine(
-    awsContext: AwsContext,
-    outputChannel: vscode.OutputChannel,
-    region: string | undefined
-) {
+export async function publishStateMachine(outputChannel: vscode.OutputChannel, region: string | undefined) {
     const logger: Logger = getLogger()
 
     const textDocument = vscode.window.activeTextEditor?.document

@@ -7,7 +7,6 @@ import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import { ExtensionContext } from 'vscode'
-import { AwsContext } from '../awsContext'
 import { isReleaseVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
@@ -21,6 +20,7 @@ import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId } from './util'
 import { telemetry } from './telemetry'
+import { Auth } from '../../credentials/auth'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -48,9 +48,9 @@ export class DefaultTelemetryService {
 
     public constructor(
         private readonly context: ExtensionContext,
-        private readonly awsContext: AwsContext,
         private readonly computeRegion?: string,
-        publisher?: TelemetryPublisher
+        publisher?: TelemetryPublisher,
+        private readonly auth = Auth.instance
     ) {
         const persistPath = context.globalStorageUri.fsPath
         this.persistFilePath = path.join(persistPath, 'telemetryCache')
@@ -136,10 +136,9 @@ export class DefaultTelemetryService {
         return this.publisher.postFeedback(feedback)
     }
 
-    public record(event: MetricDatum, awsContext?: AwsContext): void {
+    public record(event: MetricDatum): void {
         if (this.telemetryEnabled) {
-            const actualAwsContext = awsContext || this.awsContext
-            const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
+            const eventWithCommonMetadata = this.injectCommonMetadata(event)
             this._eventQueue.push(eventWithCommonMetadata)
             this._telemetryLogger.log(eventWithCommonMetadata)
         }
@@ -213,13 +212,13 @@ export class DefaultTelemetryService {
         }
     }
 
-    private injectCommonMetadata(event: MetricDatum, awsContext: AwsContext): MetricDatum {
+    private injectCommonMetadata(event: MetricDatum): MetricDatum {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
         if (event.MetricName === 'session_end' || event.MetricName === 'session_start') {
             accountValue = AccountStatus.NotApplicable
         } else {
-            const account = awsContext.getCredentialAccountId()
+            const account = this.auth.getAccountId()
             if (account) {
                 const accountIdRegex = /[0-9]{12}/
                 if (accountIdRegex.test(account)) {

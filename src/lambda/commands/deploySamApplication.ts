@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
-import { AwsContext } from '../../shared/awsContext'
 import globals from '../../shared/extensionGlobals'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
@@ -25,6 +24,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { IamConnection } from '../../credentials/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -54,7 +54,7 @@ export async function deploySamApplication(
         samDeployWizard: () => Promise<SamDeployWizardResponse | undefined>
     },
     {
-        awsContext,
+        connection,
         settings,
         window = getDefaultWindowFunctions(),
         refreshFn = () => {
@@ -62,7 +62,7 @@ export async function deploySamApplication(
             vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         },
     }: {
-        awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
+        connection: IamConnection
         settings: SamCliSettings
         window?: WindowFunctions
         refreshFn?: () => void
@@ -72,7 +72,7 @@ export async function deploySamApplication(
     let samVersion: string | undefined
     let deployFolder: string | undefined
     try {
-        const credentials = await awsContext.getCredentials()
+        const credentials = await connection.getCredentials()
         if (!credentials) {
             throw new Error('No AWS profile selected')
         }
@@ -121,7 +121,7 @@ export async function deploySamApplication(
         refreshFn()
 
         // successful deploy: retain S3 bucket for quick future access
-        const profile = awsContext.getCredentialProfileName()
+        const profile = connection.id
         if (profile) {
             await settings.updateSavedBuckets(profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
         } else {

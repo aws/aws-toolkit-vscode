@@ -27,7 +27,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
-import { Auth, AuthNode } from '../credentials/auth'
+import { Auth, AuthNode, isIamConnection } from '../credentials/auth'
 import { isCloud9 } from '../shared/extensionUtilities'
 
 /**
@@ -52,16 +52,12 @@ export async function activate(args: {
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
     args.context.extensionContext.subscriptions.push(
-        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
-            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
+        Auth.instance.onDidChangeActiveConnection(async conn => {
+            getLogger().verbose(`Credentials changed (${conn?.label}), updating AWS Explorer`)
             awsExplorer.refresh()
 
-            if (credentialsChangedEvent.profileName) {
-                await checkExplorerForDefaultRegion(
-                    credentialsChangedEvent.profileName,
-                    args.regionProvider,
-                    awsExplorer
-                )
+            if (isIamConnection(conn)) {
+                await checkExplorerForDefaultRegion(conn.label, args.regionProvider, awsExplorer)
             }
         })
     )

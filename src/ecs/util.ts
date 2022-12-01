@@ -76,7 +76,7 @@ export async function prepareCommand(
 
     async function terminateSession() {
         const sessionId = session!.sessionId!
-        const ssm = await globals.sdkClientBuilder.createAwsService(SSM, undefined, client.regionCode)
+        const ssm = await globals.sdkClientBuilder.createAwsService(SSM, { region: client.regionCode })
         ssm.terminateSession({ SessionId: sessionId })
             .promise()
             .catch(err => {

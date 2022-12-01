@@ -48,6 +48,6 @@ export class DefaultCloudWatchLogsClient {
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {
-        return await globals.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudWatchLogs, { region: this.regionCode })
     }
 }

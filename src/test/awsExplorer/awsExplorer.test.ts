@@ -15,7 +15,7 @@ import {
     DEFAULT_TEST_REGION_CODE,
     DEFAULT_TEST_REGION_NAME,
 } from '../shared/regions/testUtil'
-import { makeFakeAwsContextWithPlaceholderIds } from '../utilities/fakeAwsContext'
+import { createTestAuth } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
 describe('AwsExplorer', function () {
@@ -30,22 +30,19 @@ describe('AwsExplorer', function () {
     })
 
     it('displays region nodes with user-friendly region names', async function () {
-        // TODO: add test util to set-up `Auth` in a certain way
-        this.skip()
-
-        const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
-        const regionProvider = createTestRegionProvider({ awsContext, globalState: new FakeMemento() })
+        const auth = await createTestAuth()
+        const regionProvider = createTestRegionProvider({ auth, globalState: new FakeMemento() })
         await regionProvider.updateExplorerRegions([DEFAULT_TEST_REGION_CODE])
 
         const fakeContext = await FakeExtensionContext.create()
-        const awsExplorer = new AwsExplorer(fakeContext, regionProvider)
+        const awsExplorer = new AwsExplorer(fakeContext, regionProvider, auth)
 
         const treeNodes = await awsExplorer.getChildren()
         assert.ok(treeNodes)
-        assert.strictEqual(treeNodes.length, 1, 'Expected Explorer to have one node')
+        assert.strictEqual(treeNodes.length, 2, 'Expected Explorer to have two nodes')
 
-        assert.ok(treeNodes[0] instanceof RegionNode, 'Expected Explorer node to be RegionNode')
-        const regionNode = treeNodes[0] as RegionNode
+        assert.ok(treeNodes[1] instanceof RegionNode, 'Expected second node to be RegionNode')
+        const regionNode = treeNodes[1] as RegionNode
         assert.strictEqual(regionNode.regionCode, DEFAULT_TEST_REGION_CODE)
         assert.strictEqual(regionNode.regionName, DEFAULT_TEST_REGION_NAME)
     })

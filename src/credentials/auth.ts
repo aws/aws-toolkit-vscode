@@ -34,6 +34,7 @@ import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { Identity, validateConnection } from './identity'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoAccountAccessScopes = ['sso:account:access']
@@ -94,6 +95,7 @@ export interface SsoProfile {
 export interface IamProfile {
     readonly type: 'iam'
     readonly name: string
+    readonly region?: string
 }
 
 // Placeholder type.
@@ -156,6 +158,8 @@ interface ProfileMetadata {
      * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
      */
     readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
+
+    readonly identity?: Identity
 }
 
 // Difference between "Connection" vs. "Profile":
@@ -243,15 +247,20 @@ export class ProfileStore {
 }
 
 async function loadIamProfilesIntoStore(store: ProfileStore, manager: CredentialsProviderManager) {
-    const providers = await manager.getCredentialProviderNames()
+    const providers = await manager.getAllCredentialsProviders()
     for (const [id, profile] of store.listProfiles()) {
-        if (profile.type === 'iam' && providers[id] === undefined) {
+        if (profile.type === 'iam' && !providers.find(p => id === asString(p.getCredentialsId()))) {
             await store.deleteProfile(id)
         }
     }
-    for (const id of Object.keys(providers)) {
+    for (const provider of providers) {
+        const id = asString(provider.getCredentialsId())
         if (store.getProfile(id) === undefined) {
-            await store.addProfile(id, { type: 'iam', name: providers[id].credentialTypeId })
+            await store.addProfile(id, {
+                type: 'iam',
+                region: provider.getDefaultRegion(),
+                name: provider.getCredentialsId().credentialTypeId,
+            })
         }
     }
 }
@@ -298,7 +307,8 @@ export class Auth implements AuthService, ConnectionManager {
     public constructor(
         private readonly store: ProfileStore,
         private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider),
-        private readonly iamProfileProvider = CredentialsProviderManager.getInstance()
+        private readonly iamProfileProvider = CredentialsProviderManager.getInstance(),
+        private readonly credentialsStore = globals.credentialsStore
     ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined
@@ -460,7 +470,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return provider.invalidate()
         } else if (profile.type === 'iam') {
-            globals.loginManager.store.invalidateCredentials(fromString(id))
+            this.credentialsStore.invalidateCredentials(fromString(id))
         }
     }
 
@@ -503,6 +513,32 @@ export class Auth implements AuthService, ConnectionManager {
             } catch {
                 return this.updateConnectionState(id, 'invalid')
             }
+        }
+    }
+
+    public getDefaultRegion(conn: Pick<Connection, 'id'> | undefined = this.activeConnection): string | undefined {
+        if (!conn) {
+            return
+        }
+
+        const profile = this.store.getProfileOrThrow(conn.id)
+        if (profile.type === 'sso') {
+            return profile.ssoRegion
+        } else if (profile.type === 'iam') {
+            return profile.region
+        }
+    }
+
+    public getAccountId(conn: Pick<Connection, 'id'> | undefined = this.activeConnection): string | undefined {
+        if (!conn) {
+            return
+        }
+
+        const profile = this.store.getProfileOrThrow(conn.id)
+        const identity = profile.metadata.identity
+
+        if (identity?.source === 'sts') {
+            return identity.Account
         }
     }
 
@@ -575,15 +611,16 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
-        globals.loginManager.store.invalidateCredentials(providerId)
-        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
-        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
+        this.credentialsStore.invalidateCredentials(providerId)
+        const { credentials } = await this.credentialsStore.upsertCredentials(providerId, provider)
+        const identity = await validateConnection(credentials, provider.getDefaultRegion())
+        await this.store.updateProfile(asString(providerId), { identity })
 
         return credentials
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
-        const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
+        const creds = await this.credentialsStore.getCredentials(provider.getCredentialsId())
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }

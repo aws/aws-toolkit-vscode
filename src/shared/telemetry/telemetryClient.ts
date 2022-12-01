@@ -13,7 +13,6 @@ import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { MetricDatum } from './clienttelemetry'
 import apiConfig = require('./service-2.json')
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -139,19 +138,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            (await globals.sdkClientBuilder.createAwsService(
-                Service,
-                {
-                    // apiConfig is internal and not in the TS declaration file
-                    apiConfig: apiConfig,
-                    region: region,
-                    credentials: credentials,
-                    correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.config.endpoint,
-                } as ServiceConfigurationOptions,
-                undefined,
-                false
-            )) as ClientTelemetry
+            (await globals.sdkClientBuilder.createAwsService(Service, {
+                apiConfig: apiConfig,
+                region: region,
+                credentials: credentials,
+                correctClockSkew: true,
+                shouldSendUserAgent: false,
+                endpoint: DefaultTelemetryClient.config.endpoint,
+            })) as ClientTelemetry
         )
     }
 }

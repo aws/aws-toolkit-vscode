@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
 import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../credentials/credentialsStore'
@@ -27,7 +26,6 @@ export const VSCODE_EXTENSION_ID = {
  */
 export interface ExtContext {
     extensionContext: vscode.ExtensionContext
-    awsContext: AwsContext
     samCliContext: () => SamCliContext
     regionProvider: RegionProvider
     outputChannel: vscode.OutputChannel

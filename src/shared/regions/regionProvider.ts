@@ -14,8 +14,8 @@ import { Endpoints, Region } from './endpoints'
 import { EndpointsProvider } from './endpointsProvider'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { regionSettingKey } from '../constants'
-import { AwsContext } from '../awsContext'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { Auth } from '../../credentials/auth'
 
 export const DEFAULT_REGION = 'us-east-1'
 export const DEFAULT_PARTITION = 'aws'
@@ -38,13 +38,13 @@ export class RegionProvider {
     public constructor(
         endpoints: Endpoints = { partitions: [] },
         private readonly globalState = globals.context.globalState,
-        private readonly awsContext: Pick<AwsContext, 'getCredentialDefaultRegion'> = globals.awsContext
+        private readonly auth: Pick<Auth, 'getDefaultRegion'> = Auth.instance
     ) {
         this.loadFromEndpoints(endpoints)
     }
 
     public get defaultRegionId() {
-        return this.awsContext.getCredentialDefaultRegion() ?? DEFAULT_REGION
+        return this.auth.getDefaultRegion() ?? DEFAULT_REGION
     }
 
     public get defaultPartitionId() {

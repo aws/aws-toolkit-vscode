@@ -6,18 +6,18 @@
 import * as assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
-import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
+import { AWSClientBuilder } from '../../shared/awsClientBuilder'
 import { DevSettings } from '../../shared/settings'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
-import { FakeAwsContext } from '../utilities/fakeAwsContext'
+import { createTestAuth } from '../testUtil'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 
-describe('DefaultAwsClientBuilder', function () {
+describe('AwsClientBuilder', function () {
     let builder: AWSClientBuilder
 
-    beforeEach(function () {
-        builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+    beforeEach(async function () {
+        builder = new AWSClientBuilder(await createTestAuth())
     })
 
     describe('createAndConfigureSdkClient', function () {
@@ -56,9 +56,7 @@ describe('DefaultAwsClientBuilder', function () {
                 {
                     customUserAgent: 'CUSTOM USER AGENT',
                     apiConfig: { metadata: { serviceId: 'foo' } },
-                } as any,
-                undefined,
-                undefined,
+                },
                 new DevSettings(settings)
             )
 
@@ -74,9 +72,7 @@ describe('DefaultAwsClientBuilder', function () {
                     customUserAgent: 'CUSTOM USER AGENT',
                     apiConfig: { metadata: { serviceId: 'foo' } },
                     endpoint: 'http://example.com',
-                } as any,
-                undefined,
-                undefined,
+                },
                 new DevSettings(settings)
             )
 

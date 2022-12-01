@@ -10,8 +10,8 @@ import { asString, CredentialsProvider, CredentialsId } from './providers/creden
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export interface CachedCredentials {
-    credentials: AWS.Credentials
-    credentialsHashCode: string
+    readonly credentials: AWS.Credentials
+    readonly credentialsHashCode: string
 }
 
 /**

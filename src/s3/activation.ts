@@ -60,9 +60,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             { id: 'aws.s3.uploadFile', autoconnect: true },
             async (node?: S3BucketNode | S3FolderNode) => {
                 if (!node) {
-                    const awsContext = ctx.awsContext
-                    const regionCode = awsContext.getCredentialDefaultRegion()
-                    const s3Client = new DefaultS3Client(regionCode)
+                    const s3Client = new DefaultS3Client(ctx.regionProvider.defaultRegionId)
                     const document = vscode.window.activeTextEditor?.document.uri
                     await uploadFileCommand(s3Client, document)
                 } else {

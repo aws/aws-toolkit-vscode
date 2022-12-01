@@ -10,7 +10,6 @@ import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { DefaultTelemetryService } from '../telemetry/telemetryService'
 import { telemetry } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
@@ -316,7 +315,7 @@ const emitTokens: Record<string, number> = {}
 function startRecordCommand(id: string): number {
     const currentTime = Date.now()
     const previousEmit = emitInfo.get(id)
-    const threshold = isAutomation() ? 0 : DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
+    const threshold = isAutomation() ? 0 : 1000 * 60 * 5 // 5 minutes in milliseconds
     const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
 
     if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {

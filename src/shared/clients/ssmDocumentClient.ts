@@ -110,6 +110,6 @@ export class DefaultSsmDocumentClient {
     }
 
     private async createSdkClient(): Promise<SSM> {
-        return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(SSM, { region: this.regionCode })
     }
 }

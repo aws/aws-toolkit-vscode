@@ -42,6 +42,7 @@ import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { Auth, isIamConnection } from '../../credentials/auth'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -770,8 +771,9 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly S3_BUCKET: WizardStep = async step => {
-        const profile = this.context.extContext.awsContext.getCredentialProfileName() || ''
-        const accountId = this.context.extContext.awsContext.getCredentialAccountId() || ''
+        const conn = Auth.instance.activeConnection
+        const profile = isIamConnection(conn) ? conn.id : ''
+        const accountId = Auth.instance.getAccountId() ?? ''
         const response = await this.context.promptUserForS3Bucket(
             step,
             this.response.region!,
