@@ -1,3 +1,9 @@
+## 1.57.0 2022-12-01
+
+- **Feature** Amazon CodeCatalyst: Connect VS Code to your remote Dev Environments.
+- **Feature** Amazon CodeCatalyst: Clone your repositories to your local workspace.
+- **Feature** Amazon CodeCatalyst: Connect using your AWS Builder ID.
+
 ## 1.56.0 2022-11-28
 
 - **Feature** Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started. 

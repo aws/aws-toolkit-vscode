@@ -35,8 +35,13 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Identity, validateConnection } from './identity'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { getConfigFilename } from './sharedCredentials'
+import { authHelpUrl } from '../shared/constants'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const ssoScope = 'sso:account:access'
+export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
 
@@ -45,7 +50,7 @@ export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string
         type: 'sso',
         ssoRegion: 'us-east-1',
         startUrl: builderIdStartUrl,
-        scopes: codewhispererScopes,
+        scopes: [...codecatalystScopes, ...codewhispererScopes],
     }
 }
 
@@ -56,6 +61,10 @@ export function createSsoProfile(startUrl: string, region = 'us-east-1'): SsoPro
         ssoRegion: region,
         scopes: codewhispererScopes,
     }
+}
+
+export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
+    return scopes?.every(s => target.scopes?.includes(s))
 }
 
 export interface SsoConnection {
@@ -348,6 +357,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
@@ -433,7 +444,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (connection.id === this.#activeConnection?.id) {
             await this.logout()
         } else {
-            this.invalidateConnection(connection.id)
+            await this.invalidateConnection(connection.id)
         }
 
         await this.store.deleteProfile(connection.id)
@@ -551,10 +562,34 @@ export class Auth implements AuthService, ConnectionManager {
         return provider
     }
 
+    // XXX: always read from the same location in a dev environment
+    private getSsoSessionName = once(() => {
+        try {
+            const configFile = getConfigFilename()
+            const contents: string = require('fs').readFileSync(configFile, 'utf-8')
+            const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
+            if (!identifier) {
+                throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
+            }
+
+            return identifier
+        } catch (err) {
+            const defaultName = 'codecatalyst'
+            getLogger().warn(`auth: unable to get an sso session name, defaulting to "${defaultName}": %s`, err)
+
+            return defaultName
+        }
+    })
+
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+        const shouldUseSoftwareStatement =
+            getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
+
+        const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
+
         return this.createTokenProvider(
             {
-                identifier: id,
+                identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
                 scopes: profile.scopes,
                 region: profile.ssoRegion,
@@ -672,6 +707,16 @@ export class Auth implements AuthService, ConnectionManager {
     public readonly tryAutoConnect = once(async () => {
         if (this.activeConnection !== undefined) {
             return
+        }
+
+        // Use the environment token if available
+        if (getCodeCatalystDevEnvId() !== undefined) {
+            const profile = createBuilderIdProfile()
+            const key = getSsoProfileKey(profile)
+            if (this.store.getProfile(key) === undefined) {
+                await this.store.addProfile(key, profile)
+            }
+            await this.store.setCurrentProfileId(key)
         }
 
         const conn = await this.restorePreviousSession()
@@ -847,6 +892,7 @@ export const createIamItem = () =>
     ({
         label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
 
@@ -870,7 +916,7 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
                 a.authority.toLowerCase() === b.authority.toLowerCase()
             const oldConn = existingConnections.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
 
-            if (oldConn && (ignoreScopes || requiredScopes?.every(s => oldConn.scopes?.includes(s)))) {
+            if (oldConn && (ignoreScopes || hasScopes(oldConn, requiredScopes))) {
                 return 'A connection for this start URL already exists. Sign out before creating a new one.'
             }
         } catch (err) {
@@ -886,13 +932,42 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
     })
 }
 
-// TODO: add specific documentation URL
-Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
+export async function createBuilderIdConnection(auth: Auth) {
+    const newProfile = createBuilderIdProfile()
+    const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
+    if (existingConn && !hasScopes(existingConn, newProfile.scopes)) {
+        return migrateBuilderId(auth, existingConn, newProfile)
+    }
+
+    return existingConn ?? (await auth.createConnection(newProfile))
+}
+
+Commands.register('aws.auth.help', async () => {
+    vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
+    telemetry.aws_help.emit()
+})
 Commands.register('aws.auth.signout', () => {
     telemetry.ui_click.emit({ elementId: 'devtools_signout' })
 
     return signout(Auth.instance)
 })
+
+// XXX: right now users can only have 1 builder id connection, so de-dupe
+// This logic can be removed or re-purposed once we have access to identities
+async function migrateBuilderId(auth: Auth, existingConn: SsoConnection, newProfile: SsoProfile) {
+    const newConn = await auth.createConnection(newProfile)
+    const shouldUseConnection = auth.activeConnection?.id === existingConn.id
+    await auth.deleteConnection(existingConn).catch(err => {
+        getLogger().warn(`auth: failed to remove old connection "${existingConn.id}": %s`, err)
+    })
+
+    if (shouldUseConnection) {
+        return auth.useConnection(newConn)
+    }
+
+    return newConn
+}
+
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const c9IamItem = createIamItem()
     c9IamItem.detail =
@@ -925,11 +1000,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
-            const existingConn = (await Auth.instance.listConnections()).find(isBuilderIdConnection)
-            // Right now users can only have 1 builder id connection
-            const conn = existingConn ?? (await Auth.instance.createConnection(createBuilderIdProfile()))
-
-            return Auth.instance.useConnection(conn)
+            return createBuilderIdConnection(Auth.instance)
         }
     }
 })

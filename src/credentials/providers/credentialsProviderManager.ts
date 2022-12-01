@@ -10,7 +10,6 @@ import {
     CredentialsProvider,
     CredentialsId,
     credentialsProviderToTelemetryType,
-    CredentialsProviderType,
     isEqual,
 } from './credentials'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
@@ -74,13 +73,13 @@ export class CredentialsProviderManager {
             }
         }
 
-        const factories = this.getFactories(credentials.credentialSource)
-        for (const factory of factories) {
+        for (const factory of this.providerFactories) {
             await factory.refresh()
 
-            const provider = factory.getProvider(credentials)
-            if (provider) {
-                return provider
+            for (const provider of factory.listProviders()) {
+                if (isEqual(provider.getCredentialsId(), credentials) && (await provider.isAvailable())) {
+                    return provider
+                }
             }
         }
 
@@ -101,10 +100,6 @@ export class CredentialsProviderManager {
 
     public addProviderFactories(...factory: CredentialsProviderFactory[]) {
         this.providerFactories.push(...factory)
-    }
-
-    private getFactories(credentialsType: CredentialsProviderType): CredentialsProviderFactory[] {
-        return this.providerFactories.filter(f => f.getProviderType() === credentialsType)
     }
 
     public static getInstance(): CredentialsProviderManager {

@@ -14,7 +14,7 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion } from './vscode/env'
+import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
@@ -98,10 +98,15 @@ function createCloud9Properties(company: string): IdeProperties {
 }
 
 /**
- * Returns whether or not this is Cloud9
+ * Decides if the current system is (the specified flavor of) Cloud9.
  */
-export function isCloud9(): boolean {
-    return getIdeType() === IDE.cloud9
+export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): boolean {
+    const cloud9 = getIdeType() === IDE.cloud9
+    if (!cloud9 || flavor === 'any') {
+        return cloud9
+    }
+    const codecat = getCodeCatalystDevEnvId() !== undefined
+    return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
 }
 
 export function isCn(): boolean {
@@ -264,6 +269,10 @@ async function promptQuickstart(): Promise<void> {
  * @param context VS Code Extension Context
  */
 export function showWelcomeMessage(context: vscode.ExtensionContext): void {
+    if (getCodeCatalystDevEnvId() !== undefined) {
+        // Do not show clippy in CodeCatalyst development environments.
+        return
+    }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
     if (version === EXTENSION_ALPHA_VERSION) {
         vscode.window.showWarningMessage(

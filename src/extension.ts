@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
@@ -58,7 +59,7 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
-import { isReleaseVersion } from './shared/vscode/env'
+import { getCodeCatalystDevEnvId, isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { isUserCancelledError, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
@@ -84,9 +85,9 @@ export async function activate(context: vscode.ExtensionContext) {
     )
     globals.outputChannel = toolkitOutputChannel
 
-    registerErrorHandler(async (info, error) => {
+    registerErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        await handleError(error, info.id, defaultMessage)
+        handleError(error, info.id, defaultMessage)
     })
 
     try {
@@ -127,7 +128,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await globals.schemaService.start()
         awsFiletypes.activate()
 
-        context.subscriptions.push(vscode.window.registerUriHandler(new UriHandler()))
+        globals.uriHandler = new UriHandler()
+        context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -136,6 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
             outputChannel: toolkitOutputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
+            uriHandler: globals.uriHandler,
             credentialsStore,
         }
 
@@ -177,6 +180,8 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
+        await codecatalyst.activate(extContext)
+
         await activateCloudFormationTemplateRegistry(context)
 
         await activateAwsExplorer({
@@ -201,7 +206,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        await activateCodeWhisperer(extContext)
+        if (getCodeCatalystDevEnvId() === undefined) {
+            await activateCodeWhisperer(extContext)
+        }
 
         await activateEcr(context)
 
