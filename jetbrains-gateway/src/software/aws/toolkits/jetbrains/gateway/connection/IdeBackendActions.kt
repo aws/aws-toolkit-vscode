@@ -75,7 +75,7 @@ class IdeBackendActions(
                 result = TelemetryResult.Failed,
                 duration = System.currentTimeMillis() - start.toDouble(),
                 codecatalystDevEnvironmentWorkflowStep = "getStatus",
-                codecatalystDevEnvironmentWorkflowError = e.javaClass.getSimpleName()
+                codecatalystDevEnvironmentWorkflowError = e.javaClass.simpleName
             )
 
             throw e

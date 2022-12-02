@@ -45,8 +45,32 @@ class StartBackend(
 
         LOG.info { "Starting thin client with link: $localLink" }
         val clientHandle = ThinClientTrackerService.getInstance().associate(envId) {
-            gatewayHandle to LinkedClientManager.getInstance()
-                .startNewClient(lifetime, localLink, URLEncoder.encode(message("caws.workspace.backend.title"), Charsets.UTF_8)) {}
+            val start = System.currentTimeMillis()
+            val thinClientHandle = try {
+                LinkedClientManager.getInstance()
+                    .startNewClient(lifetime, localLink, URLEncoder.encode(message("caws.workspace.backend.title"), Charsets.UTF_8)) {
+                        CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                            project = null,
+                            userId = lazilyGetUserId(),
+                            result = TelemetryResult.Succeeded,
+                            duration = System.currentTimeMillis() - start.toDouble(),
+                            codecatalystDevEnvironmentWorkflowStep = "startThinClient",
+                        )
+                    }
+            } catch (e: Throwable) {
+                CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                    project = null,
+                    userId = lazilyGetUserId(),
+                    result = TelemetryResult.Failed,
+                    duration = System.currentTimeMillis() - start.toDouble(),
+                    codecatalystDevEnvironmentWorkflowStep = "startThinClient",
+                    codecatalystDevEnvironmentWorkflowError = e.javaClass.simpleName
+                )
+
+                throw e
+            }
+
+            gatewayHandle to thinClientHandle
         }
 
         clientHandle.clientClosed.adviseEternal {

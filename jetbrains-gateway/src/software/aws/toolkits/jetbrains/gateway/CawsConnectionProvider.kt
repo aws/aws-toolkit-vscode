@@ -121,7 +121,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                         CodecatalystTelemetry.connect(project = null, userId = userId, result = TelemetryResult.Cancelled)
                         LOG.warn { "Connect to dev environment cancelled" }
                     } else {
-                        CodecatalystTelemetry.connect(project = null, userId = userId, result = TelemetryResult.Failed)
+                        CodecatalystTelemetry.connect(project = null, userId = userId, result = TelemetryResult.Failed, reason = e.javaClass.simpleName)
                         LOG.error(e) { "Caught exception while connecting to dev environment" }
                     }
                     lifetime.terminate()
@@ -431,7 +431,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                 result = result,
                                 duration = time.toDouble(),
                                 codecatalystDevEnvironmentWorkflowStep = step.stepName,
-                                codecatalystDevEnvironmentWorkflowError = error?.javaClass?.getSimpleName()
+                                codecatalystDevEnvironmentWorkflowError = error?.javaClass?.simpleName
                             )
                         }
                     }
