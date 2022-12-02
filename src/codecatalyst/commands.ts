@@ -124,10 +124,7 @@ export async function updateDevEnv(
     })
 }
 
-function createClientInjector(
-    authProvider: CodeCatalystAuthenticationProvider,
-    clientFactory: () => Promise<CodeCatalystClient>
-): ClientInjector {
+function createClientInjector(clientFactory: () => Promise<CodeCatalystClient>): ClientInjector {
     return async (command, ...args) => {
         telemetry.record({ userId: AccountStatus.NotSet })
 
@@ -172,7 +169,7 @@ export class CodeCatalystCommands {
         authProvider: CodeCatalystAuthenticationProvider,
         clientFactory = createClientFactory(authProvider)
     ) {
-        this.withClient = createClientInjector(authProvider, clientFactory)
+        this.withClient = createClientInjector(clientFactory)
     }
 
     public listCommands() {

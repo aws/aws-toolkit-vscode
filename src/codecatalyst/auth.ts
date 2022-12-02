@@ -13,9 +13,13 @@ import {
     SsoConnection,
     codecatalystScopes,
     hasScopes,
+    createBuilderIdConnection,
 } from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
+import * as localizedText from '../shared/localizedText'
+import { ToolkitError } from '../shared/errors'
+import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -88,6 +92,58 @@ export class CodeCatalystAuthenticationProvider {
 
     public async restore() {
         await this.secondaryAuth.restoreConnection()
+    }
+
+    public async promptNotConnected(): Promise<SsoConnection> {
+        type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
+            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade'
+        }
+
+        const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        const isNewUser = conn === undefined
+        const okItem: vscode.MessageItem = { title: localizedText.ok }
+        const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
+
+        if (isNewUser || !isValidCodeCatalystConnection(conn)) {
+            // TODO: change to `satisfies` on TS 4.9
+            telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'Create' : 'Upgrade' } as ConnectionFlowEvent)
+
+            const message = isNewUser
+                ? 'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login.\n\n Create one now?'
+                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login.\n\n Upgrade now?'
+            const resp = await vscode.window.showInformationMessage(message, { modal: true }, okItem, cancelItem)
+            if (resp !== okItem) {
+                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
+            }
+
+            const newConn = await createBuilderIdConnection(this.auth)
+            if (this.auth.activeConnection?.id !== newConn.id) {
+                await this.secondaryAuth.useNewConnection(newConn)
+            }
+
+            return newConn
+        }
+
+        if (this.auth.activeConnection?.id !== conn.id) {
+            // TODO: change to `satisfies` on TS 4.9
+            telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
+
+            const resp = await vscode.window.showInformationMessage(
+                'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
+                { modal: true },
+                okItem,
+                cancelItem
+            )
+            if (resp !== okItem) {
+                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
+            }
+
+            await this.secondaryAuth.useNewConnection(conn)
+
+            return conn
+        }
+
+        throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
     }
 
     private static instance: CodeCatalystAuthenticationProvider

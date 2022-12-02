@@ -151,10 +151,7 @@ export function createClientFactory(
 ): () => Promise<CodeCatalystClient> {
     return async () => {
         await authProvider.restore()
-        const conn = authProvider.activeConnection
-        if (conn === undefined) {
-            throw new ToolkitError('CodeCatalyst client is not logged-in', { code: 'NotLoggedIn' })
-        }
+        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
 
         return createClient(conn)
     }
