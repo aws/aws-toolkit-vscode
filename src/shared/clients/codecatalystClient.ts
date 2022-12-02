@@ -210,6 +210,10 @@ class CodeCatalystClientInternal {
             req.send(function (e, data) {
                 const r = req as any
                 if (e) {
+                    if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
+                        CodeCatalystClientInternal.identityCache.delete(bearerToken)
+                    }
+
                     const allHeaders = r?.response?.httpResponse?.headers
                     const logHeaders = {}
                     // Selected headers which are useful for logging.
@@ -315,8 +319,6 @@ class CodeCatalystClientInternal {
 
         const resp = await this.call(this.sdkClient.verifySession(), false)
         assertHasProps(resp, 'identity')
-
-        setTimeout(() => CodeCatalystClientInternal.identityCache.delete(token), 60_000)
 
         return resp.identity
     }
