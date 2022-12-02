@@ -207,10 +207,6 @@ ${fileContents}
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
-            serviceJsonPath: 'types/codecatalyst-2020-12-01.json',
-            serviceName: 'ClientCodeCatalyst',
-        },
-        {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry',
         },
