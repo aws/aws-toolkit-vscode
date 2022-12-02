@@ -14,6 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.capture
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -131,7 +133,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo")
+            loginSso(projectRule.project, "foo", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
@@ -159,7 +161,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo")
+            loginSso(projectRule.project, "foo", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).resolveToken()
@@ -185,11 +187,72 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo")
+            loginSso(projectRule.project, "foo", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).reauthenticate()
             verify(connectionManager).switchConnection(eq(existingConnection))
+        }
+    }
+
+    @Test
+    fun `loginSso reuses connection if requested scopes are subset of existing`() {
+        val connectionManager: ToolkitConnectionManager = mock()
+        regionProvider.addRegion(Region.US_EAST_1)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+
+        mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
+            whenever(context.state()).thenReturn(BearerTokenAuthState.AUTHORIZED)
+        }.use {
+            val existingConnection = sut.createConnection(
+                ManagedSsoProfile(
+                    "us-east-1",
+                    "foo",
+                    listOf("existing1", "existing2", "existing3")
+                )
+            )
+
+            loginSso(projectRule.project, "foo", listOf("existing1"))
+
+            val tokenProvider = it.constructed()[0]
+            verify(tokenProvider).state()
+            verifyNoMoreInteractions(tokenProvider)
+            verify(connectionManager).switchConnection(eq(existingConnection))
+        }
+    }
+
+    @Test
+    fun `loginSso forces reauth if requested scopes are not complete subset`() {
+        val connectionManager: ToolkitConnectionManager = mock()
+        regionProvider.addRegion(Region.US_EAST_1)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+
+        mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
+            whenever(context.state()).thenReturn(BearerTokenAuthState.AUTHORIZED)
+        }.use {
+            val existingConnection = sut.createConnection(
+                ManagedSsoProfile(
+                    "us-east-1",
+                    "foo",
+                    listOf("existing1", "existing2", "existing3")
+                )
+            )
+
+            val newScopes = listOf("existing1", "new1")
+            loginSso(projectRule.project, "foo", newScopes)
+
+            val captor = argumentCaptor<ManagedBearerSsoConnection>()
+            verify(connectionManager).switchConnection(captor.capture())
+            assertThat(captor.allValues.size).isEqualTo(1)
+            assertThat(captor.firstValue).satisfies { connection ->
+                assertThat(connection.scopes).usingRecursiveComparison().isEqualTo(newScopes)
+            }
+            assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<BearerSsoConnection>() { connection ->
+                assertThat(connection).usingRecursiveComparison().isNotEqualTo(existingConnection)
+                assertThat(connection.scopes).usingRecursiveComparison().isEqualTo(newScopes)
+            }
         }
     }
 

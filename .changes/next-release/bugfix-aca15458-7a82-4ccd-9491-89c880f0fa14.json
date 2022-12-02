@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix connection issue with CodeCatalyst when user is already logged into CodeWhisperer"
+}
