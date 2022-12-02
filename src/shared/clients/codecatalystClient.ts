@@ -312,13 +312,15 @@ class CodeCatalystClientInternal {
     }
 
     private async getUserId(): Promise<string> {
-        const token = (await this.connection.getToken()).accessToken
-        if (CodeCatalystClientInternal.identityCache.has(token)) {
-            return CodeCatalystClientInternal.identityCache.get(token)!
+        const { accessToken, expiresAt } = await this.connection.getToken()
+        if (CodeCatalystClientInternal.identityCache.has(accessToken)) {
+            return CodeCatalystClientInternal.identityCache.get(accessToken)!
         }
 
         const resp = await this.call(this.sdkClient.verifySession(), false)
         assertHasProps(resp, 'identity')
+
+        setTimeout(() => CodeCatalystClientInternal.identityCache.delete(accessToken), expiresAt.getTime() - Date.now())
 
         return resp.identity
     }
