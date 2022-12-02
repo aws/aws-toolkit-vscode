@@ -14,7 +14,7 @@ import { activateYAMLLanguageService, configureLanguageService } from './yamlSer
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
-interface YamlExtensionApi {
+export interface YamlExtensionApi {
     registerContributor(
         schema: string,
         requestSchema: (resource: string) => string | undefined,

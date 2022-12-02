@@ -23,9 +23,9 @@ import { getStringHash } from './utilities/textUtilities'
 const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const devfileManifestURL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
-const hostedFilesCloudFrontDistribution = 'https://d3rrggjwfhwld2.cloudfront.net'
-const hostedFilesS3Fallback = 'https://aws-vs-toolkit.s3.amazonaws.com'
-const buildSpecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
+const buildspecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
+export const buildspecCloudfrontURL = 'https://d3rrggjwfhwld2.cloudfront.net' + buildspecHostedFilesPath
+export const buildspecS3FallbackURL = 'https://aws-vs-toolkit.s3.amazonaws.com' + buildspecHostedFilesPath
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -43,6 +43,10 @@ export interface SchemaHandler {
     /** Returns true if the given file path is handled by this `SchemaHandler`. */
     isMapped(f: vscode.Uri | string): boolean
 }
+
+export const cfnSchemaUri = (path: vscode.Uri) => vscode.Uri.joinPath(path, 'cloudformation.schema.json')
+export const samSchemaUri = (path: vscode.Uri) => vscode.Uri.joinPath(path, 'sam.schema.json')
+export const buildSpecSchemaUri = (path: vscode.Uri) => vscode.Uri.joinPath(path, 'buildspec.schema.json')
 
 /**
  * Processes the update of schema mappings for files in the workspace
@@ -146,10 +150,10 @@ export class SchemaService {
  * @param extensionContext VSCode extension context
  */
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
-    const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const cfnSchemaLocation = cfnSchemaUri(extensionContext.globalStorageUri)
+    const samSchemaLocation = samSchemaUri(extensionContext.globalStorageUri)
     const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
-    const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
+    const buildSpecSchemaLocation = buildSpecSchemaUri(extensionContext.globalStorageUri)
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(goformationManifestURL, 'tag_name')
     const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestURL, 'tag_name')
@@ -158,28 +162,28 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
 
     try {
         await updateSchemaFromRemote({
-            destination: cfnSchemaUri,
+            destination: cfnSchemaLocation,
             version: goformationSchemaVersion,
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
             cacheKey: 'cfnSchemaVersion',
             extensionContext,
             title: schemaPrefix + 'cloudformation.schema.json',
         })
-        schemas['cfn'] = cfnSchemaUri
+        schemas['cfn'] = cfnSchemaLocation
     } catch (e) {
         getLogger().verbose('Could not download cfn schema: %s', (e as Error).message)
     }
 
     try {
         await updateSchemaFromRemote({
-            destination: samSchemaUri,
+            destination: samSchemaLocation,
             version: goformationSchemaVersion,
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
             title: schemaPrefix + 'sam.schema.json',
         })
-        schemas['sam'] = samSchemaUri
+        schemas['sam'] = samSchemaLocation
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
     }
@@ -200,33 +204,33 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
 
     try {
         try {
-            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
+            const contents = await getFromUrl(buildspecCloudfrontURL)
             const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
-                destination: buildSpecSchemaUri,
-                url: hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath,
+                destination: buildSpecSchemaLocation,
+                url: buildspecCloudfrontURL,
                 version: buildspecSchemaVersion,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',
             })
-            schemas['buildspec'] = buildSpecSchemaUri
+            schemas['buildspec'] = buildSpecSchemaLocation
         } catch (e) {
             getLogger().verbose(
                 'Could not download buildspec schema from CloudFront: %s. Attempting to download buildspec schema from S3',
                 (e as Error).message
             )
-            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
+            const contents = await getFromUrl(buildspecS3FallbackURL)
             const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
-                destination: buildSpecSchemaUri,
-                url: hostedFilesS3Fallback + buildSpecHostedFilesPath,
+                destination: buildSpecSchemaLocation,
+                url: buildspecS3FallbackURL,
                 version: buildspecSchemaVersion,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',
             })
-            schemas['buildspec'] = buildSpecSchemaUri
+            schemas['buildspec'] = buildSpecSchemaLocation
         }
     } catch (e) {
         getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
@@ -344,7 +348,14 @@ export class YamlSchemaHandler implements SchemaHandler {
         }
 
         if (mapping.schema) {
-            this.yamlExtension.assignSchema(mapping.uri, mapping.registry, resolveSchema(mapping.schema, schemas))
+            const schema = resolveSchema(mapping.schema, schemas)
+            if (!schema) {
+                getLogger().debug(
+                    `YamlSchemaHandler: failed to assign schema to ${mapping.uri}. Failed to find schema locally: ${mapping.schema}`
+                )
+                return
+            }
+            this.yamlExtension.assignSchema(mapping.uri, mapping.registry, schema)
         } else {
             this.yamlExtension.removeSchema(mapping.uri, mapping.registry)
         }
@@ -391,19 +402,26 @@ export class JsonSchemaHandler implements SchemaHandler {
 
         const path = normalizeVSCodeUri(mapping.uri)
         if (mapping.schema) {
-            const uri = resolveSchema(mapping.schema, schemas).toString()
-            const existing = this.getSettingBy({ schemaPath: uri })
+            const schema = resolveSchema(mapping.schema, schemas)
+            if (!schema) {
+                getLogger().debug(
+                    `JsonSchemaHandler: failed to assign schema to ${mapping.uri}. Failed to find schema locally: ${mapping.schema}`
+                )
+                return
+            }
+            const schemaUri = schema.toString()
+            const existing = this.getSettingBy({ schemaPath: schemaUri })
 
             if (existing) {
                 if (!existing.fileMatch) {
-                    getLogger().debug(`JsonSchemaHandler: skipped setting schema '${uri}'`)
+                    getLogger().debug(`JsonSchemaHandler: skipped setting schema '${schemaUri}'`)
                 } else {
                     existing.fileMatch.push(path)
                 }
             } else {
                 settings.push({
                     fileMatch: [path],
-                    url: uri,
+                    url: schemaUri,
                 })
             }
         } else {
@@ -433,7 +451,7 @@ export class JsonSchemaHandler implements SchemaHandler {
     }
 }
 
-function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Uri {
+function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Uri | undefined {
     if (schema instanceof vscode.Uri) {
         return schema
     }

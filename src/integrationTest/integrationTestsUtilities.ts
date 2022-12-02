@@ -6,14 +6,10 @@
 import * as assert from 'assert'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
+import { getCodeLenses } from '../shared/utilities/vsCodeUtils'
 
 // java8.al2 image does a while to pull
-const LAMBDA_SESSION_TIMEOUT = 60000
-
-// Retrieves CodeLenses from VS Code
-export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
-    return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)
-}
+export const SLOW_TEST_TIMEOUT = 60000
 
 export function getTestWorkspaceFolder(): string {
     assert.ok(vscode.workspace.workspaceFolders, 'Integration Tests expect a workspace folder to be loaded')
@@ -29,7 +25,7 @@ export function getTestWorkspaceFolder(): string {
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // How long the Toolkit will wait for SAM CLI output before ending a session.
-    await configAws.update('samcli.lambdaTimeout', LAMBDA_SESSION_TIMEOUT, false)
+    await configAws.update('samcli.lambdaTimeout', SLOW_TEST_TIMEOUT, false)
     // Enable codelenses.
     await configAws.update('samcli.enableCodeLenses', true, false)
 }
