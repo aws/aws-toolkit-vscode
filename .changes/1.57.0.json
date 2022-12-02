@@ -1,0 +1,18 @@
+{
+	"date": "2022-12-01",
+	"version": "1.57.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon CodeCatalyst: Connect VS Code to your remote Dev Environments."
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon CodeCatalyst: Clone your repositories to your local workspace."
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon CodeCatalyst: Connect using your AWS Builder ID."
+		}
+	]
+}

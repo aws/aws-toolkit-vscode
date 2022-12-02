@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "S3: \"Download As\" action defaults to the last-used download path."
+}

@@ -14,6 +14,7 @@
 // 3. restore the original package.json
 //
 
+import type * as manifest from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
@@ -28,13 +29,8 @@ function parseArgs() {
     //   1: /…/src/scripts/build/package.ts
     //   2: foo
 
-    const args = {
-        /** Produce an unoptimized VSIX. Include git SHA in version string. */
-        debug: false,
-    }
     const givenArgs = process.argv.slice(2)
-
-    const validOptions = ['--debug']
+    const validOptions = ['--debug', '--no-clean']
 
     for (const a of givenArgs) {
         if (!validOptions.includes(a)) {
@@ -42,9 +38,12 @@ function parseArgs() {
         }
     }
 
-    args.debug = givenArgs.includes('--debug')
-
-    return args
+    return {
+        /** Produce an unoptimized VSIX. Include git SHA in version string. */
+        debug: givenArgs.includes('--debug'),
+        /** Skips `npm run clean` when building the VSIX. This prevents file watching from breaking. */
+        skipClean: givenArgs.includes('--no-clean'),
+    }
 }
 
 /**
@@ -85,19 +84,29 @@ function main() {
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }).toString())
+            const packageJson: typeof manifest = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix()
-            const version: string = packageJson.version?.toString()
+            const version = packageJson.version
             packageJson.version = args.debug ? `1.99.0${versionSuffix}` : version.replace('-SNAPSHOT', versionSuffix)
+
+            if (args.skipClean) {
+                // Clearly we need `prepublish` to be a standalone script and not a bunch of `npm` commands
+                const prepublish = packageJson.scripts['vscode:prepublish']
+                const replaced = prepublish.replace('npm run clean', 'echo "Skipped clean"')
+                packageJson.scripts['vscode:prepublish'] = replaced
+            }
+
             fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
 
             if (args.debug) {
-                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' }).toString()
+                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'utf-8' })
                 fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
 
         child_process.execSync(`vsce package`, { stdio: 'inherit' })
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+        console.log(`VSIX Version: ${packageJson.version}`)
     } catch (e) {
         console.log(e)
         throw Error('package.ts: failed')

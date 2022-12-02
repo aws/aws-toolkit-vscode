@@ -26,6 +26,28 @@
             "name": "debounceCount",
             "type": "int",
             "description": "Number of times the telemetry event was debounced before emission"
+        },
+        {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
+        },
+        {
+            "name": "codecatalyst_createDevEnvironmentRepoType",
+            "type": "string",
+            "description": "Type of Git repository provided to the Code Catalyst workspace create wizard",
+            "allowedValues": ["linked", "none"]
+        },
+        {
+            "name": "codecatalyst_updateDevEnvironmentLocationType",
+            "type": "string",
+            "description": "Locality of the Code Catalyst update workspace request (i.e., from the thin client or the local IDE instance)",
+            "allowedValues": ["remote", "local"]
+        },
+        {
+            "name": "userId",
+            "type": "string",
+            "description": "Opaque AWS ID identifier"
         }
     ],
     "metrics": [
@@ -54,6 +76,11 @@
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [{ "type": "result" }, { "type": "cli" }]
         },
         {
             "name": "aws_refreshCredentials",
@@ -240,6 +267,42 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "codecatalyst_createDevEnvironment",
+            "description": "Create a Code Catalyst DevEnv",
+            "metadata": [
+                { "type": "result" },
+                { "type": "userId" },
+                {
+                    "type": "codecatalyst_createDevEnvironmentRepoType",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "codecatalyst_updateDevEnvironmentSettings",
+            "description": "Update properties of a Code Catalyst development environment",
+            "metadata": [
+                { "type": "result" },
+                { "type": "userId" },
+                { "type": "codecatalyst_updateDevEnvironmentLocationType" }
+            ]
+        },
+        {
+            "name": "codecatalyst_updateDevfile",
+            "description": "Trigger a devfile update on a Code Catalyst development environment",
+            "metadata": [{ "type": "result" }, { "type": "userId" }]
+        },
+        {
+            "name": "codecatalyst_localClone",
+            "description": "Clone a Code Catalyst code repository locally",
+            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
+        },
+        {
+            "name": "codecatalyst_connect",
+            "description": "Connect to a Code Catalyst development environment",
+            "metadata": [{ "type": "result" }, { "type": "userId" }, { "type": "source", "required": false }]
         }
     ]
 }

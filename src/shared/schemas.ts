@@ -19,6 +19,7 @@ import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const SCHEMA_PREFIX = `${AWS_SCHEME}://`
 
 export type Schemas = { [key: string]: vscode.Uri }
@@ -141,8 +142,10 @@ export class SchemaService {
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
+    const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
 
     const schemas: Schemas = {}
 
@@ -172,6 +175,20 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         schemas['sam'] = samSchemaUri
     } catch (e) {
         getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+    }
+
+    try {
+        await updateSchemaFromRemote({
+            destination: devfileSchemaUri,
+            version: devfileSchemaVersion,
+            url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
+            cacheKey: 'devfileSchemaVersion',
+            extensionContext,
+            title: SCHEMA_PREFIX + 'devfile.schema.json',
+        })
+        schemas['devfile'] = devfileSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download devfile schema: %s', (e as Error).message)
     }
 
     return schemas

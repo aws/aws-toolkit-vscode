@@ -11,7 +11,7 @@ import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
-import { telemetry } from '../telemetry/telemetry'
+import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -133,16 +133,18 @@ export class Commands {
      * ```
      */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
-        const result = {} as Record<string, (id: string) => DeclaredCommand>
+        type Id = Parameters<Declare<T, Callback>>[0]
+        const result = {} as Record<string, Declare<T, Callback>>
 
         for (const [k, v] of Object.entries<Callback>(getFunctions(target))) {
             const mappedKey = `declare${toTitleCase(k)}`
             const name = !isNameMangled() ? `${target.name}.${k}` : undefined
+            const mapInfo = (id: Id) => (typeof id === 'string' ? { id, name } : { name, ...id })
 
-            result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
+            result[mappedKey] = id => this.declare(mapInfo(id), (instance: T) => v.bind(instance))
         }
 
-        return result as Declarables<T>
+        return result as unknown as Declarables<T>
     }
 
     public dispose(): void {
@@ -187,7 +189,7 @@ export class Commands {
 }
 
 interface Declare<T, F extends Callback> {
-    (id: string): DeclaredCommand<F, [target: T]>
+    (id: string | Omit<CommandInfo<F>, 'args' | 'label'>): DeclaredCommand<F, [target: T]>
 }
 
 type Declarables<T> = {
@@ -305,6 +307,18 @@ interface CommandInfo<T extends Callback> {
     readonly logging?: boolean
     /** Does the command require credentials? (default: false) */
     readonly autoconnect?: boolean
+
+    /**
+     * The telemetry metric associated with this command.
+     *
+     * Metadata can be added during execution like so:
+     * ```ts
+     * telemetry.aws_foo.record({ exampleMetadata: 'bar' })
+     * ```
+     *
+     * Any metadata is sent with the metric on completion.
+     */
+    readonly telemetryName?: MetricName
 }
 
 // This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
@@ -328,7 +342,7 @@ function startRecordCommand(id: string): number {
     return token
 }
 
-function endRecordCommand(id: string, token: number, err?: unknown) {
+function endRecordCommand(id: string, token: number, name?: MetricName, err?: unknown) {
     const data = emitInfo.get(id)
     const currentTime = Date.now()
 
@@ -339,7 +353,8 @@ function endRecordCommand(id: string, token: number, err?: unknown) {
 
     emitInfo.set(id, { ...data, debounceCounter: 0 })
 
-    telemetry.vscode_executeCommand.emit({
+    const metric = name ? (telemetry[name] as Metric<VscodeExecuteCommand>) : telemetry.vscode_executeCommand
+    metric.emit({
         command: id,
         debounceCount: data.debounceCounter,
         result: getTelemetryResult(err),
@@ -348,7 +363,7 @@ function endRecordCommand(id: string, token: number, err?: unknown) {
     })
 }
 
-async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | undefined> {
+async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
@@ -356,20 +371,24 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     logger.debug(`command: running ${label}${withArgs}`)
 
+    if (info.telemetryName !== undefined) {
+        telemetry[info.telemetryName].record({ command: info.id })
+    }
+
     try {
         if (info.autoconnect === true) {
             await vscode.commands.executeCommand('_aws.auth.autoConnect')
         }
 
         const result = await fn(...args)
-        logging && endRecordCommand(info.id, telemetryToken)
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName)
 
         return result
     } catch (error) {
-        logging && endRecordCommand(info.id, telemetryToken, error)
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
 
         if (errorHandler !== undefined) {
-            await errorHandler(info, error)
+            errorHandler(info, error)
         } else {
             logger.error(`command: ${label} failed without error handler: %s`, error)
             throw error
@@ -380,7 +399,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 // Error handling may involve other Toolkit modules and so it must be defined and registered at
 // the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
 // This file should contain as little application-specific logic as possible.
-let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => Promise<void> | void
+let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => void
 export function registerErrorHandler(handler: typeof errorHandler): void {
     if (errorHandler !== undefined) {
         throw new TypeError('Error handler has already been registered')

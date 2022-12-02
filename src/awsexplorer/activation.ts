@@ -8,6 +8,7 @@ import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -28,7 +29,8 @@ import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { CodeCatalystRootNode } from '../codecatalyst/explorer'
+import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -66,8 +68,9 @@ export async function activate(args: {
         })
     )
 
-    // The auth node looks bad on C9 right now due to sorting issues
-    const nodes = !isCloud9() ? [new AuthNode(Auth.instance), cdkNode, codewhispererNode] : [cdkNode, codewhispererNode]
+    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
+    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
