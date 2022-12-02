@@ -133,11 +133,12 @@ function createClientInjector(
     clientFactory: () => Promise<CodeCatalystClient>
 ): ClientInjector {
     return async (command, ...args) => {
-        const client = await clientFactory()
+        let client = await clientFactory()
 
         try {
             if (!client.connected) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection' })
+                const conn = await authProvider.promptNotConnected()
+                client = await client.setCredentials(async () => (await conn.getToken()).accessToken)
             }
 
             return await command(client, ...args)
