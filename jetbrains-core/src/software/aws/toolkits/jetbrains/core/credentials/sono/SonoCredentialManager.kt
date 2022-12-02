@@ -77,7 +77,9 @@ class SonoCredentialManager {
             }
 
             BearerTokenAuthState.NOT_AUTHENTICATED -> {
-                provider.reauthenticate()
+                runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
+                    provider.reauthenticate()
+                }
 
                 return provider
             }
