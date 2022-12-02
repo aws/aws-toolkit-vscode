@@ -3,8 +3,9 @@
 
 package software.aws.toolkits.jetbrains.gateway
 
-import com.intellij.ui.components.BrowserLink
+import com.intellij.ide.BrowserUtil
 import com.jetbrains.gateway.api.GatewayConnector
+import com.jetbrains.gateway.api.GatewayConnectorDocumentation
 import com.jetbrains.gateway.api.GatewayConnectorView
 import com.jetbrains.gateway.api.GatewayRecentConnections
 import com.jetbrains.rd.util.lifetime.Lifetime
@@ -48,7 +49,9 @@ class CawsConnector : GatewayConnector {
             }
     }
 
-    override fun getDocumentationLink() = BrowserLink(message("general.more"), CawsEndpoints.CAWS_DEV_ENV_MARKETING)
+    override fun getDocumentationAction() = GatewayConnectorDocumentation(true) {
+        BrowserUtil.browse(CawsEndpoints.CAWS_DEV_ENV_MARKETING)
+    }
 
     override fun getRecentConnections(setContentCallback: (Component) -> Unit): GatewayRecentConnections = object : GatewayRecentConnections {
         override val recentsIcon: Icon = AwsIcons.Logos.AWS_SMILE_SMALL
