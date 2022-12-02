@@ -30,8 +30,8 @@ const MAX_RECONNECT_TIME = 10 * 60 * 1000
 
 export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCatalystAuthenticationProvider) {
     let restartHandled = false
-    authProvider.onDidChangeActiveConnection(async () => {
-        if (restartHandled) {
+    authProvider.onDidChangeActiveConnection(async conn => {
+        if (restartHandled || conn === undefined) {
             return
         }
 
