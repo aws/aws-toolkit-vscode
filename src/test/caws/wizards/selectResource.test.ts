@@ -5,7 +5,7 @@
 
 import { instance, when } from 'ts-mockito'
 import { createOrgPrompter } from '../../../codecatalyst/wizards/selectResource'
-import { CodeCatalystOrg, ConnectedCodeCatalystClient } from '../../../shared/clients/codecatalystClient'
+import { CodeCatalystOrg, CodeCatalystClient } from '../../../shared/clients/codecatalystClient'
 import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
 import { createQuickPickTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
@@ -24,8 +24,8 @@ describe('Prompts', function () {
         orgs = [{ type: 'org', name: 'MyOrg', description: 'My Description', regionName: 'region' }]
     })
 
-    function mockClient(): ConnectedCodeCatalystClient {
-        const client = mock<ConnectedCodeCatalystClient>()
+    function mockClient(): CodeCatalystClient {
+        const client = mock<CodeCatalystClient>()
 
         when(client.listSpaces()).thenReturn(intoCollection([orgs]))
 

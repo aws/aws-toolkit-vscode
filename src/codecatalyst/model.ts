@@ -11,7 +11,6 @@ import {
     CodeCatalystClient,
     DevEnvironment,
     CodeCatalystRepo,
-    ConnectedCodeCatalystClient,
     createClient,
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
@@ -29,6 +28,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
+import { ToolkitError } from '../shared/errors'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -95,17 +95,13 @@ export function getCodeCatalystSsmEnv(region: string, ssmPath: string, devenv: D
 }
 
 export function createCodeCatalystEnvProvider(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     ssmPath: string,
     devenv: DevEnvironment,
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
-        if (!client.connected) {
-            throw new Error('Cannot provide environment variables when not logged-in')
-        }
-
-        await cacheBearerToken(client.token, devenv.id)
+        await cacheBearerToken(await client.getBearerToken(), devenv.id)
         const vars = getCodeCatalystSsmEnv(client.regionCode, ssmPath, devenv)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
@@ -155,17 +151,12 @@ export function createClientFactory(
 ): () => Promise<CodeCatalystClient> {
     return async () => {
         await authProvider.restore()
-        const client = await createClient()
         const conn = authProvider.activeConnection
-
-        if (conn) {
-            // TODO(sijaden): add global caching module
-            return client.setCredentials(async () => (await conn.getToken()).accessToken)
-        } else {
-            // TODO: show prompt/notification to use Builder ID
+        if (conn === undefined) {
+            throw new ToolkitError('CodeCatalyst client is not logged-in', { code: 'NotLoggedIn' })
         }
 
-        return client
+        return createClient(conn)
     }
 }
 
@@ -175,7 +166,7 @@ export interface ConnectedDevEnv {
 }
 
 export async function getConnectedDevEnv(
-    codeCatalystClient: ConnectedCodeCatalystClient,
+    codeCatalystClient: CodeCatalystClient,
     devenvClient = new DevEnvClient()
 ): Promise<ConnectedDevEnv | undefined> {
     const devEnvId = devenvClient.id
@@ -211,7 +202,7 @@ interface DevEnvConnection {
 }
 
 export async function prepareDevEnvConnection(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     { id, org, project }: DevEnvironmentId,
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
@@ -253,7 +244,7 @@ export async function prepareDevEnvConnection(
  * @param targetPath vscode workspace (default: "/projects/[repo]")
  */
 export async function openDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     devenv: DevEnvironmentId,
     targetPath?: string
 ): Promise<void> {
@@ -338,7 +329,7 @@ export async function getDevfileLocation(client: DevEnvClient, root?: vscode.Uri
  * Given a collection of CodeCatalyst repos, try to find a corresponding devenv, if any
  */
 export function associateDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     repos: AsyncCollection<CodeCatalystRepo>
 ): AsyncCollection<CodeCatalystRepo & { devEnv?: DevEnvironment }> {
     return toCollection(async function* () {

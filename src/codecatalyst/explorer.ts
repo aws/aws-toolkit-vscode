@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
 import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
-import { DevEnvironment } from '../shared/clients/codecatalystClient'
+import { createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
 import { UnknownError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
@@ -15,7 +15,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
-import { ConnectedDevEnv, createClientFactory, getConnectedDevEnv, getDevfileLocation } from './model'
+import { ConnectedDevEnv, getConnectedDevEnv, getDevfileLocation } from './model'
 import * as codecatalyst from './model'
 
 const getStartedCommand = Commands.register(
@@ -146,8 +146,11 @@ export class CodeCatalystRootNode implements RootNode {
 
     private async getDevEnv() {
         try {
-            const client = await createClientFactory(this.authProvider)()
-            return client.connected ? await getConnectedDevEnv(client) : undefined
+            await this.authProvider.restore()
+            const conn = this.authProvider.activeConnection
+            const client = conn !== undefined ? await createClient(conn) : undefined
+
+            return client !== undefined ? await getConnectedDevEnv(client) : undefined
         } catch (err) {
             getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
         }
