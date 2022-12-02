@@ -94,6 +94,7 @@
         {
             "name": "codecatalyst_devEnvironmentWorkflowStatistic",
             "description": "Workflow statistic for connecting to a dev environment",
+            "passive": true,
             "metadata": [
                 { "type": "userId" },
                 { "type": "result" },
