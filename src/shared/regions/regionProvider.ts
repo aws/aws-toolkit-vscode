@@ -38,13 +38,13 @@ export class RegionProvider {
     public constructor(
         endpoints: Endpoints = { partitions: [] },
         private readonly globalState = globals.context.globalState,
-        private readonly auth: Pick<Auth, 'getDefaultRegion'> = Auth.instance
+        private readonly auth: Pick<Auth, 'activeConnection'> = Auth.instance
     ) {
         this.loadFromEndpoints(endpoints)
     }
 
     public get defaultRegionId() {
-        return this.auth.getDefaultRegion() ?? DEFAULT_REGION
+        return this.auth.activeConnection?.defaultRegion ?? DEFAULT_REGION
     }
 
     public get defaultPartitionId() {

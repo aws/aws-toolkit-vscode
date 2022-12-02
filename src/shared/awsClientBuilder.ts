@@ -89,7 +89,7 @@ export class AWSClientBuilder {
                 opt.credentials = new SdkCredentialsProvider(opt.connection)
             }
 
-            opt.region ??= this.auth.getDefaultRegion(opt.connection)
+            opt.region ??= opt.connection.defaultRegion
         }
 
         if (!opt.connection && !opt.credentials && !opt.token) {

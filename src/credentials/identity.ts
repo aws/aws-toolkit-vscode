@@ -6,8 +6,10 @@
 import { Credentials } from '@aws-sdk/types'
 import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { DefaultStsClient } from '../shared/clients/stsClient'
-// import { telemetry } from '../shared/telemetry/telemetry'
+import { DEFAULT_REGION } from '../shared/regions/regionProvider'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { assertHasProps } from '../shared/utilities/tsUtils'
+import { CredentialsProvider, credentialsProviderToTelemetryType } from './providers/credentials'
 
 interface StsIdentity extends Required<GetCallerIdentityResponse> {
     readonly source: 'sts'
@@ -15,11 +17,17 @@ interface StsIdentity extends Required<GetCallerIdentityResponse> {
 
 export type Identity = StsIdentity
 
-export async function validateConnection(credentials: Credentials, region = 'us-east-1'): Promise<Identity> {
-    // telemetry.aws_validateCredentials.run()
-    const client = new DefaultStsClient(region, credentials)
-    const resp = await client.getCallerIdentity()
-    assertHasProps(resp, 'Arn', 'UserId', 'Account')
+export async function validateConnection(credentials: Credentials, provider: CredentialsProvider): Promise<Identity> {
+    return telemetry.aws_validateCredentials.run(async span => {
+        span.record({
+            credentialType: provider.getTelemetryType(),
+            credentialSourceId: credentialsProviderToTelemetryType(provider.getProviderType()),
+        })
 
-    return { source: 'sts', ...resp }
+        const region = provider.getDefaultRegion() ?? DEFAULT_REGION
+        const resp = await new DefaultStsClient(region, credentials).getCallerIdentity()
+        assertHasProps(resp, 'Arn', 'UserId', 'Account')
+
+        return { source: 'sts', ...resp }
+    })
 }

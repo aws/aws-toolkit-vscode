@@ -73,6 +73,7 @@ export interface SsoConnection {
     readonly label: string
     readonly startUrl: string
     readonly scopes?: string[]
+    readonly defaultRegion: string | undefined
 
     /**
      * Retrieves a bearer token, refreshing or re-authenticating as-needed.
@@ -89,6 +90,7 @@ export interface IamConnection {
     // This may change in the future after refactoring legacy implementations
     readonly id: string
     readonly label: string
+    readonly defaultRegion: string | undefined
     getCredentials(): Promise<Credentials>
 }
 
@@ -187,10 +189,15 @@ export class ProfileStore {
         return this.getData()[id]
     }
 
-    public getProfileOrThrow(id: string): StoredProfile {
+    public getProfileOrThrow(id: string): StoredProfile
+    public getProfileOrThrow(id: string, type: IamProfile['type']): StoredProfile<IamProfile>
+    public getProfileOrThrow(id: string, type: SsoProfile['type']): StoredProfile<SsoProfile>
+    public getProfileOrThrow(id: string, type?: Profile['type']): StoredProfile {
         const profile = this.getProfile(id)
         if (profile === undefined) {
             throw new Error(`Profile does not exist: ${id}`)
+        } else if (type && profile.type !== type) {
+            throw new Error(`Profile "${id}" is type "${profile.type}" but expected "${type}"`)
         }
 
         return profile
@@ -527,19 +534,6 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public getDefaultRegion(conn: Pick<Connection, 'id'> | undefined = this.activeConnection): string | undefined {
-        if (!conn) {
-            return
-        }
-
-        const profile = this.store.getProfileOrThrow(conn.id)
-        if (profile.type === 'sso') {
-            return profile.ssoRegion
-        } else if (profile.type === 'iam') {
-            return profile.region
-        }
-    }
-
     public getAccountId(conn: Pick<Connection, 'id'> | undefined = this.activeConnection): string | undefined {
         if (!conn) {
             return
@@ -599,7 +593,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private getIamConnection(id: Connection['id'], provider: CredentialsProvider): IamConnection & StatefulConnection {
-        const profile = this.store.getProfileOrThrow(id)
+        const getProfile = () => this.store.getProfileOrThrow(id, 'iam')
+        const profile = getProfile()
 
         return {
             id,
@@ -607,6 +602,9 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata.label ?? id,
             getCredentials: () => this.debouncedGetCredentials(id, provider),
+            get defaultRegion() {
+                return getProfile().region
+            },
         }
     }
 
@@ -614,6 +612,7 @@ export class Auth implements AuthService, ConnectionManager {
         id: Connection['id'],
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
+        const getProfile = () => this.store.getProfileOrThrow(id, 'sso')
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
         const label =
@@ -627,6 +626,9 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? label,
             getToken: () => this.debouncedGetToken(id, provider),
+            get defaultRegion() {
+                return getProfile().ssoRegion
+            },
         }
     }
 
@@ -648,7 +650,7 @@ export class Auth implements AuthService, ConnectionManager {
         const providerId = provider.getCredentialsId()
         this.credentialsStore.invalidateCredentials(providerId)
         const { credentials } = await this.credentialsStore.upsertCredentials(providerId, provider)
-        const identity = await validateConnection(credentials, provider.getDefaultRegion())
+        const identity = await validateConnection(credentials, provider)
         await this.store.updateProfile(asString(providerId), { identity })
 
         return credentials
