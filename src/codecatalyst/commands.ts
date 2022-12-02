@@ -13,8 +13,8 @@ import { selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
-import { CodeCatalystClient, CodeCatalystResource } from '../shared/clients/codecatalystClient'
-import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
+import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
+import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -124,11 +124,13 @@ export async function updateDevEnv(
     })
 }
 
-function createClientInjector(clientFactory: () => Promise<CodeCatalystClient>): ClientInjector {
+function createClientInjector(authProvider: CodeCatalystAuthenticationProvider): ClientInjector {
     return async (command, ...args) => {
         telemetry.record({ userId: AccountStatus.NotSet })
 
-        const client = await clientFactory()
+        await authProvider.restore()
+        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+        const client = await createClient(conn)
         telemetry.record({ userId: client.identity.id })
 
         return command(client, ...args)
@@ -165,11 +167,8 @@ export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
 
-    public constructor(
-        authProvider: CodeCatalystAuthenticationProvider,
-        clientFactory = createClientFactory(authProvider)
-    ) {
-        this.withClient = createClientInjector(clientFactory)
+    public constructor(authProvider: CodeCatalystAuthenticationProvider) {
+        this.withClient = createClientInjector(authProvider)
     }
 
     public listCommands() {
@@ -265,9 +264,8 @@ export class CodeCatalystCommands {
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
         const auth = CodeCatalystAuthenticationProvider.fromContext(ctx)
-        const factory = createClientFactory(auth)
 
-        return new this(auth, factory)
+        return new this(auth)
     }
 
     public static readonly declared = {

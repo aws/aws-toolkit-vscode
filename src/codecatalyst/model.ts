@@ -11,12 +11,10 @@ import {
     CodeCatalystClient,
     DevEnvironment,
     CodeCatalystRepo,
-    createClient,
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
 import { DevEnvClient } from '../shared/clients/devenvClient'
 import { getLogger } from '../shared/logger'
-import { CodeCatalystAuthenticationProvider } from './auth'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
@@ -28,7 +26,6 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
-import { ToolkitError } from '../shared/errors'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -144,17 +141,6 @@ export function sshLogFileLocation(devenvId: string): string {
 
 export function getHostNameFromEnv(env: DevEnvironmentId): string {
     return `${HOST_NAME_PREFIX}${env.id}`
-}
-
-export function createClientFactory(
-    authProvider: CodeCatalystAuthenticationProvider
-): () => Promise<CodeCatalystClient> {
-    return async () => {
-        await authProvider.restore()
-        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-
-        return createClient(conn)
-    }
 }
 
 export interface ConnectedDevEnv {
