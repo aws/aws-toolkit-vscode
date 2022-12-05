@@ -34,7 +34,7 @@ import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { Identity, validateConnection } from './identity'
+import { Identity, recordCredentialTelemetry, validateConnection } from './identity'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
@@ -612,7 +612,6 @@ export class Auth implements AuthService, ConnectionManager {
         id: Connection['id'],
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
-        const getProfile = () => this.store.getProfileOrThrow(id, 'sso')
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
         const label =
@@ -623,12 +622,10 @@ export class Auth implements AuthService, ConnectionManager {
             type: profile.type,
             scopes: profile.scopes,
             startUrl: profile.startUrl,
+            defaultRegion: profile.ssoRegion,
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? label,
             getToken: () => this.debouncedGetToken(id, provider),
-            get defaultRegion() {
-                return getProfile().ssoRegion
-            },
         }
     }
 
@@ -647,6 +644,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async createCachedCredentials(provider: CredentialsProvider) {
+        recordCredentialTelemetry(telemetry.activeSpan, provider)
+
         const providerId = provider.getCredentialsId()
         this.credentialsStore.invalidateCredentials(providerId)
         const { credentials } = await this.credentialsStore.upsertCredentials(providerId, provider)
@@ -676,7 +675,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (credentials !== undefined) {
             return credentials
         } else if ((await provider.canAutoConnect()) === true) {
-            return this.createCachedCredentials(provider)
+            return telemetry.aws_refreshCredentials.run(() => this.createCachedCredentials(provider))
         } else {
             return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
@@ -692,18 +691,20 @@ export class Auth implements AuthService, ConnectionManager {
             })
         }
 
-        if (previousState === 'valid') {
-            const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
-            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
-            if (resp !== localizedText.yes) {
-                throw new ToolkitError('User cancelled login', {
-                    cancelled: true,
-                    code: 'InvalidConnection',
-                })
+        return telemetry.aws_refreshCredentials.run(async () => {
+            if (previousState === 'valid') {
+                const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
+                const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
+                if (resp !== localizedText.yes) {
+                    throw new ToolkitError('User cancelled login', {
+                        cancelled: true,
+                        code: 'InvalidConnection',
+                    })
+                }
             }
-        }
 
-        return this.authenticate(id, refresh)
+            return this.authenticate(id, refresh)
+        })
     }
 
     public readonly tryAutoConnect = once(async () => {

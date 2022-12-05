@@ -82,7 +82,7 @@ export class AWSClientBuilder {
         opt.connection ??= this.auth.activeConnection
         delete opt.onRequestSetup
 
-        if (opt.connection) {
+        if (opt.connection && !(opt.token || opt.credentials)) {
             if (isSsoConnection(opt.connection)) {
                 opt.token = new SdkTokenProvider(opt.connection)
             } else if (isIamConnection(opt.connection)) {
