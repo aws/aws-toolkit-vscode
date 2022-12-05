@@ -79,7 +79,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         const opt = { ...options }
         delete opt.onRequestSetup
 
-        if (!opt.credentials) {
+        if (!opt.credentials && !opt.token) {
             const shim = this.awsContext.credentialsShim
 
             if (!shim) {
