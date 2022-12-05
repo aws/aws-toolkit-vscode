@@ -25,7 +25,8 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/s
 import { TestSettings } from '../../utilities/testSettingsConfiguration'
 import { Settings } from '../../../shared/settings'
 import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
-import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { createTestAuth } from '../../testUtil'
+import { IamConnection, isIamConnection } from '../../../credentials/auth'
 
 describe('deploySamApplication', async function () {
     // Bad Validator
@@ -109,21 +110,16 @@ describe('deploySamApplication', async function () {
     }
 
     // Other support stubs
-    const placeholderCredentials = {} as any as AWS.Credentials
-    let testCredentials: AWS.Credentials | undefined
     let profile: string = ''
     let settings: Settings
     let config: SamCliSettings
     let templatePath: string
     let tempToolkitFolder: string
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
+    let connection: IamConnection
     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
         return samDeployWizardResponse
     }
-
-    const awsContext = new FakeAwsContext()
-    awsContext.getCredentials = async () => testCredentials
-    awsContext.getCredentialProfileName = () => profile
 
     // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
     let didRefreshExplorer = false
@@ -132,10 +128,15 @@ describe('deploySamApplication', async function () {
     }
 
     beforeEach(async function () {
+        const auth = await createTestAuth()
+        const conn = auth.activeConnection
+        assert.ok(isIamConnection(conn), 'Expected test auth to be logged-in with an IAM connection')
+
+        connection = conn
         didRefreshExplorer = false
         settings = new TestSettings() as any
         config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
-        profile = 'testAcct'
+        profile = 'profile:qwerty'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')
         writeFile(templatePath)
@@ -144,7 +145,6 @@ describe('deploySamApplication', async function () {
         // we are using this pattern in other tests...
         globals.outputChannel = vscode.window.createOutputChannel('test channel')
 
-        testCredentials = placeholderCredentials
         invokerCalledCount = 0
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
@@ -168,7 +168,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -202,7 +202,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -224,7 +224,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -245,7 +245,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -273,7 +273,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -294,7 +294,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -315,7 +315,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -336,7 +336,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -355,84 +355,6 @@ describe('deploySamApplication', async function () {
         assert.ok(didRefreshExplorer)
     })
 
-    it('saves one bucket per region per profile', async () => {
-        profile = 'testAcct0'
-        samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
-            region: 'region0',
-            s3Bucket: 'bucket0',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
-        }
-
-        await deploySamApplication(
-            {
-                samCliContext: goodSamCliContext(),
-                samDeployWizard,
-            },
-            {
-                awsContext,
-                settings: config,
-                window,
-                refreshFn,
-            }
-        )
-
-        await waitForDeployToComplete()
-        profile = 'testAcct1'
-        samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
-            region: 'region0',
-            s3Bucket: 'bucket1',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
-        }
-        await deploySamApplication(
-            {
-                samCliContext: goodSamCliContext(),
-                samDeployWizard,
-            },
-            {
-                awsContext,
-                settings: config,
-                window,
-                refreshFn,
-            }
-        )
-
-        await waitForDeployToComplete()
-        assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(config.getSavedBuckets(), {
-            testAcct0: {
-                region0: 'bucket0',
-            },
-            testAcct1: {
-                region0: 'bucket1',
-            },
-        })
-    })
-
-    it('informs user of error when user is not logged in', async function () {
-        testCredentials = undefined
-
-        await deploySamApplication(
-            {
-                samCliContext: goodSamCliContext(),
-                samDeployWizard,
-            },
-            {
-                awsContext,
-                settings: config,
-                window,
-                refreshFn,
-            }
-        )
-
-        assertGeneralErrorLogged()
-        // Deploy aborted, so this is false.
-        assert.ok(!didRefreshExplorer)
-    })
-
     it('informs user of error when sam cli is invalid', async function () {
         await deploySamApplication(
             {
@@ -440,7 +362,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -461,7 +383,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -491,7 +413,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -522,7 +444,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,
@@ -554,7 +476,7 @@ describe('deploySamApplication', async function () {
                 samDeployWizard,
             },
             {
-                awsContext,
+                connection,
                 settings: config,
                 window,
                 refreshFn,

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from '@aws-sdk/types'
 import { Schemas } from 'aws-sdk'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { getLogger, Logger } from '../../shared/logger'
@@ -14,7 +13,6 @@ export class Cache {
 }
 
 export interface credentialsRegionDataListMap {
-    credentials: AWS.Credentials
     regionDataList: regionRegistryMap[]
 }
 
@@ -38,9 +36,8 @@ export class SchemasDataProvider {
 
     public constructor(private readonly cache: Cache) {}
 
-    public async getRegistries(region: string, client: SchemaClient, credentials: AWS.Credentials) {
-        const cachedRegion = this.cache.credentialsRegionDataList
-            .filter(x => x.credentials === credentials)
+    public async getRegistries(region: string, client: SchemaClient) {
+        const cachedRegion = [...this.cache.credentialsRegionDataList]
             .shift()
             ?.regionDataList.filter(x => x.region === region)
             .shift()
@@ -50,7 +47,7 @@ export class SchemasDataProvider {
             if (!cachedRegion || cachedRegion.registryNames.length === 0) {
                 const registrySummary = await toArrayAsync(client.listRegistries())
                 const registryNames = registrySummary.map(x => x.RegistryName!)
-                this.pushRegionDataIntoCache(region, registryNames, [], credentials)
+                this.pushRegionDataIntoCache(region, registryNames, [])
 
                 return registryNames
             }
@@ -64,9 +61,8 @@ export class SchemasDataProvider {
         return cachedRegion!.registryNames
     }
 
-    public async getSchemas(region: string, registryName: string, client: SchemaClient, credentials: AWS.Credentials) {
-        const registrySchemasMapList = this.cache.credentialsRegionDataList
-            .filter(x => x.credentials === credentials)
+    public async getSchemas(region: string, registryName: string, client: SchemaClient) {
+        const registrySchemasMapList = [...this.cache.credentialsRegionDataList]
             .shift()
             ?.regionDataList.filter(x => x.region === region)
             .shift()?.registrySchemasMapList
@@ -78,7 +74,7 @@ export class SchemasDataProvider {
                 const singleItem: registrySchemasMap = { registryName: registryName, schemaList: schemas }
                 //wizard setup always calls getRegistries method prior to getSchemas, so this shouldn't be undefined
                 if (!registrySchemasMapList) {
-                    this.pushRegionDataIntoCache(region, [], [singleItem], credentials)
+                    this.pushRegionDataIntoCache(region, [], [singleItem])
                 }
 
                 if (registrySchemasMapList) {
@@ -98,8 +94,7 @@ export class SchemasDataProvider {
     private pushRegionDataIntoCache(
         region: string,
         registryNames: string[],
-        registrySchemasMapList: registrySchemasMap[],
-        credentials?: AWS.Credentials
+        registrySchemasMapList: registrySchemasMap[]
     ): void {
         const regionData: regionRegistryMap = {
             region: region,
@@ -107,12 +102,9 @@ export class SchemasDataProvider {
             registrySchemasMapList: registrySchemasMapList,
         }
 
-        const cachedCredential = this.cache.credentialsRegionDataList.filter(x => x.credentials === credentials).shift()
-        cachedCredential?.regionDataList.push(regionData)
-
-        if (!cachedCredential) {
+        const index = this.cache.credentialsRegionDataList[0]?.regionDataList.push(regionData)
+        if (index === undefined) {
             const regionDataWithCredentials: credentialsRegionDataListMap = {
-                credentials: credentials!,
                 regionDataList: [regionData],
             }
             this.cache.credentialsRegionDataList.push(regionDataWithCredentials)

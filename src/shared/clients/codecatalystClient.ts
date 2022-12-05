@@ -20,7 +20,7 @@ import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { SsoConnection } from '../../credentials/auth'
-import { TokenProvider } from '../../credentials/sdkV2Compat'
+import { SdkTokenProvider } from '../../credentials/sdkV2Compat'
 
 // REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
@@ -129,7 +129,7 @@ async function createCodeCatalystClient(
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
-        token: new TokenProvider(connection),
+        token: new SdkTokenProvider(connection),
     } as ServiceConfigurationOptions)
 
     return c

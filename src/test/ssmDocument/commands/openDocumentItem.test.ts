@@ -13,9 +13,10 @@ import { openDocumentItem } from '../../../ssmDocument/commands/openDocumentItem
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
 
 import * as picker from '../../../shared/ui/picker'
-import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { stub } from '../../utilities/stubber'
+import { createTestAuth } from '../../testUtil'
+import { Auth } from '../../../credentials/auth'
 
 describe('openDocumentItem', async function () {
     afterEach(function () {
@@ -34,15 +35,6 @@ describe('openDocumentItem', async function () {
         }`,
     }
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
-        Name: 'testDocument',
-        DocumentFormat: 'json',
-        DocumentType: 'Command',
-        Owner: 'Amazon',
-    }
-
-    const fakeAwsContext = new FakeAwsContext()
-
     const fakeRegion = 'us-east-1'
 
     const fakeFormatSelection = [
@@ -58,18 +50,27 @@ describe('openDocumentItem', async function () {
     }
 
     it('create DocumentItemNode and openDocumentItem functionality', async function () {
+        const auth = await createTestAuth()
+
         sinon.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
         sinon.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
         sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
 
-        const documentNode = generateDocumentItemNode()
+        const documentNode = generateDocumentItemNode(auth)
         const openTextDocumentStub = sinon.stub(vscode.workspace, 'openTextDocument')
-        await openDocumentItem(documentNode, fakeAwsContext, 'json')
+        await openDocumentItem(documentNode, 'json')
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, rawContent.Content)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.language, 'ssm-json')
     })
 
-    function generateDocumentItemNode(): DocumentItemNode {
+    function generateDocumentItemNode(auth: Auth): DocumentItemNode {
+        const fakeDoc: SSM.Types.DocumentIdentifier = {
+            Name: 'testDocument',
+            DocumentFormat: 'json',
+            DocumentType: 'Command',
+            Owner: auth.getAccountId(),
+        }
+
         const client = stub(DefaultSsmDocumentClient, { regionCode: fakeRegion })
         client.getDocument.resolves(rawContent)
 

@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Request, AWSError, Credentials } from 'aws-sdk'
-import { CredentialsOptions } from 'aws-sdk/lib/credentials'
+import globals from './extensionGlobals'
+
+import { Request, AWSError } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
-import { AwsContext } from './awsContext'
-import globals from './extensionGlobals'
+import { Auth, Connection, isIamConnection, isSsoConnection } from '../credentials/auth'
+import { SdkCredentialsProvider, SdkTokenProvider } from '../credentials/sdkV2Compat'
+import { ToolkitError } from './errors'
 import { DevSettings } from './settings'
 import { getClientId } from './telemetry/util'
+import { Mutable } from './utilities/tsUtils'
 import { extensionVersion } from './vscode/env'
 
 // These are not on the public API but are very useful for logging purposes.
@@ -24,7 +27,7 @@ interface RequestExtras {
 }
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
-export type ServiceOptions = ServiceConfigurationOptions & {
+export type ClientConfiguration = ServiceConfigurationOptions & {
     /**
      * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation
      * For example, 'error' may fire more than once for a single request
@@ -42,93 +45,58 @@ export type ServiceOptions = ServiceConfigurationOptions & {
      * })
      * ```
      */
-    onRequestSetup?: RequestListener | RequestListener[]
+    readonly onRequestSetup?: RequestListener | RequestListener[]
+
+    /**
+     * Connection to use for sending requests.
+     *
+     * Credentials provided by {@link ServiceConfigurationOptions.credentials} or {@link ServiceConfigurationOptions.token} have precedence.
+     */
+    readonly connection?: Connection
+
+    /**
+     * Enablement flag for sending the Toolkit user-agent (default: true)
+     */
+    readonly shouldSendUserAgent?: boolean
+
+    /**
+     * Hidden SDK field used to set an API model explicitly.
+     */
+    readonly apiConfig?: any
 }
 
-export interface AWSClientBuilder {
+export class AWSClientBuilder {
+    public constructor(private readonly auth: Auth) {}
+
     /**
      * Creates AWS service object of the given type, and sets options defaults.
-     *
-     * @param type  AWS service type
-     * @param options  AWS service configuration options
-     * @param region  AWS region override
-     * @param userAgent  Set the Toolkit user agent
-     * @returns
      */
-    createAwsService<T extends AWS.Service>(
-        type: new (o: ServiceConfigurationOptions) => T,
-        options?: ServiceOptions,
-        region?: string,
-        userAgent?: boolean,
-        settings?: DevSettings
-    ): Promise<T>
-}
-
-export class DefaultAWSClientBuilder implements AWSClientBuilder {
-    public constructor(private readonly awsContext: AwsContext) {}
-
     public async createAwsService<T extends AWS.Service>(
         type: new (o: ServiceConfigurationOptions) => T,
-        options?: ServiceOptions,
-        region?: string,
-        userAgent: boolean = true,
+        config?: ClientConfiguration,
         settings = DevSettings.instance
     ): Promise<T> {
-        const onRequest = options?.onRequestSetup ?? []
+        const onRequest = config?.onRequestSetup ?? []
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
-        const opt = { ...options }
+        const opt: Mutable<ClientConfiguration> = { shouldSendUserAgent: true, ...config }
+        opt.connection ??= this.auth.activeConnection
         delete opt.onRequestSetup
 
-        if (!opt.credentials && !opt.token) {
-            const shim = this.awsContext.credentialsShim
-
-            if (!shim) {
-                throw new Error('Toolkit is not logged-in.')
+        if (opt.connection && !(opt.token || opt.credentials)) {
+            if (isSsoConnection(opt.connection)) {
+                opt.token = new SdkTokenProvider(opt.connection)
+            } else if (isIamConnection(opt.connection)) {
+                opt.credentials = new SdkCredentialsProvider(opt.connection)
             }
 
-            opt.credentials = new (class extends Credentials {
-                public constructor() {
-                    // The class doesn't like being instantiated with empty creds
-                    super({ accessKeyId: '???', secretAccessKey: '???' })
-                }
-
-                public override get(callback: (err?: AWSError) => void): void {
-                    // Always try to fetch the latest creds first, attempting a refresh if needed
-                    // A 'passive' refresh is attempted first, before trying an 'active' one if certain criteria are met
-                    shim.get()
-                        .then(creds => {
-                            this.loadCreds(creds)
-                            this.needsRefresh() ? this.refresh(callback) : callback()
-                        })
-                        .catch(callback)
-                }
-
-                public override refresh(callback: (err?: AWSError) => void): void {
-                    shim.refresh()
-                        .then(creds => {
-                            this.loadCreds(creds)
-                            // The SDK V2 sets `expired` on certain errors so we should only
-                            // unset the flag after acquiring new credentials via `refresh`
-                            this.expired = false
-                            callback()
-                        })
-                        .catch(callback)
-                }
-
-                private loadCreds(creds: CredentialsOptions & { expiration?: Date }) {
-                    this.accessKeyId = creds.accessKeyId
-                    this.secretAccessKey = creds.secretAccessKey
-                    this.sessionToken = creds.sessionToken ?? this.sessionToken
-                    this.expireTime = creds.expiration ?? this.expireTime
-                }
-            })()
+            opt.region ??= opt.connection.defaultRegion
         }
 
-        if (!opt.region && region) {
-            opt.region = region
+        if (!opt.connection && !opt.credentials && !opt.token) {
+            throw new ToolkitError('Toolkit is not logged-in.', { code: 'NoConnection' })
         }
 
-        if (userAgent && !opt.customUserAgent) {
+        if (opt.shouldSendUserAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
             const clientId = await getClientId(globals.context.globalState)
             opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version} ClientId/${clientId}`

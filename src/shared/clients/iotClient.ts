@@ -515,5 +515,5 @@ export class DefaultIotClient {
 }
 
 async function createSdkClient(regionCode: string): Promise<Iot> {
-    return await globals.sdkClientBuilder.createAwsService(Iot, undefined, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(Iot, { region: regionCode })
 }

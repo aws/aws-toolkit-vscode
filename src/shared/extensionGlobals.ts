@@ -4,10 +4,9 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
+import { CredentialsStore } from '../credentials/credentialsStore'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
-import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
 import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
@@ -61,9 +60,8 @@ interface ToolkitGlobals {
     readonly window: Window
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
-    loginManager: LoginManager
     awsContextCommands: AwsContextCommands
-    awsContext: AwsContext
+    credentialsStore: CredentialsStore
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }

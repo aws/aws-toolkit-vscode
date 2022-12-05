@@ -4,7 +4,6 @@
  */
 
 import * as nls from 'vscode-nls'
-import * as AWS from '@aws-sdk/types'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -80,11 +79,10 @@ function createSamTemplatePrompter(
     })
 }
 
-function createSchemaRegionPrompter(regions: Region[], defaultRegion?: string): QuickPickPrompter<string> {
+function createSchemaRegionPrompter(regions: Region[]): QuickPickPrompter<string> {
     return createRegionPrompter(regions, {
         title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
         buttons: createCommonButtons(eventBridgeSchemasDocUrl),
-        defaultRegion,
     }).transform(r => r.id)
 }
 
@@ -98,10 +96,10 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
     })
 }
 
-function createRegistryPrompter(region: string, credentials?: AWS.Credentials): QuickPickPrompter<string> {
+function createRegistryPrompter(region: string): QuickPickPrompter<string> {
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
-        .getRegistries(region, client, credentials!)
+        .getRegistries(region, client)
         .then(registryNames => {
             if (!registryNames) {
                 vscode.window.showInformationMessage(
@@ -124,14 +122,10 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
     })
 }
 
-function createSchemaPrompter(
-    region: string,
-    registry: string,
-    credentials?: AWS.Credentials
-): QuickPickPrompter<string> {
+function createSchemaPrompter(region: string, registry: string): QuickPickPrompter<string> {
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
-        .getSchemas(region, registry, client, credentials!)
+        .getSchemas(region, registry, client)
         .then(schemas => {
             if (!schemas) {
                 vscode.window.showInformationMessage(
@@ -195,12 +189,7 @@ function createArchitecturePrompter(): QuickPickPrompter<Architecture> {
 }
 
 export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
-    public constructor(context: {
-        samCliVersion: string
-        schemaRegions: Region[]
-        defaultRegion?: string
-        credentials?: AWS.Credentials
-    }) {
+    public constructor(context: { samCliVersion: string; schemaRegions: Region[]; defaultRegion?: string }) {
         super({
             exitPrompterProvider: createExitPrompter,
         })
@@ -249,20 +238,17 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             return state.template === eventBridgeStarterAppTemplate
         }
 
-        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemaRegions, context.defaultRegion), {
+        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemaRegions), {
             showWhen: isStarterTemplate,
         })
 
-        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!, context.credentials), {
+        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!), {
             showWhen: isStarterTemplate,
         })
 
-        this.form.schemaName.bindPrompter(
-            state => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
-            {
-                showWhen: isStarterTemplate,
-            }
-        )
+        this.form.schemaName.bindPrompter(state => createSchemaPrompter(state.region!, state.registryName!), {
+            showWhen: isStarterTemplate,
+        })
 
         this.form.location.bindPrompter(() =>
             createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {

@@ -112,6 +112,6 @@ export class DefaultCloudControlClient implements CloudControlClient {
     }
 
     private async createSdkClient(): Promise<CloudControl> {
-        return await globals.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudControl, { region: this.regionCode })
     }
 }

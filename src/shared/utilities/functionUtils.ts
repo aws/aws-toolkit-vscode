@@ -54,3 +54,26 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
 
     return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
 }
+
+/**
+ * Throttles a function so that it will only run at most once within the specified period of time.
+ */
+export function throttle<T>(cb: () => T | Promise<T>, delay: number): () => Promise<T> {
+    let timer: NodeJS.Timeout | undefined
+    let promise: Promise<T> | undefined
+
+    return () => {
+        timer?.refresh()
+
+        return (promise ??= new Promise<T>((resolve, reject) => {
+            timer = setTimeout(async () => {
+                timer = promise = undefined
+                try {
+                    resolve(await cb())
+                } catch (err) {
+                    reject(err)
+                }
+            }, delay)
+        }))
+    }
+}

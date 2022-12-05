@@ -8,21 +8,21 @@ const localize = nls.loadMessageBundle()
 
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
+import { Auth } from '../../credentials/auth'
 
-export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext) {
+export async function updateDocumentVersion(node: DocumentItemNodeWriteable, auth = Auth.instance) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
 
     try {
-        if (node.documentOwner === awsContext.getCredentialAccountId()) {
+        if (node.documentOwner === auth.getAccountId()) {
             const versions = await node.listSchemaVersion()
             const documentVersion: string | undefined = await promptUserforDocumentVersion(versions)
             if (!documentVersion) {

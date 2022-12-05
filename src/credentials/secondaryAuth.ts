@@ -185,11 +185,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const id = cast(this.memento.get(this.key), Optional(String))
         const conn = id !== undefined ? await this.auth.getConnection({ id }) : undefined
 
-        if (conn === undefined) {
-            getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
+        if (conn === undefined && id !== undefined) {
+            getLogger().warn(`auth (${this.toolId}): removing saved connection "${id}" as it no longer exists`)
             await this.memento.update(this.key, undefined)
-        } else if (!this.isUsable(conn)) {
-            getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
+        } else if (conn !== undefined && !this.isUsable(conn)) {
+            getLogger().warn(`auth (${this.toolId}): saved connection "${conn.id}" is not valid`)
             await this.memento.update(this.key, undefined)
         } else {
             return conn

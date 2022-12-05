@@ -34,6 +34,7 @@ import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { Identity, recordCredentialTelemetry, validateConnection } from './identity'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
@@ -72,6 +73,7 @@ export interface SsoConnection {
     readonly label: string
     readonly startUrl: string
     readonly scopes?: string[]
+    readonly defaultRegion: string | undefined
 
     /**
      * Retrieves a bearer token, refreshing or re-authenticating as-needed.
@@ -88,6 +90,7 @@ export interface IamConnection {
     // This may change in the future after refactoring legacy implementations
     readonly id: string
     readonly label: string
+    readonly defaultRegion: string | undefined
     getCredentials(): Promise<Credentials>
 }
 
@@ -103,6 +106,7 @@ export interface SsoProfile {
 export interface IamProfile {
     readonly type: 'iam'
     readonly name: string
+    readonly region?: string
 }
 
 // Placeholder type.
@@ -165,6 +169,8 @@ interface ProfileMetadata {
      * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
      */
     readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
+
+    readonly identity?: Identity
 }
 
 // Difference between "Connection" vs. "Profile":
@@ -183,10 +189,15 @@ export class ProfileStore {
         return this.getData()[id]
     }
 
-    public getProfileOrThrow(id: string): StoredProfile {
+    public getProfileOrThrow(id: string): StoredProfile
+    public getProfileOrThrow(id: string, type: IamProfile['type']): StoredProfile<IamProfile>
+    public getProfileOrThrow(id: string, type: SsoProfile['type']): StoredProfile<SsoProfile>
+    public getProfileOrThrow(id: string, type?: Profile['type']): StoredProfile {
         const profile = this.getProfile(id)
         if (profile === undefined) {
             throw new Error(`Profile does not exist: ${id}`)
+        } else if (type && profile.type !== type) {
+            throw new Error(`Profile "${id}" is type "${profile.type}" but expected "${type}"`)
         }
 
         return profile
@@ -252,15 +263,20 @@ export class ProfileStore {
 }
 
 async function loadIamProfilesIntoStore(store: ProfileStore, manager: CredentialsProviderManager) {
-    const providers = await manager.getCredentialProviderNames()
+    const providers = await manager.getAllCredentialsProviders()
     for (const [id, profile] of store.listProfiles()) {
-        if (profile.type === 'iam' && providers[id] === undefined) {
+        if (profile.type === 'iam' && !providers.find(p => id === asString(p.getCredentialsId()))) {
             await store.deleteProfile(id)
         }
     }
-    for (const id of Object.keys(providers)) {
+    for (const provider of providers) {
+        const id = asString(provider.getCredentialsId())
         if (store.getProfile(id) === undefined) {
-            await store.addProfile(id, { type: 'iam', name: providers[id].credentialTypeId })
+            await store.addProfile(id, {
+                type: 'iam',
+                region: provider.getDefaultRegion(),
+                name: provider.getCredentialsId().credentialTypeId,
+            })
         }
     }
 }
@@ -307,7 +323,8 @@ export class Auth implements AuthService, ConnectionManager {
     public constructor(
         private readonly store: ProfileStore,
         private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider),
-        private readonly iamProfileProvider = CredentialsProviderManager.getInstance()
+        private readonly iamProfileProvider = CredentialsProviderManager.getInstance(),
+        private readonly credentialsStore = globals.credentialsStore
     ) {}
 
     #activeConnection: Mutable<StatefulConnection> | undefined
@@ -471,7 +488,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return provider.invalidate()
         } else if (profile.type === 'iam') {
-            globals.loginManager.store.invalidateCredentials(fromString(id))
+            this.credentialsStore.invalidateCredentials(fromString(id))
         }
     }
 
@@ -514,6 +531,19 @@ export class Auth implements AuthService, ConnectionManager {
             } catch {
                 return this.updateConnectionState(id, 'invalid')
             }
+        }
+    }
+
+    public getAccountId(conn: Pick<Connection, 'id'> | undefined = this.activeConnection): string | undefined {
+        if (!conn) {
+            return
+        }
+
+        const profile = this.store.getProfileOrThrow(conn.id)
+        const identity = profile.metadata.identity
+
+        if (identity?.source === 'sts') {
+            return identity.Account
         }
     }
 
@@ -563,7 +593,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private getIamConnection(id: Connection['id'], provider: CredentialsProvider): IamConnection & StatefulConnection {
-        const profile = this.store.getProfileOrThrow(id)
+        const getProfile = () => this.store.getProfileOrThrow(id, 'iam')
+        const profile = getProfile()
 
         return {
             id,
@@ -571,6 +602,9 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata.label ?? id,
             getCredentials: () => this.debouncedGetCredentials(id, provider),
+            get defaultRegion() {
+                return getProfile().region
+            },
         }
     }
 
@@ -588,6 +622,7 @@ export class Auth implements AuthService, ConnectionManager {
             type: profile.type,
             scopes: profile.scopes,
             startUrl: profile.startUrl,
+            defaultRegion: profile.ssoRegion,
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? label,
             getToken: () => this.debouncedGetToken(id, provider),
@@ -609,16 +644,19 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async createCachedCredentials(provider: CredentialsProvider) {
+        recordCredentialTelemetry(telemetry.activeSpan, provider)
+
         const providerId = provider.getCredentialsId()
-        globals.loginManager.store.invalidateCredentials(providerId)
-        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
-        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
+        this.credentialsStore.invalidateCredentials(providerId)
+        const { credentials } = await this.credentialsStore.upsertCredentials(providerId, provider)
+        const identity = await validateConnection(credentials, provider)
+        await this.store.updateProfile(asString(providerId), { identity })
 
         return credentials
     }
 
     private async getCachedCredentials(provider: CredentialsProvider) {
-        const creds = await globals.loginManager.store.getCredentials(provider.getCredentialsId())
+        const creds = await this.credentialsStore.getCredentials(provider.getCredentialsId())
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }
@@ -637,7 +675,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (credentials !== undefined) {
             return credentials
         } else if ((await provider.canAutoConnect()) === true) {
-            return this.createCachedCredentials(provider)
+            return telemetry.aws_refreshCredentials.run(() => this.createCachedCredentials(provider))
         } else {
             return this.handleInvalidCredentials(id, () => this.createCachedCredentials(provider))
         }
@@ -653,18 +691,20 @@ export class Auth implements AuthService, ConnectionManager {
             })
         }
 
-        if (previousState === 'valid') {
-            const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
-            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
-            if (resp !== localizedText.yes) {
-                throw new ToolkitError('User cancelled login', {
-                    cancelled: true,
-                    code: 'InvalidConnection',
-                })
+        return telemetry.aws_refreshCredentials.run(async () => {
+            if (previousState === 'valid') {
+                const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
+                const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
+                if (resp !== localizedText.yes) {
+                    throw new ToolkitError('User cancelled login', {
+                        cancelled: true,
+                        code: 'InvalidConnection',
+                    })
+                }
             }
-        }
 
-        return this.authenticate(id, refresh)
+            return this.authenticate(id, refresh)
+        })
     }
 
     public readonly tryAutoConnect = once(async () => {

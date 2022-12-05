@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import { join } from 'path'
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
@@ -28,13 +27,12 @@ import { telemetry } from '../shared/telemetry/telemetry'
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
 
     setImmediate(() => activateASL(extensionContext))
-    await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
+    await registerStepFunctionCommands(extensionContext, outputChannel)
     initializeCodeLens(extensionContext)
 }
 
@@ -65,7 +63,6 @@ export const previewStateMachineCommand = Commands.declare(
 
 async function registerStepFunctionCommands(
     extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const visualizationManager = new AslVisualizationManager(extensionContext)
@@ -83,7 +80,7 @@ async function registerStepFunctionCommands(
         }),
         Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {
             const region: string | undefined = node?.regionCode
-            await publishStateMachine(awsContext, outputChannel, region)
+            await publishStateMachine(outputChannel, region)
         })
     )
 }

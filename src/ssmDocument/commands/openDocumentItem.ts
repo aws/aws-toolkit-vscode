@@ -9,21 +9,21 @@ const localize = nls.loadMessageBundle()
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { DocumentItemNode } from '../explorer/documentItemNode'
-import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as picker from '../../shared/ui/picker'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
+import { Auth } from '../../credentials/auth'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
+export async function openDocumentItem(node: DocumentItemNode, format?: string, auth = Auth.instance) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
 
     let documentVersion: string | undefined = undefined
 
-    if (node.documentOwner === awsContext.getCredentialAccountId()) {
+    if (node.documentOwner === auth.getAccountId()) {
         const versions = await node.listSchemaVersion()
         if (versions.length > 1) {
             documentVersion = await promptUserforDocumentVersion(versions)
@@ -58,12 +58,12 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     }
 }
 
-export async function openDocumentItemJson(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'JSON')
+export async function openDocumentItemJson(node: DocumentItemNode) {
+    openDocumentItem(node, 'JSON')
 }
 
-export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'YAML')
+export async function openDocumentItemYaml(node: DocumentItemNode) {
+    openDocumentItem(node, 'YAML')
 }
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {

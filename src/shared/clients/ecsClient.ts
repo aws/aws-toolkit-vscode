@@ -112,7 +112,7 @@ export class DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await globals.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(ECS, { region: this.regionCode })
     }
 
     public async executeCommand(

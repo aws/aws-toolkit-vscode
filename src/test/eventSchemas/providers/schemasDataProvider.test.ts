@@ -24,8 +24,6 @@ describe('schemasDataProvider', function () {
     const registrySummary2 = { RegistryName: TEST_REGISTRY2 }
     const schemaSummary = { SchemaName: TEST_SCHEMA }
     const schemaSummary2 = { SchemaName: TEST_SCHEMA2 }
-    const testCredentials = {} as any as AWS.Credentials
-    const testCredentials2 = {} as any as AWS.Credentials
 
     let dataProviderObject: SchemasDataProvider
     let cacheData: Cache
@@ -44,7 +42,6 @@ describe('schemasDataProvider', function () {
 
     beforeEach(async function () {
         const regionDataWithCredentials: credentialsRegionDataListMap = {
-            credentials: testCredentials,
             regionDataList: [],
         }
         cacheData = new Cache([regionDataWithCredentials])
@@ -53,11 +50,7 @@ describe('schemasDataProvider', function () {
 
     describe('getRegistries', function () {
         it('should return registries for given region', async function () {
-            const registryNames = await dataProviderObject.getRegistries(
-                TEST_REGION,
-                createSchemaClient(),
-                testCredentials
-            )
+            const registryNames = await dataProviderObject.getRegistries(TEST_REGION, createSchemaClient())
             assert.ok(registryNames!.length === 2, 'unexpected number of registries returned')
             assert.strictEqual(registryNames![0], TEST_REGISTRY, 'TEST_REGISTRY name should match')
             assert.strictEqual(registryNames![1], TEST_REGISTRY2, 'TEST_REGISTRY2 name should match')
@@ -65,17 +58,12 @@ describe('schemasDataProvider', function () {
 
         it('should retain results when it is queried with same credentials ', async function () {
             const client = createSchemaClient()
-            await dataProviderObject.getRegistries(TEST_REGION, client, testCredentials)
-            await dataProviderObject.getRegistries(TEST_REGION2, client, testCredentials)
+            await dataProviderObject.getRegistries(TEST_REGION, client)
+            await dataProviderObject.getRegistries(TEST_REGION2, client)
 
             assert.ok(
                 cacheData.credentialsRegionDataList.length === 1,
                 'Cache should contain data for a single credential'
-            )
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[0].credentials,
-                testCredentials,
-                'Credentials key should match'
             )
             assert.ok(
                 cacheData.credentialsRegionDataList[0].regionDataList.length === 2,
@@ -104,39 +92,12 @@ describe('schemasDataProvider', function () {
             )
         })
 
-        it('should retain results when it is queried with different credentials ', async function () {
-            const client = createSchemaClient()
-            await dataProviderObject.getRegistries(TEST_REGION, client, testCredentials)
-            await dataProviderObject.getRegistries(TEST_REGION, client, testCredentials2)
-
-            assert.ok(cacheData.credentialsRegionDataList.length === 2, 'Cache should contain data for two credentials')
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[0].credentials,
-                testCredentials,
-                'First cache element should have a matching credentials key'
-            )
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[1].credentials,
-                testCredentials2,
-                'Second cache element should have a matching credentials key'
-            )
-
-            assert.ok(
-                cacheData.credentialsRegionDataList[0].regionDataList.length === 1,
-                'First cache element should have a single region data'
-            )
-            assert.ok(
-                cacheData.credentialsRegionDataList[1].regionDataList.length === 1,
-                'Second cache element should have a single region data'
-            )
-        })
-
         it('should return undefined when error occurs', async function () {
             const client = createSchemaClient()
             client.listRegistries.reset()
             client.listRegistries.throws(new Error('Custom error'))
 
-            const result = await dataProviderObject.getRegistries(TEST_REGION, client, testCredentials)
+            const result = await dataProviderObject.getRegistries(TEST_REGION, client)
 
             assert.strictEqual(result, undefined)
             assert.ok(
@@ -148,12 +109,7 @@ describe('schemasDataProvider', function () {
 
     describe('getSchemas', function () {
         it('should return schemas for given region', async function () {
-            const schemas = await dataProviderObject.getSchemas(
-                TEST_REGION,
-                TEST_REGISTRY,
-                createSchemaClient(),
-                testCredentials
-            )
+            const schemas = await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, createSchemaClient())
 
             assert.ok(schemas!.length === 2, 'Unexpected number of schemas returned')
             assert.strictEqual(schemas![0], schemaSummary, 'schemaSummary should match')
@@ -162,17 +118,12 @@ describe('schemasDataProvider', function () {
 
         it('should retain results when it is queried with same credentials ', async function () {
             const client = createSchemaClient()
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client, testCredentials)
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY2, client, testCredentials)
+            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client)
+            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY2, client)
 
             assert.ok(
                 cacheData.credentialsRegionDataList.length === 1,
                 'Cache should contain data for a single credential'
-            )
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[0].credentials,
-                testCredentials,
-                'Credentials key should match'
             )
             assert.ok(
                 cacheData.credentialsRegionDataList[0].regionDataList.length === 1,
@@ -198,39 +149,12 @@ describe('schemasDataProvider', function () {
             )
         })
 
-        it('should retain results when it is queried with different credentials ', async function () {
-            const client = createSchemaClient()
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client, testCredentials)
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client, testCredentials2)
-
-            assert.ok(cacheData.credentialsRegionDataList.length === 2, 'Cache should contain data for two credentials')
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[0].credentials,
-                testCredentials,
-                'Credentials key should match for first element'
-            )
-            assert.strictEqual(
-                cacheData.credentialsRegionDataList[1].credentials,
-                testCredentials2,
-                'Credentials key should match for second element'
-            )
-
-            assert.ok(
-                cacheData.credentialsRegionDataList[0].regionDataList.length === 1,
-                'First cache element should have a single region data'
-            )
-            assert.ok(
-                cacheData.credentialsRegionDataList[1].regionDataList.length === 1,
-                'Second cache element should have a single region data'
-            )
-        })
-
         it('should return undefined when error occurs ', async function () {
             const client = createSchemaClient()
             client.listSchemas.reset()
             client.listSchemas.throws(new Error('Custom error'))
 
-            const result = await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client, testCredentials)
+            const result = await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client)
 
             assert.strictEqual(result, undefined)
             assert.ok(

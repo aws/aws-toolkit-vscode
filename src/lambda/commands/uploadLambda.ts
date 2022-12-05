@@ -34,13 +34,13 @@ import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { ToolkitError } from '../../shared/errors'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
-import globals from '../../shared/extensionGlobals'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
+import { Auth, isIamConnection } from '../../credentials/auth'
 
 interface SavedLambdas {
     [profile: string]: { [region: string]: string }
@@ -124,7 +124,8 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
             runtime: lambda?.configuration?.Runtime as Runtime | undefined,
         })
         if (result === 'Succeeded') {
-            const profile = globals.awsContext.getCredentialProfileName()
+            const conn = Auth.instance.activeConnection
+            const profile = isIamConnection(conn) ? conn.id : undefined
             if (profile && lambda) {
                 LambdaSettings.instance.setRecentLambda(profile, lambda.region, lambda.name)
             }
@@ -577,7 +578,8 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
 
     // Get "recently used" Lambda functions.
     const recent = LambdaSettings.instance.getRecentLambdas()
-    const profile = globals.awsContext.getCredentialProfileName()
+    const conn = Auth.instance.activeConnection
+    const profile = isIamConnection(conn) ? conn.id : undefined
     if (profile && recent?.[profile]?.[region]) {
         let isInList = false
         for (const l of lambdaFunctionNames) {

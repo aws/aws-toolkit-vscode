@@ -68,7 +68,7 @@ import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../erro
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl } from '../../constants'
-import { Auth } from '../../../credentials/auth'
+import { Auth, isIamConnection } from '../../../credentials/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -232,7 +232,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
  * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
  */
 export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider {
-    public constructor(readonly ctx: ExtContext) {}
+    public constructor(readonly ctx: ExtContext, private readonly auth = Auth.instance) {}
 
     /**
      * @param folder  Workspace folder
@@ -531,7 +531,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.templatePath!)
 
-        let awsCredentials = await this.ctx.awsContext.getCredentials()
+        const conn = this.auth.activeConnection
+        let awsCredentials = isIamConnection(conn) ? await conn.getCredentials() : undefined
         if (!awsCredentials && !config.aws?.credentials) {
             getLogger().warn('SAM debug: missing AWS credentials (Toolkit is not connected)')
         } else if (config.aws?.credentials) {

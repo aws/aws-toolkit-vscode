@@ -40,6 +40,8 @@ import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
+import { Auth, isIamConnection } from '../../credentials/auth'
+import { ToolkitError } from '../errors'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -109,6 +111,13 @@ async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSetti
             //  - regionNode (selected from AWS Explorer)
             //  -  Uri to template.yaml (selected from File Explorer)
 
+            const connection = Auth.instance.activeConnection
+            if (!isIamConnection(connection)) {
+                throw new ToolkitError('Deploying SAM applications requires IAM credentials', {
+                    code: 'NoIAMCredentials',
+                })
+            }
+
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
                 const wizard = new SamDeployWizard(samDeployWizardContext, arg)
@@ -120,7 +129,7 @@ async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSetti
                     samDeployWizard: samDeployWizard,
                 },
                 {
-                    awsContext: ctx.awsContext,
+                    connection,
                     settings,
                 }
             )

@@ -9,17 +9,14 @@ import * as nls from 'vscode-nls'
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
-import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
-import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { AWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     aboutToolkit,
@@ -95,13 +92,9 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         initializeCredentialsProviderManager()
 
+        const credentialsStore = (globals.credentialsStore = new CredentialsStore())
         const endpointsProvider = makeEndpointsProvider()
-
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
         const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
-        const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -110,19 +103,18 @@ export async function activate(context: vscode.ExtensionContext) {
             .filter(x => x)
             .forEach(line => getLogger().info(line))
 
-        await initializeAwsCredentialsStatusBarItem(awsContext, context)
+        await initializeAwsCredentialsStatusBarItem(context)
         globals.regionProvider = regionProvider
-        globals.loginManager = loginManager
+        globals.credentialsStore = credentialsStore
         globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
-        globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        globals.sdkClientBuilder = new AWSClientBuilder(Auth.instance)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
 
         const settings = Settings.instance
         const experiments = Experiments.instance
 
-        await initializeCredentials(context, awsContext, settings, loginManager)
-        await activateTelemetry(context, awsContext, settings)
+        await activateTelemetry(context, settings)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -140,7 +132,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const extContext: ExtContext = {
             extensionContext: context,
-            awsContext: globals.awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
             outputChannel: toolkitOutputChannel,
@@ -208,7 +199,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
+        await activateSsmDocument(context)
 
         await activateSam(extContext)
 
@@ -230,7 +221,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        await activateStepFunctions(context, toolkitOutputChannel)
 
         showWelcomeMessage(context)
 
