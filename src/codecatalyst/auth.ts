@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
+import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import {
     Auth,
@@ -58,7 +58,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     // Get rid of this? Not sure where to put PAT code.
-    public async getPat(client: ConnectedCodeCatalystClient, username = client.identity.name): Promise<string> {
+    public async getPat(client: CodeCatalystClient, username = client.identity.name): Promise<string> {
         const stored = await this.storage.getPat(username)
 
         if (stored) {
@@ -71,7 +71,7 @@ export class CodeCatalystAuthenticationProvider {
         return resp.secret
     }
 
-    public async getCredentialsForGit(client: ConnectedCodeCatalystClient) {
+    public async getCredentialsForGit(client: CodeCatalystClient) {
         getLogger().verbose(`codecatalyst (git): attempting to provide credentials`)
 
         const username = client.identity.name

@@ -12,7 +12,7 @@ import { promisify } from 'util'
 import { getLogger } from '../shared/logger'
 import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResource'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { DevEnvironment, ConnectedCodeCatalystClient } from '../shared/clients/codecatalystClient'
+import { DevEnvironment, CodeCatalystClient } from '../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../codecatalyst/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
@@ -57,7 +57,7 @@ export async function openTerminalCommand(ctx: ExtContext) {
     await commands.withClient(openTerminal, progress).finally(() => progress.dispose())
 }
 
-async function openTerminal(client: ConnectedCodeCatalystClient, progress: LazyProgress<{ message: string }>) {
+async function openTerminal(client: CodeCatalystClient, progress: LazyProgress<{ message: string }>) {
     const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
     if (!devenv) {
         return
@@ -198,7 +198,7 @@ async function promptVsix(
  */
 async function installVsix(
     ctx: ExtContext,
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     progress: LazyProgress<{ message: string }>,
     env: DevEnvironment
 ): Promise<void> {

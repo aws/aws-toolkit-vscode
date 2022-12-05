@@ -19,7 +19,7 @@ import {
     sshLogFileLocation,
 } from '../../codecatalyst/model'
 import { readFile, writeFile } from 'fs-extra'
-import { StartDevEnvironmentSessionRequest } from '../../../types/clientcodecatalyst'
+import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
