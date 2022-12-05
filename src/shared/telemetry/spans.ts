@@ -83,9 +83,11 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
     return missingFields.length !== 0 ? Object.assign({ missingFields }, state) : state
 }
 
+type Attributes = Partial<MetricShapes[MetricName]>
+
 export class TelemetrySpan {
     #startTime: Date | undefined = undefined
-    private readonly state: Partial<MetricBase> = {}
+    private readonly state: Attributes = {}
     private readonly definition = definitions[this.name] ?? {
         unit: 'None',
         passive: true,
@@ -104,12 +106,12 @@ export class TelemetrySpan {
         return this.#startTime
     }
 
-    public record(data: Partial<MetricBase>): this {
+    public record(data: Attributes): this {
         Object.assign(this.state, data)
         return this
     }
 
-    public emit(data?: MetricBase): void {
+    public emit(data?: Attributes): void {
         const state = getValidatedState({ ...this.state, ...data }, this.definition)
         const metadata = Object.entries(state)
             .filter(([_, v]) => v !== '') // XXX: the telemetry service currently rejects empty strings :/
@@ -192,7 +194,7 @@ export class TelemetryTracer extends TelemetryBase {
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key.
      */
-    public record(data: Partial<MetricShapes[MetricName]>): void {
+    public record(data: Attributes): void {
         for (const span of this.spans) {
             span.record(data)
         }
