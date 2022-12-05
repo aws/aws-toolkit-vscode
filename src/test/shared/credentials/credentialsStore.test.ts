@@ -38,6 +38,7 @@ describe('CredentialsStore', async function () {
     ): CredentialsProvider {
         return {
             getCredentials: async () => testCredentials,
+            getCredentialsId: () => ({ credentialSource: 'profile', credentialTypeId: 'default' }),
             getHashCode: () => credentialsHashCode,
         } as unknown as CredentialsProvider
     }
