@@ -24,7 +24,7 @@ import {
 import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
-import { ConnectedCodeCatalystClient, DevEnvironment } from '../../../shared/clients/codecatalystClient'
+import { CodeCatalystClient, DevEnvironment } from '../../../shared/clients/codecatalystClient'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -36,7 +36,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
     public readonly onDidChangeDevfile = new vscode.EventEmitter<GetStatusResponse>()
 
     public constructor(
-        private readonly client: ConnectedCodeCatalystClient,
+        private readonly client: CodeCatalystClient,
         private readonly devenv: ConnectedDevEnv,
         private readonly commands: typeof CodeCatalystCommands.declared
     ) {
@@ -157,7 +157,7 @@ let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
 export async function showConfigureDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     ctx: vscode.ExtensionContext,
     devenv: ConnectedDevEnv,
     commands: typeof CodeCatalystCommands.declared
