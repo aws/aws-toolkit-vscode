@@ -24,7 +24,7 @@ import {
     CodeCatalystBranch,
     CodeCatalystOrg,
     CodeCatalystProject,
-    ConnectedCodeCatalystClient,
+    CodeCatalystClient,
     DevEnvironment,
 } from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -51,7 +51,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     public readonly source = 'src/codecatalyst/vue/create/index.js'
 
     public constructor(
-        private readonly client: ConnectedCodeCatalystClient,
+        private readonly client: CodeCatalystClient,
         private readonly commands: typeof CodeCatalystCommands.declared,
         private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
@@ -194,7 +194,7 @@ let subscriptions: vscode.Disposable[] | undefined
 let submitPromise: Promise<void> | undefined
 
 export async function showCreateDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     ctx: vscode.ExtensionContext,
     commands: typeof CodeCatalystCommands.declared
 ): Promise<void> {
