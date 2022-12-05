@@ -5,6 +5,7 @@
 
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
+import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -74,9 +75,25 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
-        // TODO: Implement logic
-        return []
+    public async getFunctionUrlConfigs(
+        name: string,
+        lambdaClient: Lambda | undefined = undefined
+    ): Promise<Lambda.FunctionUrlConfigList> {
+        getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
+        const client = lambdaClient ?? (await this.createSdkClient())
+
+        try {
+            const request = client.listFunctionUrlConfigs({ FunctionName: name })
+            const response = await request.promise()
+            // prune `Code` from logs so we don't reveal a signed link to customer resources.
+            getLogger().debug('GetFunctionUrlConfig returned response (code section pruned): %O', {
+                ...response,
+                Code: 'Pruned',
+            })
+            return response.FunctionUrlConfigs
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get Lambda function URLs')
+        }
     }
 
     public async updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration> {
