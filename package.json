@@ -1483,6 +1483,11 @@
                     "group": "4@1"
                 },
                 {
+                    "command": "aws.copyLambdaUrl",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "3@5"
