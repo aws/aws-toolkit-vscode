@@ -100,7 +100,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
 }
 
 export function createOrgPrompter(
-    client: codecatalyst.ConnectedCodeCatalystClient
+    client: codecatalyst.CodeCatalystClient
 ): QuickPickPrompter<codecatalyst.CodeCatalystOrg> {
     const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
     return createResourcePrompter(client.listSpaces(), helpUri, {
@@ -110,7 +110,7 @@ export function createOrgPrompter(
 }
 
 export function createProjectPrompter(
-    client: codecatalyst.ConnectedCodeCatalystClient,
+    client: codecatalyst.CodeCatalystClient,
     org?: codecatalyst.CodeCatalystOrg
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
     const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
@@ -123,7 +123,7 @@ export function createProjectPrompter(
 }
 
 export function createRepoPrompter(
-    client: codecatalyst.ConnectedCodeCatalystClient,
+    client: codecatalyst.CodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
     const helpUri = isCloud9() ? docs.cloud9.cloneRepo : docs.vscode.main
@@ -138,7 +138,7 @@ export function createRepoPrompter(
 }
 
 export function createDevEnvPrompter(
-    client: codecatalyst.ConnectedCodeCatalystClient,
+    client: codecatalyst.CodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
     const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
@@ -168,7 +168,7 @@ export function createDevEnvPrompter(
 type ResourceType = codecatalyst.CodeCatalystResource['type']
 
 export async function selectCodeCatalystResource<T extends ResourceType>(
-    client: codecatalyst.ConnectedCodeCatalystClient,
+    client: codecatalyst.CodeCatalystClient,
     type: T & ResourceType
 ): Promise<(codecatalyst.CodeCatalystResource & { type: typeof type }) | undefined> {
     const prompter = (() => {
@@ -194,7 +194,7 @@ export async function selectCodeCatalystResource<T extends ResourceType>(
  * Special-case of {@link createRepoPrompter} for creating a new devenv
  */
 export async function selectRepoForDevEnv(
-    client: codecatalyst.ConnectedCodeCatalystClient
+    client: codecatalyst.CodeCatalystClient
 ): Promise<codecatalyst.CodeCatalystRepo | undefined> {
     const repos = associateDevEnv(client, client.listResources('repo').flatten())
 
