@@ -841,6 +841,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyLambdaUrl",
+                    "when": "false"
+                },
+                {
                     "command": "aws.viewSchemaItem",
                     "when": "false"
                 },
@@ -2447,6 +2451,16 @@
             {
                 "command": "aws.deleteLambda",
                 "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.copyLambdaUrl",
+                "title": "%AWS.generic.copyUrl%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

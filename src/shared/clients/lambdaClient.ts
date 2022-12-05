@@ -74,6 +74,11 @@ export class DefaultLambdaClient {
         }
     }
 
+    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+        // TODO: Implement logic
+        return []
+    }
+
     public async updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration> {
         getLogger().debug(`updateFunctionCode called for function: ${name}`)
         const client = await this.createSdkClient()

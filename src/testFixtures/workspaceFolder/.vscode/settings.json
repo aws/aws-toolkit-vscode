@@ -1,0 +1,10 @@
+{
+    "aws.resources.enabledResources": [
+        "zebra",
+        "Antelope",
+        "aardvark",
+        "elephant"
+    ],
+    "json.schemas": [],
+    "editor.tabSize": 4
+}
