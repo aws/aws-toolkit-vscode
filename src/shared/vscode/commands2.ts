@@ -10,7 +10,6 @@ import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { DefaultTelemetryService } from '../telemetry/telemetryService'
 import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
@@ -327,10 +326,9 @@ interface CommandInfo<T extends Callback> {
 const emitInfo = new Map<string, { token: number; startTime: number; debounceCounter: number }>()
 const emitTokens: Record<string, number> = {}
 
-function startRecordCommand(id: string): number {
+function startRecordCommand(id: string, threshold: number): number {
     const currentTime = Date.now()
     const previousEmit = emitInfo.get(id)
-    const threshold = isAutomation() ? 0 : DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
     const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
 
     if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
@@ -367,7 +365,8 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
-    const telemetryToken = startRecordCommand(info.id)
+    const threshold = isAutomation() || info.telemetryName ? 0 : 300_000 // 5 minutes
+    const telemetryToken = startRecordCommand(info.id, threshold)
 
     logger.debug(`command: running ${label}${withArgs}`)
 
