@@ -5,23 +5,17 @@
 
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import { ConnectedCodeCatalystClient, DevEnvironment } from '../shared/clients/codecatalystClient'
+import { CodeCatalystClient, createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { DevEnvironmentSettings } from './commands'
-import {
-    codeCatalystConnectCommand,
-    CODECATALYST_RECONNECT_KEY,
-    createClientFactory,
-    DevEnvironmentId,
-    DevEnvMemento,
-} from './model'
+import { codeCatalystConnectCommand, CODECATALYST_RECONNECT_KEY, DevEnvironmentId, DevEnvMemento } from './model'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { recordSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,21 +24,19 @@ const MAX_RECONNECT_TIME = 10 * 60 * 1000
 
 export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCatalystAuthenticationProvider) {
     let restartHandled = false
-    authProvider.onDidChangeActiveConnection(async () => {
-        if (restartHandled) {
+    authProvider.onDidChangeActiveConnection(async conn => {
+        if (restartHandled || conn === undefined) {
             return
         }
 
-        const client = await createClientFactory(authProvider)()
-        if (client.connected) {
-            const envId = getCodeCatalystDevEnvId()
-            handleRestart(client, ctx, envId)
-            restartHandled = true
-        }
+        const client = await createClient(conn)
+        const envId = getCodeCatalystDevEnvId()
+        handleRestart(client, ctx, envId)
+        restartHandled = true
     })
 }
 
-function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, envId: string | undefined) {
+function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: string | undefined) {
     if (envId !== undefined) {
         const memento = ctx.extensionContext.globalState
         const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
@@ -73,7 +65,7 @@ function handleRestart(client: ConnectedCodeCatalystClient, ctx: ExtContext, env
  * @param client a connected client
  * @param ctx the extension context
  */
-async function reconnectDevEnvs(client: ConnectedCodeCatalystClient, ctx: ExtContext): Promise<void> {
+async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Promise<void> {
     const memento = ctx.extensionContext.globalState
     const pendingDevEnvs = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
     const validDevEnvs = filterInvalidDevEnvs(pendingDevEnvs)
@@ -140,7 +132,7 @@ function setWatchedDevEnvStatus(memento: vscode.Memento, devenvs: Record<string,
  * @param devenvs All VALID devenvs that are not being watched by any other VSCode instance
  */
 async function pollDevEnvs(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     progress: vscode.Progress<{ message: string }>,
     token: vscode.CancellationToken,
     memento: vscode.Memento,
@@ -220,7 +212,7 @@ function failDevEnv(memento: vscode.Memento, devenvId: string) {
 }
 
 async function openReconnectedDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     id: string,
     devenv: DevEnvMemento,
     closeRootInstance: boolean
@@ -231,7 +223,7 @@ async function openReconnectedDevEnv(
         project: { name: devenv.projectName },
     }
 
-    telemetry.codecatalyst_connect.record({ source: 'Reconnect' })
+    recordSource('Reconnect')
     await codeCatalystConnectCommand.execute(client, identifier, devenv.previousVscodeWorkspace)
 
     // When we only have 1 devenv to watch we might as well close the local vscode instance

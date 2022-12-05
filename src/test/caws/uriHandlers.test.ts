@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import { register } from '../../codecatalyst/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { ConnectedCodeCatalystClient } from '../../shared/clients/codecatalystClient'
+import { CodeCatalystClient } from '../../shared/clients/codecatalystClient'
 import { anything, mock, reset, when } from 'ts-mockito'
 import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
@@ -40,7 +40,7 @@ describe('CodeCatalyst handlers', function () {
     let handler: UriHandler
     let testWindow: TestWindow
     let commandStub: Stub<typeof vscode.commands.executeCommand>
-    const client = mock<ConnectedCodeCatalystClient>()
+    const client = mock<CodeCatalystClient>()
 
     beforeEach(function () {
         handler = new UriHandler((testWindow = createTestWindow()))

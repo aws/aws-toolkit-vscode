@@ -24,13 +24,14 @@ import {
     CodeCatalystBranch,
     CodeCatalystOrg,
     CodeCatalystProject,
-    ConnectedCodeCatalystClient,
+    CodeCatalystClient,
     DevEnvironment,
 } from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
+import { recordSource } from '../../utils'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -51,7 +52,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
     public readonly source = 'src/codecatalyst/vue/create/index.js'
 
     public constructor(
-        private readonly client: ConnectedCodeCatalystClient,
+        private readonly client: CodeCatalystClient,
         private readonly commands: typeof CodeCatalystCommands.declared,
         private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
@@ -141,7 +142,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
             }
         })()
 
-        telemetry.codecatalyst_connect.record({ source: 'Webview' })
+        recordSource('Webview')
         telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
 
         this.onComplete(devenv)
@@ -194,7 +195,7 @@ let subscriptions: vscode.Disposable[] | undefined
 let submitPromise: Promise<void> | undefined
 
 export async function showCreateDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     ctx: vscode.ExtensionContext,
     commands: typeof CodeCatalystCommands.declared
 ): Promise<void> {

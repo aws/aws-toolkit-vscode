@@ -10,15 +10,11 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { selectCodeCatalystResource } from './wizards/selectResource'
-import { openCodeCatalystUrl } from './utils'
+import { openCodeCatalystUrl, recordSource } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
-import {
-    CodeCatalystClient,
-    ConnectedCodeCatalystClient,
-    CodeCatalystResource,
-} from '../shared/clients/codecatalystClient'
-import { createClientFactory, DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
+import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
+import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -26,7 +22,7 @@ import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
-import { CreateDevEnvironmentRequest } from '../../types/clientcodecatalyst'
+import { CreateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -34,7 +30,7 @@ export async function listCommands(): Promise<void> {
 }
 
 /** "Clone CodeCatalyst Repository" command. */
-export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient, url?: vscode.Uri): Promise<void> {
+export async function cloneCodeCatalystRepo(client: CodeCatalystClient, url?: vscode.Uri): Promise<void> {
     let resource: { name: string; project: string; org: string }
     if (!url) {
         const r = await selectCodeCatalystResource(client, 'repo')
@@ -65,7 +61,7 @@ export async function cloneCodeCatalystRepo(client: ConnectedCodeCatalystClient,
  * - "Open CodeCatalyst Repository"
  */
 export async function openCodeCatalystResource(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     kind: CodeCatalystResource['type']
 ): Promise<void> {
     const resource = await selectCodeCatalystResource(client, kind)
@@ -78,7 +74,7 @@ export async function openCodeCatalystResource(
 }
 
 export async function stopDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     devenv: DevEnvironmentId,
     opts?: { readonly showPrompt?: boolean }
 ): Promise<void> {
@@ -102,7 +98,7 @@ export async function stopDevEnv(
     })
 }
 
-export async function deleteDevEnv(client: ConnectedCodeCatalystClient, devenv: DevEnvironmentId): Promise<void> {
+export async function deleteDevEnv(client: CodeCatalystClient, devenv: DevEnvironmentId): Promise<void> {
     await client.deleteDevEnvironment({
         id: devenv.id,
         projectName: devenv.project.name,
@@ -116,7 +112,7 @@ export type DevEnvironmentSettings = Pick<
 >
 
 export async function updateDevEnv(
-    client: ConnectedCodeCatalystClient,
+    client: CodeCatalystClient,
     devenv: DevEnvironmentId,
     settings: DevEnvironmentSettings
 ) {
@@ -128,26 +124,16 @@ export async function updateDevEnv(
     })
 }
 
-function createClientInjector(
-    authProvider: CodeCatalystAuthenticationProvider,
-    clientFactory: () => Promise<CodeCatalystClient>
-): ClientInjector {
+function createClientInjector(authProvider: CodeCatalystAuthenticationProvider): ClientInjector {
     return async (command, ...args) => {
-        const client = await clientFactory()
+        telemetry.record({ userId: AccountStatus.NotSet })
 
-        try {
-            if (!client.connected) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection' })
-            }
+        await authProvider.restore()
+        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+        const client = await createClient(conn)
+        telemetry.record({ userId: client.identity.id })
 
-            return await command(client, ...args)
-        } finally {
-            const userId = client.connected ? client.identity.id : AccountStatus.NotApplicable
-
-            // TODO(sijaden): should this mark only instantiated spans or future spans as well?
-            // right now it won't mark spans if they're created and emitted prior to the command finishing
-            telemetry.record({ userId })
-        }
+        return command(client, ...args)
     }
 }
 
@@ -158,7 +144,7 @@ function createCommandDecorator(commands: CodeCatalystCommands): CommandDecorato
 }
 
 interface CodeCatalystCommand<T extends any[], U> {
-    (client: ConnectedCodeCatalystClient, ...args: T): U | Promise<U>
+    (client: CodeCatalystClient, ...args: T): U | Promise<U>
 }
 
 interface ClientInjector {
@@ -175,17 +161,14 @@ type Inject<T, U> = T extends (...args: infer P) => infer R
         : never
     : never
 
-type WithClient<T> = Parameters<Inject<T, ConnectedCodeCatalystClient>>
+type WithClient<T> = Parameters<Inject<T, CodeCatalystClient>>
 
 export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
 
-    public constructor(
-        authProvider: CodeCatalystAuthenticationProvider,
-        clientFactory = createClientFactory(authProvider)
-    ) {
-        this.withClient = createClientInjector(authProvider, clientFactory)
+    public constructor(authProvider: CodeCatalystAuthenticationProvider) {
+        this.withClient = createClientInjector(authProvider)
     }
 
     public listCommands() {
@@ -253,7 +236,7 @@ export class CodeCatalystCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            telemetry.codecatalyst_connect.record({ source: 'CommandPalette' })
+            recordSource('CommandPalette')
         }
 
         return this.withClient(openDevEnv, devenv, targetPath)
@@ -281,9 +264,8 @@ export class CodeCatalystCommands {
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
         const auth = CodeCatalystAuthenticationProvider.fromContext(ctx)
-        const factory = createClientFactory(auth)
 
-        return new this(auth, factory)
+        return new this(auth)
     }
 
     public static readonly declared = {
