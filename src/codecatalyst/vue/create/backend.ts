@@ -31,6 +31,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
+import { recordSource } from '../../utils'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -141,7 +142,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
             }
         })()
 
-        telemetry.codecatalyst_connect.record({ source: 'Webview' })
+        recordSource('Webview')
         telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
 
         this.onComplete(devenv)

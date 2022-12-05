@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { selectCodeCatalystResource } from './wizards/selectResource'
-import { openCodeCatalystUrl } from './utils'
+import { openCodeCatalystUrl, recordSource } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
@@ -236,7 +236,7 @@ export class CodeCatalystCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            telemetry.codecatalyst_connect.record({ source: 'CommandPalette' })
+            recordSource('CommandPalette')
         }
 
         return this.withClient(openDevEnv, devenv, targetPath)
