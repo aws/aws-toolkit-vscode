@@ -82,7 +82,6 @@ import software.aws.toolkits.telemetry.Result as TelemetryResult
 class CawsSettings(
     // ui initialization params
     var initialSpace: String? = null,
-    var initialProject: String = "",
 
     // core bindings
     var project: CawsProject? = null,
@@ -244,9 +243,9 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
     override fun getContent(connectionSettings: ClientConnectionSettings<*>): JComponent {
         context.connectionSettings = connectionSettings
         val client = AwsClientManager.getInstance().getClient<CodeCatalystClient>(connectionSettings)
-        val spaces = context.initialSpace?.let {
-            listOf(it)
-        } ?: tryOrNull { getSpaces(client) }
+        val spaces = context.initialSpace?.let { listOf(it) }
+            ?: context.project?.space?.let { listOf(it) }
+            ?: tryOrNull { getSpaces(client) }
         return if (spaces.isNullOrEmpty()) {
             InfoPanel()
                 .addLine(message("caws.workspace.details.introduction_message"))
@@ -269,7 +268,6 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                     }
                 }
 
-                val projects = getProjects(client, spaces)
                 val projectCombo = AsyncComboBox<CawsProject> { label, value, _ ->
                     value ?: return@AsyncComboBox
                     label.text = "${value.project} (${value.space})"
@@ -436,7 +434,12 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                 }
 
                 // need here to force comboboxes to load
-                projects.forEach { projectCombo.addItem(it) }
+                if (context.project == null) {
+                    getProjects(client, spaces).forEach { projectCombo.addItem(it) }
+                } else {
+                    projectCombo.addItem(context.project)
+                }
+
                 val propertyGraph = PropertyGraph()
                 val projectProperty = propertyGraph.property(projectCombo.selected())
                 projectCombo.addItemListener {
