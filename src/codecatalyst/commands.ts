@@ -18,7 +18,7 @@ import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { ToolkitError } from '../shared/errors'
+import { isAwsError, ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
@@ -124,13 +124,24 @@ export async function updateDevEnv(
     })
 }
 
+function isOnboardingException(e: unknown) {
+    // `GetUserDetails` returns `AccessDeniedException` if the user has not onboarded
+    return isAwsError(e) && e.code === 'AccessDeniedException' && e.message.includes('GetUserDetails')
+}
+
 function createClientInjector(authProvider: CodeCatalystAuthenticationProvider): ClientInjector {
     return async (command, ...args) => {
         telemetry.record({ userId: AccountStatus.NotSet })
 
         await authProvider.restore()
         const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-        const client = await createClient(conn)
+        const client = await createClient(conn).catch(async e => {
+            if (isOnboardingException(e)) {
+                await authProvider.promptOnboarding()
+            }
+
+            throw e
+        })
         telemetry.record({ userId: client.identity.id })
 
         return command(client, ...args)

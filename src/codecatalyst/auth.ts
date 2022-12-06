@@ -94,6 +94,23 @@ export class CodeCatalystAuthenticationProvider {
         await this.secondaryAuth.restoreConnection()
     }
 
+    public async promptOnboarding(): Promise<void> {
+        const okItem: vscode.MessageItem = { title: localizedText.ok }
+        const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
+        const resp = await vscode.window.showInformationMessage(
+            'The current connection is not onboarded with CodeCatalyst. This must be done in the browser.\n\n Onboard now?',
+            { modal: true },
+            okItem,
+            cancelItem
+        )
+
+        if (resp === okItem) {
+            await vscode.env.openExternal(vscode.Uri.parse('https://codecatalyst.aws/onboarding/view'))
+        }
+
+        throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
+    }
+
     public async promptNotConnected(): Promise<SsoConnection> {
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade'
