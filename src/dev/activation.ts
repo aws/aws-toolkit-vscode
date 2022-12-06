@@ -15,6 +15,8 @@ import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { watchBetaVSIX } from './beta'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { entries } from '../shared/utilities/tsUtils'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 interface MenuOption {
     readonly label: string
@@ -99,7 +101,7 @@ export function activate(ctx: ExtContext): void {
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
 
-    if (!isCloud9()) {
+    if (!isCloud9() && !isReleaseVersion()) {
         ctx.extensionContext.subscriptions.push(
             watchVsixUrl(devSettings),
             devSettings.onDidChange(({ key }) => {
@@ -121,10 +123,6 @@ function watchVsixUrl(settings: DevSettings): vscode.Disposable {
     }
 
     return { dispose: () => vsixWatchSubscription?.dispose() }
-}
-
-function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
-    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
