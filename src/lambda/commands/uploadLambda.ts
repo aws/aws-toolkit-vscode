@@ -212,9 +212,16 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+        if (
+            (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) ||
+            invokePath?.fsPath.endsWith('template.yaml')
+        ) {
             this.form.uploadType.setDefault('directory')
-            this.form.targetUri.setDefault(invokePath)
+            if (invokePath?.fsPath.endsWith('template.yaml')) {
+                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
+            } else {
+                this.form.targetUri.setDefault(invokePath)
+            }
         } else {
             this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
             this.form.targetUri.bindPrompter(({ uploadType }) => {

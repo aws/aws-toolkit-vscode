@@ -4,9 +4,11 @@
  */
 
 import * as vscode from 'vscode'
+import { writeFileSync } from 'fs-extra'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import { UploadLambdaWizard, UploadLambdaWizardState, LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import path = require('path')
 
 describe('UploadLambdaWizard', function () {
     let tester: WizardTester<UploadLambdaWizardState>
@@ -61,6 +63,29 @@ describe('UploadLambdaWizard', function () {
             tester.uploadType.assertValue('directory')
             tester.targetUri.assertDoesNotShow()
             tester.targetUri.assertValue(invokePath)
+            tester.lambda.name.assertShow(2)
+            tester.confirmedDeploy.assertShow(3)
+        })
+    })
+
+    describe('invoked from template', function () {
+        let tempDir: string
+        let tempDirUri: vscode.Uri
+        let invokePath: vscode.Uri
+        beforeEach(async function () {
+            tempDir = await makeTemporaryToolkitFolder()
+            tempDirUri = vscode.Uri.file(tempDir)
+            writeFileSync(path.join(tempDir, 'template.yaml'), '')
+            invokePath = vscode.Uri.file(path.join(tempDir, 'template.yaml'))
+            tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
+        })
+
+        it('skip select directory, auto selected', function () {
+            tester.lambda.region.assertShow(1)
+            tester.uploadType.assertDoesNotShow()
+            tester.uploadType.assertValue('directory')
+            tester.targetUri.assertDoesNotShow()
+            tester.targetUri.assertValue(tempDirUri)
             tester.lambda.name.assertShow(2)
             tester.confirmedDeploy.assertShow(3)
         })
