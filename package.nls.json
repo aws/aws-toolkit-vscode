@@ -185,7 +185,7 @@
     "AWS.generic.preview": "Preview",
     "AWS.generic.viewDocs": "View Documentation",
     "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
-    "AWS.walkthrough.gettingStarted.title": "Get Started with AWS",
+    "AWS.walkthrough.gettingStarted.title": "Get started with AWS",
     "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit.",
     "AWS.walkthrough.gettingStarted.description.cn": "These walkthroughs help you set up the Amazon Toolkit.",
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
