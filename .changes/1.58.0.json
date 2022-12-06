@@ -1,0 +1,22 @@
+{
+	"date": "2022-12-06",
+	"version": "1.58.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "S3: \"Download As\" action defaults to the last-used download path."
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon CodeCatalyst: faster listing of repositories and Dev Environments"
+		},
+		{
+			"type": "Feature",
+			"description": "Cloud9: browse and generate code for EventBridge Schemas from AWS Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon CodeCatalyst: Connecting to AWS Builder ID when coming from the browser has been made easier"
+		}
+	]
+}
