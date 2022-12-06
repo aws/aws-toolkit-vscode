@@ -13,6 +13,8 @@ import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
+import { watchBetaVSIX } from './beta'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 interface MenuOption {
     readonly label: string
@@ -96,6 +98,29 @@ export function activate(ctx: ExtContext): void {
 
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
+
+    if (!isCloud9()) {
+        ctx.extensionContext.subscriptions.push(
+            watchVsixUrl(devSettings),
+            devSettings.onDidChange(({ key }) => {
+                if (key === 'betaUrl') {
+                    watchVsixUrl(devSettings)
+                }
+            })
+        )
+    }
+}
+
+let vsixWatchSubscription: vscode.Disposable | undefined
+function watchVsixUrl(settings: DevSettings): vscode.Disposable {
+    const vsixUrl = settings.get('betaUrl', '')
+    vsixWatchSubscription?.dispose()
+
+    if (vsixUrl) {
+        vsixWatchSubscription = watchBetaVSIX(vsixUrl)
+    }
+
+    return { dispose: () => vsixWatchSubscription?.dispose() }
 }
 
 function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
