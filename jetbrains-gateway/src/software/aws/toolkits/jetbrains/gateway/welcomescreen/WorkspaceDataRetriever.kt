@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.gateway.inProgress
 import software.aws.toolkits.jetbrains.gateway.toSourceRepository
 import software.aws.toolkits.jetbrains.gateway.toWorkspace
 import software.aws.toolkits.jetbrains.services.caws.CawsProject
+import software.aws.toolkits.jetbrains.services.caws.listAccessibleProjectsPaginator
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -50,7 +51,7 @@ class WorkspaceDataRetriever(
 
     private fun loadData() {
         val initialDirty = mutableSetOf<WorkspaceIdentifier>()
-        client.listProjectsPaginator { it.spaceName(spaceName) }.items()
+        client.listAccessibleProjectsPaginator { it.spaceName(spaceName) }.items()
             .forEach { project ->
                 val cawsProject = CawsProject(spaceName, project.name())
                 val result = client.listDevEnvironmentsPaginator { it.projectName(project.name()).spaceName(spaceName) }.items()

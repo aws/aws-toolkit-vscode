@@ -66,6 +66,7 @@ import software.aws.toolkits.jetbrains.services.caws.CawsProject
 import software.aws.toolkits.jetbrains.services.caws.InactivityTimeout
 import software.aws.toolkits.jetbrains.services.caws.isSubscriptionFreeTier
 import software.aws.toolkits.jetbrains.services.caws.isSupportedInFreeTier
+import software.aws.toolkits.jetbrains.services.caws.listAccessibleProjectsPaginator
 import software.aws.toolkits.jetbrains.services.caws.loadParameterDescriptions
 import software.aws.toolkits.jetbrains.ui.AsyncComboBox
 import software.aws.toolkits.jetbrains.utils.ui.find
@@ -531,7 +532,7 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
 
     private fun getProjects(client: CodeCatalystClient, spaces: List<String>) = spaces
         .flatMap { space ->
-            client.listProjectsPaginator { it.spaceName(space) }.items()
+            client.listAccessibleProjectsPaginator { it.spaceName(space) }.items()
                 .map { project -> CawsProject(space, project.name()) }
         }
         .sortedByDescending { it.project }

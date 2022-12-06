@@ -32,7 +32,7 @@ object CawsResources {
             .map { it.name() }
 
         spaces.flatMap { space ->
-            listProjectsPaginator { it.spaceName(space) }
+            listAccessibleProjectsPaginator { it.spaceName(space) }
                 .items()
                 .map { CawsProject(space = space, project = it.name()) }
         }
