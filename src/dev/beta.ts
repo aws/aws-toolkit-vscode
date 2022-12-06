@@ -126,7 +126,8 @@ async function promptInstallToolkit(pluginPath: vscode.Uri, newVersion: string, 
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.dev.beta.updatePrompt',
-            `New version of AWS Toolkit is available at the beta URL (${vsixUrl}). Install the new version "{0}" to continue using the beta.`,
+            `New version of AWS Toolkit is available at the beta URL ({0}). Install the new version "{1}" to continue using the beta.`,
+            vsixUrl,
             newVersion
         ),
         installBtn
