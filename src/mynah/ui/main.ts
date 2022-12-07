@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FeedbackForm } from './components/feedback-form/feedback-form'
 import { MainContainer } from './components/main-container'
 import { Notification, NotificationType } from './components/notification/notification'
 import { SearchCard } from './components/search-block/search-card'
@@ -20,7 +19,6 @@ export class MynahUI {
     private readonly wrapper: ExtendedHTMLElement
     private readonly searchCard: SearchCard
     private readonly mainContainer: MainContainer
-    private readonly feedbackForm: FeedbackForm
     constructor() {
         window.ideApi = acquireVsCodeApi()
         window.domBuilder = new DomBuilder('body')
@@ -105,15 +103,12 @@ export class MynahUI {
         this.mainContainer = new MainContainer({
             onSuggestionOpen: (suggestion: Suggestion) => {
                 window.serviceConnector.triggerSuggestionEvent(SuggestionEventName.CLICK, suggestion)
-                this.feedbackForm.reveal()
             },
             onSuggestionLinkClick: (suggestion: Suggestion) => {
                 window.serviceConnector.triggerSuggestionEvent(SuggestionEventName.OPEN, suggestion)
-                this.feedbackForm.reveal()
             },
             onSuggestionLinkCopy: (suggestion: Suggestion) => {
                 window.serviceConnector.triggerSuggestionEvent(SuggestionEventName.COPY, suggestion)
-                this.feedbackForm.reveal()
             },
             onSuggestionEngaged: (engagement: SuggestionEngagement) => {
                 window.serviceConnector.triggerSuggestionEngagement(engagement)
@@ -131,13 +126,10 @@ export class MynahUI {
             this.recordContextChange.bind(this) as EventListener
         )
 
-        this.feedbackForm = new FeedbackForm({ onFeedbackSet: window.serviceConnector.sendFeedback })
-
         if (
             (window.config.getConfig('query-text') !== undefined && window.config.getConfig('query-text') !== '') ||
             (codeQuery !== undefined && codeQuery.simpleNames.length !== 0)
         ) {
-            this.feedbackForm.reveal()
             const initSuggestions = window.config.getConfig('suggestions')
             if (initSuggestions !== undefined && initSuggestions !== '') {
                 this.handleContentUpdate(JSON.parse(initSuggestions))
@@ -226,7 +218,6 @@ export class MynahUI {
             .then((suggestions?: Suggestion[]) => {
                 if (suggestions != undefined) {
                     this.handleContentUpdate(suggestions)
-                    this.feedbackForm.reveal()
                 }
             })
             .catch((err: Error) => {

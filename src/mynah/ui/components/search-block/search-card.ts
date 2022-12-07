@@ -19,6 +19,7 @@ import { ContextSource, ContextTypes } from '../../helper/context-manager'
 import { SearchHistoryItem } from './search-history-content'
 import { SearchApiHelp } from './search-api-help'
 import { SearchLiveToggle } from './search-live-toggle'
+import { SearchCardHeader } from './search-card-header'
 
 export interface SearchCardProps {
     onSearch: (
@@ -64,6 +65,7 @@ export class SearchCard {
     private searchPayload: SearchPayload
     private readonly foldUnfoldButton: Button
     private readonly contextManagement: SearchContext
+    private readonly searchCardHeader: SearchCardHeader
     private unfoldedByContextInsertion: boolean = false
     private unfoldedByButton: boolean = false
     render: ExtendedHTMLElement
@@ -150,11 +152,14 @@ export class SearchCard {
             })
         }
 
+        this.searchCardHeader = new SearchCardHeader()
+
         this.render = window.domBuilder.build({
             type: 'div',
             persistent: true,
             classNames: ['mynah-search-block'],
             children: [
+                this.searchCardHeader.render,
                 ...((props.liveSearch ?? false) && this.liveSearchToggle !== undefined
                     ? [this.liveSearchToggle.render]
                     : []),

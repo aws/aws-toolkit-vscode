@@ -113,11 +113,11 @@ $iconsExtension: '.svg';
 }
 
 .mynah-icon-thumbs-up {
-    @include iconMask('exposure_plus_one');
+    @include iconMask('like');
 }
 
 .mynah-icon-thumbs-down {
-    @include iconMask('exposure_minus_one');
+    @include iconMask('dislike');
 }
 
 .mynah-icon-star {

@@ -9,7 +9,7 @@ import { registerHttpsFileSystem } from './http-filesystem'
 import { TelemetryEventName, SearchTrigger } from '../telemetry/telemetry/types'
 import { SearchHistoryStore } from '../stores/searchHistoryStore'
 import { PanelStore } from '../stores/panelStore'
-import { showNotification } from '../utils/notify'
+import { NotificationType, showNotification } from '../utils/notify'
 import { SearchHistoryDisplay } from './search-history-display'
 import { AutocompleteDisplay } from './autocomplete-display'
 import { LiveSearchDisplay } from './live-search'
@@ -323,6 +323,7 @@ export class ResultDisplay {
                     }
                     break
                 case 'upvote':
+                    showNotification(NotificationType.INFO, 'Feedback Submitted. Thanks!')
                     session.recordEvent(TelemetryEventName.UPVOTE_SUGGESTION, {
                         suggestionMetadata: {
                             ...msg,
@@ -330,6 +331,7 @@ export class ResultDisplay {
                     })
                     break
                 case 'downvote':
+                    showNotification(NotificationType.INFO, 'Feedback Submitted. Thanks!')
                     session.recordEvent(TelemetryEventName.DOWNVOTE_SUGGESTION, {
                         suggestionMetadata: {
                             ...msg,

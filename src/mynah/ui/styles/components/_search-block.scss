@@ -1,7 +1,7 @@
 .mynah-search-block {
     display: inline-flex;
     flex-flow: row wrap;
-    justify-content: flex-start;
+    justify-content: flex-end;
     background-color: var(--mynah-card-bg);
     border-radius: var(--mynah-card-radius);
     box-shadow: var(--mynah-shadow-card);
@@ -10,6 +10,23 @@
     position: relative;
     @include background-shadow;
     border: var(--mynah-button-border-width) solid var(--vscode-editorGroup-border);
+
+    > .mynah-search-block-header {
+        width: 100%;
+        margin: 1em 1em 0px 0px;
+        display: flex;
+        justify-content: flex-end;
+
+        > #mynah-feedback-form-container {
+            > .mynah-feedback-trigger-button {
+                transition: var(--mynah-short-transition-bounce);
+                pointer-events: all;
+                border-bottom-right-radius: 0;
+                border-bottom-left-radius: 0;
+                cursor: pointer;
+            }
+        }
+    }
 
     > .mnynah-search-block-fold-unfold-button {
         position: absolute;

@@ -18,12 +18,10 @@
         user-select: none;
     }
     > .mynah-syntax-highlighter-copy-buttons {
-        position: absolute;
-        right: 0;
+        justify-content: flex-end;
         display: flex;
         padding: var(--mynah-sizing-1);
         z-index: 10;
-        opacity: 0;
         .mynah-button {
             font-size: var(--mynah-sizing-5);
             color: var(--mynah-color-button);
