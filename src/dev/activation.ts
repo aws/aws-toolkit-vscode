@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as config from './config'
 import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
@@ -115,7 +116,7 @@ export function activate(ctx: ExtContext): void {
 
 let vsixWatchSubscription: vscode.Disposable | undefined
 function watchVsixUrl(settings: DevSettings): vscode.Disposable {
-    const vsixUrl = settings.get('betaUrl', '')
+    const vsixUrl = settings.get('betaUrl', config.betaUrl)
     vsixWatchSubscription?.dispose()
 
     if (vsixUrl) {
