@@ -4,7 +4,6 @@
  */
 
 import { cancelEvent, ExtendedHTMLElement } from '../../helper/dom'
-import { MynahPortalNames } from '../../helper/static'
 import { Button } from '../button'
 import { Overlay, OverlayHorizontalDirection, OverlayVerticalDirection } from '../overlay/overlay'
 import { FeedbackFormComment } from './feedback-form-comment'
@@ -24,10 +23,10 @@ export class FeedbackForm {
     private readonly feedbackStars: FeedbackFormStars
     private readonly feedbackComment: FeedbackFormComment
     private feedbackPayload: FeedbackPayload = {}
-    private readonly triggerButton: Button
+    private readonly feeadbackLink: ExtendedHTMLElement
     private readonly feedbackSubmitButton: Button
     private readonly feedbackFormContainer: ExtendedHTMLElement
-    private readonly feedbackPortal: ExtendedHTMLElement
+    public readonly feedbackContainer: ExtendedHTMLElement
     private readonly onFeedbackSet
 
     constructor(props: FeedbackFormProps) {
@@ -38,19 +37,22 @@ export class FeedbackForm {
                 ...(props.initPayload.comment !== undefined && { comment: props.initPayload.comment }),
             }
         }
-        this.triggerButton = new Button({
-            classNames: ['mynah-feedback-tigger-button'],
-            onClick: () => {
-                this.formOverlay = new Overlay({
-                    children: [this.feedbackFormContainer],
-                    closeOnOutsideClick: true,
-                    dimOutside: false,
-                    horizontalDirection: OverlayHorizontalDirection.CENTER,
-                    verticalDirection: OverlayVerticalDirection.TO_TOP,
-                    referenceElement: this.triggerButton.render,
-                })
+        this.feeadbackLink = window.domBuilder.build({
+            type: 'a',
+            classNames: ['mynah-feedback-trigger-button'],
+            events: {
+                click: () => {
+                    this.formOverlay = new Overlay({
+                        children: [this.feedbackFormContainer],
+                        closeOnOutsideClick: true,
+                        dimOutside: false,
+                        horizontalDirection: OverlayHorizontalDirection.END_TO_LEFT,
+                        verticalDirection: OverlayVerticalDirection.TO_BOTTOM,
+                        referenceElement: this.feeadbackLink,
+                    })
+                },
             },
-            label: 'How was your search?',
+            innerHTML: 'Leave us feedback',
         })
 
         this.feedbackStars = new FeedbackFormStars({
@@ -89,19 +91,10 @@ export class FeedbackForm {
             children: [this.feedbackStars.render, this.feedbackComment.render, this.feedbackSubmitButton.render],
         })
 
-        this.feedbackPortal = window.domBuilder.createPortal(
-            MynahPortalNames.FEEDBACK_FORM,
-            {
-                type: 'div',
-                attributes: { id: 'mynah-feedback-form-portal' },
-                classNames: ['not-revealed'],
-                children: [this.triggerButton.render],
-            },
-            'beforeend'
-        )
-    }
-
-    reveal = (): void => {
-        this.feedbackPortal.removeClass('not-revealed')
+        this.feedbackContainer = window.domBuilder.build({
+            type: 'div',
+            attributes: { id: 'mynah-feedback-form-container' },
+            children: [this.feeadbackLink],
+        })
     }
 }

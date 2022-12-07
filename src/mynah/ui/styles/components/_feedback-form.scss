@@ -18,15 +18,16 @@
     flex-flow: row nowrap;
 
     &.not-revealed {
-        > .mynah-feedback-tigger-button {
+        > .mynah-feedback-trigger-button {
             display: none;
         }
     }
-    > .mynah-feedback-tigger-button {
+    > .mynah-feedback-trigger-button {
         transition: var(--mynah-short-transition-bounce);
         pointer-events: all;
         border-bottom-right-radius: 0;
         border-bottom-left-radius: 0;
+        cursor: pointer;
     }
 }
 
