@@ -246,14 +246,19 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-            const doNoShowAgain =
+            const t = new Date()
+            const doNotShowAgain =
                 context.extensionContext.globalState.get<boolean>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey
                 ) || false
-            if (doNoShowAgain) {
+            const notificationLastShown =
+                context.extensionContext.globalState.get<Date>(
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
+                ) || t
+
+            if (doNotShowAgain || notificationLastShown.getDate() + 7 <= t.getDate()) {
                 return
             }
-            const t = new Date()
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
                     .showWarningMessage(
@@ -266,9 +271,17 @@ export async function activate(context: ExtContext): Promise<void> {
                             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                             await showSsoSignIn.execute()
                         } else if (resp === CodeWhispererConstants.accessTokenMigrationDoNotShowAgain) {
+                            vscode.window.showInformationMessage(
+                                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainInfo,
+                                'OK'
+                            )
                             await context.extensionContext.globalState.update(
                                 CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey,
                                 true
+                            )
+                            await context.extensionContext.globalState.update(
+                                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
+                                t
                             )
                         }
                     })
