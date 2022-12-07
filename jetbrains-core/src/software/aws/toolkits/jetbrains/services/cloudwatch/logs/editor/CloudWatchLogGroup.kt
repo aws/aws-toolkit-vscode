@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEd
 import software.aws.toolkits.jetbrains.utils.ui.onEmpty
 import software.aws.toolkits.jetbrains.utils.ui.onEnter
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudWatchResourceType
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import software.aws.toolkits.telemetry.InsightsDialogOpenSource
@@ -114,7 +115,7 @@ class CloudWatchLogGroup(
         actionGroup.addAction(
             object : DumbAwareAction(message("general.refresh"), null, AllIcons.Actions.Refresh) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    CloudwatchlogsTelemetry.refreshGroup(project)
+                    CloudwatchlogsTelemetry.refresh(project, CloudWatchResourceType.LogGroup)
                     refreshTable()
                 }
             }

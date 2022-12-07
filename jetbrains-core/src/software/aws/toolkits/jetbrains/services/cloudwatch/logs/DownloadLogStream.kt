@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.buildStr
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudWatchResourceType
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.io.File
@@ -177,11 +178,11 @@ class LogStreamDownloadToFileTask(
                     }
                 )
             )
-            CloudwatchlogsTelemetry.downloadStreamToFile(project, success = true)
+            CloudwatchlogsTelemetry.download(project, success = true, CloudWatchResourceType.LogStream)
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while downloading large log stream" }
             e.notifyError(project = project, title = message("cloudwatch.logs.saving_to_disk_failed", logStream))
-            CloudwatchlogsTelemetry.downloadStreamToFile(project, success = false)
+            CloudwatchlogsTelemetry.download(project, success = false, CloudWatchResourceType.LogStream)
         }
     }
 
@@ -192,7 +193,7 @@ class LogStreamDownloadToFileTask(
         } else {
             Result.Failed
         }
-        CloudwatchlogsTelemetry.downloadStreamToFile(project, result)
+        CloudwatchlogsTelemetry.download(project, result, CloudWatchResourceType.LogStream)
     }
 
     companion object {

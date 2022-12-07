@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryDe
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultPanel
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.CloudWatchLogsToolWindowFactory
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudWatchResourceType
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -39,7 +40,7 @@ class CloudWatchLogWindow(override val project: Project) : ToolkitToolWindow {
                 result = Result.Failed
                 throw e
             } finally {
-                CloudwatchlogsTelemetry.openGroup(project, result)
+                CloudwatchlogsTelemetry.open(project, result, CloudWatchResourceType.LogGroup, source = "logGroup")
             }
         }
     }
@@ -76,7 +77,7 @@ class CloudWatchLogWindow(override val project: Project) : ToolkitToolWindow {
             result = Result.Failed
             throw e
         } finally {
-            CloudwatchlogsTelemetry.openStream(project, result)
+            CloudwatchlogsTelemetry.open(project, result, CloudWatchResourceType.LogStream, source = "logStream")
         }
     }
 

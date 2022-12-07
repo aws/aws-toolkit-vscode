@@ -29,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogs
 import software.aws.toolkits.jetbrains.utils.ui.onEmpty
 import software.aws.toolkits.jetbrains.utils.ui.onEnter
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudWatchResourceType
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import java.time.Duration
 import javax.swing.JPanel
@@ -124,7 +125,7 @@ class CloudWatchLogStream(
             object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
                 override fun actionPerformed(e: AnActionEvent) {
                     refreshTable()
-                    CloudwatchlogsTelemetry.refreshStream(project)
+                    CloudwatchlogsTelemetry.refresh(project, CloudWatchResourceType.LogStream)
                 }
             },
             Constraints.FIRST
