@@ -510,7 +510,14 @@ export class ResultDisplay {
         const logoUri = logoPath ? panel.webviewPanel.webview.asWebviewUri(logoPath) : undefined
         const javascriptUri = vs.Uri.joinPath(this.assetsPath, 'dist', source)
 
-        const context = queryContext !== undefined ? JSON.stringify(queryContext) : ''
+        const context =
+            queryContext !== undefined
+                ? JSON.stringify({
+                      should: Array.from(queryContext.should),
+                      must: Array.from(queryContext.must),
+                      mustNot: Array.from(queryContext.mustNot),
+                  })
+                : ''
 
         const codeSelectionString = codeSelection !== undefined ? JSON.stringify(codeSelection) : ''
         const codeQueryString = codeQuery !== undefined ? JSON.stringify(codeQuery) : ''
@@ -552,12 +559,21 @@ export class ResultDisplay {
             return
         }
 
+        const context =
+            queryContext !== undefined
+                ? {
+                      should: Array.from(queryContext.should),
+                      must: Array.from(queryContext.must),
+                      mustNot: Array.from(queryContext.mustNot),
+                  }
+                : undefined
+
         if (this.uiReady[panelId]) {
             void panel.webviewPanel.webview.postMessage(
                 JSON.stringify({
                     loading: false,
                     queryText: input,
-                    context: queryContext !== undefined ? queryContext : undefined,
+                    context,
                     suggestions: errorMessage ?? suggestions,
                     codeQuery,
                     codeSelection,
