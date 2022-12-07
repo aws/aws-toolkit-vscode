@@ -36,9 +36,10 @@ export class CodeCatalystAuthStorage {
     }
 }
 
+export const onboardingUrl = 'https://codecatalyst.aws/onboarding/view'
+
 const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
-
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
 
@@ -95,18 +96,9 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async promptOnboarding(): Promise<void> {
-        const okItem: vscode.MessageItem = { title: localizedText.ok }
-        const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
-        const resp = await vscode.window.showInformationMessage(
-            'The current connection is not onboarded with CodeCatalyst. This must be done in the browser.\n\n Onboard now?',
-            { modal: true },
-            okItem,
-            cancelItem
+        await vscode.window.showInformationMessage(
+            `The current connection does not have permissions to use CodeCatalyst. [Sign up with CodeCatalyst](${onboardingUrl}) to get started.`
         )
-
-        if (resp === okItem) {
-            await vscode.env.openExternal(vscode.Uri.parse('https://codecatalyst.aws/onboarding/view'))
-        }
 
         throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
     }
