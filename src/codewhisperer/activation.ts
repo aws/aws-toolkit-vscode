@@ -255,8 +255,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 context.extensionContext.globalState.get<Date>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
                 ) || t
-
-            if (doNotShowAgain || notificationLastShown.getDate() + 7 <= t.getDate()) {
+            if (doNotShowAgain || notificationLastShown <= t) {
                 return
             }
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
