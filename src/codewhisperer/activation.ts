@@ -255,6 +255,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 context.extensionContext.globalState.get<Date>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
                 ) || t
+
+            //Add 7 days to notificationLastShown to determine whether warn message should show
+            notificationLastShown.setDate(notificationLastShown.getDate() + 7)
             if (doNotShowAgain || notificationLastShown <= t) {
                 return
             }
