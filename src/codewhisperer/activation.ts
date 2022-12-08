@@ -271,7 +271,7 @@ export async function activate(context: ExtContext): Promise<void> {
                             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                             await showSsoSignIn.execute()
                         } else if (resp === CodeWhispererConstants.accessTokenMigrationDoNotShowAgain) {
-                            vscode.window.showInformationMessage(
+                            await vscode.window.showInformationMessage(
                                 CodeWhispererConstants.accessTokenMigrationDoNotShowAgainInfo,
                                 'OK'
                             )
