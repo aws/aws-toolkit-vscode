@@ -102,6 +102,16 @@ tasks.prepareSandbox {
     }
 }
 
+tasks.buildPlugin {
+    val classifier = if (archiveClassifier.get().isNullOrBlank()) {
+        "GW"
+    } else {
+        "${archiveClassifier.get()}-GW"
+    }
+
+    archiveClassifier.set(classifier)
+}
+
 val publishToken: String by project
 val publishChannel: String by project
 tasks.publishPlugin {
