@@ -1,3 +1,10 @@
+# _1.56_ (2022-12-08)
+- **(Bug Fix)** Remove redundant calls in certain Gateway UI panels
+- **(Bug Fix)** Fix threading issue while attempting to login to CodeCatalyst
+- **(Bug Fix)** Only list dev environments under projects that users are a member of
+- **(Bug Fix)** Fix 'Learn more' link in Gateway 2022.2
+- **(Bug Fix)** Fix connection issue with CodeCatalyst when user is already logged into CodeWhisperer
+
 # _1.55_ (2022-12-01)
 - **(Feature)** Amazon CodeCatalyst: Connect JetBrains to your remote Dev Environments.
 - **(Feature)** Amazon CodeCatalyst: Clone your repositories to your local machine.

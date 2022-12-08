@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix threading issue while attempting to login to CodeCatalyst"
-}

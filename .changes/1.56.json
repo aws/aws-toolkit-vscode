@@ -1,0 +1,20 @@
+{
+  "date" : "2022-12-08",
+  "version" : "1.56",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Remove redundant calls in certain Gateway UI panels"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix threading issue while attempting to login to CodeCatalyst"
+  }, {
+    "type" : "bugfix",
+    "description" : "Only list dev environments under projects that users are a member of"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'Learn more' link in Gateway 2022.2"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix connection issue with CodeCatalyst when user is already logged into CodeWhisperer"
+  } ]
+}

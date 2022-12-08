@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Remove redundant calls in certain Gateway UI panels"
-}
