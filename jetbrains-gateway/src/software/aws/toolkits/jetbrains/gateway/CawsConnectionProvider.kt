@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.gateway
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
@@ -20,6 +19,7 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBFont
@@ -109,12 +109,14 @@ class CawsConnectionProvider : GatewayConnectionProvider {
         val envId = connectionParams.envId
 
         val lifetime = Lifetime.Eternal.createNested()
+        val workflowDisposable = Lifetime.Eternal.createNestedDisposable()
 
         return object : GatewayConnectionHandle(lifetime) {
             // reference lost with all the blocks
             private val handle = this
             private val component = let { _ ->
                 val view = JBTabbedPane()
+                val workflowEmitter = TabbedWorkflowEmitter(view, workflowDisposable)
 
                 fun handleException(e: Throwable) {
                     if (e is ProcessCanceledException || e is CancellationException) {
@@ -226,6 +228,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
 
                             runBackendWorkflow(
                                 view,
+                                workflowEmitter,
                                 userId,
                                 indicator,
                                 lifetime.createNested(),
@@ -239,6 +242,9 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                         }.invokeOnCompletion { e ->
                             if (e == null) {
                                 CodecatalystTelemetry.connect(project = null, userId = userId, result = TelemetryResult.Succeeded)
+                                lifetime.onTermination {
+                                    Disposer.dispose(workflowDisposable)
+                                }
                             } else {
                                 handleException(e)
                                 if (e is ProcessCanceledException || e is CancellationException) {
@@ -268,10 +274,10 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                                     collapsibleGroup(message("general.logs"), false) {
                                                         row {
                                                             cell(view)
+                                                                .horizontalAlign(HorizontalAlign.FILL)
                                                         }
-                                                    }.apply {
-                                                        expanded = false
-                                                    }
+                                                    }.expanded = false
+                                                    // TODO: can't seem to reliably force a terminal redraw on initial expand
                                                 }
                                             }
                                         )
@@ -284,6 +290,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                             GatewayUI.getInstance().connect(parameters)
                                         }
                                     }.show()
+                                    Disposer.dispose(workflowDisposable)
                                 }
                             }
                         }
@@ -338,6 +345,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
 
     private fun runBackendWorkflow(
         view: JBTabbedPane,
+        workflowEmitter: TabbedWorkflowEmitter,
         userId: String,
         indicator: ProgressIndicator,
         lifetime: LifetimeDefinition,
@@ -388,7 +396,6 @@ class CawsConnectionProvider : GatewayConnectionProvider {
         }
 
         val promise = AsyncPromise<Unit>()
-        var workflowDisposable: Disposable? = null
         fun start() {
             lifetime.launchOnUiAnyModality {
                 view.removeAll()
@@ -438,27 +445,23 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                 }
             }
 
-            workflowDisposable?.let { Disposer.dispose(it) }
-            workflowDisposable = lifetime.createNestedDisposable().also { disposable ->
-                val workflowEmitter = TabbedWorkflowEmitter(view, disposable)
-                StepExecutor(project = null, workflow, workflowEmitter)
-                    .also {
-                        it.addContext(CAWS_CONNECTION_PARAMETERS, parameters)
-                        lifetime.onTermination {
-                            it.getProcessHandler().destroyProcess()
-                        }
-
-                        it.onSuccess = {
-                            promise.setResult(Unit)
-                        }
-
-                        it.onError = { throwable ->
-                            promise.setError(throwable)
-                        }
-
-                        it.startExecution()
+            StepExecutor(project = null, workflow, workflowEmitter)
+                .also {
+                    it.addContext(CAWS_CONNECTION_PARAMETERS, parameters)
+                    lifetime.onTermination {
+                        it.getProcessHandler().destroyProcess()
                     }
-            }
+
+                    it.onSuccess = {
+                        promise.setResult(Unit)
+                    }
+
+                    it.onError = { throwable ->
+                        promise.setError(throwable)
+                    }
+
+                    it.startExecution()
+                }
         }
 
         start()

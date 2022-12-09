@@ -45,7 +45,7 @@ class TabbedWorkflowEmitter(private val tabComponent: JTabbedPane, private val d
             content?.let { return it }
 
             // TextConsoleBuilderFactory is nicer but seems to have issues when drawn while not visible
-            return TerminalExecutionConsole(DefaultProjectFactory.getInstance().defaultProject, handler)
+            return TerminalExecutionConsole(DefaultProjectFactory.getInstance().defaultProject, 132, 24, handler)
                 .withConvertLfToCrlfForNonPtyProcess(true)
                 .also {
                     content = it
