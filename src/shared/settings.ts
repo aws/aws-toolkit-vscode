@@ -546,7 +546,6 @@ const devSettings = {
     telemetryUserPool: String,
     endpoints: Record(String, String),
     cawsStage: String,
-    betaUrl: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

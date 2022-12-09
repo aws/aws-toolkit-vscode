@@ -102,28 +102,9 @@ export function activate(ctx: ExtContext): void {
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
 
-    if (!isCloud9() && !isReleaseVersion()) {
-        ctx.extensionContext.subscriptions.push(
-            watchVsixUrl(devSettings),
-            devSettings.onDidChange(({ key }) => {
-                if (key === 'betaUrl') {
-                    watchVsixUrl(devSettings)
-                }
-            })
-        )
+    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
+        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
     }
-}
-
-let vsixWatchSubscription: vscode.Disposable | undefined
-function watchVsixUrl(settings: DevSettings): vscode.Disposable {
-    const vsixUrl = settings.get('betaUrl', config.betaUrl)
-    vsixWatchSubscription?.dispose()
-
-    if (vsixUrl) {
-        vsixWatchSubscription = watchBetaVSIX(vsixUrl)
-    }
-
-    return { dispose: () => vsixWatchSubscription?.dispose() }
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
