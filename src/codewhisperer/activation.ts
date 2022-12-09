@@ -246,14 +246,21 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-            const doNoShowAgain =
+            const t = new Date()
+            const doNotShowAgain =
                 context.extensionContext.globalState.get<boolean>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey
                 ) || false
-            if (doNoShowAgain) {
+            const notificationLastShown =
+                context.extensionContext.globalState.get<Date>(
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
+                ) || t
+
+            //Add 7 days to notificationLastShown to determine whether warn message should show
+            notificationLastShown.setDate(notificationLastShown.getDate() + 7)
+            if (doNotShowAgain || notificationLastShown <= t) {
                 return
             }
-            const t = new Date()
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
                     .showWarningMessage(
@@ -266,9 +273,17 @@ export async function activate(context: ExtContext): Promise<void> {
                             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                             await showSsoSignIn.execute()
                         } else if (resp === CodeWhispererConstants.accessTokenMigrationDoNotShowAgain) {
+                            await vscode.window.showInformationMessage(
+                                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainInfo,
+                                'OK'
+                            )
                             await context.extensionContext.globalState.update(
                                 CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey,
                                 true
+                            )
+                            await context.extensionContext.globalState.update(
+                                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
+                                t
                             )
                         }
                     })
