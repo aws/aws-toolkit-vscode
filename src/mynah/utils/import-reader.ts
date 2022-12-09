@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Java, Python, TypeScript, Tsx } from '../fqn'
+import { Java, Python, TypeScript, Tsx } from '@aws/fully-qualified-names'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
     let names: any = {}

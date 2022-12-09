@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Java, Python, TypeScript, Tsx, Extent, Location } from '../fqn'
+import { Java, Python, TypeScript, Tsx, Extent, Location } from '@aws/fully-qualified-names'
 import * as vs from 'vscode'
 
 export async function getSimpleAndFqnNames(document?: vs.TextDocument): Promise<any> {

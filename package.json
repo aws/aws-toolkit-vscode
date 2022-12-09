@@ -3311,21 +3311,21 @@
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e012"
+                    "fontCharacter": "\\e1b7"
                 }
             },
             "aws-schemas-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e013"
+                    "fontCharacter": "\\e1b8"
                 }
             },
             "aws-stepfunctions-preview": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e014"
+                    "fontCharacter": "\\e1b9"
                 }
             }
         }
@@ -3359,6 +3359,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
+        "@aws/fully-qualified-names": "^1.0.4",
         "@aws-sdk/types": "^3.13.1",
         "@aws-toolkits/telemetry": "^1.0.76",
         "@cspotcode/source-map-support": "^0.8.1",
