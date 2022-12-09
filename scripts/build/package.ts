@@ -4,9 +4,11 @@
  */
 
 //
-// Creates an artifact that can be given to users for testing alpha builds:
+// Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-1.99.0-SNAPSHOT.vsix
+//     aws-toolkit-vscode-1.999.0-xxxxxxxxxxxx.vsix
+//
+// Where `xxxxxxxxxxxx` is the first 12 characters of the commit hash that produced the artifact
 //
 // The script works like this:
 // 1. temporarily change `version` in package.json
@@ -101,13 +103,12 @@ function main() {
             const packageJson: typeof manifest = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix()
             const version = packageJson.version
-            if (isBeta()) {
-                // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
-                packageJson.version = `1.999.0${versionSuffix}`
+            // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
+            const betaOrDebugVersion = `1.999.0${versionSuffix}`
+            if (isBeta() || args.debug) {
+                packageJson.version = betaOrDebugVersion
             } else {
-                packageJson.version = args.debug
-                    ? `1.99.0${versionSuffix}`
-                    : version.replace('-SNAPSHOT', versionSuffix)
+                packageJson.version = version.replace('-SNAPSHOT', versionSuffix)
             }
 
             if (args.skipClean) {

@@ -45,6 +45,8 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
  * If this is the first time we are watching the beta version or if its been 24 hours since it was last checked then try to prompt for update
  */
 export function watchBetaVSIX(vsixUrl: string): vscode.Disposable {
+    getLogger().info(`dev: watching ${vsixUrl} for beta artifacts`)
+
     const toolkit = getBetaToolkitData(vsixUrl)
     if (!toolkit || toolkit.needUpdate || Date.now() - toolkit.lastCheck > downloadIntervalMs) {
         runAutoUpdate(vsixUrl)
@@ -58,7 +60,7 @@ async function runAutoUpdate(vsixUrl: string) {
     getLogger().debug(`dev: checking ${vsixUrl} for a new version`)
 
     try {
-        await telemetry.vscode_autoUpdateBeta.run(() => checkBetaUrl(vsixUrl))
+        await telemetry.aws_autoUpdateBeta.run(() => checkBetaUrl(vsixUrl))
     } catch (e) {
         if (!isUserCancelledError(e)) {
             getLogger().warn(`dev: beta extension auto-update failed: %s`, e)

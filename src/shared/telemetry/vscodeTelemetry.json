@@ -50,7 +50,7 @@
             ]
         },
         {
-            "name": "vscode_autoUpdateBeta",
+            "name": "aws_autoUpdateBeta",
             "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
             "passive": true
         },
