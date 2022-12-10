@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as config from './config'
 import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
@@ -13,6 +14,10 @@ import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
+import { watchBetaVSIX } from './beta'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { entries } from '../shared/utilities/tsUtils'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 interface MenuOption {
     readonly label: string
@@ -96,10 +101,10 @@ export function activate(ctx: ExtContext): void {
 
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
-}
 
-function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
-    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
+    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
+        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
+    }
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {

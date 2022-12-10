@@ -50,6 +50,11 @@
             ]
         },
         {
+            "name": "aws_autoUpdateBeta",
+            "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
+            "passive": true
+        },
+        {
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",
             "metadata": [{ "type": "result" }, { "type": "cli" }]
