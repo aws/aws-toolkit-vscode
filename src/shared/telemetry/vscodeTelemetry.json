@@ -31,6 +31,61 @@
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
+        },
+        {
+            "name": "mynahQuery",
+            "type": "string",
+            "description": "Text of a query"
+        },
+        {
+            "name": "mynahQueryContext",
+            "type": "string",
+            "description": "Context keys of a query"
+        },
+        {
+            "name": "mynahTrigger",
+            "type": "string",
+            "description": "Type of trigger for a search",
+            "allowedValues": [
+                "DEBUG_ERROR",
+                "DIAGNOSTIC_ERROR",
+                "GLOBAL_SEARCH",
+                "SEARCH_PANE",
+                "TERMINAL",
+                "SEARCH_HISTORY",
+                "CODE_SELECTION"
+            ]
+        },
+        {
+            "name": "mynahTriggerInteractionType",
+            "type": "string",
+            "description": "Interaction type for a search",
+            "allowedValues": ["KEYBOARD", "CLICK", "MENU"]
+        },
+        {
+            "name": "mynahCode",
+            "type": "string",
+            "description": "A fragment of text extracted from source code"
+        },
+        {
+            "name": "mynahSourceId",
+            "type": "string",
+            "description": "Source file"
+        },
+        {
+            "name": "mynahCodeQuery",
+            "type": "string",
+            "description": "Information extracted from source code"
+        },
+        {
+            "name": "mynahImplicit",
+            "type": "boolean",
+            "description": "Whether the search is triggered implicitly or by user"
+        },
+        {
+            "name": "mynahFromAutocomplete",
+            "type": "boolean",
+            "description": "If the search is an autocomplete search or not"
         }
     ],
     "metrics": [
@@ -39,10 +94,18 @@
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
             "metadata": [
-                { "type": "command" },
-                { "type": "debounceCount" },
-                { "type": "duration" },
-                { "type": "result" },
+                {
+                    "type": "command"
+                },
+                {
+                    "type": "debounceCount"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
                 {
                     "type": "reason",
                     "required": false
@@ -189,7 +252,11 @@
         {
             "name": "aws_showExplorerErrorDetails",
             "description": "Called when getting more details about errors thrown by the explorer",
-            "metadata": [{ "type": "result" }]
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         },
         {
             "name": "aws_showRegion",
@@ -202,7 +269,11 @@
         {
             "name": "sam_detect",
             "description": "Called when detecting the location of the SAM CLI",
-            "metadata": [{ "type": "result" }],
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ],
             "passive": true
         },
         {
@@ -233,17 +304,75 @@
             "name": "sam_attachDebugger",
             "description": "Called after trying to attach a debugger to a local sam invoke",
             "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType" },
-                { "type": "runtime" },
-                { "type": "attempts" },
-                { "type": "duration" },
-                { "type": "lambdaArchitecture", "required": false }
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "lambdaPackageType"
+                },
+                {
+                    "type": "runtime"
+                },
+                {
+                    "type": "attempts"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "lambdaArchitecture",
+                    "required": false
+                }
             ]
         },
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "mynah_activate",
+            "description": "Emitted when Mynah is activated",
+            "passive": true
+        },
+        {
+            "name": "mynah_search",
+            "description": "Emitted when user performs a search",
+            "metadata": [
+                {
+                    "type": "mynahQuery"
+                },
+                {
+                    "type": "mynahQueryContext",
+                    "required": false
+                },
+                {
+                    "type": "mynahTrigger"
+                },
+                {
+                    "type": "mynahTriggerInteractionType",
+                    "required": false
+                },
+                {
+                    "type": "mynahCode",
+                    "required": false
+                },
+                {
+                    "type": "mynahSourceId",
+                    "required": false
+                },
+                {
+                    "type": "mynahCodeQuery",
+                    "required": false
+                },
+                {
+                    "type": "mynahImplicit",
+                    "required": false
+                },
+                {
+                    "type": "mynahFromAutocomplete",
+                    "required": false
+                }
+            ]
         }
     ]
 }

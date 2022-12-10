@@ -1,0 +1,100 @@
+#mynah-wrapper {
+    display: flex;
+    flex-flow: column nowrap;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 1024px;
+    box-sizing: border-box;
+    height: 100%;
+    padding: var(--mynah-sizing-3) 0 0 0;
+    .context-checkbox {
+        display: none;
+    }
+
+    .mynah-main {
+        display: block;
+        box-sizing: border-box;
+        flex: 1 1 0;
+        overflow: hidden;
+        position: relative;
+        > .mynah-skeleton-wrapper,
+        > .mynah-cards-wrapper {
+            padding: var(--mynah-sizing-4) 0 var(--mynah-sizing-12) 0;
+            display: flex;
+            flex-flow: column nowrap;
+            gap: var(--mynah-sizing-4);
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+            height: 100%;
+        }
+        > .mynah-cards-wrapper {
+            overflow-x: hidden;
+            overflow-y: auto;
+            flex: 1 1 0;
+            transition: var(--mynah-long-transition);
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            > .mynah-no-suggestion-indicator {
+                display: flex;
+                box-sizing: border-box;
+                opacity: 0.5;
+                width: 100%;
+                padding: var(--mynah-sizing-12);
+                flex-flow: row nowrap;
+                justify-content: center;
+                align-items: flex-start;
+            }
+        }
+        > .mynah-skeleton-wrapper {
+            position: absolute;
+            transition: var(--mynah-long-transition);
+            top: 0;
+            left: 0;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            transform: translate3d(-10%, 0, 0);
+            opacity: 0;
+        }
+        &.mynah-hide-content {
+            > .mynah-cards-wrapper {
+                animation: move-to-right 750ms cubic-bezier(0.25, 0.5, 0, 1) both;
+            }
+            > .mynah-skeleton-wrapper {
+                pointer-events: all;
+                animation: move-to-middle 750ms cubic-bezier(0.25, 0.5, 0, 1) both;
+            }
+        }
+        &.mynah-show-content {
+            > .mynah-cards-wrapper {
+                animation: move-to-middle 750ms cubic-bezier(0.25, 0.5, 0, 1) both;
+            }
+            > .mynah-skeleton-wrapper {
+                pointer-events: none;
+                transition-delay: 450ms;
+                animation: move-to-right 750ms cubic-bezier(0.25, 0.5, 0, 1) both;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    #mynah-wrapper {
+        padding-top: 0;
+        > .mynah-search-block {
+            border-left: none;
+            border-right: none;
+            border-top: none;
+        }
+        .mynah-main {
+            > .mynah-skeleton-wrapper,
+            > .mynah-cards-wrapper > .mynah-card {
+                border-right: none;
+                border-left: none;
+            }
+        }
+    }
+}

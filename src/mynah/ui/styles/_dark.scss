@@ -1,0 +1,14 @@
+body.vscode-dark {
+    --mynah-color-light: rgba(255, 255, 255, 0.05);
+    --mynah-color-border-default: rgba(255, 255, 255, 0.1);
+
+    --mynah-color-context-must-contain: #6c9177;
+    --mynah-color-context-must-not-contain: #ca6046;
+    --mynah-color-context-reverse: rgba(255, 255, 255, 0.5);
+    --mynah-color-context-filter: 200%;
+
+    --mynah-color-highlight: #715c3f;
+    --mynah-color-highlight-text: #ffe6a9;
+
+    --mynah-shadow-prioritization-menu: 0 10px 20px -10px rgba(0, 0, 0, 1);
+}

@@ -1,0 +1,106 @@
+#mynah-feedback-form-portal {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    box-sizing: border-box;
+    z-index: 200000;
+    pointer-events: none;
+    transform: translate3d(-50%, 0, 0);
+    max-width: 1024px;
+    color: var(--mynah-color-context-reverse);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    flex-flow: row nowrap;
+
+    &.not-revealed {
+        > .mynah-feedback-trigger-button {
+            display: none;
+        }
+    }
+    > .mynah-feedback-trigger-button {
+        transition: var(--mynah-short-transition-bounce);
+        pointer-events: all;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+        cursor: pointer;
+    }
+}
+
+.mynah-feedback-form {
+    pointer-events: all;
+    box-sizing: border-box;
+    transition: var(--mynah-short-transition-rev);
+    padding: var(--mynah-sizing-4);
+    transform: translate3d(0, 0, 0);
+    border-radius: var(--mynah-card-radius);
+    display: flex;
+    flex-flow: column;
+    gap: var(--mynah-sizing-2);
+    align-items: flex-start;
+    transform-origin: right bottom;
+
+    > .mynah-feedback-form-comment {
+        background-color: transparent;
+        padding: var(--mynah-sizing-3);
+        border: 1px solid var(--mynah-color-border-default);
+        resize: none;
+        width: 250px;
+        max-width: 40vw;
+        height: 100px;
+        max-height: 25vh;
+        border-radius: var(--mynah-sizing-2);
+        font-size: var(--mynah-font-size-small);
+        outline: none;
+        color: var(--mynah-color-text-input);
+        &:disabled {
+            opacity: 0.25;
+        }
+        &::placeholder {
+            color: var(--mynah-color-text-weak);
+            font-size: var(--mynah-font-size-small);
+        }
+    }
+
+    > .mynah-feedback-form-stars-container {
+        display: inline-flex;
+        flex-flow: row nowrap;
+        > .mynah-feedback-form-star {
+            cursor: pointer;
+            padding-right: var(--mynah-sizing-1);
+            color: var(--mynah-color-light);
+            font-size: 1.5rem;
+            transition: var(--mynah-very-short-transition);
+            > .mynah-icon {
+                transition: var(--mynah-very-short-transition);
+                transform: translate3d(0, 0, 0) scale(0.75);
+            }
+        }
+        &[selected-star]:not(:hover) {
+            > :not(.mynah-feedback-form-star.selected ~ .mynah-feedback-form-star) {
+                color: var(--mynah-color-button);
+                > .mynah-icon {
+                    transform: translate3d(0, 0, 0) scale(1);
+                }
+            }
+        }
+        &:hover {
+            > :not(.mynah-feedback-form-star:hover ~ .mynah-feedback-form-star) {
+                color: var(--mynah-color-button);
+                > .mynah-icon {
+                    transform: translate3d(0, 0, 0) scale(1);
+                }
+            }
+        }
+    }
+
+    > .mynah-feedback-form-comment,
+    > .mynah-feedback-form-stars-container {
+        transition: var(--mynah-short-transition-rev);
+        transform-origin: right bottom;
+    }
+}
