@@ -333,6 +333,10 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
     getIcon('aws-cloudwatch-log-stream')
     ```
 
+### Beta artifacts
+
+The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
+
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
