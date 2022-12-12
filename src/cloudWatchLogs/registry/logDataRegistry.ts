@@ -13,7 +13,7 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
-import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
 /**
@@ -128,37 +128,34 @@ export class LogDataRegistry {
         }
 
         const isHead = headOrTail === 'head'
-        const logDataGetter: AsyncIterator<CloudWatchLogsResponse> = getPaginatedAwsCallIter({
-            awsCall: async request =>
-                await logData.retrieveLogsFunction(
+        const stream = pageableToCollection(
+            (r: typeof request) =>
+                logData.retrieveLogsFunction(
                     logData.logGroupInfo,
                     logData.parameters,
-                    isHead ? request.nextBackwardToken : request.nextForwardToken
+                    isHead ? r.nextBackwardToken : r.nextForwardToken
                 ),
-            nextTokenNames: isHead
-                ? {
-                      request: 'nextBackwardToken',
-                      response: 'nextBackwardToken',
-                  }
-                : {
-                      request: 'nextForwardToken',
-                      response: 'nextForwardToken',
-                  },
             request,
-        })
-        let newLogEvents: CloudWatchLogs.FilteredLogEvents = []
-        let next: IteratorResult<CloudWatchLogsResponse> = await logDataGetter.next()
-        newLogEvents = newLogEvents.concat(next.value.events)
+            isHead ? 'nextBackwardToken' : 'nextForwardToken'
+        )
 
-        while (newLogEvents.length === 0 && !next.done) {
-            next = await logDataGetter.next()
-            newLogEvents = newLogEvents.concat(next.value.events)
+        async function firstOrLast<T>(
+            iterable: AsyncIterable<T>,
+            predicate: (item: T) => boolean
+        ): Promise<T | undefined> {
+            let last: T | undefined
+            for await (const item of iterable) {
+                if (predicate((last = item))) {
+                    return item
+                }
+            }
+            return last
         }
 
-        const responseData: CloudWatchLogsResponse = {
-            events: newLogEvents,
-            nextForwardToken: next.value.nextForwardToken,
-            nextBackwardToken: next.value.nextBackwardToken,
+        const responseData = await firstOrLast(stream, resp => resp.events.length > 0)
+
+        if (!responseData) {
+            return
         }
 
         const newData =
