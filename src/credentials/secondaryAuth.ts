@@ -31,7 +31,7 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     } as const
 
     const helpButton = createHelpButton()
-    const openLink = () => helpButton.onClick()
+    const openLink = helpButton.onClick.bind(helpButton)
     helpButton.onClick = () => {
         telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_help' })
         openLink()

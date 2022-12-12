@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Help button on the \"save connection\" prompt does nothing"
+}
