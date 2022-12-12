@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Upload Lambda wizard will skip prompts and auto select parent directory when invoked from a template file."
+}
