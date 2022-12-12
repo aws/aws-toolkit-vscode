@@ -10,6 +10,8 @@ import { Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 
 interface MockWizardFormElement<TProp> {
+    readonly value: TProp | undefined
+
     applyInput(input: TProp): void
     clearInput(): void
     /**
@@ -37,6 +39,7 @@ type MockForm<T, TState = T> = {
 }
 
 type FormTesterMethodKey = keyof MockWizardFormElement<any>
+const VALUE: FormTesterMethodKey = 'value'
 const APPLY_INPUT: FormTesterMethodKey = 'applyInput'
 const CLEAR_INPUT: FormTesterMethodKey = 'clearInput'
 const ASSERT_SHOW: FormTesterMethodKey = 'assertShow'
@@ -124,6 +127,8 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
 
                     // Using a switch rather than a map since a generic index signature is not yet possible
                     switch (prop) {
+                        case VALUE:
+                            return _.get(form.applyDefaults(state), path)
                         case APPLY_INPUT:
                             return <TProp>(input: TProp) => _.set(state, path, input)
                         case CLEAR_INPUT:
