@@ -28,6 +28,11 @@
             "description": "Number of times the telemetry event was debounced before emission"
         },
         {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
+        },
+        {
             "name": "mynahQuery",
             "type": "string",
             "description": "Text of a query"
@@ -106,6 +111,16 @@
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "aws_autoUpdateBeta",
+            "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
+            "passive": true
+        },
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [{ "type": "result" }, { "type": "cli" }]
         },
         {
             "name": "aws_refreshCredentials",

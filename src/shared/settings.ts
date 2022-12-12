@@ -11,7 +11,7 @@ import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
-import { UnknownError } from './errors'
+import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -63,7 +63,7 @@ export class Settings {
 
             return true
         } catch (error) {
-            getLogger().warn(`Settings: failed to update "${key}": ${error}`)
+            getLogger().warn(`Settings: failed to update "${key}": %s`, error)
 
             return false
         }
@@ -169,10 +169,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     // Class names are not always stable, especially when bundling
     function makeLogger(name = 'Settings', loglevel: 'debug' | 'error') {
         const prefix = `${isNameMangled() ? 'Settings' : name} (${section})`
-        return (message: string) =>
+        return (message: string, ...meta: any[]) =>
             loglevel === 'debug'
-                ? getLogger().debug(`${prefix}: ${message}`)
-                : getLogger().error(`${prefix}: ${message}`)
+                ? getLogger().debug(`${prefix}: ${message}`, ...meta)
+                : getLogger().error(`${prefix}: ${message}`, ...meta)
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
@@ -192,12 +192,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return this.getOrThrow(key, defaultValue)
             } catch (e) {
-                const message = UnknownError.cast(e)
                 if (arguments.length === 1) {
-                    throw new Error(`Failed to read key "${section}.${key}": ${message}`)
+                    throw ToolkitError.chain(e, `Failed to read key "${section}.${key}"`)
                 }
 
-                this.logErr(`using default for key "${key}", read failed: ${message}`)
+                this.logErr(`using default for key "${key}", read failed: %s`, e)
 
                 return defaultValue as Inner[K]
             }
@@ -209,7 +208,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (error) {
-                this.log(`failed to update field "${key}": ${error}`)
+                this.log(`failed to update field "${key}": %s`, error)
 
                 return false
             }
@@ -221,7 +220,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
                 return true
             } catch (error) {
-                this.log(`failed to delete field "${key}": ${error}`)
+                this.log(`failed to delete field "${key}": %s`, error)
 
                 return false
             }
@@ -231,7 +230,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return await this.config.reset()
             } catch (error) {
-                this.log(`failed to reset settings: ${error}`)
+                this.log(`failed to reset settings: %s`, error)
             }
         }
 
@@ -245,6 +244,15 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return cast<Inner[K]>(value, descriptor[key])
         }
 
+        protected getOrUndefined<K extends keyof Inner>(key: K & string) {
+            const value = this.config.get(key)
+            if (value === undefined) {
+                return value
+            }
+
+            return this.get(key, undefined)
+        }
+
         private readonly getChangedEmitter = once(() => {
             // For a setting `aws.foo.bar`:
             //   - the "section" is `aws.foo`
@@ -256,13 +264,13 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             // value is a valid way to express that the key exists but no (valid) value is set.
 
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.get(p, undefined))
+            const store = toRecord(props, p => this.getOrUndefined(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => {
                     const isDifferentLazy = () => {
                         const previous = store[p]
-                        return previous !== (store[p] = this.get(p, undefined))
+                        return previous !== (store[p] = this.getOrUndefined(p))
                     }
 
                     return event.affectsConfiguration(p) || isDifferentLazy()
@@ -462,7 +470,7 @@ export class PromptSettings extends Settings.define(
         try {
             return !this.getOrThrow(promptName, false)
         } catch (error) {
-            this.log(`prompt check for "${promptName}" failed: ${error}`)
+            this.log(`prompt check for "${promptName}" failed: %s`, error)
             await this.reset()
 
             return true
@@ -516,7 +524,7 @@ export class Experiments extends Settings.define(
         try {
             return this.getOrThrow(name, false)
         } catch (error) {
-            this.log(`experiment check for ${name} failed: ${error}`)
+            this.log(`experiment check for ${name} failed: %s`, error)
             await this.reset()
 
             return false
@@ -530,16 +538,16 @@ export class Experiments extends Settings.define(
     }
 }
 
-const DEV_SETTINGS = {
+const devSettings = {
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     endpoints: Record(String, String),
+    cawsStage: String,
 }
-
-type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>
+type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
 
 /**
@@ -548,7 +556,7 @@ type AwsDevSetting = keyof ResolvedDevSettings
  * forcing certain behaviors, changing hard-coded endpoints, emitting extra debug info, etc.
  *
  * These settings should _not_ be placed in `package.json` as they are not meant to be seen by
- * the average user. Instead, add a new field to {@link DEV_SETTINGS this object} with the
+ * the average user. Instead, add a new field to {@link devSettings this object} with the
  * desired name/type.
  *
  * Note that a default value _must_ be supplied when calling {@link get} because developer
@@ -572,7 +580,7 @@ type AwsDevSetting = keyof ResolvedDevSettings
  * })
  * ```
  */
-export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
+export class DevSettings extends Settings.define('aws.dev', devSettings) {
     private readonly trappedSettings: Partial<ResolvedDevSettings> = {}
     private readonly onDidChangeActiveSettingsEmitter = new vscode.EventEmitter<void>()
 
@@ -602,10 +610,12 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
     static #instance: DevSettings
 
     public static get instance() {
-        const instance = (this.#instance ??= new this())
-        instance.get('forceDevMode', false)
+        if (this.#instance === undefined) {
+            this.#instance = new this()
+            this.#instance.get('forceDevMode', false)
+        }
 
-        return instance
+        return this.#instance
     }
 }
 
@@ -637,7 +647,7 @@ export async function migrateSetting<T, U = T>(
 
         return true
     } catch (error) {
-        getLogger().verbose(`${logPrefix}: failed: ${error}`)
+        getLogger().verbose(`${logPrefix}: failed: %s`, error)
 
         return false
     }

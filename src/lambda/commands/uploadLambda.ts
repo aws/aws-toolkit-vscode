@@ -116,7 +116,7 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
             getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
         } else {
             showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
-            getLogger().error(`Lambda upload failed: %O`, err)
+            getLogger().error(`Lambda upload failed: %s`, err)
         }
     } finally {
         telemetry.lambda_updateFunctionCode.emit({
@@ -582,7 +582,6 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
         let isInList = false
         for (const l of lambdaFunctionNames) {
             if (l.label === recent[profile][region]) {
-                l.description = localizedText.recentlyUsed
                 l.recentlyUsed = true
                 isInList = true
             }
@@ -592,7 +591,6 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
                 label: recent[profile][region],
                 recentlyUsed: true,
                 data: recent[profile][region],
-                description: localizedText.recentlyUsed,
             })
         }
     }
@@ -613,12 +611,5 @@ function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
         filterBoxInputSettings: { label: 'Existing lambda function: ', transform: input => input },
     })
 
-    prompter.onDidShow(async () => {
-        for (const item of await items) {
-            if (item.recentlyUsed) {
-                prompter.recentItem = item
-            }
-        }
-    })
     return prompter
 }

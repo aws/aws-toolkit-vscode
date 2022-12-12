@@ -8,6 +8,11 @@ import { HoverConfigUtil } from '../../../codewhisperer/util/hoverConfigUtil'
 import { FakeMemento } from '../../fakeExtensionContext'
 
 describe('HoverConfigUtil', function () {
+    after(async function () {
+        // Restore the setting after running tests
+        await new HoverConfigUtil().update('hover.enabled', true)
+    })
+
     describe('overwriteHoverConfig', async function () {
         it('Should set hover enabled to false if it is currently true', async function () {
             const hoverConfigUtil = new HoverConfigUtil()

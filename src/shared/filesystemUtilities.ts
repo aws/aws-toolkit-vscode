@@ -12,6 +12,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
+import globals from '../shared/extensionGlobals'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
@@ -81,10 +82,10 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export const readFileAsString = async (
+export async function readFileAsString(
     pathLike: string,
     options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
-): Promise<string> => {
+): Promise<string> {
     return readFile(pathLike, options)
 }
 
@@ -223,4 +224,30 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
         }
     }
     return []
+}
+/**
+ * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
+ */
+export function getDefaultDownloadPath(): string {
+    const lastUsedPath = globals.context.globalState.get('aws.downloadPath')
+    if (lastUsedPath) {
+        if (typeof lastUsedPath === 'string') {
+            return lastUsedPath
+        }
+        getLogger().error('Expected "aws.downloadPath" to be string, got %O', typeof lastUsedPath)
+    }
+    return downloadsDir()
+}
+
+export async function setDefaultDownloadPath(downloadPath: string) {
+    try {
+        const savePath = await stat(downloadPath)
+        if (savePath.isDirectory()) {
+            globals.context.globalState.update('aws.downloadPath', downloadPath)
+        } else {
+            globals.context.globalState.update('aws.downloadPath', path.dirname(downloadPath))
+        }
+    } catch (err) {
+        getLogger().error('Error while setting "aws.downloadPath"', err as Error)
+    }
 }

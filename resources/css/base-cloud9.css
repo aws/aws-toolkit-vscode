@@ -35,6 +35,14 @@ body.vscode-light .header {
     background-color: rgba(var(--shade), 0.02);
 }
 
+body.vscode-dark .notification {
+    background-color: #2a2a2a;
+}
+body.vscode-light .notification {
+    background-color: #f7f7f7;
+    box-shadow: 2px 2px 8px #aaa;
+}
+
 button:disabled {
     filter: none;
 }

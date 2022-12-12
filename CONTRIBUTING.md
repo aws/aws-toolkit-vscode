@@ -315,6 +315,10 @@ requests just from the model/types.
     req.send(function (err, data) { ... });
     ```
 
+### Webview dev-server
+
+Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+
 ### Font generation
 
 For extensions to contribute their own codicons, VS Code requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
@@ -328,6 +332,10 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
     ```ts
     getIcon('aws-cloudwatch-log-stream')
     ```
+
+### Beta artifacts
+
+The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
 
 ## Importing icons from other open source repos
 

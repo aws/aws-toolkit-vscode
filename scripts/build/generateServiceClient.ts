@@ -21,7 +21,7 @@ interface ServiceClientDefinition {
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
     const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Serivce Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
+    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
 
     await cloneJsSdk(tempJsSdkPath)
     await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
@@ -213,6 +213,10 @@ ${fileContents}
         {
             serviceJsonPath: 'src/codewhisperer/client/service-2.json',
             serviceName: 'CodeWhispererClient',
+        },
+        {
+            serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
+            serviceName: 'CodeWhispererUserClient',
         },
         {
             serviceJsonPath: 'src/mynah/client/service-2.json',

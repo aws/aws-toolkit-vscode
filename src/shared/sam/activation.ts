@@ -28,9 +28,9 @@ import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { NoopWatcher } from '../watchedFiles'
+import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
-import { CodelensRootRegistry } from './codelensRootRegistry'
+import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
@@ -39,6 +39,7 @@ import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
+import { registerSync } from './sync'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -84,6 +85,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
+
+    registerSync()
 }
 
 async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {

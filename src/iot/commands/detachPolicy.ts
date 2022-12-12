@@ -55,7 +55,7 @@ export async function detachPolicyCommand(
         getLogger().info(`detached policy: ${policyName}`)
         window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached: {0}', policyName))
     } catch (e) {
-        getLogger().error(`Failed to detach certificate: ${certId}: %O`, e)
+        getLogger().error(`Failed to detach certificate: ${certId}: %s`, e)
         showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach: {0}', policyName), window)
     }
 

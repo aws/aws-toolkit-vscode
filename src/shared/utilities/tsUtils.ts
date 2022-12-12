@@ -49,6 +49,13 @@ export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] 
     return Object.keys(obj) as [keyof T & string]
 }
 
+/**
+ * Stricter form of {@link Object.entries} that gives slightly better types for object literals.
+ */
+export function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
+    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
+}
+
 export function isThenable<T>(obj: unknown): obj is Thenable<T> {
     return isNonNullable(obj) && typeof (obj as Thenable<T>).then === 'function'
 }

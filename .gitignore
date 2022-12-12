@@ -23,9 +23,10 @@ src/shared/telemetry/vscodeTelemetry.json
 # Test reports
 .test-reports/
 
-# Auto generated Service Clients
+# Auto generated type definitions
 src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts
+src/codewhisperer/client/codewhispereruserclient.d.ts
 src/mynah/client/mynahclient.d.ts
 src/mynah/autocomplete-client/autocompleteclient.d.ts
 src/mynah/telemetry/client/mynahtelemetryclient.d.ts

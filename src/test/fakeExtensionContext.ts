@@ -19,6 +19,7 @@ import {
 } from '../shared/sam/cli/samCliValidator'
 import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -37,6 +38,12 @@ export interface FakeExtensionState {
 }
 
 export class FakeExtensionContext implements vscode.ExtensionContext {
+    // Seems to be the most reliable way to set the extension path (unfortunately)
+    // TODO: figure out a robust way to source the project directory that is invariant to entry point
+    // Using `package.json` as a reference point seems to make the most sense
+    private _extensionPath: string = path.resolve(__dirname, '../../..')
+    private _globalStoragePath: string = '.'
+
     public subscriptions: {
         dispose(): any
     }[] = []
@@ -45,15 +52,12 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public globalStorageUri: vscode.Uri = vscode.Uri.file('file://fake/storage/uri')
     public storagePath: string | undefined
     public logPath: string = ''
-    public extensionUri: vscode.Uri = vscode.Uri.file('file://fake/extension/uri')
+    public extensionUri: vscode.Uri = vscode.Uri.file(this._extensionPath)
     public environmentVariableCollection: vscode.EnvironmentVariableCollection = new FakeEnvironmentVariableCollection()
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
     public secrets = new SecretStorage()
-
-    private _extensionPath: string = ''
-    private _globalStoragePath: string = '.'
 
     /**
      * Use {@link create()} to create a FakeExtensionContext.
@@ -117,6 +121,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
+
         return {
             extensionContext: ctx,
             awsContext,
@@ -126,6 +131,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             invokeOutputChannel,
             telemetryService,
             credentialsStore: new CredentialsStore(),
+            uriHandler: new UriHandler(),
         }
     }
 }
