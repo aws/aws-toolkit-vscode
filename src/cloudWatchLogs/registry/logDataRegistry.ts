@@ -174,8 +174,9 @@ export class LogDataRegistry {
             }
         }
         if (!logData.next || headOrTail === 'tail') {
-            tokens.next = {
-                token: responseData.nextForwardToken ?? '',
+            const token = responseData.nextForwardToken ?? request.nextForwardToken
+            if (token) {
+                tokens.next = { token }
             }
         }
         this.setLogData(uri, {
