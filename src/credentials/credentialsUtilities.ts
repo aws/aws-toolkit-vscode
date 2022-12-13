@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
-import { credentialHelpUrl } from '../shared/constants'
+import { authHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import globals from '../shared/extensionGlobals'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -45,7 +45,7 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
         buttons
     ).then((selection: string | undefined) => {
         if (selection === getHelp) {
-            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+            vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
         }
         if (selection === editCreds) {
             vscode.commands.executeCommand('aws.credentials.edit')
