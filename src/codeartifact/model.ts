@@ -14,6 +14,8 @@ import { ResourceTreeNode } from '../shared/treeview/resource'
 import { getIcon } from '../shared/icons'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
 
+import { getPackageFullName } from './utils'
+
 class PackageVersion {
     public readonly id = this.packageVersion.version!
 
@@ -56,20 +58,7 @@ class Package {
     }
 
     public getTreeItem() {
-        let packageFullName: string
-        if (this.artifact.format == 'npm') {
-            if (this.artifact.namespace) {
-                packageFullName = `@${this.artifact.namespace}/${this.artifact.package}`
-            } else {
-                packageFullName = `${this.artifact.package}`
-            }
-        } else if (this.artifact.format == 'maven') {
-            packageFullName = `${this.artifact.namespace}.${this.artifact.package}`
-        } else {
-            packageFullName = this.artifact.package!
-        }
-
-        const item = new vscode.TreeItem(packageFullName)
+        const item = new vscode.TreeItem(getPackageFullName(this.artifact))
         item.tooltip = this.artifact.package!
         item.iconPath = getIcon('vscode-package')
         item.description = this.artifact.format
