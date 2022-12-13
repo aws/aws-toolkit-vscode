@@ -327,13 +327,6 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async editor => {
-                if (editor) {
-                    const uri = editor.document.uri
-                    if (uri.fsPath === 'GitHub Copilot' && uri.scheme === 'copilot' && uri.path === 'GitHub Copilot') {
-                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-                        await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
-                    }
-                }
                 await InlineCompletionService.instance.onEditorChange()
             }),
             vscode.window.onDidChangeWindowState(async e => {
