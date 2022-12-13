@@ -1848,6 +1848,10 @@
         },
         "commands": [
             {
+                "command": "github.copilot.generate",
+                "title": "Open CodeWhisperer Settings"
+            },
+            {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",

@@ -51,7 +51,6 @@ import globals from '../shared/extensionGlobals'
 import { Auth } from '../credentials/auth'
 import { isUserCancelledError } from '../shared/errors'
 import { showViewLogsMessage } from '../shared/utilities/messages'
-import { NavigationHintProvider } from './service/navigationHintProvider'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -65,7 +64,6 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
     }
-
     /**
      * CodeWhisperer security panel
      */
@@ -201,10 +199,6 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
             ReferenceInlineProvider.instance
-        ),
-        vscode.languages.registerCodeLensProvider(
-            [...CodeWhispererConstants.supportedLanguages],
-            NavigationHintProvider.instance
         )
     )
 
@@ -333,6 +327,13 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async editor => {
+                if (editor) {
+                    const uri = editor.document.uri
+                    if (uri.fsPath === 'GitHub Copilot' && uri.scheme === 'copilot' && uri.path === 'GitHub Copilot') {
+                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                        await vscode.commands.executeCommand('workbench.action.openSettings', `aws.codeWhisperer`)
+                    }
+                }
                 await InlineCompletionService.instance.onEditorChange()
             }),
             vscode.window.onDidChangeWindowState(async e => {
