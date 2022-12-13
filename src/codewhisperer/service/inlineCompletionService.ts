@@ -18,7 +18,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
-import { HoverConfigUtil } from '../util/hoverConfigUtil'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
@@ -153,6 +152,10 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         const start = RecommendationHandler.instance.startPos
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
+        const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
+        const matchedCount = RecommendationHandler.instance.recommendations.filter(
+            r => r.content.length > 0 && r.content.startsWith(prefix)
+        ).length
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
             const item = this.getInlineCompletionItem(document, r, start, end, i)
@@ -168,6 +171,9 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
             )
             this.nextMove = 0
             this._onDidShow.fire()
+            if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
+                return [item, { insertText: 'x' }]
+            }
             return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
@@ -284,7 +290,6 @@ export class InlineCompletionService {
             this.disposeCommandOverrides()
         } finally {
             this.clearRejectionTimer()
-            await HoverConfigUtil.instance.restoreHoverConfig()
         }
     }
 
@@ -362,6 +367,9 @@ export class InlineCompletionService {
     }
 
     async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
+        if (vscode.window.activeTextEditor) {
+            vscode.window.showTextDocument(vscode.window.activeTextEditor.document)
+        }
         this.inlineCompletionProvider = new CodeWhispererInlineCompletionItemProvider(
             this.inlineCompletionProvider?.getActiveItemIndex,
             indexShift
@@ -427,7 +435,6 @@ export class InlineCompletionService {
         if (this._timer !== undefined) {
             return
         }
-        await HoverConfigUtil.instance.overwriteHoverConfig()
         this._timer = globals.clock.setInterval(async () => {
             if (!this.isSuggestionVisible()) {
                 getLogger().verbose(`Clearing cached suggestion`)

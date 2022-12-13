@@ -45,7 +45,6 @@ import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
-import { HoverConfigUtil } from './util/hoverConfigUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil, isUpgradeableConnection } from './util/authUtil'
 import globals from '../shared/extensionGlobals'
@@ -56,11 +55,6 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
-    // No need to await. This can be removed once the 'hover.enabled' hack is no longer needed.
-    HoverConfigUtil.instance.restoreHoverConfig().catch(err => {
-        getLogger().warn('codewhisperer: failed to restore "editor.hover.enabled" setting: %s', err)
-    })
-
     const codewhispererSettings = CodeWhispererSettings.instance
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
@@ -70,7 +64,6 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
     }
-
     /**
      * CodeWhisperer security panel
      */
@@ -631,7 +624,6 @@ export async function shutdown() {
     }
     if (isInlineCompletionEnabled()) {
         await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
-        await HoverConfigUtil.instance.restoreHoverConfig()
     } else {
         if (vscode.window.activeTextEditor) {
             await InlineCompletion.instance.resetInlineStates(vscode.window.activeTextEditor)
