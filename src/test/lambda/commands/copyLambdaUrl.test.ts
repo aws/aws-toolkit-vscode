@@ -16,7 +16,7 @@ import { createUrlForLambdaFunctionUrl } from '../../../shared/constants'
 
 describe('copy lambda function URL to clipboard', async () => {
     let client: SinonStubbedInstance<LambdaClient>
-    let node: SinonStubbedInstance<LambdaFunctionNode>
+    let node: Pick<LambdaFunctionNode, 'name' | 'regionCode'>
     let quickPickUrlFunc: SinonStub
 
     const nodeName = 'my-node-name'
@@ -25,8 +25,7 @@ describe('copy lambda function URL to clipboard', async () => {
         client = createStubInstance(DefaultLambdaClient)
         quickPickUrlFunc = stub()
 
-        node = createStubInstance(LambdaFunctionNode)
-        stub(node, 'name').get(() => nodeName)
+        node = { name: nodeName, regionCode: 'myRegion' }
     })
 
     it('Single URL exists', async () => {

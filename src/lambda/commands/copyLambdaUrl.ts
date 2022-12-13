@@ -14,7 +14,7 @@ import { FunctionUrlConfigList } from 'aws-sdk/clients/lambda'
 import { createUrlForLambdaFunctionUrl } from '../../shared/constants'
 
 export async function copyLambdaUrl(
-    node: LambdaFunctionNode,
+    node: Pick<LambdaFunctionNode, 'name' | 'regionCode'>,
     client: LambdaClient = new DefaultLambdaClient(node.regionCode),
     quickPickUrl = _quickPickUrl
 ): Promise<void> {
