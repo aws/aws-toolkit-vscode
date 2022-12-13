@@ -166,8 +166,9 @@ export class LogDataRegistry {
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
         if (!logData.previous || headOrTail === 'head') {
-            tokens.previous = {
-                token: responseData.nextBackwardToken ?? '',
+            const token = responseData.nextBackwardToken
+            if (token) {
+                tokens.previous = { token }
             }
         }
         if (!logData.next || headOrTail === 'tail') {
