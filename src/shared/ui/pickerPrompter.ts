@@ -61,11 +61,6 @@ export type ExtendedQuickPickOptions<T> = Omit<
     // TODO: this could optionally be a callback accepting the error and returning an item
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
-    /**
-     * Controls whether "Selected previously" is set as the description of the `recentItem` (default: true).
-     * This currently mutates the item as it is expected that callers regenerate items every prompt
-     */
-    recentItemText?: boolean
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
@@ -86,7 +81,6 @@ const DEFAULT_ERROR_ITEM = {
 
 export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
-    recentItemText: true,
     noItemsFoundItem: DEFAULT_NO_ITEMS_ITEM,
     errorItem: DEFAULT_ERROR_ITEM,
 }
@@ -269,7 +263,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * of the items and makes it the active selection.
      */
     public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
-        this.setRecentItem(response, true)
+        this.setRecentItem(response)
     }
 
     public get recentItem() {
@@ -346,15 +340,36 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     private appendItems(items: DataQuickPickItem<T>[]): void {
         const picker = this.quickPick
         const recent = picker.activeItems
+        const mergedItems = picker.items.concat(items)
 
-        picker.items = picker.items.concat(items).sort(this.options.compare)
+        const recentlyUsedItem = mergedItems.find(item => item.recentlyUsed)
+        if (recentlyUsedItem !== undefined) {
+            if (items.includes(recentlyUsedItem)) {
+                const prefix = recentlyUsedItem.description
+                recentlyUsedItem.description = prefix ? `${prefix} (${recentlyUsed})` : `(${recentlyUsed})`
+            }
 
-        if (picker.items.length === 0 && !this.busy) {
-            this.isShowingPlaceholder = true
-            picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            picker.items = mergedItems.sort((a, b) => {
+                if (a === recentlyUsedItem) {
+                    return -1
+                } else if (b === recentlyUsedItem) {
+                    return 1
+                } else {
+                    return this.options.compare?.(a, b) ?? 0
+                }
+            })
+
+            picker.activeItems = [recentlyUsedItem]
+        } else {
+            picker.items = mergedItems.sort(this.options.compare)
+
+            if (picker.items.length === 0 && !this.busy) {
+                this.isShowingPlaceholder = true
+                picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            }
+
+            this.selectItems(...recent)
         }
-
-        this.selectItems(...recent)
     }
 
     // TODO: add options to this to clear items _before_ loading them
@@ -368,7 +383,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param disableInput Disables the prompter until the items have been loaded, only relevant for async loads (default: true)
      * @returns A promise that is resolved when loading has finished
      */
-    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = true): Promise<void> {
+    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = false): Promise<void> {
         // This code block assumes that callers never try to load items in parallel
         // For now this okay since we don't have any pickers that require that capability
 
@@ -466,18 +481,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
-     * Sets the "last selected/accepted" item or input, moves it to the start
-     * of the items and makes it the active selection.
+     * Sets the "last selected/accepted" item or input and makes it the active selection.
      *
      * @param picked  Recent item.
-     * @param first Controls whether the recent item is moved to the start of the items.
      */
-    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
-        const recentItemText = `(${recentlyUsed})`
-        // HACK: Scrub any "selected previously" descriptions, in case this is
-        // "backwards navigation". #2148
-        this.quickPick.items.forEach(item => item.description?.replace(recentItemText, ''))
-
+    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined): void {
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -486,24 +494,6 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === recovered?.label)
         } else {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
-        }
-
-        if (this.options.recentItemText) {
-            this.quickPick.activeItems.forEach(
-                item => (item.description = `${item.description ?? ''} ${recentItemText}`)
-            )
-            // Needed to force a UI update.
-            this.quickPick.items = [...this.quickPick.items]
-        }
-
-        if (first) {
-            const activeItems = this.quickPick.activeItems
-            function recentFirst(a: DataQuickPickItem<T>, b: DataQuickPickItem<T>): number {
-                const isRecent = activeItems.find(val => val.label === a.label)
-                return isRecent ? -1 : 0
-            }
-            this.quickPick.items = [...this.quickPick.items].sort(recentFirst)
-            this.quickPick.activeItems = this.quickPick.items.length > 0 ? [this.quickPick.items[0]] : []
         }
 
         if (this.quickPick.activeItems.length === 0) {

@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found"
-}

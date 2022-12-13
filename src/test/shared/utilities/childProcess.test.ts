@@ -8,7 +8,7 @@ import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { ChildProcess, EOF } from '../../../shared/utilities/childProcess'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
@@ -250,7 +250,7 @@ describe('ChildProcess', async function () {
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Windows', async function () {
+            it('can stop() previously stopped processes - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
@@ -262,9 +262,7 @@ describe('ChildProcess', async function () {
                 childProcess.stop()
                 await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
-                assert.throws(() => {
-                    childProcess.stop()
-                })
+                assert.doesNotThrow(() => childProcess.stop())
             })
         } // END Windows-only tests
 
@@ -283,7 +281,7 @@ describe('ChildProcess', async function () {
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Unix', async function () {
+            it('can stop() previously stopped processes - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
@@ -295,7 +293,16 @@ describe('ChildProcess', async function () {
                 await result
 
                 assert.strictEqual(childProcess.stopped, true)
-                assert.throws(() => childProcess.stop())
+                assert.doesNotThrow(() => childProcess.stop())
+            })
+
+            it('can send input - Unix', async function () {
+                const childProcess = new ChildProcess('cat')
+                const result = childProcess.run()
+                await childProcess.send('foo')
+                await childProcess.send(EOF)
+                const { stdout } = await result
+                assert.strictEqual(stdout, 'foo')
             })
         } // END Unix-only tests
     })

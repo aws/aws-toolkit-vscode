@@ -11,13 +11,13 @@ import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 
 export interface SamCliLocationProvider {
-    getLocation(): Promise<string | undefined>
+    getLocation(): Promise<{ path: string; version: string } | undefined>
 }
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
     private static SAM_CLI_LOCATOR: BaseSamCliLocator | undefined
 
-    public async getLocation(): Promise<string | undefined> {
+    public async getLocation() {
         return DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
     }
 
@@ -44,11 +44,8 @@ abstract class BaseSamCliLocator {
     }
 
     // TODO: this method is being called multiple times on my Windows machine and is really slow
-    public async getLocation(): Promise<string | undefined> {
-        let location: string | undefined = await this.findFileInFolders(
-            this.getExecutableFilenames(),
-            this.getExecutableFolders()
-        )
+    public async getLocation() {
+        let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
         if (!location) {
             location = await this.getSystemPathLocation()
@@ -63,7 +60,7 @@ abstract class BaseSamCliLocator {
     protected abstract getExecutableFilenames(): string[]
     protected abstract getExecutableFolders(): string[]
 
-    protected async findFileInFolders(files: string[], folders: string[]): Promise<string | undefined> {
+    protected async findFileInFolders(files: string[], folders: string[]) {
         const fullPaths: string[] = files
             .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
             .reduce((accumulator, paths) => {
@@ -87,7 +84,7 @@ abstract class BaseSamCliLocator {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
                         BaseSamCliLocator.didFind = true
-                        return fullPath
+                        return { path: fullPath, version: validationResult.version }
                     }
                     this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
@@ -105,7 +102,7 @@ abstract class BaseSamCliLocator {
      * Searches for `getExecutableFilenames()` in `$PATH` and returns the first
      * path found on the filesystem, if any.
      */
-    private async getSystemPathLocation(): Promise<string | undefined> {
+    private async getSystemPathLocation() {
         const envVars = process.env as EnvironmentVariables
 
         if (envVars.PATH) {

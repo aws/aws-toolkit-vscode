@@ -39,6 +39,7 @@ import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
+import { registerSync } from './sync'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -84,6 +85,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
+
+    registerSync()
 }
 
 async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
