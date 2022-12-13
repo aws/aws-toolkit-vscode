@@ -235,3 +235,12 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
 export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
+
+export const accessTokenMigrationDoNotShowAgain = `Don\'t Show Again`
+
+export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
+
+export const accessTokenMigrationDoNotShowAgainLastShown =
+    'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN_LAST_SHOWN'
+
+export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`
