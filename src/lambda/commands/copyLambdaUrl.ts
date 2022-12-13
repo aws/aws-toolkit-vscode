@@ -12,6 +12,7 @@ import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompt
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { FunctionUrlConfigList } from 'aws-sdk/clients/lambda'
 import { createUrlForLambdaFunctionUrl } from '../../shared/constants'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function copyLambdaUrl(
     node: Pick<LambdaFunctionNode, 'name' | 'regionCode'>,
@@ -46,5 +47,8 @@ async function _quickPickUrl(configList: FunctionUrlConfigList): Promise<string 
     }))
     const picker: QuickPickPrompter<string> = createQuickPick(items, { title: 'Select function to copy url from.' })
     const res = await picker.prompt()
-    return isValidResponse(res) ? res : undefined
+    if (!isValidResponse(res)) {
+        throw new CancellationError('user')
+    }
+    return res
 }
