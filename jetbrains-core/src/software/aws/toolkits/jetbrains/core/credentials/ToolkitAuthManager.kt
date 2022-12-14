@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
@@ -140,6 +141,16 @@ fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_SON
             manager.deleteConnection(connection)
             throw e
         }
+    }
+}
+
+fun logoutFromSsoConnection(project: Project?, connection: AwsBearerTokenConnection, callback: () -> Unit = {}) {
+    try {
+        ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC).invalidate(connection.id)
+        ToolkitAuthManager.getInstance().deleteConnection(connection.id)
+        project?.let { ToolkitConnectionManager.getInstance(it).switchConnection(null) }
+    } finally {
+        callback()
     }
 }
 

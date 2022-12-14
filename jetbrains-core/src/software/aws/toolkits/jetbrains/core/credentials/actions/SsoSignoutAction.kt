@@ -4,12 +4,10 @@
 package software.aws.toolkits.jetbrains.core.credentials.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.UiTelemetry
 
@@ -30,13 +28,9 @@ class SsoSignoutAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val connection = connection(e) ?: return
 
-        ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC).invalidate(connection.id)
-        ToolkitAuthManager.getInstance().deleteConnection(connection.id)
-        e.project?.let {
-            ToolkitConnectionManager.getInstance(it).switchConnection(null)
+        logoutFromSsoConnection(e.project, connection) {
+            UiTelemetry.click(e.project, "devtools_signout")
         }
-
-        UiTelemetry.click(e.project, "devtools_signout")
     }
 
     private fun connection(e: AnActionEvent): AwsBearerTokenConnection? = e.project?.let {

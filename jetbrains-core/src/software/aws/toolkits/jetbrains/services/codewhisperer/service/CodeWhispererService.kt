@@ -76,9 +76,7 @@ class CodeWhispererService {
         val project = editor.project ?: return
         if (!isCodeWhispererEnabled(project)) return
         if (isConnectionExpired(project)) {
-            if (triggerTypeInfo.triggerType == CodewhispererTriggerType.OnDemand) {
-                promptReAuth(project)
-            }
+            promptReAuth(project)
             return
         }
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)

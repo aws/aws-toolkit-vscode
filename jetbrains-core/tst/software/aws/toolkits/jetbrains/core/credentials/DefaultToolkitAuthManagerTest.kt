@@ -15,7 +15,6 @@ import org.junit.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.capture
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -27,6 +26,7 @@ import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
@@ -288,5 +288,35 @@ class DefaultToolkitAuthManagerTest {
                 assertThat(conn.label).isEqualTo(expectedConnection.label)
             }
         }
+    }
+
+    @Test
+    fun `logoutFromConnection should invalidate the token provider and the connection and invoke callback`() {
+        regionProvider.addRegion(Region.US_EAST_1)
+        val connectionManager: ToolkitConnectionManager = mock()
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+        val authManager: ToolkitAuthManager = mock()
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, authManager, disposableRule.disposable)
+
+        val connection = ManagedBearerSsoConnection("startUrl000", "us-east-1", listOf())
+
+        var messageReceived = 0
+        var callbackInvoked = 0
+        ApplicationManager.getApplication().messageBus.connect().subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun invalidate(providerId: String) {
+                    if (providerId == "sso;startUrl000") {
+                        messageReceived += 1
+                    }
+                }
+            }
+        )
+
+        logoutFromSsoConnection(projectRule.project, connection) { callbackInvoked += 1 }
+        assertThat(messageReceived).isEqualTo(1)
+        assertThat(callbackInvoked).isEqualTo(1)
+        verify(authManager).deleteConnection(eq("sso;startUrl000"))
+        verify(connectionManager).switchConnection(eq(null))
     }
 }

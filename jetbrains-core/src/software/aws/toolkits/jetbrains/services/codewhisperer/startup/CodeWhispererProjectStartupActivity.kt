@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyWarnAccountless
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Timer
@@ -32,6 +33,9 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
     override fun runActivity(project: Project) {
         if (!isCodeWhispererEnabled(project)) return
         if (runOnce) return
+
+        promptReAuth(project)
+
         CodeWhispererStatusBarManager.getInstance(project).updateWidget()
 
         // install intellsense autotrigger listener, this only need to be executed 1 time
