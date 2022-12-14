@@ -11,6 +11,7 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyWarnAccountless
@@ -31,6 +32,7 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
     override fun runActivity(project: Project) {
         if (!isCodeWhispererEnabled(project)) return
         if (runOnce) return
+        CodeWhispererStatusBarManager.getInstance(project).updateWidget()
 
         // install intellsense autotrigger listener, this only need to be executed 1 time
         project.messageBus.connect().subscribe(LookupManagerListener.TOPIC, CodeWhispererIntlliSenseAutoTriggerListener)

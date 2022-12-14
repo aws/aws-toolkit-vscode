@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.status
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.impl.status.widget.StatusBarEditorBasedWidgetFactory
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -24,7 +25,9 @@ class CodeWhispererStatusBarWidgetFactory : StatusBarEditorBasedWidgetFactory() 
         Disposer.dispose(widget)
     }
 
+    override fun canBeEnabledOn(statusBar: StatusBar) = true
+
     companion object {
-        private const val ID = "aws.codewhisperer"
+        const val ID = "aws.codewhisperer"
     }
 }

@@ -86,6 +86,8 @@ class DefaultConnectionPinningManager(private val project: Project) :
         } else {
             pinnedConnections[feature.featureId] = newConnection
         }
+
+        project.messageBus.syncPublisher(ConnectionPinningManagerListener.TOPIC).pinnedConnectionChanged(feature, newConnection)
     }
 
     override fun maybePinFeatures(oldConnection: ToolkitConnection, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>) {
