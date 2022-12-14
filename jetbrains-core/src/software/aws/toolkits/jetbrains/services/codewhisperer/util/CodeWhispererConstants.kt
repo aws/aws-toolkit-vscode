@@ -9,6 +9,7 @@ import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
 import java.awt.Font
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 
 object CodeWhispererConstants {
     const val CHARACTERS_LIMIT = 10240
@@ -48,6 +49,9 @@ object CodeWhispererConstants {
 
     // Date when Accountless is not supported
     val EXPIRE_DATE = SimpleDateFormat("yyyy-MM-dd").parse("2023-01-31")
+
+    // Formatter for timestamp on accountless warn notification
+    val TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
     object AutoSuggestion {
         const val SETTING_ID = "codewhisperer_autoSuggestionActivation"

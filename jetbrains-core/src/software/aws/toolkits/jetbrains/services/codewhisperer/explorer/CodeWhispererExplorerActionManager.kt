@@ -39,6 +39,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.UiTelemetry
 import java.net.URI
+import java.time.LocalDateTime
 
 // TODO: refactor this class, now it's managing action and state
 @State(name = "codewhispererStates", storages = [Storage("aws.xml")])
@@ -184,6 +185,18 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
         }
     }
 
+    fun setAccountlessNotificationTimestamp() {
+        actionState.accountlessWarnTimestamp = LocalDateTime.now().format(CodeWhispererConstants.TIMESTAMP_FORMATTER)
+    }
+
+    fun getAccountlessNotificationTimestamp(): String? = actionState.accountlessWarnTimestamp
+
+    fun getDoNotShowAgain(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgain, false)
+
+    fun setDoNotShowAgain(doNotShowAgain: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.DoNotShowAgain] = doNotShowAgain
+    }
+
     private fun setAutoSuggestion(project: Project, isAutoEnabled: Boolean) {
         setAutoEnabled(isAutoEnabled)
         val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED
@@ -235,12 +248,14 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
     override fun getState(): CodeWhispererExploreActionState = CodeWhispererExploreActionState().apply {
         value.putAll(actionState.value)
         token = actionState.token
+        accountlessWarnTimestamp = actionState.accountlessWarnTimestamp
     }
 
     override fun loadState(state: CodeWhispererExploreActionState) {
         actionState.value.clear()
         actionState.token = state.token
         actionState.value.putAll(state.value)
+        actionState.accountlessWarnTimestamp = state.accountlessWarnTimestamp
     }
 
     companion object {
@@ -267,6 +282,9 @@ internal class CodeWhispererExploreActionState : BaseState() {
     // can not remove this as we want to support existing accountless users
     @get:Property
     var token by string()
+
+    @get:Property
+    var accountlessWarnTimestamp by string()
 }
 
 // TODO: Don't remove IsManualEnabled
@@ -274,7 +292,8 @@ internal enum class CodeWhispererExploreStateType {
     IsAutoEnabled,
     IsManualEnabled,
     HasAcceptedTermsOfServices,
-    HasShownHowToUseCodeWhisperer
+    HasShownHowToUseCodeWhisperer,
+    DoNotShowAgain,
 }
 
 interface CodeWhispererActivationChangedListener {
