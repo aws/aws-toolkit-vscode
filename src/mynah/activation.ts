@@ -30,6 +30,7 @@ import { TelemetryClient, TelemetryClientSession } from './telemetry/telemetry/c
 import { IdentityManagerFactory } from './telemetry/identity/factory'
 import { TelemetryClientFactory } from './telemetry/telemetry/factory'
 import { MynahClientType, TelemetryEventName } from './telemetry/telemetry/types'
+import { extensionVersion } from '../shared/vscode/env'
 
 let telemetryClient: TelemetryClient
 
@@ -57,7 +58,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
         environmentVersion: version,
         identityId,
         mynahClientType: MynahClientType.MYNAH_VISUAL_STUDIO_CODE,
-        mynahClientVersion: require(__dirname + '/../../package.json').version,
+        mynahClientVersion: extensionVersion,
     })
     const searchHistoryStore = new SearchHistoryStore(context.globalState, context.workspaceState)
     const panelStore = new PanelStore()
