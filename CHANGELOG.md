@@ -1,3 +1,24 @@
+## 1.58.0 2022-12-06
+
+- **Feature** S3: "Download As" action defaults to the last-used download path.
+- **Feature** Amazon CodeCatalyst: faster listing of repositories and Dev Environments
+- **Feature** Cloud9: browse and generate code for EventBridge Schemas from AWS Explorer
+- **Feature** Amazon CodeCatalyst: Connecting to AWS Builder ID when coming from the browser has been made easier
+
+## 1.57.0 2022-12-01
+
+- **Feature** Amazon CodeCatalyst: Connect VS Code to your remote Dev Environments.
+- **Feature** Amazon CodeCatalyst: Clone your repositories to your local workspace.
+- **Feature** Amazon CodeCatalyst: Connect using your AWS Builder ID.
+
+## 1.56.0 2022-11-28
+
+- **Feature** Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started. 
+- **Feature** Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block.
+- **Feature** Amazon CodeWhisperer now supports TypeScript and C# programming languages.
+- **Feature** Amazon CodeWhisperer is now available as a supported feature and no longer an experimental feature.
+- **Feature** Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities.
+
 ## 1.55.0 2022-11-23
 
 - **Bug Fix** logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found

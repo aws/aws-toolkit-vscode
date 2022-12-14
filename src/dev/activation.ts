@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as config from './config'
 import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
@@ -12,6 +13,11 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
+import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
+import { watchBetaVSIX } from './beta'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { entries } from '../shared/utilities/tsUtils'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 interface MenuOption {
     readonly label: string
@@ -28,6 +34,24 @@ interface MenuOption {
  * feature/module as a description so it can be moved around easier.
  */
 const menuOptions: Record<string, MenuOption> = {
+    installVsix: {
+        label: 'Install VSIX on Remote Environment',
+        description: 'CodeCatalyst',
+        detail: 'Automatically upload/install a VSIX to a remote host',
+        executor: installVsixCommand,
+    },
+    openTerminal: {
+        label: 'Open Remote Terminal',
+        description: 'CodeCatalyst',
+        detail: 'Open a new terminal connected to the remote environment',
+        executor: openTerminalCommand,
+    },
+    deleteDevEnv: {
+        label: 'Delete Workspace',
+        description: 'CodeCatalyst',
+        detail: 'Deletes the selected Dev Environment',
+        executor: deleteDevEnvCommand,
+    },
     editStorage: {
         label: 'Edit Storage',
         description: 'VS Code',
@@ -77,10 +101,10 @@ export function activate(ctx: ExtContext): void {
 
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
-}
 
-function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
-    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
+    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
+        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
+    }
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {

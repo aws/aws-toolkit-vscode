@@ -32,8 +32,39 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { createCommonButtons } from '../shared/ui/buttons'
+import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { getConfigFilename } from './sharedCredentials'
+import { authHelpUrl } from '../shared/constants'
+
+export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const ssoScope = 'sso:account:access'
+export const codecatalystScopes = ['codecatalyst:read_write']
+export const ssoAccountAccessScopes = ['sso:account:access']
+export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+
+export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
+    return {
+        type: 'sso',
+        ssoRegion: 'us-east-1',
+        startUrl: builderIdStartUrl,
+        scopes: [...codecatalystScopes, ...codewhispererScopes],
+    }
+}
+
+export function createSsoProfile(startUrl: string, region = 'us-east-1'): SsoProfile & { readonly scopes: string[] } {
+    return {
+        type: 'sso',
+        startUrl,
+        ssoRegion: region,
+        scopes: codewhispererScopes,
+    }
+}
+
+export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
+    return scopes?.every(s => target.scopes?.includes(s))
+}
 
 export interface SsoConnection {
     readonly type: 'sso'
@@ -316,6 +347,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
@@ -401,7 +434,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (connection.id === this.#activeConnection?.id) {
             await this.logout()
         } else {
-            this.invalidateConnection(connection.id)
+            await this.invalidateConnection(connection.id)
         }
 
         await this.store.deleteProfile(connection.id)
@@ -493,10 +526,34 @@ export class Auth implements AuthService, ConnectionManager {
         return provider
     }
 
+    // XXX: always read from the same location in a dev environment
+    private getSsoSessionName = once(() => {
+        try {
+            const configFile = getConfigFilename()
+            const contents: string = require('fs').readFileSync(configFile, 'utf-8')
+            const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
+            if (!identifier) {
+                throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
+            }
+
+            return identifier
+        } catch (err) {
+            const defaultName = 'codecatalyst'
+            getLogger().warn(`auth: unable to get an sso session name, defaulting to "${defaultName}": %s`, err)
+
+            return defaultName
+        }
+    })
+
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+        const shouldUseSoftwareStatement =
+            getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
+
+        const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
+
         return this.createTokenProvider(
             {
-                identifier: id,
+                identifier: tokenIdentifier,
                 startUrl: profile.startUrl,
                 scopes: profile.scopes,
                 region: profile.ssoRegion,
@@ -523,7 +580,8 @@ export class Auth implements AuthService, ConnectionManager {
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label = `IAM Identity Center (${truncatedUrl})`
+        const label =
+            profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
 
         return {
             id,
@@ -612,6 +670,16 @@ export class Auth implements AuthService, ConnectionManager {
     public readonly tryAutoConnect = once(async () => {
         if (this.activeConnection !== undefined) {
             return
+        }
+
+        // Use the environment token if available
+        if (getCodeCatalystDevEnvId() !== undefined) {
+            const profile = createBuilderIdProfile()
+            const key = getSsoProfileKey(profile)
+            if (this.store.getProfile(key) === undefined) {
+                await this.store.addProfile(key, profile)
+            }
+            await this.store.setCurrentProfileId(key)
         }
 
         const conn = await this.restorePreviousSession()
@@ -728,6 +796,8 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
 }
 
 const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+    telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
+
     if (auth instanceof Auth) {
         return promptAndUseConnection(auth)
     } else {
@@ -758,6 +828,17 @@ async function signout(auth: Auth) {
     }
 }
 
+export const createBuilderIdItem = () =>
+    ({
+        label: codicon`${getIcon('vscode-person')} ${localize(
+            'aws.auth.builderIdItem.label',
+            'Use a personal email to sign up and sign in with AWS Builder ID'
+        )}`,
+        data: 'builderId',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionBuilderID' }),
+        detail: 'AWS Builder ID is a new, personal profile for builders.', // TODO: need a "Learn more" button ?
+    } as DataQuickPickItem<'builderId'>)
+
 export const createSsoItem = () =>
     ({
         label: codicon`${getIcon('vscode-organization')} ${localize(
@@ -766,23 +847,26 @@ export const createSsoItem = () =>
             getIdeProperties().company
         )}`,
         data: 'sso',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionSSO' }),
         detail: "Sign in to your company's IAM Identity Center access portal login page.",
     } as DataQuickPickItem<'sso'>)
 
 export const createIamItem = () =>
     ({
-        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Enter IAM Credentials')}`,
+        label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
+        onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
 export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
+export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
+    isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
 
-export async function createStartUrlPrompter(title: string) {
-    const existingConnections = (await Auth.instance.listConnections())
-        .filter(isSsoConnection)
-        .map(conn => vscode.Uri.parse(conn.startUrl))
+export async function createStartUrlPrompter(title: string, ignoreScopes = true) {
+    const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
+    const requiredScopes = createSsoProfile('').scopes
 
     function validateSsoUrl(url: string) {
         if (!url.match(/^(http|https):\/\//i)) {
@@ -791,7 +875,11 @@ export async function createStartUrlPrompter(title: string) {
 
         try {
             const uri = vscode.Uri.parse(url, true)
-            if (existingConnections.find(conn => conn.authority.toLowerCase() === uri.authority.toLowerCase())) {
+            const isSameAuthority = (a: vscode.Uri, b: vscode.Uri) =>
+                a.authority.toLowerCase() === b.authority.toLowerCase()
+            const oldConn = existingConnections.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
+
+            if (oldConn && (ignoreScopes || hasScopes(oldConn, requiredScopes))) {
                 return 'A connection for this start URL already exists. Sign out before creating a new one.'
             }
         } catch (err) {
@@ -801,22 +889,61 @@ export async function createStartUrlPrompter(title: string) {
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's AWS access portal",
-        buttons: createCommonButtons(),
+        placeholder: "Enter start URL for your organization's IAM Identity Center",
+        buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })
 }
 
-// TODO: add specific documentation URL
-Commands.register('aws.auth.help', async () => (await Commands.get('aws.help'))?.execute())
-Commands.register('aws.auth.signout', () => signout(Auth.instance))
+export async function createBuilderIdConnection(auth: Auth) {
+    const newProfile = createBuilderIdProfile()
+    const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
+    if (existingConn && !hasScopes(existingConn, newProfile.scopes)) {
+        return migrateBuilderId(auth, existingConn, newProfile)
+    }
+
+    return existingConn ?? (await auth.createConnection(newProfile))
+}
+
+Commands.register('aws.auth.help', async () => {
+    vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
+    telemetry.aws_help.emit()
+})
+Commands.register('aws.auth.signout', () => {
+    telemetry.ui_click.emit({ elementId: 'devtools_signout' })
+
+    return signout(Auth.instance)
+})
+
+// XXX: right now users can only have 1 builder id connection, so de-dupe
+// This logic can be removed or re-purposed once we have access to identities
+async function migrateBuilderId(auth: Auth, existingConn: SsoConnection, newProfile: SsoProfile) {
+    const newConn = await auth.createConnection(newProfile)
+    const shouldUseConnection = auth.activeConnection?.id === existingConn.id
+    await auth.deleteConnection(existingConn).catch(err => {
+        getLogger().warn(`auth: failed to remove old connection "${existingConn.id}": %s`, err)
+    })
+
+    if (shouldUseConnection) {
+        return auth.useConnection(newConn)
+    }
+
+    return newConn
+}
+
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
-    const resp = await showQuickPick([createSsoItem(), createIamItem()], {
+    const c9IamItem = createIamItem()
+    c9IamItem.detail =
+        'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+    const items = isCloud9() ? [createSsoItem(), c9IamItem] : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+
+    const resp = await showQuickPick(items, {
         title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
         placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
         buttons: createCommonButtons() as vscode.QuickInputButton[],
     })
     if (!isValidResponse(resp)) {
+        telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
         throw new CancellationError('user')
     }
 
@@ -830,13 +957,13 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 throw new CancellationError('user')
             }
 
-            const conn = await Auth.instance.createConnection({
-                type: 'sso',
-                startUrl,
-                ssoRegion: 'us-east-1',
-            })
+            telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
 
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
             return Auth.instance.useConnection(conn)
+        }
+        case 'builderId': {
+            return createBuilderIdConnection(Auth.instance)
         }
     }
 })
@@ -852,9 +979,11 @@ const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, 
 // Used to decouple from the `Commands` implementation
 Commands.register('_aws.auth.autoConnect', () => Auth.instance.tryAutoConnect())
 
-export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) =>
-    promptAndUseConnection(auth, 'iam')
-)
+export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) => {
+    telemetry.ui_click.emit({ elementId: 'explorer_IAMselect_VSCode' })
+
+    return promptAndUseConnection(auth, 'iam')
+})
 
 // Legacy commands
 export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
@@ -888,9 +1017,9 @@ export class AuthNode implements TreeNode<Auth> {
 
     public constructor(public readonly resource: Auth) {}
 
-    public async getTreeItem() {
+    public getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
-        await this.resource.tryAutoConnect()
+        this.resource.tryAutoConnect()
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)

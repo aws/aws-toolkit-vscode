@@ -2,17 +2,13 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Experiments, fromExtensionManifest } from '../../shared/settings'
+import { fromExtensionManifest } from '../../shared/settings'
 
 const description = {
     includeSuggestionsWithCodeReferences: Boolean,
     shareCodeWhispererContentWithAWS: Boolean,
 }
 export class CodeWhispererSettings extends fromExtensionManifest('aws.codeWhisperer', description) {
-    public async isEnabled(): Promise<boolean> {
-        return await Experiments.instance.isExperimentEnabled('CodeWhisperer')
-    }
-
     public isIncludeSuggestionsWithCodeReferencesEnabled(): boolean {
         return this.get(`includeSuggestionsWithCodeReferences`, false)
     }

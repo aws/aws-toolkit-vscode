@@ -81,7 +81,7 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
 
     async function replaceColor(file: string, color: string, dst: string): Promise<void> {
         const contents = await fs.readFile(file, 'utf-8')
-        const replaced = contents.replace('currentColor', color)
+        const replaced = contents.replace(/currentColor/g, color)
         await fs.writeFile(dst, replaced)
     }
 

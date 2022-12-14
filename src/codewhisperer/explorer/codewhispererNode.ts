@@ -8,46 +8,54 @@ import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../models/constants'
 import {
     createEnableCodeSuggestionsNode,
-    createEnterAccessCodeNode,
-    createIntroductionNode,
     createAutoSuggestionsNode,
-    createRequestAccessNode,
     createOpenReferenceLogNode,
     createSecurityScanNode,
-    createRequestAccessNodeCloud9,
+    createLearnMore,
+    createSsoSignIn,
+    createFreeTierLimitMetNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
-import { Experiments } from '../../shared/settings'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { Cloud9AccessState } from '../models/model'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { AuthUtil } from '../util/authUtil'
+import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { getIcon } from '../../shared/icons'
+
 export class CodeWhispererNode implements RootNode {
+    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
+
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
+    private readonly onDidChangeTreeItemEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeTreeItemEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
+    private _showFreeTierLimitReachedNode = false
 
-    constructor() {
-        Experiments.instance.onDidChange(async ({ key }) => {
-            if (key === 'CodeWhisperer') {
-                this.onDidChangeVisibilityEmitter.fire()
-                const codewhispererEnabled = await Experiments.instance.isExperimentEnabled('CodeWhisperer')
-                telemetry.aws_experimentActivation.emit({
-                    experimentId: CodeWhispererConstants.experimentId,
-                    experimentState: codewhispererEnabled ? 'activated' : 'deactivated',
-                    passive: false,
-                })
-            }
-        })
-    }
+    constructor() {}
 
     public getTreeItem() {
+        if (!this.isAvailable) {
+            const item = new vscode.TreeItem('CodeWhisperer (Preview)')
+            item.description = 'Unavailable in Dev Environment'
+            item.iconPath = getIcon('vscode-circle-slash')
+
+            return item
+        }
+
+        if (!isCloud9()) {
+            AuthUtil.instance.restore()
+        }
+
         const item = new vscode.TreeItem('CodeWhisperer (Preview)')
+        item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
-        item.contextValue = 'awsCodeWhispererNode'
+        item.contextValue = AuthUtil.instance.isUsingSavedConnection
+            ? 'awsCodeWhispererNodeSaved'
+            : 'awsCodeWhispererNode'
 
         return item
     }
@@ -56,53 +64,71 @@ export class CodeWhispererNode implements RootNode {
         this.onDidChangeChildrenEmitter.fire()
     }
 
+    public refreshRootNode() {
+        this.onDidChangeTreeItemEmitter.fire()
+    }
+
+    private getDescription(): string {
+        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
+        if (accessToken) {
+            return 'Access Token'
+        }
+        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
+            return AuthUtil.instance.isEnterpriseSsoInUse()
+                ? 'IAM Identity Center Connected'
+                : 'AWS Builder ID Connected'
+        }
+        return ''
+    }
+
     public getChildren() {
+        if (!this.isAvailable) {
+            return []
+        }
+
         const termsAccepted = globals.context.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey)
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
 
         if (isCloud9()) {
-            const cloud9AccessState = globals.context.globalState.get<number | undefined>(
-                CodeWhispererConstants.cloud9AccessStateKey
-            )
-            if (cloud9AccessState === undefined) {
-                return [createIntroductionNode()]
-            } else if (
-                cloud9AccessState === Cloud9AccessState.NoAccess ||
-                cloud9AccessState === Cloud9AccessState.RequestedAccess
-            ) {
-                return [createIntroductionNode(), createRequestAccessNodeCloud9()]
+            if (termsAccepted) {
+                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
-                if (termsAccepted) {
-                    return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
-                } else {
-                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
-                }
+                return [createLearnMore(), createEnableCodeSuggestionsNode()]
             }
         } else {
-            if (globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)) {
+            const accessToken = this.getDescription()
+            if (accessToken || AuthUtil.instance.isConnected()) {
                 if (termsAccepted) {
-                    return [
-                        createAutoSuggestionsNode(autoTriggerEnabled),
-                        createOpenReferenceLogNode(),
-                        createSecurityScanNode(),
-                    ]
+                    if (this._showFreeTierLimitReachedNode) {
+                        return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
+                    } else {
+                        return [
+                            createAutoSuggestionsNode(autoTriggerEnabled),
+                            createSecurityScanNode(),
+                            createOpenReferenceLogNode(),
+                        ]
+                    }
                 } else {
-                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+                    return [createSsoSignIn(), createLearnMore()]
                 }
             } else {
-                return [createIntroductionNode(), createEnterAccessCodeNode(), createRequestAccessNode()]
+                return [createSsoSignIn(), createLearnMore()]
             }
         }
     }
 
-    public async canShow(): Promise<boolean> {
-        return await Experiments.instance.isExperimentEnabled('CodeWhisperer')
+    public updateShowFreeTierLimitReachedNode(show: boolean) {
+        this._showFreeTierLimitReachedNode = show
     }
 }
 
 export const codewhispererNode = new CodeWhispererNode()
-export const refreshCodeWhisperer = Commands.register(
-    'aws.codeWhisperer.refresh',
-    codewhispererNode.refresh.bind(codewhispererNode)
-)
+export const refreshCodeWhisperer = Commands.register('aws.codeWhisperer.refresh', (showFreeTierLimitNode = false) => {
+    codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
+    codewhispererNode.refresh()
+})
+
+export const refreshCodeWhispererRootNode = Commands.register('aws.codeWhisperer.refreshRootNode', () => {
+    codewhispererNode.refreshRootNode()
+})

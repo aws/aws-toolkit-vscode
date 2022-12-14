@@ -109,7 +109,7 @@ export class Timeout {
     }
 
     /**
-     * Returns the elapsed time from the initial Timeout object creation
+     * Returns the elapsed time (ms) from the initial Timeout object creation
      */
     public get elapsedTime(): number {
         return (this.completed ? this._endTime : globals.clock.Date.now()) - this._startTime

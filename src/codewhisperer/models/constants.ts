@@ -6,6 +6,7 @@
 /**
  * SDK Client
  */
+
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
@@ -72,7 +73,15 @@ export const typescript = 'typescript'
 export const plaintext = 'plaintext'
 
 // use vscode languageId here
-export const supportedLanguages = ['java', 'python', 'javascript', 'javascriptreact', 'typescript'] as const
+export const supportedLanguages = [
+    'java',
+    'python',
+    'javascript',
+    'javascriptreact',
+    'typescript',
+    'typescriptreact',
+    'csharp',
+] as const
 
 export type SupportedLanguage = typeof supportedLanguages[number]
 
@@ -125,9 +134,9 @@ export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
 
-export const learnMoreUri = 'https://aws.amazon.com/codewhisperer'
+export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
-export const previewSignupPortal = 'https://pages.awscloud.com/codewhisperer-sign-up-form.html'
+export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
 
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
@@ -159,12 +168,16 @@ export const referenceLogText = (
 export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
 
+export const referenceLogPromptTextEnterpriseSSO =
+    'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
 /**
  * Security Scan
  */
 export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
@@ -184,20 +197,50 @@ export const artifactTypeBuild = 'BuiltJars'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-// telemetry experiment id
-export const experimentId = 'codeWhisperer'
-
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 3
-
-// cloud9 access state
-export const cloud9AccessStateKey = 'cloud9AccessStateKey'
-
-export const cloud9AccessSent = 'Access requested!'
-
-export const cloud9AccessAlreadySent = 'Access has already been requested, we are still processing it.'
 
 export const reloadWindow = 'Reload Now'
 
 export const reloadWindowPrompt =
     'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
+
+export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
+
+export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
+
+export const accessTokenCutOffDate = new Date(2023, 0, 31)
+
+export const accessTokenMigrationWarningMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection by January 31, 2023.`
+
+export const accessTokenMigrationErrorMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection.`
+
+export const accessTokenMigrationWarningButtonMessage = `Connect with AWS to Continue`
+
+export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
+
+export const connectWithAWSBuilderId = `Connect with AWS`
+
+export const freeTierLimitReached =
+    'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
+
+export const throttlingLearnMore = `Learn More`
+
+export const throttlingMessage = `Maximum recommendation count reached for this month`
+
+export const connectionChangeMessage = `Keep using CodeWhisperer with `
+
+export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
+
+export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
+
+export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
+
+export const accessTokenMigrationDoNotShowAgain = `Don\'t Show Again`
+
+export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
+
+export const accessTokenMigrationDoNotShowAgainLastShown =
+    'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN_LAST_SHOWN'
+
+export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`

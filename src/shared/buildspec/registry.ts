@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as yaml from 'js-yaml'
 import globals from '../extensionGlobals'
-import { WatchedFiles } from '../watchedFiles'
+import { WatchedFiles } from '../fs/watchedFiles'
 import { isUntitledScheme } from '../utilities/vsCodeUtils'
 import { SystemUtilities } from '../systemUtilities'
 

@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from './logger/logger'
-import * as pathutils from './utilities/pathUtils'
+import { getLogger } from '../logger/logger'
+import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
-import { isUntitledScheme, normalizeVSCodeUri } from './utilities/vsCodeUtils'
+import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
 export interface WatchedItem<T> {
     /**
@@ -221,7 +221,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Rebuilds registry using current glob and exclusion patterns.
      * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
      */
-    private async rebuild(): Promise<void> {
+    public async rebuild(): Promise<void> {
         this.reset()
         for (const glob of this.globs) {
             const itemUris = await vscode.workspace.findFiles(glob)

@@ -27,7 +27,33 @@ export interface TruncPaths {
     lines: number
 }
 
+export const DependencyGraphConstants = {
+    /**
+     * Key words
+     */
+    import: 'import',
+    from: 'from',
+    as: 'as',
+    static: 'static',
+    package: 'package',
+    semicolon: ';',
+
+    /**
+     * Regex
+     */
+    newlineRegex: /\r?\n/,
+
+    /**
+     * File extension
+     */
+    pythonExt: '.py',
+    javaExt: '.java',
+    javaBuildExt: '.class',
+    jsExt: '.js',
+}
+
 export abstract class DependencyGraph {
+    protected _languageId: string = ''
     protected _sysPaths: Set<string> = new Set<string>()
     protected _parsedStatements: Set<string> = new Set<string>()
     protected _pickedSourceFiles: Set<string> = new Set<string>()
@@ -36,6 +62,10 @@ export abstract class DependencyGraph {
     protected _tmpDir: string = tempDirPath
     protected _truncDir: string = ''
     protected _totalLines: number = 0
+
+    constructor(languageId: string) {
+        this._languageId = languageId
+    }
 
     public getRootFile(editor: vscode.TextEditor) {
         return editor.document.uri
@@ -119,6 +149,12 @@ export abstract class DependencyGraph {
         return files.map(file => statSync(file)).reduce((accumulator, { size }) => accumulator + size, 0)
     }
 
+    protected copyFilesToTmpDir(files: Set<string> | string[], dir: string) {
+        files.forEach(filePath => {
+            this.copyFileToTmp(vscode.Uri.file(filePath), dir)
+        })
+    }
+
     public removeTmpFiles(truncation: TruncPaths) {
         getLogger().verbose(`Cleaning up temporary files...`)
         this.removeZip(truncation.src.zip)
@@ -136,7 +172,7 @@ export abstract class DependencyGraph {
 
     abstract generateTruncation(uri: vscode.Uri): Promise<TruncPaths>
 
-    abstract searchDependency(uri: vscode.Uri): void
+    abstract searchDependency(uri: vscode.Uri): Promise<Set<string>>
 
     abstract traverseDir(dirPath: string): void
 

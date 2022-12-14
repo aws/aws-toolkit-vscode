@@ -64,11 +64,14 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
  *   https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-credential_source.html
  * - "env" means we read the credentials from `AWS_XX` environment variables.
  *   https://docs.aws.amazon.com/sdkref/latest/guide/environment-variables.html
+ * - "sso" refers to all SSO-based profiles. Currently, any profile with a start URL will
+ *   be treated as SSO _by the Toolkit_. Incomplete profiles may be rejected by the SDKs, so
+ *   valid SSO profiles may not necessarily be considered valid among all tools.
  *
  * Compare the similar concept `telemetry.CredentialSourceId`.
  */
 export type CredentialsProviderType = typeof credentialsProviderType[number]
-export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
+export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env', 'sso'] as const
 
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId

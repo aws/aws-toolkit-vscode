@@ -21,10 +21,11 @@ import { CloudFormation } from './cloudformation/cloudformation'
 import { getStringHash } from './utilities/textUtilities'
 
 const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const devfileManifestURL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
-const buildspecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
-const buildspecCloudfrontURL = 'https://d3rrggjwfhwld2.cloudfront.net' + buildspecHostedFilesPath
-const buildspecS3FallbackURL = 'https://aws-vs-toolkit.s3.amazonaws.com' + buildspecHostedFilesPath
+const hostedFilesCloudFrontDistribution = 'https://d3rrggjwfhwld2.cloudfront.net'
+const hostedFilesS3Fallback = 'https://aws-vs-toolkit.s3.amazonaws.com'
+const buildSpecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -167,9 +168,12 @@ export class SchemaService {
 export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
     const buildSpecSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'buildspec.schema.json')
 
     const goformationSchemaVersion = await getPropertyFromJsonUrl(goformationManifestURL, 'tag_name')
+    const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestURL, 'tag_name')
+
     const schemas: Schemas = {}
 
     try {
@@ -201,13 +205,27 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     }
 
     try {
+        await updateSchemaFromRemote({
+            destination: devfileSchemaUri,
+            version: devfileSchemaVersion,
+            url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
+            cacheKey: 'devfileSchemaVersion',
+            extensionContext,
+            title: schemaPrefix + 'devfile.schema.json',
+        })
+        schemas['devfile'] = devfileSchemaUri
+    } catch (e) {
+        getLogger().verbose('Could not download devfile schema: %s', (e as Error).message)
+    }
+
+    try {
         try {
-            const contents = await getFromUrl(buildspecCloudfrontURL)
+            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
             const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
                 destination: buildSpecSchemaUri,
+                url: hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath,
                 version: buildspecSchemaVersion,
-                url: buildspecCloudfrontURL,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',
@@ -218,12 +236,12 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
                 'Could not download buildspec schema from CloudFront: %s. Attempting to download buildspec schema from S3',
                 (e as Error).message
             )
-            const contents = await getFromUrl(buildspecS3FallbackURL)
+            const contents = await getFromUrl(hostedFilesCloudFrontDistribution + buildSpecHostedFilesPath)
             const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
             await updateSchemaFromRemote({
                 destination: buildSpecSchemaUri,
+                url: hostedFilesS3Fallback + buildSpecHostedFilesPath,
                 version: buildspecSchemaVersion,
-                url: buildspecS3FallbackURL,
                 cacheKey: 'buildSpecSchemaVersion',
                 extensionContext,
                 title: schemaPrefix + 'buildspec.schema.json',

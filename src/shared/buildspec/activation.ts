@@ -9,7 +9,7 @@ import { createStarterTemplateFile, localize } from '../utilities/vsCodeUtils'
 import { BuildspecTemplateRegistry } from './registry'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
-import { NoopWatcher } from '../watchedFiles'
+import { NoopWatcher } from '../fs/watchedFiles'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
 

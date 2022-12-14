@@ -10,13 +10,14 @@ import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
 import { BuildspecTemplateRegistry } from './buildspec/registry'
-import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
-import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
+import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
     typeof globalThis,
@@ -75,6 +76,7 @@ interface ToolkitGlobals {
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
+    uriHandler: UriHandler
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.

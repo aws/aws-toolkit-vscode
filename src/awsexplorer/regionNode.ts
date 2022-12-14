@@ -12,7 +12,6 @@ import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
 import { IotNode } from '../iot/explorer/iotNodes'
-import { isCloud9 } from '../shared/extensionUtilities'
 import { Region } from '../shared/regions/endpoints'
 import { DEFAULT_PARTITION, RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -67,8 +66,7 @@ const serviceCandidates = [
     },
     {
         serviceId: 'schemas',
-        createFn: (regionCode: string) =>
-            !isCloud9() ? new SchemasNode(new DefaultSchemaClient(regionCode)) : undefined,
+        createFn: (regionCode: string) => new SchemasNode(new DefaultSchemaClient(regionCode)),
     },
     {
         serviceId: 'states',

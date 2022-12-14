@@ -1,37 +1,43 @@
-## How to Use Amazon CodeWhisperer
+## Using Amazon CodeWhisperer
 
-Welcome to the Amazon CodeWhisperer preview! CodeWhisperer uses machine learning to generate code suggestions
-from the existing code and comments in your IDE. Supported languages include: **Java, Python, and JavaScript**.
+CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include **Java, Python, JavaScript, C# and TypeScript**.
 
-### TAB. Left Arrow. Right Arrow. That’s all!
+---
 
-You should automatically see inline code suggestions. Use the **TAB key to accept** a suggestion. CodeWhisperer may
-provide multiple suggestions to choose from, use **[left arrow] and [right arrow] to navigate** between suggestions.
+**Navigating with the tab and arrow keys**
 
-That’s all you need to know. If you don’t like the suggestions you see, simply keep typing (or hit ESC key).
-The suggestions will go away and CodeWhisperer will generate new ones at a later point based on the additional context.
+As you enter your code, CodeWhisperer will offer inline code suggestions. Use **TAB to accept** a suggestion. CodeWhisperer may provide multiple suggestions to choose from. Use **[left arrow] and [right arrow] to navigate** between suggestions.
 
-### Requesting Suggestions Manually
+If you don’t like the suggestions you see, keep typing (or hit ESC). The suggestions will disappear, and CodeWhisperer will generate new ones at a later point based on the additional context.
 
-You can also request a suggestion at any time, use **Option C** on Mac and **ALT C** on Windows. Once you receive
-the suggestions use TAB to accept and the Arrow keys to navigate.
+<img src="twosum_vsc.gif" style="max-height:400px;" alt="twosum">
 
-### How to get the best recommendations
+---
 
--   More context = better recommendations. You will see better recommendations when your current file has more
-    existing code.
+**Requesting suggestions manually**
 
--   Write more comments and be more descriptive. “Function to upload a file to S3” will get better results than
-    “Upload a file.”
+You can request suggestions at any time. Use **Option-C** on Mac or **ALT-C** on Windows. After you receive suggestions, use TAB to accept and arrow keys to navigate.
 
--   Try to specify the libraries you prefer by inserting import statements.
+---
 
--   Use descriptive names for variable and functions. A function called “upload_file_to_S3” will get better results
-    than a function called “file_upload”
+**Getting the best recommendations**
 
--   Break down complex tasks into smaller tasks and write descriptive comments.
+For best results, follow these practices.
 
-### How to provide feedback
+-   Give CodeWhisperer something to work with. The more code your file contains, the more context CodeWhisperer has for generating recommendations.
+-   Write descriptive comments. “Function to upload a file to S3” will get better results than “Upload a file”.
+-   Specify the libraries you prefer by using import statements.
+-   Use descriptive names for variable and functions. A function called “upload_file_to_S3” will get better results than a function called “file_upload”.
+-   Break down complex tasks into simpler tasks.
 
-CodeWhisperer is in preview, let us know what your think by sharing feedback (using the AWS Toolkit
-feedback button) or reaching out to [codewhisperer@amazon.com](mailto:codewhisperer@amazon.com) .
+---
+
+**Further reading**
+
+To learn more about working with CodeWhisperer and VS Code, see [CodeWhisperer for VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html).
+
+---
+
+**Providing feedback**
+
+CodeWhisperer is in preview. Let us know what you think by sharing feedback (using the AWS Toolkit feedback button) or by reaching out to [codewhisperer@amazon.com](mailto:codewhisperer@amazon.com).

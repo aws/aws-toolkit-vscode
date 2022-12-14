@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { getResourcesForHandler } from '../cloudformation/templateRegistry'
+import { getResourcesForHandler } from '../fs/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { API_TARGET_TYPE, CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
