@@ -163,6 +163,10 @@ You can find the coverage report at `./coverage/index.html` after running the te
 -   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
 -   Generate a report with `npm run report`
 
+### CodeCatalyst Blueprints
+
+You can find documentation to create VSCode IDE settings for CodeCatalyst blueprints at [docs/vscode-config.md](./docs/vscode-config.md).
+
 ## Pull Requests
 
 Before sending a pull request:
