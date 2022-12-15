@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Add do not show again button for CodeWhisperer accountless usage notification"
+}
