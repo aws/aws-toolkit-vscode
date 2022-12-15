@@ -1,0 +1,18 @@
+{
+	"date": "2022-12-15",
+	"version": "1.59.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Help button on the \"save connection\" prompt does nothing"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer may alter editor.hover.enabled configuration"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Add 'Do not show again' button to authentication migration prompt"
+		}
+	]
+}
