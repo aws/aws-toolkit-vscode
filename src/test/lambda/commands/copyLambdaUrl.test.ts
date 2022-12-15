@@ -5,14 +5,13 @@
 
 import * as assert from 'assert'
 import { createStubInstance, SinonStubbedInstance, stub, SinonStub, spy, SinonSpy } from 'sinon'
-import { copyLambdaUrl } from '../../../lambda/commands/copyLambdaUrl'
+import { copyLambdaUrl, noLambdaFuncMessage } from '../../../lambda/commands/copyLambdaUrl'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { buildFunctionUrlConfig } from '../../shared/clients/defaultLambdaClient.test'
 import { env } from 'vscode'
-import { createUrlForLambdaFunctionUrl } from '../../../shared/constants'
 
 describe('copy lambda function URL to clipboard', async () => {
     let client: SinonStubbedInstance<LambdaClient>
@@ -71,7 +70,7 @@ describe('copy lambda function URL to clipboard', async () => {
 
             assert.strictEqual(await env.clipboard.readText(), '')
             assert.deepStrictEqual(spiedInformationMessage.args, [
-                [`No URL for Lambda function. [How to create URL.](${createUrlForLambdaFunctionUrl})`],
+                [noLambdaFuncMessage],
             ])
             assert.deepStrictEqual(spiedStatusBarMessage.args, [
                 [addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000],

@@ -11,8 +11,10 @@ import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { FunctionUrlConfigList } from 'aws-sdk/clients/lambda'
-import { createUrlForLambdaFunctionUrl } from '../../shared/constants'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { lambdaFunctionUrlConfigUrl } from '../../shared/constants'
+
+export const noLambdaFuncMessage = `No URL for Lambda function. [How to create URL.](${lambdaFunctionUrlConfigUrl})`
 
 export async function copyLambdaUrl(
     node: Pick<LambdaFunctionNode, 'name' | 'regionCode'>,
@@ -22,9 +24,7 @@ export async function copyLambdaUrl(
     const configs = await client.getFunctionUrlConfigs(node.name)
 
     if (configs.length == 0) {
-        globals.window.showWarningMessage(
-            `No URL for Lambda function. [How to create URL.](${createUrlForLambdaFunctionUrl})`
-        )
+        globals.window.showWarningMessage(noLambdaFuncMessage)
         globals.window.setStatusBarMessage(addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000)
     } else {
         let url: string | undefined = undefined
