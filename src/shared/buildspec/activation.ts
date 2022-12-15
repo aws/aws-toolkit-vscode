@@ -41,5 +41,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
 const buildspecTemplate = `version: 0.2
 phases:
-  
+  install:
+    commands:
+      - ""
 `
