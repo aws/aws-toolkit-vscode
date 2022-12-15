@@ -247,14 +247,13 @@ export async function activate(context: ExtContext): Promise<void> {
             const notificationLastShown =
                 context.extensionContext.globalState.get<Date>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
-                ) || t
+                ) || new Date()
 
             //Add 7 days to notificationLastShown to determine whether warn message should show
             notificationLastShown.setDate(notificationLastShown.getDate() + 7)
             if (doNotShowAgain || notificationLastShown <= t) {
                 return
-            }
-            if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
+            } else if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
                     .showWarningMessage(
                         CodeWhispererConstants.accessTokenMigrationWarningMessage,
@@ -274,12 +273,12 @@ export async function activate(context: ExtContext): Promise<void> {
                                 CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey,
                                 true
                             )
-                            await context.extensionContext.globalState.update(
-                                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
-                                t
-                            )
                         }
                     })
+                context.extensionContext.globalState.update(
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
+                    t
+                )
             } else {
                 await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
                 await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
