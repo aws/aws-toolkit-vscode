@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Add do not show again button for SSO connection notification"
+	"description": "Add do not show again button to notification that prompts user to migrate to new authentication"
 }
