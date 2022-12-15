@@ -1,0 +1,14 @@
+{
+  "date" : "2022-12-15",
+  "version" : "1.57",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Change reauthentication prompt to be non-distruptive notification."
+  }, {
+    "type" : "bugfix",
+    "description" : "Add do not show again button for CodeWhisperer accountless usage notification"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix CodeWhisperer status widget is shown even when users are disconnected"
+  } ]
+}

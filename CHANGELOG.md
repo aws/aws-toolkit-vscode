@@ -1,3 +1,8 @@
+# _1.57_ (2022-12-15)
+- **(Feature)** Change reauthentication prompt to be non-distruptive notification.
+- **(Bug Fix)** Add do not show again button for CodeWhisperer accountless usage notification
+- **(Bug Fix)** Fix CodeWhisperer status widget is shown even when users are disconnected
+
 # _1.56_ (2022-12-08)
 - **(Bug Fix)** Remove redundant calls in certain Gateway UI panels
 - **(Bug Fix)** Fix threading issue while attempting to login to CodeCatalyst

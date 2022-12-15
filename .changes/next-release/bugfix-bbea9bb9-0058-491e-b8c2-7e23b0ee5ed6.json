@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix CodeWhisperer status widget is shown even when users are disconnected"
-}
