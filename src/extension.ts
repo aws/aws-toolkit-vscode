@@ -51,6 +51,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateYamlExtPrompt } from './shared/extensions/yamlActivation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -233,6 +234,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+
+        await activateYamlExtPrompt()
 
         showWelcomeMessage(context)
 
