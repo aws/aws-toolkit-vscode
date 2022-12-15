@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fixed a bug when CodeWhisperer may alter hover.enable configuration"
+	"description": "Fix a bug when CodeWhisperer may alter editor.hover.enabled configuration"
 }
