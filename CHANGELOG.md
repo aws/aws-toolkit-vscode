@@ -1,3 +1,9 @@
+## 1.59.0 2022-12-15
+
+- **Bug Fix** Help button on the "save connection" prompt does nothing
+- **Bug Fix** CodeWhisperer may alter editor.hover.enabled configuration
+- **Feature** CodeWhisperer: Add 'Do not show again' button to authentication migration prompt
+
 ## 1.58.0 2022-12-06
 
 - **Feature** S3: "Download As" action defaults to the last-used download path.
