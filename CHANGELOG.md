@@ -1,3 +1,7 @@
+## 1.60.0 2022-12-16
+
+- **Bug Fix** CodeWhisperer: fix potential undefined reference
+
 ## 1.59.0 2022-12-15
 
 - **Bug Fix** Help button on the "save connection" prompt does nothing
