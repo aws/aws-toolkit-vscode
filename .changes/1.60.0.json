@@ -1,0 +1,10 @@
+{
+	"date": "2022-12-16",
+	"version": "1.60.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: fix potential undefined reference"
+		}
+	]
+}
