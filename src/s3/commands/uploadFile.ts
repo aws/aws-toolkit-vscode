@@ -365,7 +365,7 @@ async function uploadWithProgress(
         key: request.key,
         content: request.fileLocation,
         progressListener,
-        contentType: mime.contentType(path.extname(request.key)) || undefined,
+        contentType: mime.contentType(path.extname(request.fileLocation.fsPath)) || undefined,
     })
 
     progressListener(0)
