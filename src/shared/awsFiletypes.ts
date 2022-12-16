@@ -132,3 +132,11 @@ async function isSameMetricPending(filetype: string, fileExt: string | undefined
     )
     return !!pendingMetrics
 }
+
+export const awsFiletypeFileNames = {
+    CloudFormation: ['template.yaml', 'template.yml'],
+    Buildspec: ['buildspec.yml', 'buildspec.yaml'],
+    Devfile: ['devfile.yaml', 'devfile.yml'],
+}
+
+export type AWSFiletypeNames = keyof typeof awsFiletypeFileNames

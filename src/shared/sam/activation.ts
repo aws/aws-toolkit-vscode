@@ -24,8 +24,8 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
-import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
+import { ExtContext } from '../extensions'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { NoopWatcher } from '../fs/watchedFiles'
@@ -35,7 +35,6 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
@@ -47,7 +46,6 @@ const sharedDetectSamCli = shared(detectSamCli)
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    await createYamlExtensionPrompt()
     await migrateLegacySettings()
     const config = SamCliSettings.instance
 
@@ -250,160 +248,4 @@ async function activateCodeLensProviders(
     )
 
     return disposables
-}
-
-/**
- * Creates a prompt (via toast) to guide users to installing the Red Hat YAML extension.
- * This is necessary for displaying codelenses on templaye YAML files.
- * Will show once per extension activation at most (all prompting triggers are disposed of on first trigger)
- * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
- */
-async function createYamlExtensionPrompt(): Promise<void> {
-    const settings = PromptSettings.instance
-
-    // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
-    // not have a marketplace or contain the YAML plugin.
-    if (
-        (await settings.isPromptEnabled('yamlExtPrompt')) &&
-        getIdeType() === IDE.vscode &&
-        !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
-    ) {
-        // Disposed immediately after showing one, so the user isn't prompted
-        // more than once per session.
-        const yamlPromptDisposables: vscode.Disposable[] = []
-
-        // user opens a template file
-        vscode.workspace.onDidOpenTextDocument(
-            async (doc: vscode.TextDocument) => {
-                promptInstallYamlPluginFromFilename(doc.fileName, yamlPromptDisposables)
-            },
-            undefined,
-            yamlPromptDisposables
-        )
-
-        // user swaps to an already-open template file that didn't have focus
-        vscode.window.onDidChangeActiveTextEditor(
-            async (editor: vscode.TextEditor | undefined) => {
-                await promptInstallYamlPluginFromEditor(editor, yamlPromptDisposables)
-            },
-            undefined,
-            yamlPromptDisposables
-        )
-
-        /**
-         * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
-         * in the document
-         * @param event An vscode text document change event
-         * @returns nothing
-         */
-        async function promptOnAWSTemplateFormatVersion(event: vscode.TextDocumentChangeEvent): Promise<void> {
-            for (const change of event.contentChanges) {
-                const changedLine = event.document.lineAt(change.range.start.line)
-                if (changedLine.text.includes('AWSTemplateFormatVersion')) {
-                    promptInstallYamlPlugin(yamlPromptDisposables)
-                    return
-                }
-            }
-            return
-        }
-
-        const promptNotifications = new Map<string, Promise<unknown>>()
-        vscode.workspace.onDidChangeTextDocument(
-            (event: vscode.TextDocumentChangeEvent) => {
-                const uri = event.document.uri.toString()
-                if (
-                    event.document.languageId === 'yaml' &&
-                    !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml) &&
-                    !promptNotifications.has(uri)
-                ) {
-                    promptNotifications.set(
-                        uri,
-                        promptOnAWSTemplateFormatVersion(event).finally(() => promptNotifications.delete(uri))
-                    )
-                }
-            },
-            undefined,
-            yamlPromptDisposables
-        )
-
-        vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
-            promptNotifications.delete(event.uri.toString())
-        })
-
-        // user already has an open template with focus
-        // prescreen if a template.yaml is current open so we only call once
-        const openTemplateYamls = vscode.window.visibleTextEditors.filter(editor => {
-            const fileName = editor.document.fileName
-            return fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')
-        })
-
-        if (openTemplateYamls.length > 0) {
-            promptInstallYamlPluginFromEditor(openTemplateYamls[0], yamlPromptDisposables)
-        }
-    }
-}
-
-async function promptInstallYamlPluginFromEditor(
-    editor: vscode.TextEditor | undefined,
-    disposables: vscode.Disposable[]
-): Promise<void> {
-    if (editor) {
-        promptInstallYamlPluginFromFilename(editor.document.fileName, disposables)
-    }
-}
-
-/**
- * Prompt user to install YAML plugin for template.yaml and template.yml files
- * @param fileName File name to check against
- * @param disposables List of disposables to dispose of when the filename is a template YAML file
- */
-async function promptInstallYamlPluginFromFilename(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
-    if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
-        promptInstallYamlPlugin(disposables)
-    }
-}
-
-/**
- * Show the install YAML extension prompt and dispose other listeners
- * @param disposables
- */
-async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
-    // immediately dispose other triggers so it doesn't flash again
-    for (const prompt of disposables) {
-        prompt.dispose()
-    }
-    const settings = PromptSettings.instance
-
-    const installBtn = localize('AWS.missingExtension.install', 'Install...')
-    const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Don't show again")
-
-    const response = await vscode.window.showInformationMessage(
-        localize(
-            'AWS.message.info.yaml.prompt',
-            'Install YAML extension for more {0} features in CloudFormation templates',
-            getIdeProperties().company
-        ),
-        installBtn,
-        permanentlySuppress
-    )
-
-    switch (response) {
-        case installBtn:
-            // Available options are:
-            // extension.open: opens extension page in VS Code extension marketplace view
-            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
-            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
-
-            // not sure if these are 100% stable.
-            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
-            try {
-                await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
-            } catch (e) {
-                const err = e as Error
-                getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
-            }
-            break
-        case permanentlySuppress:
-            settings.disablePrompt('yamlExtPrompt')
-    }
 }
