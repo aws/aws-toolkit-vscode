@@ -55,6 +55,42 @@ export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResul
             message = processResult.error.message
         }
     }
+    const usefulErrors = collectAcceptedErrorMessages(processResult.stderr).join('\n')
+    throw makeUnexpectedExitCodeError(message ?? usefulErrors)
+}
 
-    throw makeUnexpectedExitCodeError(message ?? 'no message available')
+/**
+ * Collect known errors messages from a sam error message
+ * that may have multiple errors in one message.
+ * @param errors A string that can have multiple error messages
+ */
+export function collectAcceptedErrorMessages(errorMessage: string): string[] {
+    const errors = errorMessage.split('\n')
+    const shouldCollectFuncs = [_startsWithEscapeSequence, _startsWithError]
+    return errors.filter(error => {
+        return shouldCollectFuncs.some(shouldCollect => {
+            return shouldCollect(error)
+        })
+    })
+}
+
+/**
+ * Returns true if text starts with an escape
+ * sequence with one of the accepted sequences.
+ */
+function _startsWithEscapeSequence(text: string): boolean {
+    const escapeInDecimal = 27
+    if (text.charCodeAt(0) !== escapeInDecimal) {
+        return false
+    }
+
+    const remainingText = text.substring(1)
+    const acceptedSequences = ['[33m']
+    return acceptedSequences.some(code => {
+        return remainingText.startsWith(code)
+    })
+}
+
+function _startsWithError(text: string): boolean {
+    return text.startsWith('Error:')
 }
