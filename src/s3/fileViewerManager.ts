@@ -16,7 +16,7 @@ import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { PromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { UnknownError } from '../shared/errors'
+import { ToolkitError } from '../shared/errors'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -149,11 +149,6 @@ export class S3FileViewerManager {
         })
     }
 
-    private async openUnknownDocument(fileUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
-        await vscode.commands.executeCommand('vscode.open', fileUri)
-        return this.window.visibleTextEditors.find(e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri))
-    }
-
     /**
      * Opens a new editor, closing the previous one if it exists
      */
@@ -162,25 +157,22 @@ export class S3FileViewerManager {
         options?: vscode.TextDocumentShowOptions
     ): Promise<vscode.TextEditor | undefined> {
         const fsPath = fileUri.fsPath
-
         await this.activeTabs[this.fs.uriToKey(fileUri)]?.dispose()
 
-        // Defer to `vscode.open` for non-text files
-        const contentType = mime.contentType(path.extname(fsPath))
-        if (!contentType || mime.charset(contentType) !== 'UTF-8') {
-            return this.openUnknownDocument(fileUri)
-        }
-
         try {
+            // Defer to `vscode.open` for non-text files
+            const contentType = mime.contentType(path.extname(fsPath))
+            if (!contentType || mime.charset(contentType) !== 'UTF-8') {
+                await vscode.commands.executeCommand('vscode.open', fileUri)
+                return this.window.visibleTextEditors.find(
+                    e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
+                )
+            }
+
             const document = await vscode.workspace.openTextDocument(fileUri)
             return await this.window.showTextDocument(document, options)
         } catch (err) {
-            if (UnknownError.cast(err).message.match(/binary/)) {
-                getLogger().verbose(`S3FileViewer: unable to open "${fileUri.fsPath}" as text document: %s`, err)
-                return this.openUnknownDocument(fileUri)
-            }
-
-            throw err
+            throw ToolkitError.chain(err, 'Failed to open document', { code: 'FailedToOpen' })
         }
     }
 

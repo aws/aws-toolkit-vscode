@@ -14,10 +14,11 @@ import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { createTestWindow, TestWindow } from '../../shared/vscode/window'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
-import { assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { assertTelemetry, assertTextEditorContains, closeAllEditors } from '../../testUtil'
 import { PromptSettings } from '../../../shared/settings'
 import { stub } from '../../utilities/stubber'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
+import { ToolkitError } from '../../../shared/errors'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -156,6 +157,22 @@ describe('S3FileProvider', function () {
         assert.deepStrictEqual(result.content, newData)
         assert.deepStrictEqual(result.ContentType, jsonFile.ContentType)
     })
+
+    it('emits telemetry when downloading', async function () {
+        await provider.read()
+        assertTelemetry('s3_downloadObject', {
+            component: 'viewer',
+            result: 'Succeeded',
+        })
+    })
+
+    it('emits telemetry when uploading', async function () {
+        await provider.write(Buffer.from('111', 'utf-8'))
+        assertTelemetry('s3_uploadObject', {
+            component: 'viewer',
+            result: 'Succeeded',
+        })
+    })
 })
 
 describe('FileViewerManager', function () {
@@ -267,6 +284,12 @@ describe('FileViewerManager', function () {
 
             await fileViewerManager.openInReadMode({ ...file, bucket })
             await assertTextEditorContains(contents.toString())
+        })
+
+        it('rejects if the file does not exist', async function () {
+            const file = makeFile('foo.txt', Buffer.from('0', 'utf-8'))
+            const err = await fileViewerManager.openInReadMode({ ...file, bucket }).catch(e => e)
+            assert.ok(err instanceof ToolkitError)
         })
     })
 })
