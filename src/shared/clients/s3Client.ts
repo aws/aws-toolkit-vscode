@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import * as mime from 'mime-types'
-import * as path from 'path'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
@@ -23,7 +21,6 @@ export const DEFAULT_DELIMITER = '/'
 
 export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
-export type File = InterfaceNoSymbol<DefaultFile>
 export type S3Client = InterfaceNoSymbol<DefaultS3Client>
 
 interface S3Object {
@@ -131,8 +128,6 @@ export interface DeleteObjectsResponse {
 export interface DeleteBucketRequest {
     readonly bucketName: string
 }
-
-const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 export class DefaultS3Client {
     public constructor(
@@ -318,17 +313,11 @@ export class DefaultS3Client {
                 ? this.fileStreams.createReadStream(request.content)
                 : bufferToStream(request.content)
 
-        const contentType =
-            request.contentType ??
-            (request.content instanceof vscode.Uri
-                ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
-                : DEFAULT_CONTENT_TYPE)
-
         const managedUploaded = s3.upload({
             Bucket: request.bucketName,
             Key: request.key,
             Body: readStream,
-            ContentType: contentType,
+            ContentType: request.contentType,
         })
 
         const progressListener = request.progressListener
@@ -451,10 +440,14 @@ export class DefaultS3Client {
         getLogger().debug('ListFiles called with request: %O', request)
 
         const s3 = await this.createS3()
-
+        const bucket = new DefaultBucket({
+            partitionId: this.partitionId,
+            region: this.regionCode,
+            name: request.bucketName,
+        })
         const output = await s3
             .listObjectsV2({
-                Bucket: request.bucketName,
+                Bucket: bucket.name,
                 Delimiter: DEFAULT_DELIMITER,
                 MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
                 Prefix: request.folderPath,
@@ -464,17 +457,10 @@ export class DefaultS3Client {
 
         const files: File[] = _(output.Contents)
             .reject(file => file.Key === request.folderPath)
-            .map(
-                file =>
-                    new DefaultFile({
-                        key: file.Key!,
-                        partitionId: this.partitionId,
-                        bucketName: request.bucketName,
-                        lastModified: file.LastModified,
-                        sizeBytes: file.Size,
-                        eTag: file.ETag,
-                    })
-            )
+            .map(file => {
+                assertHasProps(file, 'Key')
+                return toFile(bucket, file)
+            })
             .value()
 
         const folders: Folder[] = _(output.CommonPrefixes)
@@ -642,6 +628,9 @@ export class DefaultS3Client {
     }
 }
 
+/**
+ * @deprecated This should be refactored the same way as {@link toFile}
+ */
 export class DefaultBucket {
     public readonly name: string
     public readonly region: string
@@ -658,6 +647,9 @@ export class DefaultBucket {
     }
 }
 
+/**
+ * @deprecated This should be refactored the same way as {@link toFile}
+ */
 export class DefaultFolder {
     public readonly name: string
     public readonly path: string
@@ -674,39 +666,24 @@ export class DefaultFolder {
     }
 }
 
-export class DefaultFile {
-    public readonly name: string
-    public readonly key: string
-    public readonly arn: string
-    public readonly lastModified?: Date
-    public readonly sizeBytes?: number
-    public readonly eTag?: string
+export interface File extends S3.Object, S3.HeadObjectOutput {
+    readonly name: string
+    readonly key: string
+    readonly arn: string
+    readonly lastModified?: Date
+    readonly sizeBytes?: number
+    readonly eTag?: string
+}
 
-    public constructor({
-        partitionId,
-        bucketName,
-        key,
-        lastModified,
-        sizeBytes,
-        eTag,
-    }: {
-        partitionId: string
-        bucketName: string
-        key: string
-        lastModified?: Date
-        sizeBytes?: number
-        eTag?: string
-    }) {
-        this.name = _(key).split(DEFAULT_DELIMITER).last()!
-        this.key = key
-        this.arn = buildArn({ partitionId, bucketName, key })
-        this.lastModified = lastModified
-        this.sizeBytes = sizeBytes
-        this.eTag = eTag
-    }
-
-    public [inspect.custom](): string {
-        return `File (name=${this.name}, key=${this.key}, arn=${this.arn}, lastModified=${this.lastModified}, sizeBytes=${this.sizeBytes})`
+export function toFile(bucket: Bucket, resp: RequiredProps<S3.Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
+    return {
+        key: resp.Key,
+        arn: `${bucket.arn}${delimiter}${resp.Key}`,
+        name: resp.Key.split(delimiter).pop()!,
+        eTag: resp.ETag,
+        lastModified: resp.LastModified,
+        sizeBytes: resp.Size,
+        ...resp,
     }
 }
 

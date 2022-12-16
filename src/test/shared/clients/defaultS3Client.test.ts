@@ -10,7 +10,7 @@ import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
-import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/s3Client'
+import { DefaultBucket, DefaultFolder, DefaultS3Client, toFile } from '../../../shared/clients/s3Client'
 import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
@@ -54,6 +54,7 @@ describe('DefaultS3Client', function () {
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
     const error: AWSError = new FakeAwsError('Expected failure') as AWSError
+    const bucket = new DefaultBucket({ partitionId: partition, name: bucketName, region })
 
     let mockS3: S3
 
@@ -439,6 +440,8 @@ describe('DefaultS3Client', function () {
 
     describe('listFiles', function () {
         it('lists files and folders', async function () {
+            const folder = { Key: folderPath, Size: fileSizeBytes, LastModified: fileLastModified }
+            const file = { Key: fileKey, Size: fileSizeBytes, LastModified: fileLastModified }
             when(
                 mockS3.listObjectsV2(
                     deepEqual({
@@ -451,27 +454,15 @@ describe('DefaultS3Client', function () {
                 )
             ).thenReturn(
                 success({
-                    Contents: [
-                        { Key: folderPath, Size: fileSizeBytes, LastModified: fileLastModified },
-                        { Key: fileKey, Size: fileSizeBytes, LastModified: fileLastModified },
-                    ],
+                    Contents: [folder, file],
                     CommonPrefixes: [{ Prefix: subFolderPath }, { Prefix: emptySubFolderPath }],
                     NextContinuationToken: nextContinuationToken,
                 })
             )
 
             const response = await createClient().listFiles({ bucketName, folderPath, continuationToken, maxResults })
-
             assert.deepStrictEqual(response, {
-                files: [
-                    new DefaultFile({
-                        partitionId: partition,
-                        bucketName,
-                        key: fileKey,
-                        lastModified: fileLastModified,
-                        sizeBytes: fileSizeBytes,
-                    }),
-                ],
+                files: [toFile(bucket, file)],
                 folders: [
                     new DefaultFolder({ partitionId: partition, bucketName, path: subFolderPath }),
                     new DefaultFolder({ partitionId: partition, bucketName, path: emptySubFolderPath }),
@@ -637,14 +628,17 @@ describe('DefaultFolder', function () {
     })
 })
 
-describe('DefaultFile', function () {
+describe('toFile', function () {
     it('properly constructs an instance', function () {
-        const file = new DefaultFile({
+        const bucket = new DefaultBucket({
+            name: 'bucketName',
+            region: 'us-west-2',
             partitionId: 'partitionId',
-            bucketName: 'bucketName',
-            key: 'key/for/file.jpg',
-            lastModified: new globals.clock.Date(2020, 5, 4),
-            sizeBytes: 1337,
+        })
+        const file = toFile(bucket, {
+            Size: 1337,
+            Key: 'key/for/file.jpg',
+            LastModified: new globals.clock.Date(2020, 5, 4),
         })
         assert.strictEqual(file.name, 'file.jpg')
         assert.strictEqual(file.key, 'key/for/file.jpg')

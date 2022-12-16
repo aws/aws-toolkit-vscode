@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { S3 } from 'aws-sdk'
 import * as path from 'path'
-import { statSync } from 'fs'
+import * as mime from 'mime-types'
 import * as vscode from 'vscode'
-
+import { statSync } from 'fs'
+import { S3 } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
@@ -365,6 +365,7 @@ async function uploadWithProgress(
         key: request.key,
         content: request.fileLocation,
         progressListener,
+        contentType: mime.contentType(path.extname(request.key)) || undefined,
     })
 
     progressListener(0)
