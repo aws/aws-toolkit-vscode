@@ -305,6 +305,7 @@ describe('DefaultS3Client', function () {
                 key: fileKey,
                 content: fileLocation,
                 progressListener: progressCaptor.listener(),
+                contentType: 'image/jpeg',
             })
 
             verify(mockS3.upload(anything())).once()
