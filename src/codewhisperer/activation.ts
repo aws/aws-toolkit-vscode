@@ -244,14 +244,13 @@ export async function activate(context: ExtContext): Promise<void> {
                 context.extensionContext.globalState.get<boolean>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey
                 ) || false
-            const notificationLastShown =
-                context.extensionContext.globalState.get<Date>(
+            const notificationLastShown: number =
+                context.extensionContext.globalState.get<number | undefined>(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
-                ) || new Date()
+                ) || 1
 
             //Add 7 days to notificationLastShown to determine whether warn message should show
-            notificationLastShown.setDate(notificationLastShown.getDate() + 7)
-            if (doNotShowAgain || notificationLastShown <= t) {
+            if (doNotShowAgain || notificationLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
                 return
             } else if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
@@ -277,7 +276,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     })
                 context.extensionContext.globalState.update(
                     CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
-                    t
+                    Date.now()
                 )
             } else {
                 await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
