@@ -16,6 +16,7 @@ import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { PromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { ToolkitError } from '../shared/errors'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -54,8 +55,9 @@ export class S3FileProvider implements FileProvider {
         const stats = await this.client.headObject({ bucketName: bucket.name, key })
 
         this.updateETag(stats.ETag)
-        this._file.sizeBytes = stats.ContentLength
+        this._file.sizeBytes = stats.ContentLength ?? this._file.sizeBytes
         this._file.lastModified = stats.LastModified
+        this._file.ContentType = stats.ContentType
     }
 
     public async read(): Promise<Uint8Array> {
@@ -88,12 +90,13 @@ export class S3FileProvider implements FileProvider {
         return telemetry.s3_uploadObject.run(async span => {
             span.record({ component: 'viewer' })
 
+            const mimeType = mime.contentType(path.extname(this._file.name)) || undefined
             const result = await this.client
                 .uploadFile({
                     content,
                     key: this._file.key,
                     bucketName: this._file.bucket.name,
-                    contentType: mime.contentType(path.extname(this._file.name)) || undefined,
+                    contentType: this._file.ContentType ?? mimeType,
                 })
                 .then(u => u.promise())
 
@@ -123,8 +126,7 @@ export class S3FileViewerManager {
         private readonly fs: VirualFileSystem,
         private readonly window: typeof vscode.window = vscode.window,
         private readonly settings = PromptSettings.instance,
-        private readonly commands: typeof vscode.commands = vscode.commands,
-        private readonly workspace: typeof vscode.workspace = vscode.workspace
+        private readonly schemes = { read: S3_READ_SCHEME, edit: S3_EDIT_SCHEME }
     ) {
         this.disposables.push(this.registerTabCleanup())
     }
@@ -141,7 +143,7 @@ export class S3FileViewerManager {
     }
 
     private registerTabCleanup(): vscode.Disposable {
-        return this.workspace.onDidCloseTextDocument(async doc => {
+        return vscode.workspace.onDidCloseTextDocument(async doc => {
             const key = this.fs.uriToKey(doc.uri)
             await this.activeTabs[key]?.dispose()
         })
@@ -155,26 +157,29 @@ export class S3FileViewerManager {
         options?: vscode.TextDocumentShowOptions
     ): Promise<vscode.TextEditor | undefined> {
         const fsPath = fileUri.fsPath
-
         await this.activeTabs[this.fs.uriToKey(fileUri)]?.dispose()
 
-        // Defer to `vscode.open` for non-text files
-        const contentType = mime.contentType(path.extname(fsPath))
-        if (contentType && mime.charset(contentType) != 'UTF-8') {
-            await this.commands.executeCommand('vscode.open', fileUri)
-            return this.window.visibleTextEditors.find(
-                e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
-            )
-        }
+        try {
+            // Defer to `vscode.open` for non-text files
+            const contentType = mime.contentType(path.extname(fsPath))
+            if (!contentType || mime.charset(contentType) !== 'UTF-8') {
+                await vscode.commands.executeCommand('vscode.open', fileUri)
+                return this.window.visibleTextEditors.find(
+                    e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
+                )
+            }
 
-        const document = await this.workspace.openTextDocument(fileUri)
-        return await this.window.showTextDocument(document, options)
+            const document = await vscode.workspace.openTextDocument(fileUri)
+            return await this.window.showTextDocument(document, options)
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Failed to open document', { code: 'FailedToOpen' })
+        }
     }
 
     private async closeEditor(editor: vscode.TextEditor | undefined): Promise<void> {
         if (editor && !editor.document.isClosed) {
             await this.window.showTextDocument(editor.document, { preserveFocus: false })
-            await this.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         }
     }
 
@@ -192,7 +197,7 @@ export class S3FileViewerManager {
                 await this.window.showTextDocument(activeTab.editor.document)
             } else {
                 getLogger().verbose(`S3FileViewer: Reopening non-text document`)
-                await this.commands.executeCommand('vscode.open', uri)
+                await vscode.commands.executeCommand('vscode.open', uri)
             }
 
             return activeTab
@@ -209,8 +214,8 @@ export class S3FileViewerManager {
         const contentType = mime.contentType(path.extname(file.name))
         const isTextDocument = contentType && mime.charset(contentType) == 'UTF-8'
 
-        const uri = S3FileViewerManager.fileToUri(file, TabMode.Read)
-        if (await this.tryFocusTab(uri, uri.with({ scheme: S3_EDIT_SCHEME }))) {
+        const uri = this.fileToUri(file, TabMode.Read)
+        if (await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.edit }))) {
             return
         }
 
@@ -224,13 +229,13 @@ export class S3FileViewerManager {
 
     /**
      * Opens the tab in edit mode with the use of an S3Tab, or shifts focus to an edit tab if any.
-     * Exiting read-only tabs are closed as they cannot be converted to edit tabs.
+     * Existing read-only tabs are closed as they cannot be converted to edit tabs.
      *
      * @param uriOrFile to be opened
      */
     public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<void> {
-        const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : S3FileViewerManager.fileToUri(uriOrFile, TabMode.Edit)
-        const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: S3_READ_SCHEME }))
+        const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : this.fileToUri(uriOrFile, TabMode.Edit)
+        const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.read }))
         const file = activeTab?.file ?? uriOrFile
 
         if (activeTab?.mode === TabMode.Edit) {
@@ -254,7 +259,7 @@ export class S3FileViewerManager {
             this.fs.registerProvider(uri, provider),
             provider.onDidChange(() => {
                 // TODO: find the correct node instead of refreshing it all
-                this.commands.executeCommand('aws.refreshAwsExplorer', true)
+                vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
             })
         )
     }
@@ -267,7 +272,7 @@ export class S3FileViewerManager {
             throw new CancellationError('user')
         }
 
-        const uri = S3FileViewerManager.fileToUri(file, mode)
+        const uri = this.fileToUri(file, mode)
         const key = this.fs.uriToKey(uri)
         const provider = (this.providers[key] ??= this.registerProvider(file, uri))
         const editor = await this.openEditor(uri, { preview: mode === TabMode.Read })
@@ -353,8 +358,8 @@ export class S3FileViewerManager {
         })
     }
 
-    private static fileToUri(file: S3File, mode: TabMode): vscode.Uri {
-        const scheme = mode === TabMode.Read ? S3_READ_SCHEME : S3_EDIT_SCHEME
+    private fileToUri(file: S3File, mode: TabMode): vscode.Uri {
+        const scheme = mode === TabMode.Read ? this.schemes.read : this.schemes.edit
 
         return vscode.Uri.parse(`${scheme}:`, true).with({
             path: ['', file.bucket.region, file.bucket.name, file.key].join('/'),
