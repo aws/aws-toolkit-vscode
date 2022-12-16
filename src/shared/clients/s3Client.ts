@@ -678,7 +678,7 @@ export interface File extends S3.Object, S3.HeadObjectOutput {
 export function toFile(bucket: Bucket, resp: RequiredProps<S3.Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
     return {
         key: resp.Key,
-        arn: `${bucket.arn}${delimiter}${resp.Key}`,
+        arn: `${bucket.arn}/${resp.Key}`,
         name: resp.Key.split(delimiter).pop()!,
         eTag: resp.ETag,
         lastModified: resp.LastModified,
