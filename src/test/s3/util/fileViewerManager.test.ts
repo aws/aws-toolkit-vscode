@@ -244,6 +244,14 @@ describe('FileViewerManager', function () {
             assert.strictEqual(findEditors(textFile1.name)[0]?.document.uri.scheme, editScheme)
         })
 
+        it('re-uses tabs in edit mode when opening as read-only', async function () {
+            await fileViewerManager.openInEditMode({ ...textFile1, bucket })
+            await fileViewerManager.openInReadMode({ ...textFile1, bucket })
+            const editors = findEditors(textFile1.name)
+            assert.strictEqual(editors.length, 1)
+            assert.strictEqual(findEditors(textFile1.name)[0]?.document.uri.scheme, editScheme)
+        })
+
         it('can open in edit mode, showing a warning with two options', async function () {
             const shownMessage = testWindow.waitForMessage(/You are now editing an S3 file./).then(message => {
                 message.assertSeverity(SeverityLevel.Warning)

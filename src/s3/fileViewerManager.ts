@@ -215,7 +215,7 @@ export class S3FileViewerManager {
         const isTextDocument = contentType && mime.charset(contentType) == 'UTF-8'
 
         const uri = this.fileToUri(file, TabMode.Read)
-        if (await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.read }))) {
+        if (await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.edit }))) {
             return
         }
 
@@ -235,7 +235,7 @@ export class S3FileViewerManager {
      */
     public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<void> {
         const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : this.fileToUri(uriOrFile, TabMode.Edit)
-        const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.edit }))
+        const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.read }))
         const file = activeTab?.file ?? uriOrFile
 
         if (activeTab?.mode === TabMode.Edit) {
