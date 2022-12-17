@@ -110,7 +110,9 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         const truncatedSuggestion = this.truncateSuggestionOverlapWithRightContext(document, r.content)
         if (!r.content.startsWith(prefix) || truncatedSuggestion.length === 0) {
             //mark suggestion as Discard when it does not fit into the context
-            RecommendationHandler.instance.setSuggestionState(index, 'Discard')
+            if (RecommendationHandler.instance.getSuggestionState(index) !== 'Showed') {
+                RecommendationHandler.instance.setSuggestionState(index, 'Discard')
+            }
             return undefined
         }
         return {
