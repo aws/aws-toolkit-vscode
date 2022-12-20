@@ -5,13 +5,15 @@
 
 import * as assert from 'assert'
 import { createStubInstance, SinonStubbedInstance, stub, SinonStub, spy, SinonSpy } from 'sinon'
-import { copyLambdaUrl, noLambdaFuncMessage } from '../../../lambda/commands/copyLambdaUrl'
+import { copyLambdaUrl, createLambdaFuncUrlPrompter, noLambdaFuncMessage } from '../../../lambda/commands/copyLambdaUrl'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { buildFunctionUrlConfig } from '../../shared/clients/defaultLambdaClient.test'
 import { env } from 'vscode'
+import { FunctionUrlConfig } from 'aws-sdk/clients/lambda'
+import { createQuickPickTester } from '../../shared/ui/testUtils'
 
 describe('copy lambda function URL to clipboard', async () => {
     let client: SinonStubbedInstance<LambdaClient>
@@ -69,12 +71,28 @@ describe('copy lambda function URL to clipboard', async () => {
             await copyLambdaUrl(node, client)
 
             assert.strictEqual(await env.clipboard.readText(), '')
-            assert.deepStrictEqual(spiedInformationMessage.args, [
-                [noLambdaFuncMessage],
-            ])
+            assert.deepStrictEqual(spiedInformationMessage.args, [[noLambdaFuncMessage]])
             assert.deepStrictEqual(spiedStatusBarMessage.args, [
                 [addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000],
             ])
         })
+    })
+})
+
+describe('lambda func url prompter', async () => {
+    it('prompts for lambda function ARN', async () => {
+        const configList: FunctionUrlConfig[] = [
+            <FunctionUrlConfig>{ FunctionUrl: 'url1', FunctionArn: 'arn1' },
+            <FunctionUrlConfig>{ FunctionUrl: 'url2', FunctionArn: 'arn2' },
+        ]
+        const prompter = createLambdaFuncUrlPrompter(configList)
+        const tester = createQuickPickTester(prompter)
+        tester.assertItems(
+            configList.map(c => {
+                return { label: c.FunctionArn, data: c.FunctionUrl } // order matters
+            })
+        )
+        tester.acceptItem(configList[1].FunctionArn)
+        await tester.result(configList[1].FunctionUrl)
     })
 })

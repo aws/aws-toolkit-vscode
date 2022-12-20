@@ -41,14 +41,17 @@ export async function copyLambdaUrl(
 }
 
 async function _quickPickUrl(configList: FunctionUrlConfigList): Promise<string | undefined> {
-    const items = configList.map(c => ({
-        label: c.FunctionArn,
-        data: c.FunctionUrl,
-    }))
-    const picker: QuickPickPrompter<string> = createQuickPick(items, { title: 'Select function to copy url from.' })
-    const res = await picker.prompt()
+    const res = await createLambdaFuncUrlPrompter(configList).prompt()
     if (!isValidResponse(res)) {
         throw new CancellationError('user')
     }
     return res
+}
+
+export function createLambdaFuncUrlPrompter(configList: FunctionUrlConfigList): QuickPickPrompter<string> {
+    const items = configList.map(c => ({
+        label: c.FunctionArn,
+        data: c.FunctionUrl,
+    }))
+    return createQuickPick(items, { title: 'Select function to copy url from.' })
 }
