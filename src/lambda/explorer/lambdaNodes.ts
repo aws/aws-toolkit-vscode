@@ -20,6 +20,8 @@ import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
 export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE = 'awsRegionFunctionNodeUploadable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE = 'awsRegionFunctionNodeDownloadableUploadable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -71,9 +73,17 @@ function makeLambdaFunctionNode(
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')
-        ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
-        : CONTEXT_VALUE_LAMBDA_FUNCTION
 
+    if (samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')) {
+        node.contextValue =
+            node.configuration.PackageType !== 'Image'
+                ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE
+                : CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
+    } else {
+        node.contextValue =
+            node.configuration.PackageType !== 'Image'
+                ? CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE
+                : CONTEXT_VALUE_LAMBDA_FUNCTION
+    }
     return node
 }

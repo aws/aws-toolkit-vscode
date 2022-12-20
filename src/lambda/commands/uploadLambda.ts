@@ -569,8 +569,23 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
     try {
         const foundLambdas = await toArrayAsync(listLambdaFunctions(lambdaClient))
         for (const l of foundLambdas) {
-            lambdaFunctionNames.push({ label: l.FunctionName!, data: l.FunctionName })
+            const item: DataQuickPickItem<string> = { label: l.FunctionName!, data: l.FunctionName }
+            if (l.PackageType === 'Image') {
+                item.invalidSelection = true
+                item.description = 'Cannot upload to this lambda'
+            }
+            lambdaFunctionNames.push(item)
         }
+        // sort invalid selections to the end
+        lambdaFunctionNames.sort((a, b) => {
+            if (a.invalidSelection && !b.invalidSelection) {
+                return 1
+            }
+            if (!a.invalidSelection && b.invalidSelection) {
+                return -1
+            }
+            return 0
+        })
     } catch (error) {
         getLogger().error('lambda: failed to list Lambda functions: %s', (error as Error).message)
     }
