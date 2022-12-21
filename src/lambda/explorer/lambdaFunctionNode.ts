@@ -9,6 +9,12 @@ import { getIcon } from '../../shared/icons'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
+
+export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE = 'awsRegionFunctionNodeUploadable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE = 'awsRegionFunctionNodeDownloadableUploadable'
 
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -25,6 +31,18 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         this.configuration = configuration
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`
+
+        if (samLambdaImportableRuntimes.contains(this.configuration.Runtime ?? '')) {
+            this.contextValue =
+                this.configuration.PackageType !== 'Image'
+                    ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE
+                    : CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
+        } else {
+            this.contextValue =
+                this.configuration.PackageType !== 'Image'
+                    ? CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE
+                    : CONTEXT_VALUE_LAMBDA_FUNCTION
+        }
     }
 
     public get functionName(): string {

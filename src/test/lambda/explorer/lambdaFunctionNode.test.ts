@@ -6,7 +6,14 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import {
+    LambdaFunctionNode,
+    CONTEXT_VALUE_LAMBDA_FUNCTION,
+    CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE,
+    CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE,
+    CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE,
+} from '../../../lambda/explorer/lambdaFunctionNode'
+import { samLambdaImportableRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 
 describe('LambdaFunctionNode', function () {
@@ -54,5 +61,30 @@ describe('LambdaFunctionNode', function () {
         const childNodes = await testNode.getChildren()
         assert.ok(childNodes)
         assert.strictEqual(childNodes.length, 0, 'Expected node to have no children')
+    })
+
+    it('sets appropriate Context Value', function () {
+        const uploadableAndDownloadable: Lambda.FunctionConfiguration = {
+            Runtime: samLambdaImportableRuntimes.first(),
+            PackageType: 'Zip',
+        }
+        const onlyDownloadable: Lambda.FunctionConfiguration = {
+            Runtime: samLambdaImportableRuntimes.first(),
+            PackageType: 'Image',
+        }
+        const onlyUploadable: Lambda.FunctionConfiguration = { Runtime: 'unsupportedRuntime', PackageType: 'Zip' }
+        const neither: Lambda.FunctionConfiguration = { Runtime: 'unsupportedRuntime', PackageType: 'Image' }
+
+        testNode = new LambdaFunctionNode(parentNode, 'someregioncode', uploadableAndDownloadable)
+        assert.strictEqual(testNode.contextValue, CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE)
+
+        testNode = new LambdaFunctionNode(parentNode, 'someregioncode', onlyDownloadable)
+        assert.strictEqual(testNode.contextValue, CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE)
+
+        testNode = new LambdaFunctionNode(parentNode, 'someregioncode', onlyUploadable)
+        assert.strictEqual(testNode.contextValue, CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE)
+
+        testNode = new LambdaFunctionNode(parentNode, 'someregioncode', neither)
+        assert.strictEqual(testNode.contextValue, CONTEXT_VALUE_LAMBDA_FUNCTION)
     })
 })
