@@ -27,7 +27,9 @@ phases:
       - choco uninstall -y dotnet-sdk --version 5.0.100 dotnet-5.0-sdk --version 5.0.100
       - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\5.0.100'"
       - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\6.0.202'"
-      - choco install -y dotnet-5.0-sdk
+      - |
+        Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';
+        ./dotnet-install.ps1 -Verbose -InstallDir 'C:\Program Files\dotnet' -Channel '5.0'
       - |
         $DOTNET_ROOT = "$Env:USERPROFILE\.dotnet"
         $Env:PATH = "$Env:PATH;$DOTNET_ROOT;$DOTNET_ROOT\tools"
@@ -75,8 +77,8 @@ phases:
             copyFolder $root "build/idea-sandbox/system-test/log/" $script:TEST_ARTIFACTS
             copyFolder $root "build/test-results/test/" $script:TEST_REPORTS
         }
-        
-        copyArtifacts "."  
+
+        copyArtifacts "."
         Get-ChildItem -Directory | ForEach-Object { copyArtifacts $_.Name }
 
         if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
