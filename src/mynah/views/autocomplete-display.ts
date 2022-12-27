@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AutocompleteItem } from '../ui/components/search-block/autocomplete-content'
+import { AutocompleteItem } from '@aws/mynah-ui'
 import { PanelStore } from '../stores/panelStore'
 import { QueryContext } from '../models/model'
 import { getAutocompleteSuggestions } from '../service/autocomplete'
@@ -40,6 +40,7 @@ export class AutocompleteDisplay {
             .then(async (suggestions: AutocompleteItem[]) => {
                 await panel.webviewPanel.webview.postMessage(
                     JSON.stringify({
+                        sender: 'mynah',
                         autocompleteList: suggestions,
                     })
                 )

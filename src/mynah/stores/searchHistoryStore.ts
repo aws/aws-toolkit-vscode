@@ -60,6 +60,7 @@ export class SearchHistoryStore {
     constructor(private readonly globalStore: Memento, private readonly workplaceStore: Memento) {}
 
     public async addRecord(record: SearchHistoryRecord): Promise<void> {
+        console.log('ADD RECORD', record)
         await this.addRecordToWorkplaceStore(record)
         await this.addRecordToGlobalStore(record)
     }
@@ -94,6 +95,14 @@ export class SearchHistoryStore {
 
         const result = localRecordsCopy
             .reverse()
+            .filter(
+                record =>
+                    record.query.input !== '' ||
+                    (record.query.codeQuery?.simpleNames.length !== undefined &&
+                        record.query.codeQuery?.simpleNames.length > 0) ||
+                    (record.query.codeQuery?.usedFullyQualifiedNames.length !== undefined &&
+                        record.query.codeQuery?.usedFullyQualifiedNames.length > 0)
+            )
             .filter(record => record.recordDate !== undefined)
             .filter(
                 record =>

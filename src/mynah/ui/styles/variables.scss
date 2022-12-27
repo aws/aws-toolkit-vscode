@@ -41,9 +41,9 @@
     --mynah-color-highlight: rgba(255, 199, 72, 0.3);
     --mynah-color-highlight-text: #886411;
 
-    --mynah-color-context-must-contain: #c7ebce;
+    --mynah-color-context-must-contain: var(--vscode-sideBar-background);
     --mynah-color-context-should-contain: var(--vscode-sideBar-background);
-    --mynah-color-context-must-not-contain: #f3cac7;
+    --mynah-color-context-must-not-contain: var(--vscode-sideBar-background);
     --mynah-color-context-reverse: rgba(0, 0, 0, 0.5);
     --mynah-color-context-filter: 0.975;
 

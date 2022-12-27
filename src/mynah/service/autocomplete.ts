@@ -7,7 +7,7 @@ import { DefaultAutocompleteClient } from '../autocomplete-client/autocomplete'
 import * as autocompleteClient from '../autocomplete-client/autocomplete'
 
 import { AutocompleteQuery } from '../views/autocomplete-display'
-import { AutocompleteItem } from '../ui/components/search-block/autocomplete-content'
+import { AutocompleteItem } from '@aws/mynah-ui'
 
 export const getAutocompleteSuggestions = async (
     client: DefaultAutocompleteClient,

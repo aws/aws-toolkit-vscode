@@ -1,0 +1,13 @@
+$sourceThumbsPath: 'assets/source-thumbs';
+.mynah-source-thumbnail {
+    background-image: url(#{$sourceThumbsPath}/web.svg);
+    &.aws {
+        background-image: url(#{$sourceThumbsPath}/aws.svg);
+    }
+    &.stackoverflow {
+        background-image: url(#{$sourceThumbsPath}/stackoverflow.svg);
+    }
+    &.github {
+        background-image: url(#{$sourceThumbsPath}/github.svg);
+    }
+}

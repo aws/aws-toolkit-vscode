@@ -27,6 +27,7 @@ import {
 import { getIcon, Icon } from '../../shared/icons'
 import { Telemetry } from '../telemetry/telemetry/interfaces'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { NO_QUERY_ERROR_MESSAGE } from '../service/search'
 
 enum LiveSearchCommands {
     PAUSE = 'Mynah.LiveSearchPause',
@@ -95,6 +96,7 @@ export class ResultDisplay {
 
                 void panel?.webviewPanel.webview.postMessage(
                     JSON.stringify({
+                        sender: 'mynah',
                         liveSearchAction: 'pauseLiveSearch',
                     })
                 )
@@ -124,6 +126,7 @@ export class ResultDisplay {
 
                 void panel?.webviewPanel.webview.postMessage(
                     JSON.stringify({
+                        sender: 'mynah',
                         liveSearchAction: 'resumeLiveSearch',
                     })
                 )
@@ -152,6 +155,7 @@ export class ResultDisplay {
 
             void panel?.webviewPanel.webview.postMessage(
                 JSON.stringify({
+                    sender: 'mynah',
                     liveSearchAction: 'stopLiveSearch',
                 })
             )
@@ -268,7 +272,11 @@ export class ResultDisplay {
                 return
             }
             const session = panel.telemetrySession
-            const trigger = msg.trigger ?? SearchTrigger.SEARCH_PANE
+            const trigger = msg.trigger
+                ? msg.trigger
+                : msg.codeSelection
+                ? SearchTrigger.CODE_SELECTION
+                : SearchTrigger.SEARCH_PANE
             const fileName =
                 msg.codeSelection !== undefined
                     ? msg.codeSelection.file !== undefined
@@ -502,7 +510,6 @@ export class ResultDisplay {
         codeQuery?: CodeQuery
     ): void {
         this.uiReady[panelId] = false
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const panel = this.panelStore.getPanel(panelId)!
         const source = 'src/mynah/ui/mynah-ui.js'
         const mynahLogo = getIcon('aws-mynah-logo')
@@ -551,6 +558,7 @@ export class ResultDisplay {
         queryContext?: QueryContext,
         codeQuery?: CodeQuery,
         codeSelection?: CodeSelection,
+        code?: string,
         errorMessage?: string
     ): void {
         const panel = this.panelStore.getPanel(panelId)
@@ -571,10 +579,12 @@ export class ResultDisplay {
         if (this.uiReady[panelId]) {
             void panel.webviewPanel.webview.postMessage(
                 JSON.stringify({
+                    sender: 'mynah',
                     loading: false,
                     queryText: input,
-                    context,
-                    suggestions: errorMessage ?? suggestions,
+                    context: context !== undefined ? context : undefined,
+                    ...(errorMessage ? { error: { message: errorMessage } } : { suggestions: suggestions }),
+                    code,
                     codeQuery,
                     codeSelection,
                 })
@@ -589,6 +599,7 @@ export class ResultDisplay {
                     queryContext,
                     codeQuery,
                     codeSelection,
+                    code,
                     errorMessage
                 )
             }, 50)
@@ -599,6 +610,7 @@ export class ResultDisplay {
             query: {
                 queryId: panelId,
                 input,
+                code,
                 queryContext: queryContext ?? {
                     must: new Set<string>(),
                     should: new Set<string>(),
@@ -659,21 +671,24 @@ export class ResultDisplay {
                     suggestionsList,
                     query.queryContext,
                     query.codeQuery,
-                    query.codeSelection
+                    query.codeSelection,
+                    query.code
                 )
             })
             .catch((error: Error) => {
-                console.error('An error occurred when waiting for suggestions:', error)
-                this.updateContent(
-                    panelId,
-                    query.input,
-                    query.trigger,
-                    [],
-                    query.queryContext,
-                    query.codeQuery,
-                    query.codeSelection,
-                    'Something went wrong.'
-                )
+                if (!error || error.message !== NO_QUERY_ERROR_MESSAGE) {
+                    this.updateContent(
+                        panelId,
+                        query.input,
+                        query.trigger,
+                        [],
+                        query.queryContext,
+                        query.codeQuery,
+                        query.codeSelection,
+                        query.code,
+                        'An error occurred while getting suggestions.'
+                    )
+                }
             })
         if (query.implicit ?? false) {
             this.panelStore.setLiveSearchPanelId(panelId)
@@ -705,27 +720,39 @@ const getWebviewContent = (
     codeSelection?: string,
     codeQuery?: string,
     language?: string
-): string => `
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Mynah</title>
-        <mynah-config logo-url="${logoUri}" query-text="${encodeURI(queryText ?? '')}"
-        context="${encodeURI(context ?? '')}" code-selection="${encodeURI(
-    codeSelection ?? ''
-)}" code-query="${encodeURI(codeQuery ?? '')}" loading="${String(loading)}" live="${String(live)}" language="${String(
-    language
-)}"></mynah-config>
-        <script type="text/javascript" src="${scriptUri}" defer onload="init()"></script>
-        <script type="text/javascript" defer>
-          function init(){
-            const uiElements = new MynahUI();
-            window.uiElements = uiElements;
-          }
-        </script>
-    </head>
-
-    <body>
-    </body>
-</html>
-`
+): string => {
+    const initialDataJSONString: string[] = []
+    if (queryText !== undefined && queryText.trim() !== '') {
+        initialDataJSONString.push(`query: \`${queryText}\``)
+    }
+    if (context !== undefined && context.trim() !== '') {
+        initialDataJSONString.push(`matchPolicy: ${context}`)
+    }
+    if (codeQuery !== undefined && codeQuery.trim() !== '') {
+        initialDataJSONString.push(`codeQuery: ${codeQuery}`)
+    }
+    if (codeSelection !== undefined && codeSelection.trim() !== '') {
+        initialDataJSONString.push(`codeSelection: ${codeSelection}`)
+    }
+    if (loading) {
+        initialDataJSONString.push(`loading: true`)
+    }
+    if (live) {
+        initialDataJSONString.push(`liveSearchState: "resumeLiveSearch"`)
+    }
+    return `<!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Mynah</title>
+                    <mynah-config logo-url="${logoUri}" language="${String(language)}"></mynah-config>
+                    <script type="text/javascript" src="${scriptUri}" defer onload="init()"></script>
+                    <script type="text/javascript">
+                        const init = () => {
+                            createMynahUI({${initialDataJSONString.join(',')}});
+                        }
+                    </script>
+                </head>
+                <body>
+                </body>
+            </html>`
+}

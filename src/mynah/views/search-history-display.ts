@@ -29,6 +29,7 @@ export class SearchHistoryDisplay {
     private async updateContent(panel: Panel, searchHistoryRecords?: SearchHistoryRecord[] | string): Promise<void> {
         await panel.webviewPanel.webview.postMessage(
             JSON.stringify({
+                sender: 'mynah',
                 searchHistoryRecords,
             })
         )
