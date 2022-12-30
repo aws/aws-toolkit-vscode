@@ -29,7 +29,7 @@ import * as AutocompleteClient from './autocomplete-client/autocomplete'
 import { TelemetryClient, TelemetryClientSession } from './telemetry/telemetry/client'
 import { IdentityManagerFactory } from './telemetry/identity/factory'
 import { TelemetryClientFactory } from './telemetry/telemetry/factory'
-import { MynahClientType, TelemetryEventName } from './telemetry/telemetry/types'
+import { MynahClientType } from './telemetry/telemetry/types'
 import { extensionVersion } from '../shared/vscode/env'
 
 let telemetryClient: TelemetryClient
@@ -78,8 +78,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     const telemetrySession: TelemetryClientSession = telemetryClient.newSession(uuid())
 
     const onDidOpenTextDocumentNotificationsProcessor = new OnDidOpenTextDocumentNotificationsProcessor(
-        notificationInfoStore,
-        telemetrySession
+        notificationInfoStore
     )
 
     vs.workspace.onDidOpenTextDocument(async d => {
@@ -116,9 +115,13 @@ export async function activate(context: ExtensionContext): Promise<void> {
         liveSearchDisplay,
         autocompleteDisplay,
     })
-    telemetrySession.recordEvent(TelemetryEventName.ACTIVATE)
-    telemetry.mynah_activate.emit()
-
+    telemetry.mynah_updateExtensionState.emit({
+        mynahContext: JSON.stringify({
+            extensionMetadata: {
+                state: 'ACTIVE',
+            },
+        }),
+    })
     suggestionsEmitter.event(output => {
         resultDisplay.showSearchSuggestions(output)
     })
@@ -131,11 +134,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
 }
 
 export const deactivate = async (context: ExtensionContext): Promise<void> => {
-    if (telemetryClient !== undefined) {
-        telemetryClient.newSession(uuid()).recordEvent(TelemetryEventName.DEACTIVATE)
-    }
-
     if (heartbeatListener !== undefined) {
         heartbeatListener.dispose()
     }
+
+    telemetry.mynah_updateExtensionState.emit({
+        mynahContext: JSON.stringify({
+            extensionMetadata: {
+                state: 'INACTIVE',
+            },
+        }),
+    })
 }

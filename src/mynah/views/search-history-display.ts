@@ -5,8 +5,7 @@
 
 import { SearchHistoryFilters, SearchHistoryRecord, SearchHistoryStore } from '../stores/searchHistoryStore'
 import { Panel, PanelStore } from '../stores/panelStore'
-import { TelemetryEventName } from '../telemetry/telemetry/types'
-
+import { telemetry } from '../../shared/telemetry/telemetry'
 export interface SearchHistoryQuery {
     filters: SearchHistoryFilters
     panelId: string
@@ -45,8 +44,7 @@ export class SearchHistoryDisplay {
 
         try {
             const searchHistoryRecords = await this.searchHistoryStore.getHistory(filters)
-            panel.telemetrySession.recordEvent(TelemetryEventName.CLICK_SEARCH_HISTORY)
-
+            telemetry.mynah_showSearchHistory.emit()
             await this.updateContent(panel, searchHistoryRecords)
         } catch (error) {
             console.error('An error occurred when waiting for search history:', error)
