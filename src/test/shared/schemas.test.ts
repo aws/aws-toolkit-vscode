@@ -25,7 +25,9 @@ describe('SchemaService', function () {
     let config: Settings
     let fakeYamlExtension: YamlExtension
     const cfnSchema = vscode.Uri.file('cfn')
+    const cfnRegistry = 'cloudformation'
     const samSchema = vscode.Uri.file('sam')
+    const samRegistry = 'sam'
 
     beforeEach(async function () {
         fakeExtensionContext = await FakeExtensionContext.create()
@@ -49,15 +51,17 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
+            registry: cfnRegistry,
         })
         service.registerMapping({
             uri: vscode.Uri.parse('/bar'),
             type: 'yaml',
             schema: 'sam',
+            registry: samRegistry,
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/bar')), samSchema)).once()
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnRegistry, cfnSchema)).once()
+        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/bar')), samRegistry, samSchema)).once()
     })
 
     it('removes schemas from the yaml extension', async function () {
@@ -65,9 +69,10 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: undefined,
+            registry: samRegistry,
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.removeSchema(deepEqual(vscode.Uri.file('/foo')))).once()
+        verify(fakeYamlExtension.removeSchema(deepEqual(vscode.Uri.file('/foo')), samRegistry)).once()
     })
 
     it('registers schemas to json configuration', async function () {
@@ -75,6 +80,7 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'json',
             schema: 'cfn',
+            registry: cfnRegistry,
         })
         await service.processUpdates()
 
@@ -93,6 +99,7 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'json',
             schema: undefined,
+            registry: cfnRegistry,
         })
         await service.processUpdates()
 
@@ -116,9 +123,10 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
+            registry: cfnRegistry,
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(anything(), anything())).never()
+        verify(fakeYamlExtension.assignSchema(anything(), anything(), anything())).never()
     })
 
     it('processes no updates if yaml extension unavailable', async function () {
@@ -129,131 +137,9 @@ describe('SchemaService', function () {
             uri: vscode.Uri.parse('/foo'),
             type: 'yaml',
             schema: 'cfn',
+            registry: cfnRegistry,
         })
         await service.processUpdates()
-        verify(fakeYamlExtension.assignSchema(anything(), anything())).never()
-    })
-
-    it('processes no updates if owner is different', async function () {
-        const testUri = vscode.Uri.parse('/foo')
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-                owner: 'different_test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-    })
-
-    it('processes updates if owner is the same', async function () {
-        const testUri = vscode.Uri.parse('/foo')
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'sam',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
-    })
-
-    it('processes updates if schema type changed', async function () {
-        const testUri = vscode.Uri.parse('/foo')
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'sam',
-                owner: 'different_test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
-    })
-
-    it('processes updates if file becomes owned', async function () {
-        const testUri = vscode.Uri.parse('/foo')
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'sam',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).once()
-    })
-
-    it('processes no updates if non owner tries to change file', async function () {
-        const testUri = vscode.Uri.parse('/foo')
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'cfn',
-                owner: 'test_registry',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), cfnSchema)).once()
-
-        service.registerMapping(
-            {
-                uri: testUri,
-                type: 'yaml',
-                schema: 'sam',
-            },
-            true
-        )
-        verify(fakeYamlExtension.assignSchema(deepEqual(vscode.Uri.file('/foo')), samSchema)).never()
+        verify(fakeYamlExtension.assignSchema(anything(), anything(), anything())).never()
     })
 })

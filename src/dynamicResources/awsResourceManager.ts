@@ -27,6 +27,7 @@ export class AwsResourceManager {
     private folder: string | undefined
     private schemas: Map<string, Schema>
     private openResources: Map<string, ResourceNode | ResourceTypeNode>
+    private name = 'AwsResourceMananger'
 
     public constructor(private readonly extensionContext: vscode.ExtensionContext) {
         this.schemas = new Map<string, Schema>()
@@ -103,6 +104,7 @@ export class AwsResourceManager {
                     uri,
                     type: 'json',
                     schema: undefined,
+                    registry: this.name,
                 })
             }
 
@@ -202,6 +204,7 @@ export class AwsResourceManager {
                 uri,
                 type: 'json',
                 schema: location,
+                registry: this.name,
             },
             // Flush immediately so the onDidOpenTextDocument handler can work.
             true

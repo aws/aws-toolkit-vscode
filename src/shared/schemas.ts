@@ -33,7 +33,7 @@ export type SchemaType = 'yaml' | 'json'
 export interface SchemaMapping {
     uri: vscode.Uri
     type: SchemaType
-    owner?: string
+    registry: string
     schema?: string | vscode.Uri
 }
 
@@ -56,7 +56,6 @@ export class SchemaService {
     private updateQueue: SchemaMapping[] = []
     private schemas?: Schemas
     private handlers: Map<SchemaType, SchemaHandler>
-    private owned: Map<vscode.Uri, SchemaMapping>
 
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
@@ -75,7 +74,6 @@ export class SchemaService {
                 ['json', new JsonSchemaHandler()],
                 ['yaml', new YamlSchemaHandler()],
             ])
-        this.owned = new Map()
     }
 
     public isMapped(uri: vscode.Uri): boolean {
@@ -93,33 +91,15 @@ export class SchemaService {
     }
 
     /**
-     * Registers a schema mapping in the schema service. If the incoming mapping has an owner, then the mapping will be considered "owned".
-     * If the URI is owned (in the owners map), the update will only be processed if the incoming mapping owner is the same as the owned user OR
-     * the type of the schema changed
+     * Registers a schema mapping in the schema service
      *
      * @param mapping
      * @param flush Flush immediately instead of waiting for timer.
      */
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
-        // The owner is undefined and needs to be set
-        const isOwnerUndefined =
-            !this.owned.has(mapping.uri) && mapping.owner !== undefined && mapping.schema !== undefined
-
-        // The owner and the incoming owner are defined but the schema changed
-        const isSchemaChanged =
-            this.owned.has(mapping.uri) &&
-            mapping.owner !== undefined &&
-            this.owned.get(mapping.uri)?.schema !== mapping.schema
-
-        if (isOwnerUndefined || isSchemaChanged) {
-            this.owned.set(mapping.uri, mapping)
-        }
-
-        if (mapping.owner === this.owned.get(mapping.uri)?.owner) {
-            this.updateQueue.push(mapping)
-            if (flush === true) {
-                this.processUpdates()
-            }
+        this.updateQueue.push(mapping)
+        if (flush === true) {
+            this.processUpdates()
         }
     }
 
@@ -351,6 +331,8 @@ export class YamlSchemaHandler implements SchemaHandler {
         return exists
     }
 
+    // Update which schemas should be assigned and removed.
+    // If multiple schemas are assigned to a single uri then use the first one is used
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         if (!this.yamlExtension) {
             const ext = await activateYamlExtension()
@@ -362,9 +344,9 @@ export class YamlSchemaHandler implements SchemaHandler {
         }
 
         if (mapping.schema) {
-            this.yamlExtension.assignSchema(mapping.uri, resolveSchema(mapping.schema, schemas))
+            this.yamlExtension.assignSchema(mapping.uri, mapping.registry, resolveSchema(mapping.schema, schemas))
         } else {
-            this.yamlExtension.removeSchema(mapping.uri)
+            this.yamlExtension.removeSchema(mapping.uri, mapping.registry)
         }
     }
 }
