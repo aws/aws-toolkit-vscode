@@ -4,10 +4,10 @@ $sourceThumbsPath: 'assets/source-thumbs';
     &.aws {
         background-image: url(#{$sourceThumbsPath}/aws.svg);
     }
-    &.stackoverflow {
+    &.StackOverflow {
         background-image: url(#{$sourceThumbsPath}/stackoverflow.svg);
     }
-    &.github {
+    &.Github {
         background-image: url(#{$sourceThumbsPath}/github.svg);
     }
 }
