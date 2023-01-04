@@ -21,8 +21,7 @@ dependencies {
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
     testImplementation(libs.wiremock)
-    testImplementation(libs.sshd.core)
-    testImplementation(libs.sshd.scp)
+    testImplementation(libs.bundles.sshd)
 
     attributesSchema {
         attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE) {

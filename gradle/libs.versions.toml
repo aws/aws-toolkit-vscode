@@ -22,7 +22,7 @@ telemetryGenerator = "1.0.80"
 testLogger = "3.1.0"
 testRetry = "1.2.1"
 slf4j = "1.7.36"
-sshd = "2.8.0"
+sshd = "2.9.2"
 wiremock = "2.33.2"
 zjsonpatch = "0.4.11"
 
@@ -90,6 +90,7 @@ telemetryGenerator = { module = "software.aws.toolkits:telemetry-generator", ver
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 sshd-core = { module = "org.apache.sshd:sshd-core", version.ref = "sshd" }
 sshd-scp = { module = "org.apache.sshd:sshd-scp", version.ref = "sshd" }
+sshd-sftp = { module = "org.apache.sshd:sshd-sftp", version.ref = "sshd" }
 wiremock = { module = "com.github.tomakehurst:wiremock-jre8", version.ref = "wiremock" }
 zjsonpatch = { module = "com.flipkart.zjsonpatch:zjsonpatch", version.ref = "zjsonpatch" }
 
@@ -97,3 +98,4 @@ zjsonpatch = { module = "com.flipkart.zjsonpatch:zjsonpatch", version.ref = "zjs
 jackson = ["jackson-datetime", "jackson-kotlin", "jackson-yaml", "jackson-xml"]
 kotlin = ["kotlin-stdLibJdk8", "kotlin-reflect"]
 mockito = ["mockito-core", "mockito-kotlin"]
+sshd = ["sshd-core", "sshd-scp", "sshd-sftp"]
