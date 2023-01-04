@@ -98,6 +98,12 @@ enum class HelpIds(shortId: String, val url: String) {
         "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using"
     ),
 
+    // What is AWS Toolkit?
+    AWS_TOOLKIT_GETTING_STARTED(
+        "awsToolkitGettingStarted",
+        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html"
+    ),
+
     // CodeWhisperer
     CODEWHISPERER_TOKEN(
         "CodeWhispererToken",

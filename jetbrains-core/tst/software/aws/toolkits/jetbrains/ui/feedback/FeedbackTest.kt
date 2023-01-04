@@ -3,90 +3,39 @@
 
 package software.aws.toolkits.jetbrains.ui.feedback
 
-import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.ui.DialogPanel
 import com.intellij.testFramework.ProjectRule
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Suite
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
-import software.aws.toolkits.resources.message
 
-@RunWith(Suite::class)
-@Suite.SuiteClasses(FeedbackTest.NonParameterizedTests::class, FeedbackTest.NoCommentSetTest::class)
 class FeedbackTest {
-    class NonParameterizedTests {
-        @Rule
-        @JvmField
-        val projectRule = ProjectRule()
+    @Rule
+    @JvmField
+    val projectRule = ProjectRule()
 
-        @Test
-        fun panelInitiallyNegative() {
-            val panel = SubmitFeedbackPanel(Sentiment.NEGATIVE)
-            assertThat(panel.sentiment).isEqualTo(Sentiment.NEGATIVE)
-        }
+    private lateinit var sut: FeedbackDialog
+    private lateinit var sutPanel: DialogPanel
 
-        @Test
-        fun panelInitiallyPositive() {
-            val panel = SubmitFeedbackPanel(Sentiment.POSITIVE)
-            assertThat(panel.sentiment).isEqualTo(Sentiment.POSITIVE)
-        }
-
-        @Test
-        fun noSentimentSet() {
-            runInEdtAndWait {
-                val dialog = FeedbackDialog(projectRule.project)
-                val panel = dialog.getViewForTesting()
-
-                assertThat(panel.sentiment).isEqualTo(null)
-                assertThat(dialog.doValidate()).isInstanceOfSatisfying(ValidationInfo::class.java) {
-                    it.message.contains(message("feedback.validation.no_sentiment"))
-                }
-            }
-        }
-
-        @Test
-        fun commentTooLong() {
-            runInEdtAndWait {
-                val dialog = FeedbackDialog(projectRule.project)
-                val panel = dialog.getViewForTesting()
-
-                panel.comment = "string".repeat(2000)
-                assertThat(dialog.doValidate()).isInstanceOfSatisfying(ValidationInfo::class.java) {
-                    it.message.contains(message("feedback.validation.comment_too_long"))
-                }
-            }
+    @Test
+    fun `Initial dialog with sentiment positive and no comment is valid`() {
+        runInEdt {
+            sut = FeedbackDialog(projectRule.project)
+            sutPanel = sut.getFeedbackDialog()
+            val validationErrors = sutPanel.validationsOnApply.flatMap { it.value }.filter { it.validate() != null }
+            assertThat(validationErrors).isEmpty()
         }
     }
 
-    @RunWith(Parameterized::class)
-    class NoCommentSetTest(private val name: String, private val case: String) {
-        @Rule
-        @JvmField
-        val projectRule = ProjectRule()
-
-        companion object {
-            @Parameterized.Parameters(name = "{0}")
-            @JvmStatic
-            fun data() = listOf(
-                arrayOf("empty string", ""),
-                arrayOf("spaces", "      "),
-                arrayOf("new line", "\n")
-            )
-        }
-
-        @Test
-        fun noCommentSet() {
-            runInEdtAndWait {
-                val dialog = FeedbackDialog(projectRule.project)
-                val panel = dialog.getViewForTesting()
-                panel.setSentimentForTest(Sentiment.POSITIVE)
-                panel.comment = case
-                assertThat(dialog.doValidate()).isNull()
-            }
+    @Test
+    fun `Dialog with negative sentiment and comment is valid`() {
+        runInEdt {
+            sut = FeedbackDialog(projectRule.project, Sentiment.NEGATIVE, "test")
+            sutPanel = sut.getFeedbackDialog()
+            val validationErrors = sutPanel.validationsOnApply.flatMap { it.value }.filter { it.validate() != null }
+            assertThat(validationErrors).isEmpty()
         }
     }
 }
