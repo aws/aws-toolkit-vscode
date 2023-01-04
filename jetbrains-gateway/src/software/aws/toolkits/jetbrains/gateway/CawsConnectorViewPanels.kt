@@ -129,6 +129,7 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                 isIndeterminate = true
             ) {
                 val userId = lazilyGetUserId()
+                val start = System.currentTimeMillis()
                 val env = try {
                     val cawsClient = connectionSettings.awsClient<CodeCatalystClient>()
                     if (context.cloneType == CawsWizardCloneType.UNLINKED_3P) {
@@ -155,7 +156,13 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                             CawsWizardCloneType.UNLINKED_3P -> CodecatalystCreateDevEnvironmentRepoType.Unlinked
                             CawsWizardCloneType.NONE -> CodecatalystCreateDevEnvironmentRepoType.None
                         }
-
+                        CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                            project = null,
+                            userId = userId,
+                            result = TelemetryResult.Succeeded,
+                            duration = (System.currentTimeMillis() - start).toDouble(),
+                            codecatalystDevEnvironmentWorkflowStep = "createDevEnvironment"
+                        )
                         CodecatalystTelemetry.createDevEnvironment(
                             project = null,
                             userId = userId,
@@ -169,6 +176,13 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                     withUiContext {
                         Messages.showErrorDialog(e.message ?: message("general.unknown_error"), message)
                     }
+                    CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                        project = null,
+                        userId = userId,
+                        result = TelemetryResult.Failed,
+                        duration = (System.currentTimeMillis() - start).toDouble(),
+                        codecatalystDevEnvironmentWorkflowStep = "createDevEnvironment"
+                    )
                     CodecatalystTelemetry.createDevEnvironment(project = null, userId = userId, result = TelemetryResult.Failed)
                     return@startUnderModalProgressAsync
                 }
