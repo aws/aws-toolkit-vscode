@@ -21,19 +21,19 @@ export class EndpointsProvider {
 
     public async load(): Promise<Endpoints> {
         getLogger().info('Retrieving AWS endpoint data')
-        const localEndpointsJson = await this.localFetcher.get()
-        if (localEndpointsJson) {
-            const localEndpoints = loadEndpoints(localEndpointsJson)
-            if (localEndpoints) {
-                return localEndpoints
-            }
-        }
-
         const remoteEndpointsJson = await this.remoteFetcher.get()
         if (remoteEndpointsJson) {
             const remoteEndpoints = loadEndpoints(remoteEndpointsJson)
             if (remoteEndpoints) {
                 return remoteEndpoints
+            }
+        }
+
+        const localEndpointsJson = await this.localFetcher.get()
+        if (localEndpointsJson) {
+            const localEndpoints = loadEndpoints(localEndpointsJson)
+            if (localEndpoints) {
+                return localEndpoints
             }
         }
 
