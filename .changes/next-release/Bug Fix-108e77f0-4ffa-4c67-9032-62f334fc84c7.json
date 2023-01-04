@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "AWS regions are not dynamically fetched by the Toolkit"
+}
