@@ -31,16 +31,16 @@ export class BuildspecTemplateRegistry extends WatchedFiles<BuildspecTemplate> {
                 template = yaml.load(templateAsYaml, {}) as BuildspecTemplate
             }
         } catch (e) {
-            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, owner: this.name })
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, registry: this.name })
             return undefined
         }
 
         if (template && template.version && template.phases) {
-            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'buildspec', owner: this.name })
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'buildspec', registry: this.name })
             return template
         }
 
-        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, owner: this.name })
+        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, registry: this.name })
         return undefined
     }
 
@@ -49,7 +49,7 @@ export class BuildspecTemplateRegistry extends WatchedFiles<BuildspecTemplate> {
             uri,
             type: 'yaml',
             schema: undefined,
-            owner: this.name,
+            registry: this.name,
         })
         await super.remove(uri)
     }

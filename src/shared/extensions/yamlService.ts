@@ -91,13 +91,20 @@ export async function activateYAMLLanguageService(): Promise<LanguageService> {
     return yamlService
 }
 
-export function configureLanguageService(languageService: LanguageService, schemaMap: Map<string, vscode.Uri>): void {
+export function configureLanguageService(
+    languageService: LanguageService,
+    schemaMap: Map<string, Map<string, vscode.Uri>>
+): void {
     const schemaSettings: SchemasSettings[] = []
-    for (const [filePath, schemaUri] of schemaMap) {
-        schemaSettings.push({
-            fileMatch: [filePath],
-            uri: 'file://' + encodeURI(schemaUri.fsPath), // the file system path is encoded because os x has a space in the path and markdown will fail
-        })
+    for (const [filePath, schemas] of schemaMap) {
+        for (const [_, schemaUri] of schemas) {
+            if (schemaUri) {
+                schemaSettings.push({
+                    fileMatch: [filePath],
+                    uri: 'file://' + encodeURI(schemaUri.fsPath), // the file system path is encoded because os x has a space in the path and markdown will fail
+                })
+            }
+        }
     }
     languageService.configure({
         completion: true,

@@ -35,7 +35,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
                 template = await CloudFormation.load(path, false)
             }
         } catch (e) {
-            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, owner: this.name })
+            globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, registry: this.name })
             return undefined
         }
 
@@ -44,16 +44,16 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'sam', owner: this.name })
+                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'sam', registry: this.name })
             } else {
                 // apply cfn schema
-                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'cfn', owner: this.name })
+                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'cfn', registry: this.name })
             }
 
             return template
         }
 
-        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, owner: this.name })
+        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, registry: this.name })
         return undefined
     }
 
@@ -63,7 +63,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
             uri,
             type: 'yaml',
             schema: undefined,
-            owner: this.name,
+            registry: this.name,
         })
         await super.remove(uri)
     }
