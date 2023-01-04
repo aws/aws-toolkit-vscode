@@ -43,4 +43,11 @@ describe('EndpointsProvider', async function () {
 
         assert.strictEqual(endpoints.partitions.length, 1)
     })
+
+    it('prefers remote fetcher over local fetcher', async function () {
+        const provider = new EndpointsProvider(fetcher1, fetcher2)
+        const endpoints = await provider.load()
+
+        assert.strictEqual(endpoints.partitions.length, 1)
+    })
 })
