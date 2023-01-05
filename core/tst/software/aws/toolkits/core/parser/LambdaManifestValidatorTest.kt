@@ -3,23 +3,22 @@
 
 package software.aws.toolkits.core.parser
 
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.core.lambda.LambdaManifestValidator
 
 class LambdaManifestValidatorTest {
 
     @Test
-    fun isXmlParsing() {
+    fun `manifest xml file parsing succeeds`() {
         LambdaManifestValidatorTest::class.java.getResourceAsStream("/xmlSampleSuccess.xml").use {
-            assertTrue(LambdaManifestValidator.canBeParsed(it))
+            assertThat(LambdaManifestValidator.canBeParsed(it)).isTrue
         }
     }
     @Test
-    fun isXmlParseFail() {
+    fun `manifest xml file parsing fails`() {
         LambdaManifestValidatorTest::class.java.getResourceAsStream("/xmlSampleFailure.xml").use {
-            assertFalse(LambdaManifestValidator.canBeParsed(it))
+            assertThat(LambdaManifestValidator.canBeParsed(it)).isFalse
         }
     }
 }

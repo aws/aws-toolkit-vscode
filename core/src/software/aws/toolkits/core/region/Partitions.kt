@@ -53,7 +53,6 @@ object EndpointsJsonValidator : RemoteResolveParser {
         return PartitionParser.parse(data)?.partitions?.isNotEmpty() ?: return false
     }
 }
-
 object ServiceEndpointResource : RemoteResource {
     override val urls: List<String> = listOf("https://idetoolkits.amazonwebservices.com/endpoints.json")
     override val name: String = "service-endpoints.json"

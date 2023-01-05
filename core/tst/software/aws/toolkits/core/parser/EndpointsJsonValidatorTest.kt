@@ -3,22 +3,21 @@
 
 package software.aws.toolkits.core.parser
 
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.core.region.EndpointsJsonValidator
 
 class EndpointsJsonValidatorTest {
     @Test
-    fun isJsonParse() {
+    fun `endpoints json file parsing succeeds`() {
         EndpointsJsonValidatorTest::class.java.getResourceAsStream("/jsonSampleSuccess.json").use {
-            assertTrue(EndpointsJsonValidator.canBeParsed(it))
+            assertThat(EndpointsJsonValidator.canBeParsed(it)).isTrue
         }
     }
     @Test
-    fun isJsonParseFail() {
+    fun `endpoints json file parsing fails`() {
         EndpointsJsonValidatorTest::class.java.getResourceAsStream("/jsonSampleFailure.json").use {
-            assertFalse(EndpointsJsonValidator.canBeParsed(it))
+            assertThat(EndpointsJsonValidator.canBeParsed(it)).isFalse
         }
     }
 }

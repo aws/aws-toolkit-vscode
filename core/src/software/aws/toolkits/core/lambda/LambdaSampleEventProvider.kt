@@ -4,13 +4,15 @@
 package software.aws.toolkits.core.lambda
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.slf4j.LoggerFactory
-import software.aws.toolkits.core.region.EndpointsJsonValidator
 import software.aws.toolkits.core.utils.RemoteResolveParser
 import software.aws.toolkits.core.utils.RemoteResource
 import software.aws.toolkits.core.utils.RemoteResourceResolver
@@ -85,10 +87,26 @@ internal data class LambdaSampleEventResource(val filename: String) : RemoteReso
     override val ttl: Duration = Duration.ofDays(7)
     override val remoteResolveParser: RemoteResolveParser? = resolveParserForGivenFile(filename.substringAfterLast('.', ""))
 }
+object LambdaSampleEventJsonValidator : RemoteResolveParser {
+    private val LOG = LoggerFactory.getLogger(LambdaSampleEventJsonValidator::class.java)
 
+    private val mapper = jacksonObjectMapper()
+        .disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)
+        .disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .enable(JsonParser.Feature.ALLOW_COMMENTS)
+
+    override fun canBeParsed(data: InputStream): Boolean {
+        val jsonMapper: Map<String, Any> = HashMap()
+        val result = LOG.tryOrNull("Failed to parse Lambda Sample Event request") {
+            this.mapper.readValue(data, jsonMapper.javaClass)
+        }
+        return result?.isNotEmpty() ?: false
+    }
+}
 fun resolveParserForGivenFile(extension: String): RemoteResolveParser? =
     when (extension) {
         "xml" -> LambdaManifestValidator
-        "json" -> EndpointsJsonValidator
+        "json" -> LambdaSampleEventJsonValidator
         else -> null
     }
