@@ -4,14 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    Bucket,
-    CreateFolderRequest,
-    CreateFolderResponse,
-    Folder,
-    S3Client,
-    UploadFileRequest,
-} from '../../shared/clients/s3Client'
+import { Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../shared/clients/s3Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
@@ -88,14 +81,6 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
-    }
-
-    /**
-     * See {@link S3Client.uploadFile}.
-     */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
-        const managedUpload = await this.s3.uploadFile(request)
-        await managedUpload.promise()
     }
 
     public get arn(): string {
