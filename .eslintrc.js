@@ -19,6 +19,27 @@ module.exports = {
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
+        // https://typescript-eslint.io/rules/naming-convention/
+        '@typescript-eslint/naming-convention': [
+            'error',
+            {
+                selector: 'default',
+                format: ['camelCase', 'PascalCase'],
+                // Allow underscores.
+                leadingUnderscore: 'allowSingleOrDouble',
+                trailingUnderscore: 'allowSingleOrDouble',
+            },
+            // Allow object properties, enums, and methods to have any format:
+            //   {
+            //     'foo-1-2-3': 42,
+            //   }
+            // https://github.com/typescript-eslint/typescript-eslint/issues/1483#issuecomment-733421303
+            {
+                selector: ['objectLiteralProperty', 'classMethod', 'enumMember'],
+                format: null,
+                // modifiers: ['requiresQuotes'],
+            },
+        ],
         // TODO reenable this rule (by removing this off)
         'no-async-promise-executor': 'off',
         // TODO reenable this rule (by removing this off)
@@ -40,8 +61,6 @@ module.exports = {
         // TODO rennable this rule (by removing this off)
         // this is another troublesome one, producing ~600 issues
         '@typescript-eslint/no-use-before-define': 'off',
-        // TODO rennable this rule (by removing this off)
-        '@typescript-eslint/camelcase': 'off',
         // TODO rennable this rule (by removing this off)
         'no-useless-escape': 'off',
         // TODO rennable this rule (by removing this off)
