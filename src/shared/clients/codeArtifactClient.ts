@@ -69,13 +69,7 @@ export class DefaultCodeArtifactClient {
             (await client).listPackageVersions(req).promise()
         const collection = pageableToCollection(requester, request, 'nextToken', 'versions')
 
-        return collection.filter(isNonNullable).map(async versions => {
-            if (versions.length === 0) {
-                return []
-            }
-
-            return versions
-        })
+        return collection.filter(isNonNullable)
     }
 
     protected async createSdkClient(): Promise<CodeArtifact> {
