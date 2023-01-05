@@ -35,6 +35,15 @@ export class TelemetryHelper {
 
     public startUrl: string | undefined
 
+    // timestamps to compute client component latency
+    private invokeSuggestionStartTime = 0
+    private fetchCredentialStartTime = 0
+    private sdkApiCallStartTime = 0
+    private sdkApiCallEndTime = 0
+    private firstSuggestionShowTime = 0
+    private allPaginationEndTime = 0
+    private firstResponseRequestId = ''
+
     constructor() {
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
@@ -136,5 +145,75 @@ export class TelemetryHelper {
 
     public isTelemetryEnabled(): boolean {
         return globals.telemetry.telemetryEnabled
+    }
+
+    public resetClientComponentLatencyTime() {
+        this.invokeSuggestionStartTime = 0
+        this.sdkApiCallStartTime = 0
+        this.sdkApiCallEndTime = 0
+        this.fetchCredentialStartTime = 0
+        this.firstSuggestionShowTime = 0
+        this.allPaginationEndTime = 0
+        this.firstResponseRequestId = ''
+    }
+
+    public setInvokeSuggestionStartTime() {
+        if (this.invokeSuggestionStartTime === 0) {
+            this.invokeSuggestionStartTime = performance.now()
+        }
+    }
+
+    public setSdkApiCallStartTime() {
+        if (this.sdkApiCallStartTime === 0) {
+            this.sdkApiCallStartTime = performance.now()
+        }
+    }
+
+    public setSdkApiCallEndTime() {
+        if (this.sdkApiCallEndTime === 0) {
+            this.sdkApiCallEndTime = performance.now()
+        }
+    }
+
+    public setFetchCredentialStartTime() {
+        if (this.fetchCredentialStartTime === 0) {
+            this.fetchCredentialStartTime = performance.now()
+        }
+    }
+
+    public setFirstSuggestionShowTime() {
+        if (this.firstSuggestionShowTime === 0) {
+            this.firstSuggestionShowTime = performance.now()
+        }
+    }
+
+    public setFirstResponseRequestId(requestId: string) {
+        if (this.firstResponseRequestId === '') {
+            this.firstResponseRequestId = requestId
+        }
+    }
+
+    public setAllPaginationEndTime() {
+        if (this.allPaginationEndTime === 0) {
+            this.allPaginationEndTime = performance.now()
+        }
+    }
+
+    public recordClientComponentLatency(sessionId: string, languageId: string) {
+        telemetry.codewhisperer_clientComponentLatency.emit({
+            codewhispererRequestId: this.firstResponseRequestId,
+            codewhispererSessionId: sessionId,
+            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - this.invokeSuggestionStartTime,
+            codewhispererEndToEndLatency: this.firstSuggestionShowTime - this.invokeSuggestionStartTime,
+            codewhispererAllCompletionsLatency: this.allPaginationEndTime - this.invokeSuggestionStartTime,
+            codewhispererPostprocessingLatency: this.firstSuggestionShowTime - this.sdkApiCallEndTime,
+            codewhispererCredentialFetchingLatency: this.sdkApiCallStartTime - this.fetchCredentialStartTime,
+            codewhispererPreprocessingLatency: this.fetchCredentialStartTime - this.invokeSuggestionStartTime,
+            codewhispererCompletionType: this.completionType,
+            codewhispererTriggerType: this.triggerType,
+            codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,
+            credentialStartUrl: this.startUrl,
+        })
+        this.resetClientComponentLatencyTime()
     }
 }

@@ -170,6 +170,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
                 r.references
             )
             this.nextMove = 0
+            TelemetryHelper.instance.setFirstSuggestionShowTime()
             this._onDidShow.fire()
             if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
                 return [item, { insertText: 'x' }]
