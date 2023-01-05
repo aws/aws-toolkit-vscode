@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "View support for CodeArtifact"
+	"description": "CodeArtifact resources can now be viewed in the AWS Explorer"
 }
