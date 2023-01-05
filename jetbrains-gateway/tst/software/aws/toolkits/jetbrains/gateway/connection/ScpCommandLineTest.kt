@@ -8,10 +8,14 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.io.readBytes
 import org.apache.sshd.common.session.Session
 import org.apache.sshd.scp.common.ScpTransferEventListener
+import org.apache.sshd.server.session.ServerSession
+import org.apache.sshd.sftp.server.Handle
+import org.apache.sshd.sftp.server.SftpEventListener
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.utils.test.notNull
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermission
 import java.util.UUID
@@ -98,13 +102,11 @@ class ScpCommandLineTest {
 
         val paths = sut.executeScpTest()
 
-        assertThat(paths.size).isEqualTo(2)
-        // creates folder because it doesn't exist
-        assertThat(paths.first()!!.fileName.toString()).isEqualTo(destination.name)
-        // and then the second file
-        assertThat(paths.last()!!.fileName.toString()).isEqualTo(uuid)
-        // ...which is nested
-        assertThat(paths.last()!!.parent.fileName.toString()).isEqualTo(directory.name)
+        assertThat(paths).singleElement().notNull.satisfies {
+            assertThat(it.fileName.toString()).isEqualTo(uuid)
+            // is nested
+            assertThat(it.parent.fileName.toString()).isEqualTo(directory.name)
+        }
     }
 
     private fun ScpCommandLine.executeScpTest(): List<Path?> {
@@ -138,14 +140,11 @@ class ScpCommandLineTest {
             ) {
                 pathsCollector.add(file)
             }
+        })
 
-            override fun startFolderEvent(
-                session: Session?,
-                op: ScpTransferEventListener.FileOperation?,
-                file: Path?,
-                perms: MutableSet<PosixFilePermission>?
-            ) {
-                pathsCollector.add(file)
+        sshServer.sftpSubsystemFactory.addSftpEventListener(object : SftpEventListener {
+            override fun open(session: ServerSession?, remoteHandle: String?, localHandle: Handle?) {
+                pathsCollector.add(localHandle?.file)
             }
         })
     }
