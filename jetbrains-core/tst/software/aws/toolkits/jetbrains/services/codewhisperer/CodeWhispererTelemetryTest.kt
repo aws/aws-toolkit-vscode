@@ -51,8 +51,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testSessionId
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_PAUSE_CODEWHISPERER
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager.Companion.ACTION_RESUME_CODEWHISPERER
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.PauseCodeWhispererNode
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.ResumeCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
@@ -715,7 +715,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         val metricCaptor = argumentCaptor<MetricEvent>()
         doNothing().`when`(batcher).enqueue(metricCaptor.capture())
 
-        stateManager.performAction(projectRule.project, ACTION_PAUSE_CODEWHISPERER)
+        PauseCodeWhispererNode(projectRule.project).onDoubleClick(mock())
         assertEventsContainsFieldsAndCount(
             metricCaptor.allValues,
             awsModifySetting,
@@ -724,7 +724,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             "settingState" to CodeWhispererConstants.AutoSuggestion.DEACTIVATED
         )
 
-        stateManager.performAction(projectRule.project, ACTION_RESUME_CODEWHISPERER)
+        ResumeCodeWhispererNode(projectRule.project).onDoubleClick(mock())
         assertEventsContainsFieldsAndCount(
             metricCaptor.allValues,
             awsModifySetting,

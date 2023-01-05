@@ -5,13 +5,17 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.resources.message
+import java.awt.event.MouseEvent
 
 class OpenCodeReferenceNode(nodeProject: Project) : CodeWhispererActionNode(
     nodeProject,
     message("codewhisperer.explorer.code_reference.open"),
-    CodeWhispererExplorerActionManager.ACTION_OPEN_CODE_REFERENCE_PANEL,
     3,
     AllIcons.Actions.Preview
-)
+) {
+    override fun onDoubleClick(event: MouseEvent) {
+        CodeWhispererCodeReferenceManager.getInstance(project).showCodeReferencePanel()
+    }
+}

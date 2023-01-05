@@ -9,13 +9,10 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -27,11 +24,9 @@ import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnecti
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginDialog
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreActionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererTermsOfServiceDialog
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 
 class CodeWhispererExplorerActionManagerTest {
@@ -66,34 +61,6 @@ class CodeWhispererExplorerActionManagerTest {
         connectionManager = mock()
 
         project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
-    }
-
-    /**
-     * enableCodeWhisperer()
-     */
-    @Ignore("WIP")
-    @Test
-    fun `if there is no active connection, it should pop the login dialog`() {
-        sut = spy()
-        whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(null)
-
-        mockConstruction(CodeWhispererLoginDialog::class.java) { loginDialogMock, _ ->
-            whenever(loginDialogMock.showAndGet()).thenReturn(true)
-        }.use {
-            mockConstruction(CodeWhispererTermsOfServiceDialog::class.java) { tosMock, _ ->
-                whenever(tosMock.showAndGet()).thenReturn(true)
-            }.use {
-                // before
-                assertThat(isCodeWhispererEnabled(project)).isFalse
-
-                runInEdtAndWait {
-                    sut.enableCodeWhisperer(project)
-                }
-
-                // after
-                assertThat(isCodeWhispererEnabled(project)).isTrue
-            }
-        }
     }
 
     /**

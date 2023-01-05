@@ -7,11 +7,15 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.resources.message
+import java.awt.event.MouseEvent
 
 class PauseCodeWhispererNode(nodeProject: Project) : CodeWhispererActionNode(
     nodeProject,
     message("codewhisperer.explorer.pause_auto"),
-    CodeWhispererExplorerActionManager.ACTION_PAUSE_CODEWHISPERER,
     1,
     AllIcons.Actions.Pause
-)
+) {
+    override fun onDoubleClick(event: MouseEvent) {
+        CodeWhispererExplorerActionManager.getInstance().setAutoSuggestion(project, false)
+    }
+}

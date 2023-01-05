@@ -4,14 +4,22 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.UiTelemetry
+import java.awt.event.MouseEvent
+import java.net.URI
 
 class WhatIsCodeWhispererNode(nodeProject: Project) : CodeWhispererActionNode(
     nodeProject,
     message("codewhisperer.explorer.what_is"),
-    CodeWhispererExplorerActionManager.ACTION_WHAT_IS_CODEWHISPERER,
     1,
     AllIcons.Actions.Help
-)
+) {
+    override fun onDoubleClick(event: MouseEvent) {
+        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI))
+        UiTelemetry.click(project, "cw_learnMore_Cta")
+    }
+}
