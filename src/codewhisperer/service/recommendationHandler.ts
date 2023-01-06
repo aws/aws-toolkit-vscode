@@ -201,6 +201,10 @@ export class RecommendationHandler {
                 nextToken = resp?.nextToken ? resp?.nextToken : ''
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
+                TelemetryHelper.instance.setSessionId(sessionId)
+                if (nextToken === '') {
+                    TelemetryHelper.instance.setAllPaginationEndTime()
+                }
             } else {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
@@ -309,11 +313,6 @@ export class RecommendationHandler {
         this.sessionId = sessionId
         this.nextToken = nextToken
         this.errorCode = errorCode
-
-        if (this.nextToken === '') {
-            TelemetryHelper.instance.setAllPaginationEndTime()
-            TelemetryHelper.instance.recordClientComponentLatency(sessionId, editor.document.languageId)
-        }
     }
 
     cancelPaginatedRequest() {
