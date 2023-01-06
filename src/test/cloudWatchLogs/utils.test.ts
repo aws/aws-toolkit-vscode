@@ -4,17 +4,55 @@
  */
 
 import * as assert from 'assert'
+import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
     CloudWatchLogsParameters,
     CloudWatchLogsData,
     CloudWatchLogsResponse,
+    CloudWatchLogsGroupInfo,
 } from '../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
 export const newText = 'a little longer now\n'
+export const addedEvent = {
+    message: 'this is an additional event',
+}
+export const forwardToken = 'forward'
+export const backwardToken = 'backward'
+
+export async function returnPaginatedEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: CloudWatchLogs.NextToken
+) {
+    switch (nextToken) {
+        case forwardToken:
+            return fakeGetLogEvents()
+        case backwardToken:
+            return fakeSearchLogGroup()
+        default:
+            return {
+                events: [],
+                nextForwardToken: forwardToken,
+                nextBackwardToken: backwardToken,
+            }
+    }
+}
+
+export async function returnNonEmptyPaginatedEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: CloudWatchLogs.NextToken
+) {
+    const result = await returnPaginatedEvents(logGroupInfo, parameters, nextToken)
+    if (result.events.length === 0) {
+        result.events = [addedEvent]
+    }
+    return result
+}
 
 export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
     return {
@@ -115,6 +153,17 @@ export const logGroupsData: CloudWatchLogsData = {
         regionName: 'thisIsARegionCode',
     },
     retrieveLogsFunction: fakeSearchLogGroup,
+    busy: false,
+}
+
+export const paginatedData: CloudWatchLogsData = {
+    data: [],
+    parameters: {},
+    logGroupInfo: {
+        groupName: 'g',
+        regionName: 'r',
+    },
+    retrieveLogsFunction: returnPaginatedEvents,
     busy: false,
 }
 export const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)

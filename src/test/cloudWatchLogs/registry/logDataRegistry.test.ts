@@ -6,11 +6,31 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { LogDataRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logDataRegistry'
+import {
+    LogDataRegistry,
+    ActiveTab,
+    CloudWatchLogsAction,
+    CloudWatchLogsGroupInfo,
+    CloudWatchLogsParameters,
+    CloudWatchLogsResponse,
+    CloudWatchLogsData,
+} from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { logGroupsData, newLineData, newText, testLogData, testStreamNames, unregisteredData } from '../utils.test'
+import {
+    fakeGetLogEvents,
+    fakeSearchLogGroup,
+    logGroupsData,
+    newLineData,
+    newText,
+    paginatedData,
+    testLogData,
+    testStreamNames,
+    unregisteredData,
+} from '../utils.test'
+import { CloudWatchLogs } from 'aws-sdk'
+import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
 
 describe('LogDataRegistry', async function () {
     let registry: LogDataRegistry
@@ -22,12 +42,42 @@ describe('LogDataRegistry', async function () {
     const unregisteredUri = createURIFromArgs(unregisteredData.logGroupInfo, unregisteredData.parameters)
     const newLineUri = createURIFromArgs(newLineData.logGroupInfo, newLineData.parameters)
     const searchLogGroupUri = createURIFromArgs(logGroupsData.logGroupInfo, logGroupsData.parameters)
+    const paginatedUri = createURIFromArgs(paginatedData.logGroupInfo, paginatedData.parameters)
+
+    /**
+     * Convenience method to update a log and then
+     * get the data so that it can be verified by
+     * the test.
+     */
+    async function updateLogAndGetResult(
+        uri: vscode.Uri = paginatedUri,
+        headOrTail: 'head' | 'tail' = 'tail'
+    ): Promise<CloudWatchLogsData> {
+        await registry.updateLog(uri, headOrTail)
+        const data = registry.getLogData(uri)
+        assert(data)
+        return data
+    }
+
+    async function testUpdateLog(headOrTail: 'head' | 'tail') {
+        const oldData = registry.getLogData(paginatedUri)
+        // check that oldData is unchanged.
+        assert(oldData)
+        assert.deepStrictEqual(oldData.data, paginatedData.data)
+
+        const newData = await updateLogAndGetResult(paginatedUri, headOrTail)
+
+        // check that newData is changed to what it should be.
+        const expected = headOrTail === 'head' ? (await fakeSearchLogGroup()).events : (await fakeGetLogEvents()).events
+        assert.deepStrictEqual(newData.data, expected)
+    }
 
     beforeEach(function () {
         registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
         registry.setLogData(registeredUri, testLogData)
         registry.setLogData(newLineUri, newLineData)
         registry.setLogData(searchLogGroupUri, logGroupsData)
+        registry.setLogData(paginatedUri, paginatedData)
     })
 
     describe('hasLog', function () {
@@ -47,6 +97,117 @@ describe('LogDataRegistry', async function () {
             const preregisteredLogData = registry.getLogData(registeredUri)
             assert(preregisteredLogData)
             assert.strictEqual(preregisteredLogData.data[0].message, testLogData.data[0].message)
+        })
+    })
+
+    describe('updateLog', async function () {
+        it("properly paginates the results with 'head'", async () => {
+            await testUpdateLog('head')
+        })
+
+        it("properly paginates the results with 'tail'", async () => {
+            await testUpdateLog('tail')
+        })
+    })
+
+    describe('updateLog pagination test', async function () {
+        const pageToken0 = undefined // Absence of token implies inital page
+        const pageToken1 = 'page1Token'
+        const pageToken2 = 'page2Token'
+
+        function createCwlEvents(id: string, count: number): FilteredLogEvents {
+            let events: CloudWatchLogs.FilteredLogEvents = []
+            for (let i = 0; i < count; i++) {
+                events = events.concat({ message: `message-${id}`, logStreamName: `stream-${id}` })
+            }
+            return events
+        }
+
+        async function buildCwlAction(isPage1Empty: boolean): Promise<CloudWatchLogsAction> {
+            return async function (
+                logGroupInfo: CloudWatchLogsGroupInfo,
+                parameters: CloudWatchLogsParameters,
+                nextToken?: CloudWatchLogs.NextToken
+            ) {
+                return getSimulatedCwlResponse(nextToken, isPage1Empty)
+            }
+        }
+
+        /**
+         * This function returns a simulated cloud watch logs reponse for a given token.
+         * @param token The page token
+         * @param isPage1Empty A flag to indicate if Page 1 should have data/isn't the tail.
+         * @returns
+         */
+        function getSimulatedCwlResponse(
+            token: CloudWatchLogs.NextToken | undefined,
+            isPage1Empty: boolean
+        ): CloudWatchLogsResponse {
+            switch (token) {
+                case pageToken1:
+                    if (isPage1Empty) {
+                        return { events: [], nextForwardToken: undefined, nextBackwardToken: pageToken0 }
+                    }
+                    return {
+                        events: createCwlEvents('P1', 1),
+                        nextForwardToken: pageToken2,
+                        nextBackwardToken: pageToken0,
+                    }
+                case pageToken2:
+                    return { events: [], nextForwardToken: undefined, nextBackwardToken: pageToken1 }
+                default: // pageToken0
+                    return {
+                        events: createCwlEvents('P0', 1),
+                        nextForwardToken: pageToken1,
+                        nextBackwardToken: undefined,
+                    }
+            }
+        }
+
+        it('can retrieve new logs when a page is updated', async () => {
+            // Swap to use other paginate testing function
+            const page1IsEmpty = true
+            paginatedData.retrieveLogsFunction = await buildCwlAction(page1IsEmpty)
+
+            // -- Make first call.
+            const firstUpdatedData = await updateLogAndGetResult(paginatedUri)
+
+            const firstActual = {
+                events: firstUpdatedData.data,
+                nextForwardToken: firstUpdatedData.next?.token,
+                nextBackwardToken: firstUpdatedData.previous?.token,
+            }
+            const firstExpected = getSimulatedCwlResponse(pageToken0, page1IsEmpty)
+            assert.deepStrictEqual(firstActual, firstExpected)
+
+            // -- Make second call.
+            const secondUpdatedData = await updateLogAndGetResult(paginatedUri)
+
+            const secondActual = {
+                events: secondUpdatedData.data,
+                nextForwardToken: secondUpdatedData.next?.token,
+                nextBackwardToken: secondUpdatedData.previous?.token,
+            }
+            // Expect the output to equal the first call since page 1 'does not exist yet'
+            assert.deepStrictEqual(secondActual, firstExpected)
+
+            // Simulate page 1 now getting data
+            secondUpdatedData.retrieveLogsFunction = await buildCwlAction(!page1IsEmpty)
+            registry.setLogData(paginatedUri, secondUpdatedData)
+
+            // -- Make third call.
+            const thirdUpdatedData = await updateLogAndGetResult(paginatedUri)
+
+            const thirdExpected = getSimulatedCwlResponse(pageToken1, !page1IsEmpty)
+            thirdExpected.events = firstExpected.events.concat(thirdExpected.events)
+
+            const thirdActual = {
+                events: thirdUpdatedData.data,
+                nextForwardToken: thirdUpdatedData.next?.token,
+                nextBackwardToken: thirdUpdatedData.previous?.token,
+            }
+
+            assert.deepStrictEqual(thirdActual, thirdExpected)
         })
     })
 

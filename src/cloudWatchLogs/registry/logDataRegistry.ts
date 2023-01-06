@@ -13,6 +13,7 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
 /**
@@ -120,26 +121,60 @@ export class LogDataRegistry {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
         }
-        const nextToken = headOrTail === 'head' ? logData.previous?.token : logData.next?.token
+        const request: CloudWatchLogsResponse = {
+            events: [],
+            nextForwardToken: logData.next?.token,
+            nextBackwardToken: logData.previous?.token,
+        }
 
-        // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-        const logEvents = await logData.retrieveLogsFunction(logData.logGroupInfo, logData.parameters, nextToken)
+        const isHead = headOrTail === 'head'
+        const stream = pageableToCollection(
+            (r: typeof request) =>
+                logData.retrieveLogsFunction(
+                    logData.logGroupInfo,
+                    logData.parameters,
+                    isHead ? r.nextBackwardToken : r.nextForwardToken
+                ),
+            request,
+            isHead ? 'nextBackwardToken' : 'nextForwardToken'
+        )
+
+        async function firstOrLast<T>(
+            iterable: AsyncIterable<T>,
+            predicate: (item: T) => boolean
+        ): Promise<T | undefined> {
+            let last: T | undefined
+            for await (const item of iterable) {
+                if (predicate((last = item))) {
+                    return item
+                }
+            }
+            return last
+        }
+
+        const responseData = await firstOrLast(stream, resp => resp.events.length > 0)
+
+        if (!responseData) {
+            return
+        }
 
         const newData =
             headOrTail === 'head'
-                ? (logEvents.events ?? []).concat(logData.data)
-                : logData.data.concat(logEvents.events ?? [])
+                ? (responseData.events ?? []).concat(logData.data)
+                : logData.data.concat(responseData.events ?? [])
 
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
         if (!logData.previous || headOrTail === 'head') {
-            tokens.previous = {
-                token: logEvents.nextBackwardToken ?? '',
+            const token = responseData.nextBackwardToken
+            if (token) {
+                tokens.previous = { token }
             }
         }
         if (!logData.next || headOrTail === 'tail') {
-            tokens.next = {
-                token: logEvents.nextForwardToken ?? '',
+            const token = responseData.nextForwardToken ?? request.nextForwardToken
+            if (token) {
+                tokens.next = { token }
             }
         }
         this.setLogData(uri, {
