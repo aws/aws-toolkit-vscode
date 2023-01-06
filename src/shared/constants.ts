@@ -35,6 +35,7 @@ export const ssoCredentialsHelpUrl: string =
 
 export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
+export const createUrlForLambdaFunctionUrl = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for samInitWizard
 export const samInitDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
@@ -46,6 +47,7 @@ export const launchConfigDocUrl: string = isCloud9()
 export const samDeployDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
+export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
