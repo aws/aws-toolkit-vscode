@@ -10,10 +10,25 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
-import { buildFunctionUrlConfig } from '../../shared/clients/defaultLambdaClient.test'
 import { env } from 'vscode'
 import { FunctionUrlConfig } from 'aws-sdk/clients/lambda'
 import { createQuickPickTester } from '../../shared/ui/testUtils'
+
+/**
+ * Builds an instance of {@link FunctionUrlConfig} without the
+ * need to define all values.
+ *
+ * @param options key + value of {@link FunctionUrlConfig}
+ */
+export function buildFunctionUrlConfig(options: Partial<FunctionUrlConfig>): FunctionUrlConfig {
+    return {
+        AuthType: options.AuthType ?? '',
+        CreationTime: options.CreationTime ?? '',
+        FunctionArn: options.FunctionArn ?? '',
+        FunctionUrl: options.FunctionUrl ?? '',
+        LastModifiedTime: options.LastModifiedTime ?? '',
+    }
+}
 
 describe('copy lambda function URL to clipboard', async () => {
     let client: SinonStubbedInstance<LambdaClient>

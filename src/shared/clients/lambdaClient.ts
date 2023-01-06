@@ -75,12 +75,9 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getFunctionUrlConfigs(
-        name: string,
-        lambdaClient: Lambda | undefined = undefined
-    ): Promise<Lambda.FunctionUrlConfigList> {
+    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
         getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
-        const client = lambdaClient ?? (await this.createSdkClient())
+        const client = await this.createSdkClient()
 
         try {
             const request = client.listFunctionUrlConfigs({ FunctionName: name })
