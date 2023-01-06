@@ -194,6 +194,7 @@
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
     "AWS.generic.close": "Close",
+    "AWS.generic.copyUrl": "Copy URL",
     "AWS.generic.promptDelete": "Delete...",
     "AWS.generic.promptUpdate": "Update...",
     "AWS.generic.preview": "Preview",
