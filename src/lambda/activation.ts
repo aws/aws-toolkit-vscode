@@ -14,6 +14,7 @@ import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
+import { copyLambdaUrl } from './commands/copyLambdaUrl'
 
 /**
  * Activates Lambda components.
@@ -52,6 +53,10 @@ export async function activate(context: ExtContext): Promise<void> {
                 await uploadLambdaCommand()
             }
         }),
+        Commands.register(
+            'aws.copyLambdaUrl',
+            async (node: LambdaFunctionNode) => await copyLambdaUrl(node, new DefaultLambdaClient(node.regionCode))
+        ),
         registerSamInvokeVueCommand(context)
     )
 }
