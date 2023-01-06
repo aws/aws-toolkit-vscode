@@ -23,7 +23,7 @@ We want your feedback!
 - Code contributions. See [our contributing guide](CONTRIBUTING.md) for how to get started.
 
 ## Supported IDEs
-All JetBrains IDEs 2021.2+
+All JetBrains IDEs 2022.1+
 
 ## Installation
 
@@ -53,7 +53,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md#building-from-source) for instructions
 selected account/region. This does not represent all resources available in your account, only a sub-set of those 
 resource types supported by the plugin.
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer)
-* **Authentication** - Connect to AWS using static credentials, credential process, or AWS SSO. [Learn more about
+* **Authentication** - Connect to AWS using static credentials, credential process, AWS Builder ID or AWS SSO. [Learn more about
 authentication options](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials)
 
 ### Services
@@ -77,7 +77,7 @@ environment provided by the SAM CLI.
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-remote)
 * **Package & Deploy Lambda Functions** - Ability to package a Lambda function zip and create a remote lambda
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-deploy)
-* **Deploy SAM-based Applications** - Package, deploy & track SAM-based applications
+* **Sync SAM-based Applications** - Sync & track SAM-based applications
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/sam-deploy)
 
 *Note: Python features are available in both PyCharm and IntelliJ with the 
