@@ -160,10 +160,10 @@ export class TelemetryHelper {
         this.sessionId = ''
     }
 
+    /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
-        if (this.invokeSuggestionStartTime === 0) {
-            this.invokeSuggestionStartTime = performance.now()
-        }
+         this.resetClientComponentLatencyTime()
+         this.invokeSuggestionStartTime = performance.now()
     }
 
     public setFetchCredentialStartTime() {
