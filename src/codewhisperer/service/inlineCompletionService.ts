@@ -104,13 +104,17 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         r: Recommendation,
         start: vscode.Position,
         end: vscode.Position,
-        index: number
+        index: number,
+        prefix: string
     ): vscode.InlineCompletionItem | undefined {
-        const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
+        if (!r.content.startsWith(prefix)) {
+            return undefined
+        }
         const truncatedSuggestion = this.truncateSuggestionOverlapWithRightContext(document, r.content)
-        if (!r.content.startsWith(prefix) || truncatedSuggestion.length === 0) {
-            //mark suggestion as Discard when it does not fit into the context
-            RecommendationHandler.instance.setSuggestionState(index, 'Discard')
+        if (truncatedSuggestion.length === 0) {
+            if (RecommendationHandler.instance.getSuggestionState(index) !== 'Showed') {
+                RecommendationHandler.instance.setSuggestionState(index, 'Discard')
+            }
             return undefined
         }
         return {
@@ -158,7 +162,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         ).length
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
-            const item = this.getInlineCompletionItem(document, r, start, end, i)
+            const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }
