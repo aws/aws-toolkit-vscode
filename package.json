@@ -275,7 +275,8 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "samSyncCode": false
+                        "samSyncCode": false,
+                        "lsp": false
                     },
                     "properties": {
                         "jsonResourceModification": {
@@ -283,6 +284,10 @@
                             "default": false
                         },
                         "samSyncCode": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "lsp": {
                             "type": "boolean",
                             "default": false
                         }
