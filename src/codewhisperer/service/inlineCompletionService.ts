@@ -412,6 +412,10 @@ export class InlineCompletionService {
         this.statusBar.show()
     }
 
+    isPaginationRunning(): boolean {
+        return this._isPaginationRunning
+    }
+
     hideCodeWhispererStatusBar() {
         this.statusBar.hide()
     }
