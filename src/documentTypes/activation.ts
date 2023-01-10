@@ -5,7 +5,10 @@
 
 import * as vscode from 'vscode'
 import { activateDocumentsLanguageServer } from './server'
+import { Experiments } from '../shared/settings'
 
-export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    await activateDocumentsLanguageServer(extensionContext)
+export async function tryActivate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    if (await Experiments.instance.isExperimentEnabled('lsp')) {
+        await activateDocumentsLanguageServer(extensionContext)
+    }
 }
