@@ -22,14 +22,14 @@ export class ManualInputSearch extends SearchInput {
     private readonly notificationInfoStore: NotificationInfoStore
     private readonly muteNotificationButtonText = 'Do not show again'
 
-    private readonly supportedLanguages: Array<string> = [
+    private readonly supportedLanguages = new Set<string>([
         'java',
         'javascript',
         'javascriptreact',
         'typescriptreact',
         'python',
         'typescript',
-    ]
+    ])
 
     constructor(
         context: ExtensionContext,
@@ -53,7 +53,7 @@ export class ManualInputSearch extends SearchInput {
 
         // Adds hover subscription
         context.subscriptions.push(
-            vs.languages.registerHoverProvider(this.supportedLanguages, {
+            vs.languages.registerHoverProvider(Array.from(this.supportedLanguages), {
                 provideHover: async (document, position): Promise<vs.Hover> => {
                     let hover: vs.Hover
                     const hoveredWordRange = document.getWordRangeAtPosition(position)
@@ -132,7 +132,7 @@ export class ManualInputSearch extends SearchInput {
         const isCodeSelected = selectedCode !== undefined && selectedCode !== ''
 
         let hasUnsupportedLanguage = false
-        if (isCodeSelected && !this.supportedLanguages.includes(this.getDocumentLanguage())) {
+        if (isCodeSelected && !this.supportedLanguages.has(this.getDocumentLanguage())) {
             hasUnsupportedLanguage = true
             await this.createNotificationAboutUnsupportedLanguage()
         }
