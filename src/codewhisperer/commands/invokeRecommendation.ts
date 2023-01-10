@@ -14,6 +14,7 @@ import { KeyStrokeHandler } from '../service/keyStrokeHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -81,7 +82,8 @@ export async function invokeRecommendation(
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.showReauthenticatePrompt()
             }
-            InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {
             if (
                 !vsCodeState.isCodeWhispererEditing &&

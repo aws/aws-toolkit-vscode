@@ -179,6 +179,7 @@ export class RecommendationHandler {
                     page === 0,
                     codewhispererPromise
                 )
+                TelemetryHelper.instance.setSdkApiCallEndTime()
                 latency = startTime !== 0 ? performance.now() - startTime : 0
                 if ('recommendations' in resp) {
                     recommendation = (resp && resp.recommendations) || []
@@ -199,6 +200,11 @@ export class RecommendationHandler {
                 requestId = resp?.$response && resp?.$response?.requestId
                 nextToken = resp?.nextToken ? resp?.nextToken : ''
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
+                TelemetryHelper.instance.setFirstResponseRequestId(requestId)
+                TelemetryHelper.instance.setSessionId(sessionId)
+                if (nextToken === '') {
+                    TelemetryHelper.instance.setAllPaginationEndTime()
+                }
             } else {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
