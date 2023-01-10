@@ -6,6 +6,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach to AWS Documents Language Server",
+            "program": "/Volumes/workplace/AWSDocumentsLanguageServer/target/debug/awsdocuments_language_server",
+            "waitFor": true
+        },
+        {
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
@@ -125,6 +132,11 @@
         {
             "name": "Extension + Attach to SSM Document Language Server",
             "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        },
+        {
+            "name": "Extension + Attach to AWS Documents Language Server",
+            "configurations": ["Extension", "Attach to AWS Documents Language Server"],
+            "preLaunchTask": "Build AWS Documents Language Server"
         }
     ]
 }

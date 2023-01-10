@@ -46,6 +46,7 @@ import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
+import { activate as activateDocuments } from './documentTypes/activation'
 import { activate as activateDynamicResources } from './dynamicResources/activation'
 import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
@@ -236,6 +237,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         await activateYamlExtPrompt()
+
+        await activateDocuments(context)
 
         showWelcomeMessage(context)
 

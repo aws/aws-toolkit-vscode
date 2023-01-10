@@ -63,6 +63,14 @@
             "type": "process",
             "command": "${input:killTasks}",
             "problemMatcher": []
+        },
+        {
+            "label": "Build AWS Documents Language Server",
+            "type": "shell",
+            "command": "cargo build",
+            "options": {
+                "cwd": "/Volumes/workplace/AWSDocumentsLanguageServer/"
+            }
         }
     ],
     "inputs": [
