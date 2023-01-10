@@ -104,7 +104,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     @Test
     fun `test pre-setup failure will send service invocation event with failed status`() {
         val codewhispererServiceSpy = spy(codewhispererService) {
-            onGeneric { getRequestContext(any(), any(), any(), any()) }
+            onGeneric { getRequestContext(any(), any(), any(), any(), any()) }
                 .doAnswer { throw Exception() }
         }
         ApplicationManager.getApplication().replaceService(CodeWhispererService::class.java, codewhispererServiceSpy, disposableRule.disposable)
@@ -386,7 +386,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test userDecision events will record sessionId and requestId from response`() {
         val statesCaptor = argumentCaptor<InvocationContext>()
         withCodeWhispererServiceInvokedAndWait {}
-        verify(popupManagerSpy, timeout(5000).atLeastOnce()).render(statesCaptor.capture(), any(), any())
+        verify(popupManagerSpy, timeout(5000).atLeastOnce()).render(statesCaptor.capture(), any(), any(), any(), any())
         val states = statesCaptor.lastValue
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())

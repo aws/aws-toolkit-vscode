@@ -50,6 +50,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPositio
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
@@ -72,13 +73,20 @@ import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import java.util.concurrent.TimeUnit
 
 class CodeWhispererService {
-    fun showRecommendationsInPopup(editor: Editor, triggerTypeInfo: TriggerTypeInfo) {
+    fun showRecommendationsInPopup(
+        editor: Editor,
+        triggerTypeInfo: TriggerTypeInfo,
+        latencyContext: LatencyContext
+    ) {
         val project = editor.project ?: return
         if (!isCodeWhispererEnabled(project)) return
+
+        latencyContext.credentialFetchingStart = System.nanoTime()
         if (isConnectionExpired(project)) {
             promptReAuth(project)
             return
         }
+        latencyContext.credentialFetchingEnd = System.nanoTime()
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
         if (psiFile == null) {
             LOG.debug { "No PSI file for the current document" }
@@ -89,7 +97,7 @@ class CodeWhispererService {
         }
 
         val requestContext = try {
-            getRequestContext(triggerTypeInfo, editor, project, psiFile)
+            getRequestContext(triggerTypeInfo, editor, project, psiFile, latencyContext)
         } catch (e: Exception) {
             LOG.debug { e.message.toString() }
             CodeWhispererTelemetryService.getInstance().sendFailedServiceInvocationEvent(project, e::class.simpleName)
@@ -146,11 +154,23 @@ class CodeWhispererService {
         coroutineScope.launch {
             try {
                 var startTime = System.nanoTime()
+                requestContext.latencyContext.codewhispererPreprocessingEnd = System.nanoTime()
+                requestContext.latencyContext.paginationAllCompletionsStart = System.nanoTime()
+                var requestCount = 0
                 for (response in responseIterable) {
+                    requestCount++
                     val endTime = System.nanoTime()
                     val latency = TimeUnit.NANOSECONDS.toMillis(endTime - startTime).toDouble()
                     startTime = endTime
                     val requestId = response.responseMetadata().requestId()
+                    if (requestCount == 1) {
+                        requestContext.latencyContext.codewhispererPostprocessingStart = System.nanoTime()
+                        requestContext.latencyContext.paginationFirstCompletionTime = latency
+                        requestContext.latencyContext.firstRequestId = requestId
+                    }
+                    if (response.nextToken().isEmpty()) {
+                        requestContext.latencyContext.paginationAllCompletionsEnd = System.nanoTime()
+                    }
                     val sessionId = response.sdkHttpResponse().headers().getOrDefault(KET_SESSION_ID, listOf(requestId))[0]
                     val emptyRecommendations = checkEmptyRecommendations(response.recommendations())
                     val completionType = checkCompletionType(response.recommendations(), emptyRecommendations)
@@ -353,7 +373,7 @@ class CodeWhispererService {
                 CodeWhispererPopupManager.getInstance().cancelPopup(popup)
                 return null
             }
-        } else if (response.recommendations().isNotEmpty()) {
+        } else {
             updateCodeWhisperer(nextStates, isPopupShowing)
         }
         return nextStates
@@ -462,12 +482,13 @@ class CodeWhispererService {
         triggerTypeInfo: TriggerTypeInfo,
         editor: Editor,
         project: Project,
-        psiFile: PsiFile
+        psiFile: PsiFile,
+        latencyContext: LatencyContext
     ): RequestContext {
         val fileContextInfo = getFileContextInfo(editor, psiFile)
         val caretPosition = getCaretPosition(editor)
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-        return RequestContext(project, editor, triggerTypeInfo, caretPosition, fileContextInfo, connection)
+        return RequestContext(project, editor, triggerTypeInfo, caretPosition, fileContextInfo, connection, latencyContext)
     }
 
     private fun validateResponse(response: ListRecommendationsResponse): ListRecommendationsResponse {
@@ -623,7 +644,8 @@ data class RequestContext(
     val triggerTypeInfo: TriggerTypeInfo,
     val caretPosition: CaretPosition,
     val fileContextInfo: FileContextInfo,
-    val connection: ToolkitConnection?
+    val connection: ToolkitConnection?,
+    val latencyContext: LatencyContext
 )
 
 data class ResponseContext(

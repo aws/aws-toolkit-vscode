@@ -90,7 +90,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         stateManager.setHasAcceptedTermsOfService(false)
         assertThat(isCodeWhispererEnabled(projectRule.project)).isFalse
         invokeCodeWhispererService()
-        verify(codewhispererServiceSpy, never()).showRecommendationsInPopup(any(), any())
+        verify(codewhispererServiceSpy, never()).showRecommendationsInPopup(any(), any(), any())
     }
 
     @Test
@@ -99,7 +99,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         assertThat(stateManager.isAutoEnabled()).isFalse
         runInEdtAndWait {
             projectRule.fixture.type(':')
-            verify(codewhispererServiceSpy, never()).showRecommendationsInPopup(any(), any())
+            verify(codewhispererServiceSpy, never()).showRecommendationsInPopup(any(), any(), any())
         }
     }
 

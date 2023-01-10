@@ -7,6 +7,7 @@ import com.intellij.codeInsight.editorActions.TypedHandlerDelegate
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -15,16 +16,19 @@ import software.aws.toolkits.telemetry.CodewhispererTriggerType
 
 class CodeWhispererTypedHandler : TypedHandlerDelegate(), CodeWhispererAutoTriggerHandler {
     override fun charTyped(c: Char, project: Project, editor: Editor, psiFiles: PsiFile): Result {
+        val latencyContext = LatencyContext()
+        latencyContext.codewhispererPreprocessingStart = System.nanoTime()
+        latencyContext.codewhispererEndToEndStart = System.nanoTime()
         if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.AutoTrigger)) {
             return Result.CONTINUE
         }
         if (CodeWhispererConstants.SPECIAL_CHARACTERS_LIST.contains(c.toString())) {
-            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.SpecialCharacters)
+            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.SpecialCharacters, latencyContext)
             return Result.CONTINUE
         }
         val invocationStatus = CodeWhispererInvocationStatus.getInstance()
         if (invocationStatus.checkKeyStrokeCountMeetThreshold()) {
-            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.KeyStrokeCount)
+            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.KeyStrokeCount, latencyContext)
         } else {
             invocationStatus.incrementKeyStrokeCount()
         }

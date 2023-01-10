@@ -53,7 +53,13 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         // inlay chunks are chunks from first line(chunks) and an additional chunk from other lines
         val inlayChunks = chunks + listOf(RecommendationChunk(otherLinesInlayText, 0, chunks.last().inlayOffset))
         CodeWhispererInlayManager.getInstance().updateInlays(states, inlayChunks)
-        CodeWhispererPopupManager.getInstance().render(states, sessionContext, overlappingLinesCount)
+        CodeWhispererPopupManager.getInstance().render(
+            states,
+            sessionContext,
+            overlappingLinesCount,
+            isRecommendationAdded = false,
+            isScrolling = false
+        )
     }
 
     override fun scrolled(states: InvocationContext, sessionContext: SessionContext) {
@@ -87,10 +93,22 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
             states.popup
         )
 
-        CodeWhispererPopupManager.getInstance().render(states, sessionContext, overlappingLinesCount)
+        CodeWhispererPopupManager.getInstance().render(
+            states,
+            sessionContext,
+            overlappingLinesCount,
+            isRecommendationAdded = false,
+            isScrolling = true
+        )
     }
 
     override fun recommendationAdded(states: InvocationContext, sessionContext: SessionContext) {
-        CodeWhispererPopupManager.getInstance().updatePopupPanel(states, sessionContext)
+        CodeWhispererPopupManager.getInstance().render(
+            states,
+            sessionContext,
+            0,
+            isRecommendationAdded = true,
+            isScrolling = false
+        )
     }
 }

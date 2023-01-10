@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseCo
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
+import java.util.concurrent.TimeUnit
 
 data class CaretContext(val leftFileContext: String, val rightFileContext: String, val leftContextOnCurrentLine: String = "")
 
@@ -92,3 +93,43 @@ data class CodeScanResponseContext(
     val codeScanTotalIssues: Int = 0,
     val reason: String? = null
 )
+data class LatencyContext(
+    var credentialFetchingStart: Long = 0L,
+    var credentialFetchingEnd: Long = 0L,
+
+    var codewhispererPreprocessingStart: Long = 0L,
+    var codewhispererPreprocessingEnd: Long = 0L,
+
+    var paginationFirstCompletionTime: Double = 0.0,
+
+    var codewhispererPostprocessingStart: Long = 0L,
+    var codewhispererPostprocessingEnd: Long = 0L,
+
+    var codewhispererEndToEndStart: Long = 0L,
+    var codewhispererEndToEndEnd: Long = 0L,
+
+    var paginationAllCompletionsStart: Long = 0L,
+    var paginationAllCompletionsEnd: Long = 0L,
+
+    var firstRequestId: String = ""
+) {
+    fun getCodeWhispererEndToEndLatency() = TimeUnit.NANOSECONDS.toMillis(
+        codewhispererEndToEndEnd - codewhispererEndToEndStart
+    ).toDouble()
+
+    fun getCodeWhispererAllCompletionsLatency() = TimeUnit.NANOSECONDS.toMillis(
+        paginationAllCompletionsEnd - paginationAllCompletionsStart
+    ).toDouble()
+
+    fun getCodeWhispererPostprocessingLatency() = TimeUnit.NANOSECONDS.toMillis(
+        codewhispererPostprocessingEnd - codewhispererPostprocessingStart
+    ).toDouble()
+
+    fun getCodeWhispererCredentialFetchingLatency() = TimeUnit.NANOSECONDS.toMillis(
+        credentialFetchingEnd - credentialFetchingStart
+    ).toDouble()
+
+    fun getCodeWhispererPreprocessingLatency() = TimeUnit.NANOSECONDS.toMillis(
+        codewhispererPreprocessingEnd - codewhispererPreprocessingStart
+    ).toDouble()
+}

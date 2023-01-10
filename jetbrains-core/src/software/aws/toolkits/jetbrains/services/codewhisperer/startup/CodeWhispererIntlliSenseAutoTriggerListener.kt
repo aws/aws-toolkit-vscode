@@ -8,6 +8,7 @@ import com.intellij.codeInsight.lookup.LookupEvent
 import com.intellij.codeInsight.lookup.LookupListener
 import com.intellij.codeInsight.lookup.LookupManagerListener
 import com.intellij.codeInsight.lookup.impl.LookupImpl
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
@@ -19,6 +20,9 @@ object CodeWhispererIntlliSenseAutoTriggerListener : LookupManagerListener {
 
         newLookup.addLookupListener(object : LookupListener {
             override fun itemSelected(event: LookupEvent) {
+                val latencyContext = LatencyContext()
+                latencyContext.codewhispererPreprocessingStart = System.nanoTime()
+                latencyContext.codewhispererEndToEndStart = System.nanoTime()
                 val editor = event.lookup.editor
                 val triggerType = CodewhispererTriggerType.AutoTrigger
                 if (!(event.lookup as LookupImpl).isShown ||
@@ -31,7 +35,7 @@ object CodeWhispererIntlliSenseAutoTriggerListener : LookupManagerListener {
                     triggerType,
                     CodewhispererAutomatedTriggerType.IntelliSenseAcceptance
                 )
-                CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerTypeInfo)
+                CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerTypeInfo, latencyContext)
                 cleanup()
             }
             override fun lookupCanceled(event: LookupEvent) {

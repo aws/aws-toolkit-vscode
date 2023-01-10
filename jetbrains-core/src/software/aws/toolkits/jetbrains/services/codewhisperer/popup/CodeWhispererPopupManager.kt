@@ -193,18 +193,34 @@ class CodeWhispererPopupManager {
         updateCodeReferencePanel(states.requestContext.project, details[selectedIndex].recommendation.references())
     }
 
-    fun render(states: InvocationContext, sessionContext: SessionContext, overlappingLinesCount: Int) {
+    fun render(
+        states: InvocationContext,
+        sessionContext: SessionContext,
+        overlappingLinesCount: Int,
+        isRecommendationAdded: Boolean,
+        isScrolling: Boolean
+    ) {
         updatePopupPanel(states, sessionContext)
 
         val caretPoint = states.requestContext.editor.offsetToXY(states.requestContext.caretPosition.offset)
         sessionContext.seen.add(sessionContext.selectedIndex)
-        showPopup(
-            states,
-            sessionContext,
-            states.popup,
-            caretPoint,
-            overlappingLinesCount
-        )
+
+        // There are three cases that render() is called:
+        // 1. Popup showing for the first time, both booleans are false, we should show the popup and update the latency
+        // end time, and emit the event if it's at the pagination end.
+        // 2. New recommendations being added to the existing ones, we should not update the latency end time, and emit
+        // the event if it's at the pagination end.
+        // 3. User scrolling (so popup is changing positions), we should not update the latency end time and should not
+        // emit any events.
+        if (!isRecommendationAdded) {
+            showPopup(states, sessionContext, states.popup, caretPoint, overlappingLinesCount)
+            if (!isScrolling) {
+                states.requestContext.latencyContext.codewhispererPostprocessingEnd = System.nanoTime()
+                states.requestContext.latencyContext.codewhispererEndToEndEnd = System.nanoTime()
+            }
+        }
+        if (isScrolling || CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) return
+        CodeWhispererTelemetryService.getInstance().sendClientComponentLatencyEvent(states)
     }
 
     fun dontClosePopupAndRun(runnable: () -> Unit) {
