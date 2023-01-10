@@ -9,6 +9,7 @@ import './styles/variables.scss'
 import './styles/dark.scss'
 import './styles/icons.scss'
 import './styles/source-thumbs.scss'
+import './styles/frequent-apis.scss'
 
 // @ts-ignore
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
