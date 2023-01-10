@@ -20,6 +20,7 @@ import { getLogger } from '../../shared/logger'
 import { throttle } from 'lodash'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const refreshCredentials = throttle(() => {
     getLogger().verbose('codewhisperer: invalidating expired credentials')
@@ -135,7 +136,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
+        TelemetryHelper.instance.setFetchCredentialStartTime()
         const bearerToken = await AuthUtil.instance.getBearerToken()
+        TelemetryHelper.instance.setSdkApiCallStartTime()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
