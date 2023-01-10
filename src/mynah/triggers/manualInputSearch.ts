@@ -254,9 +254,7 @@ export class ManualInputSearch extends SearchInput {
         }
 
         const selection: any = editor.selection
-        let selectedCode: any = customRangeInDocument
-            ? editor.document.getText(customRangeInDocument)
-            : editor.document.getText(selection)
+        let selectedCode: any = editor.document.getText(customRangeInDocument ?? selection)
         let range: any = customRangeInDocument ?? selection
         if (selectedCode === '') {
             // If there is no selection then pick the line where the cursor is
@@ -294,9 +292,7 @@ export class ManualInputSearch extends SearchInput {
             .getText()
             .replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g, '')
         const selection: any = editor.selection
-        const selectedCode: any = customRangeInDocument
-            ? editor.document.getText(customRangeInDocument)
-            : editor.document.getText(selection)
+        const selectedCode: any = editor.document.getText(customRangeInDocument ?? selection)
         let range: any = customRangeInDocument ?? selection
         if (selectedCode === '') {
             // If there is no selection then pick the line where the cursor is
