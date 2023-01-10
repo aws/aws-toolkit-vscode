@@ -16,7 +16,7 @@ interface BuildspecTemplate {
 }
 
 export class BuildspecTemplateRegistry extends WatchedFiles<BuildspecTemplate> {
-    protected name: string = 'BuildspecTemplateRegistry'
+    readonly name: string = 'BuildspecTemplateRegistry'
     protected async process(uri: vscode.Uri, contents?: string): Promise<BuildspecTemplate | undefined> {
         let template: BuildspecTemplate | undefined
         try {

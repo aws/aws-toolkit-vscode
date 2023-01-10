@@ -6,9 +6,52 @@
 import * as vscode from 'vscode'
 import { activateDocumentsLanguageServer } from './server'
 import { Experiments } from '../shared/settings'
+import { LanguageClient } from 'vscode-languageclient'
+import { getLogger } from '../shared/logger'
+
+const logger = getLogger()
+
+export class DocumentsLanguageServer {
+    protected static _instance: DocumentsLanguageServer | undefined = undefined
+    private _server: LanguageClient | undefined = undefined
+
+    private constructor() {}
+
+    static get instance(): DocumentsLanguageServer {
+        return (this._instance ??= new this())
+    }
+
+    /** True if `aws.experiments.lsp` is enabled in the settings */
+    isEnabled(): boolean {
+        return Experiments.instance.get('lsp', false)
+    }
+
+    isRunning(): boolean {
+        return this._server !== undefined
+    }
+
+    /** Starts the actual language server if not already running. */
+    async start(extensionContext: vscode.ExtensionContext): Promise<undefined> {
+        if (!this.isRunning()) {
+            this._server = await activateDocumentsLanguageServer(extensionContext)
+        }
+        logger.info('Documents Language Server is running.')
+        return
+    }
+
+    /** Stops the actual language server if already running.*/
+    async stop(): Promise<undefined> {
+        await this._server?.stop()
+        logger.info('Documents Language Server is stopped.')
+        this._server = undefined
+        return
+    }
+}
 
 export async function tryActivate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    if (await Experiments.instance.isExperimentEnabled('lsp')) {
-        await activateDocumentsLanguageServer(extensionContext)
+    if (DocumentsLanguageServer.instance.isEnabled()) {
+        await DocumentsLanguageServer.instance.start(extensionContext)
+    } else {
+        await DocumentsLanguageServer.instance.stop()
     }
 }
