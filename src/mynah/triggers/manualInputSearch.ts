@@ -20,7 +20,6 @@ import { TelemetryEventName } from '../telemetry/telemetry/types'
 export class ManualInputSearch extends SearchInput {
     private apiHelpStatusBar!: StatusBar | undefined
     private readonly notificationInfoStore: NotificationInfoStore
-
     private readonly muteNotificationButtonText = 'Do not show again'
 
     private readonly supportedLanguages = new Set<string>([
@@ -38,32 +37,67 @@ export class ManualInputSearch extends SearchInput {
         readonly telemetrySession: TelemetryClientSession
     ) {
         super()
-
         this.notificationInfoStore = new NotificationInfoStore(context.globalState, context.workspaceState)
     }
 
     public activate(context: ExtensionContext): void {
-        context.subscriptions.push(commands.registerCommand('Mynah.show', async () => await this.show()))
+        context.subscriptions.push(
+            commands.registerCommand('Mynah.show', async parameters => {
+                let range: vs.Range
+                if (parameters && parameters.range) {
+                    range = new vs.Range(parameters.range[0], parameters.range[1])
+                }
+                return await this.show(range!)
+            })
+        )
+
+        // Adds hover subscription
+        context.subscriptions.push(
+            vs.languages.registerHoverProvider(Array.from(this.supportedLanguages), {
+                provideHover: async (document, position): Promise<vs.Hover> => {
+                    let hover: vs.Hover
+                    const hoveredWordRange = document.getWordRangeAtPosition(position)
+
+                    //Checks target word has FQNs
+                    if (await this.checkIfSelectionHasFQNs(hoveredWordRange)) {
+                        // Mynah.show command arguments to simulate a code selection with hover
+                        const args = [{ range: hoveredWordRange, isFromHover: true }]
+                        const contents = new vs.MarkdownString(
+                            `[Find real world examples for **${document.getText(
+                                hoveredWordRange
+                            )}** with Mynah](${vs.Uri.parse(
+                                `command:Mynah.show?${encodeURIComponent(JSON.stringify(args))}`
+                            )})`
+                        )
+                        contents.isTrusted = true
+                        hover = new vs.Hover(contents)
+                        return hover
+                    } else {
+                        return hover!
+                    }
+                },
+            })
+        )
 
         vs.window.onDidChangeTextEditorSelection(async event => {
-            await this.checkIfSelectionHasFQNs()
+            if (await this.checkIfSelectionHasFQNs()) {
+                this.apiHelpStatusBar = new StatusBar({
+                    text: 'Show similar examples with Mynah',
+                    commands: { Examples: 'Mynah.show' },
+                })
+            }
         })
     }
 
-    private async checkIfSelectionHasFQNs(): Promise<void> {
-        const codeQuery = await this.extractCodeQuery(false, true)
+    private async checkIfSelectionHasFQNs(customRangeInDocument?: vs.Range): Promise<boolean> {
+        const codeQuery = await this.extractCodeQuery(false, true, customRangeInDocument)
 
         if (this.apiHelpStatusBar !== undefined) {
             this.apiHelpStatusBar?.destroy()
             this.apiHelpStatusBar = undefined
         }
 
-        if (codeQuery !== undefined && codeQuery.usedFullyQualifiedNames.length > 0) {
-            this.apiHelpStatusBar = new StatusBar({
-                text: 'Show similar examples with Mynah',
-                commands: { Examples: 'Mynah.show' },
-            })
-        }
+        return codeQuery !== undefined && codeQuery.usedFullyQualifiedNames.length > 0
     }
 
     // TODO: Refine this interface. This method likely doesn't belong in this
@@ -91,8 +125,10 @@ export class ManualInputSearch extends SearchInput {
         })
     }
 
-    public async show(): Promise<void> {
-        const selectedCode = this.getSelectedCodeFromEditor()
+    public async show(customRangeInDocument?: vs.Range): Promise<void> {
+        const selectedCode = customRangeInDocument
+            ? window.activeTextEditor?.document.getText(customRangeInDocument)
+            : this.getSelectedCodeFromEditor()
         const isCodeSelected = selectedCode !== undefined && selectedCode !== ''
 
         let hasUnsupportedLanguage = false
@@ -102,7 +138,7 @@ export class ManualInputSearch extends SearchInput {
         }
 
         let hasCodeQuery = false
-        const codeQuery = await this.extractCodeQuery(true)
+        const codeQuery = await this.extractCodeQuery(true, false, customRangeInDocument)
         if (isCodeSelected && !hasUnsupportedLanguage && codeQuery !== undefined) {
             hasCodeQuery = true
         }
@@ -131,7 +167,7 @@ export class ManualInputSearch extends SearchInput {
                               name: '',
                           },
                       }
-                    : this.extractCodeSelection(),
+                    : this.extractCodeSelection(customRangeInDocument),
             })
         } catch (err: any) {
             // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -184,7 +220,7 @@ export class ManualInputSearch extends SearchInput {
         editor.setDecorations(mynahSelectedCodeDecorator, [])
     }
 
-    private getSelectedCodeFromEditor(): string | undefined {
+    private getSelectedCodeFromEditor(customRangeInDocument?: vs.Range): string | undefined {
         const editor = window.activeTextEditor
         if (editor === undefined) {
             return undefined
@@ -194,10 +230,10 @@ export class ManualInputSearch extends SearchInput {
             return undefined
         }
 
-        return editor.document.getText(editor.selection)
+        return editor.document.getText(customRangeInDocument ?? editor.selection)
     }
 
-    private extractCodeSelection(): SearchPayloadCodeSelection {
+    private extractCodeSelection(customRangeInDocument?: vs.Range): SearchPayloadCodeSelection {
         const editor = window.activeTextEditor
         const emptySelection = {
             selectedCode: '',
@@ -218,8 +254,8 @@ export class ManualInputSearch extends SearchInput {
         }
 
         const selection: any = editor.selection
-        let selectedCode: any = editor.document.getText(selection)
-        let range: any = selection
+        let selectedCode: any = editor.document.getText(customRangeInDocument ?? selection)
+        let range: any = customRangeInDocument ?? selection
         if (selectedCode === '') {
             // If there is no selection then pick the line where the cursor is
             range = editor.document.lineAt(selection.active.line).range
@@ -240,7 +276,7 @@ export class ManualInputSearch extends SearchInput {
         }
     }
 
-    private async getSimpleAndFqnNames(): Promise<any> {
+    private async getSimpleAndFqnNames(customRangeInDocument?: vs.Range): Promise<any> {
         const editor = window.activeTextEditor
         if (editor === undefined) {
             return undefined
@@ -256,8 +292,8 @@ export class ManualInputSearch extends SearchInput {
             .getText()
             .replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g, '')
         const selection: any = editor.selection
-        const selectedCode: any = editor.document.getText(selection)
-        let range: any = selection
+        const selectedCode: any = editor.document.getText(customRangeInDocument ?? selection)
+        let range: any = customRangeInDocument ?? selection
         if (selectedCode === '') {
             // If there is no selection then pick the line where the cursor is
             range = editor.document.lineAt(selection.active.line).range
@@ -357,9 +393,10 @@ export class ManualInputSearch extends SearchInput {
 
     private async extractCodeQuery(
         haveUserInput: boolean,
-        skipNotifications?: boolean
+        skipNotifications?: boolean,
+        customRangeInDocument?: vs.Range
     ): Promise<CodeQuery | undefined> {
-        const names = await this.getSimpleAndFqnNames()
+        const names = await this.getSimpleAndFqnNames(customRangeInDocument)
         if (names === undefined || Object.keys(names).length === 0) {
             return undefined
         }
