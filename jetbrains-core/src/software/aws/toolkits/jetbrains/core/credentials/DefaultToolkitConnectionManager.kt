@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.ide.ActivityTracker
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -10,10 +11,24 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 
 // TODO: unify with AwsConnectionManager
 @State(name = "connectionManager", storages = [Storage("aws.xml")])
 class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStateComponent<ToolkitConnectionManagerState> {
+    init {
+        ApplicationManager.getApplication().messageBus.connect().subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun invalidate(providerId: String) {
+                    if (activeConnection()?.id == providerId) {
+                        switchConnection(null)
+                        ActivityTracker.getInstance().inc()
+                    }
+                }
+            }
+        )
+    }
     private val project: Project?
     constructor(project: Project) {
         this.project = project
