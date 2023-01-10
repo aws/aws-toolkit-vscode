@@ -15,6 +15,7 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -155,7 +156,8 @@ export class KeyStrokeHandler {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
             } else if (isInlineCompletionEnabled()) {
-                InlineCompletionService.instance.getPaginatedRecommendation(
+                TelemetryHelper.instance.setInvokeSuggestionStartTime()
+                await InlineCompletionService.instance.getPaginatedRecommendation(
                     client,
                     editor,
                     'AutoTrigger',
