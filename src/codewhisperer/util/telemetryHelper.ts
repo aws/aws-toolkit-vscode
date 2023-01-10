@@ -35,12 +35,23 @@ export class TelemetryHelper {
 
     public startUrl: string | undefined
 
+    // variables for client component latency
+    private invokeSuggestionStartTime = 0
+    private fetchCredentialStartTime = 0
+    private sdkApiCallStartTime = 0
+    private sdkApiCallEndTime = 0
+    private firstSuggestionShowTime = 0
+    private allPaginationEndTime = 0
+    private firstResponseRequestId = ''
+    private sessionId = ''
+
     constructor() {
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
         this.completionType = 'Line'
         this.cursorOffset = 0
         this.startUrl = ''
+        this.sessionId = ''
     }
 
     static #instance: TelemetryHelper
@@ -136,5 +147,85 @@ export class TelemetryHelper {
 
     public isTelemetryEnabled(): boolean {
         return globals.telemetry.telemetryEnabled
+    }
+
+    public resetClientComponentLatencyTime() {
+        this.invokeSuggestionStartTime = 0
+        this.sdkApiCallStartTime = 0
+        this.sdkApiCallEndTime = 0
+        this.fetchCredentialStartTime = 0
+        this.firstSuggestionShowTime = 0
+        this.allPaginationEndTime = 0
+        this.firstResponseRequestId = ''
+        this.sessionId = ''
+    }
+
+    /** This method is assumed to be invoked first at the start of execution **/
+    public setInvokeSuggestionStartTime() {
+         this.resetClientComponentLatencyTime()
+         this.invokeSuggestionStartTime = performance.now()
+    }
+
+    public setFetchCredentialStartTime() {
+        if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
+            this.fetchCredentialStartTime = performance.now()
+        }
+    }
+
+    public setSdkApiCallStartTime() {
+        if (this.sdkApiCallStartTime === 0 && this.fetchCredentialStartTime !== 0) {
+            this.sdkApiCallStartTime = performance.now()
+        }
+    }
+
+    public setSdkApiCallEndTime() {
+        if (this.sdkApiCallEndTime === 0 && this.sdkApiCallStartTime !== 0) {
+            this.sdkApiCallEndTime = performance.now()
+        }
+    }
+
+    public setAllPaginationEndTime() {
+        if (this.allPaginationEndTime === 0 && this.sdkApiCallEndTime !== 0) {
+            this.allPaginationEndTime = performance.now()
+        }
+    }
+
+    public setFirstSuggestionShowTime() {
+        if (this.firstSuggestionShowTime === 0 && this.sdkApiCallEndTime !== 0) {
+            this.firstSuggestionShowTime = performance.now()
+        }
+    }
+
+    public setFirstResponseRequestId(requestId: string) {
+        if (this.firstResponseRequestId === '') {
+            this.firstResponseRequestId = requestId
+        }
+    }
+
+    public setSessionId(sessionId: string) {
+        this.sessionId = sessionId
+    }
+
+    // report client component latency after all pagination call finish
+    // and at least one suggestion is shown to the user
+    public tryRecordClientComponentLatency(languageId: string) {
+        if (this.firstSuggestionShowTime === 0 || this.allPaginationEndTime === 0) {
+            return
+        }
+        telemetry.codewhisperer_clientComponentLatency.emit({
+            codewhispererRequestId: this.firstResponseRequestId,
+            codewhispererSessionId: this.sessionId,
+            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - this.sdkApiCallStartTime,
+            codewhispererEndToEndLatency: this.firstSuggestionShowTime - this.invokeSuggestionStartTime,
+            codewhispererAllCompletionsLatency: this.allPaginationEndTime - this.sdkApiCallStartTime,
+            codewhispererPostprocessingLatency: this.firstSuggestionShowTime - this.sdkApiCallEndTime,
+            codewhispererCredentialFetchingLatency: this.sdkApiCallStartTime - this.fetchCredentialStartTime,
+            codewhispererPreprocessingLatency: this.fetchCredentialStartTime - this.invokeSuggestionStartTime,
+            codewhispererCompletionType: this.completionType,
+            codewhispererTriggerType: this.triggerType,
+            codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,
+            credentialStartUrl: this.startUrl,
+        })
+        this.resetClientComponentLatencyTime()
     }
 }
