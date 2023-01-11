@@ -218,6 +218,18 @@ ${fileContents}
             serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
             serviceName: 'CodeWhispererUserClient',
         },
+        {
+            serviceJsonPath: 'src/mynah/client/service-2.json',
+            serviceName: 'MynahClient',
+        },
+        {
+            serviceJsonPath: 'src/mynah/autocomplete-client/service-2.json',
+            serviceName: 'AutoCompleteClient',
+        },
+        {
+            serviceJsonPath: 'src/mynah/telemetry/client/service-2.json',
+            serviceName: 'MynahTelemetryClient',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

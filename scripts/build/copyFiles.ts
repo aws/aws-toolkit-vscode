@@ -53,6 +53,16 @@ const tasks: CopyTask[] = [
         target: path.join('node_modules', 'vue', 'dist', 'vue.global.prod.js'),
         destination: path.join('libs', 'vue.min.js'),
     },
+
+    // Mynah
+    {
+        target: path.join('node_modules', '@aws', 'fully-qualified-names', 'fully_qualified_names_bg.wasm'),
+        destination: path.join('src', 'fully_qualified_names_bg.wasm'),
+    },
+    {
+        target: path.join('node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
+        destination: path.join('src', 'tree-sitter.wasm'),
+    },
 ]
 
 // Localization files are produced relative to `src` despite `tsc` emitting a compilation relative to the root

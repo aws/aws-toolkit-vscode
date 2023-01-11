@@ -250,7 +250,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 ) || 1
 
             //Add 7 days to notificationLastShown to determine whether warn message should show
-            if (doNotShowAgain || notificationLastShown + (1000 * 60 * 60 * 24 * 7) >= Date.now()) {
+            if (doNotShowAgain || notificationLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
                 return
             } else if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
