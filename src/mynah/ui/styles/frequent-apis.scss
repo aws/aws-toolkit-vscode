@@ -1,6 +1,6 @@
 // TODO Should be removed after the new api for docs provided
 :root {
-    --mynah-max-api-doc-height: calc(var(--mynah-sizing-8) * 17);
+    --mynah-max-api-doc-height: calc(var(--mynah-sizing-8) * 14);
     --mynah-max-api-doc-showmore-height: var(--mynah-sizing-8);
 }
 $maxAPIDocHeight: var(--mynah-max-api-doc-height);
@@ -25,12 +25,13 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
                 align-items: center;
                 height: $maxAPIDocShowMoreHeight;
                 width: 100%;
-                background-color: var(--mynah-color-bg);
+                background-color: var(--mynah-card-bg);
+                border-top: 1px solid var(--mynah-color-border-default);
                 z-index: 999;
                 cursor: pointer;
                 > i.mynah-icon {
-                    height: calc($maxAPIDocShowMoreHeight / 3 * 2);
-                    width: calc($maxAPIDocShowMoreHeight / 3 * 2);
+                    height: var(--mynah-sizing-6);
+                    width: var(--mynah-sizing-6);
                 }
                 > i.mynah-icon-down-open {
                     display: inline-flex;
@@ -55,7 +56,7 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
                     display: inline-flex;
                 }
                 & + div {
-                    padding-bottom: $maxAPIDocShowMoreHeight;
+                    padding-bottom: calc($maxAPIDocShowMoreHeight + var(--mynah-sizing-4));
                 }
             }
         }

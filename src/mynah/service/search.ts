@@ -35,14 +35,14 @@ const sanitizeOptions = {
             },
         ],
         // TODO Should be removed after the new api for docs provided
-        'amzn-mynah-fqn-url': ['href'],
+        'amzn-mynah-fqn-url': ['href', 'fqn'],
     },
 }
 
 // TODO Should be removed after the new api for docs provided
 const sanitizeOptionsTransformCustomTags = {
     allowedAttributes: {
-        '*': ['href', 'class'],
+        '*': ['href', 'class', 'fqn'],
     },
     transformTags: {
         'amzn-mynah-frequently-used-fqns-panel': (tagName: string, attribs: Record<string, string>) => {
@@ -100,18 +100,23 @@ export const getSearchSuggestions = async (
                 const output = client.search(request)
                 output.then((value: SearchResponse) => {
                     const suggestionsList = value.suggestions?.map(suggestion => {
+                        console.log(suggestion.body)
                         let body = sanitize(suggestion.body as string, sanitizeOptions)
+                        console.log(body)
 
                         // TODO Should be removed after the new api for docs provided
                         if (suggestion.type === 'ApiDocumentation') {
                             body = `${sanitize(body, sanitizeOptionsTransformCustomTags)
                                 .replace(
                                     `<div class="amzn-mynah-frequently-used-fqns-panel">`,
-                                    `<div class="amzn-mynah-frequently-used-fqns-panel"><b>Frequently used APIs:</b> Based on real world usage, following APIs are frequently used with the API shown above:`
+                                    `<div class="amzn-mynah-frequently-used-fqns-panel">
+                                    <b>Frequently used APIs:</b>
+                                    Based on real world usage, following APIs are frequently used with the API shown above:
+                                    <span>`
                                 )
                                 .replace(
                                     '</div>',
-                                    `</div>
+                                    `</span></div>
                             <input class="amzn-mynah-docs-showmore-toggle" id="amzon-api-doc-${suggestion.url}" type="checkbox">
                             <div class="amzn-mynah-docs-body">
                             <label for="amzon-api-doc-${suggestion.url}">
@@ -121,6 +126,7 @@ export const getSearchSuggestions = async (
                             <div>`
                                 )}
                             </div></div>`
+                            console.log(body)
                         }
                         return {
                             ...suggestion,
