@@ -4,11 +4,8 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.editor
 
 import com.intellij.openapi.editor.Editor
-import software.aws.toolkits.core.utils.debug
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
@@ -19,17 +16,7 @@ interface CodeWhispererAutoTriggerHandler {
         automatedTriggerType: CodewhispererAutomatedTriggerType,
         latencyContext: LatencyContext
     ) {
-        if (automatedTriggerType == CodewhispererAutomatedTriggerType.KeyStrokeCount &&
-            !CodeWhispererInvocationStatus.getInstance().hasMetInvocationTimeThreshold()
-        ) {
-            LOG.debug { "Attempt to auto-trigger CodeWhisperer but haven't reached time threshold since last invocation." }
-            return
-        }
         val triggerTypeInfo = TriggerTypeInfo(CodewhispererTriggerType.AutoTrigger, automatedTriggerType)
         CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerTypeInfo, latencyContext)
-    }
-
-    companion object {
-        private val LOG = getLogger<CodeWhispererAutoTriggerHandler>()
     }
 }

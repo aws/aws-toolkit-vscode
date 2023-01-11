@@ -135,6 +135,7 @@ open class CodeWhispererTestBase {
 
         clientAdaptorSpy = spy(CodeWhispererClientAdaptorImpl(projectRule.project))
         projectRule.project.replaceService(CodeWhispererClientAdaptor::class.java, clientAdaptorSpy, disposableRule.disposable)
+        stateManager.setAutoEnabled(false)
     }
 
     @After

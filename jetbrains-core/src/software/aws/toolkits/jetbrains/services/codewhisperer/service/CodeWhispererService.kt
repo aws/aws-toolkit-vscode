@@ -130,7 +130,6 @@ class CodeWhispererService {
             return
         }
 
-        invocationStatus.resetKeyStrokeCount()
         invokeCodeWhispererInBackground(requestContext)
     }
 
@@ -156,6 +155,7 @@ class CodeWhispererService {
                 var startTime = System.nanoTime()
                 requestContext.latencyContext.codewhispererPreprocessingEnd = System.nanoTime()
                 requestContext.latencyContext.paginationAllCompletionsStart = System.nanoTime()
+                CodeWhispererInvocationStatus.getInstance().setInvocationStart()
                 var requestCount = 0
                 for (response in responseIterable) {
                     requestCount++
