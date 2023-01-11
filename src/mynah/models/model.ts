@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { NotificationType } from '@aws/mynah-ui'
 import { Range } from 'vscode-languageserver-protocol'
 
 export abstract class SearchInput {
@@ -12,7 +13,8 @@ export abstract class SearchInput {
         code?: string,
         queryId?: string,
         codeQuery?: CodeQuery,
-        codeSelection?: CodeSelection
+        codeSelection?: CodeSelection,
+        headerInfo?: HeaderInfo
     ): Promise<void>
 }
 
@@ -58,6 +60,11 @@ export interface CodeSelection {
     }
 }
 
+export interface HeaderInfo {
+    content: string
+    type?: NotificationType
+}
+
 export interface Query {
     readonly queryId: string
     readonly input: string
@@ -68,6 +75,7 @@ export interface Query {
     readonly implicit?: boolean
     readonly codeQuery?: CodeQuery
     readonly codeSelection?: CodeSelection
+    readonly headerInfo?: HeaderInfo
 }
 
 export type Trigger =

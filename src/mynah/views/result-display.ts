@@ -17,6 +17,7 @@ import { StatusBar } from '../utils/status-bar'
 import {
     CodeQuery,
     CodeSelection,
+    HeaderInfo,
     Query,
     QueryContext,
     SearchInput,
@@ -323,10 +324,11 @@ export class ResultDisplay {
                         void this.searchInput.searchText(
                             msg.text,
                             msg.context,
-                            code,
+                            msg.code,
                             panelId,
                             msg.codeQuery,
-                            msg.codeSelection
+                            msg.codeSelection,
+                            msg.headerInfo
                         )
                     }
                     break
@@ -475,7 +477,7 @@ export class ResultDisplay {
 
         this.panelStore.savePanel(panelId, { webviewPanel: panel, telemetrySession: session })
 
-        this.generatePanel(panelId, input, queryContext, live, query.codeSelection, query.codeQuery)
+        this.generatePanel(panelId, input, queryContext, live, query.codeSelection, query.codeQuery, query.headerInfo)
     }
 
     /**
@@ -507,7 +509,8 @@ export class ResultDisplay {
         queryContext?: QueryContext,
         live?: boolean,
         codeSelection?: CodeSelection,
-        codeQuery?: CodeQuery
+        codeQuery?: CodeQuery,
+        headerInfo?: HeaderInfo
     ): void {
         this.uiReady[panelId] = false
         const panel = this.panelStore.getPanel(panelId)!
@@ -529,6 +532,7 @@ export class ResultDisplay {
         const codeSelectionString = codeSelection !== undefined ? JSON.stringify(codeSelection) : ''
         const codeQueryString = codeQuery !== undefined ? JSON.stringify(codeQuery) : ''
         const localLanguage = vs.env.language
+        const headerInfoString = headerInfo !== undefined ? JSON.stringify(headerInfo) : ''
 
         // Use the webpack dev server if available
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
@@ -546,7 +550,8 @@ export class ResultDisplay {
             live,
             codeSelectionString,
             codeQueryString,
-            localLanguage
+            localLanguage,
+            headerInfoString
         )
     }
 
@@ -559,7 +564,8 @@ export class ResultDisplay {
         codeQuery?: CodeQuery,
         codeSelection?: CodeSelection,
         code?: string,
-        errorMessage?: string
+        errorMessage?: string,
+        headerInfo?: HeaderInfo
     ): void {
         const panel = this.panelStore.getPanel(panelId)
 
@@ -587,6 +593,7 @@ export class ResultDisplay {
                     code,
                     codeQuery,
                     codeSelection,
+                    headerInfo,
                 })
             )
         } else {
@@ -600,7 +607,8 @@ export class ResultDisplay {
                     codeQuery,
                     codeSelection,
                     code,
-                    errorMessage
+                    errorMessage,
+                    headerInfo
                 )
             }, 50)
             return
@@ -619,6 +627,7 @@ export class ResultDisplay {
                 trigger: trigger ?? 'SearchBarRefinement',
                 codeQuery,
                 codeSelection,
+                headerInfo,
             },
             suggestions,
             recordDate: new Date().getTime(),
@@ -672,7 +681,9 @@ export class ResultDisplay {
                     query.queryContext,
                     query.codeQuery,
                     query.codeSelection,
-                    query.code
+                    query.code,
+                    undefined,
+                    query.headerInfo
                 )
             })
             .catch((error: Error) => {
@@ -686,7 +697,8 @@ export class ResultDisplay {
                         query.codeQuery,
                         query.codeSelection,
                         query.code,
-                        'An error occurred while getting suggestions.'
+                        'An error occurred while getting suggestions.',
+                        query.headerInfo
                     )
                 }
             })
@@ -719,7 +731,8 @@ const getWebviewContent = (
     live?: boolean,
     codeSelection?: string,
     codeQuery?: string,
-    language?: string
+    language?: string,
+    headerInfo?: string
 ): string => {
     const initialDataJSONString: string[] = []
     if (queryText !== undefined && queryText.trim() !== '') {
@@ -733,6 +746,9 @@ const getWebviewContent = (
     }
     if (codeSelection !== undefined && codeSelection.trim() !== '') {
         initialDataJSONString.push(`codeSelection: ${codeSelection}`)
+    }
+    if (headerInfo !== undefined && headerInfo.trim() !== '') {
+        initialDataJSONString.push(`headerInfo: ${headerInfo}`)
     }
     if (loading) {
         initialDataJSONString.push(`loading: true`)
