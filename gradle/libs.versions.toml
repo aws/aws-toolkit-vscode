@@ -1,7 +1,7 @@
 [versions]
 apacheCommons = "2.8.0"
 assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.com/issue/KT-17765
-awsSdk = "2.17.292"
+awsSdk = "2.18.20"
 commonmark = "0.17.1"
 detekt = "1.21.0"
 intellijGradle = "1.10.0"

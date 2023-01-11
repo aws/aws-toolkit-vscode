@@ -22,6 +22,7 @@ enum class LambdaRuntime(
     NODEJS12_X(Runtime.NODEJS12_X, architectures = ARM_COMPATIBLE),
     NODEJS14_X(Runtime.NODEJS14_X, minSamDebugging = "1.17.0", minSamInit = "1.17.0", architectures = ARM_COMPATIBLE),
     NODEJS16_X(Runtime.NODEJS16_X, minSamDebugging = "1.49.0", minSamInit = "1.49.0", architectures = ARM_COMPATIBLE),
+    NODEJS18_X(Runtime.NODEJS18_X, minSamDebugging = "1.65.0", minSamInit = "1.65.0", architectures = ARM_COMPATIBLE),
     JAVA8(Runtime.JAVA8),
     JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0", architectures = ARM_COMPATIBLE),
     JAVA11(Runtime.JAVA11, architectures = ARM_COMPATIBLE),
