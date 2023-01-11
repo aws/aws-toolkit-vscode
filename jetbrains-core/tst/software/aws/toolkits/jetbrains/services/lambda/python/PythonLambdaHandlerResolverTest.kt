@@ -25,6 +25,14 @@ class PythonLambdaHandlerResolverTest {
     val projectRule = PythonCodeInsightTestFixtureRule()
 
     @Test
+    fun `finds requirementsTxt inside source root`() {
+        createHandler("hello_world/app.py")
+        createRequirementsTxt("hello_world")
+
+        assertHandler("hello_world/app.handle", true)
+    }
+
+    @Test
     fun findWorksByPath() {
         createHandler("hello_world/app.py")
         createRequirementsTxt(".")

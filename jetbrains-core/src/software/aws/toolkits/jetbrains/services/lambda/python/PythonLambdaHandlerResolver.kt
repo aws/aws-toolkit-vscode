@@ -56,12 +56,19 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
     ): Boolean {
         // Start matching to see if the parent folders align
         var directory = pyModule.containingDirectory
+        val hasRequirementsTxt = { directory.virtualFile.findChild("requirements.txt") != null }
 
-        // Go from the deepest back up
+        // Go from the deepest back up until we find a requirements.txt
+        // SAM CLI will strictly use requirements.txt in the directory defined by CodeUri, but we don't have that data here
         parentModuleFolders.reversed().forEach { parentModule ->
             if (parentModule != directory?.name || !directoryHasInitPy(directory)) {
                 return false
             }
+
+            if (hasRequirementsTxt()) {
+                return true
+            }
+
             directory = directory.parentDirectory
         }
 
@@ -69,11 +76,15 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
             if (folder != directory?.name) {
                 return false
             }
+
+            if (hasRequirementsTxt()) {
+                return true
+            }
+
             directory = directory.parentDirectory
         }
 
-        val rootVirtualFile = directory.virtualFile
-        if (rootVirtualFile.findChild("requirements.txt") != null) {
+        if (hasRequirementsTxt()) {
             return true
         } else {
             throw IllegalStateException("Failed to locate requirements.txt")
