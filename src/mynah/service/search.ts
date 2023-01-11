@@ -10,7 +10,22 @@ import * as sanitize from 'sanitize-html'
 import { SearchResponse } from '../client/mynahclient'
 
 const sanitizeOptions = {
-    allowedTags: ['b', 'i', 'em', 'strong', 'pre', 'code', 'p', 'li', 'ul', 'span'],
+    allowedTags: [
+        'b',
+        'i',
+        'em',
+        'strong',
+        'pre',
+        'code',
+        'p',
+        'li',
+        'ul',
+        'span',
+        // TODO Should be removed after the new api for docs provided
+        'amzn-mynah-frequently-used-fqns-panel',
+        // TODO Should be removed after the new api for docs provided
+        'amzn-mynah-fqn-url',
+    ],
     allowedAttributes: {
         span: [
             {
@@ -19,6 +34,34 @@ const sanitizeOptions = {
                 values: ['amzn-mynah-search-result-highlight'],
             },
         ],
+        // TODO Should be removed after the new api for docs provided
+        'amzn-mynah-fqn-url': ['href', 'fqn'],
+    },
+}
+
+// TODO Should be removed after the new api for docs provided
+const sanitizeOptionsTransformCustomTags = {
+    allowedAttributes: {
+        '*': ['href', 'class', 'fqn'],
+    },
+    transformTags: {
+        'amzn-mynah-frequently-used-fqns-panel': (tagName: string, attribs: Record<string, string>) => {
+            return {
+                tagName: 'div',
+                attribs: {
+                    class: 'amzn-mynah-frequently-used-fqns-panel',
+                },
+            }
+        },
+        'amzn-mynah-fqn-url': (tagName: string, attribs: Record<string, string>) => {
+            return {
+                tagName: 'a',
+                attribs: {
+                    href: attribs.href,
+                },
+                text: attribs.fqn,
+            }
+        },
     },
 }
 
@@ -56,10 +99,37 @@ export const getSearchSuggestions = async (
             try {
                 const output = client.search(request)
                 output.then((value: SearchResponse) => {
-                    const suggestionsList = value.suggestions?.map(suggestion => ({
-                        ...suggestion,
-                        body: sanitize(suggestion.body as string, sanitizeOptions),
-                    }))
+                    const suggestionsList = value.suggestions?.map(suggestion => {
+                        let body = sanitize(suggestion.body as string, sanitizeOptions)
+
+                        // TODO Should be removed after the new api for docs provided
+                        if (suggestion.type === 'ApiDocumentation') {
+                            body = `${sanitize(body, sanitizeOptionsTransformCustomTags)
+                                .replace(
+                                    `<div class="amzn-mynah-frequently-used-fqns-panel">`,
+                                    `<div class="amzn-mynah-frequently-used-fqns-panel">
+                                    <b>Frequently used APIs:</b>
+                                    Based on real world usage, following APIs are frequently used with the API shown above:
+                                    <span>`
+                                )
+                                .replace(
+                                    '</div>',
+                                    `</span></div>
+                            <input class="amzn-mynah-docs-showmore-toggle" id="amzon-api-doc-${suggestion.url}" type="checkbox">
+                            <div class="amzn-mynah-docs-body">
+                            <label for="amzon-api-doc-${suggestion.url}">
+                            <i class="mynah-icon mynah-icon-down-open"></i>
+                            <i class="mynah-icon mynah-icon-up-open"></i>
+                            </label>
+                            <div>`
+                                )}
+                            </div></div>`
+                        }
+                        return {
+                            ...suggestion,
+                            body,
+                        }
+                    })
                     resolve(suggestionsList as SearchSuggestion[])
                 })
             } catch (err: any) {
