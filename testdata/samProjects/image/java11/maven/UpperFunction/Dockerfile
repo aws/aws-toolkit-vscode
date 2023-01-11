@@ -1,4 +1,4 @@
-FROM amd64/maven as build-image
+FROM public.ecr.aws/docker/library/maven:latest as build-image
 
 WORKDIR "/task"
 COPY src/ src/

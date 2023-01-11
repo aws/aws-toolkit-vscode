@@ -1,4 +1,4 @@
-FROM golang:[GoVersion] as build-image
+FROM public.ecr.aws/docker/library/golang:[GoVersion] as build-image
 
 ENV GOPROXY direct
 
