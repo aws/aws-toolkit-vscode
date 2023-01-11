@@ -100,9 +100,7 @@ export const getSearchSuggestions = async (
                 const output = client.search(request)
                 output.then((value: SearchResponse) => {
                     const suggestionsList = value.suggestions?.map(suggestion => {
-                        console.log(suggestion.body)
                         let body = sanitize(suggestion.body as string, sanitizeOptions)
-                        console.log(body)
 
                         // TODO Should be removed after the new api for docs provided
                         if (suggestion.type === 'ApiDocumentation') {
@@ -126,7 +124,6 @@ export const getSearchSuggestions = async (
                             <div>`
                                 )}
                             </div></div>`
-                            console.log(body)
                         }
                         return {
                             ...suggestion,
