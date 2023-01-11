@@ -21,9 +21,14 @@ export async function extractContext(isCodeSelected: boolean): Promise<QueryCont
             should.add(language)
         }
     }
+
     if (editor !== undefined && languageId !== undefined) {
         const imports = await readImports(editor.document?.getText(), languageId)
-        imports.forEach(importKey => should.add(importKey))
+        imports
+            .filter(function (elem, index, self) {
+                return index === self.indexOf(elem) && elem != languageId
+            })
+            .forEach(importKey => should.add(importKey))
     }
 
     return {
