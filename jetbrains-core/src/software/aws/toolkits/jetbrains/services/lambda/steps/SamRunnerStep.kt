@@ -8,6 +8,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.encoding.EncodingProjectManager
 import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.LocalLambdaRunSettings
@@ -45,6 +46,9 @@ class SamRunnerStep(val environment: ExecutionEnvironment, val settings: LocalLa
             .withParameters(builtLambda.templateLocation.toString())
             .withParameters("--event")
             .withParameters(createEventFile())
+            // the default charset may not be compatible with the executable.
+            // matches pycharm behavior:https://github.com/JetBrains/intellij-community/blob/9aadf09286f1c3707ad25b855b7ce7c45810c9ae/python/src/com/jetbrains/python/run/PythonScriptCommandLineState.java#L243
+            .withCharset(EncodingProjectManager.getInstance(environment.project).defaultCharset)
             .withEnvironment(totalEnvVars)
             .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 

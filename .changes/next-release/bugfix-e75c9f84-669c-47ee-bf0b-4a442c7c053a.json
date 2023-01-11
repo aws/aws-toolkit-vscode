@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Lambda Python console encoding issue (#2802)"
+}
