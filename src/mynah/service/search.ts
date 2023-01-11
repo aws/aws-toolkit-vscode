@@ -108,8 +108,7 @@ export const getSearchSuggestions = async (
                                 .replace(
                                     `<div class="amzn-mynah-frequently-used-fqns-panel">`,
                                     `<div class="amzn-mynah-frequently-used-fqns-panel">
-                                    <b>Frequently used APIs:</b>
-                                    Based on real world usage, following APIs are frequently used with the API shown above:
+                                    Based on real world usage, following API elements are frequently used with the one shown above:
                                     <span>`
                                 )
                                 .replace(
