@@ -462,7 +462,10 @@ export async function attachDebugger({
 }: AttachDebuggerContext): Promise<void> {
     getLogger().debug(
         `localLambdaRunner.attachDebugger: startDebugging with config: ${JSON.stringify(
-            params.debugConfig,
+            {
+                name: params.debugConfig.name,
+                invokeTarget: params.debugConfig.invokeTarget,
+            },
             undefined,
             2
         )}`
