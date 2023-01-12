@@ -1,0 +1,20 @@
+{
+  "date" : "2023-01-12",
+  "version" : "1.58",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: more responsive Auto-Suggestions"
+  }, {
+    "type" : "feature",
+    "description" : "Added Nodejs18.x Lambda runtime support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix regression in requirements.txt detection (#3041)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix `com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException when choosing an input template in Lambda Run Configurations` (#3359)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Lambda Python console encoding issue (#2802)"
+  } ]
+}

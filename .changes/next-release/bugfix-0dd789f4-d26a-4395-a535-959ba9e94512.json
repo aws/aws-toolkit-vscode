@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix regression in requirements.txt detection (#3041)"
-}

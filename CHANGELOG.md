@@ -1,3 +1,10 @@
+# _1.58_ (2023-01-12)
+- **(Feature)** CodeWhisperer: more responsive Auto-Suggestions
+- **(Feature)** Added Nodejs18.x Lambda runtime support
+- **(Bug Fix)** Fix regression in requirements.txt detection ([#3041](https://github.com/aws/aws-toolkit-jetbrains/issues/3041))
+- **(Bug Fix)** Fix `com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException when choosing an input template in Lambda Run Configurations` ([#3359](https://github.com/aws/aws-toolkit-jetbrains/issues/3359))
+- **(Bug Fix)** Fix Lambda Python console encoding issue ([#2802](https://github.com/aws/aws-toolkit-jetbrains/issues/2802))
+
 # _1.57_ (2022-12-15)
 - **(Feature)** Change reauthentication prompt to be non-distruptive notification.
 - **(Bug Fix)** Add do not show again button for CodeWhisperer accountless usage notification
