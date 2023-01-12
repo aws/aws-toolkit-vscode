@@ -11,6 +11,8 @@ import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { AWS_SCHEME } from '../constants'
 import { activateYAMLLanguageService, configureLanguageService } from './yamlService'
+import { DocumentsLanguageServer } from '../../documentTypes/activation'
+import { BuildspecTemplateRegistry } from '../buildspec/registry'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -63,17 +65,42 @@ function unregisterSchema(path: string, registry: string, schemaMap: Map<string,
     }
 }
 
-// Get the schema that should be associated with the given path, if there are multiple then choose the first
-function getSchemas(path: string, schemaMap: Map<string, Map<string, vscode.Uri>>): string | undefined {
+/**
+ * Get the schema that should be associated with the given path, if there are multiple then choose the first
+ * @param shouldUseSchemaFunc Function that determines if the resulting schema should to be used.
+ */
+export function getSchemas(
+    path: string,
+    schemaMap: Map<string, Map<string, vscode.Uri>>,
+    shouldUseSchemaFunc = shouldUseSchema
+): string | undefined {
     const schema = schemaMap.get(path)
     if (!schema) {
         return undefined
     }
-    const possibleSchemas = Array.from(schema.values()).filter(schema => schema !== undefined)
+
+    const possibleSchemas = Array.from(schema.entries()).filter(
+        (registryAndUri: [string, vscode.Uri]) => registryAndUri[1] !== undefined
+    )
+
     if (possibleSchemas.length > 0) {
-        return possibleSchemas[0].toString()
+        const firstSchema = possibleSchemas[0]
+        if (shouldUseSchemaFunc(firstSchema[0])) {
+            return firstSchema[1].toString()
+        }
     }
+
     return undefined
+}
+
+// If the given schema should be used.
+export function shouldUseSchema(schemaRegistry: string, dls = DocumentsLanguageServer.instance): boolean {
+    if (dls.isEnabled() && schemaRegistry === BuildspecTemplateRegistry.name) {
+        // The document types language server will handle this schema instead,
+        // so we indicate not to run for buildspecs
+        return false
+    }
+    return true
 }
 
 export async function activateYamlExtension(): Promise<YamlExtension | undefined> {
