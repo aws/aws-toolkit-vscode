@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix `com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException when choosing an input template in Lambda Run Configurations` (#3359)"
+}
