@@ -1,0 +1,26 @@
+{
+	"date": "2023-01-12",
+	"version": "1.61.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "AWS regions are not dynamically fetched by the Toolkit"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "S3: saving files from the editor overwrites existing content types"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "S3: file editor fails on binary files with no file extension"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: more responsive Auto-Suggestions"
+		},
+		{
+			"type": "Feature",
+			"description": "Copy Lambda Function URL in AWS Explorer"
+		}
+	]
+}
