@@ -37,6 +37,10 @@ export interface UpdateCachedScriptOptions {
     filePath: string
 }
 
+export interface ConfirmCachedFileExistsOptions {
+    filePath: string
+}
+
 export interface StateMachineGraphCacheOptions {
     cssFilePath?: string
     jsFilePath?: string
@@ -115,6 +119,38 @@ export class StateMachineGraphCache {
             // save the url of the downloaded and cached assets
             options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
         }
+    }
+
+    // Coordinates check for multiple cached files.
+    public async confirmCacheExists(): Promise<boolean> {
+        const cssExists = await this.confirmCachedFileExists({
+            filePath: this.cssFilePath,
+        })
+        const jsExists = await this.confirmCachedFileExists({
+            filePath: this.jsFilePath,
+        })
+        if (cssExists && jsExists) {
+            return true
+        } else {
+            if (!cssExists) {
+                this.logger.error('Failed to locate cached State Machine Graph css assets')
+                // This log message is intended to help users setup on disconnected C9/VSCode instances.
+                this.logger.error(`Expected to find: "${VISUALIZATION_CSS_URL}" at "${this.cssFilePath}"`)
+            }
+            if (!jsExists) {
+                this.logger.error('Failed to locate cached State Machine Graph css assets')
+                // This log message is intended to help users setup on disconnected C9/VSCode instances.
+                this.logger.error(`Expected to find: "${VISUALIZATION_SCRIPT_URL}" at "${this.jsFilePath}"`)
+            }
+            const err = new Error('Failed to located cached State Machine Graph assets')
+            throw err
+        }
+    }
+
+    // Confirms presence of dependency for ASL Visualiser on file system
+    protected async confirmCachedFileExists(options: ConfirmCachedFileExistsOptions) {
+        const cachedFileExists = await this.fileExists(options.filePath)
+        return cachedFileExists
     }
 
     protected async writeToLocalStorage(destinationPath: string, data: string): Promise<void> {

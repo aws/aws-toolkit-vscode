@@ -33,7 +33,20 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await this.cache.updateCache(globalStorage)
+            try {
+                await this.cache.updateCache(globalStorage)
+            } catch (err) {
+                // So we can't update the cache, but can we use an existing on disk version.
+                try {
+                    logger.warn(
+                        'Updating State Machine Graph Visualisation assets failed, checking for fallback local cache.'
+                    )
+                    await this.cache.confirmCacheExists()
+                } catch (err) {
+                    logger.error('No local cached State Machine Graph Visualization assets found.')
+                    throw err
+                }
+            }
 
             const newVisualization = new AslVisualization(document)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
