@@ -1,3 +1,11 @@
+## 1.61.0 2023-01-12
+
+- **Bug Fix** AWS regions are not dynamically fetched by the Toolkit
+- **Bug Fix** S3: saving files from the editor overwrites existing content types
+- **Bug Fix** S3: file editor fails on binary files with no file extension
+- **Feature** CodeWhisperer: more responsive Auto-Suggestions
+- **Feature** Copy Lambda Function URL in AWS Explorer
+
 ## 1.60.0 2022-12-16
 
 - **Bug Fix** CodeWhisperer: fix potential undefined reference
