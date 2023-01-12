@@ -49,7 +49,7 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
+import { getInputTemplatePath, makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
@@ -466,7 +466,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             codeConfig.invokeTarget.projectRoot = pathutil.normalize(
                 resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
             )
-            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
+            templateInvoke.templatePath = getInputTemplatePath(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -600,6 +600,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             envFile: '', // Populated by makeConfig().
             apiPort: apiPort,
             debugPort: debugPort,
+            invokeTarget: {
+                ...config.invokeTarget,
+            },
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,
@@ -654,6 +657,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 throw new ToolkitError(message, { code: 'UnsupportedRuntime' })
             }
         }
+
+        // generate template for target=code
+        if (launchConfig.invokeTarget.target === 'code') {
+            const codeConfig = launchConfig as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            await makeInputTemplate(codeConfig)
+        }
+
         await makeJsonFiles(launchConfig)
 
         // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().

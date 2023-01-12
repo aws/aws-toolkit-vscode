@@ -718,7 +718,10 @@ describe('SamDebugConfigurationProvider', async function () {
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'app.handler',
-                invokeTarget: { ...input.invokeTarget },
+                invokeTarget: {
+                    ...input.invokeTarget,
+                    lambdaHandler: `aws-toolkit-ts-output/${input.invokeTarget.lambdaHandler}`,
+                },
                 lambda: {
                     ...input.lambda,
                 },
@@ -752,7 +755,7 @@ describe('SamDebugConfigurationProvider', async function () {
   src:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.handler
+      Handler: aws-toolkit-ts-output/app.handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: nodejs12.x

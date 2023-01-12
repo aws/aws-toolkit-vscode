@@ -76,11 +76,17 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
+export function getInputTemplatePath(config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }): string {
+    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
+
+    return pathutil.normalize(inputTemplatePath)
+}
+
 export async function makeInputTemplate(
     config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
-): Promise<string> {
+): Promise<void> {
     let newTemplate: SamTemplateGenerator
-    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
+    const inputTemplatePath: string = config.templatePath
     const resourceName = makeResourceName(config)
 
     // code type - generate ephemeral SAM template
@@ -90,7 +96,7 @@ export async function makeInputTemplate(
         .withRuntime(config.lambda!.runtime!)
         .withCodeUri(pathutil.normalize(config.invokeTarget.projectRoot))
 
-    if (config.lambda?.environmentVariables) {
+    if (config.lambda?.environmentVariables && Object.entries(config.lambda?.environmentVariables).length) {
         newTemplate = newTemplate.withEnvironment({
             Variables: config.lambda?.environmentVariables,
         })
@@ -108,8 +114,6 @@ export async function makeInputTemplate(
     }
 
     await newTemplate.generate(inputTemplatePath)
-
-    return pathutil.normalize(inputTemplatePath)
 }
 
 async function buildLambdaHandler(
