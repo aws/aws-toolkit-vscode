@@ -23,9 +23,8 @@ import { getStringHash } from './utilities/textUtilities'
 const goformationManifestURL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 const devfileManifestURL = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
-const buildspecHostedFilesPath = '/CodeBuild/buildspec/buildspec-standalone.schema.json'
-export const buildspecCloudfrontURL = 'https://d3rrggjwfhwld2.cloudfront.net' + buildspecHostedFilesPath
-export const buildspecS3FallbackURL = 'https://aws-vs-toolkit.s3.amazonaws.com' + buildspecHostedFilesPath
+export const buildspecCloudfrontURL =
+    'https://d3rrggjwfhwld2.cloudfront.net/CodeBuild/buildspec/buildspec-standalone.schema.json'
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -203,35 +202,17 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     }
 
     try {
-        try {
-            const contents = await getFromUrl(buildspecCloudfrontURL)
-            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
-            await updateSchemaFromRemote({
-                destination: buildSpecSchemaLocation,
-                url: buildspecCloudfrontURL,
-                version: buildspecSchemaVersion,
-                cacheKey: 'buildSpecSchemaVersion',
-                extensionContext,
-                title: schemaPrefix + 'buildspec.schema.json',
-            })
-            schemas['buildspec'] = buildSpecSchemaLocation
-        } catch (e) {
-            getLogger().verbose(
-                'Could not download buildspec schema from CloudFront: %s. Attempting to download buildspec schema from S3',
-                (e as Error).message
-            )
-            const contents = await getFromUrl(buildspecS3FallbackURL)
-            const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
-            await updateSchemaFromRemote({
-                destination: buildSpecSchemaLocation,
-                url: buildspecS3FallbackURL,
-                version: buildspecSchemaVersion,
-                cacheKey: 'buildSpecSchemaVersion',
-                extensionContext,
-                title: schemaPrefix + 'buildspec.schema.json',
-            })
-            schemas['buildspec'] = buildSpecSchemaLocation
-        }
+        const contents = await getFromUrl(buildspecCloudfrontURL)
+        const buildspecSchemaVersion = contents ? getStringHash(contents) : undefined
+        await updateSchemaFromRemote({
+            destination: buildSpecSchemaLocation,
+            url: buildspecCloudfrontURL,
+            version: buildspecSchemaVersion,
+            cacheKey: 'buildSpecSchemaVersion',
+            extensionContext,
+            title: schemaPrefix + 'buildspec.schema.json',
+        })
+        schemas['buildspec'] = buildSpecSchemaLocation
     } catch (e) {
         getLogger().verbose('Could not download buildspec schema: %s', (e as Error).message)
     }
