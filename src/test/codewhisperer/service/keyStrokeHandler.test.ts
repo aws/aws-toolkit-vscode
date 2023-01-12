@@ -33,9 +33,11 @@ describe('keyStrokeHandler', function () {
     })
     describe('processKeyStroke', async function () {
         let invokeSpy: sinon.SinonStub
+        let startTimerSpy: sinon.SinonStub
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
         beforeEach(function () {
             invokeSpy = sinon.stub(KeyStrokeHandler.instance, 'invokeAutomatedTrigger')
+            startTimerSpy = sinon.stub(KeyStrokeHandler.instance, 'startIdleTimeTriggerTimer')
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             resetCodeWhispererGlobalVariables()
@@ -62,6 +64,7 @@ describe('keyStrokeHandler', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
             await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger when changed text matches active recommendation prefix', async function () {
@@ -87,6 +90,7 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger when doing delete or undo (empty changed text)', async function () {
@@ -98,23 +102,10 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
-        })
-
-        it('Should not call invokeAutomatedTrigger if previous text input is within 2 seconds and it is not a specialcharacter trigger \n', async function () {
-            KeyStrokeHandler.instance.keyStrokeCount = 14
-            const mockEditor = createMockTextEditor()
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
-            )
-            RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
         it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is new line', async function () {
-            KeyStrokeHandler.instance.keyStrokeCount = 14
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -127,7 +118,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is a specialcharacter', async function () {
-            KeyStrokeHandler.instance.keyStrokeCount = 14
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -200,31 +190,26 @@ describe('keyStrokeHandler', function () {
             assert.ok(!invokeSpy.called)
         })
 
-        it('Should call invokeAutomatedTrigger with arg KeyStrokeCount when invocationContext.keyStrokeCount reaches threshold', async function () {
+        it('Should not start idle trigger timer when inputing special characters', async function () {
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
+                '('
             )
-            KeyStrokeHandler.instance.keyStrokeCount = 15
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            invokeSpy('KeyStrokeCount', mockEditor, mockClient)
-            assert.ok(invokeSpy.called)
+            assert.ok(!startTimerSpy.called)
         })
 
-        it('Should not call invokeAutomatedTrigger when user input is not special character and keyStrokeCount does not reach threshold, should increase invocationContext.keyStrokeCount by 1', async function () {
+        it('Should start idle trigger timer when inputing non-special characters', async function () {
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 'a'
             )
-            RecommendationHandler.instance.lastInvocationTime = 0
-            KeyStrokeHandler.instance.keyStrokeCount = 8
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
-            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 9)
+            assert.ok(startTimerSpy.called)
         })
     })
 
@@ -250,15 +235,15 @@ describe('keyStrokeHandler', function () {
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
             assert.ok(getRecommendationsStub.calledOnce || oldGetRecommendationsStub.calledOnce)
         })
+    })
 
-        it('should reset invocationContext.keyStrokeCount to 0', async function () {
-            const mockEditor = createMockTextEditor()
-            KeyStrokeHandler.instance.keyStrokeCount = 10
-            sinon
-                .stub(RecommendationHandler.instance, 'getServerResponse')
-                .resolves([{ content: 'import math' }, { content: 'def two_sum(nums, target):' }])
-            await KeyStrokeHandler.instance.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
+    describe('shouldTriggerIdleTime', function () {
+        it('should return false when inline is enabled and inline completion is in progress ', function () {
+            const keyStrokeHandler = new KeyStrokeHandler()
+            sinon.stub(InlineCompletionService.instance, 'isPaginationRunning').returns(true)
+            sinon.stub(InlineCompletion.instance, 'isPaginationRunning').returns(true)
+            const result = keyStrokeHandler.shouldTriggerIdleTime()
+            assert.strictEqual(result, false)
         })
     })
 

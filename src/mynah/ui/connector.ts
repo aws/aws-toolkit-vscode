@@ -82,6 +82,11 @@ export class Connector {
                 if (messageData.codeSelection !== undefined) {
                     mappedReceivedMessage.codeSelection = messageData.codeSelection
                 }
+
+                if (messageData.headerInfo !== undefined) {
+                    mappedReceivedMessage.headerInfo = messageData.headerInfo
+                }
+
                 if (messageData.liveSearchAction !== undefined) {
                     mappedReceivedMessage.liveSearchState = messageData.liveSearchAction
                 }
@@ -111,6 +116,7 @@ export class Connector {
             command: 'search',
             text: searchPayload.query,
             context: searchPayload.matchPolicy,
+            code: searchPayload.code,
             ...(searchPayload.codeSelection?.selectedCode !== '' ? { codeSelection: searchPayload.codeSelection } : {}),
             codeQuery: searchPayload.codeQuery,
             isFromAutocomplete,
