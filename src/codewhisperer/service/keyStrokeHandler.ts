@@ -15,6 +15,7 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -29,17 +30,60 @@ export class KeyStrokeHandler {
     /**
      * Key stroke count for automated trigger
      */
-    public keyStrokeCount: number
+
+    private idleTriggerTimer?: NodeJS.Timer
 
     constructor() {
         this.specialChar = ''
-        this.keyStrokeCount = 0
     }
 
     static #instance: KeyStrokeHandler
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    public startIdleTimeTriggerTimer(
+        event: vscode.TextDocumentChangeEvent,
+        editor: vscode.TextEditor,
+        client: DefaultCodeWhispererClient,
+        config: ConfigurationEntry
+    ) {
+        if (this.idleTriggerTimer) {
+            clearInterval(this.idleTriggerTimer)
+            this.idleTriggerTimer = undefined
+        }
+        if (!this.shouldTriggerIdleTime()) {
+            return
+        }
+        this.idleTriggerTimer = setInterval(() => {
+            const duration = (performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
+            if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) {
+                return
+            }
+
+            try {
+                this.invokeAutomatedTrigger('IdleTime', editor, client, config)
+            } finally {
+                if (this.idleTriggerTimer) {
+                    clearInterval(this.idleTriggerTimer)
+                    this.idleTriggerTimer = undefined
+                }
+            }
+        }, CodeWhispererConstants.idleTimerPollPeriod)
+    }
+
+    public shouldTriggerIdleTime(): boolean {
+        if (isCloud9() && RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+            return false
+        }
+        if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
+            return false
+        }
+        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) {
+            return false
+        }
+        return true
     }
 
     async processKeyStroke(
@@ -76,35 +120,23 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
-            // Time duration between 2 invocations should be greater than the threshold
-            // This threshold does not applies to Enter | SpecialCharacters | IntelliSenseAcceptance type auto trigger.
-            const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
+            if ([DocumentChangedSource.RegularKey].includes(changedSource)) {
+                this.startIdleTimeTriggerTimer(event, editor, client, config)
+            }
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
-                    this.keyStrokeCount += 1
                     triggerType = 'Enter'
                     break
                 }
                 case DocumentChangedSource.SpecialCharsKey: {
-                    this.keyStrokeCount += 1
                     triggerType = 'SpecialCharacters'
                     break
                 }
                 case DocumentChangedSource.IntelliSense: {
-                    this.keyStrokeCount += 1
                     triggerType = 'IntelliSenseAcceptance'
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    // text length can be greater than 1 in Cloud9
-                    this.keyStrokeCount += event.contentChanges[0].text.length
-                    if (
-                        this.keyStrokeCount >= 15 &&
-                        duration >= CodeWhispererConstants.invocationTimeIntervalThreshold
-                    ) {
-                        triggerType = 'KeyStrokeCount'
-                        this.keyStrokeCount = 0
-                    }
                     break
                 }
                 default: {
@@ -128,7 +160,6 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         if (editor) {
-            this.keyStrokeCount = 0
             if (isCloud9()) {
                 if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                     return
@@ -155,7 +186,8 @@ export class KeyStrokeHandler {
                     RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
             } else if (isInlineCompletionEnabled()) {
-                InlineCompletionService.instance.getPaginatedRecommendation(
+                TelemetryHelper.instance.setInvokeSuggestionStartTime()
+                await InlineCompletionService.instance.getPaginatedRecommendation(
                     client,
                     editor,
                     'AutoTrigger',

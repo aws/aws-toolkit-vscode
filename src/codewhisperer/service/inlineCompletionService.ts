@@ -174,6 +174,8 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
                 r.references
             )
             this.nextMove = 0
+            TelemetryHelper.instance.setFirstSuggestionShowTime()
+            TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
             this._onDidShow.fire()
             if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
                 return [item, { insertText: 'x' }]
@@ -368,6 +370,7 @@ export class InlineCompletionService {
                 showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
             }
         }
+        TelemetryHelper.instance.tryRecordClientComponentLatency(editor.document.languageId)
     }
 
     async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
@@ -414,6 +417,10 @@ export class InlineCompletionService {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
         this.statusBar.show()
+    }
+
+    isPaginationRunning(): boolean {
+        return this._isPaginationRunning
     }
 
     hideCodeWhispererStatusBar() {
