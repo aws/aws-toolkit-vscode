@@ -26,6 +26,7 @@ fun Project.refreshAwsTree(resource: Resource<*>? = null, connectionSettings: Co
 
 fun Project.refreshDevToolTree() {
     runInEdt {
+        if (this.isDisposed) return@runInEdt
         DevToolsToolWindow.getInstance(this).redrawContent()
     }
 }

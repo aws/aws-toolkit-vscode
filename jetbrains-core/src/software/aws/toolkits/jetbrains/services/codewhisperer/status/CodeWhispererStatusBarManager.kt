@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.status
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -22,12 +23,12 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhi
  * Manager visibility of CodeWhisperer status bar widget, only display it when CodeWhisperer is connected
  */
 @Service(Service.Level.PROJECT)
-class CodeWhispererStatusBarManager(private val project: Project) {
+class CodeWhispererStatusBarManager(private val project: Project) : Disposable {
     private val widgetsManager = project.getService(StatusBarWidgetsManager::class.java)
     private val settings = ApplicationManager.getApplication().getService(StatusBarWidgetSettings::class.java)
 
     init {
-        ApplicationManager.getApplication().messageBus.connect().subscribe(
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
             ToolkitConnectionManagerListener.TOPIC,
             object : ToolkitConnectionManagerListener {
                 override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
@@ -55,6 +56,8 @@ class CodeWhispererStatusBarManager(private val project: Project) {
             widgetsManager.updateWidget(it)
         }
     }
+
+    override fun dispose() {}
 
     companion object {
         fun getInstance(project: Project): CodeWhispererStatusBarManager = project.service()

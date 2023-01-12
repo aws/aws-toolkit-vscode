@@ -124,8 +124,7 @@ class DefaultConnectionPinningManager(private val project: Project) :
         )
     }
 
-    override fun dispose() {
-    }
+    override fun dispose() {}
 
     @TestOnly
     internal fun showDialogIfNeeded(oldConnection: ToolkitConnection, newConnection: ToolkitConnection, featuresString: String) = if (!doNotPromptForPinning) {
