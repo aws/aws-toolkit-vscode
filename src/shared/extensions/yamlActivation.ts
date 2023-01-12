@@ -177,9 +177,9 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[], templat
     const response = await vscode.window.showInformationMessage(
         localize(
             'AWS.message.info.yaml.prompt',
-            'Install YAML extension for more {0} features in {1} files',
-            getIdeProperties().company,
-            template
+            'For inline {0} template support from {1}, install the YAML extension',
+            template,
+            getIdeProperties().company
         ),
         installBtn,
         dontShow
