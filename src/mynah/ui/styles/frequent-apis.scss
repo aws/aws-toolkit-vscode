@@ -1,6 +1,6 @@
 // TODO Should be removed after the new api for docs provided
 :root {
-    --mynah-max-api-doc-height: calc(var(--mynah-sizing-8) * 14);
+    --mynah-max-api-doc-height: calc(var(--mynah-sizing-8) * 7);
     --mynah-max-api-doc-showmore-height: var(--mynah-sizing-8);
 }
 $maxAPIDocHeight: var(--mynah-max-api-doc-height);
@@ -25,8 +25,7 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
                 align-items: center;
                 height: $maxAPIDocShowMoreHeight;
                 width: 100%;
-                background-color: var(--mynah-card-bg);
-                border-top: 1px solid var(--mynah-color-border-default);
+                // border-top: 1px solid var(--mynah-color-border-default);
                 z-index: 999;
                 cursor: pointer;
                 > i.mynah-icon {
@@ -41,11 +40,13 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
                 }
             }
             & > label + div {
-                margin-bottom: calc(-1 * $maxAPIDocShowMoreHeight / 2);
+                max-height: calc($maxAPIDocHeight - $maxAPIDocShowMoreHeight);
+                margin-bottom: $maxAPIDocShowMoreHeight;
+                overflow: hidden;
             }
         }
         &:not(:checked) ~ .amzn-mynah-docs-body {
-            max-height: calc($maxAPIDocHeight + $maxAPIDocShowMoreHeight);
+            max-height: $maxAPIDocHeight;
         }
         &:checked ~ .amzn-mynah-docs-body {
             & > label {
@@ -56,13 +57,13 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
                     display: inline-flex;
                 }
                 & + div {
-                    padding-bottom: calc($maxAPIDocShowMoreHeight + var(--mynah-sizing-4));
+                    max-height: initial;
                 }
             }
         }
     }
     .amzn-mynah-frequently-used-fqns-panel {
-        margin-top: var(--mynah-sizing-6) !important;
+        margin-top: var(--mynah-sizing-2) !important;
         border: 1px solid var(--mynah-color-border-default);
         border-radius: var(--mynah-button-radius);
         padding: var(--mynah-sizing-2);
