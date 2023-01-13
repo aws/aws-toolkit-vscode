@@ -200,7 +200,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     writeFileSync(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
 
     // resolve ts lambda handler to point into build directory relative to codeRoot
-    const tsLambdaHandler = path.relative(config.codeRoot, `${tsBuildDir}/${config.invokeTarget.lambdaHandler}`)
+    const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
     config.invokeTarget.lambdaHandler = tsLambdaHandler
     getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
