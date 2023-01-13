@@ -152,7 +152,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
 
     const loadBaseConfig = (tsConfigPath: PathLike) => {
         if (!existsSync(tsConfigPath)) {
-            return null
+            return undefined
         }
 
         try {
@@ -163,13 +163,13 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
             getLogger('channel').error(`Unable to use TypeScript base: ${tsConfigPath}`)
         }
 
-        return null
+        return undefined
     }
 
     const tsConfigPath = path.join(config.codeRoot, TS_CONFIG_FILE)
     const tsOutputPath = path.join(config.codeRoot, TS_BUILD_DIR)
 
-    let tsConfig =
+    const tsConfig =
         loadBaseConfig(tsConfigPath) || loadBaseConfig(path.join(config.codeRoot, TS_CONFIG_INITIAL_BASE_FILE)) || {}
 
     if (Object.keys(tsConfig).length === 0) {
