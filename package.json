@@ -3484,7 +3484,7 @@
             "aws-stepfunctions-preview": {
                 "description": "AWS Contributed Icon",
                 "default": {
-                    "fontPath": "./resources\\fonts\\aws-toolkit-icons.woff",
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\e1b7"
                 }
             }
