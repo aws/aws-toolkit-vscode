@@ -19,11 +19,11 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
-const TS_BUILD_DIR = 'aws-toolkit-ts-output'
-const TS_CONFIG_FILE = 'aws-toolkit-tsconfig.json'
+const tsBuildDir = 'aws-toolkit-ts-output'
+const tsConfigFile = 'aws-toolkit-tsconfig.json'
 
 // use project tsconfig.json as initial base - if unable to parse existing config
-const TS_CONFIG_INITIAL_BASE_FILE = 'tsconfig.json'
+const tsConfigInitialBaseFile = 'tsconfig.json'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -166,22 +166,22 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
         return undefined
     }
 
-    const tsConfigPath = path.join(config.codeRoot, TS_CONFIG_FILE)
-    const tsOutputPath = path.join(config.codeRoot, TS_BUILD_DIR)
+    const tsConfigPath = path.join(config.codeRoot, tsConfigFile)
+    const tsOutputPath = path.join(config.codeRoot, tsBuildDir)
 
     const tsConfig =
-        loadBaseConfig(tsConfigPath) || loadBaseConfig(path.join(config.codeRoot, TS_CONFIG_INITIAL_BASE_FILE)) || {}
+        loadBaseConfig(tsConfigPath) ?? loadBaseConfig(path.join(config.codeRoot, tsConfigInitialBaseFile)) ?? {}
 
-    if (Object.keys(tsConfig).length === 0) {
+    if (tsConfig.compilerOptions === undefined) {
         getLogger('channel').info('Creating TypeScript config')
+        tsConfig.compilerOptions = {
+            target: 'es6',
+            module: 'commonjs',
+            inlineSourceMap: true,
+        }
     }
 
-    const compilerOptions = tsConfig.compilerOptions || {
-        target: 'es6',
-        module: 'commonjs',
-        inlineSourceMap: true,
-    }
-    tsConfig.compilerOptions = compilerOptions
+    const compilerOptions = tsConfig.compilerOptions
 
     // overwrite outDir, rootDir, sourceRoot
     compilerOptions.outDir = tsOutputPath
@@ -207,7 +207,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
         getLogger('channel').info(`Compiling TypeScript app with: "${tsc}"`)
         await new ChildProcess(tsc, ['--project', tsConfigPath]).run()
 
-        config.invokeTarget.lambdaHandler = `${TS_BUILD_DIR}/${config.invokeTarget.lambdaHandler}`
+        config.invokeTarget.lambdaHandler = `${tsBuildDir}/${config.invokeTarget.lambdaHandler}`
     } catch (error) {
         getLogger('channel').error(`TypeScript compile error: ${error}`)
         throw Error('Failed to compile TypeScript app')
