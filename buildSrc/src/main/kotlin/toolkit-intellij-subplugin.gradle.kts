@@ -205,7 +205,14 @@ tasks.withType<RunIdeForUiTestTask>().all {
 
     ciOnly {
         configure<JacocoTaskExtension> {
+            // sync with testing-subplugin
+            // don't instrument sdk, icons, etc.
             includes = listOf("software.aws.toolkits.*")
+            excludes = listOf("software.aws.toolkits.telemetry.*")
+
+            // 221+ uses a custom classloader and jacoco fails to find classes
+            isIncludeNoLocationClasses = true
+
             output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
         }
     }
