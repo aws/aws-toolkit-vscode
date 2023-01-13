@@ -11,10 +11,10 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
-export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE = 'awsRegionFunctionNodeUploadable'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE = 'awsRegionFunctionNodeDownloadableUploadable'
+export const contextLambda = 'awsRegionFunctionNode'
+export const contextLambdaImportable = 'awsRegionFunctionNodeDownloadable'
+export const contextLambdaUploadable = 'awsRegionFunctionNodeUploadable'
+export const contextLambdaImportableUploadable = 'awsRegionFunctionNodeDownloadableUploadable'
 
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -34,14 +34,9 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
 
         if (samLambdaImportableRuntimes.contains(this.configuration.Runtime ?? '')) {
             this.contextValue =
-                this.configuration.PackageType !== 'Image'
-                    ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE_UPLOADABLE
-                    : CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
+                this.configuration.PackageType !== 'Image' ? contextLambdaImportableUploadable : contextLambdaImportable
         } else {
-            this.contextValue =
-                this.configuration.PackageType !== 'Image'
-                    ? CONTEXT_VALUE_LAMBDA_FUNCTION_UPLOADABLE
-                    : CONTEXT_VALUE_LAMBDA_FUNCTION
+            this.contextValue = this.configuration.PackageType !== 'Image' ? contextLambdaUploadable : contextLambda
         }
     }
 
