@@ -720,7 +720,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 handlerName: 'app.handler',
                 invokeTarget: {
                     ...input.invokeTarget,
-                    lambdaHandler: `aws-toolkit-ts-output/${input.invokeTarget.lambdaHandler}`,
                 },
                 lambda: {
                     ...input.lambda,
@@ -755,7 +754,7 @@ describe('SamDebugConfigurationProvider', async function () {
   src:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: aws-toolkit-ts-output/app.handler
+      Handler: app.handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: nodejs12.x
