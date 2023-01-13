@@ -23,7 +23,9 @@ export class DocumentsLanguageServer {
 
     /** True if `aws.experiments.lsp` is enabled in the settings */
     isEnabled(): boolean {
-        return Experiments.instance.get('lsp', false)
+        const enabled = Experiments.instance.get('lsp', false)
+        logger.info(`Documents LS is enabled=${enabled}`)
+        return enabled
     }
 
     isRunning(): boolean {

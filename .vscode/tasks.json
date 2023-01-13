@@ -69,7 +69,7 @@
             "type": "shell",
             "command": "cargo build",
             "options": {
-                "cwd": "/Volumes/workplace/AWSDocumentsLanguageServer/"
+                "cwd": "${cwd}/../aws-toolkit-common/lsp"
             }
         }
     ],

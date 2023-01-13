@@ -17,10 +17,11 @@ export async function activateDocumentsLanguageServer(extensionContext: Extensio
 
     // The server is implemented in rust
     // TODO grab language server from URL/hosted file location
+    if (process.env.LANGUAGE_SERVER === undefined) {
+        throw Error('Missing env `LANGUAGE_SERVER`. Should be set in `launch.json`.')
+    }
     const runExecutable: Executable = {
-        command: path.resolve(
-            path.join('/Volumes/workplace/AWSDocumentsLanguageServer/target/debug', 'awsdocuments_language_server')
-        ),
+        command: path.resolve(path.join(process.env.LANGUAGE_SERVER)),
     }
 
     // If the extension is launch in debug mode the debug server options are use

@@ -9,7 +9,7 @@
             "type": "lldb",
             "request": "attach",
             "name": "Attach to AWS Documents Language Server",
-            "program": "/Volumes/workplace/AWSDocumentsLanguageServer/target/debug/awsdocuments_language_server",
+            "program": "${cwd}/../aws-toolkit-common/lsp/target/debug/awsdocuments_language_server",
             "waitFor": true
         },
         {
@@ -25,7 +25,8 @@
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
-                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
+                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080",
+                "LANGUAGE_SERVER": "${cwd}/../aws-toolkit-common/lsp/target/debug/awsdocuments_language_server"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "watch"
