@@ -74,7 +74,7 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
         order: 1000;
         > span:last-child {
             display: inline-flex;
-            flex-flow: row nowrap;
+            flex-flow: row wrap;
             gap: var(--mynah-sizing-2);
         }
     }

@@ -169,28 +169,21 @@ export class Connector {
     }
 
     triggerSuggestionEngagement = (engagement: SuggestionEngagement): void => {
-        switch (engagement.engagementType) {
-            case EngagementType.INTERACTION:
-                if (engagement.selectionDistanceTraveled?.selectedText !== undefined) {
-                    this.postMessageHandler({
-                        command: 'selectSuggestionText',
-                        suggestionId: engagement.suggestion.url,
-                        suggestionRank: parseInt(engagement.suggestion.id),
-                        suggestionType: engagement.suggestion.type,
-                        selectedText: engagement.selectionDistanceTraveled.selectedText,
-                    })
-                }
-                break
-            case EngagementType.TIME:
-                this.postMessageHandler({
-                    command: 'hoverSuggestion',
-                    suggestionId: engagement.suggestion.url,
-                    suggestionRank: parseInt(engagement.suggestion.id),
-                    suggestionType: engagement.suggestion.type,
-                    hoverDuration: engagement.engagementDurationTillTrigger / 1000, // seconds
-                })
-                break
+        let command: string = 'hoverSuggestion'
+        if (
+            engagement.engagementType === EngagementType.INTERACTION &&
+            engagement.selectionDistanceTraveled?.selectedText !== undefined
+        ) {
+            command = 'selectSuggestionText'
         }
+        this.postMessageHandler({
+            command,
+            suggestionId: engagement.suggestion.url,
+            suggestionRank: parseInt(engagement.suggestion.id),
+            suggestionType: engagement.suggestion.type,
+            selectedText: engagement.selectionDistanceTraveled?.selectedText,
+            hoverDuration: engagement.engagementDurationTillTrigger / 1000, // seconds
+        })
     }
 
     triggerSuggestionClipboardInteraction = (suggestionId: string, type?: string, text?: string): void => {

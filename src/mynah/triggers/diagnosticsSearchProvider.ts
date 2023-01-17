@@ -35,7 +35,6 @@ export class DiagnosticsSearchProvider implements CodeActionProvider {
         const codeRange = new Range(new Position(Math.max(0, relevantLine - 1), 0), new Position(relevantLine + 1, 0))
         const code = document.getText(codeRange).trim()
         const lineWithError = document.lineAt(relevantLine).text
-        console.log('CODE', code)
         const docContent = document.getText()
         const { language, otherContext } = extractLanguageAndOtherContext(document.languageId)
         const queryContext: QueryContext = {
