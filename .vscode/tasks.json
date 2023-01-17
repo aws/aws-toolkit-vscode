@@ -66,8 +66,8 @@
         },
         {
             "label": "Build AWS Documents Language Server",
-            "type": "shell",
-            "command": "cargo build",
+            "type": "npm",
+            "script": "compile",
             "options": {
                 "cwd": "${cwd}/../aws-toolkit-common/lsp"
             }

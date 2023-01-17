@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, workspace } from 'vscode'
 
-import { Executable, LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 
 export async function activateDocumentsLanguageServer(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
@@ -20,15 +20,15 @@ export async function activateDocumentsLanguageServer(extensionContext: Extensio
     if (process.env.LANGUAGE_SERVER === undefined) {
         throw Error('Missing env `LANGUAGE_SERVER`. Should be set in `launch.json`.')
     }
-    const runExecutable: Executable = {
-        command: path.resolve(path.join(process.env.LANGUAGE_SERVER)),
-    }
+    const serverModule = path.resolve(path.join(process.env.LANGUAGE_SERVER))
+
+    const debugOptions = { execArgv: ['--nolazy', '--inspect=6012', '--preserve-symlinks'] }
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
     const serverOptions: ServerOptions = {
-        run: runExecutable,
-        debug: runExecutable,
+        run: { module: serverModule, transport: TransportKind.ipc },
+        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
     // Options to control the language client

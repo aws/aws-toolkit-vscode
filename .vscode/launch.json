@@ -6,13 +6,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "lldb",
-            "request": "attach",
-            "name": "Attach to AWS Documents Language Server",
-            "program": "${cwd}/../aws-toolkit-common/lsp/target/debug/awsdocuments_language_server",
-            "waitFor": true
-        },
-        {
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
@@ -26,7 +19,7 @@
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080",
-                "LANGUAGE_SERVER": "${cwd}/../aws-toolkit-common/lsp/target/debug/awsdocuments_language_server"
+                "LANGUAGE_SERVER": "${cwd}/../aws-toolkit-common/lsp/out/server.js"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "watch"
@@ -127,6 +120,17 @@
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "Attach to AWS Documents Language Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6012,
+            "outFiles": ["${cwd}/../aws-toolkit-common/lsp/out/**.js"],
+            "restart": {
+                "maxAttempts": 10,
+                "delay": 1000
+            }
         }
     ],
     "compounds": [

@@ -40,33 +40,24 @@ export class DocumentsLanguageServer {
         logger.info('Documents Language Server is running.')
         return
     }
-}
 
-export async function tryActivate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    if (DocumentsLanguageServer.instance.isEnabled()) {
-        await DocumentsLanguageServer.instance.start(extensionContext)
-    } else if (DocumentsLanguageServer.instance.isRunning()) {
-        await promptReloadToDisableLsp()
+    /** Stops the actual language server if not already stopped. */
+    async stop(): Promise<undefined> {
+        await this._server?.stop()
+        logger.info('Documents Language Server is stopped.')
+        this._server = undefined
+        return
     }
 }
 
 /**
- * Currently, running `stop()` on the {@link LanguageClient}
- * does not work. Reloading the window is the next best option.
- *
- * TODO: For some reason `stop()` fails since the Rust LS
- * is returning an invalid response.
+ * Starts the actual language server if it should be, otherwise
+ * ensures it is not running.
  */
-async function promptReloadToDisableLsp(): Promise<void> {
-    const res = await vscode.window.showInformationMessage('Reload window to disable?', 'Yes')
-    switch (res) {
-        case 'Yes': {
-            vscode.commands.executeCommand('workbench.action.reloadWindow')
-            break
-        }
-        default: {
-            Experiments.instance.update('lsp', true)
-            break
-        }
+export async function tryActivate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    if (DocumentsLanguageServer.instance.isEnabled()) {
+        await DocumentsLanguageServer.instance.start(extensionContext)
+    } else {
+        await DocumentsLanguageServer.instance.stop()
     }
 }
