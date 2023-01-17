@@ -60,7 +60,6 @@ export class SearchHistoryStore {
     constructor(private readonly globalStore: Memento, private readonly workplaceStore: Memento) {}
 
     public async addRecord(record: SearchHistoryRecord): Promise<void> {
-        console.log('ADD RECORD', record)
         await this.addRecordToWorkplaceStore(record)
         await this.addRecordToGlobalStore(record)
     }

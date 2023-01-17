@@ -362,14 +362,6 @@ export class ResultDisplay {
                         },
                     })
                     break
-                case 'click':
-                    void vs.env.openExternal(vs.Uri.parse(msg.suggestionId))
-                    session.recordEvent(TelemetryEventName.CLICK_SUGGESTION, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
-                    })
-                    break
                 case 'notify':
                     showNotification(msg.type, msg.message, msg.details)
                     break
