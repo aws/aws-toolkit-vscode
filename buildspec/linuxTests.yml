@@ -2,7 +2,7 @@ version: 0.2
 
 cache:
   paths:
-#    - '/root/.gradle/caches/**/*'
+    - '/root/.gradle/caches/modules-2/**/*'
     - '/root/.gradle/wrapper/**/*'
 
 env:
@@ -13,6 +13,7 @@ env:
 phases:
   install:
     commands:
+      - rm -rf /root/.gradle/caches/modules-2/{*.lock,gc.properties}
       - export PATH="$PATH:$HOME/.dotnet/tools"
       - dotnet codeartifact-creds install
 
