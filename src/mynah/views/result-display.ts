@@ -660,7 +660,7 @@ export class ResultDisplay {
             .then(async suggestions => {
                 emitter.fire(suggestions)
                 const suggestionsList = await Promise.all(
-                    Object.entries(suggestions).map(([idx, suggestion]) => ({ ...suggestion, id: idx }))
+                    Object.entries(suggestions).map(([_, suggestion]) => ({ ...suggestion }))
                 )
                 const latency = Date.now() - startTime
                 const panel = this.panelStore.getPanel(panelId)

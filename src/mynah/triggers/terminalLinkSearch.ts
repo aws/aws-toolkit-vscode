@@ -104,7 +104,8 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
     private async showNotification(query: Query): Promise<void> {
         const mute = 'Do not show again'
         const yes = 'Yes'
-        const items = [yes, mute]
+        const no = 'No'
+        const items = [yes, no, mute]
         this.telemetrySession.recordEvent(TelemetryEventName.VIEW_NOTIFICATION, {
             notificationMetadata: {
                 name: TERMINAL_ERROR_NOTIFICATION,
@@ -125,6 +126,8 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         switch (result) {
             case yes:
                 this.queryEmitter.fire(query)
+                break
+            case no:
                 break
             case mute:
                 await this.notificationInfoStore.setMuteStatusForNotificationInWorkplaceStore(

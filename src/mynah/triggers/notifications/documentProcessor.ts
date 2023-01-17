@@ -86,11 +86,13 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
             ranges.push([linesArr[anchor], linesArr[linesArr.length - 1]])
 
             const startButtonName = 'Yes!'
+            const declineButtonName = 'No'
             const muteButtonName = 'Do not show again'
             await vs.window
                 .showInformationMessage(
                     'Would you like Mynah to find resources and usage examples for APIs used in your code?',
                     startButtonName,
+                    declineButtonName,
                     muteButtonName
                 )
                 .then(async selection => {
@@ -106,6 +108,15 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                             this.apiHelpGuideNotificationName,
                             true
                         )
+                        return
+                    }
+                    if (selection === declineButtonName) {
+                        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
+                            notificationMetadata: {
+                                name: this.apiHelpGuideNotificationName,
+                                action: declineButtonName,
+                            },
+                        })
                         return
                     }
                     if (selection === startButtonName) {

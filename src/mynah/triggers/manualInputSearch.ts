@@ -21,6 +21,7 @@ export class ManualInputSearch extends SearchInput {
     private apiHelpStatusBar!: StatusBar | undefined
     private readonly notificationInfoStore: NotificationInfoStore
     private readonly muteNotificationButtonText = 'Do not show again'
+    readonly apiHelpGuideNotificationName = 'api_help_guide'
 
     private readonly supportedLanguages = new Set<string>([
         'java',
@@ -169,6 +170,10 @@ export class ManualInputSearch extends SearchInput {
                       }
                     : this.extractCodeSelection(customRangeInDocument),
             })
+            await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
+                this.apiHelpGuideNotificationName,
+                true
+            )
         } catch (err: any) {
             // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
             console.error(`Query was incorrect because ${err.message}.`)
