@@ -136,10 +136,13 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
             }
 
             if (!obj.name.startsWith('vscode')) {
+                // Normalize the font path regardless of platform
+                // See https://github.com/aws/aws-toolkit-vscode/pull/3066#discussion_r1063662657
+                const normalizedPath = relativeDest.split(path.sep).join(path.posix.sep)
                 icons.push({
                     name: obj.name,
                     path: filePath,
-                    data: createPackageIcon(`./${relativeDest}`, obj.unicode[0]),
+                    data: createPackageIcon(`./${normalizedPath}`, obj.unicode[0]),
                 })
             } else {
                 icons.push({ name: obj.name, path: filePath })
