@@ -22,6 +22,7 @@ import { TelemetryClientSession } from '../telemetry/telemetry/client'
 import { ErrorType, TelemetryEventName } from '../telemetry/telemetry/types'
 import { LiveSearchDisplay } from '../views/live-search'
 import { Query, QueryContext } from '../models/model'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class DebugErrorSearch implements DebugAdapterTrackerFactory {
     constructor(
@@ -119,13 +120,13 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
         const no = 'No'
         const yes = 'Yes'
         const items = [yes, no]
-
-        this.telemetrySession.recordEvent(TelemetryEventName.VIEW_NOTIFICATION, {
-            notificationMetadata: {
-                name: notificationName,
-            },
+        telemetry.mynah_viewNotification.emit({
+            mynahContext: JSON.stringify({
+                notificationMetadata: {
+                    name: notificationName,
+                },
+            }),
         })
-
         const result = await window.showInformationMessage(
             'Mynah search is available to debug the exception. Would you like to see the results?',
             ...items
@@ -133,11 +134,13 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
         if (result === yes) {
             this.queryEmitter.fire(query)
         }
-        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-            notificationMetadata: {
-                name: notificationName,
-                action: result,
-            },
+        telemetry.mynah_actOnNotification.emit({
+            mynahContext: JSON.stringify({
+                notificationMetadata: {
+                    name: notificationName,
+                    action: result,
+                },
+            }),
         })
     }
 }

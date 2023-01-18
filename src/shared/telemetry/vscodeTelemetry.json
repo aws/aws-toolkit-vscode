@@ -33,59 +33,19 @@
             "description": "Installed CLI"
         },
         {
-            "name": "mynahQuery",
+            "name": "mynahContext",
             "type": "string",
-            "description": "Text of a query"
+            "description": "Event specific metadata object, serialised as a JSON string"
         },
         {
-            "name": "mynahQueryContext",
+            "name": "mynahSearchId",
             "type": "string",
-            "description": "Context keys of a query"
+            "description": "Identifies a unique search interaction"
         },
         {
-            "name": "mynahTrigger",
+            "name": "mynahViewId",
             "type": "string",
-            "description": "Type of trigger for a search",
-            "allowedValues": [
-                "DEBUG_ERROR",
-                "DIAGNOSTIC_ERROR",
-                "GLOBAL_SEARCH",
-                "SEARCH_PANE",
-                "TERMINAL",
-                "SEARCH_HISTORY",
-                "CODE_SELECTION"
-            ]
-        },
-        {
-            "name": "mynahTriggerInteractionType",
-            "type": "string",
-            "description": "Interaction type for a search",
-            "allowedValues": ["KEYBOARD", "CLICK", "MENU"]
-        },
-        {
-            "name": "mynahCode",
-            "type": "string",
-            "description": "A fragment of text extracted from source code"
-        },
-        {
-            "name": "mynahSourceId",
-            "type": "string",
-            "description": "Source file"
-        },
-        {
-            "name": "mynahCodeQuery",
-            "type": "string",
-            "description": "Information extracted from source code"
-        },
-        {
-            "name": "mynahImplicit",
-            "type": "boolean",
-            "description": "Whether the search is triggered implicitly or by user"
-        },
-        {
-            "name": "mynahFromAutocomplete",
-            "type": "boolean",
-            "description": "If the search is an autocomplete search or not"
+            "description": "Identifies panel in which search form is rendered"
         }
     ],
     "metrics": [
@@ -120,7 +80,14 @@
         {
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",
-            "metadata": [{ "type": "result" }, { "type": "cli" }]
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "cli"
+                }
+            ]
         },
         {
             "name": "aws_refreshCredentials",
@@ -330,47 +297,154 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
-            "name": "mynah_activate",
-            "description": "Emitted when Mynah is activated",
+            "name": "mynah_showResults",
+            "description": "Emitted when search suggestions are rendered",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_submitFeedback",
+            "description": "Emitted when user submits feedback",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updateQueryContext",
+            "description": "Emitted when user updates search query context",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updatePanelState",
+            "description": "Emitted when mynah search panel goes in/out of focus",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updateExtensionState",
+            "description": "Emitted when extension activates/deactivates",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ],
             "passive": true
+        },
+        {
+            "name": "mynah_updateLiveSearchState",
+            "description": "Emitted when mynah live search state (running, paused or stopped) changes",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_viewNotification",
+            "description": "Emitted when user sees a notification",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_actOnNotification",
+            "description": "Emitted when user interacts with a notification",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_selectAutocompleteSuggestion",
+            "description": "Emitted when user selects a autocomplete suggested query",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_showCodeDetails",
+            "description": "Emitted when user clicks on a code block in search pane",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_showSearchHistory",
+            "description": "Emitted when user clicks on search history button"
         },
         {
             "name": "mynah_search",
             "description": "Emitted when user performs a search",
             "metadata": [
                 {
-                    "type": "mynahQuery"
+                    "type": "mynahContext"
                 },
                 {
-                    "type": "mynahQueryContext",
-                    "required": false
+                    "type": "mynahSearchId"
                 },
                 {
-                    "type": "mynahTrigger"
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_interactWithSuggestion",
+            "description": "Emitted when user interacts with a search suggestion",
+            "metadata": [
+                {
+                    "type": "mynahContext"
                 },
                 {
-                    "type": "mynahTriggerInteractionType",
-                    "required": false
+                    "type": "mynahSearchId"
                 },
                 {
-                    "type": "mynahCode",
-                    "required": false
-                },
-                {
-                    "type": "mynahSourceId",
-                    "required": false
-                },
-                {
-                    "type": "mynahCodeQuery",
-                    "required": false
-                },
-                {
-                    "type": "mynahImplicit",
-                    "required": false
-                },
-                {
-                    "type": "mynahFromAutocomplete",
-                    "required": false
+                    "type": "mynahViewId"
                 }
             ]
         }

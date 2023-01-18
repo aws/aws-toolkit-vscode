@@ -6,7 +6,7 @@
 import * as vs from 'vscode'
 import { Event, EventEmitter, ExtensionContext } from 'vscode'
 import { registerHttpsFileSystem } from './http-filesystem'
-import { TelemetryEventName, SearchTrigger } from '../telemetry/telemetry/types'
+import { SearchTrigger } from '../telemetry/telemetry/types'
 import { SearchHistoryStore } from '../stores/searchHistoryStore'
 import { PanelStore } from '../stores/panelStore'
 import { NotificationType, showNotification } from '../utils/notify'
@@ -29,6 +29,7 @@ import { getIcon, Icon } from '../../shared/icons'
 import { Telemetry } from '../telemetry/telemetry/interfaces'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { NO_QUERY_ERROR_MESSAGE } from '../service/search'
+import { v4 as uuid } from 'uuid'
 
 enum LiveSearchCommands {
     PAUSE = 'Mynah.LiveSearchPause',
@@ -57,7 +58,6 @@ export interface ResultDisplayProps {
 export class ResultDisplay {
     private readonly assetsPath: vs.Uri
     private readonly searchInput: SearchInput
-    private readonly client: Telemetry
     private readonly searchHistoryStore: SearchHistoryStore
     private readonly panelStore: PanelStore
     private readonly searchHistoryDisplay: SearchHistoryDisplay
@@ -70,7 +70,6 @@ export class ResultDisplay {
         registerHttpsFileSystem(context)
         this.assetsPath = vs.Uri.joinPath(context.extensionUri)
         this.searchInput = props.input
-        this.client = props.client
         this.searchHistoryStore = props.searchHistoryStore
         this.panelStore = props.panelStore
         this.searchHistoryDisplay = props.searchHistoryDisplay
@@ -91,8 +90,13 @@ export class ResultDisplay {
         if (liveSearchPanelId !== undefined) {
             if (!this.liveSearchDisplay.isLiveSearchPaused()) {
                 const panel = this.panelStore.getPanel(liveSearchPanelId)
-                const session = panel?.telemetrySession
-                session?.recordEvent(TelemetryEventName.PAUSE_LIVE_SEARCH)
+                telemetry.mynah_updateLiveSearchState.emit({
+                    mynahContext: JSON.stringify({
+                        liveSearchMetadata: {
+                            state: 'PAUSE',
+                        },
+                    }),
+                })
                 this.liveSearchDisplay.pauseLiveSearch()
 
                 void panel?.webviewPanel.webview.postMessage(
@@ -121,10 +125,14 @@ export class ResultDisplay {
         if (liveSearchPanelId !== undefined) {
             if (this.liveSearchDisplay.isLiveSearchPaused()) {
                 const panel = this.panelStore.getPanel(liveSearchPanelId)
-                const session = panel?.telemetrySession
-                session?.recordEvent(TelemetryEventName.RESUME_LIVE_SEARCH)
+                telemetry.mynah_updateLiveSearchState.emit({
+                    mynahContext: JSON.stringify({
+                        liveSearchMetadata: {
+                            state: 'RESUME',
+                        },
+                    }),
+                })
                 this.liveSearchDisplay.resumeLiveSearch()
-
                 void panel?.webviewPanel.webview.postMessage(
                     JSON.stringify({
                         sender: 'mynah',
@@ -150,17 +158,20 @@ export class ResultDisplay {
         const liveSearchPanelId = this.panelStore.getLiveSearchPanelId()
         if (liveSearchPanelId !== undefined) {
             const panel = this.panelStore.getPanel(liveSearchPanelId)
-            const session = panel?.telemetrySession
-            session?.recordEvent(TelemetryEventName.REFINE_LIVE_SEARCH)
+            telemetry.mynah_updateLiveSearchState.emit({
+                mynahContext: JSON.stringify({
+                    liveSearchMetadata: {
+                        state: 'STOP',
+                    },
+                }),
+            })
             this.panelStore.clearLiveSearchPane()
-
             void panel?.webviewPanel.webview.postMessage(
                 JSON.stringify({
                     sender: 'mynah',
                     liveSearchAction: 'stopLiveSearch',
                 })
             )
-
             // Remove status bar control completely
             this.removeStatusBarControl()
         }
@@ -236,35 +247,35 @@ export class ResultDisplay {
             if (panel === undefined) {
                 return
             }
-            session.recordEvent(
-                panel.webviewPanel.active ? TelemetryEventName.ENTER_FOCUS : TelemetryEventName.LEAVE_FOCUS
-            )
+            telemetry.mynah_updatePanelState.emit({
+                mynahContext: JSON.stringify({
+                    panelMetadata: {
+                        state: panel.webviewPanel.active ? 'IN_FOCUS' : 'OUT_OF_FOCUS',
+                    },
+                }),
+                mynahViewId: panelId,
+            })
         })
-        const session = this.client.newSession(panelId)
+        const searchId = uuid()
         const context = {
             should: Array.from(queryContext.should),
             must: Array.from(queryContext.must),
             mustNot: Array.from(queryContext.mustNot),
         }
-        session.recordEvent(TelemetryEventName.SEARCH, {
-            searchMetadata: {
-                query: input,
-                trigger: this.getTelemetrySearchTrigger(trigger),
-                queryContext: context,
-                code,
-                sourceId,
-                codeQuery: query.codeQuery,
-                implicit: query.implicit ?? false,
-            },
-        })
         telemetry.mynah_search.emit({
-            mynahQuery: input,
-            mynahQueryContext: JSON.stringify(context),
-            mynahTrigger: this.getTelemetrySearchTrigger(trigger),
-            mynahCode: code,
-            mynahSourceId: sourceId,
-            mynahCodeQuery: JSON.stringify(query.codeQuery),
-            mynahImplicit: query.implicit ?? false,
+            mynahContext: JSON.stringify({
+                searchMetadata: {
+                    query: input,
+                    trigger: this.getTelemetrySearchTrigger(trigger),
+                    queryContext: context,
+                    code,
+                    sourceId,
+                    codeQuery: query.codeQuery,
+                    implicit: query.implicit ?? false,
+                },
+            }),
+            mynahSearchId: searchId,
+            mynahViewId: panelId,
         })
 
         panel.webview.onDidReceiveMessage(msg => {
@@ -272,12 +283,12 @@ export class ResultDisplay {
             if (panel === undefined) {
                 return
             }
-            const session = panel.telemetrySession
+            const searchId = panel.searchId
             const trigger = msg.trigger
                 ? msg.trigger
                 : msg.codeSelection
-                ? SearchTrigger.CODE_SELECTION
-                : SearchTrigger.SEARCH_PANE
+                    ? SearchTrigger.CODE_SELECTION
+                    : SearchTrigger.SEARCH_PANE
             const fileName =
                 msg.codeSelection !== undefined
                     ? msg.codeSelection.file !== undefined
@@ -287,10 +298,9 @@ export class ResultDisplay {
             const selectionRangeStart =
                 msg.codeSelection?.file !== undefined
                     ? `${String(msg.codeSelection.file.range.start.row)}:${String(
-                          msg.codeSelection.file.range.start.column
-                      )}`
+                        msg.codeSelection.file.range.start.column
+                    )}`
                     : ''
-            const newSession = this.client.newSession(panelId)
             const fromAutocomplete = msg.fromAutocomplete ?? false
             switch (msg.command) {
                 case 'uiReady':
@@ -298,26 +308,22 @@ export class ResultDisplay {
                     break
                 case 'search':
                     panel.webviewPanel.title = this.getPanelTitle(msg.text, fileName, selectionRangeStart)
-                    panel.telemetrySession = newSession
-                    newSession.recordEvent(TelemetryEventName.SEARCH, {
-                        searchMetadata: {
-                            query: msg.text,
-                            queryContext: msg.context,
-                            trigger,
-                            code,
-                            codeQuery: msg.codeQuery,
-                            implicit: msg.implicit ?? false,
-                            fromAutocomplete,
-                        },
-                    })
+                    //Update the search Id as we are performing a new search
+                    panel.searchId = uuid()
                     telemetry.mynah_search.emit({
-                        mynahQuery: msg.text,
-                        mynahQueryContext: JSON.stringify(msg.context),
-                        mynahTrigger: trigger,
-                        mynahCode: code,
-                        mynahCodeQuery: JSON.stringify(msg.codeQuery),
-                        mynahImplicit: msg.implicit ?? false,
-                        mynahFromAutocomplete: fromAutocomplete,
+                        mynahContext: JSON.stringify({
+                            searchMetadata: {
+                                query: msg.text,
+                                queryContext: msg.context,
+                                trigger: trigger,
+                                code: code,
+                                codeQuery: msg.codeQuery,
+                                implicit: msg.implicit ?? false,
+                                fromAutocomplete,
+                            },
+                        }),
+                        mynahSearchId: panel.searchId,
+                        mynahViewId: panelId,
                     })
                     // Since the search performs when the extension's search-input changes, we don't want to trigger a real search for history items.
                     if (trigger !== SearchTrigger.SEARCH_HISTORY) {
@@ -334,84 +340,134 @@ export class ResultDisplay {
                     break
                 case 'upvote':
                     showNotification(NotificationType.INFO, 'Feedback Submitted. Thanks!')
-                    session.recordEvent(TelemetryEventName.UPVOTE_SUGGESTION, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'UPVOTE',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'downvote':
                     showNotification(NotificationType.INFO, 'Feedback Submitted. Thanks!')
-                    session.recordEvent(TelemetryEventName.DOWNVOTE_SUGGESTION, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'DOWNVOTE',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'stars':
-                    session.recordEvent(TelemetryEventName.STAR_RATE_SEARCH, {
-                        feedbackMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_submitFeedback.emit({
+                        mynahContext: JSON.stringify({
+                            feedbackMetadata: {
+                                rating: msg.rating,
+                                type: 'RATING',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'feedback':
-                    session.recordEvent(TelemetryEventName.ENTER_FEEDBACK, {
-                        feedbackMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_submitFeedback.emit({
+                        mynahContext: JSON.stringify({
+                            feedbackMetadata: {
+                                feedback: msg.feedback,
+                                type: 'TEXT',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'notify':
                     showNotification(msg.type, msg.message, msg.details)
                     break
                 case 'copy':
-                    session.recordEvent(TelemetryEventName.COPY_SUGGESTION_LINK, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'COPY_LINK',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'addQueryContext':
-                    session.recordEvent(TelemetryEventName.ADD_QUERY_CONTEXT, {
-                        queryContextMetadata: {
-                            queryContext: msg.queryContext.context,
-                            queryContextSource: msg.queryContext.source,
-                            queryContextType: msg.queryContext.type,
-                        },
+                    telemetry.mynah_updateQueryContext.emit({
+                        mynahContext: JSON.stringify({
+                            queryContextMetadata: {
+                                queryContext: msg.queryContext.context,
+                                queryContextSource: msg.queryContext.source,
+                                queryContextType: msg.queryContext.type,
+                                operation: 'ADD',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'removeQueryContext':
-                    session.recordEvent(TelemetryEventName.REMOVE_QUERY_CONTEXT, {
-                        queryContextMetadata: {
-                            queryContext: msg.queryContext.context,
-                            queryContextSource: msg.queryContext.source,
-                            queryContextType: msg.queryContext.type,
-                        },
+                    telemetry.mynah_updateQueryContext.emit({
+                        mynahContext: JSON.stringify({
+                            queryContextMetadata: {
+                                queryContext: msg.queryContext.context,
+                                queryContextSource: msg.queryContext.source,
+                                queryContextType: msg.queryContext.type,
+                                operation: 'REMOVE',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'openSuggestion':
-                    session.recordEvent(TelemetryEventName.OPEN_SUGGESTION_LINK, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'OPEN',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'getSearchHistory':
                     void this.searchHistoryDisplay.showSearchHistoryList({ filters: msg.filters, panelId })
                     break
                 case 'selectSuggestionText':
-                    session.recordEvent(TelemetryEventName.SELECT_SUGGESTION_TEXT, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'SELECT_TEXT',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'hoverSuggestion':
-                    session.recordEvent(TelemetryEventName.HOVER_SUGGESTION, {
-                        suggestionMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_interactWithSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            suggestionMetadata: {
+                                ...msg,
+                                interactionType: 'HOVER',
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
                 case 'liveSearch':
@@ -441,19 +497,25 @@ export class ResultDisplay {
                     })
                     break
                 case 'selectAutocompleteSuggestion':
-                    session.recordEvent(TelemetryEventName.SELECT_AUTOCOMPLETE_QUERY_TEXT, {
-                        autocompleteMetadata: {
-                            input: msg.text,
-                            selectedItem: msg.autocompleteSuggestionSelected,
-                            suggestionsCount: msg.autocompleteSuggestionsCount,
-                        },
+                    telemetry.mynah_selectAutocompleteSuggestion.emit({
+                        mynahContext: JSON.stringify({
+                            autocompleteMetadata: {
+                                input: msg.text,
+                                selectedItem: msg.autocompleteSuggestionSelected,
+                                suggestionsCount: msg.autocompleteSuggestionsCount,
+                            },
+                        }),
                     })
                     break
                 case 'clickCodeDetails':
-                    session.recordEvent(TelemetryEventName.CLICK_CODE_DETAILS, {
-                        codeDetailsMetadata: {
-                            ...msg,
-                        },
+                    telemetry.mynah_showCodeDetails.emit({
+                        mynahContext: JSON.stringify({
+                            codeDetailsMetadata: {
+                                ...msg,
+                            },
+                        }),
+                        mynahSearchId: searchId,
+                        mynahViewId: panelId,
                     })
                     break
             }
@@ -467,7 +529,7 @@ export class ResultDisplay {
             this.panelStore.deletePanel(panelId)
         })
 
-        this.panelStore.savePanel(panelId, { webviewPanel: panel, telemetrySession: session })
+        this.panelStore.savePanel(panelId, { webviewPanel: panel, searchId })
 
         this.generatePanel(panelId, input, queryContext, live, query.codeSelection, query.codeQuery, query.headerInfo)
     }
@@ -515,10 +577,10 @@ export class ResultDisplay {
         const context =
             queryContext !== undefined
                 ? JSON.stringify({
-                      should: Array.from(queryContext.should),
-                      must: Array.from(queryContext.must),
-                      mustNot: Array.from(queryContext.mustNot),
-                  })
+                    should: Array.from(queryContext.should),
+                    must: Array.from(queryContext.must),
+                    mustNot: Array.from(queryContext.mustNot),
+                })
                 : ''
 
         const codeSelectionString = codeSelection !== undefined ? JSON.stringify(codeSelection) : ''
@@ -568,10 +630,10 @@ export class ResultDisplay {
         const context =
             queryContext !== undefined
                 ? {
-                      should: Array.from(queryContext.should),
-                      must: Array.from(queryContext.must),
-                      mustNot: Array.from(queryContext.mustNot),
-                  }
+                    should: Array.from(queryContext.should),
+                    must: Array.from(queryContext.must),
+                    mustNot: Array.from(queryContext.mustNot),
+                }
                 : undefined
 
         if (this.uiReady[panelId]) {
@@ -640,12 +702,13 @@ export class ResultDisplay {
                 ? `${query.codeSelection.file.range.start.row}:${query.codeSelection.file.range.start.column}`
                 : ''
         const panelId = (query.implicit ?? false ? this.panelStore.getLiveSearchPanelId() : queryId) ?? queryId
-        const panel = this.panelStore.getPanel(panelId)
+        let panel = this.panelStore.getPanel(panelId)
         if (panel !== undefined) {
             panel.webviewPanel.title = this.getPanelTitle(query.input, fileName, selectionRangeStart)
             panel.webviewPanel.reveal(panel.webviewPanel.viewColumn, false)
         } else {
             this.setupPanel(panelId, query, query.implicit ?? false)
+            panel = this.panelStore.getPanel(panelId)
         }
         const startTime = Date.now()
         output.suggestions
@@ -659,12 +722,18 @@ export class ResultDisplay {
                 if (panel === undefined) {
                     return
                 }
-                panel.telemetrySession.recordEvent(TelemetryEventName.SHOW_RESULTS, {
-                    resultMetadata: {
-                        latency,
-                        resultCount: suggestions.length,
-                    },
+                telemetry.mynah_showResults.emit({
+                    mynahContext: JSON.stringify({
+                        resultMetadata: {
+                            latency,
+                            resultCount: suggestions.length,
+                            suggestions: suggestions.map(suggestion => suggestion.url),
+                        },
+                    }),
+                    mynahSearchId: panel.searchId,
+                    mynahViewId: panelId,
                 })
+
                 this.updateContent(
                     panelId,
                     query.input,

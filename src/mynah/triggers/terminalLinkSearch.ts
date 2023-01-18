@@ -20,6 +20,7 @@ import { ErrorMetadata, ErrorType, TelemetryEventName } from '../telemetry/telem
 import { LiveSearchDisplay } from '../views/live-search'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import { Query } from '../models/model'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const PYTHON_JS_ERROR_TRACE: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
 const JVM_ERROR: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
@@ -37,7 +38,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         readonly telemetrySession: TelemetryClientSession,
         readonly liveSearchDisplay: LiveSearchDisplay,
         readonly notificationInfoStore: NotificationInfoStore
-    ) {}
+    ) { }
 
     public activate(context: ExtensionContext): void {
         context.subscriptions.push(window.registerTerminalLinkProvider(this))
@@ -106,21 +107,25 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         const yes = 'Yes'
         const no = 'No'
         const items = [yes, no, mute]
-        this.telemetrySession.recordEvent(TelemetryEventName.VIEW_NOTIFICATION, {
-            notificationMetadata: {
-                name: TERMINAL_ERROR_NOTIFICATION,
-            },
+        telemetry.mynah_viewNotification.emit({
+            mynahContext: JSON.stringify({
+                notificationMetadata: {
+                    name: TERMINAL_ERROR_NOTIFICATION,
+                },
+            }),
         })
         const result = await window.showInformationMessage(
             'Mynah search is available to help resolve the error. Would you like to see the results?',
             ...items
         )
 
-        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-            notificationMetadata: {
-                name: TERMINAL_ERROR_NOTIFICATION,
-                action: result,
-            },
+        telemetry.mynah_actOnNotification.emit({
+            mynahContext: JSON.stringify({
+                notificationMetadata: {
+                    name: TERMINAL_ERROR_NOTIFICATION,
+                    action: result,
+                },
+            }),
         })
 
         switch (result) {
