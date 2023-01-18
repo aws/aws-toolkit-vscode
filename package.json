@@ -1464,22 +1464,22 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)$/",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)$/",
                     "group": "4@1"
                 },
                 {
@@ -1624,12 +1624,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)/",
                     "group": "2@2"
                 },
                 {
@@ -2436,7 +2436,7 @@
                 "command": "aws.downloadLambda",
                 "title": "%AWS.command.downloadLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableUploadable)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2447,6 +2447,7 @@
                 "command": "aws.uploadLambda",
                 "title": "%AWS.command.uploadLambda%",
                 "category": "%AWS.title%",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeUploadable|awsRegionFunctionNodeDownloadableUploadable)$/ || explorerResourceIsFolder || isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

@@ -9,6 +9,12 @@ import { getIcon } from '../../shared/icons'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
+
+export const contextLambda = 'awsRegionFunctionNode'
+export const contextLambdaImportable = 'awsRegionFunctionNodeDownloadable'
+export const contextLambdaUploadable = 'awsRegionFunctionNodeUploadable'
+export const contextLambdaImportableUploadable = 'awsRegionFunctionNodeDownloadableUploadable'
 
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -25,6 +31,13 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         this.configuration = configuration
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`
+
+        if (samLambdaImportableRuntimes.contains(this.configuration.Runtime ?? '')) {
+            this.contextValue =
+                this.configuration.PackageType !== 'Image' ? contextLambdaImportableUploadable : contextLambdaImportable
+        } else {
+            this.contextValue = this.configuration.PackageType !== 'Image' ? contextLambdaUploadable : contextLambda
+        }
     }
 
     public get functionName(): string {

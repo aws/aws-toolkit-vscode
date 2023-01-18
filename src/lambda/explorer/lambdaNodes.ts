@@ -16,10 +16,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
-import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
-
-export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -60,20 +56,7 @@ export class LambdaNode extends AWSTreeNodeBase {
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => makeLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
+            key => new LambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
-}
-
-function makeLambdaFunctionNode(
-    parent: AWSTreeNodeBase,
-    regionCode: string,
-    configuration: Lambda.FunctionConfiguration
-): LambdaFunctionNode {
-    const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')
-        ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
-        : CONTEXT_VALUE_LAMBDA_FUNCTION
-
-    return node
 }
