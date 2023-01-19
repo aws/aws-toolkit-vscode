@@ -10,7 +10,7 @@ import { getIcon } from '../icons'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
-const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
+const helpTooltip = localize('AWS.command.help', 'View Toolkit Documentation')
 
 type WizardButton<T> = QuickInputButton<T | WizardControl> | QuickInputButton<void>
 export type PrompterButtons<T> = readonly WizardButton<T>[]
@@ -31,7 +31,7 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  */
 export function createHelpButton(
     uri: string | vscode.Uri = documentationUrl,
-    tooltip: string = HELP_TOOLTIP
+    tooltip: string = helpTooltip
 ): QuickInputLinkButton {
     const iconPath = getIcon('vscode-help')
 

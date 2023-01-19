@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
+import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
@@ -50,7 +50,7 @@ describe('LambdaNode', function () {
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_LAMBDA_FUNCTION,
+                contextValueLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
         )

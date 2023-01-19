@@ -9,14 +9,14 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_CLOUDWATCH_LOG = 'awsCloudWatchLogNode'
+export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
 
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(public readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {
         super('')
         this.update(logGroup)
         this.iconPath = getIcon('aws-cloudwatch-log-group')
-        this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
+        this.contextValue = contextValueCloudwatchLog
     }
 
     public update(logGroup: CloudWatchLogs.LogGroup): void {

@@ -18,15 +18,15 @@ import { PromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { ToolkitError } from '../shared/errors'
 
-export const S3_EDIT_SCHEME = 's3'
-export const S3_READ_SCHEME = 's3-readonly'
+export const s3EditScheme = 's3'
+export const s3ReadScheme = 's3-readonly'
 export const enum TabMode {
     Read = 'read',
     Edit = 'edit',
 }
 
-const SIZE_LIMIT = 4 * Math.pow(10, 6) // 4 MB
-const PROMPT_ON_EDIT_KEY = 'fileViewerEdit'
+const sizeLimit = 4 * Math.pow(10, 6) // 4 MB
+const promptOnEditKey = 'fileViewerEdit'
 
 export interface S3Tab {
     dispose(): Promise<void> | void
@@ -67,7 +67,7 @@ export class S3FileProvider implements FileProvider {
             const result = downloadFile(this._file, {
                 client: this.client,
                 progressLocation:
-                    (this._file.sizeBytes ?? 0) < SIZE_LIMIT
+                    (this._file.sizeBytes ?? 0) < sizeLimit
                         ? vscode.ProgressLocation.Window
                         : vscode.ProgressLocation.Notification,
             })
@@ -126,7 +126,7 @@ export class S3FileViewerManager {
         private readonly fs: VirualFileSystem,
         private readonly window: typeof vscode.window = vscode.window,
         private readonly settings = PromptSettings.instance,
-        private readonly schemes = { read: S3_READ_SCHEME, edit: S3_EDIT_SCHEME }
+        private readonly schemes = { read: s3ReadScheme, edit: s3EditScheme }
     ) {
         this.disposables.push(this.registerTabCleanup())
     }
@@ -305,7 +305,7 @@ export class S3FileViewerManager {
                     'AWS.s3.fileViewer.warning.noSize',
                     "File size couldn't be determined. Continue with download?"
                 )
-            } else if (fileSize > SIZE_LIMIT) {
+            } else if (fileSize > sizeLimit) {
                 getLogger().debug(`FileViewer: File size ${fileSize} is >4MB, prompting user`)
 
                 return localize('AWS.s3.fileViewer.warning.4mb', 'File size is more than 4MB. Continue with download?')
@@ -335,7 +335,7 @@ export class S3FileViewerManager {
     }
 
     private async showEditNotification(): Promise<void> {
-        if (!(await this.settings.isPromptEnabled(PROMPT_ON_EDIT_KEY))) {
+        if (!(await this.settings.isPromptEnabled(promptOnEditKey))) {
             return
         }
 
@@ -349,7 +349,7 @@ export class S3FileViewerManager {
 
         await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
             if (selection === dontShow) {
-                return this.settings.disablePrompt(PROMPT_ON_EDIT_KEY)
+                return this.settings.disablePrompt(promptOnEditKey)
             }
 
             if (selection === help) {

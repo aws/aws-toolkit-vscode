@@ -13,7 +13,7 @@ import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
 import { installFakeClock } from '../../testUtil'
 
-const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
+const missingPropertiesFragment = 'missing properties'
 
 describe('SharedCredentialsProvider', async function () {
     let clock: FakeTimers.InstalledClock
@@ -107,7 +107,7 @@ describe('SharedCredentialsProvider', async function () {
         )
 
         assert.notStrictEqual(sut.validate(), undefined)
-        assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
+        assertSubstringsInText(sut.validate(), missingPropertiesFragment, 'aws_secret_access_key')
     })
 
     it('validation identifies when session_token is missing a corresponding access key id', async function () {
@@ -117,7 +117,7 @@ describe('SharedCredentialsProvider', async function () {
         )
 
         assert.notStrictEqual(sut.validate(), undefined)
-        assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_access_key_id')
+        assertSubstringsInText(sut.validate(), missingPropertiesFragment, 'aws_access_key_id')
     })
 
     it('validation identifies when session_token is missing a corresponding secret key', async function () {
@@ -127,7 +127,7 @@ describe('SharedCredentialsProvider', async function () {
         )
 
         assert.notStrictEqual(sut.validate(), undefined)
-        assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
+        assertSubstringsInText(sut.validate(), missingPropertiesFragment, 'aws_secret_access_key')
     })
 
     it('validation identifies when the profile contains no supported properties', async function () {

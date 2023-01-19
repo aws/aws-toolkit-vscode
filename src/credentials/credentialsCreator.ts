@@ -8,10 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import { createInputBox, promptUser } from '../shared/ui/input'
 
-const ERROR_MESSAGE_USER_CANCELLED = localize(
-    'AWS.error.mfa.userCancelled',
-    'User cancelled entering authentication code'
-)
+const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User cancelled entering authentication code')
 
 /**
  * @description Prompts user for MFA token
@@ -37,7 +34,7 @@ export async function getMfaTokenFromUser(mfaSerial: string, profileName: string
 
     // Distinguish user cancel vs code entry issues with the error message
     if (!token) {
-        throw new Error(ERROR_MESSAGE_USER_CANCELLED)
+        throw new Error(errorMessageUserCancelled)
     }
 
     return token

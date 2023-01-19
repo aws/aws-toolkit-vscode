@@ -7,19 +7,19 @@ import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
-export const JAVA_LANGUAGE = 'java'
-export const JAVA_ALLFILES: vscode.DocumentFilter[] = [
+export const javaLanguage = 'java'
+export const javaAllfiles: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: JAVA_LANGUAGE,
+        language: javaLanguage,
     },
 ]
-export const GRADLE_BASE_PATTERN = '**/build.gradle'
-export const MAVEN_BASE_PATTERN = '**/pom.xml'
+export const gradleBasePattern = '**/build.gradle'
+export const mavenBasePattern = '**/pom.xml'
 
-const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic \b/
-const REGEXP_RESERVED_WORD_ABSTRACT = /\b abstract \b/
-const REGEXP_PARAMETERS = /\(.*\)/
+const regexpReservedWordPublic = /\bpublic \b/
+const regexpReservedWordAbstract = /\b abstract \b/
+const regexpParameters = /\(.*\)/
 
 export interface JavaLambdaHandlerComponents {
     package: string
@@ -97,8 +97,8 @@ export function isValidClassSymbol(
         const classDeclarationBeforeName: string = document.getText(classDeclarationBeforeNameRange)
 
         return (
-            REGEXP_RESERVED_WORD_PUBLIC.test(classDeclarationBeforeName) &&
-            !REGEXP_RESERVED_WORD_ABSTRACT.test(classDeclarationBeforeName)
+            regexpReservedWordPublic.test(classDeclarationBeforeName) &&
+            !regexpReservedWordAbstract.test(classDeclarationBeforeName)
         )
     }
 
@@ -119,7 +119,7 @@ export function isValidLambdaHandler(
         const signatureBeforeMethodNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
         const signatureBeforeMethodName: string = document.getText(signatureBeforeMethodNameRange)
 
-        if (REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)) {
+        if (regexpReservedWordPublic.test(signatureBeforeMethodName)) {
             return isValidMethodSignature(symbol)
         }
     }
@@ -140,7 +140,7 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
         // The `redhat.java` extension appears to strip a fair amount from this signature:
         // from source function `public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context)`
         // redhat extension returns: symbol.name = `'handleRequest(APIGatewayProxyRequestEvent, Context)'`
-        const parametersArr = REGEXP_PARAMETERS.exec(symbol.name)
+        const parametersArr = regexpParameters.exec(symbol.name)
         // reject if there are no parameters
         if (!parametersArr) {
             return false

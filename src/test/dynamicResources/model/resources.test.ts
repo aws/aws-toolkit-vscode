@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { getResourceTypes } from '../../../dynamicResources/model/resources'
 
-const FAKE_RESOURCE_MODEL = {
+const fakeResourceModel = {
     Type1: {
         operations: ['CREATE', 'READ', 'DELETE', 'UPDATE'],
         documentation: 'foo',
@@ -23,14 +23,14 @@ const FAKE_RESOURCE_MODEL = {
 
 describe('getResourceTypes', function () {
     it('returns a map of resource types', function () {
-        const types = getResourceTypes(FAKE_RESOURCE_MODEL)
+        const types = getResourceTypes(fakeResourceModel)
         const fakeType = types.get('Type3')
         assert.deepStrictEqual(fakeType?.operations, ['READ', 'LIST'])
         assert.strictEqual(fakeType?.documentation, 'baz')
     })
 
     it('filters out types not supporting LIST operation', function () {
-        const types = getResourceTypes(FAKE_RESOURCE_MODEL)
+        const types = getResourceTypes(fakeResourceModel)
         assert.strictEqual(types.size, 2)
         assert.ok(!types.has('Type1'))
     })

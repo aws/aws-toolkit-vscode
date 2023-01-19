@@ -5,11 +5,11 @@
 
 import * as vscode from 'vscode'
 
-export const LOG_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
+export const logOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
 /**
  * Shows the log output channel.
  */
 export function showLogOutputChannel({ preserveFocus = true }: { preserveFocus?: boolean } = {}): void {
-    LOG_OUTPUT_CHANNEL.show(preserveFocus)
+    logOutputChannel.show(preserveFocus)
 }

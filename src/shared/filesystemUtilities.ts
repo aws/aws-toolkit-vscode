@@ -14,7 +14,7 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 
-const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+const defaultEncoding: BufferEncoding = 'utf8'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -84,7 +84,7 @@ export async function fileExists(p: string): Promise<boolean> {
  */
 export async function readFileAsString(
     pathLike: string,
-    options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
+    options: { encoding: BufferEncoding; flag?: string } = { encoding: defaultEncoding }
 ): Promise<string> {
     return readFile(pathLike, options)
 }

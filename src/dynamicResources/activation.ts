@@ -14,7 +14,7 @@ import { saveResource } from './commands/saveResource'
 import { ResourcesNode } from './explorer/nodes/resourcesNode'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
-import { RESOURCE_FILE_GLOB_PATTERN } from './awsResourceManager'
+import { resourceFileGlobPattern } from './awsResourceManager'
 import { Commands } from '../shared/vscode/commands2'
 import globals from '../shared/extensionGlobals'
 
@@ -116,7 +116,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             {
                 language: 'json',
                 scheme: 'file',
-                pattern: RESOURCE_FILE_GLOB_PATTERN,
+                pattern: resourceFileGlobPattern,
             },
             new ResourceCodeLensProvider(resourceManager)
         )

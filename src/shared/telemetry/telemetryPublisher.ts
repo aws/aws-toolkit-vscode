@@ -17,7 +17,7 @@ export interface IdentityPublisherTuple {
 export type TelemetryPublisher = ClassToInterfaceType<DefaultTelemetryPublisher>
 
 export class DefaultTelemetryPublisher implements TelemetryPublisher {
-    private static readonly DEFAULT_MAX_BATCH_SIZE = 20
+    private static readonly defaultMaxBatchSize = 20
 
     private readonly _eventQueue: MetricDatum[]
 
@@ -56,7 +56,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
 
         while (this._eventQueue.length !== 0) {
-            const batch = this._eventQueue.splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE)
+            const batch = this._eventQueue.splice(0, DefaultTelemetryPublisher.defaultMaxBatchSize)
 
             if (this.telemetryClient === undefined) {
                 return

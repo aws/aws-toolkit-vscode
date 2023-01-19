@@ -17,9 +17,9 @@ import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 
-export const DEFAULT_REGION = 'us-east-1'
-export const DEFAULT_PARTITION = 'aws'
-export const DEFAULT_DNS_SUFFIX = 'amazonaws.com'
+export const defaultRegion = 'us-east-1'
+export const defaultPartition = 'aws'
+export const defaultDnsSuffix = 'amazonaws.com'
 
 interface RegionData {
     dnsSuffix: string
@@ -44,7 +44,7 @@ export class RegionProvider {
     }
 
     public get defaultRegionId() {
-        return this.awsContext.getCredentialDefaultRegion() ?? DEFAULT_REGION
+        return this.awsContext.getCredentialDefaultRegion() ?? defaultRegion
     }
 
     public get defaultPartitionId() {

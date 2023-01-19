@@ -7,10 +7,10 @@ import * as child_process from 'child_process'
 import * as manifest from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 
-const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
+const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
-const STABLE = 'stable'
-const MINIMUM = 'minimum'
+const stable = 'stable'
+const minimum = 'minimum'
 
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
@@ -23,10 +23,10 @@ const MINIMUM = 'minimum'
  * VSCODE_TEST_VERSION prior to running the tests.
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
-    let vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION]
+    let vsCodeVersion = process.env[envvarVscodeTestVersion]
     if (!vsCodeVersion) {
-        vsCodeVersion = STABLE
-    } else if (vsCodeVersion === MINIMUM) {
+        vsCodeVersion = stable
+    } else if (vsCodeVersion === minimum) {
         vsCodeVersion = getMinVsCodeVersion()
     }
 
