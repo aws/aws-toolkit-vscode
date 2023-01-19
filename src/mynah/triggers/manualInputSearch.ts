@@ -45,10 +45,21 @@ export class ManualInputSearch extends SearchInput {
         context.subscriptions.push(
             commands.registerCommand('Mynah.show', async parameters => {
                 let range: vs.Range
-                if (parameters && parameters.range) {
+                let inputTrigger: string
+                if (typeof parameters === 'string') {
+                    parameters = JSON.parse(parameters)
+                }
+                // Workaround to define context menu call
+                if (parameters && parameters.authority !== undefined) {
+                    inputTrigger = 'MENU'
+                } else {
+                    inputTrigger = parameters.inputTrigger
+                }
+
+                if (parameters.range) {
                     range = new vs.Range(parameters.range[0], parameters.range[1])
                 }
-                return await this.show(range!)
+                return await this.show(range!, inputTrigger)
             })
         )
 
@@ -62,7 +73,7 @@ export class ManualInputSearch extends SearchInput {
                     //Checks target word has FQNs
                     if (await this.checkIfSelectionHasFQNs(hoveredWordRange)) {
                         // Mynah.show command arguments to simulate a code selection with hover
-                        const args = [{ range: hoveredWordRange, isFromHover: true }]
+                        const args = { range: hoveredWordRange, isFromHover: true, inputTrigger: 'HOVER_BUBBLE' }
                         const contents = new vs.MarkdownString(
                             `[Find real world examples for **${document.getText(
                                 hoveredWordRange
@@ -126,7 +137,7 @@ export class ManualInputSearch extends SearchInput {
         })
     }
 
-    public async show(customRangeInDocument?: vs.Range): Promise<void> {
+    public async show(customRangeInDocument?: vs.Range, inputTrigger?: string): Promise<void> {
         const selectedCode = customRangeInDocument
             ? window.activeTextEditor?.document.getText(customRangeInDocument)
             : this.getSelectedCodeFromEditor()
@@ -151,6 +162,7 @@ export class ManualInputSearch extends SearchInput {
                 queryContext: await extractContext(isCodeSelected),
                 queryId: uuid(),
                 trigger: isCodeSelected ? ('CodeSelection' as Trigger) : ('SearchBarInput' as Trigger),
+                inputType: inputTrigger,
                 codeQuery: !hasCodeQuery
                     ? {
                           simpleNames: [],

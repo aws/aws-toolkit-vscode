@@ -267,6 +267,7 @@ export class ResultDisplay {
                 searchMetadata: {
                     query: input,
                     trigger: this.getTelemetrySearchTrigger(trigger),
+                    triggerInteractionType: query.inputType,
                     queryContext: context,
                     code,
                     sourceId,
@@ -287,8 +288,8 @@ export class ResultDisplay {
             const trigger = msg.trigger
                 ? msg.trigger
                 : msg.codeSelection
-                    ? SearchTrigger.CODE_SELECTION
-                    : SearchTrigger.SEARCH_PANE
+                ? SearchTrigger.CODE_SELECTION
+                : SearchTrigger.SEARCH_PANE
             const fileName =
                 msg.codeSelection !== undefined
                     ? msg.codeSelection.file !== undefined
@@ -298,8 +299,8 @@ export class ResultDisplay {
             const selectionRangeStart =
                 msg.codeSelection?.file !== undefined
                     ? `${String(msg.codeSelection.file.range.start.row)}:${String(
-                        msg.codeSelection.file.range.start.column
-                    )}`
+                          msg.codeSelection.file.range.start.column
+                      )}`
                     : ''
             const fromAutocomplete = msg.fromAutocomplete ?? false
             switch (msg.command) {
@@ -577,10 +578,10 @@ export class ResultDisplay {
         const context =
             queryContext !== undefined
                 ? JSON.stringify({
-                    should: Array.from(queryContext.should),
-                    must: Array.from(queryContext.must),
-                    mustNot: Array.from(queryContext.mustNot),
-                })
+                      should: Array.from(queryContext.should),
+                      must: Array.from(queryContext.must),
+                      mustNot: Array.from(queryContext.mustNot),
+                  })
                 : ''
 
         const codeSelectionString = codeSelection !== undefined ? JSON.stringify(codeSelection) : ''
@@ -630,10 +631,10 @@ export class ResultDisplay {
         const context =
             queryContext !== undefined
                 ? {
-                    should: Array.from(queryContext.should),
-                    must: Array.from(queryContext.must),
-                    mustNot: Array.from(queryContext.mustNot),
-                }
+                      should: Array.from(queryContext.should),
+                      must: Array.from(queryContext.must),
+                      mustNot: Array.from(queryContext.mustNot),
+                  }
                 : undefined
 
         if (this.uiReady[panelId]) {

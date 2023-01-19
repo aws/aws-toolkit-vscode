@@ -70,6 +70,7 @@ export interface Query {
     readonly input: string
     readonly code?: string
     readonly trigger: Trigger
+    readonly inputType?: string
     readonly queryContext: QueryContext
     readonly sourceId?: string
     readonly implicit?: boolean
