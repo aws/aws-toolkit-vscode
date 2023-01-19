@@ -58,7 +58,9 @@ export class DefaultIamClient {
             throw new Error('No evaluation results found')
         }
 
-        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed')
+        // Ignore deny from Organization CSP.  These can result in false negatives.
+        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false)
+
     }
 
     private async createSdkClient(): Promise<IAM> {
