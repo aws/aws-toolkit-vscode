@@ -58,7 +58,10 @@ export class DefaultIamClient {
             throw new Error('No evaluation results found')
         }
 
-        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed')
+        // Ignore deny from Organization SCP.  These can result in false negatives.
+        // See https://github.com/aws/aws-sdk/issues/102
+        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false)
+
     }
 
     private async createSdkClient(): Promise<IAM> {
