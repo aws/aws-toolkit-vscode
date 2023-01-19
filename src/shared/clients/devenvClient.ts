@@ -6,11 +6,11 @@
 import got from 'got'
 import { getCodeCatalystDevEnvId } from '../vscode/env'
 
-const ENVIRONMENT_AUTH_TOKEN = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
-const ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
+const environmentAuthToken = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
+const environmentEndpoint = 'http://127.0.0.1:1339'
 
 export class DevEnvClient {
-    public constructor(private readonly endpoint: string = ENVIRONMENT_ENDPOINT) {}
+    public constructor(private readonly endpoint: string = environmentEndpoint) {}
 
     public get id(): string | undefined {
         return getCodeCatalystDevEnvId()
@@ -40,7 +40,7 @@ export class DevEnvClient {
     }
 
     private get authToken(): string | undefined {
-        return process.env[ENVIRONMENT_AUTH_TOKEN]
+        return process.env[environmentAuthToken]
     }
 
     private readonly got = got.extend({

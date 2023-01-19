@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import {
-    CLI_VERSION_STEP_FUNCTIONS_TEMPLATE,
+    cliVersionStepFunctionsTemplate,
     getSamCliTemplateParameter,
     getSamTemplateWizardOption,
     getTemplateDescription,
@@ -61,7 +61,7 @@ before(function () {
 describe('getSamTemplateWizardOption', function () {
     it('should successfully return available templates for specific runtime', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
+            const result = getSamTemplateWizardOption(runtime, 'Zip', cliVersionStepFunctionsTemplate)
             switch (runtime) {
                 case 'python3.7':
                 case 'python3.8':

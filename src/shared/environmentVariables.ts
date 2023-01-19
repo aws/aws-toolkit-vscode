@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 export interface EnvironmentVariables {
     HOME?: string
     USERPROFILE?: string

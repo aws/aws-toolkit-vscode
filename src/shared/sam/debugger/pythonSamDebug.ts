@@ -23,12 +23,12 @@ import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { sleep } from '../../utilities/timeoutUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
-const DEBUGPY_WRAPPER_PATH = '/tmp/lambci_debug_files/py_debug_wrapper.py'
+const debugpyWrapperPath = '/tmp/lambci_debug_files/py_debug_wrapper.py'
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -102,7 +102,7 @@ export async function makePythonDebugConfig(
             config.debuggerPath = globals.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
-            const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
+            const debugArgs = `${debugpyWrapperPath} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
             if (isImageLambda) {
                 const params = getPythonExeAndBootstrap(config.runtime)
                 config.debugArgs = [`${params.python} ${debugArgs} ${params.bootstrap}`]
@@ -224,8 +224,8 @@ export async function invokePythonLambda(
     config: PythonDebugConfiguration
 ): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([
-        WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-        WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
+        waitForDebuggerMessages.PYTHON,
+        waitForDebuggerMessages.PYTHON_IKPDB,
     ])
 
     // Must not used waitForPort() for ikpdb: the socket consumes

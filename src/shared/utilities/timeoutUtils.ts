@@ -6,14 +6,14 @@
 import globals from '../extensionGlobals'
 import { CancellationToken, EventEmitter, Event } from 'vscode'
 
-export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
-export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
-export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
+export const timeoutExpiredMessage = 'Timeout token expired'
+export const timeoutCancelledMessage = 'Timeout token cancelled'
+export const timeoutUnexpectedResolve = 'Promise resolved with an unexpected object'
 
 type CancellationAgent = 'user' | 'timeout'
 export class CancellationError extends Error {
     public constructor(public readonly agent: CancellationAgent) {
-        super(agent === 'user' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
+        super(agent === 'user' ? timeoutCancelledMessage : timeoutExpiredMessage)
     }
 
     public static isUserCancelled(err: any): err is CancellationError & { agent: 'user' } {
@@ -263,7 +263,7 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
     }
 
     if (result === undefined && (opt.allowUndefined ?? true) !== true) {
-        throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+        throw new Error(timeoutUnexpectedResolve)
     }
 
     return result as T

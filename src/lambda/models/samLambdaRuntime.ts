@@ -55,7 +55,7 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs8.10',
     'nodejs10.x',
 ])
-const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
+const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs14.x'],
     [RuntimeFamily.Python, 'python3.9'],
     [RuntimeFamily.DotNetCore, 'dotnetcore3.1'],
@@ -191,7 +191,7 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
  * Provides the default runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
-    return DEFAULT_RUNTIMES.get(runtime)
+    return defaultRuntimes.get(runtime)
 }
 
 /**

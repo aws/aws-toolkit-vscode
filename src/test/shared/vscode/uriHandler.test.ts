@@ -8,11 +8,11 @@ import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../../../shared/vscode/uriHandler'
 
 describe('UriHandler', function () {
-    const TEST_PATH = '/my/path'
+    const testPath = '/my/path'
     let uriHandler: UriHandler
 
     function makeUri(query?: string): vscode.Uri {
-        return vscode.Uri.parse(`scheme://authority${TEST_PATH}${query !== undefined ? `?${query}` : ''}`)
+        return vscode.Uri.parse(`scheme://authority${testPath}${query !== undefined ? `?${query}` : ''}`)
     }
 
     beforeEach(function () {
@@ -20,13 +20,13 @@ describe('UriHandler', function () {
     })
 
     it('can register a handler', async function () {
-        uriHandler.registerHandler(TEST_PATH, q => assert.strictEqual(q.get('key'), 'value'))
+        uriHandler.registerHandler(testPath, q => assert.strictEqual(q.get('key'), 'value'))
         return uriHandler.handleUri(makeUri('key=value'))
     })
 
     it('uses parser if available', async function () {
         uriHandler.registerHandler(
-            TEST_PATH,
+            testPath,
             q => assert.strictEqual(q.myNumber, 123),
             (q: SearchParams) => ({ myNumber: Number(q.get('myString')) })
         )
@@ -34,20 +34,20 @@ describe('UriHandler', function () {
     })
 
     it('can handle lists', async function () {
-        uriHandler.registerHandler(TEST_PATH, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
+        uriHandler.registerHandler(testPath, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
         return uriHandler.handleUri(makeUri('list=1&list=2&list=3'))
     })
 
     it('can dispose handlers', async function () {
         return new Promise((resolve, reject) => {
-            uriHandler.registerHandler(TEST_PATH, () => reject(new Error('this should not be called'))).dispose()
+            uriHandler.registerHandler(testPath, () => reject(new Error('this should not be called'))).dispose()
             uriHandler.handleUri(makeUri()).then(resolve)
         })
     })
 
     it('throws when registering handler for same path', function () {
-        uriHandler.registerHandler(TEST_PATH, () => {})
-        assert.throws(() => uriHandler.registerHandler(TEST_PATH, () => {}))
+        uriHandler.registerHandler(testPath, () => {})
+        assert.throws(() => uriHandler.registerHandler(testPath, () => {}))
     })
 
     it('catches errors thrown by the parser', function (done) {
@@ -56,7 +56,7 @@ describe('UriHandler', function () {
             throw new Error()
         }
 
-        uriHandler.registerHandler(TEST_PATH, handler, parser)
+        uriHandler.registerHandler(testPath, handler, parser)
         assert.doesNotReject(uriHandler.handleUri(makeUri('key=value'))).then(done, done)
     })
 
@@ -65,7 +65,7 @@ describe('UriHandler', function () {
             throw new Error()
         }
 
-        uriHandler.registerHandler(TEST_PATH, handler)
+        uriHandler.registerHandler(testPath, handler)
         return assert.doesNotReject(uriHandler.handleUri(makeUri()))
     })
 })

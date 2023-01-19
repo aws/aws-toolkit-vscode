@@ -63,11 +63,11 @@ describe('CredentialsProfileMru', function () {
     it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async function () {
         const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
 
-        for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {
+        for (let i = 0; i < CredentialsProfileMru.maxCredentialMruSize + 1; i++) {
             await credentialsMru.setMostRecentlyUsedProfile(`entry${i}`)
         }
 
         const mru = credentialsMru.getMruList()
-        assert.strictEqual(mru.length, CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
+        assert.strictEqual(mru.length, CredentialsProfileMru.maxCredentialMruSize)
     })
 })

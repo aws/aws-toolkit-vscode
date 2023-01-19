@@ -32,8 +32,8 @@ enum CodeGenerationStatus {
     CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS',
 }
 
-const RETRY_INTERVAL_MS = 2000
-const MAX_RETRIES = 150 // p100 of Java code generation is 250 seconds. So retry for an even 5 minutes.
+const retryintervalms = 2000
+const _maxRetries = 150 // p100 of Java code generation is 250 seconds. So retry for an even 5 minutes.
 
 export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel: vscode.OutputChannel) {
     const logger: Logger = getLogger()
@@ -217,8 +217,8 @@ export class CodeGenerationStatusPoller {
 
     public async pollForCompletion(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails,
-        retryInterval: number = RETRY_INTERVAL_MS,
-        maxRetries: number = MAX_RETRIES
+        retryInterval: number = retryintervalms,
+        maxRetries: number = _maxRetries
     ): Promise<string> {
         for (let i = 0; i < maxRetries; i++) {
             const codeGenerationStatus = await this.getCurrentStatus(codeDownloadRequest)

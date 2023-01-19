@@ -12,9 +12,9 @@ import {
     FilterBoxQuickPickPrompter,
     DataQuickPick,
     DataQuickPickItem,
-    DEFAULT_QUICKPICK_OPTIONS,
+    defaultQuickpickOptions,
     QuickPickPrompter,
-    CUSTOM_USER_INPUT,
+    customUserInput,
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
@@ -30,7 +30,7 @@ describe('createQuickPick', function () {
         const picker = prompter.quickPick
 
         Object.keys(picker).forEach(key => {
-            const defaultValue = (DEFAULT_QUICKPICK_OPTIONS as Record<string, any>)[key]
+            const defaultValue = (defaultQuickpickOptions as Record<string, any>)[key]
             if (defaultValue !== undefined) {
                 assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
             }
@@ -286,7 +286,7 @@ describe('QuickPickPrompter', function () {
 })
 
 describe('FilterBoxQuickPickPrompter', function () {
-    const TEST_TIMEOUT = 5000
+    const testTimeout = 5000
     const testItems = [
         { label: 'item1', data: 0 },
         { label: 'item2', data: 1 },
@@ -302,7 +302,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
-        setTimeout(picker.dispose.bind(picker), TEST_TIMEOUT)
+        setTimeout(picker.dispose.bind(picker), testTimeout)
     }
 
     function loadAndPrompt(): ReturnType<typeof testPrompter.prompt> {
@@ -369,7 +369,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 }
             })
 
-            testPrompter.recentItem = { data: CUSTOM_USER_INPUT, description: input } as any
+            testPrompter.recentItem = { data: customUserInput, description: input } as any
             picker.fireOnDidChangeValue(input)
         })
 

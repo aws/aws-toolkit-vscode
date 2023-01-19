@@ -11,8 +11,8 @@ import { isAutomation } from '../vscode/env'
 import { v4 as uuidv4 } from 'uuid'
 import { addTypeName } from '../utilities/typeConstructors'
 
-const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+const legacySettingsTelemetryValueDisable = 'Disable'
+const legacySettingsTelemetryValueEnable = 'Enable'
 
 const TelemetryFlag = addTypeName('boolean', convertLegacy)
 
@@ -28,9 +28,9 @@ export function convertLegacy(value: unknown): boolean {
     }
 
     // Set telemetry value to boolean if the current value matches the legacy value
-    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+    if (value === legacySettingsTelemetryValueDisable) {
         return false
-    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
+    } else if (value === legacySettingsTelemetryValueEnable) {
         return true
     } else {
         throw new TypeError(`Unknown telemetry setting: ${value}`)

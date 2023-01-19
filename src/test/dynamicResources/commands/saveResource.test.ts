@@ -12,8 +12,8 @@ import { AddOperation } from 'fast-json-patch'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 
 describe('createResource', function () {
-    const FAKE_TYPE = 'fakeType'
-    const FAKE_DEFINITION = '{}'
+    const fakeType = 'fakeType'
+    const fakeDefinition = '{}'
 
     let mockCloudControl: CloudControlClient
 
@@ -28,8 +28,8 @@ describe('createResource', function () {
         when(
             mockCloudControl.createResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    DesiredState: FAKE_DEFINITION,
+                    TypeName: fakeType,
+                    DesiredState: fakeDefinition,
                 })
             )
         ).thenResolve({
@@ -38,38 +38,38 @@ describe('createResource', function () {
             },
         })
 
-        await createResource(FAKE_TYPE, FAKE_DEFINITION, instance(mockCloudControl), window)
+        await createResource(fakeType, fakeDefinition, instance(mockCloudControl), window)
 
         verify(
             mockCloudControl.createResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    DesiredState: FAKE_DEFINITION,
+                    TypeName: fakeType,
+                    DesiredState: fakeDefinition,
                 })
             )
         ).once()
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.cancellable, false)
-        assert.deepStrictEqual(window.progress.reported, [{ message: `Creating resource (${FAKE_TYPE})...` }])
+        assert.deepStrictEqual(window.progress.reported, [{ message: `Creating resource (${fakeType})...` }])
 
-        assert.ok(window.message.information?.startsWith(`Created resource ${newIdentifier} (${FAKE_TYPE})`))
+        assert.ok(window.message.information?.startsWith(`Created resource ${newIdentifier} (${fakeType})`))
     })
 
     it('shows an error message when resource creation fails', async function () {
         when(
             mockCloudControl.createResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    DesiredState: FAKE_DEFINITION,
+                    TypeName: fakeType,
+                    DesiredState: fakeDefinition,
                 })
             )
         ).thenReject(new Error())
         const window = new FakeWindow()
 
         try {
-            await createResource(FAKE_TYPE, FAKE_DEFINITION, instance(mockCloudControl), window)
+            await createResource(fakeType, fakeDefinition, instance(mockCloudControl), window)
         } catch (err) {
-            assert.ok(window.message.error?.startsWith(`Failed to create resource (${FAKE_TYPE})`))
+            assert.ok(window.message.error?.startsWith(`Failed to create resource (${fakeType})`))
             return
         }
         assert.fail('Expected exception, but none was thrown.')
@@ -78,10 +78,10 @@ describe('createResource', function () {
     it('shows an error message when definition is not valid json', async function () {
         const window = new FakeWindow()
         try {
-            await createResource(FAKE_TYPE, 'foo', instance(mockCloudControl), window)
+            await createResource(fakeType, 'foo', instance(mockCloudControl), window)
         } catch (err) {
             verify(mockCloudControl.createResource(anything())).never()
-            assert.ok(window.message.error?.startsWith(`Failed to create resource (${FAKE_TYPE})`))
+            assert.ok(window.message.error?.startsWith(`Failed to create resource (${fakeType})`))
             return
         }
         assert.fail('Expected exception, but none was thrown.')
@@ -93,25 +93,25 @@ describe('createResource', function () {
         when(
             mockCloudControl.createResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    DesiredState: FAKE_DEFINITION,
+                    TypeName: fakeType,
+                    DesiredState: fakeDefinition,
                 })
             )
         ).thenReject(error)
         const window = new FakeWindow()
 
-        await createResource(FAKE_TYPE, FAKE_DEFINITION, instance(mockCloudControl), window)
+        await createResource(fakeType, fakeDefinition, instance(mockCloudControl), window)
 
-        assert.ok(window.message.warning?.startsWith(`${FAKE_TYPE} does not currently support resource creation`))
+        assert.ok(window.message.warning?.startsWith(`${fakeType} does not currently support resource creation`))
     })
 })
 
 describe('updateResource', function () {
-    const FAKE_TYPE = 'fakeType'
-    const FAKE_IDENTIFIER = 'fakeIdentifier'
-    const FAKE_DEFINITION = '{}'
-    const FAKE_OPERATION = { op: 'add', value: 'Foo' } as AddOperation<string>
-    const FAKE_DIFF = [FAKE_OPERATION]
+    const fakeType = 'fakeType'
+    const fakeIdentifier = 'fakeIdentifier'
+    const fakeDefinition = '{}'
+    const fakeOperation = { op: 'add', value: 'Foo' } as AddOperation<string>
+    const fakeDiff = [fakeOperation]
 
     let mockCloudControl: CloudControlClient
 
@@ -121,25 +121,25 @@ describe('updateResource', function () {
 
     it('updates resources, shows progress and confirmation', async function () {
         const window = new FakeWindow()
-        const patchJson = JSON.stringify(FAKE_DIFF)
+        const patchJson = JSON.stringify(fakeDiff)
 
         when(
             mockCloudControl.updateResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeType,
+                    Identifier: fakeIdentifier,
                     PatchDocument: patchJson,
                 })
             )
         ).thenResolve()
 
-        await updateResource(FAKE_TYPE, FAKE_IDENTIFIER, FAKE_DEFINITION, instance(mockCloudControl), window, FAKE_DIFF)
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), window, fakeDiff)
 
         verify(
             mockCloudControl.updateResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeType,
+                    Identifier: fakeIdentifier,
                     PatchDocument: patchJson,
                 })
             )
@@ -147,19 +147,19 @@ describe('updateResource', function () {
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.cancellable, false)
         assert.deepStrictEqual(window.progress.reported, [
-            { message: `Updating resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})...` },
+            { message: `Updating resource ${fakeIdentifier} (${fakeType})...` },
         ])
 
-        assert.ok(window.message.information?.startsWith(`Updated resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
+        assert.ok(window.message.information?.startsWith(`Updated resource ${fakeIdentifier} (${fakeType})`))
     })
 
     it('shows an error message when resource update fails', async function () {
-        const patchJson = JSON.stringify(FAKE_DIFF)
+        const patchJson = JSON.stringify(fakeDiff)
         when(
             mockCloudControl.updateResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeType,
+                    Identifier: fakeIdentifier,
                     PatchDocument: patchJson,
                 })
             )
@@ -167,16 +167,9 @@ describe('updateResource', function () {
         const window = new FakeWindow()
 
         try {
-            await updateResource(
-                FAKE_TYPE,
-                FAKE_IDENTIFIER,
-                FAKE_DEFINITION,
-                instance(mockCloudControl),
-                window,
-                FAKE_DIFF
-            )
+            await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), window, fakeDiff)
         } catch (err) {
-            assert.ok(window.message.error?.startsWith(`Failed to update resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
+            assert.ok(window.message.error?.startsWith(`Failed to update resource ${fakeIdentifier} (${fakeType})`))
             return
         }
         assert.fail('Expected exception, but none was thrown.')
@@ -185,27 +178,27 @@ describe('updateResource', function () {
     it('shows a warning message when there is no diff', async function () {
         const window = new FakeWindow()
 
-        await updateResource(FAKE_TYPE, FAKE_IDENTIFIER, FAKE_DEFINITION, instance(mockCloudControl), window, [])
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), window, [])
 
         verify(mockCloudControl.updateResource(anything())).never()
         assert.ok(window.message.warning?.startsWith(`Update cancelled`))
     })
 
     it('shows a warning if unsupported action', async function () {
-        const patchJson = JSON.stringify(FAKE_DIFF)
+        const patchJson = JSON.stringify(fakeDiff)
         const error = new Error('fake exception')
         error.name = 'UnsupportedActionException'
         when(
             mockCloudControl.updateResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeType,
+                    Identifier: fakeIdentifier,
                     PatchDocument: patchJson,
                 })
             )
         ).thenReject(error)
         const window = new FakeWindow()
-        await updateResource(FAKE_TYPE, FAKE_IDENTIFIER, FAKE_DEFINITION, instance(mockCloudControl), window, FAKE_DIFF)
-        assert.ok(window.message.warning?.startsWith(`${FAKE_TYPE} does not currently support resource updating`))
+        await updateResource(fakeType, fakeIdentifier, fakeDefinition, instance(mockCloudControl), window, fakeDiff)
+        assert.ok(window.message.warning?.startsWith(`${fakeType} does not currently support resource updating`))
     })
 })
