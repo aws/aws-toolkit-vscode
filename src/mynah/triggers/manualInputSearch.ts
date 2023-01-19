@@ -15,7 +15,7 @@ import { mynahSelectedCodeDecorator } from '../decorations/selectedCode'
 import { StatusBar } from '../utils/status-bar'
 import { CodeQuery, Query, QueryContext, SearchInput, Trigger } from '../models/model'
 import { TelemetryClientSession } from '../telemetry/telemetry/client'
-import { TelemetryEventName } from '../telemetry/telemetry/types'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class ManualInputSearch extends SearchInput {
     private apiHelpStatusBar!: StatusBar | undefined
@@ -186,10 +186,12 @@ export class ManualInputSearch extends SearchInput {
         const notificationInfo = await this.notificationInfoStore.getRecordFromGlobalStore(notificationName)
 
         if (notificationInfo === undefined || !notificationInfo.muted) {
-            this.telemetrySession.recordEvent(TelemetryEventName.VIEW_NOTIFICATION, {
-                notificationMetadata: {
-                    name: notificationName,
-                },
+            telemetry.mynah_viewNotification.emit({
+                mynahContext: JSON.stringify({
+                    notificationMetadata: {
+                        name: notificationName,
+                    },
+                }),
             })
 
             await vs.window
@@ -203,11 +205,13 @@ export class ManualInputSearch extends SearchInput {
                             notificationName,
                             true
                         )
-                        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-                            notificationMetadata: {
-                                name: notificationName,
-                                action: this.muteNotificationButtonText,
-                            },
+                        telemetry.mynah_actOnNotification.emit({
+                            mynahContext: JSON.stringify({
+                                notificationMetadata: {
+                                    name: notificationName,
+                                    action: this.muteNotificationButtonText,
+                                },
+                            }),
                         })
                     }
                 })

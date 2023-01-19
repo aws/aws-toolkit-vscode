@@ -4,11 +4,10 @@
  */
 
 import { WebviewPanel } from 'vscode'
-import { TelemetrySession } from '../telemetry/telemetry/interfaces'
 
 export interface Panel {
     webviewPanel: WebviewPanel
-    telemetrySession: TelemetrySession
+    searchId: string
 }
 
 export class PanelStore {

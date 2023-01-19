@@ -7,14 +7,9 @@ import * as vs from 'vscode'
 import { NotificationInfoStore } from '../../stores/notificationsInfoStore'
 import { getSimpleAndFqnNames } from '../../utils/document'
 import { mynahSelectedCodeDecorator } from '../../decorations/selectedCode'
-import { TelemetryClientSession } from '../../telemetry/telemetry/client'
-import { TelemetryEventName } from '../../telemetry/telemetry/types'
-
+import { telemetry } from '../../../shared/telemetry/telemetry'
 export class OnDidOpenTextDocumentNotificationsProcessor {
-    constructor(
-        private readonly notificationInfoStore: NotificationInfoStore,
-        private readonly telemetrySession: TelemetryClientSession
-    ) {}
+    constructor(private readonly notificationInfoStore: NotificationInfoStore) {}
 
     readonly apiHelpGuideNotificationName = 'api_help_guide'
 
@@ -97,11 +92,13 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                 )
                 .then(async selection => {
                     if (selection === muteButtonName) {
-                        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-                            notificationMetadata: {
-                                name: this.apiHelpGuideNotificationName,
-                                action: muteButtonName,
-                            },
+                        telemetry.mynah_actOnNotification.emit({
+                            mynahContext: JSON.stringify({
+                                notificationMetadata: {
+                                    name: this.apiHelpGuideNotificationName,
+                                    action: muteButtonName,
+                                },
+                            }),
                         })
 
                         await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
@@ -111,20 +108,24 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                         return
                     }
                     if (selection === declineButtonName) {
-                        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-                            notificationMetadata: {
-                                name: this.apiHelpGuideNotificationName,
-                                action: declineButtonName,
-                            },
+                        telemetry.mynah_actOnNotification.emit({
+                            mynahContext: JSON.stringify({
+                                notificationMetadata: {
+                                    name: this.apiHelpGuideNotificationName,
+                                    action: declineButtonName,
+                                },
+                            }),
                         })
                         return
                     }
                     if (selection === startButtonName) {
-                        this.telemetrySession.recordEvent(TelemetryEventName.CLICK_NOTIFICATION, {
-                            notificationMetadata: {
-                                name: this.apiHelpGuideNotificationName,
-                                action: startButtonName,
-                            },
+                        telemetry.mynah_actOnNotification.emit({
+                            mynahContext: JSON.stringify({
+                                notificationMetadata: {
+                                    name: this.apiHelpGuideNotificationName,
+                                    action: startButtonName,
+                                },
+                            }),
                         })
 
                         const decorations: any = []
@@ -145,10 +146,12 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                 })
 
             await this.notificationInfoStore.addNewViewToNotificationInGlobalStore(this.apiHelpGuideNotificationName)
-            this.telemetrySession.recordEvent(TelemetryEventName.VIEW_NOTIFICATION, {
-                notificationMetadata: {
-                    name: this.apiHelpGuideNotificationName,
-                },
+            telemetry.mynah_viewNotification.emit({
+                mynahContext: JSON.stringify({
+                    notificationMetadata: {
+                        name: this.apiHelpGuideNotificationName,
+                    },
+                }),
             })
         })
     }
