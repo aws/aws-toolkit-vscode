@@ -11,11 +11,11 @@ import { AwsContext } from '../awsContext'
 import { isReleaseVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
-import { DefaultTelemetryClient, REGION_KEY } from './telemetryClient'
+import { DefaultTelemetryClient, regionKey } from './telemetryClient'
 import { DefaultTelemetryPublisher } from './telemetryPublisher'
 import { TelemetryFeedback } from './telemetryClient'
 import { TelemetryPublisher } from './telemetryPublisher'
-import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryClient'
+import { accountMetadataKey, AccountStatus, computeRegionKey } from './telemetryClient'
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -237,12 +237,12 @@ export class DefaultTelemetryService {
             }
         }
 
-        const commonMetadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+        const commonMetadata = [{ Key: accountMetadataKey, Value: accountValue }]
         if (this.computeRegion) {
-            commonMetadata.push({ Key: COMPUTE_REGION_KEY, Value: this.computeRegion })
+            commonMetadata.push({ Key: computeRegionKey, Value: this.computeRegion })
         }
-        if (!event?.Metadata?.some((m: any) => m?.Key == REGION_KEY)) {
-            commonMetadata.push({ Key: REGION_KEY, Value: globals.regionProvider.guessDefaultRegion() })
+        if (!event?.Metadata?.some((m: any) => m?.Key == regionKey)) {
+            commonMetadata.push({ Key: regionKey, Value: globals.regionProvider.guessDefaultRegion() })
         }
 
         if (event.Metadata) {

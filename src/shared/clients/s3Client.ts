@@ -16,6 +16,7 @@ import { DEFAULT_PARTITION } from '../regions/regionProvider'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { toStream } from '../utilities/collectionUtils'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
 

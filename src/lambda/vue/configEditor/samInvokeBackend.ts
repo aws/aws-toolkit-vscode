@@ -160,7 +160,7 @@ export class SamInvokeWebview extends VueWebview {
      */
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
-        const NO_TEMPLATE = 'NOTEMPLATEFOUND'
+        const noTemplate = 'NOTEMPLATEFOUND'
         for (const template of globals.templateRegistry.registeredItems) {
             const resources = template.item.Resources
             if (resources) {
@@ -187,7 +187,7 @@ export class SamInvokeWebview extends VueWebview {
                     'No templates with valid SAM functions found.'
                 ),
                 detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-                templatePath: NO_TEMPLATE,
+                templatePath: noTemplate,
             })
         }
 
@@ -203,7 +203,7 @@ export class SamInvokeWebview extends VueWebview {
         })
         const selectedTemplate = picker.verifySinglePickerOutput(choices)
 
-        if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
+        if (!selectedTemplate || selectedTemplate.templatePath === noTemplate) {
             return
         }
 

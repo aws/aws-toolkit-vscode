@@ -8,16 +8,16 @@ import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
-export const CSHARP_LANGUAGE = 'csharp'
-export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
+export const csharpLanguage = 'csharp'
+export const csharpAllfiles: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: CSHARP_LANGUAGE,
+        language: csharpLanguage,
     },
 ]
-export const CSHARP_BASE_PATTERN = '**/*.csproj'
+export const csharpBasePattern = '**/*.csproj'
 
-const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic\b/
+const regexpReservedWordPublic = /\bpublic\b/
 
 export interface DotNetLambdaHandlerComponents {
     assembly: string
@@ -120,7 +120,7 @@ export function isPublicClassSymbol(
         const classDeclarationBeforeNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
         const classDeclarationBeforeName: string = document.getText(classDeclarationBeforeNameRange)
 
-        return REGEXP_RESERVED_WORD_PUBLIC.test(classDeclarationBeforeName)
+        return regexpReservedWordPublic.test(classDeclarationBeforeName)
     }
 
     return false
@@ -140,7 +140,7 @@ export function isValidLambdaHandler(
         const signatureBeforeMethodNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
         const signatureBeforeMethodName: string = document.getText(signatureBeforeMethodNameRange)
 
-        if (REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)) {
+        if (regexpReservedWordPublic.test(signatureBeforeMethodName)) {
             return isValidMethodSignature(symbol)
         }
     }

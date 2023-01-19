@@ -19,9 +19,9 @@ import { getIcon } from '../../shared/icons'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
-const CONTEXT_BASE = 'awsAppRunnerServiceNode'
+const contextBase = 'awsAppRunnerServiceNode'
 
-const OPERATION_STATUS = {
+const operationStatus = {
     START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'),
     CREATE_SERVICE: localize('AWS.apprunner.operationStatus.create', 'Creating...'),
     PAUSE_SERVICE: localize('AWS.apprunner.operationStatus.pause', 'Pausing...'),
@@ -30,7 +30,7 @@ const OPERATION_STATUS = {
     UPDATE_SERVICE: localize('AWS.apprunner.operationStatus.update', 'Updating...'),
 }
 
-type ServiceOperation = keyof typeof OPERATION_STATUS
+type ServiceOperation = keyof typeof operationStatus
 
 export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResourceNode {
     public readonly name: string
@@ -76,7 +76,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
 
     private setLabel(): void {
         const displayStatus = this.currentOperation.Type
-            ? OPERATION_STATUS[this.currentOperation.Type]
+            ? operationStatus[this.currentOperation.Type]
             : `${this._info.Status.charAt(0)}${this._info.Status.slice(1).toLowerCase().replace(/\_/g, ' ')}`
         this.label = `${this._info.ServiceName} [${displayStatus}]`
     }
@@ -138,7 +138,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         }
 
         this._info = Object.assign(this._info, info)
-        this.contextValue = `${CONTEXT_BASE}.${this._info.Status}`
+        this.contextValue = `${contextBase}.${this._info.Status}`
         this.setLabel()
     }
 

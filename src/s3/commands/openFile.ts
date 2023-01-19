@@ -11,7 +11,7 @@ import { S3FileViewerManager } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-const SIZE_LIMIT = 50 * Math.pow(10, 6)
+const sizeLimit = 50 * Math.pow(10, 6)
 
 export async function openFileReadModeCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
@@ -40,7 +40,7 @@ async function isFileSizeValid(
     fileNode: S3FileNode,
     window = Window.vscode()
 ): Promise<boolean> {
-    if (size && size > SIZE_LIMIT) {
+    if (size && size > sizeLimit) {
         const downloadAs = localize('AWS.s3.button.downloadAs', 'Download as..')
         window
             .showErrorMessage(

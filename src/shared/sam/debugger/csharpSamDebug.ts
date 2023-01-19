@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as semver from 'semver'
 import {
     DotNetCoreDebugConfiguration,
-    DOTNET_CORE_DEBUGGER_PATH,
+    dotnetCoreDebuggerPath,
     getCodeRoot,
     isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
@@ -243,7 +243,7 @@ export async function makeCoreCLRDebugConfiguration(
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+        codeUri = codeUri.replace(pathutil.driveLetterRegex, match => match.toUpperCase())
     }
 
     if (isImageLambda) {
@@ -278,14 +278,14 @@ export async function makeCoreCLRDebugConfiguration(
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
-            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+            debuggerPath: dotnetCoreDebuggerPath,
             pipeCwd: codeUri,
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
-                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+                debuggerPath: dotnetCoreDebuggerPath,
                 pipeCwd: codeUri,
             },
         },

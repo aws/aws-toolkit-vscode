@@ -11,6 +11,7 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
     python: 'ms-python.python',

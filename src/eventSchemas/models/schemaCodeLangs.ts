@@ -7,6 +7,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set as ImmutableSet } from 'immutable'
 import { goRuntimes } from '../../lambda/models/samLambdaRuntime'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 export const JAVA = 'Java 8+'
 export const PYTHON = 'Python 3.6+'
 export const TYPESCRIPT = 'Typescript 3+'

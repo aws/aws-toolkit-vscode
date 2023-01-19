@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import { getLogger } from '../shared/logger'

@@ -18,6 +18,7 @@ import { PromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { ToolkitError } from '../shared/errors'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
 export const enum TabMode {

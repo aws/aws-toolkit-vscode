@@ -20,7 +20,7 @@ import { getCodeCatalystSpaceName, getCodeCatalystProjectName } from '../shared/
 import { writeFile } from 'fs-extra'
 import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
+import { ensureDependencies, hostNamePrefix } from './tools'
 import { isCodeCatalystVSCode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -140,7 +140,7 @@ export function sshLogFileLocation(devenvId: string): string {
 }
 
 export function getHostNameFromEnv(env: DevEnvironmentId): string {
-    return `${HOST_NAME_PREFIX}${env.id}`
+    return `${hostNamePrefix}${env.id}`
 }
 
 export interface ConnectedDevEnv {
@@ -344,4 +344,4 @@ export interface DevEnvMemento {
     alias: string | undefined
 }
 
-export const CODECATALYST_RECONNECT_KEY = 'CODECATALYST_RECONNECT'
+export const codecatalystReconnectKey = 'CODECATALYST_RECONNECT'

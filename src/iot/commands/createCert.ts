@@ -15,6 +15,7 @@ import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
 const PEM_FILE_ENCODING = 'ascii'
 

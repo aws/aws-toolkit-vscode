@@ -22,7 +22,7 @@ export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInpu
 
 export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
-export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
+export const defaultInputboxOptions: vscode.InputBoxOptions = {
     ignoreFocusOut: true,
 }
 
@@ -34,7 +34,7 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
-    assign({ ...DEFAULT_INPUTBOX_OPTIONS, ...options }, inputBox)
+    assign({ ...defaultInputboxOptions, ...options }, inputBox)
     inputBox.buttons = options?.buttons ?? []
 
     const prompter = new InputBoxPrompter(inputBox)

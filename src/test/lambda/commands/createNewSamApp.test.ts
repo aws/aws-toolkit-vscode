@@ -13,7 +13,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     addInitialLaunchConfiguration,
     getProjectUri,
-    SAM_INIT_TEMPLATE_FILES,
+    samInitTemplateFiles,
     writeToolkitReadme,
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
@@ -81,7 +81,7 @@ describe('createNewSamApp', function () {
     describe('getProjectUri', function () {
         it('returns the target file when it exists', async function () {
             assert.strictEqual(
-                normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))?.fsPath ?? ''),
+                normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
             )
         })
@@ -91,15 +91,15 @@ describe('createNewSamApp', function () {
             fakeTarget = path.join(tempFolder, 'template.yml')
             testutil.toFile('target file', fakeTarget)
             assert.strictEqual(
-                normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))?.fsPath ?? ''),
+                normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
             )
         })
         it('returns undefined when the target does not exist', async function () {
             const badResponse1 = { location: fakeResponse.location, name: 'notreal' }
             const badResponse2 = { location: vscode.Uri.parse('fake://notreal'), name: 'notafile' }
-            assert.strictEqual((await getProjectUri(badResponse1, SAM_INIT_TEMPLATE_FILES))?.fsPath, undefined)
-            assert.strictEqual((await getProjectUri(badResponse2, SAM_INIT_TEMPLATE_FILES))?.fsPath, undefined)
+            assert.strictEqual((await getProjectUri(badResponse1, samInitTemplateFiles))?.fsPath, undefined)
+            assert.strictEqual((await getProjectUri(badResponse2, samInitTemplateFiles))?.fsPath, undefined)
         })
     })
 
@@ -112,7 +112,7 @@ describe('createNewSamApp', function () {
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -201,7 +201,7 @@ describe('createNewSamApp', function () {
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -238,7 +238,7 @@ describe('createNewSamApp', function () {
             const launchConfigs1 = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -248,7 +248,7 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 (await getProjectUri(
                     { location: fakeWorkspaceFolder.uri, name: 'otherFolder' },
-                    SAM_INIT_TEMPLATE_FILES
+                    samInitTemplateFiles
                 ))!,
                 undefined,
                 instance(mockLaunchConfiguration)

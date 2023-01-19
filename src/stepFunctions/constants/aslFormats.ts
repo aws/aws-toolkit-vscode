@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 export const JSON_ASL = 'asl'
 export const JSON_TYPE = 'json'
 export const YAML_ASL = 'asl-yaml'

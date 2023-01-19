@@ -19,10 +19,10 @@ import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
 
-const VSCODE_APPNAME = 'Visual Studio Code'
-const CLOUD9_APPNAME = 'AWS Cloud9'
-const CLOUD9_CN_APPNAME = 'Amazon Cloud9'
-const NOT_INITIALIZED = 'notInitialized'
+const vscodeAppname = 'Visual Studio Code'
+const cloud9Appname = 'AWS Cloud9'
+const cloud9CnAppname = 'Amazon Cloud9'
+const notInitialized = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
@@ -32,13 +32,13 @@ export enum IDE {
     unknown,
 }
 
-let computeRegion: string | undefined = NOT_INITIALIZED
+let computeRegion: string | undefined = notInitialized
 
 export function getIdeType(): IDE {
     const settings = DevSettings.instance
     if (
-        vscode.env.appName === CLOUD9_APPNAME ||
-        vscode.env.appName === CLOUD9_CN_APPNAME ||
+        vscode.env.appName === cloud9Appname ||
+        vscode.env.appName === cloud9CnAppname ||
         settings.get('forceCloud9', false)
     ) {
         return IDE.cloud9
@@ -46,7 +46,7 @@ export function getIdeType(): IDE {
 
     // Theia doesn't necessarily have all env propertie
     // so we should be defensive and assume appName is nullable.
-    if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
+    if (vscode.env.appName?.startsWith(vscodeAppname)) {
         return IDE.vscode
     }
 
@@ -359,7 +359,7 @@ export async function initializeComputeRegion(
 }
 
 export function getComputeRegion(): string | undefined {
-    if (computeRegion === NOT_INITIALIZED) {
+    if (computeRegion === notInitialized) {
         throw new Error('Attempted to get compute region without initializing.')
     }
 

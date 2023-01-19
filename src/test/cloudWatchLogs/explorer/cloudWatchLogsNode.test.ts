@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
+import { contextValueCloudwatchLog, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
@@ -58,7 +58,7 @@ describe('CloudWatchLogsNode', function () {
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_CLOUDWATCH_LOG,
+                contextValueCloudwatchLog,
                 'expected the node to have a CloudWatch Log contextValue'
             )
         )

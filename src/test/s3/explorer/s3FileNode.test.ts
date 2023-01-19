@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
-import { S3_DATE_FORMAT, S3FileNode } from '../../../s3/explorer/s3FileNode'
+import { s3DateFormat, S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 
 describe('S3FileNode', function () {
@@ -16,7 +16,7 @@ describe('S3FileNode', function () {
     const sizeBytes = 1024
     const lastModified = new Date(2020, 5, 4, 3, 2, 1)
     const now = new Date(2020, 6, 4)
-    const lastModifiedReadable = moment(lastModified).format(S3_DATE_FORMAT)
+    const lastModifiedReadable = moment(lastModified).format(s3DateFormat)
 
     it('creates an S3 File Node', async function () {
         const node = new S3FileNode(

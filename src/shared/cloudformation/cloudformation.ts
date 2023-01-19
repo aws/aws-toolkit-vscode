@@ -11,11 +11,12 @@ import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
-import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
 import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
+    /* eslint @typescript-eslint/naming-convention: 0 */
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
     export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
@@ -421,7 +422,7 @@ export namespace CloudFormation {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (resource.Properties) {
-            if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
+            if (resource.Properties.PackageType === lambdaPackageTypeImage) {
                 if (!validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
                 }

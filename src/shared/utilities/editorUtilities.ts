@@ -6,10 +6,10 @@
 import * as _path from 'path'
 import { Settings } from '../settings'
 
-const DEFAULT_TAB_SIZE = 4
+const defaultTabSize = 4
 
 export function getTabSizeSetting(): number {
-    return Settings.instance.getSection('editor').get('tabSize', DEFAULT_TAB_SIZE)
+    return Settings.instance.getSection('editor').get('tabSize', defaultTabSize)
 }
 
 export function getInlineSuggestEnabled(): boolean {

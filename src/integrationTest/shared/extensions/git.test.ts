@@ -15,6 +15,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { getMinVsCodeVersion } from '../../../../scripts/test/launchTestUtilities' // TODO: don't use stuff from 'scripts'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
 const TEST_REMOTE_NAME = 'test-origin'
 const TEST_REMOTE_URL = 'https://github.com/aws/aws-toolkit-vscode'
 const TEST_REMOTE_BRANCH = 'master'
