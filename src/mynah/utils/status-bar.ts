@@ -40,7 +40,11 @@ export class StatusBar {
         // If there is one single command, it will be set directly
         if (typeof props.commands !== 'undefined') {
             if (Object.keys(props.commands).length === 1) {
-                this.statusBar.command = props.commands[Object.keys(props.commands)[0]]
+                this.statusBar.command = {
+                    title: props.text,
+                    command: props.commands[Object.keys(props.commands)[0]],
+                    arguments: [{ inputTrigger: 'STATUS_BAR' }],
+                }
             } else {
                 this.statusBar.command = this.createQuickPick(props.commands)
             }

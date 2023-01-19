@@ -93,7 +93,6 @@ export class ManualInputSearch extends SearchInput {
 
         vs.window.onDidChangeTextEditorSelection(async event => {
             if (await this.checkIfSelectionHasFQNs()) {
-                // TODO: add arguments for this call
                 this.apiHelpStatusBar = new StatusBar({
                     text: 'Show similar examples with Mynah',
                     commands: { Examples: 'Mynah.show' },
