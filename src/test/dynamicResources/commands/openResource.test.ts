@@ -14,11 +14,11 @@ import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resou
 import { getDiagnostics, openResource } from '../../../dynamicResources/commands/openResource'
 
 describe('openResource', function () {
-    const FAKE_TYPE = 'fakeType'
-    const FAKE_IDENTIFIER = 'fakeIdentifier'
+    const fakeType = 'fakeType'
+    const fakeIdentifier = 'fakeIdentifier'
     let mockResourceManager: AwsResourceManager
     let mockDiagnosticCollection: vscode.DiagnosticCollection
-    const fakeResourceNode = new ResourceNode({ typeName: FAKE_TYPE } as ResourceTypeNode, FAKE_IDENTIFIER)
+    const fakeResourceNode = new ResourceNode({ typeName: fakeType } as ResourceTypeNode, fakeIdentifier)
 
     beforeEach(function () {
         mockResourceManager = mock()
@@ -40,7 +40,7 @@ describe('openResource', function () {
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.cancellable, false)
         assert.deepStrictEqual(window.progress.reported, [
-            { message: `Opening resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})...` },
+            { message: `Opening resource ${fakeIdentifier} (${fakeType})...` },
         ])
     })
 
@@ -56,7 +56,7 @@ describe('openResource', function () {
             },
             window
         )
-        assert.ok(window.message.error?.startsWith(`Failed to open resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
+        assert.ok(window.message.error?.startsWith(`Failed to open resource ${fakeIdentifier} (${fakeType})`))
     })
 
     it('handles opening ResourceNodes', async function () {

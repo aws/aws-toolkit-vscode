@@ -29,16 +29,16 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const CACHE_DIR = join(homedir(), '.aws', 'sso', 'cache')
+const cacheDir = join(homedir(), '.aws', 'sso', 'cache')
 
-export function getCache(directory = CACHE_DIR): SsoCache {
+export function getCache(directory = cacheDir): SsoCache {
     return {
         token: getTokenCache(directory),
         registration: getRegistrationCache(directory),
     }
 }
 
-export function getRegistrationCache(directory = CACHE_DIR): KeyedCache<ClientRegistration, RegistrationKey> {
+export function getRegistrationCache(directory = cacheDir): KeyedCache<ClientRegistration, RegistrationKey> {
     const hashScopes = (scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         scopes.forEach(s => shasum.update(s))
@@ -61,7 +61,7 @@ export function getRegistrationCache(directory = CACHE_DIR): KeyedCache<ClientRe
     return mapCache(cache, read, write)
 }
 
-export function getTokenCache(directory = CACHE_DIR): KeyedCache<SsoAccess> {
+export function getTokenCache(directory = cacheDir): KeyedCache<SsoAccess> {
     // Older specs do not store the registration
     type MaybeRegistration = Partial<Omit<ClientRegistration, 'expiresAt'> & { readonly registrationExpiresAt: string }>
 

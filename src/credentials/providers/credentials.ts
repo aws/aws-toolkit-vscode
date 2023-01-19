@@ -6,7 +6,7 @@
 import * as AWS from '@aws-sdk/types'
 import { CredentialSourceId, CredentialType } from '../../shared/telemetry/telemetry'
 
-const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
+const credentialsProviderIdSeparator = ':'
 
 /**
  * "Fully-qualified" credentials structure (source + name).
@@ -28,11 +28,11 @@ export interface CredentialsId {
  * @param credentials  Value to be formatted.
  */
 export function asString(credentials: CredentialsId): string {
-    return [credentials.credentialSource, credentials.credentialTypeId].join(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+    return [credentials.credentialSource, credentials.credentialTypeId].join(credentialsProviderIdSeparator)
 }
 
 export function fromString(credentials: string): CredentialsId {
-    const separatorPos = credentials.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+    const separatorPos = credentials.indexOf(credentialsProviderIdSeparator)
 
     if (separatorPos === -1) {
         throw new Error(`Unexpected credentialsId format: ${credentials}`)

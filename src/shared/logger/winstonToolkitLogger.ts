@@ -15,7 +15,7 @@ import { formatError, ToolkitError, UnknownError } from '../errors'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
-const LOGMAP_SIZE: number = 1000
+const logmapSize: number = 1000
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     private readonly logger: winston.Logger
     private disposed: boolean = false
@@ -139,7 +139,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             this.logger.log(level, message, ...meta, { logID: this.idCounter })
         }
 
-        this.logMap[this.idCounter % LOGMAP_SIZE] = {}
+        this.logMap[this.idCounter % logmapSize] = {}
         return this.idCounter++
     }
 
@@ -159,12 +159,12 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         }
 
         // This prevents callers from getting stale logs
-        if (this.idCounter - logID > LOGMAP_SIZE) {
+        if (this.idCounter - logID > logmapSize) {
             return undefined
         }
 
-        if (this.logMap[logID % LOGMAP_SIZE]) {
-            return this.logMap[logID % LOGMAP_SIZE][file.toString(true)]
+        if (this.logMap[logID % logmapSize]) {
+            return this.logMap[logID % logmapSize][file.toString(true)]
         }
     }
 
@@ -176,7 +176,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * @param obj  Object passed from the event
      */
     private parseLogObject(file: vscode.Uri, obj: any): void {
-        const logID: number = parseInt(obj.logID) % LOGMAP_SIZE
+        const logID: number = parseInt(obj.logID) % logmapSize
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
         const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 

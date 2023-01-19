@@ -38,7 +38,7 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 
-const BACKOFF_DELAY_MS = 5000
+const backoffDelayMs = 5000
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
@@ -75,7 +75,7 @@ export class OidcClient {
         }
     }
 
-    public async pollForToken(request: CreateTokenRequest, timeout: number, interval = BACKOFF_DELAY_MS) {
+    public async pollForToken(request: CreateTokenRequest, timeout: number, interval = backoffDelayMs) {
         while (this.clock.Date.now() + interval <= timeout) {
             try {
                 return await this.createToken(request)
@@ -85,7 +85,7 @@ export class OidcClient {
                 }
 
                 if (err instanceof SlowDownException) {
-                    interval += BACKOFF_DELAY_MS
+                    interval += backoffDelayMs
                 } else if (!(err instanceof AuthorizationPendingException)) {
                     throw err
                 }

@@ -11,10 +11,10 @@ import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 
-const REQUEST_BODY = 'request body string'
-const ASSET_URL = 'https://something'
-const FILE_PATH = '/some/path'
-const STORAGE_KEY = 'KEY'
+const requestBody = 'request body string'
+const assetUrl = 'https://something'
+const filePath = '/some/path'
+const storageKey = 'KEY'
 let tempFolder = ''
 
 describe('StateMachineGraphCache', function () {
@@ -33,7 +33,7 @@ describe('StateMachineGraphCache', function () {
                 get: sinon.stub().returns(undefined),
             }
 
-            const getFileData = sinon.stub().resolves(REQUEST_BODY)
+            const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
@@ -49,13 +49,13 @@ describe('StateMachineGraphCache', function () {
 
             await cache.updateCachedFile({
                 globalStorage,
-                lastDownloadedURLKey: STORAGE_KEY,
-                currentURL: ASSET_URL,
-                filePath: FILE_PATH,
+                lastDownloadedURLKey: storageKey,
+                currentURL: assetUrl,
+                filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
-            assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
+            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.ok(writeFile.calledWith(filePath, requestBody))
         })
 
         it('downloads and stores a file when cached file exists but url has been updated', async function () {
@@ -64,7 +64,7 @@ describe('StateMachineGraphCache', function () {
                 get: sinon.stub().returns('https://old-url'),
             }
 
-            const getFileData = sinon.stub().resolves(REQUEST_BODY)
+            const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
@@ -80,22 +80,22 @@ describe('StateMachineGraphCache', function () {
 
             await cache.updateCachedFile({
                 globalStorage,
-                lastDownloadedURLKey: STORAGE_KEY,
-                currentURL: ASSET_URL,
-                filePath: FILE_PATH,
+                lastDownloadedURLKey: storageKey,
+                currentURL: assetUrl,
+                filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
-            assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
+            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.ok(writeFile.calledWith(filePath, requestBody))
         })
 
         it('it does not store data when file exists and url for it is same', async function () {
             const globalStorage = {
                 update: sinon.spy(),
-                get: sinon.stub().returns(ASSET_URL),
+                get: sinon.stub().returns(assetUrl),
             }
 
-            const getFileData = sinon.stub().resolves(REQUEST_BODY)
+            const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
@@ -111,9 +111,9 @@ describe('StateMachineGraphCache', function () {
 
             await cache.updateCachedFile({
                 globalStorage,
-                lastDownloadedURLKey: STORAGE_KEY,
-                currentURL: ASSET_URL,
-                filePath: FILE_PATH,
+                lastDownloadedURLKey: storageKey,
+                currentURL: assetUrl,
+                filePath: filePath,
             })
 
             assert.ok(globalStorage.update.notCalled)
@@ -126,7 +126,7 @@ describe('StateMachineGraphCache', function () {
                 get: sinon.stub().returns(undefined),
             }
 
-            const getFileData = sinon.stub().resolves(REQUEST_BODY)
+            const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(false)
 
             const writeFile = sinon.spy()
@@ -146,13 +146,13 @@ describe('StateMachineGraphCache', function () {
 
             await cache.updateCachedFile({
                 globalStorage,
-                lastDownloadedURLKey: STORAGE_KEY,
-                currentURL: ASSET_URL,
-                filePath: FILE_PATH,
+                lastDownloadedURLKey: storageKey,
+                currentURL: assetUrl,
+                filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
-            assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
+            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.ok(writeFile.calledWith(filePath, requestBody))
             assert.ok(makeDir.calledWith(dirPath))
         })
     })

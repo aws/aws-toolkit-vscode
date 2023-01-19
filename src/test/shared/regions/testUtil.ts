@@ -7,8 +7,8 @@ import { Memento } from 'vscode'
 import { AwsContext } from '../../../shared/awsContext'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 
-export const DEFAULT_TEST_REGION_CODE = 'someRegion'
-export const DEFAULT_TEST_REGION_NAME = 'Some Region'
+export const DEFAULT_TEST_REGION_CODE = 'someRegion' // eslint-disable-line @typescript-eslint/naming-convention
+export const DEFAULT_TEST_REGION_NAME = 'Some Region' // eslint-disable-line @typescript-eslint/naming-convention
 
 const endpoints = {
     partitions: [

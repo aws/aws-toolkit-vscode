@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const AWS_EVENT_SCHEMA_CONTENT = `{
+export const awsEventSchemaContent = `{
     "openapi" : "3.0.0",
     "info" : {
       "version" : "1.0.0",
@@ -68,7 +68,7 @@ export const AWS_EVENT_SCHEMA_CONTENT = `{
     }
   }`
 
-export const PARTNER_SCHEMA_CONTENT = `{
+export const partnerSchemaContent = `{
     "openapi": "3.0.0",
     "info": {
       "version": "1.0.0",
@@ -136,7 +136,7 @@ export const PARTNER_SCHEMA_CONTENT = `{
     }
   }`
 
-export const CUSTOMER_UPLOADED_SCHEMA = `{
+export const customerUploadedSchema = `{
     "openapi": "3.0.0",
     "info": {
       "version": "1.0.0",
@@ -164,7 +164,7 @@ export const CUSTOMER_UPLOADED_SCHEMA = `{
     }
   }`
 
-export const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES = `{
+export const customerUploadedSchemaMultipleTypes = `{
     "openapi": "3.0.0",
     "info": {
       "version": "1.0.0",

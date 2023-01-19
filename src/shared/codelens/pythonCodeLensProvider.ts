@@ -8,15 +8,15 @@ import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
-export const PYTHON_LANGUAGE = 'python'
-export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
+export const pythonLanguage = 'python'
+export const pythonAllfiles: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: PYTHON_LANGUAGE,
+        language: pythonLanguage,
     },
 ]
 
-export const PYTHON_BASE_PATTERN = '**/requirements.txt'
+export const pythonBasePattern = '**/requirements.txt'
 
 export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
     const rootUri = (await findParentProjectFile(uri, /^requirements\.txt$/)) || uri

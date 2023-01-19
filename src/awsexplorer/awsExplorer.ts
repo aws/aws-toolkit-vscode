@@ -25,7 +25,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
 
-    private readonly ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
+    private readonly rootNodeAddRegion = new AWSCommandTreeNode(
         undefined,
         localize('AWS.explorerNode.addRegion', 'Add regions to {0} Explorer...', getIdeProperties().company),
         'aws.showRegion',
@@ -129,7 +129,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         )
 
         if (this.regionNodes.size === 0) {
-            return [this.getAuthNode(), this.ROOT_NODE_ADD_REGION]
+            return [this.getAuthNode(), this.rootNodeAddRegion]
         }
 
         return await makeChildrenNodes({

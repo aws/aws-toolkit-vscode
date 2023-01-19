@@ -18,7 +18,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 
-const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000
+const deleteFileDisplayTimeoutMs = 2000
 
 /**
  * Deletes the file represented by the given node.
@@ -62,7 +62,7 @@ export async function deleteFileCommand(
         getLogger().info(`deleted file: ${filePath}`)
         window.setStatusBarMessage(
             addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted: {0}', node.file.name)),
-            DELETE_FILE_DISPLAY_TIMEOUT_MS
+            deleteFileDisplayTimeoutMs
         )
     })
 }

@@ -16,8 +16,8 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('ResourcesNode', function () {
     let settings: ResourcesSettings
@@ -79,14 +79,14 @@ describe('ResourcesNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        resourceTypes = UNSORTED_TEXT
+        resourceTypes = unsortedText
 
         await setConfiguration(resourceTypes)
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     async function setConfiguration(resourceTypes: string[]) {

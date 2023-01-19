@@ -200,6 +200,7 @@ describe('runSamCliInit', async function () {
         before(function () {
             lazyLoadSamTemplateStrings()
 
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             extraContent = {
                 AWS_Schema_registry: 'testRegistry',
                 AWS_Schema_name: 'testSchema',

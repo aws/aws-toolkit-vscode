@@ -17,7 +17,7 @@ import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSam
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
-import { TEMPLATE_FILE_GLOB_PATTERN } from '../../../shared/cloudformation/activation'
+import { templateFileGlobPattern } from '../../../shared/cloudformation/activation'
 import globals from '../../../shared/extensionGlobals'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
@@ -105,7 +105,7 @@ describe('LaunchConfiguration', function () {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp6-zip/template.yaml'))
 
     beforeEach(async function () {
-        await globals.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        await globals.templateRegistry.addWatchPattern(templateFileGlobPattern)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()

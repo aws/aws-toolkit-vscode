@@ -174,11 +174,13 @@ export class IteratingQuickPickController<TResponse> {
 
     // Default constructs are public static so they can be validated aganist by other functions.
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     public static readonly NO_ITEMS_ITEM: vscode.QuickPickItem = {
         label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
         detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
         alwaysShow: true,
     }
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     public static readonly ERROR_ITEM: vscode.QuickPickItem = {
         label: localize('AWS.picker.dynamic.errorNode.label', 'There was an error retrieving more items.'),
         alwaysShow: true,

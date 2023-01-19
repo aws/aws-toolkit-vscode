@@ -19,7 +19,7 @@ export interface InstanceIdentity {
 
 export type Ec2MetadataClient = ClassToInterfaceType<DefaultEc2MetadataClient>
 export class DefaultEc2MetadataClient {
-    private static readonly METADATA_SERVICE_TIMEOUT: number = 500
+    private static readonly metadataServiceTimeout: number = 500
 
     public constructor(private metadata: MetadataService = DefaultEc2MetadataClient.getMetadataService()) {}
 
@@ -51,8 +51,8 @@ export class DefaultEc2MetadataClient {
     private static getMetadataService() {
         return new MetadataService({
             httpOptions: {
-                timeout: DefaultEc2MetadataClient.METADATA_SERVICE_TIMEOUT,
-                connectTimeout: DefaultEc2MetadataClient.METADATA_SERVICE_TIMEOUT,
+                timeout: DefaultEc2MetadataClient.metadataServiceTimeout,
+                connectTimeout: DefaultEc2MetadataClient.metadataServiceTimeout,
             } as any,
             // workaround for known bug: https://github.com/aws/aws-sdk-js/issues/3029
         })

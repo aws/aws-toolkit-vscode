@@ -7,11 +7,11 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import globals from './extensionGlobals'
 
-export const ACTIVATION_TEMPLATE_PATH_KEY = 'ACTIVATION_TEMPLATE_PATH_KEY'
-export const ACTIVATION_LAUNCH_PATH_KEY = 'ACTIVATION_LAUNCH_PATH_KEY'
-export const SAM_INIT_RUNTIME_KEY = 'SAM_INIT_RUNTIME_KEY'
-export const SAM_INIT_IMAGE_BOOLEAN_KEY = 'SAM_INIT_IMAGE_BOOLEAN_KEY'
-export const SAM_INIT_ARCH_KEY = 'SAM_INIT_ARCH_KEY'
+export const activationTemplatePathKey = 'ACTIVATION_TEMPLATE_PATH_KEY'
+export const activationLaunchPathKey = 'ACTIVATION_LAUNCH_PATH_KEY'
+export const samInitRuntimeKey = 'SAM_INIT_RUNTIME_KEY'
+export const samInitImageBooleanKey = 'SAM_INIT_IMAGE_BOOLEAN_KEY'
+export const samInitArchKey = 'SAM_INIT_ARCH_KEY'
 
 export interface SamInitState {
     template: string | undefined
@@ -27,28 +27,28 @@ export interface SamInitState {
 export class ActivationReloadState {
     public getSamInitState(): SamInitState | undefined {
         return {
-            template: this.extensionContext.globalState.get<string>(ACTIVATION_TEMPLATE_PATH_KEY),
-            readme: this.extensionContext.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY),
-            runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),
-            architecture: this.extensionContext.globalState.get<string>(SAM_INIT_ARCH_KEY),
-            isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY),
+            template: this.extensionContext.globalState.get<string>(activationTemplatePathKey),
+            readme: this.extensionContext.globalState.get<string>(activationLaunchPathKey),
+            runtime: this.extensionContext.globalState.get<string>(samInitRuntimeKey),
+            architecture: this.extensionContext.globalState.get<string>(samInitArchKey),
+            isImage: this.extensionContext.globalState.get<boolean>(samInitImageBooleanKey),
         }
     }
 
     public setSamInitState(state: SamInitState): void {
-        this.extensionContext.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, state.template)
-        this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, state.readme)
-        this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, state.runtime)
-        this.extensionContext.globalState.update(SAM_INIT_ARCH_KEY, state.architecture)
-        this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, state.isImage)
+        this.extensionContext.globalState.update(activationTemplatePathKey, state.template)
+        this.extensionContext.globalState.update(activationLaunchPathKey, state.readme)
+        this.extensionContext.globalState.update(samInitRuntimeKey, state.runtime)
+        this.extensionContext.globalState.update(samInitArchKey, state.architecture)
+        this.extensionContext.globalState.update(samInitImageBooleanKey, state.isImage)
     }
 
     public clearSamInitState(): void {
-        this.extensionContext.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, undefined)
-        this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
-        this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
-        this.extensionContext.globalState.update(SAM_INIT_ARCH_KEY, undefined)
-        this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, undefined)
+        this.extensionContext.globalState.update(activationTemplatePathKey, undefined)
+        this.extensionContext.globalState.update(activationLaunchPathKey, undefined)
+        this.extensionContext.globalState.update(samInitRuntimeKey, undefined)
+        this.extensionContext.globalState.update(samInitArchKey, undefined)
+        this.extensionContext.globalState.update(samInitImageBooleanKey, undefined)
     }
 
     protected get extensionContext(): vscode.ExtensionContext {

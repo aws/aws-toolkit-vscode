@@ -8,9 +8,9 @@ import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import * as assert from 'assert'
 import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 
-const COMMENT = 'comment'
-const SENTIMENT = 'Positive'
-const message = { command: 'submitFeedback', comment: COMMENT, sentiment: SENTIMENT }
+const comment = 'comment'
+const sentiment = 'Positive'
+const message = { command: 'submitFeedback', comment: comment, sentiment: sentiment }
 
 describe('submitFeedbackListener', function () {
     let mockTelemetry: TelemetryService
@@ -23,7 +23,7 @@ describe('submitFeedbackListener', function () {
         const webview = new FeedbackWebview(instance(mockTelemetry))
         await webview.submit(message)
 
-        verify(mockTelemetry.postFeedback(deepEqual({ comment: COMMENT, sentiment: SENTIMENT }))).once()
+        verify(mockTelemetry.postFeedback(deepEqual({ comment: comment, sentiment: sentiment }))).once()
         assert.ok(webview.isDisposed)
     })
 

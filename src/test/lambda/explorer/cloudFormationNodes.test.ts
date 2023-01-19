@@ -9,7 +9,7 @@ import * as os from 'os'
 import {
     CloudFormationNode,
     CloudFormationStackNode,
-    CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+    contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -123,7 +123,7 @@ describe('CloudFormationStackNode', function () {
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+                contextValueCloudformationLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
         )

@@ -16,15 +16,13 @@ export type EcsResourceAndToken = {
     nextToken?: string
 }
 
-const MAX_RESULTS_PER_RESPONSE = 10
+const maxResultsPerResponse = 10
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
     public async getClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const clusterArnList = await sdkClient
-            .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
-            .promise()
+        const clusterArnList = await sdkClient.listClusters({ maxResults: maxResultsPerResponse, nextToken }).promise()
         if (clusterArnList.clusterArns?.length === 0) {
             return { resource: [] }
         }
@@ -54,7 +52,7 @@ export class DefaultEcsClient {
     public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
         const serviceArnList = await sdkClient
-            .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
+            .listServices({ cluster: cluster, maxResults: maxResultsPerResponse, nextToken })
             .promise()
         if (serviceArnList.serviceArns?.length === 0) {
             return { resource: [] }

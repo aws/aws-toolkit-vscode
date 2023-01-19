@@ -21,8 +21,8 @@ export interface JavaStatement {
     packages: string[]
 }
 
-export const IMPORT_REGEX = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
-export const PACKAGE_REGEX = /^package\s+([\w\.]+)\s*;/gm
+export const importRegex = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
+export const packageRegex = /^package\s+([\w\.]+)\s*;/gm
 
 export class JavaDependencyGraph extends DependencyGraph {
     private _outputDirs: Set<string> = new Set<string>()
@@ -44,8 +44,8 @@ export class JavaDependencyGraph extends DependencyGraph {
 
     private extractStatement(content: string): JavaStatement {
         return {
-            imports: content.match(new RegExp(IMPORT_REGEX)) ?? [],
-            packages: content.match(new RegExp(PACKAGE_REGEX)) ?? [],
+            imports: content.match(new RegExp(importRegex)) ?? [],
+            packages: content.match(new RegExp(packageRegex)) ?? [],
         }
     }
 

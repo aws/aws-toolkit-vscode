@@ -14,7 +14,7 @@ import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { DEFAULT_DNS_SUFFIX, RegionProvider } from '../../shared/regions/regionProvider'
+import { defaultDnsSuffix, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -29,7 +29,7 @@ export async function copyUrlCommand(
     window = Window.vscode()
 ): Promise<void> {
     const region = node.regionCode
-    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
+    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
     const client = new DefaultApiGatewayClient(region)
 
     let stages: Stage[]
