@@ -1205,7 +1205,8 @@
             "editor/context": [
                 {
                     "command": "Mynah.show",
-                    "group": "4_search"
+                    "group": "4_search",
+                    "args": "{\"inputTrigger\": \"MENU\"}"
                 }
             ],
             "editor/title/context": [
@@ -3302,7 +3303,8 @@
             {
                 "command": "Mynah.show",
                 "key": "ctrl+m",
-                "mac": "cmd+m"
+                "mac": "cmd+m",
+                "args": "{\"inputTrigger\": \"KEYBOARD\"}"
             }
         ],
         "grammars": [
