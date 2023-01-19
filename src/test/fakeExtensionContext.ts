@@ -11,7 +11,7 @@ import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
     minimumSamCliVersionInclusive,
-    minimumSamCliVersionInclusiveForGoSupport,
+    minSamCliVersionInclusiveForGoSupport,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
@@ -113,7 +113,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
                     return new FakeChildProcessResult({})
                 }),
-                validator: new FakeSamCliValidator(minimumSamCliVersionInclusiveForGoSupport),
+                validator: new FakeSamCliValidator(minSamCliVersionInclusiveForGoSupport),
             } as SamCliContext
         }
         const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })

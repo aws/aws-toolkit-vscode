@@ -28,8 +28,8 @@ import {
 } from '../models/samTemplates'
 import * as semver from 'semver'
 import {
-    minimumSamCliVersionInclusiveForArmSupport,
-    minimumSamCliVersionInclusiveForImageSupport,
+    minSamCliVersionInclusiveForArmSupport,
+    minSamCliVersionInclusiveForImageSupport,
 } from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -57,7 +57,7 @@ export interface CreateNewSamAppWizardForm {
 
 function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimeAndPackage> {
     return createRuntimeQuickPick({
-        showImageRuntimes: semver.gte(samCliVersion, minimumSamCliVersionInclusiveForImageSupport),
+        showImageRuntimes: semver.gte(samCliVersion, minSamCliVersionInclusiveForImageSupport),
         buttons: createCommonButtons(samInitDocUrl),
     })
 }
@@ -226,7 +226,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
                 return false
             }
 
-            if (semver.lt(context.samCliVersion, minimumSamCliVersionInclusiveForArmSupport)) {
+            if (semver.lt(context.samCliVersion, minSamCliVersionInclusiveForArmSupport)) {
                 return false
             }
 

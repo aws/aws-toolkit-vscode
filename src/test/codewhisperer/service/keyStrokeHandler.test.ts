@@ -26,7 +26,7 @@ describe('keyStrokeHandler', function () {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
         isAutomatedTriggerEnabled: true,
-        isIncludeSuggestionsWithCodeReferencesEnabled: true,
+        isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
     }
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
@@ -59,7 +59,7 @@ describe('keyStrokeHandler', function () {
                 isShowMethodsEnabled: true,
                 isManualTriggerEnabled: true,
                 isAutomatedTriggerEnabled: false,
-                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
             }
             const keyStrokeHandler = new KeyStrokeHandler()
             await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)

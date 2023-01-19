@@ -186,7 +186,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
                 return
             }
-            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
+            RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
             RecommendationHandler.instance.clearRecommendations()
         }),
 
@@ -246,11 +246,11 @@ export async function activate(context: ExtContext): Promise<void> {
                 ) || false
             const notificationLastShown: number =
                 context.extensionContext.globalState.get<number | undefined>(
-                    CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowLastShown
                 ) || 1
 
             //Add 7 days to notificationLastShown to determine whether warn message should show
-            if (doNotShowAgain || notificationLastShown + (1000 * 60 * 60 * 24 * 7) >= Date.now()) {
+            if (doNotShowAgain || notificationLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
                 return
             } else if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 vscode.window
@@ -311,7 +311,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     async function showCodeWhispererWelcomeMessage(): Promise<void> {
         const filePath = isCloud9()
-            ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9ReadmeFileSource)
+            ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
             : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
         const readmeUri = vscode.Uri.file(filePath)
         await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
@@ -330,13 +330,12 @@ export async function activate(context: ExtContext): Promise<void> {
             vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
         const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
         const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
-        const isIncludeSuggestionsWithCodeReferencesEnabled =
-            codewhispererSettings.isIncludeSuggestionsWithCodeReferencesEnabled()
+        const isWithCodeReferencesEnabled = codewhispererSettings.isWithCodeReferencesEnabled()
         return {
             isShowMethodsEnabled,
             isManualTriggerEnabled,
             isAutomatedTriggerEnabled,
-            isIncludeSuggestionsWithCodeReferencesEnabled,
+            isWithCodeReferencesEnabled,
         }
     }
 
@@ -617,7 +616,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
 export async function shutdown() {
     if (isCloud9()) {
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
         RecommendationHandler.instance.clearRecommendations()
     }
     if (isInlineCompletionEnabled()) {

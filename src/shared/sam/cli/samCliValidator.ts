@@ -10,11 +10,11 @@ import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 
 export const minimumSamCliVersionInclusive = '0.47.0'
-export const minimumSamCliVersionInclusiveForImageSupport = '1.13.0'
-export const maximumSamCliVersionExclusive = '2.0.0'
-export const minimumSamCliVersionInclusiveForGoSupport = '1.18.1'
-export const minimumSamCliVersionInclusiveForArmSupport = '1.33.0'
-export const minimumSamCliVersionInclusiveForDotnet31Support = '1.4.0'
+export const minSamCliVersionInclusiveForImageSupport = '1.13.0'
+export const maxSamCliVersionExclusive = '2.0.0'
+export const minSamCliVersionInclusiveForGoSupport = '1.18.1'
+export const minSamCliVersionInclusiveForArmSupport = '1.33.0'
+export const minSamCliVersionInclusiveForDotnet31Support = '1.4.0'
 
 // Errors
 export class InvalidSamCliError extends Error {
@@ -124,7 +124,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             return SamCliVersionValidation.VersionTooLow
         }
 
-        if (semver.gte(version, maximumSamCliVersionExclusive)) {
+        if (semver.gte(version, maxSamCliVersionExclusive)) {
             return SamCliVersionValidation.VersionTooHigh
         }
 

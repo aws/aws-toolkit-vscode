@@ -40,6 +40,7 @@ const exportedArrowViaDeclaration = (arg1: string) => {}
 const exportedArrowViaDeclarationAlt: (x: string) => void = arg1 => {}
 
 const exportedArrowViaDeclarationWithFourArgs = (arg1: string, arg2: string, arg3: string, arg4: string) => {}
+// eslint-disable-next-line id-length
 const exportedArrowViaDeclarationWithFourArgsAlt: (arg1: string, arg2: string, arg3: string, arg4: string) => void = (
     arg1,
     arg2,

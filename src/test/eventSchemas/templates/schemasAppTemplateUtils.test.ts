@@ -28,7 +28,9 @@ const customerUploadedSchemaExpectedPackageName = 'schema.somecustomer_someaweso
 const defaultEventSource = 'INSERT-YOUR-EVENT-SOURCE'
 const defaultEventDetailType = 'INSERT-YOUR-DETAIL-TYPE'
 
+// eslint-disable-next-line id-length
 const customerUploadedSchemaMultipleTypesName = 'someCustomer.multipleTypes@SomeOtherAwesomeSchema'
+// eslint-disable-next-line id-length
 const customerUploadedSchemaMultipleTypesExpectedPackageName =
     'schema.somecustomer_multipletypes.someotherawesomeschema'
 

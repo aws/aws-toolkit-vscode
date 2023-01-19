@@ -192,7 +192,7 @@ describe('inlineCompletion', function () {
             isShowMethodsEnabled: true,
             isManualTriggerEnabled: true,
             isAutomatedTriggerEnabled: true,
-            isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
         }
         const invokeSpy = sinon.stub(RecommendationHandler.instance, 'getRecommendations')
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient

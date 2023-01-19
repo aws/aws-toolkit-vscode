@@ -24,7 +24,7 @@ describe('recommendationHandler', function () {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
         isAutomatedTriggerEnabled: true,
-        isIncludeSuggestionsWithCodeReferencesEnabled: true,
+        isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
     }
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()

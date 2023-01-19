@@ -341,7 +341,11 @@ export class RecommendationHandler {
         this.nextToken = ''
         this.errorMessagePrompt = ''
     }
-    reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
+
+    /**
+     * Emits telemetry reflecting user decision for current recommendation.
+     */
+    reportUserDecisionOfRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,
@@ -359,7 +363,7 @@ export class RecommendationHandler {
 
     canShowRecommendationInIntelliSense(editor: vscode.TextEditor, showPrompt: boolean = false): boolean {
         const reject = () => {
-            this.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            this.reportUserDecisionOfRecommendation(editor, -1)
             this.clearRecommendations()
         }
         if (!this.isValidResponse()) {

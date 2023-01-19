@@ -22,6 +22,7 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 
+// eslint-disable-next-line id-length
 class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
@@ -86,7 +87,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         return index
     }
 
-    truncateSuggestionOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
+    truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
         let rightContextRange: vscode.Range | undefined = undefined
         const pos = RecommendationHandler.instance.startPos
         if (suggestion.split(/\r?\n/).length > 1) {
@@ -110,7 +111,7 @@ class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompleti
         if (!r.content.startsWith(prefix)) {
             return undefined
         }
-        const truncatedSuggestion = this.truncateSuggestionOverlapWithRightContext(document, r.content)
+        const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content)
         if (truncatedSuggestion.length === 0) {
             if (RecommendationHandler.instance.getSuggestionState(index) !== 'Showed') {
                 RecommendationHandler.instance.setSuggestionState(index, 'Discard')
@@ -289,7 +290,7 @@ export class InlineCompletionService {
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
             RecommendationHandler.instance.cancelPaginatedRequest()
-            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
             this.disposeInlineCompletion()
             this.setCodeWhispererStatusBarOk()
@@ -312,7 +313,7 @@ export class InlineCompletionService {
             RecommendationHandler.instance.recommendations.forEach((r, i) => {
                 RecommendationHandler.instance.setSuggestionState(i, 'Discard')
             })
-            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
         } else if (RecommendationHandler.instance.recommendations.length > 0) {
             RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
@@ -349,7 +350,7 @@ export class InlineCompletionService {
                     page
                 )
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
-                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     this.setCodeWhispererStatusBarOk()
                     return

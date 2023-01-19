@@ -13,6 +13,7 @@ export function assertNodeListOnlyContainsErrorNode(nodes: AWSTreeNodeBase[]) {
     assert.strictEqual(nodes[0].contextValue, 'awsErrorNode', 'Expected ErrorNode in the list')
 }
 
+// eslint-disable-next-line id-length
 export function assertNodeListOnlyContainsPlaceholderNode(nodes: AWSTreeNodeBase[]) {
     assert(nodes !== undefined)
     assert.strictEqual(nodes.length, 1, 'Unexpected node count')

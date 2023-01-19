@@ -8,7 +8,7 @@ import globals from '../../../../shared/extensionGlobals'
 import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import {
     DefaultSamCliValidator,
-    maximumSamCliVersionExclusive,
+    maxSamCliVersionExclusive,
     minimumSamCliVersionInclusive,
     SamCliValidatorContext,
     SamCliVersionValidation,
@@ -51,7 +51,7 @@ describe('DefaultSamCliValidator', async function () {
         },
         {
             situation: 'SAM CLI Version is too high',
-            version: maximumSamCliVersionExclusive,
+            version: maxSamCliVersionExclusive,
             expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
         },
         {
