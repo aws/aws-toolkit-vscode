@@ -4,7 +4,7 @@
  */
 
 export class BaseTemplates {
-    public static readonly SIMPLE_HTML = `
+    public static readonly simpleHtml = `
         <html>
         <head>
             <meta charset="UTF-8">

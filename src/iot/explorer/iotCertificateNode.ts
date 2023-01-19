@@ -25,7 +25,7 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-const CONTEXT_BASE = 'awsIotCertificateNode'
+const contextBase = 'awsIotCertificateNode'
 /**
  * Represents an IoT Certificate that may have either a Thing Node or the
  * Certificate Folder Node as a parent.
@@ -54,7 +54,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         )
         this.iconPath = getIcon('aws-iot-certificate')
         this.description = `\t[${this.certificate.activeStatus}]`
-        this.contextValue = `${CONTEXT_BASE}.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.${this.certificate.activeStatus}`
     }
 
     public update(): void {
@@ -135,7 +135,7 @@ export class IotThingCertNode extends IotCertificateNode {
         protected readonly workspace = Workspace.vscode()
     ) {
         super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Things.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.Things.${this.certificate.activeStatus}`
     }
 }
 
@@ -151,6 +151,6 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
         protected readonly workspace = Workspace.vscode()
     ) {
         super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.Policies.${this.certificate.activeStatus}`
     }
 }

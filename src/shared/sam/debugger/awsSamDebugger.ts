@@ -57,8 +57,8 @@ import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
 import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
+    minimumSamCliVersionInclusiveForImageSupport,
+    minimumSamCliVersionInclusiveForGoSupport,
 } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
@@ -489,7 +489,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: Remove this when min sam version is > 1.13.0
         if (!isZip) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
+            if (semver.lt(samCliVersion, minimumSamCliVersionInclusiveForImageSupport)) {
                 const message = localize(
                     'AWS.output.sam.no.image.support',
                     'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
@@ -513,12 +513,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: remove this when min sam version is >= 1.18.1
         if (goRuntimes.includes(runtime) && !config.noDebug) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
+            if (semver.lt(samCliVersion, minimumSamCliVersionInclusiveForGoSupport)) {
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.go.support',
                         'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
-                        MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+                        minimumSamCliVersionInclusiveForGoSupport
                     )
                 )
                 config.noDebug = true

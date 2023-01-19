@@ -64,7 +64,7 @@ export type ExtendedQuickPickOptions<T> = Omit<
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
-const DEFAULT_NO_ITEMS_ITEM = {
+const defaultNoItemsItem = {
     label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
     detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
     alwaysShow: true,
@@ -72,17 +72,17 @@ const DEFAULT_NO_ITEMS_ITEM = {
 }
 
 /** See {@link ExtendedQuickPickOptions.errorItem errorItem} for setting a different error item */
-const DEFAULT_ERROR_ITEM = {
+const defaultErrorItem = {
     // TODO: add icon, check for C9
     label: localize('AWS.picker.dynamic.error.label', '[Error loading items]'),
     alwaysShow: true,
     data: WIZARD_BACK,
 }
 
-export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
+export const defaultQuickpickOptions: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
-    noItemsFoundItem: DEFAULT_NO_ITEMS_ITEM,
-    errorItem: DEFAULT_ERROR_ITEM,
+    noItemsFoundItem: defaultNoItemsItem,
+    errorItem: defaultErrorItem,
 }
 
 type QuickPickData<T> = PromptResult<T> | (() => Promise<PromptResult<T>>)
@@ -103,7 +103,7 @@ export type DataQuickPickItem<T> = vscode.QuickPickItem & {
 
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
 
-export const CUSTOM_USER_INPUT = Symbol()
+export const customUserInput = Symbol()
 
 export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
@@ -131,7 +131,7 @@ export function createQuickPick<T>(
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
-    const mergedOptions = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
+    const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
 
@@ -582,7 +582,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         super(quickPick)
 
         this.transform(selection => {
-            if ((selection as T | typeof CUSTOM_USER_INPUT) === CUSTOM_USER_INPUT) {
+            if ((selection as T | typeof customUserInput) === customUserInput) {
                 return settings.transform(quickPick.value) ?? selection
             }
             return selection
@@ -602,7 +602,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         const picker = this.quickPick as DataQuickPick<T | symbol>
         const validator = (input: string) =>
             this.settings.validator !== undefined ? this.settings.validator(input) : undefined
-        const items = picker.items.filter(item => item.data !== CUSTOM_USER_INPUT)
+        const items = picker.items.filter(item => item.data !== customUserInput)
         const { label } = this.settings
 
         function update(value: string = '') {
@@ -611,7 +611,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
                     label,
                     description: value,
                     alwaysShow: true,
-                    data: CUSTOM_USER_INPUT,
+                    data: customUserInput,
                     invalidSelection: validator(value) !== undefined,
                     detail: validator(value),
                 } as DataQuickPickItem<T | symbol>
@@ -627,6 +627,6 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     }
 
     private isUserInput(picked: any): picked is DataQuickPickItem<symbol> {
-        return picked !== undefined && picked.data === CUSTOM_USER_INPUT
+        return picked !== undefined && picked.data === customUserInput
     }
 }

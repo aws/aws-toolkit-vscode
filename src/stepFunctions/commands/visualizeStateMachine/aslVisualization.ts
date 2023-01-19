@@ -15,7 +15,7 @@ import * as yaml from 'yaml'
 import { YAML_FORMATS } from '../../constants/aslFormats'
 import globals from '../../../shared/extensionGlobals'
 
-const YAML_OPTIONS: yaml.Options = {
+const yamlOptions: yaml.Options = {
     merge: false,
     maxAliasCount: 0,
     schema: 'yaml-1.1',
@@ -70,7 +70,7 @@ export class AslVisualization {
         let yamlErrors: string[] = []
 
         if (isYaml) {
-            const parsed = yaml.parseDocument(text, YAML_OPTIONS)
+            const parsed = yaml.parseDocument(text, yamlOptions)
             yamlErrors = parsed.errors.map(error => error.message)
             let json: any
 

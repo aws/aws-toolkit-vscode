@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as vscode from 'vscode'
-import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
+import { createInputBox, defaultInputboxOptions, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 
 describe('createInputBox', function () {
@@ -20,8 +20,8 @@ describe('createInputBox', function () {
         const prompter = createInputBox()
         const inputBox = prompter.inputBox
 
-        Object.keys(DEFAULT_INPUTBOX_OPTIONS).forEach(key => {
-            assert.strictEqual(inputBox[key as keyof vscode.InputBox], (DEFAULT_INPUTBOX_OPTIONS as any)[key])
+        Object.keys(defaultInputboxOptions).forEach(key => {
+            assert.strictEqual(inputBox[key as keyof vscode.InputBox], (defaultInputboxOptions as any)[key])
         })
     })
 })

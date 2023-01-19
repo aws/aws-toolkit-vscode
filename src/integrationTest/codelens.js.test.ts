@@ -10,16 +10,16 @@ import { getAddConfigCodeLens, getTestWorkspaceFolder } from './integrationTests
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import * as testUtils from './integrationTestsUtilities'
 
-const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
-const CODELENS_TEST_TIMEOUT_MILLIS = 10000
-const CODELENS_RETRY_INTERVAL = 1000
+const activateExtensionTimeoutMillis = 30000
+const codelensTestTimeoutMillis = 10000
+const codelensRetryInterval = 1000
 
 const workspaceFolder = getTestWorkspaceFolder()
 
 describe('SAM Local CodeLenses (JS)', async function () {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function () {
-        this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
+        this.timeout(activateExtensionTimeoutMillis)
         await testUtils.configureAwsToolkitExtension()
     })
 
@@ -29,14 +29,10 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'app.handlerBesidePackageJson'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await getAddConfigCodeLens(
-            document.uri,
-            CODELENS_TEST_TIMEOUT_MILLIS,
-            CODELENS_RETRY_INTERVAL
-        )
+        const codeLenses = await getAddConfigCodeLens(document.uri, codelensTestTimeoutMillis, codelensRetryInterval)
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
-    }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+    }).timeout(codelensTestTimeoutMillis)
 
     it('appear when manifest in root', async function () {
         const appRoot = join(workspaceFolder, 'js-manifest-in-root')
@@ -44,14 +40,10 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await getAddConfigCodeLens(
-            document.uri,
-            CODELENS_TEST_TIMEOUT_MILLIS,
-            CODELENS_RETRY_INTERVAL
-        )
+        const codeLenses = await getAddConfigCodeLens(document.uri, codelensTestTimeoutMillis, codelensRetryInterval)
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..', '..'))
-    }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+    }).timeout(codelensTestTimeoutMillis)
 
     it('appear when manifest in subfolder and app in subfolder to manifest', async function () {
         const appRoot = join(workspaceFolder, 'js-manifest-in-subfolder')
@@ -59,14 +51,10 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'subfolder/app.handlerInManifestSubfolder'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await getAddConfigCodeLens(
-            document.uri,
-            CODELENS_TEST_TIMEOUT_MILLIS,
-            CODELENS_RETRY_INTERVAL
-        )
+        const codeLenses = await getAddConfigCodeLens(document.uri, codelensTestTimeoutMillis, codelensRetryInterval)
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..'))
-    }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+    }).timeout(codelensTestTimeoutMillis)
 
     it('appear when project is a few folders deep in the workspace', async function () {
         const appRoot = join(workspaceFolder, 'deeper-projects', 'js-plain-sam-app')
@@ -74,11 +62,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'app.projectDeepInWorkspace'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await getAddConfigCodeLens(
-            document.uri,
-            CODELENS_TEST_TIMEOUT_MILLIS,
-            CODELENS_RETRY_INTERVAL
-        )
+        const codeLenses = await getAddConfigCodeLens(document.uri, codelensTestTimeoutMillis, codelensRetryInterval)
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     })

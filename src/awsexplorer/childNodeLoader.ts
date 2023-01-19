@@ -9,7 +9,7 @@ import { MoreResultsNode } from './moreResultsNode'
 import { ChildNodeCache } from './childNodeCache'
 import * as AsyncLock from 'async-lock'
 
-const LOCK_KEY = 'ChildNodeLoader'
+const lockKey = 'ChildNodeLoader'
 
 export interface ChildNodePage<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
     newChildren: T[]
@@ -56,7 +56,7 @@ export class ChildNodeLoader<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
      * Returns true if a {@link loadMoreChildren} call is in progress.
      */
     public isLoadingMoreChildren(): boolean {
-        return this.loadChildrenLock.isBusy(LOCK_KEY)
+        return this.loadChildrenLock.isBusy(lockKey)
     }
 
     /**
@@ -92,7 +92,7 @@ export class ChildNodeLoader<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
      */
     private async loadMoreChildrenIf(condition: () => boolean): Promise<void> {
         if (condition()) {
-            return this.loadChildrenLock.acquire(LOCK_KEY, async () => {
+            return this.loadChildrenLock.acquire(lockKey, async () => {
                 if (condition()) {
                     const newPage = await this.loadPage(this.cache.continuationToken)
                     this.cache.appendPage(newPage)

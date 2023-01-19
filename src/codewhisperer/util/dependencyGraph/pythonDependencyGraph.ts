@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import path = require('path')
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
-export const IMPORT_REGEX =
+export const importRegex =
     /^(?:from[ ]+(\S+)[ ]+)?import[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*([,]*[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*)*$/gm
 
 export class PythonDependencyGraph extends DependencyGraph {
@@ -30,7 +30,7 @@ export class PythonDependencyGraph extends DependencyGraph {
     private async readImports(uri: vscode.Uri) {
         const content: string = await readFileAsString(uri.fsPath)
         this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
-        const regExp = new RegExp(IMPORT_REGEX)
+        const regExp = new RegExp(importRegex)
         return content.match(regExp) ?? []
     }
 

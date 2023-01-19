@@ -18,9 +18,9 @@ import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 
-const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
-const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
-const SCHEMA_PREFIX = `${AWS_SCHEME}://`
+const goformationManifestUrl = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const devfileManifestUrl = 'https://api.github.com/repos/devfile/api/releases/latest'
+const schemaPrefix = `${AWS_SCHEME}://`
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -42,7 +42,7 @@ export interface SchemaHandler {
  * Processes the update of schema mappings for files in the workspace
  */
 export class SchemaService {
-    private static readonly DEFAULT_UPDATE_PERIOD_MILLIS = 1000
+    private static readonly defaultUpdatePeriodMillis = 1000
 
     private updatePeriod: number
     private timer?: NodeJS.Timer
@@ -60,7 +60,7 @@ export class SchemaService {
             handlers?: Map<SchemaType, SchemaHandler>
         }
     ) {
-        this.updatePeriod = opts?.updatePeriod ?? SchemaService.DEFAULT_UPDATE_PERIOD_MILLIS
+        this.updatePeriod = opts?.updatePeriod ?? SchemaService.defaultUpdatePeriodMillis
         this.schemas = opts?.schemas
         this.handlers =
             opts?.handlers ??
@@ -144,8 +144,8 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
     const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
 
-    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
-    const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
+    const goformationSchemaVersion = await getPropertyFromJsonUrl(goformationManifestUrl, 'tag_name')
+    const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
     const schemas: Schemas = {}
 
@@ -156,7 +156,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
             cacheKey: 'cfnSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'cloudformation.schema.json',
+            title: schemaPrefix + 'cloudformation.schema.json',
         })
         schemas['cfn'] = cfnSchemaUri
     } catch (e) {
@@ -170,7 +170,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'sam.schema.json',
+            title: schemaPrefix + 'sam.schema.json',
         })
         schemas['sam'] = samSchemaUri
     } catch (e) {
@@ -184,7 +184,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
             extensionContext,
-            title: SCHEMA_PREFIX + 'devfile.schema.json',
+            title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
     } catch (e) {

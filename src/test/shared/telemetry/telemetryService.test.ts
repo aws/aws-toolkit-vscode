@@ -12,7 +12,7 @@ import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
-    DEFAULT_TEST_ACCOUNT_ID,
+    defaultTestAccountId,
     FakeAwsContext,
     makeFakeAwsContextWithPlaceholderIds,
 } from '../../utilities/fakeAwsContext'
@@ -177,7 +177,7 @@ describe('DefaultTelemetryService', function () {
         assert.strictEqual(logger.metricCount, 1)
 
         const metrics = logger.queryFull({ metricName: 'name' })
-        assertMetadataContainsTestAccount(metrics[0], DEFAULT_TEST_ACCOUNT_ID)
+        assertMetadataContainsTestAccount(metrics[0], defaultTestAccountId)
     })
 
     it('events with `session` namespace do not have an account tied to them', async function () {

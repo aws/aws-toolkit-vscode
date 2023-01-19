@@ -33,9 +33,9 @@ describe('ResourceManager', function () {
     let schemaService: SchemaService
     let tempFolder: string
 
-    const FAKE_TYPE_NAME = 'sometype'
-    const FAKE_IDENTIFIER = 'someidentifier'
-    const FAKE_REGION = 'someregion'
+    const fakeTypeName = 'sometype'
+    const fakeIdentifier = 'someidentifier'
+    const fakeRegion = 'someregion'
 
     const fakeResourceDescription = {
         Role: 'arn:aws:iam::1234:role/service-role/fooResource',
@@ -55,14 +55,14 @@ describe('ResourceManager', function () {
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
 
-        const rootNode = new ResourcesNode(FAKE_REGION, instance(cloudFormation), cloudControl)
+        const rootNode = new ResourcesNode(fakeRegion, instance(cloudFormation), cloudControl)
         resourceTypeNode = new ResourceTypeNode(
             rootNode,
-            FAKE_TYPE_NAME,
+            fakeTypeName,
             instance(cloudControl),
             {} as ResourceTypeMetadata
         )
-        resourceNode = new ResourceNode(resourceTypeNode, FAKE_IDENTIFIER)
+        resourceNode = new ResourceNode(resourceTypeNode, fakeIdentifier)
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = vscode.Uri.file(tempFolder)
         resourceManager = new AwsResourceManager(fakeContext)
@@ -86,7 +86,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'awsResource')
-        assert.strictEqual(capturedUri.fsPath, `${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.preview.json`)
+        assert.strictEqual(capturedUri.fsPath, `${fakeIdentifier}.${fakeTypeName}.preview.json`)
         assert.strictEqual(capturedUri.query, formatResourceModel(JSON.stringify(fakeResourceDescription)))
 
         assert.strictEqual(showTextDocumentStub.getCall(0).args[0], mockTextDocument)
@@ -106,7 +106,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.fsPath.endsWith(`${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`${fakeIdentifier}.${fakeTypeName}.awsResource.json`), true)
 
         const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, fakeResourceDescription)
@@ -151,7 +151,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.fsPath.endsWith(`new.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`new.${fakeTypeName}.awsResource.json`), true)
 
         const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, {})
@@ -226,8 +226,8 @@ describe('ResourceManager', function () {
         when(
             cloudControl.getResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE_NAME,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeTypeName,
+                    Identifier: fakeIdentifier,
                 })
             )
         ).thenResolve({
@@ -237,7 +237,7 @@ describe('ResourceManager', function () {
                 Properties: JSON.stringify(fakeResourceDescription),
             },
         })
-        when(cloudFormation.describeType(FAKE_TYPE_NAME)).thenResolve({
+        when(cloudFormation.describeType(fakeTypeName)).thenResolve({
             Schema: '{}',
         })
     }

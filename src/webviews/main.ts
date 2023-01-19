@@ -397,10 +397,10 @@ function resolveWebviewHtml(params: {
     main: vscode.Uri
 }): string {
     const resolvedParams = { ...params, connectSource: `'none'` }
-    const LOCAL_SERVER = process.env.WEBPACK_DEVELOPER_SERVER
+    const localServer = process.env.WEBPACK_DEVELOPER_SERVER
 
-    if (LOCAL_SERVER) {
-        const local = vscode.Uri.parse(LOCAL_SERVER)
+    if (localServer) {
+        const local = vscode.Uri.parse(localServer)
         resolvedParams.cspSource = `${params.cspSource} ${local.toString()}`
         resolvedParams.main = local.with({ path: `/${params.webviewJs}` })
         resolvedParams.connectSource = `'self' ws:`

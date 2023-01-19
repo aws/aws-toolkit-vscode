@@ -14,9 +14,9 @@ import { IotThingNode } from '../explorer/iotThingNode'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { IotNode } from '../explorer/iotNodes'
 
-const STATUS_REVOKED = 'REVOKED'
-const STATUS_ACTIVE = 'ACTIVE'
-const STATUS_INACTIVE = 'INACTIVE'
+const statusRevoked = 'REVOKED'
+const statusActive = 'ACTIVE'
+const statusInactive = 'INACTIVE'
 
 /**
  * Deactivates an active certificate.
@@ -53,7 +53,7 @@ export async function deactivateCertificateCommand(
 
     getLogger().info(`Deactivating certificate ${certId}`)
     try {
-        await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_INACTIVE })
+        await node.iot.updateCertificate({ certificateId: certId, newStatus: statusInactive })
 
         getLogger().info(`deactivated certificate: ${certId}`)
         window.showInformationMessage(
@@ -109,7 +109,7 @@ export async function activateCertificateCommand(
 
     getLogger().info(`Activating certificate ${certId}`)
     try {
-        await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_ACTIVE })
+        await node.iot.updateCertificate({ certificateId: certId, newStatus: statusActive })
 
         getLogger().info(`activated certificate: ${certId}`)
         window.showInformationMessage(localize('AWS.iot.activateCert.success', 'Activated: {0}', node.certificate.id))
@@ -159,7 +159,7 @@ export async function revokeCertificateCommand(
 
     getLogger().info(`Revoking certificate: ${certId}`)
     try {
-        await node.iot.updateCertificate({ certificateId: certId, newStatus: STATUS_REVOKED })
+        await node.iot.updateCertificate({ certificateId: certId, newStatus: statusRevoked })
 
         getLogger().info(`revoked certificate: ${certId}`)
         window.showInformationMessage(localize('AWS.iot.revokeCert.success', 'Revoked: {0}', node.certificate.id))
