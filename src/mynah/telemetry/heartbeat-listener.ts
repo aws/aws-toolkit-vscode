@@ -4,22 +4,19 @@
  */
 
 import { Disposable, window, workspace } from 'vscode'
-import { TelemetryClientSession } from './telemetry/client'
-import { TelemetryEventName } from './telemetry/types'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { HeartbeatMetadata } from '../telemetry/telemetry-metadata'
 
 const HEARTBEAT_DUE_THRESHOLD = 120000
 
 export class HeartbeatListener {
     private disposable!: Disposable
 
-    private readonly telemetryClientSession: TelemetryClientSession
-
     private lastFileName!: string
 
     private lastHeartbeatAt = 0
 
-    constructor(telemetryClientSession: TelemetryClientSession) {
-        this.telemetryClientSession = telemetryClientSession
+    constructor() {
         this.setupEventListeners()
     }
 
@@ -60,8 +57,15 @@ export class HeartbeatListener {
     }
 
     private sendHeartbeat(fileName: string, languageId: string, isEdit: boolean): void {
-        this.telemetryClientSession.recordEvent(TelemetryEventName.HEARTBEAT, {
-            heartbeatMetadata: { fileName, languageId, isEdit },
+        const heartbeatMetadata: HeartbeatMetadata = {
+            fileName,
+            languageId,
+            isEdit,
+        }
+        telemetry.mynah_heartbeat.emit({
+            mynahContext: JSON.stringify({
+                heartbeatMetadata,
+            }),
         })
     }
 

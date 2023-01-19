@@ -18,25 +18,20 @@ import { findErrorContext } from '../utils/stack-trace'
 import { v4 as uuid } from 'uuid'
 import { ExceptionInfoResponse } from './interfaces'
 import { extractLanguageAndOtherContext } from './languages'
-import { TelemetryClientSession } from '../telemetry/telemetry/client'
-import { ErrorType, TelemetryEventName } from '../telemetry/telemetry/types'
 import { LiveSearchDisplay } from '../views/live-search'
 import { Query, QueryContext } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
 
 export class DebugErrorSearch implements DebugAdapterTrackerFactory {
-    constructor(
-        readonly queryEmitter: EventEmitter<Query>,
-        readonly telemetrySession: TelemetryClientSession,
-        readonly liveSearchDisplay: LiveSearchDisplay
-    ) {}
+    constructor(readonly queryEmitter: EventEmitter<Query>, readonly liveSearchDisplay: LiveSearchDisplay) {}
 
     public activate(context: ExtensionContext): void {
         context.subscriptions.push(debug.registerDebugAdapterTrackerFactory('*', this))
     }
 
     createDebugAdapterTracker(session: any): ProviderResult<DebugErrorSearchTracker> {
-        return new DebugErrorSearchTracker(session, this.queryEmitter, this.telemetrySession, this.liveSearchDisplay)
+        return new DebugErrorSearchTracker(session, this.queryEmitter, this.liveSearchDisplay)
     }
 }
 
@@ -46,7 +41,6 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
     constructor(
         session: any,
         readonly queryEmitter: EventEmitter<Query>,
-        readonly telemetrySession: TelemetryClientSession,
         readonly liveSearchDisplay: LiveSearchDisplay
     ) {
         this.language = session.type
@@ -71,7 +65,7 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
                 code = errorContext.code
                 errorContext.imports.forEach(importKey => queryContext.should.add(importKey))
             }
-            const errorMetadata = {
+            const errorMetadata: ErrorMetadata = {
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 message: `${msg.body.exceptionId} ${msg.body.description}`,
                 severity: DiagnosticSeverity.Error.toString(),
@@ -81,10 +75,13 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
                 languageId: language ?? '',
                 stackTrace: stackTrace ?? '',
                 type: ErrorType.DEBUG,
+                state: ErrorState.NEW,
             }
 
-            this.telemetrySession.recordEvent(TelemetryEventName.OBSERVE_ERROR, {
-                errorMetadata,
+            telemetry.mynah_updateErrorState.emit({
+                mynahContext: JSON.stringify({
+                    errorMetadata,
+                }),
             })
 
             const query: Query = {

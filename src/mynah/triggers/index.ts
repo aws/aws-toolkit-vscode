@@ -9,7 +9,6 @@ import { TerminalLinkSearch } from './terminalLinkSearch'
 import { ManualInputSearch } from './manualInputSearch'
 import { Event, EventEmitter, ExtensionContext } from 'vscode'
 import { DiagnosticsSearchProvider } from './diagnosticsSearchProvider'
-import { TelemetryClientSession } from '../telemetry/telemetry/client'
 import { LiveSearchDisplay } from '../views/live-search'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import { Query, SearchInput, SearchOutput } from '../models/model'
@@ -20,14 +19,13 @@ export { extractLanguageAndOtherContext } from './languages'
 export const registerSearchTriggers = (
     context: ExtensionContext,
     suggestionsEmitter: EventEmitter<SearchOutput>,
-    telemetrySession: TelemetryClientSession,
     liveSearchDisplay: LiveSearchDisplay,
     notificationInfoStore: NotificationInfoStore,
     mynahClient: DefaultMynahSearchClient
 ): SearchInput => {
     const queryEmitter = new EventEmitter<Query>()
 
-    const input = registerTriggers(context, queryEmitter, telemetrySession, liveSearchDisplay, notificationInfoStore)
+    const input = registerTriggers(context, queryEmitter, liveSearchDisplay, notificationInfoStore)
 
     registerSearchSources(queryEmitter.event, suggestionsEmitter, mynahClient)
     return input
@@ -50,7 +48,6 @@ const registerSearchSources = (
 const registerTriggers = (
     context: ExtensionContext,
     queryEmitter: EventEmitter<Query>,
-    telemetrySession: TelemetryClientSession,
     liveSearchDisplay: LiveSearchDisplay,
     notificationInfoStore: NotificationInfoStore
 ): SearchInput => {
@@ -62,21 +59,16 @@ const registerTriggers = (
     vs.commands.registerCommand('Mynah.search', (query: Query) => {
         queryEmitter.fire(query)
     })
-    const terminalLinkSearch = new TerminalLinkSearch(
-        queryEmitter,
-        telemetrySession,
-        liveSearchDisplay,
-        notificationInfoStore
-    )
+    const terminalLinkSearch = new TerminalLinkSearch(queryEmitter, liveSearchDisplay, notificationInfoStore)
     terminalLinkSearch.activate(context)
 
-    const debugErrorSearch = new DebugErrorSearch(queryEmitter, telemetrySession, liveSearchDisplay)
+    const debugErrorSearch = new DebugErrorSearch(queryEmitter, liveSearchDisplay)
     debugErrorSearch.activate(context)
 
     const diagnosticsSearchProvider = new DiagnosticsSearchProvider()
     diagnosticsSearchProvider.activate()
 
-    const manualInputSearch = new ManualInputSearch(context, queryEmitter, telemetrySession)
+    const manualInputSearch = new ManualInputSearch(context, queryEmitter)
     manualInputSearch.activate(context)
     return manualInputSearch
 }

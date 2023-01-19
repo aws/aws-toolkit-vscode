@@ -15,12 +15,11 @@ import {
 import { SearchTerminalLink } from './interfaces'
 import { v4 as uuid } from 'uuid'
 import { extractContext } from '../utils/context-extraction'
-import { TelemetryClientSession } from '../telemetry/telemetry/client'
-import { ErrorMetadata, ErrorType, TelemetryEventName } from '../telemetry/telemetry/types'
 import { LiveSearchDisplay } from '../views/live-search'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import { Query } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
 
 const PYTHON_JS_ERROR_TRACE: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
 const JVM_ERROR: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
@@ -35,10 +34,9 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
 
     constructor(
         readonly queryEmitter: EventEmitter<Query>,
-        readonly telemetrySession: TelemetryClientSession,
         readonly liveSearchDisplay: LiveSearchDisplay,
         readonly notificationInfoStore: NotificationInfoStore
-    ) { }
+    ) {}
 
     public activate(context: ExtensionContext): void {
         context.subscriptions.push(window.registerTerminalLinkProvider(this))
@@ -52,13 +50,14 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         const { errorName, errorMessage } = error.groups
         const message = `${errorName} ${errorMessage}`
         const editor = window.activeTextEditor
-        const errorMetadata = {
+        const errorMetadata: ErrorMetadata = {
             message,
             severity: DiagnosticSeverity.Error.toString(),
             errorId: uuid(),
             file: editor?.document?.fileName ?? '',
             languageId: editor?.document?.languageId ?? '',
             type: ErrorType.TERMINAL,
+            state: ErrorState.NEW,
         }
         const query: Query = {
             trigger: 'TerminalLink',
@@ -79,7 +78,11 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         }
 
         if (this.isNewError(errorMetadata)) {
-            this.telemetrySession.recordEvent(TelemetryEventName.OBSERVE_ERROR, { errorMetadata })
+            telemetry.mynah_updateErrorState.emit({
+                mynahContext: JSON.stringify({
+                    errorMetadata,
+                }),
+            })
             if (await this.liveSearchDisplay.canShowLiveSearchPane()) {
                 this.queryEmitter.fire({ ...query, implicit: true })
             } else {

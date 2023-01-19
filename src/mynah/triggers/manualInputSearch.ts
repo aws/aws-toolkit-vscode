@@ -14,7 +14,6 @@ import * as vs from 'vscode'
 import { mynahSelectedCodeDecorator } from '../decorations/selectedCode'
 import { StatusBar } from '../utils/status-bar'
 import { CodeQuery, Query, QueryContext, SearchInput, Trigger } from '../models/model'
-import { TelemetryClientSession } from '../telemetry/telemetry/client'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class ManualInputSearch extends SearchInput {
@@ -32,11 +31,7 @@ export class ManualInputSearch extends SearchInput {
         'typescript',
     ])
 
-    constructor(
-        context: ExtensionContext,
-        readonly queryEmitter: EventEmitter<Query>,
-        readonly telemetrySession: TelemetryClientSession
-    ) {
+    constructor(context: ExtensionContext, readonly queryEmitter: EventEmitter<Query>) {
         super()
         this.notificationInfoStore = new NotificationInfoStore(context.globalState, context.workspaceState)
     }

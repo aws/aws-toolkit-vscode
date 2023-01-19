@@ -447,6 +447,24 @@
                     "type": "mynahViewId"
                 }
             ]
+        },
+        {
+            "name": "mynah_updateErrorState",
+            "description": "Emitted when an error is observed or cleared in the IDE",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_heartbeat",
+            "description": "Emitted when the user is actively using the IDE",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
         }
     ]
 }

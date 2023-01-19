@@ -26,7 +26,6 @@ import {
     Trigger,
 } from '../models/model'
 import { getIcon, Icon } from '../../shared/icons'
-import { Telemetry } from '../telemetry/telemetry/interfaces'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { NO_QUERY_ERROR_MESSAGE } from '../service/search'
 import { v4 as uuid } from 'uuid'
@@ -40,7 +39,6 @@ const emitter: EventEmitter<SearchSuggestion[]> = new EventEmitter()
 export const showSuggestions: Event<SearchSuggestion[]> = emitter.event
 
 export interface ResultDisplayProps {
-    client: Telemetry
     input: SearchInput
     searchHistoryStore: SearchHistoryStore
     panelStore: PanelStore

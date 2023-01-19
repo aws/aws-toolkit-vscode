@@ -3,41 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { version, env, EventEmitter, ExtensionContext, window } from 'vscode'
+import { EventEmitter, ExtensionContext, window } from 'vscode'
 import { registerSearchTriggers } from './triggers'
 import { ResultDisplay } from './views/result-display'
 import { IdentityStore } from './stores/identityStore'
 
 import { OnDidOpenTextDocumentNotificationsProcessor } from './triggers/notifications/documentProcessor'
-import { v4 as uuid } from 'uuid'
 
 import { SearchHistoryStore } from './stores/searchHistoryStore'
 import { PanelStore } from './stores/panelStore'
 import { SearchHistoryDisplay } from './views/search-history-display'
 import { AutocompleteDisplay } from './views/autocomplete-display'
-import { DiagnosticErrorListener } from './telemetry/diagnostic-error-listener'
 import { LiveSearchDisplay } from './views/live-search'
 import * as vs from 'vscode'
 import { NotificationInfoStore } from './stores/notificationsInfoStore'
 import { mynahSelectedCodeDecorator } from './decorations/selectedCode'
 import { SearchOutput } from './models/model'
 import { HeartbeatListener } from './telemetry/heartbeat-listener'
-import { FileEditListener } from './telemetry/file-edit-listener'
 import { telemetry } from '../shared/telemetry/telemetry'
 import * as mynahClient from './client/mynah'
 import * as AutocompleteClient from './autocomplete-client/autocomplete'
-import { TelemetryClient, TelemetryClientSession } from './telemetry/telemetry/client'
 import { IdentityManagerFactory } from './telemetry/identity/factory'
-import { TelemetryClientFactory } from './telemetry/telemetry/factory'
-import { MynahClientType } from './telemetry/telemetry/types'
-import { extensionVersion } from '../shared/vscode/env'
-
-let telemetryClient: TelemetryClient
 
 let heartbeatListener: HeartbeatListener
-
-const DIAGNOSTIC_ERROR_TELEMETRY_DELAY_MS = 60_000
-const FILE_EDIT_EVENT_BUFFER_DURATION_MS = 300_000
 
 export async function activate(context: ExtensionContext): Promise<void> {
     const mynahChannel = window.createOutputChannel('Mynah')
@@ -53,13 +41,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
         await identityStorage.store(IdentityStore.IDENTITY_ID_KEY, identityId)
     }
     mynahChannel.appendLine('Identity id: ' + identityId)
-    telemetryClient = TelemetryClientFactory.getInstance({
-        environmentName: env.appName,
-        environmentVersion: version,
-        identityId,
-        mynahClientType: MynahClientType.MYNAH_VISUAL_STUDIO_CODE,
-        mynahClientVersion: extensionVersion,
-    })
     const searchHistoryStore = new SearchHistoryStore(context.globalState, context.workspaceState)
     const panelStore = new PanelStore()
     const notificationInfoStore = new NotificationInfoStore(context.globalState, context.workspaceState)
@@ -74,8 +55,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
         client: autocompleteClient,
         panelStore,
     })
-
-    const telemetrySession: TelemetryClientSession = telemetryClient.newSession(uuid())
 
     const onDidOpenTextDocumentNotificationsProcessor = new OnDidOpenTextDocumentNotificationsProcessor(
         notificationInfoStore
@@ -98,17 +77,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
     }
 
     const client = new mynahClient.DefaultMynahSearchClient()
-    const input = registerSearchTriggers(
-        context,
-        suggestionsEmitter,
-        telemetrySession,
-        liveSearchDisplay,
-        notificationInfoStore,
-        client
-    )
+    const input = registerSearchTriggers(context, suggestionsEmitter, liveSearchDisplay, notificationInfoStore, client)
     const resultDisplay = new ResultDisplay(context, {
         input,
-        client: telemetryClient,
         searchHistoryStore,
         panelStore,
         searchHistoryDisplay,
@@ -126,11 +97,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
         resultDisplay.showSearchSuggestions(output)
     })
 
-    const diagnosticErrorListener = new DiagnosticErrorListener(DIAGNOSTIC_ERROR_TELEMETRY_DELAY_MS, telemetrySession)
-    diagnosticErrorListener.activate()
-    const fileEditListener = new FileEditListener(FILE_EDIT_EVENT_BUFFER_DURATION_MS, telemetrySession)
-    fileEditListener.activate()
-    heartbeatListener = new HeartbeatListener(telemetrySession)
+    heartbeatListener = new HeartbeatListener()
 }
 
 export const deactivate = async (context: ExtensionContext): Promise<void> => {
