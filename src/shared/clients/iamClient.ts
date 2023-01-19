@@ -58,7 +58,7 @@ export class DefaultIamClient {
             throw new Error('No evaluation results found')
         }
 
-        // Ignore deny from Organization CSP.  These can result in false negatives.
+        // Ignore deny from Organization SCP.  These can result in false negatives.
         return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false)
 
     }
