@@ -7,11 +7,11 @@
 
 import * as assert from 'assert'
 import {
-    ACTIVATION_LAUNCH_PATH_KEY,
+    activationLaunchPathKey,
     ActivationReloadState,
-    SAM_INIT_RUNTIME_KEY,
-    SAM_INIT_IMAGE_BOOLEAN_KEY,
-    ACTIVATION_TEMPLATE_PATH_KEY,
+    samInitRuntimeKey,
+    samInitImageBooleanKey,
+    activationTemplatePathKey,
 } from '../../shared/activationReloadState'
 import globals, { checkDidReload } from '../../shared/extensionGlobals'
 
@@ -27,10 +27,10 @@ describe('ActivationReloadState', async function () {
     })
 
     it('decides globals.didReload', async function () {
-        await globals.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
+        await globals.context.globalState.update(activationLaunchPathKey, undefined)
         assert.strictEqual(checkDidReload(globals.context), false)
 
-        await globals.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, '/some/path')
+        await globals.context.globalState.update(activationLaunchPathKey, '/some/path')
         assert.strictEqual(checkDidReload(globals.context), true)
     })
 
@@ -45,22 +45,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                globals.context.globalState.get(activationLaunchPathKey),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                globals.context.globalState.get(activationTemplatePathKey),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                globals.context.globalState.get(samInitRuntimeKey),
                 undefined,
                 'Unexpected init runtime key value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                globals.context.globalState.get(samInitImageBooleanKey),
                 false,
                 'Unexpected init image boolean value was set'
             )
@@ -76,22 +76,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                globals.context.globalState.get(activationLaunchPathKey),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                globals.context.globalState.get(activationTemplatePathKey),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                globals.context.globalState.get(samInitRuntimeKey),
                 'someruntime',
                 'Unexpected init runtime value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                globals.context.globalState.get(samInitImageBooleanKey),
                 false,
                 'Unexpected init image boolean value was set'
             )
@@ -107,22 +107,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                globals.context.globalState.get(activationLaunchPathKey),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                globals.context.globalState.get(activationTemplatePathKey),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                globals.context.globalState.get(samInitRuntimeKey),
                 'someruntime',
                 'Unexpected init runtime value was set'
             )
             assert.strictEqual(
-                globals.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                globals.context.globalState.get(samInitImageBooleanKey),
                 true,
                 'Unexpected init image boolean value was set'
             )
@@ -131,9 +131,9 @@ describe('ActivationReloadState', async function () {
 
     describe('getSamInitState', async function () {
         it('path defined, without runtime', async function () {
-            await globals.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await globals.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await globals.context.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
+            await globals.context.globalState.update(activationLaunchPathKey, 'getsomepath')
+            await globals.context.globalState.update(activationTemplatePathKey, 'gettemplatepath')
+            await globals.context.globalState.update(samInitRuntimeKey, undefined)
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -158,9 +158,9 @@ describe('ActivationReloadState', async function () {
         })
 
         it('path defined, with runtime', async function () {
-            await globals.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await globals.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await globals.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
+            await globals.context.globalState.update(activationLaunchPathKey, 'getsomepath')
+            await globals.context.globalState.update(activationTemplatePathKey, 'gettemplatepath')
+            await globals.context.globalState.update(samInitRuntimeKey, 'getsomeruntime')
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -185,10 +185,10 @@ describe('ActivationReloadState', async function () {
         })
 
         it('path defined, with runtime and isImage', async function () {
-            await globals.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await globals.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await globals.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
-            await globals.context.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
+            await globals.context.globalState.update(activationLaunchPathKey, 'getsomepath')
+            await globals.context.globalState.update(activationTemplatePathKey, 'gettemplatepath')
+            await globals.context.globalState.update(samInitRuntimeKey, 'getsomeruntime')
+            await globals.context.globalState.update(samInitImageBooleanKey, true)
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -224,25 +224,25 @@ describe('ActivationReloadState', async function () {
         activationReloadState.clearSamInitState()
 
         assert.strictEqual(
-            globals.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+            globals.context.globalState.get(activationLaunchPathKey),
             undefined,
             'Expected launch path to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            globals.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+            globals.context.globalState.get(activationTemplatePathKey),
             undefined,
             'Expected template path to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            globals.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+            globals.context.globalState.get(samInitRuntimeKey),
             undefined,
             'Expected runtime key to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            globals.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+            globals.context.globalState.get(samInitImageBooleanKey),
             undefined,
             'Expected isImage key to be cleared (undefined)'
         )

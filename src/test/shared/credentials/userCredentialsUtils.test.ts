@@ -8,6 +8,8 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as sinon from 'sinon'
 
+/* eslint @typescript-eslint/naming-convention: 0 */
+
 import { Uri } from 'vscode'
 import { loadSharedConfigFiles } from '../../../shared/credentials/credentialsFile'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'

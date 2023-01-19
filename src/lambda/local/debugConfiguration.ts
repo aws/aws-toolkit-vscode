@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import {
     AwsSamDebuggerConfiguration,
-    AWS_SAM_DEBUG_TARGET_TYPES,
+    awsSamDebugTargetTypes,
     CodeTargetProperties,
     TemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -175,7 +175,7 @@ export function getHandlerName(
                 localize(
                     'AWS.sam.debugger.invalidTarget',
                     'Debug Configuration has an unsupported target type. Supported types: {0}',
-                    AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+                    awsSamDebugTargetTypes.join(', ')
                 )
             )
             return ''

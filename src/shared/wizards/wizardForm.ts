@@ -81,9 +81,9 @@ function checkParent<TState>(prop: string, state: TState, options: FormDataEleme
 }
 
 type FormProperty = keyof (FormElement<any, any> & ParentFormElement<any, any>)
-const BIND_PROMPTER: FormProperty = 'bindPrompter'
-const APPLY_FORM: FormProperty = 'applyBoundForm'
-const SET_DEFAULT: FormProperty = 'setDefault'
+const BIND_PROMPTER: FormProperty = 'bindPrompter' // eslint-disable-line @typescript-eslint/naming-convention
+const APPLY_FORM: FormProperty = 'applyBoundForm' // eslint-disable-line @typescript-eslint/naming-convention
+const SET_DEFAULT: FormProperty = 'setDefault' // eslint-disable-line @typescript-eslint/naming-convention
 
 /**
  * Maps individual {@link Prompter prompters} to a desired property of the output interface as defined by

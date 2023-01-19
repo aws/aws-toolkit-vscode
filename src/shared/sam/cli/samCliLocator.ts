@@ -157,7 +157,7 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 }
 
 class UnixSamCliLocator extends BaseSamCliLocator {
-    private static readonly locationpaths: string[] = [
+    private static readonly locationPaths: string[] = [
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if
@@ -166,7 +166,7 @@ class UnixSamCliLocator extends BaseSamCliLocator {
         `${process.env.HOME}/.linuxbrew/bin`,
     ]
 
-    private static readonly executablefilenames: string[] = ['sam']
+    private static readonly executableFilenames: string[] = ['sam']
 
     public constructor() {
         super()

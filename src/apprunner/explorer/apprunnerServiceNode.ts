@@ -22,12 +22,12 @@ const localize = nls.loadMessageBundle()
 const contextBase = 'awsAppRunnerServiceNode'
 
 const operationStatus = {
-    START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'),
-    CREATE_SERVICE: localize('AWS.apprunner.operationStatus.create', 'Creating...'),
-    PAUSE_SERVICE: localize('AWS.apprunner.operationStatus.pause', 'Pausing...'),
-    RESUME_SERVICE: localize('AWS.apprunner.operationStatus.resume', 'Resuming...'),
-    DELETE_SERVICE: localize('AWS.apprunner.operationStatus.delete', 'Deleting...'),
-    UPDATE_SERVICE: localize('AWS.apprunner.operationStatus.update', 'Updating...'),
+    START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'), // eslint-disable-line @typescript-eslint/naming-convention
+    CREATE_SERVICE: localize('AWS.apprunner.operationStatus.create', 'Creating...'), // eslint-disable-line @typescript-eslint/naming-convention
+    PAUSE_SERVICE: localize('AWS.apprunner.operationStatus.pause', 'Pausing...'), // eslint-disable-line @typescript-eslint/naming-convention
+    RESUME_SERVICE: localize('AWS.apprunner.operationStatus.resume', 'Resuming...'), // eslint-disable-line @typescript-eslint/naming-convention
+    DELETE_SERVICE: localize('AWS.apprunner.operationStatus.delete', 'Deleting...'), // eslint-disable-line @typescript-eslint/naming-convention
+    UPDATE_SERVICE: localize('AWS.apprunner.operationStatus.update', 'Updating...'), // eslint-disable-line @typescript-eslint/naming-convention
 }
 
 type ServiceOperation = keyof typeof operationStatus

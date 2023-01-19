@@ -16,10 +16,9 @@ import { isCloud9 } from '../extensionUtilities'
 import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
-    /* eslint @typescript-eslint/naming-convention: 0 */
-    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
-    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
-    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
+    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
+    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
 
     export function isZipLambdaResource(
         resource?: ZipResourceProperties | ImageResourceProperties

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint @typescript-eslint/naming-convention: 0 */
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import { getLogger } from '../shared/logger'
@@ -30,7 +29,7 @@ export interface ContextChangeEventsArgs {
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
 const logged = new Set<string>()
-const DEFAULT_REGION = 'us-east-1'
+const defaultRegion = 'us-east-1'
 
 /**
  * Wraps an AWS context in terms of credential profile and zero or more regions. The
@@ -100,11 +99,11 @@ export class DefaultAwsContext implements AwsContext {
         if (!logged.has(credId) && !this.currentCredentials?.defaultRegion) {
             logged.add(credId)
             getLogger().warn(
-                `AwsContext: no default region in credentials profile, falling back to ${DEFAULT_REGION}: ${credId}`
+                `AwsContext: no default region in credentials profile, falling back to ${defaultRegion}: ${credId}`
             )
         }
 
-        return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
+        return this.currentCredentials?.defaultRegion ?? defaultRegion
     }
 
     private emitEvent() {

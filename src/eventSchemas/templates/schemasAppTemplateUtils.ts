@@ -19,7 +19,7 @@ const detail = 'detail'
 const ref = '$ref'
 
 const defaultEventSource = 'INSERT-YOUR-EVENT-SOURCE'
-const defaultEventDetailType = 'INSERT-YOUR-detail-TYPE'
+const defaultEventDetailType = 'INSERT-YOUR-DETAIL-TYPE'
 
 export interface SchemaTemplateParameters {
     SchemaVersion: string
@@ -28,12 +28,12 @@ export interface SchemaTemplateParameters {
 
 // This matches the extra_content parameters to Schema-based templates in both key and value names in cookiecutter.json in the templates used by SamEventBridgeSchemaAppPython
 export interface SchemaTemplateExtraContext {
-    AWS_Schema_registry: string
-    AWS_Schema_name: string
-    AWS_Schema_root: string
-    AWS_Schema_source: string
-    AWS_Schema_detail_type: string
-    user_agent: string
+    AWS_Schema_registry: string // eslint-disable-line @typescript-eslint/naming-convention
+    AWS_Schema_name: string // eslint-disable-line @typescript-eslint/naming-convention
+    AWS_Schema_root: string // eslint-disable-line @typescript-eslint/naming-convention
+    AWS_Schema_source: string // eslint-disable-line @typescript-eslint/naming-convention
+    AWS_Schema_detail_type: string // eslint-disable-line @typescript-eslint/naming-convention
+    user_agent: string // eslint-disable-line @typescript-eslint/naming-convention
 }
 
 export async function buildSchemaTemplateParameters(schemaName: string, registryName: string, client: SchemaClient) {
@@ -63,11 +63,11 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
     const rootSchemaEventName = buildRootSchemaEventName(schemaNode, awsEventNode) || getCoreFileName(schemaName)
 
     const templateExtraContent: SchemaTemplateExtraContext = {
-        AWS_Schema_registry: registryName,
-        AWS_Schema_name: rootSchemaEventName!,
-        AWS_Schema_root: schemaPackageHierarchy,
-        AWS_Schema_source: source,
-        AWS_Schema_detail_type: detailType,
+        AWS_Schema_registry: registryName, // eslint-disable-line @typescript-eslint/naming-convention
+        AWS_Schema_name: rootSchemaEventName!, // eslint-disable-line @typescript-eslint/naming-convention
+        AWS_Schema_root: schemaPackageHierarchy, // eslint-disable-line @typescript-eslint/naming-convention
+        AWS_Schema_source: source, // eslint-disable-line @typescript-eslint/naming-convention
+        AWS_Schema_detail_type: detailType, // eslint-disable-line @typescript-eslint/naming-convention
         // Need to provide user agent to SAM CLI so that it will enable appTemplate-based
         user_agent: 'AWSToolkit',
     }

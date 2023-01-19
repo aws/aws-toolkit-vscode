@@ -14,9 +14,9 @@ import {
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { stub } from '../../utilities/stubber'
 
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const fakeRegionCode = 'someregioncode'
+const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('CloudWatchLogsNode', function () {
     let testNode: CloudWatchLogsNode
@@ -25,7 +25,7 @@ describe('CloudWatchLogsNode', function () {
     let logGroupNames: string[]
 
     function createClient() {
-        const client = stub(DefaultCloudWatchLogsClient, { regionCode: FAKE_REGION_CODE })
+        const client = stub(DefaultCloudWatchLogsClient, { regionCode: fakeRegionCode })
         client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map(name => ({ logGroupName: name }))))
 
         return client
@@ -33,7 +33,7 @@ describe('CloudWatchLogsNode', function () {
 
     beforeEach(function () {
         logGroupNames = ['group1', 'group2']
-        testNode = new CloudWatchLogsNode(FAKE_REGION_CODE, createClient())
+        testNode = new CloudWatchLogsNode(fakeRegionCode, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -65,19 +65,19 @@ describe('CloudWatchLogsNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        logGroupNames = UNSORTED_TEXT
+        logGroupNames = unsortedText
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
         const client = createClient()
         client.describeLogGroups.throws(new Error())
 
-        const node = new CloudWatchLogsNode(FAKE_REGION_CODE, client)
+        const node = new CloudWatchLogsNode(fakeRegionCode, client)
         assertNodeListOnlyContainsErrorNode(await node.getChildren())
     })
 })

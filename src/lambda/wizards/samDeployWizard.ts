@@ -43,8 +43,9 @@ import { getIcon } from '../../shared/icons'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-/* eslint @typescript-eslint/naming-convention: 0 */
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
 
 export interface SamDeployWizardResponse {

@@ -25,8 +25,8 @@ import { telemetry } from './telemetry'
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
 export class DefaultTelemetryService {
-    public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
-    public static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
+    public static readonly telemetryCognitoIdKey = 'telemetryId'
+    public static readonly defaultFlushPeriodMillis = 1000 * 60 * 5 // 5 minutes in milliseconds
 
     public startTime: Date
     public readonly persistFilePath: string
@@ -62,7 +62,7 @@ export class DefaultTelemetryService {
         this.startTime = new globals.clock.Date()
 
         this._eventQueue = []
-        this._flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
+        this._flushPeriod = DefaultTelemetryService.defaultFlushPeriodMillis
 
         if (publisher !== undefined) {
             this.publisher = publisher
@@ -177,7 +177,7 @@ export class DefaultTelemetryService {
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
-                DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
+                DefaultTelemetryService.telemetryCognitoIdKey,
                 '[]'
             )
             // Maps don't cleanly de/serialize with JSON.parse/stringify so we need to do it ourselves
@@ -192,7 +192,7 @@ export class DefaultTelemetryService {
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
                 await this.context.globalState.update(
-                    DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
+                    DefaultTelemetryService.telemetryCognitoIdKey,
                     JSON.stringify(Array.from(identityMap.entries()))
                 )
 

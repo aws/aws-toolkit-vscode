@@ -18,7 +18,7 @@ import { OidcClient } from '../../../credentials/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { InternalServerException, InvalidClientException, UnauthorizedClientException } from '@aws-sdk/client-sso-oidc'
 
-const HOUR_IN_MS = 3600000
+const hourInMs = 3600000
 
 describe('SsoAccessTokenProvider', function () {
     const region = 'fakeRegion'
@@ -80,9 +80,9 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('invalidate', function () {
         it('removes cached tokens and registrations', async function () {
-            const validToken = createToken(HOUR_IN_MS)
+            const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
-            await cache.registration.save({ region }, createRegistration(HOUR_IN_MS))
+            await cache.registration.save({ region }, createRegistration(hourInMs))
             await sut.invalidate()
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
@@ -92,14 +92,14 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('getToken', function () {
         it('returns a cached token', async function () {
-            const validToken = createToken(HOUR_IN_MS)
+            const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
 
             assert.deepStrictEqual(await sut.getToken(), validToken)
         })
 
         it('invalidates expired tokens', async function () {
-            const expiredToken = createToken(-HOUR_IN_MS)
+            const expiredToken = createToken(-hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
             await sut.getToken()
 
@@ -107,18 +107,18 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('returns `undefined` for expired tokens that cannot be refreshed', async function () {
-            const expiredToken = createToken(-HOUR_IN_MS)
+            const expiredToken = createToken(-hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: expiredToken })
 
             assert.strictEqual(await sut.getToken(), undefined)
         })
 
         it('refreshes expired tokens', async function () {
-            const refreshedToken = createToken(HOUR_IN_MS, { accessToken: 'newToken' })
+            const refreshedToken = createToken(hourInMs, { accessToken: 'newToken' })
             when(oidcClient.createToken(anything())).thenResolve(refreshedToken)
 
-            const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
-            const validRegistation = createRegistration(HOUR_IN_MS)
+            const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
+            const validRegistation = createRegistration(hourInMs)
             const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
             await cache.token.save(startUrl, access)
             assert.deepStrictEqual(await sut.getToken(), refreshedToken)
@@ -128,7 +128,7 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('does not refresh if missing a client registration', async function () {
-            const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
+            const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
             await cache.token.save(startUrl, { region, startUrl, token: refreshableToken })
 
             assert.strictEqual(await sut.getToken(), undefined)
@@ -142,8 +142,8 @@ describe('SsoAccessTokenProvider', function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
                 when(oidcClient.createToken(anything())).thenReject(exception)
 
-                const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
-                const validRegistation = createRegistration(HOUR_IN_MS)
+                const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
+                const validRegistation = createRegistration(hourInMs)
                 const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
                 await cache.token.save(startUrl, access)
                 await assert.rejects(sut.getToken())
@@ -156,8 +156,8 @@ describe('SsoAccessTokenProvider', function () {
                 const exception = new InternalServerException({ message: '', $metadata: {} })
                 when(oidcClient.createToken(anything())).thenReject(exception)
 
-                const refreshableToken = createToken(-HOUR_IN_MS, { refreshToken: 'refreshToken' })
-                const validRegistation = createRegistration(HOUR_IN_MS)
+                const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
+                const validRegistation = createRegistration(hourInMs)
                 const access = { region, startUrl, token: refreshableToken, registration: validRegistation }
                 await cache.token.save(startUrl, access)
                 await assert.rejects(sut.getToken())
@@ -174,9 +174,9 @@ describe('SsoAccessTokenProvider', function () {
         }
 
         function setupFlow() {
-            const token = createToken(HOUR_IN_MS)
-            const registration = createRegistration(HOUR_IN_MS)
-            const authorization = createAuthorization(HOUR_IN_MS)
+            const token = createToken(hourInMs)
+            const registration = createRegistration(hourInMs)
+            const authorization = createAuthorization(hourInMs)
 
             when(oidcClient.registerClient(anything())).thenResolve(registration)
             when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
@@ -199,7 +199,7 @@ describe('SsoAccessTokenProvider', function () {
             const { token } = setupFlow()
             stubOpen()
 
-            const cachedToken = createToken(HOUR_IN_MS, { accessToken: 'someOtherToken' })
+            const cachedToken = createToken(hourInMs, { accessToken: 'someOtherToken' })
             await cache.token.save(startUrl, { region, startUrl, token: cachedToken })
 
             assert.deepStrictEqual(await sut.getToken(), cachedToken)
@@ -211,7 +211,7 @@ describe('SsoAccessTokenProvider', function () {
         describe('Exceptions', function () {
             it('removes the client registration cache on client faults', async function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
-                const registration = createRegistration(HOUR_IN_MS)
+                const registration = createRegistration(hourInMs)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
                 when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
@@ -222,10 +222,10 @@ describe('SsoAccessTokenProvider', function () {
 
             it('removes the client registration cache on client faults (token step)', async function () {
                 const exception = new InvalidClientException({ message: '', $metadata: {} })
-                const registration = createRegistration(HOUR_IN_MS)
+                const registration = createRegistration(hourInMs)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
-                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(createAuthorization(HOUR_IN_MS))
+                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(createAuthorization(hourInMs))
                 when(oidcClient.pollForToken(anything(), anything(), anything())).thenReject(exception)
 
                 stubOpen()
@@ -236,7 +236,7 @@ describe('SsoAccessTokenProvider', function () {
 
             it('preserves the client registration cache on server faults', async function () {
                 const exception = new InternalServerException({ message: '', $metadata: {} })
-                const registration = createRegistration(HOUR_IN_MS)
+                const registration = createRegistration(hourInMs)
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
                 when(oidcClient.startDeviceAuthorization(anything())).thenReject(exception)
@@ -257,7 +257,7 @@ describe('SsoAccessTokenProvider', function () {
             })
 
             it('saves the client registration even when cancelled', async function () {
-                const registration = createRegistration(HOUR_IN_MS)
+                const registration = createRegistration(hourInMs)
                 await cache.registration.save({ region }, registration)
                 await assert.rejects(sut.createToken(), CancellationError)
                 const cached = await cache.registration.load({ region })

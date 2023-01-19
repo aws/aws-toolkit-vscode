@@ -30,7 +30,7 @@ import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
 
-const TEMPLATE_YAML = 'template.yaml'
+const templateYaml = 'template.yaml'
 
 describe('createNewSamApp', function () {
     let mockLaunchConfiguration: LaunchConfiguration
@@ -47,7 +47,7 @@ describe('createNewSamApp', function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        fakeTarget = path.join(tempFolder, TEMPLATE_YAML)
+        fakeTarget = path.join(tempFolder, templateYaml)
         testutil.toFile('target file', fakeTarget)
 
         fakeWorkspaceFolder = {
@@ -229,7 +229,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
-            testutil.toFile('target file', path.join(otherFolder1, TEMPLATE_YAML))
+            testutil.toFile('target file', path.join(otherFolder1, templateYaml))
 
             await globals.templateRegistry.addItemToRegistry(tempTemplate)
             await globals.templateRegistry.addItemToRegistry(otherTemplate1)

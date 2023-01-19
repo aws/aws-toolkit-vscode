@@ -18,7 +18,7 @@ import { getLogger } from '../shared/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
-import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
+import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, hostNamePrefix } from './tools'
 import { isCodeCatalystVSCode } from './utils'
@@ -101,7 +101,7 @@ export function createCodeCatalystEnvProvider(
         await cacheBearerToken(await client.getBearerToken(), devenv.id)
         const vars = getCodeCatalystSsmEnv(client.regionCode, ssmPath, devenv)
 
-        return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
+        return useSshAgent ? { [sshAgentSocketVariable]: await startSshAgent(), ...vars } : vars
     }
 }
 

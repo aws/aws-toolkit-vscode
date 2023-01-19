@@ -10,13 +10,10 @@ import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import globals from '../extensionGlobals'
 
-/* eslint @typescript-eslint/naming-convention: 0 */
-
-export const DEFAULT_MAX_THINGS = 250 // 250 is the maximum allowed by the API
-export const DEFAULT_DELIMITER = '/'
+const defaultMaxThings = 250 // 250 is the maximum allowed by the API
 
 /* ATS is recommended over the deprecated Verisign certificates */
-const IOT_ENDPOINT_TYPE = 'iot:Data-ATS'
+const iotEndpointType = 'iot:Data-ATS'
 
 export type IotThing = { readonly name: string; readonly arn: string }
 export type IotCertificate = {
@@ -28,9 +25,9 @@ export type IotCertificate = {
 export type IotPolicy = IotThing
 export type IotClient = InterfaceNoSymbol<DefaultIotClient>
 
-const IOT_SERVICE_ARN = 'iot'
+const iotServiceArn = 'iot'
 //Pattern to extract the certificate ID from the parsed ARN resource.
-const CERT_ARN_RESOURCE_PATTERN = /cert\/(\w+)/
+const certArnResourcePattern = /cert\/(\w+)/
 
 export interface ListThingCertificatesResponse {
     readonly certificates: Iot.CertificateDescription[]
@@ -54,7 +51,7 @@ export class DefaultIotClient {
 
         const output: Iot.ListThingsResponse = await iot
             .listThings({
-                maxResults: request?.maxResults ?? DEFAULT_MAX_THINGS,
+                maxResults: request?.maxResults ?? defaultMaxThings,
                 nextToken: request?.nextToken,
             })
             .promise()
@@ -103,7 +100,7 @@ export class DefaultIotClient {
 
         const output: Iot.ListCertificatesResponse = await iot
             .listCertificates({
-                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
             })
@@ -129,7 +126,7 @@ export class DefaultIotClient {
         const output: Iot.ListThingPrincipalsResponse = await iot
             .listThingPrincipals({
                 thingName: request.thingName,
-                maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
+                maxResults: request.maxResults ?? defaultMaxThings,
                 nextToken: request.nextToken,
             })
             .promise()
@@ -172,8 +169,8 @@ export class DefaultIotClient {
 
         const describedCerts = iotPrincipals.map(async iotPrincipal => {
             const principalArn = parse(iotPrincipal)
-            const certIdFound = principalArn.resource.match(CERT_ARN_RESOURCE_PATTERN)
-            if (principalArn.service != IOT_SERVICE_ARN || !certIdFound) {
+            const certIdFound = principalArn.resource.match(certArnResourcePattern)
+            if (principalArn.service != iotServiceArn || !certIdFound) {
                 return undefined
             }
             const certId = certIdFound[1]
@@ -203,7 +200,7 @@ export class DefaultIotClient {
 
         const output = await iot
             .listPrincipalThings({
-                maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
+                maxResults: request.maxResults ?? defaultMaxThings,
                 nextToken: request.nextToken,
                 principal: request.principal,
             })
@@ -302,7 +299,7 @@ export class DefaultIotClient {
 
         const output: Iot.ListPoliciesResponse = await iot
             .listPolicies({
-                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
             })
@@ -324,7 +321,7 @@ export class DefaultIotClient {
         const output: Iot.ListPrincipalPoliciesResponse = await iot
             .listPrincipalPolicies({
                 principal: request.principal,
-                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
             })
@@ -348,7 +345,7 @@ export class DefaultIotClient {
 
         const output = await iot
             .listTargetsForPolicy({
-                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 policyName: request.policyName,
             })
@@ -429,7 +426,7 @@ export class DefaultIotClient {
         getLogger().debug('GetEndpoint called')
         const iot = await this.iotProvider(this.regionCode)
 
-        const output = await iot.describeEndpoint({ endpointType: IOT_ENDPOINT_TYPE }).promise()
+        const output = await iot.describeEndpoint({ endpointType: iotEndpointType }).promise()
         if (!output.endpointAddress) {
             throw new Error('Failed to retrieve endpoint')
         }

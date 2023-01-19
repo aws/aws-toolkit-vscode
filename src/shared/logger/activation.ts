@@ -11,7 +11,7 @@ import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
 import { setLogger } from './logger'
-import { LOG_OUTPUT_CHANNEL } from './outputChannel'
+import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
@@ -30,7 +30,7 @@ export async function activate(
     extensionContext: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const logOutputChannel = LOG_OUTPUT_CHANNEL
+    const chan = logOutputChannel
     const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
     await SystemUtilities.createDirectory(extensionContext.logUri)
@@ -38,7 +38,7 @@ export async function activate(
     const mainLogger = makeLogger(
         {
             logPaths: [logUri.fsPath],
-            outputChannels: [logOutputChannel],
+            outputChannels: [chan],
         },
         extensionContext.subscriptions
     )
@@ -51,7 +51,7 @@ export async function activate(
         makeLogger(
             {
                 logPaths: [logUri.fsPath],
-                outputChannels: [outputChannel, logOutputChannel],
+                outputChannels: [outputChannel, chan],
             },
             extensionContext.subscriptions
         ),
@@ -63,7 +63,7 @@ export async function activate(
         makeLogger(
             {
                 staticLogLevel: 'verbose', // verbose will log anything
-                outputChannels: [outputChannel, logOutputChannel],
+                outputChannels: [outputChannel, chan],
                 useDebugConsole: true,
             },
             extensionContext.subscriptions

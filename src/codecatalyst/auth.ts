@@ -96,7 +96,7 @@ export class CodeCatalystAuthenticationProvider {
 
     public async promptNotConnected(): Promise<SsoConnection> {
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
-            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade'
+            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
