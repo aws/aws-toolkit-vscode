@@ -12,7 +12,7 @@ import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilit
 import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
-import { DEFAULT_PARTITION } from '../regions/regionProvider'
+import { defaultPartition } from '../regions/regionProvider'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { toStream } from '../utilities/collectionUtils'
 
@@ -133,7 +133,7 @@ export interface DeleteBucketRequest {
 export class DefaultS3Client {
     public constructor(
         public readonly regionCode: string,
-        private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION,
+        private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultpartition,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {}

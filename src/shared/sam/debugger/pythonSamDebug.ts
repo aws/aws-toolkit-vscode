@@ -23,7 +23,7 @@ import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { sleep } from '../../utilities/timeoutUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
@@ -224,8 +224,8 @@ export async function invokePythonLambda(
     config: PythonDebugConfiguration
 ): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([
-        WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-        WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
+        waitForDebuggerMessages.PYTHON,
+        waitForDebuggerMessages.PYTHON_IKPDB,
     ])
 
     // Must not used waitForPort() for ikpdb: the socket consumes

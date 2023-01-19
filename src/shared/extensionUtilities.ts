@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
-import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
+import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
@@ -274,7 +274,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         return
     }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
-    if (version === EXTENSION_ALPHA_VERSION) {
+    if (version === extensionAlphaVersion) {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.startup.toastIfAlpha',

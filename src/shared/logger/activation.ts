@@ -21,7 +21,7 @@ import { SystemUtilities } from '../systemUtilities'
 
 const localize = nls.loadMessageBundle()
 
-const DEFAULT_LOG_LEVEL: LogLevel = 'info'
+const defaultLogLevel: LogLevel = 'info'
 
 /**
  * Activate Logger functionality for the extension.
@@ -136,7 +136,7 @@ export function makeLogger(
 function getLogLevel(): LogLevel {
     const configuration = Settings.instance.getSection(extensionSettingsPrefix)
 
-    return configuration.get('logLevel', DEFAULT_LOG_LEVEL)
+    return configuration.get('logLevel', defaultLogLevel)
 }
 
 function makeLogFilename(): string {
