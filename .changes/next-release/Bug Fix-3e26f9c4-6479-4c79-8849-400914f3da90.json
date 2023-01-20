@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "iamClient ignore permission check when denial comes from organization csp policy"
+	"description": "iam: ignore permission check when denial comes from organization csp policy"
 }
