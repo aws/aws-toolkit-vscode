@@ -22,20 +22,20 @@ const localize = nls.loadMessageBundle()
 
 const commandMap = new Map<[command: string, errorMessage: string], (...args: any) => Promise<any>>()
 
-const CREATE_SERVICE_FAILED = localize('aws.apprunner.createService.failed', 'Failed to create App Runner service')
-const CREATE_SERVICE_ECR_FAILED = localize(
+const createServiceFailed = localize('aws.apprunner.createService.failed', 'Failed to create App Runner service')
+const createServiceEcrFailed = localize(
     'aws.apprunner.createServiceFromEcr.failed',
     'Failed to create App Runner service from ECR'
 )
-const PAUSE_SERVICE_FAILED = localize('aws.apprunner.pauseService.failed', 'Failed to pause App Runner service')
-const RESUME_SERVICE_FAILED = localize('aws.apprunner.resumeService.failed', 'Failed to resume App Runner service')
-const COPY_SERVICE_URL_FAILED = localize('aws.apprunner.copyServiceUrl.failed', 'Failed to copy App Runner service URL')
-const OPEN_SERVICE_FAILED = localize('aws.apprunner.open.failed', 'Failed to open App Runner service')
-const DEPLOY_SERVICE_FAILED = localize(
+const pauseServiceFailed = localize('aws.apprunner.pauseService.failed', 'Failed to pause App Runner service')
+const resumeServiceFailed = localize('aws.apprunner.resumeService.failed', 'Failed to resume App Runner service')
+const copyServiceUrlFailed = localize('aws.apprunner.copyServiceUrl.failed', 'Failed to copy App Runner service URL')
+const openServiceFailed = localize('aws.apprunner.open.failed', 'Failed to open App Runner service')
+const deployServiceFailed = localize(
     'aws.apprunner.startDeployment.failed',
     'Failed to start deployment of App Runner service'
 )
-const DELETE_SERVICE_FAILED = localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service')
+const deleteServiceFailed = localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service')
 
 const copyUrl = async (node: AppRunnerServiceNode) => {
     copyToClipboard(node.url, 'URL')
@@ -66,14 +66,14 @@ const deployService = async (node: AppRunnerServiceNode) => {
     }
 }
 
-commandMap.set(['aws.apprunner.createService', CREATE_SERVICE_FAILED], createAppRunnerService)
-commandMap.set(['aws.apprunner.createServiceFromEcr', CREATE_SERVICE_ECR_FAILED], createFromEcr)
-commandMap.set(['aws.apprunner.pauseService', PAUSE_SERVICE_FAILED], pauseService)
-commandMap.set(['aws.apprunner.resumeService', RESUME_SERVICE_FAILED], resumeService)
-commandMap.set(['aws.apprunner.copyServiceUrl', COPY_SERVICE_URL_FAILED], copyUrl)
-commandMap.set(['aws.apprunner.open', OPEN_SERVICE_FAILED], openUrl)
-commandMap.set(['aws.apprunner.startDeployment', DEPLOY_SERVICE_FAILED], deployService)
-commandMap.set(['aws.apprunner.deleteService', DELETE_SERVICE_FAILED], deleteService)
+commandMap.set(['aws.apprunner.createService', createServiceFailed], createAppRunnerService)
+commandMap.set(['aws.apprunner.createServiceFromEcr', createServiceEcrFailed], createFromEcr)
+commandMap.set(['aws.apprunner.pauseService', pauseServiceFailed], pauseService)
+commandMap.set(['aws.apprunner.resumeService', resumeServiceFailed], resumeService)
+commandMap.set(['aws.apprunner.copyServiceUrl', copyServiceUrlFailed], copyUrl)
+commandMap.set(['aws.apprunner.open', openServiceFailed], openUrl)
+commandMap.set(['aws.apprunner.startDeployment', deployServiceFailed], deployService)
+commandMap.set(['aws.apprunner.deleteService', deleteServiceFailed], deleteService)
 
 /**
  * Activates App Runner

@@ -9,14 +9,14 @@ import * as path from 'path'
 import * as semver from 'semver'
 import {
     DotNetCoreDebugConfiguration,
-    DOTNET_CORE_DEBUGGER_PATH,
+    dotnetCoreDebuggerPath,
     getCodeRoot,
     isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
@@ -26,7 +26,7 @@ import { Window } from '../../vscode/window'
 
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
+import { minSamCliVersionForDotnet31Support } from '../cli/samCliValidator'
 import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
@@ -72,14 +72,14 @@ export async function invokeCsharpLambda(
     config: SamLaunchRequestArgs,
     window: Window = Window.vscode()
 ): Promise<SamLaunchRequestArgs> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.DOTNET])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
 
     if (!config.noDebug) {
         const samCliVersion = await getSamCliVersion(ctx.samCliContext())
         // TODO: Remove this when min sam version is >= 1.4.0
-        if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT)) {
+        if (semver.lt(samCliVersion, minSamCliVersionForDotnet31Support)) {
             window.showWarningMessage(
                 localize(
                     'AWS.output.sam.local.no.net.3.1.debug',
@@ -243,7 +243,7 @@ export async function makeCoreCLRDebugConfiguration(
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+        codeUri = codeUri.replace(pathutil.driveLetterRegex, match => match.toUpperCase())
     }
 
     if (isImageLambda) {
@@ -278,14 +278,14 @@ export async function makeCoreCLRDebugConfiguration(
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
-            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+            debuggerPath: dotnetCoreDebuggerPath,
             pipeCwd: codeUri,
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
-                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+                debuggerPath: dotnetCoreDebuggerPath,
                 pipeCwd: codeUri,
             },
         },

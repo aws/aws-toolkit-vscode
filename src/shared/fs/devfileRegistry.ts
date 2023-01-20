@@ -11,7 +11,7 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 
-export const DEVFILE_GLOB_PATTERN = '**/devfile.{yaml,yml}'
+export const devfileGlobPattern = '**/devfile.{yaml,yml}'
 
 export class DevfileRegistry extends WatchedFiles<Devfile> {
     protected name = 'DevfileRegistry'

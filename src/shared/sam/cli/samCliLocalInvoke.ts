@@ -17,7 +17,7 @@ import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
-export const WAIT_FOR_DEBUGGER_MESSAGES = {
+export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
     PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
@@ -54,10 +54,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
     public constructor(
-        private readonly debuggerAttachCues: string[] = [
-            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
-        ]
+        private readonly debuggerAttachCues: string[] = [waitForDebuggerMessages.PYTHON, waitForDebuggerMessages.NODEJS]
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {

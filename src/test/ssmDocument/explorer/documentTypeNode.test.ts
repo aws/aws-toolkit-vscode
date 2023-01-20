@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode'
 
-import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('DocumentTypeNode', function () {
     let sandbox: sinon.SinonSandbox
@@ -41,6 +41,6 @@ describe('DocumentTypeNode', function () {
         })
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 })

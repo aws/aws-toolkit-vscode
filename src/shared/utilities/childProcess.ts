@@ -57,7 +57,7 @@ export interface ChildProcessResult {
     signal?: string
 }
 
-export const EOF = Symbol('EOF')
+export const eof = Symbol('EOF')
 
 /**
  * Convenience class to manage a child process
@@ -315,7 +315,7 @@ export class ChildProcess {
      *
      * This throws if the process hasn't started or if the write fails.
      */
-    public async send(input: string | Buffer | typeof EOF) {
+    public async send(input: string | Buffer | typeof eof) {
         if (this.childProcess === undefined) {
             throw new Error('Cannot write to non-existent process')
         }
@@ -325,7 +325,7 @@ export class ChildProcess {
             throw new Error('Cannot write to non-existent stdin')
         }
 
-        if (input === EOF) {
+        if (input === eof) {
             return new Promise<void>(resolve => stdin.end('', resolve))
         }
 

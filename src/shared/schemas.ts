@@ -48,7 +48,7 @@ export interface SchemaHandler {
  * Processes the update of schema mappings for files in the workspace
  */
 export class SchemaService {
-    private static readonly DEFAULT_UPDATE_PERIOD_MILLIS = 1000
+    private static readonly defaultUpdatePeriodMillis = 1000
 
     private updatePeriod: number
     private timer?: NodeJS.Timer
@@ -66,7 +66,7 @@ export class SchemaService {
             handlers?: Map<SchemaType, SchemaHandler>
         }
     ) {
-        this.updatePeriod = opts?.updatePeriod ?? SchemaService.DEFAULT_UPDATE_PERIOD_MILLIS
+        this.updatePeriod = opts?.updatePeriod ?? SchemaService.defaultUpdatePeriodMillis
         this.schemas = opts?.schemas
         this.handlers =
             opts?.handlers ??

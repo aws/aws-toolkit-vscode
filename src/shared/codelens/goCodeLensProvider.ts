@@ -12,18 +12,18 @@ import { findParentProjectFile } from '../utilities/workspaceUtils'
 import { basename, dirname } from 'path'
 import { activateExtension } from '../utilities/vsCodeUtils'
 
-export const GO_LANGUAGE = 'go'
-export const GO_ALLFILES: vscode.DocumentFilter[] = [
+export const goLanguage = 'go'
+export const goAllfiles: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: GO_LANGUAGE,
+        language: goLanguage,
     },
 ]
 
 // Go modules were introduced in Go 1.11
 // Before that, $GOPATH had to be set properly to find dependencies
 // We currently just ignore projects without a Go module file
-export const GO_BASE_PATTERN = '**/go.mod'
+export const goBasePattern = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const modFile = await findParentProjectFile(document.uri, /go\.mod$/)

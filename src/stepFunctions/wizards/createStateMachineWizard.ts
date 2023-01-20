@@ -11,7 +11,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { sfnCreateStateMachineUrl } from '../../shared/constants'
 
-export const STARTER_TEMPLATES: DataQuickPickItem<string>[] = [
+export const starterTemplates: DataQuickPickItem<string>[] = [
     {
         label: localize('AWS.stepfunctions.template.helloWorld.label', 'Hello world'),
         description: localize(
@@ -85,7 +85,7 @@ export class CreateStateMachineWizard extends Wizard<CreateStateMachineWizardRes
         super()
 
         this.form.templateFile.bindPrompter(() =>
-            createQuickPick(STARTER_TEMPLATES, {
+            createQuickPick(starterTemplates, {
                 title: localize(
                     'AWS.message.prompt.selectStateMachineTemplate.placeholder',
                     'Select a starter template'

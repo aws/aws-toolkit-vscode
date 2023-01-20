@@ -19,6 +19,7 @@ describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     async function detectCdkProjects_wait(dirs: any) {
         return (
             (await waitUntil(

@@ -7,10 +7,10 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set as ImmutableSet } from 'immutable'
 import { goRuntimes } from '../../lambda/models/samLambdaRuntime'
 
-export const JAVA = 'Java 8+'
-export const PYTHON = 'Python 3.6+'
-export const TYPESCRIPT = 'Typescript 3+'
-export const GO = 'Go 1+'
+export const JAVA = 'Java 8+' // eslint-disable-line @typescript-eslint/naming-convention
+export const PYTHON = 'Python 3.6+' // eslint-disable-line @typescript-eslint/naming-convention
+export const TYPESCRIPT = 'Typescript 3+' // eslint-disable-line @typescript-eslint/naming-convention
+export const GO = 'Go 1+' // eslint-disable-line @typescript-eslint/naming-convention
 export type SchemaCodeLangs = 'Java 8+' | 'Python 3.6+' | 'Typescript 3+' | 'Go 1+'
 
 export const schemaCodeLangs: ImmutableSet<SchemaCodeLangs> = ImmutableSet([JAVA, PYTHON, TYPESCRIPT, GO])

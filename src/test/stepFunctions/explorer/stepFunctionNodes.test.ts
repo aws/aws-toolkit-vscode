@@ -5,13 +5,13 @@
 
 import * as assert from 'assert'
 import {
-    CONTEXT_VALUE_STATE_MACHINE,
+    contextValueStateMachine,
     StateMachineNode,
     StepFunctionsNode,
 } from '../../../stepFunctions/explorer/stepFunctionsNodes'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import globals from '../../../shared/extensionGlobals'
@@ -42,7 +42,7 @@ describe('StepFunctionsNode', function () {
     it('returns placeholder node if no children are present', async function () {
         const node = new StepFunctionsNode(regionCode, createStatesClient())
 
-        assertNodeListOnlyContainsPlaceholderNode(await node.getChildren())
+        assertNodeListOnlyHasPlaceholderNode(await node.getChildren())
     })
 
     it('has StateMachineNode child nodes', async function () {
@@ -56,7 +56,7 @@ describe('StepFunctionsNode', function () {
             assert.ok(node instanceof StateMachineNode, 'Expected child node to be StateMachineNode')
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_STATE_MACHINE,
+                contextValueStateMachine,
                 'expected the node to have a State Machine contextValue'
             )
         })
@@ -76,6 +76,6 @@ describe('StepFunctionsNode', function () {
         client.listStateMachines.throws()
         const testNode = new StepFunctionsNode(regionCode, client)
 
-        assertNodeListOnlyContainsErrorNode(await testNode.getChildren())
+        assertNodeListOnlyHasErrorNode(await testNode.getChildren())
     })
 })

@@ -11,7 +11,7 @@ import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
 import { NoopWatcher } from '../fs/watchedFiles'
 
-export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
+export const templateFileGlobPattern = '**/*.{yaml,yml}'
 
 /**
  * Activate Buildspec related functionality for the extension.
@@ -20,7 +20,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     try {
         const registry = new BuildspecTemplateRegistry()
         globals.templateRegistry.buildspec = registry
-        await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        await registry.addWatchPattern(templateFileGlobPattern)
         await registry.watchUntitledFiles()
     } catch (e) {
         vscode.window.showErrorMessage(

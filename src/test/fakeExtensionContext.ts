@@ -10,8 +10,8 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
+    minSamCliVersion,
+    minSamCliVersionForGoSupport,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
@@ -113,7 +113,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
                     return new FakeChildProcessResult({})
                 }),
-                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
+                validator: new FakeSamCliValidator(minSamCliVersionForGoSupport),
             } as SamCliContext
         }
         const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
@@ -173,7 +173,7 @@ class SecretStorage implements vscode.SecretStorage {
 
 export class FakeSamCliValidator implements SamCliValidator {
     private readonly version: string
-    public constructor(version: string = MINIMUM_SAM_CLI_VERSION_INCLUSIVE) {
+    public constructor(version: string = minSamCliVersion) {
         this.version = version
     }
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {

@@ -14,10 +14,10 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 
-const AWS_IOT_EXAMPLE_POLICY =
+const awsIotExamplePolicy =
     '{ "Version": "2012-10-17", "Statement": [ {"Effect": "Allow", "Action": "*", "Resource": "*" } ] }'
 
-const expectedPolicy = JSON.stringify(JSON.parse(AWS_IOT_EXAMPLE_POLICY), undefined, getTabSizeSetting())
+const expectedPolicy = JSON.stringify(JSON.parse(awsIotExamplePolicy), undefined, getTabSizeSetting())
 
 describe('viewPolicyVersionCommand', function () {
     const policyName = 'test-policy'
@@ -55,7 +55,7 @@ describe('viewPolicyVersionCommand', function () {
         const showTextDocumentStub = sandbox.stub(vscode.window, 'showTextDocument').resolves({} as vscode.TextEditor)
 
         when(iot.getPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).thenResolve({
-            policyDocument: AWS_IOT_EXAMPLE_POLICY,
+            policyDocument: awsIotExamplePolicy,
         })
         await viewPolicyVersionCommand(node)
 

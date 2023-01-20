@@ -8,8 +8,8 @@ import globals from '../../../../shared/extensionGlobals'
 import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import {
     DefaultSamCliValidator,
-    MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+    maxSamCliVersionExclusive,
+    minSamCliVersion,
     SamCliValidatorContext,
     SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
@@ -41,7 +41,7 @@ describe('DefaultSamCliValidator', async function () {
     const samCliVersionTestScenarios = [
         {
             situation: 'SAM CLI Version is valid',
-            version: MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+            version: minSamCliVersion,
             expectedVersionValidation: SamCliVersionValidation.Valid,
         },
         {
@@ -51,7 +51,7 @@ describe('DefaultSamCliValidator', async function () {
         },
         {
             situation: 'SAM CLI Version is too high',
-            version: MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
+            version: maxSamCliVersionExclusive,
             expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
         },
         {
@@ -118,7 +118,7 @@ describe('DefaultSamCliValidator', async function () {
         })
 
         it('Uses the cached validation result', async function () {
-            const validatorContext = new TestSamCliValidatorContext(MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
+            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
             await samCliValidator.getVersionValidatorResult()
@@ -128,7 +128,7 @@ describe('DefaultSamCliValidator', async function () {
         })
 
         it('Does not use the cached validation result if the SAM CLI timestamp changed', async function () {
-            const validatorContext = new TestSamCliValidatorContext(MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
+            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
             await samCliValidator.getVersionValidatorResult()

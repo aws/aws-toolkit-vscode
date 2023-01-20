@@ -71,7 +71,7 @@ export async function openSsoPortalLink(authorization: { readonly verificationUr
 }
 
 // Most SSO 'expirables' are fairly long lived, so a one minute buffer is plenty.
-const EXPIRATION_BUFFER_MS = 60000
+const expirationBufferMs = 60000
 export function isExpired(expirable: { expiresAt: Date }): boolean {
-    return globals.clock.Date.now() + EXPIRATION_BUFFER_MS >= expirable.expiresAt.getTime()
+    return globals.clock.Date.now() + expirationBufferMs >= expirable.expiresAt.getTime()
 }
