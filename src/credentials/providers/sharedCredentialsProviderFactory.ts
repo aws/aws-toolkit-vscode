@@ -9,7 +9,7 @@ import {
     getConfigFilename,
     getCredentialsFilename,
     loadSharedCredentialsProfiles,
-    updateAwsSdkLoadConfigEnvironmentVariable,
+    updateAwsSdkLoadConfigEnvVar,
 } from '../sharedCredentials'
 import { CredentialsProviderType } from './credentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
@@ -55,7 +55,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         const allCredentialProfiles = await loadSharedCredentialsProfiles()
         this.loadedCredentialsModificationMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
-        await updateAwsSdkLoadConfigEnvironmentVariable()
+        await updateAwsSdkLoadConfigEnvVar()
 
         const profileNames = Array.from(allCredentialProfiles.keys())
         getLogger().verbose(`credentials: found profiles: ${profileNames}`)

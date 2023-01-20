@@ -14,8 +14,8 @@ import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { getIcon } from '../../../shared/icons'
@@ -137,7 +137,7 @@ describe('DefaultRegistryNode', function () {
         const schemasNode = new SchemasNode(createSchemaClient())
         const childNodes = await schemasNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('handles error', async function () {
@@ -155,6 +155,6 @@ describe('DefaultRegistryNode', function () {
         const testNode: ThrowErrorDefaultSchemaRegistrynNode = new ThrowErrorDefaultSchemaRegistrynNode()
 
         const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 })
