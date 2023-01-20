@@ -65,7 +65,7 @@ export interface ConfigurationEntry {
     readonly isShowMethodsEnabled: boolean
     readonly isManualTriggerEnabled: boolean
     readonly isAutomatedTriggerEnabled: boolean
-    readonly isIncludeSuggestionsWithCodeReferencesEnabled: boolean
+    readonly isSuggestionsWithCodeReferencesEnabled: boolean
 }
 
 export interface InlineCompletionItem {

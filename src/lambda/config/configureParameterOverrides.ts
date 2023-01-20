@@ -23,7 +23,7 @@ export interface ConfigureParameterOverridesContext {
     executeCommand: typeof vscode.commands.executeCommand
 }
 
-class DefaultConfigureParameterOverridesContext implements ConfigureParameterOverridesContext {
+class DefaultConfigureParamOverridesContext implements ConfigureParameterOverridesContext {
     public readonly getWorkspaceFolder = vscode.workspace.getWorkspaceFolder
 
     public readonly showErrorMessage = vscode.window.showErrorMessage
@@ -41,7 +41,7 @@ export async function configureParameterOverrides(
         templateUri: vscode.Uri
         requiredParameterNames?: Iterable<string>
     },
-    context: ConfigureParameterOverridesContext = new DefaultConfigureParameterOverridesContext()
+    context: ConfigureParameterOverridesContext = new DefaultConfigureParamOverridesContext()
 ): Promise<void> {
     const workspaceFolder = context.getWorkspaceFolder(templateUri)
     if (!workspaceFolder) {

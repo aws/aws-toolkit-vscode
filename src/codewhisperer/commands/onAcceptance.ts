@@ -32,7 +32,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
         const languageId = acceptanceEntry.editor.document.languageId
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(
             acceptanceEntry.editor,
             acceptanceEntry.acceptIndex
         )

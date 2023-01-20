@@ -84,7 +84,7 @@ export async function onInlineAcceptance(
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active
         const languageId = acceptanceEntry.editor.document.languageId
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(
             acceptanceEntry.editor,
             acceptanceEntry.acceptIndex
         )

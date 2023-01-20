@@ -31,7 +31,7 @@ import { getOverriddenParameters, getParameters } from '../config/parameterUtils
 import { DefaultEcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
-import { minimumSamCliVersionInclusiveForImageSupport } from '../../shared/sam/cli/samCliValidator'
+import { minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliValidator'
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -708,7 +708,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         if (this.hasImages) {
             // TODO: remove check when min version is high enough
             const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
-            if (semver.lt(samCliVersion, minimumSamCliVersionInclusiveForImageSupport)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForImageSupport)) {
                 vscode.window.showErrorMessage(
                     localize(
                         'AWS.output.sam.no.image.support',

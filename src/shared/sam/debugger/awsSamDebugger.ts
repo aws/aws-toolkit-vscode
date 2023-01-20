@@ -56,10 +56,7 @@ import { fromString } from '../../../credentials/providers/credentials'
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
-import {
-    minimumSamCliVersionInclusiveForImageSupport,
-    minimumSamCliVersionInclusiveForGoSupport,
-} from '../cli/samCliValidator'
+import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
@@ -339,6 +336,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
+    // eslint-disable-next-line id-length
     public async resolveDebugConfigurationWithSubstitutedVariables(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
@@ -489,7 +487,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: Remove this when min sam version is > 1.13.0
         if (!isZip) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, minimumSamCliVersionInclusiveForImageSupport)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForImageSupport)) {
                 const message = localize(
                     'AWS.output.sam.no.image.support',
                     'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
@@ -513,12 +511,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: remove this when min sam version is >= 1.18.1
         if (goRuntimes.includes(runtime) && !config.noDebug) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, minimumSamCliVersionInclusiveForGoSupport)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForGoSupport)) {
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.go.support',
                         'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
-                        minimumSamCliVersionInclusiveForGoSupport
+                        minSamCliVersionForGoSupport
                     )
                 )
                 config.noDebug = true

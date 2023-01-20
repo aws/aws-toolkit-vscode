@@ -18,8 +18,8 @@ import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { stub } from '../../utilities/stubber'
 
@@ -92,7 +92,7 @@ describe('CloudFormationStackNode', function () {
         const node = generateTestNode()
         const childNodes = await node.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LambdaFunctionNode child nodes', async function () {
@@ -152,7 +152,7 @@ describe('CloudFormationStackNode', function () {
         cloudFormationClient.describeStackResources.throws()
 
         const node = generateTestNode({ cloudFormationClient })
-        assertNodeListOnlyContainsErrorNode(await node.getChildren())
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 })
 
@@ -181,7 +181,7 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(children)
+        assertNodeListOnlyHasPlaceholderNode(children)
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
@@ -189,6 +189,6 @@ describe('CloudFormationNode', function () {
         client.listStacks.throws()
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
 
-        assertNodeListOnlyContainsErrorNode(await cloudFormationNode.getChildren())
+        assertNodeListOnlyHasErrorNode(await cloudFormationNode.getChildren())
     })
 })
