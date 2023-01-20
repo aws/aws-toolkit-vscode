@@ -18,13 +18,13 @@ import { isCloud9 } from '../../extensionUtilities'
 
 export * from './awsSamDebugConfiguration.gen'
 
-export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE = 'template' as const
-export const CODE_TARGET_TYPE = 'code' as const
-export const API_TARGET_TYPE = 'api' as const
-export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
-export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
+export const AWS_SAM_DEBUG_TYPE = 'aws-sam' // eslint-disable-line @typescript-eslint/naming-convention
+export const DIRECT_INVOKE_TYPE = 'direct-invoke' // eslint-disable-line @typescript-eslint/naming-convention
+export const TEMPLATE_TARGET_TYPE = 'template' as const // eslint-disable-line @typescript-eslint/naming-convention
+export const CODE_TARGET_TYPE = 'code' as const // eslint-disable-line @typescript-eslint/naming-convention
+export const API_TARGET_TYPE = 'api' as const // eslint-disable-line @typescript-eslint/naming-convention
+export const awsSamDebugRequestTypes = [DIRECT_INVOKE_TYPE]
+export const awsSamDebugTargetTypes = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
 
 export type AwsSamTargetType = 'api' | 'code' | 'template'
 

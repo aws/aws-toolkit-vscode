@@ -13,7 +13,7 @@ import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
 import { IotNode } from '../iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
-import { DEFAULT_PARTITION, RegionProvider } from '../shared/regions/regionProvider'
+import { defaultPartition, RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
@@ -104,7 +104,7 @@ export class RegionNode extends AWSTreeNodeBase {
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
         //  If the service is available, we use the `createFn` to generate the node for the region.
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
-        const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
+        const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const { serviceId, createFn } of serviceCandidates) {
             if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {

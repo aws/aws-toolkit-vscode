@@ -7,14 +7,14 @@ import * as CodeWhispererConstants from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 
-const COGNITO_ID_KEY = 'cognitoID'
+const cognitoIdKey = 'cognitoID'
 
 export const getCognitoCredentials = async (): Promise<CognitoIdentityCredentials> => {
     const region = CodeWhispererConstants.region
     try {
         // grab Cognito identityId
         const poolId = CodeWhispererConstants.identityPoolID
-        const identityMapJson = globals.context.globalState.get<string>(COGNITO_ID_KEY, '[]')
+        const identityMapJson = globals.context.globalState.get<string>(cognitoIdKey, '[]')
 
         const identityMap = new Map<string, string>(JSON.parse(identityMapJson) as Iterable<[string, string]>)
         let identityId = identityMap.get(poolId)
@@ -25,7 +25,7 @@ export const getCognitoCredentials = async (): Promise<CognitoIdentityCredential
 
             // save it
             identityMap.set(poolId, identityId)
-            await globals.context.globalState.update(COGNITO_ID_KEY, JSON.stringify(Array.from(identityMap.entries())))
+            await globals.context.globalState.update(cognitoIdKey, JSON.stringify(Array.from(identityMap.entries())))
         }
 
         const credentials = new CognitoIdentityCredentials({ IdentityId: identityId }, { region })

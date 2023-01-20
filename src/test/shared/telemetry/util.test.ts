@@ -10,7 +10,7 @@ import { convertLegacy, getClientId, TelemetryConfig } from '../../../shared/tel
 import { FakeMemento } from '../../fakeExtensionContext'
 
 describe('TelemetryConfig', function () {
-    const SETTING_KEY = 'aws.telemetry'
+    const settingKey = 'aws.telemetry'
     const settings = new Settings(ConfigurationTarget.Workspace)
 
     let sut: TelemetryConfig
@@ -73,7 +73,7 @@ describe('TelemetryConfig', function () {
     describe('isTelemetryEnabled', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.update(SETTING_KEY, scenario.initialSettingValue)
+                await settings.update(settingKey, scenario.initialSettingValue)
 
                 assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })

@@ -23,7 +23,7 @@ export interface SsmDocumentTemplateQuickPickItem {
     docType: string
 }
 
-const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
+const ssmdocumentTemplates: SsmDocumentTemplateQuickPickItem[] = [
     {
         label: localize('AWS.ssmDocument.template.automationHelloWorldPython.label', 'Hello world using Python'),
         description: localize(
@@ -61,7 +61,7 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
             totalSteps: 2,
         },
         buttons: [vscode.QuickInputButtons.Back],
-        items: SSMDOCUMENT_TEMPLATES,
+        items: ssmdocumentTemplates,
     })
 
     const choices = await picker.promptUser({

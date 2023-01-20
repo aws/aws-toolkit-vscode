@@ -23,16 +23,16 @@ export class CodeWhispererTracker {
     /**
      * the interval of the background thread invocation, which is triggered by the timer
      */
-    private static readonly DEFAULT_CHECK_PERIOD_MILLIS = 1000 * 60 * 1 // 1 minute in milliseconds
+    private static readonly defaultCheckPeriodMillis = 1000 * 60 * 1 // 1 minute in milliseconds
     /**
      * modification should be recorded at least 5 minutes after accepted into the editor
      */
-    private static readonly DEFAULT_MODIFICATION_INTERVAL_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
+    private static readonly defaultModificationIntervalMillis = 1000 * 60 * 5 // 5 minutes in milliseconds
 
     /**
      * This is to avoid user overflowing the eventQueue by spamming accepted suggestions
      */
-    private static readonly DEFAULT_MAX_QUEUE_SIZE = 10000
+    private static readonly defaultMaxQueueSize = 10000
 
     private constructor() {
         this._eventQueue = []
@@ -47,7 +47,7 @@ export class CodeWhispererTracker {
             this.startTimer()
         }
 
-        if (this._eventQueue.length >= CodeWhispererTracker.DEFAULT_MAX_QUEUE_SIZE) {
+        if (this._eventQueue.length >= CodeWhispererTracker.defaultMaxQueueSize) {
             this._eventQueue.shift()
         }
         this._eventQueue.push(suggestion)
@@ -65,7 +65,7 @@ export class CodeWhispererTracker {
         for (const suggestion of this._eventQueue) {
             if (
                 currentTime.getTime() - suggestion.time.getTime() >
-                CodeWhispererTracker.DEFAULT_MODIFICATION_INTERVAL_MILLIS
+                CodeWhispererTracker.defaultModificationIntervalMillis
             ) {
                 this.emitTelemetryOnSuggestion(suggestion)
             } else {
@@ -132,7 +132,7 @@ export class CodeWhispererTracker {
                         this._timer!.refresh()
                     }
                 }
-            }, CodeWhispererTracker.DEFAULT_CHECK_PERIOD_MILLIS)
+            }, CodeWhispererTracker.defaultCheckPeriodMillis)
         }
     }
 

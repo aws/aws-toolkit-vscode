@@ -12,19 +12,19 @@ import { getRegistrationCache, getTokenCache } from '../../../credentials/sso/ca
 describe('SSO Cache', function () {
     const region = 'dummyRegion'
     const startUrl = 'https://123456.awsapps.com/start'
-    const HOUR_IN_MS = 3600000
+    const hourInMs = 3600000
 
     let testDir: string
 
     const validRegistration = {
         clientId: 'dummyId',
         clientSecret: 'dummySecret',
-        expiresAt: new Date(Date.now() + HOUR_IN_MS),
+        expiresAt: new Date(Date.now() + hourInMs),
     }
 
     const validToken = {
         accessToken: 'longstringofrandomcharacters',
-        expiresAt: new Date(Date.now() + HOUR_IN_MS),
+        expiresAt: new Date(Date.now() + hourInMs),
     }
 
     beforeEach(async function () {

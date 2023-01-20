@@ -20,6 +20,7 @@ import { isAutomation, isReleaseVersion } from '../vscode/env'
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
 
 // Telemetry Notice Versions
@@ -27,7 +28,7 @@ export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionA
 // track scenarios when we may need to re-prompt the user about telemetry.
 // Version 1 was the original notice, allowing users to enable/disable/defer telemetry
 // Version 2 states that there is metrics gathering, which can be adjusted in the options
-const CURRENT_TELEMETRY_NOTICE_VERSION = 2
+const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-eslint/naming-convention
 
 /**
  * Sets up the Metrics system and initializes globals.telemetry

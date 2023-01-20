@@ -8,14 +8,14 @@ import * as AWS from '@aws-sdk/types'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { DEFAULT_TEST_REGION_CODE } from '../shared/regions/testUtil'
 
-export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
-export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
+export const defaultTestProfileName = 'qwerty'
+export const defaultTestAccountId = '123456789012'
+const defaultRegion = 'us-east-1'
 
 export interface FakeAwsContextParams {
     contextCredentials?: AwsContextCredentials
 }
 
-const DEFAULT_REGION = 'us-east-1'
 export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
@@ -55,7 +55,7 @@ export class FakeAwsContext implements AwsContext {
     }
 
     public getCredentialDefaultRegion(): string {
-        return this.awsContextCredentials?.defaultRegion ?? DEFAULT_REGION
+        return this.awsContextCredentials?.defaultRegion ?? defaultRegion
     }
 }
 
@@ -63,8 +63,8 @@ export function makeFakeAwsContextWithPlaceholderIds(credentials: AWS.Credential
     return new FakeAwsContext({
         contextCredentials: {
             credentials: credentials,
-            credentialsId: DEFAULT_TEST_PROFILE_NAME,
-            accountId: DEFAULT_TEST_ACCOUNT_ID,
+            credentialsId: defaultTestProfileName,
+            accountId: defaultTestAccountId,
             defaultRegion: DEFAULT_TEST_REGION_CODE,
         },
     })

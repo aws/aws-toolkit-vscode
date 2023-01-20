@@ -157,7 +157,7 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
     }
 
     protected get startStep(): WizardStep {
-        return this.SELECT_STREAM
+        return this.selectStream
     }
 
     protected getResult(): SelectLogStreamResponse | undefined {
@@ -172,7 +172,7 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
         }
     }
 
-    private readonly SELECT_STREAM: WizardStep = async () => {
+    private readonly selectStream: WizardStep = async () => {
         const returnVal = await this.context.pickLogStream()
 
         // retry on error

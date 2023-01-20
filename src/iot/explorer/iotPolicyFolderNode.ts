@@ -20,10 +20,10 @@ import { IotNode } from './iotNodes'
 import { Commands } from '../../shared/vscode/commands'
 
 //Length of certificate ID. The certificate ID is the last segment of the ARN.
-const CERT_ID_LENGTH = 64
+const certIdLength = 64
 
 //Number of digits of the certificate ID to show
-const CERT_PREVIEW_LENGTH = 8
+const certPreviewLength = 8
 
 /**
  * Represents the group of all IoT Policies.
@@ -77,7 +77,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
                             this,
                             this.iot,
                             (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map(certId =>
-                                certId.slice(-CERT_ID_LENGTH, -CERT_ID_LENGTH + CERT_PREVIEW_LENGTH)
+                                certId.slice(-certIdLength, -certIdLength + certPreviewLength)
                             )
                         )
                 ) ?? []

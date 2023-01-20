@@ -14,9 +14,9 @@ import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import { isClientFault } from '../../shared/errors'
 
-const CLIENT_REGISTRATION_TYPE = 'public'
-const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
-const REFRESH_GRANT_TYPE = 'refresh_token'
+const clientRegistrationType = 'public'
+const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
+const refreshGrantType = 'refresh_token'
 
 /**
  *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
@@ -114,7 +114,7 @@ export class SsoAccessTokenProvider {
     private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
         try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
-            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: REFRESH_GRANT_TYPE })
+            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
 
             return this.formatToken(response, registration)
         } catch (err) {
@@ -153,7 +153,7 @@ export class SsoAccessTokenProvider {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
             deviceCode: authorization.deviceCode,
-            grantType: DEVICE_GRANT_TYPE,
+            grantType: deviceGrantType,
         }
 
         const token = await this.oidc.pollForToken(
@@ -168,7 +168,7 @@ export class SsoAccessTokenProvider {
     private async registerClient(): Promise<ClientRegistration> {
         return this.oidc.registerClient({
             clientName: `aws-toolkit-vscode-${globals.clock.Date.now()}`,
-            clientType: CLIENT_REGISTRATION_TYPE,
+            clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })
     }

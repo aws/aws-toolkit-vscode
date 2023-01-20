@@ -11,8 +11,8 @@ import { deleteResource } from '../../../dynamicResources/commands/deleteResourc
 import { DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 
 describe('deleteResource', function () {
-    const FAKE_TYPE = 'fakeType'
-    const FAKE_IDENTIFIER = 'fakeIdentifier'
+    const fakeType = 'fakeType'
+    const fakeIdentifier = 'fakeIdentifier'
     const cloudControl = new DefaultCloudControlClient('')
     let sandbox: sinon.SinonSandbox
 
@@ -29,30 +29,30 @@ describe('deleteResource', function () {
         const stub = sandbox
             .stub(cloudControl, 'deleteResource')
             .callsFake(async ({ TypeName: typeName, Identifier: identifier }) => {
-                assert.strictEqual(typeName, FAKE_TYPE)
-                assert.strictEqual(identifier, FAKE_IDENTIFIER)
+                assert.strictEqual(typeName, fakeType)
+                assert.strictEqual(identifier, fakeIdentifier)
             })
 
-        await deleteResource(cloudControl, FAKE_TYPE, FAKE_IDENTIFIER, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
 
-        assert.strictEqual(window.message.warning, `Delete resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})?`)
+        assert.strictEqual(window.message.warning, `Delete resource ${fakeIdentifier} (${fakeType})?`)
 
         assert.strictEqual(stub.calledOnce, true)
 
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.cancellable, false)
         assert.deepStrictEqual(window.progress.reported, [
-            { message: `Deleting resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})...` },
+            { message: `Deleting resource ${fakeIdentifier} (${fakeType})...` },
         ])
 
-        assert.ok(window.message.information?.startsWith(`Deleted resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
+        assert.ok(window.message.information?.startsWith(`Deleted resource ${fakeIdentifier} (${fakeType})`))
     })
 
     it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         const spy = sandbox.spy(cloudControl, 'deleteResource')
 
-        await deleteResource(cloudControl, FAKE_TYPE, FAKE_IDENTIFIER, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
 
         assert.strictEqual(spy.notCalled, true)
 
@@ -67,9 +67,9 @@ describe('deleteResource', function () {
 
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
 
-        await deleteResource(cloudControl, FAKE_TYPE, FAKE_IDENTIFIER, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
 
-        assert.ok(window.message.error?.startsWith(`Failed to delete resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
+        assert.ok(window.message.error?.startsWith(`Failed to delete resource ${fakeIdentifier} (${fakeType})`))
     })
 
     it('shows a warning if unsupported action', async function () {
@@ -81,8 +81,8 @@ describe('deleteResource', function () {
 
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
 
-        await deleteResource(cloudControl, FAKE_TYPE, FAKE_IDENTIFIER, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
 
-        assert.ok(window.message.warning?.startsWith(`Resource type ${FAKE_TYPE} does not currently support delete`))
+        assert.ok(window.message.warning?.startsWith(`Resource type ${fakeType} does not currently support delete`))
     })
 })

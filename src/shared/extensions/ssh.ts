@@ -15,7 +15,7 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 
 const localize = nls.loadMessageBundle()
 
-export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
+export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
 
 export function getSshConfigPath(): string {
     const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
@@ -28,8 +28,8 @@ export function getSshConfigPath(): string {
  * @returns `undefined` if agent is already running or on Windows, otherwise the SSH agent socket
  */
 export async function startSshAgent(): Promise<string | undefined> {
-    if (process.env[SSH_AGENT_SOCKET_VARIABLE] !== undefined) {
-        return process.env[SSH_AGENT_SOCKET_VARIABLE]
+    if (process.env[sshAgentSocketVariable] !== undefined) {
+        return process.env[sshAgentSocketVariable]
     }
 
     getLogger().info('Starting SSH agent...')
