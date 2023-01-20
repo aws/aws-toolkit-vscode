@@ -41,14 +41,14 @@ const yamlLanguageConfiguration: LanguageConfiguration = {
     },
 }
 
-const SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT = 6010
+const ssmdocumentLanguageserverDefaultport = 6010
 
 async function getLanguageServerDebuggerPort(extensionContext: ExtensionContext): Promise<number> {
     // get the port from env variable or use 6010 as default if not set
     const env = process.env as EnvironmentVariables
     const port = env.SSMDOCUMENT_LANGUAGESERVER_PORT
         ? parseInt(env.SSMDOCUMENT_LANGUAGESERVER_PORT as string)
-        : SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT
+        : ssmdocumentLanguageserverDefaultport
 
     return getPortPromise({ port: port })
 }

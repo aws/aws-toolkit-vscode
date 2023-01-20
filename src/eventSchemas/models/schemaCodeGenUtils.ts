@@ -6,15 +6,15 @@
 // TODO: This is fragile. Very fragile. But it is necessary to get Schemas service launched, and we've evaluated all other tradeoffs
 // This will be done on the server-side as soon as we can, but for now the client needs to do this
 export class SchemaCodeGenUtils {
-    private readonly SCHEMA_PACKAGE_PREFIX = 'schema'
+    private readonly schemaPackagePrefix = 'schema'
     private readonly AWS = 'aws'
     private readonly PARTNER = 'partner'
-    private readonly AWS_PARTNER_PREFIX = `${this.AWS}.${this.PARTNER}-` // dash suffix because of 3p partner registry name format
-    private readonly AWS_EVENTS_PREFIX = `${this.AWS}.` // . suffix because of 1p event registry schema format
+    private readonly awsPartnerPrefix = `${this.AWS}.${this.PARTNER}-` // dash suffix because of 3p partner registry name format
+    private readonly awsEventsPrefix = `${this.AWS}.` // . suffix because of 1p event registry schema format
 
     public buildSchemaPackageName(schemaName: string): string {
         const builder = new CodeGenPackageBuilder()
-        builder.append(this.SCHEMA_PACKAGE_PREFIX)
+        builder.append(this.schemaPackagePrefix)
         this.buildPackageName(builder, schemaName)
 
         return builder.build()
@@ -32,17 +32,17 @@ export class SchemaCodeGenUtils {
     }
 
     private isAwsPartnerEvent(schemaName: string): boolean {
-        return schemaName.startsWith(this.AWS_PARTNER_PREFIX)
+        return schemaName.startsWith(this.awsPartnerPrefix)
     }
 
     private buildPartnerEventPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
-        const partnerSchemaString = schemaName.substring(this.AWS_PARTNER_PREFIX.length)
+        const partnerSchemaString = schemaName.substring(this.awsPartnerPrefix.length)
 
         builder.append(this.AWS).append(this.PARTNER).append(partnerSchemaString)
     }
 
     private isAwsEvent(name: string): boolean {
-        return name.startsWith(this.AWS_EVENTS_PREFIX)
+        return name.startsWith(this.awsEventsPrefix)
     }
 
     private buildAwsEventPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
@@ -65,7 +65,7 @@ class CodeGenPackageBuilder {
 
     public append(segment: string): CodeGenPackageBuilder {
         if (this.builder.length > 0) {
-            this.builder = this.builder.concat(IdentifierFormatter.PACKAGE_SEPARATOR)
+            this.builder = this.builder.concat(IdentifierFormatter.packageSeparator)
         }
         this.builder = this.builder.concat(IdentifierFormatter.toValidIdentifier(segment.toLowerCase()))
 
@@ -74,15 +74,15 @@ class CodeGenPackageBuilder {
 }
 
 export namespace IdentifierFormatter {
-    export const PACKAGE_SEPARATOR = '.'
-    const POTENTIAL_PACKAGE_SEPARATOR = '@'
-    const NOT_VALID_IDENTIFIER_REGEX = new RegExp(`[^a-zA-Z0-9_${POTENTIAL_PACKAGE_SEPARATOR}]`, 'g')
-    const POTENTIAL_PACKAGE_SEPARATOR_REGEX = new RegExp(POTENTIAL_PACKAGE_SEPARATOR, 'g')
-    const UNDERSCORE = '_'
+    export const packageSeparator = '.'
+    const potentialPackageSeparator = '@'
+    const notValidIdentifierRegex = new RegExp(`[^a-zA-Z0-9_${potentialPackageSeparator}]`, 'g')
+    const potentialPackageSeparatorRegex = new RegExp(potentialPackageSeparator, 'g')
+    const underscore = '_'
 
     export function toValidIdentifier(name: string): string {
         return name
-            .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
-            .replace(POTENTIAL_PACKAGE_SEPARATOR_REGEX, PACKAGE_SEPARATOR)
+            .replace(notValidIdentifierRegex, underscore)
+            .replace(potentialPackageSeparatorRegex, packageSeparator)
     }
 }

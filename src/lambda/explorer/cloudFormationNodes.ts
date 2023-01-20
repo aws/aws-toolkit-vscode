@@ -21,7 +21,7 @@ import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
+export const contextValueCloudformationLambdaFunction = 'awsCloudFormationFunctionNode'
 
 export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
@@ -154,7 +154,7 @@ function makeCloudFormationLambdaFunctionNode(
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
+    node.contextValue = contextValueCloudformationLambdaFunction
 
     return node
 }

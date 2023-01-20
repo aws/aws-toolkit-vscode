@@ -13,7 +13,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     addInitialLaunchConfiguration,
     getProjectUri,
-    SAM_INIT_TEMPLATE_FILES,
+    samInitTemplateFiles,
     writeToolkitReadme,
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
@@ -30,7 +30,7 @@ import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
 
-const TEMPLATE_YAML = 'template.yaml'
+const templateYaml = 'template.yaml'
 
 describe('createNewSamApp', function () {
     let mockLaunchConfiguration: LaunchConfiguration
@@ -47,7 +47,7 @@ describe('createNewSamApp', function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        fakeTarget = path.join(tempFolder, TEMPLATE_YAML)
+        fakeTarget = path.join(tempFolder, templateYaml)
         testutil.toFile('target file', fakeTarget)
 
         fakeWorkspaceFolder = {
@@ -81,7 +81,7 @@ describe('createNewSamApp', function () {
     describe('getProjectUri', function () {
         it('returns the target file when it exists', async function () {
             assert.strictEqual(
-                normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))?.fsPath ?? ''),
+                normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
             )
         })
@@ -91,15 +91,15 @@ describe('createNewSamApp', function () {
             fakeTarget = path.join(tempFolder, 'template.yml')
             testutil.toFile('target file', fakeTarget)
             assert.strictEqual(
-                normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))?.fsPath ?? ''),
+                normalize((await getProjectUri(fakeResponse, samInitTemplateFiles))?.fsPath ?? ''),
                 normalize(fakeTarget)
             )
         })
         it('returns undefined when the target does not exist', async function () {
             const badResponse1 = { location: fakeResponse.location, name: 'notreal' }
             const badResponse2 = { location: vscode.Uri.parse('fake://notreal'), name: 'notafile' }
-            assert.strictEqual((await getProjectUri(badResponse1, SAM_INIT_TEMPLATE_FILES))?.fsPath, undefined)
-            assert.strictEqual((await getProjectUri(badResponse2, SAM_INIT_TEMPLATE_FILES))?.fsPath, undefined)
+            assert.strictEqual((await getProjectUri(badResponse1, samInitTemplateFiles))?.fsPath, undefined)
+            assert.strictEqual((await getProjectUri(badResponse2, samInitTemplateFiles))?.fsPath, undefined)
         })
     })
 
@@ -112,7 +112,7 @@ describe('createNewSamApp', function () {
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -201,7 +201,7 @@ describe('createNewSamApp', function () {
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -229,7 +229,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate1.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
-            testutil.toFile('target file', path.join(otherFolder1, TEMPLATE_YAML))
+            testutil.toFile('target file', path.join(otherFolder1, templateYaml))
 
             await globals.templateRegistry.addItemToRegistry(tempTemplate)
             await globals.templateRegistry.addItemToRegistry(otherTemplate1)
@@ -238,7 +238,7 @@ describe('createNewSamApp', function () {
             const launchConfigs1 = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
-                (await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILES))!,
+                (await getProjectUri(fakeResponse, samInitTemplateFiles))!,
                 undefined,
                 instance(mockLaunchConfiguration)
             )
@@ -248,7 +248,7 @@ describe('createNewSamApp', function () {
                 fakeWorkspaceFolder,
                 (await getProjectUri(
                     { location: fakeWorkspaceFolder.uri, name: 'otherFolder' },
-                    SAM_INIT_TEMPLATE_FILES
+                    samInitTemplateFiles
                 ))!,
                 undefined,
                 instance(mockLaunchConfiguration)

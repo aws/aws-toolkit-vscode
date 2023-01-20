@@ -18,9 +18,9 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 
-const FAKE_TYPE_NAME = 'sometype'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const fakeTypeName = 'sometype'
+const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('ResourceTypeNode', function () {
     let testNode: ResourceTypeNode
@@ -38,8 +38,8 @@ describe('ResourceTypeNode', function () {
     })
 
     it('initializes name and tooltip', async function () {
-        assert.strictEqual(testNode.label, FAKE_TYPE_NAME)
-        assert.strictEqual(testNode.tooltip, FAKE_TYPE_NAME)
+        assert.strictEqual(testNode.label, fakeTypeName)
+        assert.strictEqual(testNode.tooltip, fakeTypeName)
     })
 
     it('returns placeholder node if no resources are found', async function () {
@@ -100,7 +100,7 @@ describe('ResourceTypeNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        resourceIdentifiers = UNSORTED_TEXT
+        resourceIdentifiers = unsortedText
         mockCloudControlClient(resourceIdentifiers)
 
         testNode = generateTestNode(instance(cloudControl))
@@ -108,7 +108,7 @@ describe('ResourceTypeNode', function () {
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
@@ -177,19 +177,19 @@ describe('ResourceTypeNode', function () {
             documentation,
             available: available ?? true,
         } as ResourceTypeMetadata
-        return new ResourceTypeNode({} as ResourcesNode, FAKE_TYPE_NAME, client, metadata)
+        return new ResourceTypeNode({} as ResourcesNode, fakeTypeName, client, metadata)
     }
 
     function mockCloudControlClient(resourceIdentifiers: string[]): void {
         when(
             cloudControl.listResources(
                 deepEqual({
-                    TypeName: FAKE_TYPE_NAME,
+                    TypeName: fakeTypeName,
                     NextToken: anything(),
                 })
             )
         ).thenResolve({
-            TypeName: FAKE_TYPE_NAME,
+            TypeName: fakeTypeName,
             NextToken: undefined,
             ResourceDescriptions: resourceIdentifiers.map<CloudControl.ResourceDescription>(identifier => {
                 return {

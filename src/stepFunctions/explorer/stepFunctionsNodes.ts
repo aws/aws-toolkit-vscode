@@ -20,7 +20,7 @@ import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
+export const contextValueStateMachine = 'awsStateMachineNode'
 
 const sfnNodeMap = new Map<string, StepFunctionsNode>()
 
@@ -120,7 +120,7 @@ function makeStateMachineNode(
     details: StepFunctions.StateMachineListItem
 ): StateMachineNode {
     const node = new StateMachineNode(parent, regionCode, details)
-    node.contextValue = CONTEXT_VALUE_STATE_MACHINE
+    node.contextValue = contextValueStateMachine
 
     return node
 }

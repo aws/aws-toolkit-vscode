@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import {
     AwsSamDebuggerConfiguration,
-    AWS_SAM_DEBUG_TARGET_TYPES,
+    awsSamDebugTargetTypes,
     CodeTargetProperties,
     TemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -25,8 +25,8 @@ import globals from '../../shared/extensionGlobals'
  * Magic path on the Docker image.
  * https://github.com/aws/aws-sam-cli/blob/2201b17bff0a438b934abbb53f6c76eff9ccfa6d/samcli/local/docker/lambda_container.py#L25
  */
-export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
-export const GO_DEBUGGER_PATH = '/tmp/lambci_debug_files'
+export const dotnetCoreDebuggerPath = '/tmp/lambci_debug_files/vsdbg'
+export const goDebuggerPath = '/tmp/lambci_debug_files'
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.NodeJS
@@ -90,7 +90,7 @@ export interface GoDebugConfiguration extends SamLaunchRequestArgs {
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
-    debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH
+    debuggerPath: typeof dotnetCoreDebuggerPath
     pipeCwd: string
 }
 
@@ -175,7 +175,7 @@ export function getHandlerName(
                 localize(
                     'AWS.sam.debugger.invalidTarget',
                     'Debug Configuration has an unsupported target type. Supported types: {0}',
-                    AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+                    awsSamDebugTargetTypes.join(', ')
                 )
             )
             return ''

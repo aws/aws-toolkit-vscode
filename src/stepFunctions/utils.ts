@@ -24,11 +24,11 @@ import { fromExtensionManifest } from '../shared/settings'
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
 
-export const VISUALIZATION_SCRIPT_URL = 'https://do0of8uwbahzz.cloudfront.net/sfn-0.1.5.js'
-export const VISUALIZATION_CSS_URL = 'https://do0of8uwbahzz.cloudfront.net/graph-0.1.5.css'
+const visualizationScriptUrl = 'https://do0of8uwbahzz.cloudfront.net/sfn-0.1.5.js'
+const visualizationCssUrl = 'https://do0of8uwbahzz.cloudfront.net/graph-0.1.5.css'
 
-export const SCRIPTS_LAST_DOWNLOADED_URL = 'SCRIPT_LAST_DOWNLOADED_URL'
-export const CSS_LAST_DOWNLOADED_URL = 'CSS_LAST_DOWNLOADED_URL'
+const scriptsLastDownloadedUrl = 'SCRIPT_LAST_DOWNLOADED_URL'
+const cssLastDownloadedUrl = 'CSS_LAST_DOWNLOADED_URL'
 
 export interface UpdateCachedScriptOptions {
     globalStorage: vscode.Memento
@@ -76,8 +76,8 @@ export class StateMachineGraphCache {
     public async updateCache(globalStorage: vscode.Memento): Promise<void> {
         const scriptUpdate = this.updateCachedFile({
             globalStorage,
-            lastDownloadedURLKey: SCRIPTS_LAST_DOWNLOADED_URL,
-            currentURL: VISUALIZATION_SCRIPT_URL,
+            lastDownloadedURLKey: scriptsLastDownloadedUrl,
+            currentURL: visualizationScriptUrl,
             filePath: this.jsFilePath,
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph script assets')
@@ -88,8 +88,8 @@ export class StateMachineGraphCache {
 
         const cssUpdate = this.updateCachedFile({
             globalStorage,
-            lastDownloadedURLKey: CSS_LAST_DOWNLOADED_URL,
-            currentURL: VISUALIZATION_CSS_URL,
+            lastDownloadedURLKey: cssLastDownloadedUrl,
+            currentURL: visualizationCssUrl,
             filePath: this.cssFilePath,
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph css assets')
@@ -183,10 +183,10 @@ export async function* listStateMachines(
  * @param role The IAM role to check
  */
 export function isStepFunctionsRole(role: IAM.Role): boolean {
-    const STEP_FUNCTIONS_SEVICE_PRINCIPAL: string = 'states.amazonaws.com'
+    const stepFunctionsSevicePrincipal: string = 'states.amazonaws.com'
     const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
 
-    return !!assumeRolePolicyDocument?.includes(STEP_FUNCTIONS_SEVICE_PRINCIPAL)
+    return !!assumeRolePolicyDocument?.includes(stepFunctionsSevicePrincipal)
 }
 
 export async function isDocumentValid(text: string, textDocument?: vscode.TextDocument): Promise<boolean> {
