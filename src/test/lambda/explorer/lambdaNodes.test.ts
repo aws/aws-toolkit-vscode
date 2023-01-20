@@ -8,8 +8,8 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { stub } from '../../utilities/stubber'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
@@ -31,7 +31,7 @@ describe('LambdaNode', function () {
     it('returns placeholder node if no children are present', async function () {
         const childNodes = await createNode().getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LambdaFunctionNode child nodes', async function () {
@@ -68,6 +68,6 @@ describe('LambdaNode', function () {
         client.listFunctions.throws()
         const node = new LambdaNode(regionCode, client)
 
-        assertNodeListOnlyContainsErrorNode(await node.getChildren())
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 })

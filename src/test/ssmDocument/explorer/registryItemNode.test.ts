@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { stub } from '../../utilities/stubber'
@@ -22,7 +22,7 @@ describe('RegistryItemNode', function () {
         const testNode = new RegistryItemNode(regionCode, 'Owned by me', documentType, client)
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('puts documents into right registry', async function () {

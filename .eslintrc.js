@@ -19,6 +19,16 @@ module.exports = {
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
+        'id-length': [
+            'error',
+            {
+                min: 1,
+                max: 40,
+                exceptionPatterns: [
+                    '^codecatalyst_', // CodeCatalyst telemetry names are verbose :(
+                ],
+            },
+        ],
         // https://typescript-eslint.io/rules/naming-convention/
         '@typescript-eslint/naming-convention': [
             'error',

@@ -24,7 +24,7 @@ describe('recommendationHandler', function () {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
         isAutomatedTriggerEnabled: true,
-        isIncludeSuggestionsWithCodeReferencesEnabled: true,
+        isSuggestionsWithCodeReferencesEnabled: true,
     }
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
