@@ -9,7 +9,7 @@ const description = {
     shareCodeWhispererContentWithAWS: Boolean,
 }
 export class CodeWhispererSettings extends fromExtensionManifest('aws.codeWhisperer', description) {
-    public isIncludeSuggestionsWithCodeReferencesEnabled(): boolean {
+    public isSuggestionsWithCodeReferencesEnabled(): boolean {
         return this.get(`includeSuggestionsWithCodeReferences`, false)
     }
 

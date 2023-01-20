@@ -50,7 +50,7 @@ type AwsClis = Extract<ToolId, 'session-manager-plugin'>
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
+export const awsClis: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
@@ -80,7 +80,7 @@ export async function installCli(
     confirm: boolean,
     window: Window = Window.vscode()
 ): Promise<string | never> {
-    const cliToInstall = AWS_CLIS[cli]
+    const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
     }
@@ -252,9 +252,9 @@ async function installSsmCli(
 ): Promise<string> {
     progress.report({ message: msgDownloading })
 
-    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin'], tempDir, timeout)
+    const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']))
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
@@ -326,7 +326,7 @@ export async function getOrInstallCli(
     if (DevSettings.instance.get('forceInstallTools', false)) {
         return installCli(cli, confirm, window)
     } else {
-        return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)
+        return (await getCliCommand(awsClis[cli])) ?? installCli(cli, confirm, window)
     }
 }
 

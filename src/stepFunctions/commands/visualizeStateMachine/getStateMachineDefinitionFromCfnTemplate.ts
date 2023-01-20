@@ -59,7 +59,7 @@ export function toUnescapedAslJsonString(
     escapedAslJsonStr:
         | string
         | {
-              'Fn::Join': any[]
+              'Fn::Join': any[] // eslint-disable-line @typescript-eslint/naming-convention
           }
 ): string {
     if (typeof escapedAslJsonStr === 'string') {

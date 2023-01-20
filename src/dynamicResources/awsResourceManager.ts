@@ -21,7 +21,7 @@ import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
 
-export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'
+export const resourceFileGlobPattern = '**/*.awsResource.json'
 
 export class AwsResourceManager {
     private folder: string | undefined

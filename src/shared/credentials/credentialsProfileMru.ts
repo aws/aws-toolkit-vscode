@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
  * Tracks the credentials selected by the user, ordered by most recent.
  */
 export class CredentialsProfileMru {
-    public static readonly MAX_CREDENTIAL_MRU_SIZE = 5
+    public static readonly maxCredentialMruSize = 5
 
     private static readonly configurationStateName: string = 'recentCredentials'
 
@@ -36,7 +36,7 @@ export class CredentialsProfileMru {
 
         mru.splice(0, 0, profileName)
 
-        mru.splice(CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
+        mru.splice(CredentialsProfileMru.maxCredentialMruSize)
 
         await this._context.globalState.update(CredentialsProfileMru.configurationStateName, mru)
     }

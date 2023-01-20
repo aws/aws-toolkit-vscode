@@ -39,7 +39,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         }
         this._view.webview.html = this.getHtml(
             webviewView.webview,
-            CodeWhispererSettings.instance.isIncludeSuggestionsWithCodeReferencesEnabled()
+            CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
         )
         this._view.webview.onDidReceiveMessage(data => {
             vscode.commands.executeCommand('aws.codeWhisperer.configure', 'codewhisperer')
@@ -48,7 +48,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
 
     public async update() {
         if (this._view) {
-            const showPrompt = CodeWhispererSettings.instance.isIncludeSuggestionsWithCodeReferencesEnabled()
+            const showPrompt = CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
             this._view.webview.html = this.getHtml(this._view.webview, showPrompt)
         }
     }

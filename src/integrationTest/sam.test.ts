@@ -32,15 +32,15 @@ import { closeAllEditors } from '../test/testUtil'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
-const CODELENS_TIMEOUT: number = 60000
-const CODELENS_RETRY_INTERVAL: number = 200
+const codelensTimeout: number = 60000
+const codelensRetryInterval: number = 200
 // note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 240000
-const NO_DEBUG_SESSION_TIMEOUT: number = 5000
-const NO_DEBUG_SESSION_INTERVAL: number = 100
+const debugTimeout: number = 240000
+const noDebugSessionTimeout: number = 5000
+const noDebugSessionInterval: number = 100
 
 /** Go can't handle API tests yet */
-const SKIP_LANGUAGES_ON_API = ['go']
+const skipLanguagesOnApi = ['go']
 
 interface TestScenario {
     displayName: string
@@ -495,8 +495,8 @@ describe('SAM Integration Tests', async function () {
 
                     const codeLenses = await testUtils.getAddConfigCodeLens(
                         samAppCodeUri,
-                        CODELENS_TIMEOUT,
-                        CODELENS_RETRY_INTERVAL
+                        codelensTimeout,
+                        codelensRetryInterval
                     )
                     assert.ok(codeLenses && codeLenses.length === 2)
 
@@ -536,11 +536,11 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (SKIP_LANGUAGES_ON_API.includes(scenario.language)) {
+                    if (skipLanguagesOnApi.includes(scenario.language)) {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('api', {
                         api: {
                             path: '/hello',
@@ -551,15 +551,15 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('template')
                 })
 
                 async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
                     await waitUntil(async () => vscode.debug.activeDebugSession === undefined, {
-                        timeout: NO_DEBUG_SESSION_TIMEOUT,
-                        interval: NO_DEBUG_SESSION_INTERVAL,
+                        timeout: noDebugSessionTimeout,
+                        interval: noDebugSessionInterval,
                         truthy: true,
                     })
 

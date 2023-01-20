@@ -19,7 +19,7 @@ export let stepFunctionsSampleApp = 'stepFunctionsSampleAppUnintialized'
 export const typeScriptBackendTemplate = 'App Backend using TypeScript'
 export const repromptUserForTemplate = 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
-export const CLI_VERSION_STEP_FUNCTIONS_TEMPLATE = '0.52.0'
+export const cliVersionStepFunctionsTemplate = '0.52.0'
 
 export type SamTemplate = string
 
@@ -127,7 +127,7 @@ export function supportsStepFuntionsTemplate(samCliVersion: string): boolean {
     if (!samCliVersion) {
         return false
     }
-    return semver.gte(samCliVersion, CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
+    return semver.gte(samCliVersion, cliVersionStepFunctionsTemplate)
 }
 
 export function supportsTypeScriptBackendTemplate(runtime: Runtime): boolean {

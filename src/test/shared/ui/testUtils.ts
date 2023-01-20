@@ -82,7 +82,7 @@ interface TestOptions {
     // TODO: add formatting options?
 }
 
-const TEST_DEFAULTS: Required<TestOptions> = {
+const testDefaults: Required<TestOptions> = {
     timeout: 5000,
 }
 
@@ -108,7 +108,7 @@ export function createQuickPickTester<T>(
     const errors: Error[] = []
     const traces: AssertionParams[] = []
     const testPicker = exposeEmitters(prompter.quickPick, ['onDidAccept', 'onDidTriggerButton'])
-    const resolvedOptions = { ...TEST_DEFAULTS, ...options }
+    const resolvedOptions = { ...testDefaults, ...options }
 
     /* Waits until the picker is both enabled and not busy. */
     function whenReady(): Promise<void[]> {

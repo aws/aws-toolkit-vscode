@@ -15,22 +15,22 @@ export interface SamCliLocationProvider {
 }
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
-    private static SAM_CLI_LOCATOR: BaseSamCliLocator | undefined
+    private static samCliLocator: BaseSamCliLocator | undefined
 
     public async getLocation() {
         return DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
     }
 
     public static getSamCliLocator(): SamCliLocationProvider {
-        if (!DefaultSamCliLocationProvider.SAM_CLI_LOCATOR) {
+        if (!DefaultSamCliLocationProvider.samCliLocator) {
             if (process.platform === 'win32') {
-                DefaultSamCliLocationProvider.SAM_CLI_LOCATOR = new WindowsSamCliLocator()
+                DefaultSamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
             } else {
-                DefaultSamCliLocationProvider.SAM_CLI_LOCATOR = new UnixSamCliLocator()
+                DefaultSamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
             }
         }
 
-        return DefaultSamCliLocationProvider.SAM_CLI_LOCATOR
+        return DefaultSamCliLocationProvider.samCliLocator
     }
 }
 
@@ -116,10 +116,10 @@ abstract class BaseSamCliLocator {
 }
 
 class WindowsSamCliLocator extends BaseSamCliLocator {
-    // Do not access LOCATION_PATHS directly. Use getExecutableFolders()
-    private static LOCATION_PATHS: string[] | undefined
+    // Do not access locationPaths directly. Use getExecutableFolders()
+    private static locationPaths: string[] | undefined
 
-    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam.cmd', 'sam.exe']
+    private static readonly executableFilenames: string[] = ['sam.cmd', 'sam.exe']
 
     public constructor() {
         super()
@@ -132,32 +132,32 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
     }
 
     protected getExecutableFilenames(): string[] {
-        return WindowsSamCliLocator.EXECUTABLE_FILENAMES
+        return WindowsSamCliLocator.executableFilenames
     }
 
     protected getExecutableFolders(): string[] {
-        if (!WindowsSamCliLocator.LOCATION_PATHS) {
-            WindowsSamCliLocator.LOCATION_PATHS = []
+        if (!WindowsSamCliLocator.locationPaths) {
+            WindowsSamCliLocator.locationPaths = []
 
             const envVars = process.env as EnvironmentVariables
 
             const programFiles = envVars.PROGRAMFILES
             if (programFiles) {
-                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
+                WindowsSamCliLocator.locationPaths.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
             }
 
             const programFilesX86 = envVars['PROGRAMFILES(X86)']
             if (programFilesX86) {
-                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
+                WindowsSamCliLocator.locationPaths.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
             }
         }
 
-        return WindowsSamCliLocator.LOCATION_PATHS
+        return WindowsSamCliLocator.locationPaths
     }
 }
 
 class UnixSamCliLocator extends BaseSamCliLocator {
-    private static readonly LOCATION_PATHS: string[] = [
+    private static readonly locationPaths: string[] = [
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if
@@ -166,7 +166,7 @@ class UnixSamCliLocator extends BaseSamCliLocator {
         `${process.env.HOME}/.linuxbrew/bin`,
     ]
 
-    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam']
+    private static readonly executableFilenames: string[] = ['sam']
 
     public constructor() {
         super()
@@ -179,10 +179,10 @@ class UnixSamCliLocator extends BaseSamCliLocator {
     }
 
     protected getExecutableFilenames(): string[] {
-        return UnixSamCliLocator.EXECUTABLE_FILENAMES
+        return UnixSamCliLocator.executableFilenames
     }
 
     protected getExecutableFolders(): string[] {
-        return UnixSamCliLocator.LOCATION_PATHS
+        return UnixSamCliLocator.locationPaths
     }
 }

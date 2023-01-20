@@ -16,8 +16,8 @@ import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/
 import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../shared/settings'
 
-const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
-const CREDENTIALS_PROGRESS_DELAY = 1000
+const credentialsTimeout = 300000 // 5 minutes
+const credentialsProgressDelay = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -70,7 +70,7 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
 export async function resolveProviderWithCancel(
     profile: string,
     provider: Promise<Credentials>,
-    timeout: Timeout | number = CREDENTIALS_TIMEOUT
+    timeout: Timeout | number = credentialsTimeout
 ): Promise<Credentials> {
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
@@ -84,7 +84,7 @@ export async function resolveProviderWithCancel(
                 timeout
             )
         }
-    }, CREDENTIALS_PROGRESS_DELAY)
+    }, credentialsProgressDelay)
 
     return await waitTimeout(provider, timeout, {
         allowUndefined: false,

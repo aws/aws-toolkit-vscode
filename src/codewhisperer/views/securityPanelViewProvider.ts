@@ -90,8 +90,8 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
                 this.packageName
             }</span> found <span class="total">${total}</span> issues</p>`
         )
-        this.panelSets.forEach((panel_set, index) => {
-            this.addLine(panel_set, index)
+        this.panelSets.forEach((panelSet, index) => {
+            this.addLine(panelSet, index)
         })
         this.update()
         if (editor) {
@@ -124,8 +124,8 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     }
 
     private persistLines() {
-        this.panelSets.forEach((panel_set, index) => {
-            this.persistLine(panel_set, index)
+        this.panelSets.forEach((panelSet, index) => {
+            this.persistLine(panelSet, index)
         })
     }
 
@@ -284,8 +284,8 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         })
         this.panelSets[index] = currentPanelSet
         this.dynamicLog = []
-        this.panelSets.forEach((panel_set, index) => {
-            this.addLine(panel_set, index)
+        this.panelSets.forEach((panelSet, index) => {
+            this.addLine(panelSet, index)
         })
         this.update()
         if (editor) {

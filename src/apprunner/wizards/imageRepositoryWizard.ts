@@ -27,8 +27,8 @@ import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
-const PUBLIC_ECR = 'public.ecr.aws'
-const APP_RUNNER_ECR_ENTITY = 'build.apprunner.amazonaws'
+const publicEcr = 'public.ecr.aws'
+const appRunnerEcrEntity = 'build.apprunner.amazonaws'
 
 export type TaggedEcrRepository = EcrRepository & { tag?: string }
 
@@ -119,11 +119,11 @@ function createImagePrompter(
 
         const privateRegExp = /[0-9]+\.dkr\.ecr\.[a-zA-z0-9\-]+\.amazonaws\.com/
 
-        if (options.noPublicMessage && userInputParts[0].startsWith(PUBLIC_ECR)) {
+        if (options.noPublicMessage && userInputParts[0].startsWith(publicEcr)) {
             return options.noPublicMessage
         }
 
-        if (!userInputParts[0].startsWith(PUBLIC_ECR) && !userInputParts[0].match(privateRegExp)) {
+        if (!userInputParts[0].startsWith(publicEcr) && !userInputParts[0].match(privateRegExp)) {
             return 'not a valid ECR URL'
         }
     }
@@ -259,7 +259,7 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
             return createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
                 helpUrl: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
-                roleFilter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
+                roleFilter: role => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
                 createRole: createEcrRole.bind(undefined, iamClient),
             }).transform(resp => resp.Arn)
         }

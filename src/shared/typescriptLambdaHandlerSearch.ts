@@ -16,7 +16,7 @@ const getRange = (node: ts.Node) => ({
  * Detects functions that could possibly be used as Lambda Function Handlers from a Typescript file.
  */
 export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
-    public static readonly MAXIMUM_FUNCTION_PARAMETERS: number = 3
+    public static readonly maximumFunctionParameters: number = 3
 
     private readonly _baseFilename: string
     // _candidateDeclaredFunctionNames - names of functions that could be lambda handlers
@@ -67,7 +67,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
         handlers.push(...this.findCandidateHandlersInModuleExports())
         handlers.push(...this.findCandidateHandlersInExportedFunctions())
-        handlers.push(...this.findCandidateHandlersInExportDeclarations())
+        handlers.push(...this.findCandidateHandlersInExportDecls())
 
         return handlers
     }
@@ -158,7 +158,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     /**
      * @description Looks at "export { xyz }" statements to find candidate Lambda handlers
      */
-    private findCandidateHandlersInExportDeclarations(): RootlessLambdaHandlerCandidate[] {
+    private findCandidateHandlersInExportDecls(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
         this._candidateExportDeclarations.forEach(exportDeclaration => {
@@ -289,7 +289,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      */
     private static isValidFunctionAssignment(expression: ts.Expression): boolean {
         if (ts.isFunctionLike(expression)) {
-            return expression.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS
+            return expression.parameters.length <= TypescriptLambdaHandlerSearch.maximumFunctionParameters
         }
 
         return false
@@ -317,6 +317,6 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     ): boolean {
         const nameIsValid: boolean = !validateName || !!node.name
 
-        return node.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS && nameIsValid
+        return node.parameters.length <= TypescriptLambdaHandlerSearch.maximumFunctionParameters && nameIsValid
     }
 }

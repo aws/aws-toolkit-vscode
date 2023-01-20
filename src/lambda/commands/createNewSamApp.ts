@@ -50,9 +50,9 @@ import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/tele
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
-export const SAM_INIT_TEMPLATE_FILES: string[] = ['template.yaml', 'template.yml']
-export const SAM_INIT_README_FILE: string = 'README.TOOLKIT.md'
-export const SAM_INIT_README_SOURCE: string = 'resources/markdown/samReadme.md'
+export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
+export const samInitReadmeFile: string = 'README.TOOLKIT.md'
+export const samInitReadmeSource: string = 'resources/markdown/samReadme.md'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -199,14 +199,14 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILES)
+        const templateUri = await getProjectUri(config, samInitTemplateFiles)
         if (!templateUri) {
             reason = 'fileNotFound'
 
             return
         }
 
-        const readmeUri = vscode.Uri.file(path.join(path.dirname(templateUri.fsPath), SAM_INIT_README_FILE))
+        const readmeUri = vscode.Uri.file(path.join(path.dirname(templateUri.fsPath), samInitReadmeFile))
 
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
@@ -453,7 +453,7 @@ export async function writeToolkitReadme(
 ): Promise<boolean> {
     try {
         const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
-        const readme = (await getText(globals.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
+        const readme = (await getText(globals.context.asAbsolutePath(samInitReadmeSource)))
             .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
             .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
             .replace(/\$\{CODELENS\}/g, getIdeProperties().codelens)

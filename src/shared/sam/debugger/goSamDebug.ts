@@ -6,12 +6,12 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { GoDebugConfiguration, GO_DEBUGGER_PATH, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
+import { GoDebugConfiguration, goDebuggerPath, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
@@ -51,7 +51,7 @@ const localize = nls.loadMessageBundle()
  *  [2] https://github.com/lambci/docker-lambda/blob/f6b4765a9b659ceb949c34b19390026820ddd462/go1.x/run/aws-lambda-mock.go
  */
 export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.GO_DELVE])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.GO_DELVE])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForDelve
 
@@ -124,7 +124,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         config.containerEnvVars = {
             _AWS_LAMBDA_GO_DEBUGGING: '1',
             _AWS_LAMBDA_GO_DELVE_API_VERSION: '2',
-            _AWS_LAMBDA_GO_DELVE_PATH: path.posix.join(GO_DEBUGGER_PATH, 'dlv'),
+            _AWS_LAMBDA_GO_DELVE_PATH: path.posix.join(goDebuggerPath, 'dlv'),
             _AWS_LAMBDA_GO_DELVE_LISTEN_PORT: port.toString(),
         }
     }
@@ -164,7 +164,7 @@ interface InstallScript {
  */
 async function makeInstallScript(debuggerPath: string, isWindows: boolean): Promise<InstallScript | undefined> {
     let script: string = isWindows ? '' : '#!/bin/sh\n'
-    const DELVE_REPO: string = 'github.com/go-delve/delve'
+    const delveRepo: string = 'github.com/go-delve/delve'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
     const delvePath: string = path.posix.join(debuggerPath, 'dlv')
     const installOptions: SpawnOptions = { env: { ...process.env } }
@@ -178,7 +178,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
         const goPath: string = JSON.parse(execFileSync('go', ['env', '-json']).toString()).GOPATH
-        let repoPath: string = path.join(goPath, 'src', DELVE_REPO)
+        let repoPath: string = path.join(goPath, 'src', delveRepo)
 
         function getDelveVersion(repo: string, silent: boolean): string {
             try {
@@ -199,8 +199,8 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
                 )
             )
             installOptions.env!['GOPATH'] = debuggerPath
-            repoPath = path.join(debuggerPath, 'src', DELVE_REPO)
-            const args = ['get', '-d', `${DELVE_REPO}/cmd/dlv`]
+            repoPath = path.join(debuggerPath, 'src', delveRepo)
+            const args = ['get', '-d', `${delveRepo}/cmd/dlv`]
             const out = execFileSync('go', args, installOptions as any)
             getLogger().debug('"go %O": %s', args, out)
         }
@@ -221,7 +221,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     installOptions.env!['GOARCH'] = 'amd64'
     installOptions.env!['GOOS'] = 'linux'
 
-    script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
+    script += `go build -o "${delvePath}" "${delveRepo}/cmd/dlv"\n`
 
     await fs.writeFile(installScriptPath, script, 'utf8')
     await fs.chmod(installScriptPath, 0o755)

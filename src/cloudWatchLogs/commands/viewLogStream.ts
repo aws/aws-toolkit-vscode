@@ -81,7 +81,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
                     },
                     request,
                 }),
-            response => convertDescribeLogStreamsToQuickPickItems(response)
+            response => convertDescribeLogToQuickPickItems(response)
         )
 
         const controller = new picker.IteratingQuickPickController(qp, populator)
@@ -112,7 +112,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     }
 }
 
-export function convertDescribeLogStreamsToQuickPickItems(
+export function convertDescribeLogToQuickPickItems(
     response: CloudWatchLogs.DescribeLogStreamsResponse
 ): vscode.QuickPickItem[] {
     return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
@@ -141,7 +141,7 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
     }
 
     protected get startStep(): WizardStep {
-        return this.SELECT_STREAM
+        return this.selectStream
     }
 
     protected getResult(): SelectLogStreamResponse | undefined {
@@ -156,7 +156,7 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
         }
     }
 
-    private readonly SELECT_STREAM: WizardStep = async () => {
+    private readonly selectStream: WizardStep = async () => {
         const returnVal = await this.context.pickLogStream()
 
         // retry on error

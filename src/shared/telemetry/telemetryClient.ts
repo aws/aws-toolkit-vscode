@@ -18,9 +18,9 @@ import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export const ACCOUNT_METADATA_KEY = 'awsAccount'
-export const REGION_KEY = 'awsRegion'
-export const COMPUTE_REGION_KEY = 'computeRegion'
+export const accountMetadataKey = 'awsAccount'
+export const regionKey = 'awsRegion'
+export const computeRegionKey = 'computeRegion'
 
 export enum AccountStatus {
     NotApplicable = 'n/a',
@@ -28,7 +28,7 @@ export enum AccountStatus {
     Invalid = 'invalid',
 }
 
-export const METADATA_FIELD_NAME = {
+export const metadataFieldName = {
     RESULT: 'result',
     DURATION: 'duration',
     REASON: 'reason',
@@ -53,16 +53,16 @@ export interface TelemetryFeedback {
 export type TelemetryClient = ClassToInterfaceType<DefaultTelemetryClient>
 
 export class DefaultTelemetryClient implements TelemetryClient {
-    private static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
-    private static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
-    private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
+    private static readonly defaultIdentityPool = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
+    private static readonly defaultTelemetryEndpoint = 'https://client-telemetry.us-east-1.amazonaws.com'
+    private static readonly productName = 'AWS Toolkit For VS Code'
 
     private static initializeConfig(): TelemetryConfiguration {
         const settings = DevSettings.instance
 
         return {
-            endpoint: settings.get('telemetryEndpoint', this.DEFAULT_TELEMETRY_ENDPOINT),
-            identityPool: settings.get('telemetryUserPool', this.DEFAULT_IDENTITY_POOL),
+            endpoint: settings.get('telemetryEndpoint', this.defaultTelemetryEndpoint),
+            identityPool: settings.get('telemetryUserPool', this.defaultIdentityPool),
         }
     }
 
@@ -86,7 +86,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             if (!isAutomation()) {
                 await this.client
                     .postMetrics({
-                        AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                        AWSProduct: DefaultTelemetryClient.productName,
                         AWSProductVersion: extensionVersion,
                         ClientID: this.clientId,
                         OS: os.platform(),
@@ -113,7 +113,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
         try {
             await this.client
                 .postFeedback({
-                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                    AWSProduct: DefaultTelemetryClient.productName,
                     AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
