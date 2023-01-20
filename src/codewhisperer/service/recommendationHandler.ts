@@ -151,7 +151,7 @@ export class RecommendationHandler {
             req = EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
-                accessToken ? undefined : config.isIncludeSuggestionsWithCodeReferencesEnabled
+                accessToken ? undefined : config.isSuggestionsWithCodeReferencesEnabled
             )
         } else {
             req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)

@@ -23,7 +23,7 @@ describe('inlineCompletionService', function () {
             isShowMethodsEnabled: true,
             isManualTriggerEnabled: true,
             isAutomatedTriggerEnabled: true,
-            isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
+            isSuggestionsWithCodeReferencesEnabled: true,
         }
 
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient

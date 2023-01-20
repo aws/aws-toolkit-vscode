@@ -39,9 +39,9 @@ function exportedViaDeclaration(arg1: string) {}
 const exportedArrowViaDeclaration = (arg1: string) => {}
 const exportedArrowViaDeclarationAlt: (x: string) => void = arg1 => {}
 
-const exportedArrowViaDeclarationWithFourArgs = (arg1: string, arg2: string, arg3: string, arg4: string) => {}
+const exportedArrowViaDeclWithFourArgs = (arg1: string, arg2: string, arg3: string, arg4: string) => {}
 // eslint-disable-next-line id-length
-const exportedArrowViaDeclarationWithFourArgsAlt: (arg1: string, arg2: string, arg3: string, arg4: string) => void = (
+const exportedArrowViaDeclWithFourArgsAlt: (arg1: string, arg2: string, arg3: string, arg4: string) => void = (
     arg1,
     arg2,
     arg3,
@@ -49,4 +49,4 @@ const exportedArrowViaDeclarationWithFourArgsAlt: (arg1: string, arg2: string, a
 ) => {}
 
 export { exportedViaDeclaration, exportedArrowViaDeclaration, exportedArrowViaDeclarationAlt }
-export { functionWithFourArgs, exportedArrowViaDeclarationWithFourArgs, exportedArrowViaDeclarationWithFourArgsAlt }
+export { functionWithFourArgs, exportedArrowViaDeclWithFourArgs, exportedArrowViaDeclWithFourArgsAlt }

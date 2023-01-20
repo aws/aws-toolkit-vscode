@@ -72,8 +72,7 @@ function createTemplatesSymbol({
     return templatesSymbol
 }
 
-// eslint-disable-next-line id-length
-class MockSamParameterCompletionItemProviderContext implements SamParameterCompletionItemProviderContext {
+class MockSamParamComplItemProviderContext implements SamParameterCompletionItemProviderContext {
     public readonly logger: Pick<Logger, 'warn'>
     public readonly getWorkspaceFolder: typeof vscode.workspace.getWorkspaceFolder
     public readonly executeCommand: typeof vscode.commands.executeCommand
@@ -100,7 +99,7 @@ describe('SamParameterCompletionItemProvider', async function () {
     it('recovers gracefully if document is not in a workspace', async function () {
         const warnArgs: (Error | string)[][] = []
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 logger: {
                     warn(...message: (Error | string)[]) {
                         warnArgs.push(message)
@@ -132,7 +131,7 @@ describe('SamParameterCompletionItemProvider', async function () {
 
     it('does not provide suggestions if document symbols could not be loaded', async function () {
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async () => undefined,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
             })
@@ -154,7 +153,7 @@ describe('SamParameterCompletionItemProvider', async function () {
 
     it('does not provide suggestions if no matching template is found', async function () {
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
             })
@@ -181,7 +180,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         })
 
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({
@@ -223,7 +222,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         })
 
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({
@@ -263,7 +262,7 @@ describe('SamParameterCompletionItemProvider', async function () {
 
     it('recovers gracefully if templates.json is empty or invalid', async function () {
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => undefined,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
             })
@@ -287,7 +286,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         })
 
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({
@@ -326,7 +325,7 @@ describe('SamParameterCompletionItemProvider', async function () {
     it('recovers gracefully if `parameterOverrides` is not defined for this template', async function () {
         const templatesSymbol = createTemplatesSymbol({})
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({
@@ -369,7 +368,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         })
 
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({
@@ -412,7 +411,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         })
 
         const provider = new SamParameterCompletionItemProvider(
-            new MockSamParameterCompletionItemProviderContext({
+            new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
                 loadTemplate: async () => ({

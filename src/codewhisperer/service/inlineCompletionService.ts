@@ -22,8 +22,7 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 
-// eslint-disable-next-line id-length
-class CodeWhispererInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
+class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
 
@@ -211,7 +210,7 @@ const hideCommand = Commands.declare(
 )
 
 export class InlineCompletionService {
-    private inlineCompletionProvider?: CodeWhispererInlineCompletionItemProvider
+    private inlineCompletionProvider?: CWInlineCompletionItemProvider
     private inlineCompletionProviderDisposable?: vscode.Disposable
     private maxPage = 100
     private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
@@ -378,7 +377,7 @@ export class InlineCompletionService {
         if (vscode.window.activeTextEditor) {
             vscode.window.showTextDocument(vscode.window.activeTextEditor.document)
         }
-        this.inlineCompletionProvider = new CodeWhispererInlineCompletionItemProvider(
+        this.inlineCompletionProvider = new CWInlineCompletionItemProvider(
             this.inlineCompletionProvider?.getActiveItemIndex,
             indexShift
         )

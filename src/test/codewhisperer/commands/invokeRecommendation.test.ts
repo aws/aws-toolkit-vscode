@@ -34,7 +34,7 @@ describe('invokeRecommendation', function () {
                 isShowMethodsEnabled: true,
                 isManualTriggerEnabled: true,
                 isAutomatedTriggerEnabled: true,
-                isIncludeSuggestionsWithCodeReferencesEnabled: true, // eslint-disable-line id-length
+                isSuggestionsWithCodeReferencesEnabled: true,
             }
             await invokeRecommendation(mockEditor, mockClient, config)
             assert.ok(getRecommendationStub.called || oldGetRecommendationStub.called)
