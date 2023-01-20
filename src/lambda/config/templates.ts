@@ -321,7 +321,7 @@ export class TemplatesConfigPopulator {
         templateRelativePath: string,
         parameterName: string
     ): TemplatesConfigPopulator {
-        this.ensureTemplateParameterOverridesSectionExists(templateRelativePath)
+        this.ensureTemplateParamOverrideSectionExists(templateRelativePath)
 
         this.ensureJsonPropertyExists(['templates', templateRelativePath, 'parameterOverrides', parameterName], '', [
             'string',
@@ -383,7 +383,7 @@ export class TemplatesConfigPopulator {
         return this
     }
 
-    private ensureTemplateParameterOverridesSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
+    private ensureTemplateParamOverrideSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplateSectionExists(templateRelativePath)
 
         this.ensureJsonPropertyExists(['templates', templateRelativePath, 'parameterOverrides'], {})

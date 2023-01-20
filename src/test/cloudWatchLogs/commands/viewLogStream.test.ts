@@ -11,7 +11,7 @@ import * as moment from 'moment'
 import {
     SelectLogStreamWizardContext,
     SelectLogStreamWizard,
-    convertDescribeLogStreamsToQuickPickItems,
+    convertDescribeLogToQuickPickItems,
 } from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
@@ -64,10 +64,10 @@ describe('viewLogStreamWizard', async function () {
     })
 })
 
-describe('convertDescribeLogStreamsToQuickPickItems', function () {
+describe('convertDescribeLogToQuickPickItems', function () {
     it('converts things correctly', function () {
         const time = new globals.clock.Date().getTime()
-        const results = convertDescribeLogStreamsToQuickPickItems({
+        const results = convertDescribeLogToQuickPickItems({
             logStreams: [
                 {
                     logStreamName: 'streamWithoutTimestamp',
@@ -88,7 +88,7 @@ describe('convertDescribeLogStreamsToQuickPickItems', function () {
             label: 'streamWithTimestamp',
             detail: moment(time).format(LOCALIZED_DATE_FORMAT),
         })
-        const noResults = convertDescribeLogStreamsToQuickPickItems({})
+        const noResults = convertDescribeLogToQuickPickItems({})
         assert.strictEqual(noResults.length, 0)
     })
 })

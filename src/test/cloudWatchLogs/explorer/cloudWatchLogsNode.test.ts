@@ -8,8 +8,8 @@ import { contextValueCloudwatchLog, LogGroupNode } from '../../../cloudWatchLogs
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { stub } from '../../utilities/stubber'
@@ -41,7 +41,7 @@ describe('CloudWatchLogsNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LogGroupNode child nodes', async function () {
@@ -78,6 +78,6 @@ describe('CloudWatchLogsNode', function () {
         client.describeLogGroups.throws(new Error())
 
         const node = new CloudWatchLogsNode(fakeRegionCode, client)
-        assertNodeListOnlyContainsErrorNode(await node.getChildren())
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 })

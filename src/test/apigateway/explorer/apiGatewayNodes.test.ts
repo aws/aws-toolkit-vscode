@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
@@ -57,7 +57,7 @@ describe('ApiGatewayNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has RestApi child nodes', async function () {
@@ -82,6 +82,6 @@ describe('ApiGatewayNode', function () {
         client.listApis.throws(new Error())
 
         const node = new ApiGatewayNode(fakePartitionId, fakeRegionCode, client)
-        assertNodeListOnlyContainsErrorNode(await node.getChildren())
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 })
