@@ -32,8 +32,8 @@ export async function extractContext(isCodeSelected: boolean): Promise<QueryCont
     }
 
     return {
-        must,
-        should,
-        mustNot: new Set<string>(),
+        must: Array.from(must),
+        should: Array.from(should),
+        mustNot: [],
     }
 }

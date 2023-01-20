@@ -21,9 +21,9 @@ import { Query } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
 
-const PYTHON_JS_ERROR_TRACE: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
-const JVM_ERROR: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
-const TERMINAL_ERROR_NOTIFICATION = 'live_search_terminal_error'
+const PythonJSErrorTrace: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
+const JVMError: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
+const TerminalErrorNotifications = 'live_search_terminal_error'
 
 interface ErrorCache {
     [errorMessage: string]: boolean
@@ -43,7 +43,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
     }
 
     async provideTerminalLinks(context: TerminalLinkContext, _: CancellationToken): Promise<SearchTerminalLink[]> {
-        const error = PYTHON_JS_ERROR_TRACE.exec(context.line) ?? JVM_ERROR.exec(context.line)
+        const error = PythonJSErrorTrace.exec(context.line) ?? JVMError.exec(context.line)
         if (!error?.groups) {
             return []
         }
@@ -87,7 +87,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
                 this.queryEmitter.fire({ ...query, implicit: true })
             } else {
                 const notificationInfo = await this.notificationInfoStore.getRecordFromWorkplaceStore(
-                    TERMINAL_ERROR_NOTIFICATION
+                    TerminalErrorNotifications
                 )
                 if (notificationInfo === undefined || !notificationInfo.muted) {
                     await this.showNotification(query)
@@ -113,7 +113,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         telemetry.mynah_viewNotification.emit({
             mynahContext: JSON.stringify({
                 notificationMetadata: {
-                    name: TERMINAL_ERROR_NOTIFICATION,
+                    name: TerminalErrorNotifications,
                 },
             }),
         })
@@ -125,7 +125,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         telemetry.mynah_actOnNotification.emit({
             mynahContext: JSON.stringify({
                 notificationMetadata: {
-                    name: TERMINAL_ERROR_NOTIFICATION,
+                    name: TerminalErrorNotifications,
                     action: result,
                 },
             }),
@@ -139,7 +139,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
                 break
             case mute:
                 await this.notificationInfoStore.setMuteStatusForNotificationInWorkplaceStore(
-                    TERMINAL_ERROR_NOTIFICATION,
+                    TerminalErrorNotifications,
                     true
                 )
                 break

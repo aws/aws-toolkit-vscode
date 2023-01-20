@@ -6,7 +6,6 @@
 import { EventEmitter, ExtensionContext, window } from 'vscode'
 import { registerSearchTriggers } from './triggers'
 import { ResultDisplay } from './views/result-display'
-import { IdentityStore } from './stores/identityStore'
 
 import { OnDidOpenTextDocumentNotificationsProcessor } from './triggers/notifications/documentProcessor'
 
@@ -23,7 +22,6 @@ import { HeartbeatListener } from './telemetry/heartbeat-listener'
 import { telemetry } from '../shared/telemetry/telemetry'
 import * as mynahClient from './client/mynah'
 import * as AutocompleteClient from './autocomplete-client/autocomplete'
-import { IdentityManagerFactory } from './telemetry/identity/factory'
 
 let heartbeatListener: HeartbeatListener
 
@@ -33,14 +31,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     context.subscriptions.push(mynahChannel)
     const suggestionsEmitter = new EventEmitter<SearchOutput>()
 
-    const identityStorage = new IdentityStore(context.secrets, context.globalState)
-    const identity = identityStorage.get(IdentityStore.IDENTITY_ID_KEY)
-    let identityId: string | undefined = await identity
-    if (identityId === undefined) {
-        identityId = await IdentityManagerFactory.getInstance().getIdentity()
-        await identityStorage.store(IdentityStore.IDENTITY_ID_KEY, identityId)
-    }
-    mynahChannel.appendLine('Identity id: ' + identityId)
     const searchHistoryStore = new SearchHistoryStore(context.globalState, context.workspaceState)
     const panelStore = new PanelStore()
     const notificationInfoStore = new NotificationInfoStore(context.globalState, context.workspaceState)

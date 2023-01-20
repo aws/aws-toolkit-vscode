@@ -5,7 +5,7 @@
 
 import { Memento } from 'vscode'
 
-export const STORAGE_KEY = 'NOTIFICATION_INFO_'
+export const StorageKey = 'NOTIFICATION_INFO_'
 
 export interface NotificationInfoRecord {
     notificationName: string
@@ -18,11 +18,11 @@ export class NotificationInfoStore {
     constructor(private readonly globalStore: Memento, private readonly workplaceStore: Memento) {}
 
     public async addRecordToWorkplaceStore(record: NotificationInfoRecord): Promise<void> {
-        await this.workplaceStore.update(STORAGE_KEY + record.notificationName, record)
+        await this.workplaceStore.update(StorageKey + record.notificationName, record)
     }
 
     public async addRecordToGlobalStore(record: NotificationInfoRecord): Promise<void> {
-        await this.globalStore.update(STORAGE_KEY + record.notificationName, record)
+        await this.globalStore.update(StorageKey + record.notificationName, record)
     }
 
     private getEmptyRecord(notificationName: string): NotificationInfoRecord {
@@ -45,7 +45,7 @@ export class NotificationInfoStore {
 
         record.muted = isMuted
 
-        await this.workplaceStore.update(STORAGE_KEY + notificationName, record)
+        await this.workplaceStore.update(StorageKey + notificationName, record)
     }
 
     public async setMuteStatusForNotificationInGlobalStore(notificationName: string, isMuted: boolean): Promise<void> {
@@ -56,7 +56,7 @@ export class NotificationInfoStore {
 
         record.muted = isMuted
 
-        await this.globalStore.update(STORAGE_KEY + notificationName, record)
+        await this.globalStore.update(StorageKey + notificationName, record)
     }
 
     public async addNewViewToNotificationInWorkplaceStore(notificationName: string): Promise<void> {
@@ -68,7 +68,7 @@ export class NotificationInfoStore {
         record.viewsCounter = record.viewsCounter + 1
         record.lastSeen = new Date().getTime()
 
-        await this.workplaceStore.update(STORAGE_KEY + notificationName, record)
+        await this.workplaceStore.update(StorageKey + notificationName, record)
     }
 
     public async addNewViewToNotificationInGlobalStore(notificationName: string): Promise<void> {
@@ -80,14 +80,14 @@ export class NotificationInfoStore {
         record.viewsCounter = record.viewsCounter + 1
         record.lastSeen = new Date().getTime()
 
-        await this.globalStore.update(STORAGE_KEY + notificationName, record)
+        await this.globalStore.update(StorageKey + notificationName, record)
     }
 
     public async getRecordFromGlobalStore(notificationName: string): Promise<NotificationInfoRecord | undefined> {
-        return await this.globalStore.get(STORAGE_KEY + notificationName)
+        return await this.globalStore.get(StorageKey + notificationName)
     }
 
     public async getRecordFromWorkplaceStore(notificationName: string): Promise<NotificationInfoRecord | undefined> {
-        return await this.workplaceStore.get(STORAGE_KEY + notificationName)
+        return await this.workplaceStore.get(StorageKey + notificationName)
     }
 }

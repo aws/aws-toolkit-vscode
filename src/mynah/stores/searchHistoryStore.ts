@@ -8,7 +8,7 @@ import { integer } from 'vscode-languageserver-types'
 import { isManualTrigger, Query, SearchSuggestion } from '../models/model'
 import { some } from 'lodash'
 
-export const STORAGE_KEY = 'SEARCH_HISTORY'
+export const StorageKey = 'SEARCH_HISTORY'
 
 export interface SearchHistoryFilters {
     /**
@@ -68,14 +68,14 @@ export class SearchHistoryStore {
         const history = await this.getHistoryFromStore(false)
         history.push(record)
 
-        await this.workplaceStore.update(STORAGE_KEY, history)
+        await this.workplaceStore.update(StorageKey, history)
     }
 
     private async addRecordToGlobalStore(record: SearchHistoryRecord): Promise<void> {
         const history = await this.getHistoryFromStore(true)
         history.push(record)
 
-        await this.globalStore.update(STORAGE_KEY, history)
+        await this.globalStore.update(StorageKey, history)
     }
 
     public async getHistory(filters: SearchHistoryFilters): Promise<SearchHistoryRecord[]> {
@@ -125,9 +125,9 @@ export class SearchHistoryStore {
 
     private async getHistoryFromStore(isGlobal: boolean): Promise<SearchHistoryRecord[]> {
         if (isGlobal) {
-            return (await this.globalStore.get(STORAGE_KEY)) ?? []
+            return (await this.globalStore.get(StorageKey)) ?? []
         }
 
-        return (await this.workplaceStore.get(STORAGE_KEY)) ?? []
+        return (await this.workplaceStore.get(StorageKey)) ?? []
     }
 }

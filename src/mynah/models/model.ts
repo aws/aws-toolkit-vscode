@@ -39,9 +39,9 @@ export interface CodePreview {
 }
 
 export interface QueryContext {
-    must: Set<string>
-    should: Set<string>
-    mustNot: Set<string>
+    must: string[]
+    should: string[]
+    mustNot: string[]
 }
 
 export interface CodeQuery {

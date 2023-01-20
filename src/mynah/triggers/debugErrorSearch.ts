@@ -19,7 +19,7 @@ import { v4 as uuid } from 'uuid'
 import { ExceptionInfoResponse } from './interfaces'
 import { extractLanguageAndOtherContext } from './languages'
 import { LiveSearchDisplay } from '../views/live-search'
-import { Query, QueryContext } from '../models/model'
+import { Query } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
 
@@ -53,7 +53,7 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
             const errorContext = await findErrorContext(stackTrace, this.language)
             let code
             const { language, otherContext } = extractLanguageAndOtherContext(this.language)
-            const queryContext: QueryContext = {
+            const queryContext = {
                 must: new Set<string>(),
                 should: otherContext,
                 mustNot: new Set<string>(),
@@ -87,7 +87,11 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
             const query: Query = {
                 input: errorMetadata.message,
                 code,
-                queryContext,
+                queryContext: {
+                    must: Array.from(queryContext.must),
+                    should: Array.from(queryContext.should),
+                    mustNot: Array.from(queryContext.mustNot),
+                },
                 queryId: uuid(),
                 trigger: 'DebugError',
                 sourceId: errorMetadata.errorId,

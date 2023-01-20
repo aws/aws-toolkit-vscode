@@ -6,9 +6,9 @@
 import * as vs from 'vscode'
 import { readImports } from './import-reader'
 
-const PYTHON_STACK_TRACE = /File "(?<file>.+)", line (?<line>\d+), in /
-const JAVA_STACK_TRACE = /\((?<file>.*):(?<line>\d+)\)/
-const OTHER_STACK_TRACE = /[^(]*\((?<file>.*):(?<line>\d+):(\d+)\)/
+const PythonStackTrace = /File "(?<file>.+)", line (?<line>\d+), in /
+const JavaStackTrace = /\((?<file>.*):(?<line>\d+)\)/
+const OtherStackTrace = /[^(]*\((?<file>.*):(?<line>\d+):(\d+)\)/
 
 export interface ErrorContext {
     readonly code: string
@@ -22,12 +22,12 @@ export async function findErrorContext(stackTrace?: string, language?: string): 
     }
     let mostRecentCall
     if (language === 'python') {
-        mostRecentCall = stackTrace.match(PYTHON_STACK_TRACE)
+        mostRecentCall = stackTrace.match(PythonStackTrace)
     } else if (language === 'java') {
-        mostRecentCall = stackTrace.match(JAVA_STACK_TRACE)
+        mostRecentCall = stackTrace.match(JavaStackTrace)
     } else {
         // For example: at partition (/local/home/rwillems/workspaces/Scratchpad/folder/quicksort.js:16:11)\n    at quickSort (/local/home/rwillems/workspaces/Scratchpad/folder/quicksort.js:10:15)\n
-        mostRecentCall = stackTrace.match(OTHER_STACK_TRACE)
+        mostRecentCall = stackTrace.match(OtherStackTrace)
     }
     const matchGroups = mostRecentCall?.groups
     if (matchGroups === undefined) {

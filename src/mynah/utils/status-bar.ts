@@ -5,7 +5,7 @@
 
 import * as vs from 'vscode'
 
-const STATUS_BAR_START_PRIORITY = 1000
+const StatusBarStartPrority = 1000
 
 /**
  * StatusBar update props
@@ -31,7 +31,7 @@ export class StatusBar {
     constructor(props: StatusBarProps) {
         this.statusBar = vs.window.createStatusBarItem(
             vs.StatusBarAlignment.Right,
-            STATUS_BAR_START_PRIORITY + (props.priority ?? 0)
+            StatusBarStartPrority + (props.priority ?? 0)
         )
         this.statusBar.text = props.text
         this.statusBar.tooltip = props.tooltip

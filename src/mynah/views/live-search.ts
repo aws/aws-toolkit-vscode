@@ -6,11 +6,11 @@
 import { Memento } from 'vscode'
 import { PanelStore } from '../stores/panelStore'
 
-const MAX_IMPLICIT_OPEN_COUNT = 1
+const MaxImplicitOpenCount = 1
 
-export const LIVE_SEARCH_VIEW_COUNT_KEY = 'LIVE_SEARCH_VIEW_COUNT'
+export const LiveSearchViewCountKey = 'LIVE_SEARCH_VIEW_COUNT'
 
-export const LIVE_SEARCH_ENABLED_KEY = 'LIVE_SEARCH_ENABLED'
+export const LiveSearchEnabledKey = 'LIVE_SEARCH_ENABLED'
 
 export class LiveSearchDisplay {
     private liveSearchPaused = false
@@ -21,7 +21,7 @@ export class LiveSearchDisplay {
         return (
             !this.liveSearchPaused &&
             (await this.isLiveSearchEnabled()) &&
-            ((await this.getLiveSearchViewCount()) < MAX_IMPLICIT_OPEN_COUNT || this.panelStore.isMynahPaneOpen())
+            ((await this.getLiveSearchViewCount()) < MaxImplicitOpenCount || this.panelStore.isMynahPaneOpen())
         )
     }
 
@@ -34,16 +34,16 @@ export class LiveSearchDisplay {
     }
 
     public async disableLiveSearch(): Promise<void> {
-        await this.store.update(LIVE_SEARCH_ENABLED_KEY, false)
+        await this.store.update(LiveSearchEnabledKey, false)
     }
 
     public async enableLiveSearch(): Promise<void> {
-        await this.store.update(LIVE_SEARCH_ENABLED_KEY, true)
+        await this.store.update(LiveSearchEnabledKey, true)
     }
 
     public async incrementLiveSearchViewCount(): Promise<void> {
         // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-        await this.store.update(LIVE_SEARCH_VIEW_COUNT_KEY, (await this.getLiveSearchViewCount()) + 1)
+        await this.store.update(LiveSearchViewCountKey, (await this.getLiveSearchViewCount()) + 1)
     }
 
     public isLiveSearchPaused(): boolean {
@@ -51,10 +51,10 @@ export class LiveSearchDisplay {
     }
 
     private async isLiveSearchEnabled(): Promise<any> {
-        return this.store.get(LIVE_SEARCH_ENABLED_KEY, true)
+        return this.store.get(LiveSearchEnabledKey, true)
     }
 
     private async getLiveSearchViewCount(): Promise<any> {
-        return this.store.get(LIVE_SEARCH_VIEW_COUNT_KEY, 0)
+        return this.store.get(LiveSearchViewCountKey, 0)
     }
 }

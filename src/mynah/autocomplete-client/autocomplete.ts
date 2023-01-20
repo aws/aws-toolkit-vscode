@@ -9,8 +9,8 @@ import globals from '../../shared/extensionGlobals'
 import * as AutocompleteClient from './autocompleteclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 
-const AUTOCOMPLETE_ENDPOINT = 'https://u1bqell147.execute-api.us-east-1.amazonaws.com/prod'
-const REGION = 'us-east-1'
+const AutocompleteEndpoint = 'https://u1bqell147.execute-api.us-east-1.amazonaws.com/prod'
+const Region = 'us-east-1'
 
 export type Context = Readonly<AutocompleteClient.Context>
 export type AutocompleteRequest = Readonly<AutocompleteClient.AutocompleteRequest>
@@ -24,9 +24,9 @@ export class DefaultAutocompleteClient {
             Service,
             {
                 apiConfig: apiConfig,
-                region: REGION,
+                region: Region,
                 credentials: { accessKeyId: '123', secretAccessKey: '456' },
-                endpoint: AUTOCOMPLETE_ENDPOINT,
+                endpoint: AutocompleteEndpoint,
             } as ServiceOptions,
             undefined,
             false

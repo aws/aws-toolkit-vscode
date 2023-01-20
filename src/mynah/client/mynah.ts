@@ -9,8 +9,8 @@ import globals from '../../shared/extensionGlobals'
 import * as MynahClient from './mynahclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 
-const SEARCH_ENDPOINT = 'https://eeokcea2t5.execute-api.us-east-1.amazonaws.com/prod'
-const SEARCH_REGION = 'us-east-1'
+const SearchEndpoint = 'https://eeokcea2t5.execute-api.us-east-1.amazonaws.com/prod'
+const SearchRegion = 'us-east-1'
 
 export type Context = Readonly<MynahClient.Context>
 export type SearchRequest = Readonly<MynahClient.SearchRequest>
@@ -24,9 +24,9 @@ export class DefaultMynahSearchClient {
             Service,
             {
                 apiConfig: apiConfig,
-                region: SEARCH_REGION,
+                region: SearchRegion,
                 credentials: { accessKeyId: '123', secretAccessKey: '456' },
-                endpoint: SEARCH_ENDPOINT,
+                endpoint: SearchEndpoint,
             } as ServiceOptions,
             undefined,
             false

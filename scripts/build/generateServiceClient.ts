@@ -226,10 +226,6 @@ ${fileContents}
             serviceJsonPath: 'src/mynah/autocomplete-client/service-2.json',
             serviceName: 'AutoCompleteClient',
         },
-        {
-            serviceJsonPath: 'src/mynah/telemetry/client/service-2.json',
-            serviceName: 'MynahTelemetryClient',
-        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

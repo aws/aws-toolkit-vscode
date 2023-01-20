@@ -7,7 +7,7 @@ import { Disposable, window, workspace } from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { HeartbeatMetadata } from '../telemetry/telemetry-metadata'
 
-const HEARTBEAT_DUE_THRESHOLD = 120000
+const HeartbeatDueThreshold = 120000
 
 export class HeartbeatListener {
     private disposable!: Disposable
@@ -53,7 +53,7 @@ export class HeartbeatListener {
     }
 
     private isHeartbeatDue(time: number): boolean {
-        return this.lastHeartbeatAt + HEARTBEAT_DUE_THRESHOLD < time
+        return this.lastHeartbeatAt + HeartbeatDueThreshold < time
     }
 
     private sendHeartbeat(fileName: string, languageId: string, isEdit: boolean): void {

@@ -6,7 +6,6 @@
 import * as vs from 'vscode'
 import { Event, EventEmitter, ExtensionContext } from 'vscode'
 import { registerHttpsFileSystem } from './http-filesystem'
-import { SearchTrigger } from '../telemetry/telemetry/types'
 import { SearchHistoryStore } from '../stores/searchHistoryStore'
 import { PanelStore } from '../stores/panelStore'
 import { NotificationType, showNotification } from '../utils/notify'
@@ -27,8 +26,9 @@ import {
 } from '../models/model'
 import { getIcon, Icon } from '../../shared/icons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { NO_QUERY_ERROR_MESSAGE } from '../service/search'
+import { NoQueryErrorMessage } from '../service/search'
 import { v4 as uuid } from 'uuid'
+import { SearchTrigger } from '../telemetry/telemetry-metadata'
 
 enum LiveSearchCommands {
     PAUSE = 'Mynah.LiveSearchPause',
@@ -181,13 +181,13 @@ export class ResultDisplay {
     }
 
     private getPanelTitle(input: string, fileName: string, selectionRangeStart: string): string {
-        const MAX_PANEL_TITLE_LENGTH = 22
+        const MaxPanelTitleLength = 22
 
         let title = ''
 
         if (input.length > 0) {
-            if (input.length > MAX_PANEL_TITLE_LENGTH / 2) {
-                title = title + input.slice(0, MAX_PANEL_TITLE_LENGTH / 2) + '…'
+            if (input.length > MaxPanelTitleLength / 2) {
+                title = title + input.slice(0, MaxPanelTitleLength / 2) + '…'
             } else {
                 title = title + input
             }
@@ -202,9 +202,9 @@ export class ResultDisplay {
 
             const fileNameLastPart = fileName.split('/').pop()
 
-            if (fileName.length > MAX_PANEL_TITLE_LENGTH / 2) {
+            if (fileName.length > MaxPanelTitleLength / 2) {
                 // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-                title = title + fileNameLastPart?.slice(0, MAX_PANEL_TITLE_LENGTH / 2) + '…'
+                title = title + fileNameLastPart?.slice(0, MaxPanelTitleLength / 2) + '…'
             } else {
                 // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
                 title = title + fileNameLastPart
@@ -626,22 +626,18 @@ export class ResultDisplay {
             return
         }
 
-        const context =
-            queryContext !== undefined
-                ? {
-                      should: Array.from(queryContext.should),
-                      must: Array.from(queryContext.must),
-                      mustNot: Array.from(queryContext.mustNot),
-                  }
-                : undefined
-
+        queryContext = queryContext ?? {
+            must: [],
+            should: [],
+            mustNot: [],
+        }
         if (this.uiReady[panelId]) {
             void panel.webviewPanel.webview.postMessage(
                 JSON.stringify({
                     sender: 'mynah',
                     loading: false,
                     queryText: input,
-                    context: context !== undefined ? context : undefined,
+                    queryContext,
                     ...(errorMessage ? { error: { message: errorMessage } } : { suggestions: suggestions }),
                     code,
                     codeQuery,
@@ -673,9 +669,9 @@ export class ResultDisplay {
                 input,
                 code,
                 queryContext: queryContext ?? {
-                    must: new Set<string>(),
-                    should: new Set<string>(),
-                    mustNot: new Set<string>(),
+                    must: [],
+                    should: [],
+                    mustNot: [],
                 },
                 trigger: trigger ?? 'SearchBarRefinement',
                 codeQuery,
@@ -747,7 +743,7 @@ export class ResultDisplay {
                 )
             })
             .catch((error: Error) => {
-                if (!error || error.message !== NO_QUERY_ERROR_MESSAGE) {
+                if (!error || error.message !== NoQueryErrorMessage) {
                     this.updateContent(
                         panelId,
                         query.input,

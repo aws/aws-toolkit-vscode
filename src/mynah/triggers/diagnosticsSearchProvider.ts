@@ -19,7 +19,7 @@ import { v4 as uuid } from 'uuid'
 import { readImports } from '../utils/import-reader'
 import { extractLanguageAndOtherContext } from './languages'
 import { getErrorId } from '../utils/diagnostic'
-import { QueryContext } from '../models/model'
+import { Query } from '../models/model'
 
 export class DiagnosticsSearchProvider implements CodeActionProvider {
     public activate(): void {
@@ -37,7 +37,7 @@ export class DiagnosticsSearchProvider implements CodeActionProvider {
         const lineWithError = document.lineAt(relevantLine).text
         const docContent = document.getText()
         const { language, otherContext } = extractLanguageAndOtherContext(document.languageId)
-        const queryContext: QueryContext = {
+        const queryContext = {
             must: new Set<string>(),
             should: otherContext,
             mustNot: new Set<string>(),
@@ -49,12 +49,16 @@ export class DiagnosticsSearchProvider implements CodeActionProvider {
         imports.forEach(importKey => queryContext.should.add(importKey))
         return context.diagnostics.map((diagnostic: Diagnostic): CodeAction => {
             const title = "Get Mynah's suggestions to address diagnostic."
-            const query = {
+            const query: Query = {
                 queryId: uuid(),
                 input: diagnostic.message,
                 code,
                 trigger: 'DiagnosticError',
-                queryContext,
+                queryContext: {
+                    must: Array.from(queryContext.must),
+                    should: Array.from(queryContext.should),
+                    mustNot: Array.from(queryContext.mustNot),
+                },
                 sourceId: getErrorId(diagnostic, document.uri.fsPath),
                 codeSelection: {
                     selectedCode: '',

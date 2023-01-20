@@ -45,6 +45,7 @@ const sanitizeOptionsTransformCustomTags = {
         '*': ['href', 'class', 'fqn'],
     },
     transformTags: {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         'amzn-mynah-frequently-used-fqns-panel': (tagName: string, attribs: Record<string, string>) => {
             return {
                 tagName: 'div',
@@ -53,6 +54,7 @@ const sanitizeOptionsTransformCustomTags = {
                 },
             }
         },
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         'amzn-mynah-fqn-url': (tagName: string, attribs: Record<string, string>) => {
             return {
                 tagName: 'a',
@@ -65,7 +67,7 @@ const sanitizeOptionsTransformCustomTags = {
     },
 }
 
-export const NO_QUERY_ERROR_MESSAGE = 'no-query'
+export const NoQueryErrorMessage = 'no-query'
 
 export const getSearchSuggestions = async (
     client: DefaultMynahSearchClient,
@@ -77,16 +79,16 @@ export const getSearchSuggestions = async (
             query.codeQuery?.simpleNames.length === 0 &&
             query.codeQuery?.usedFullyQualifiedNames.length === 0
         ) {
-            reject(new Error(NO_QUERY_ERROR_MESSAGE))
+            reject(new Error(NoQueryErrorMessage))
         } else {
             const request: mynahClient.SearchRequest = {
                 input: query.input ? query.input.trim().substring(0, 1000) : undefined,
                 code: query.code ? query.code.trim().substring(0, 1000) : undefined,
                 context: {
                     matchPolicy: {
-                        should: Array.from(query.queryContext.should),
-                        must: Array.from(query.queryContext.must),
-                        mustNot: Array.from(query.queryContext.mustNot),
+                        should: query.queryContext.should,
+                        must: query.queryContext.must,
+                        mustNot: query.queryContext.mustNot,
                     },
                 },
                 codeQuery:

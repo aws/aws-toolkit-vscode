@@ -17,8 +17,7 @@ import {
     SuggestionEventName,
     SearchHistoryFilters,
 } from '@aws/mynah-ui'
-import { SearchTrigger } from '../telemetry/telemetry/types'
-
+import { SearchTrigger } from '../telemetry/telemetry-metadata'
 export interface ConnectorProps {
     postMessageHandler: (message: Record<string, any>) => void
     onMessageReceived?: (messageData: any) => void
