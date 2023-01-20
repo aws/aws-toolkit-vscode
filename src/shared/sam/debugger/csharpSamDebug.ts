@@ -26,7 +26,7 @@ import { Window } from '../../vscode/window'
 
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
-import { minSamCliVersionInclusiveForDotnet31Support } from '../cli/samCliValidator'
+import { minSamCliVersionForDotnet31Support } from '../cli/samCliValidator'
 import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
@@ -79,7 +79,7 @@ export async function invokeCsharpLambda(
     if (!config.noDebug) {
         const samCliVersion = await getSamCliVersion(ctx.samCliContext())
         // TODO: Remove this when min sam version is >= 1.4.0
-        if (semver.lt(samCliVersion, minSamCliVersionInclusiveForDotnet31Support)) {
+        if (semver.lt(samCliVersion, minSamCliVersionForDotnet31Support)) {
             window.showWarningMessage(
                 localize(
                     'AWS.output.sam.local.no.net.3.1.debug',

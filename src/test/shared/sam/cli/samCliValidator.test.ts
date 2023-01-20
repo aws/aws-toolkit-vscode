@@ -9,7 +9,7 @@ import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import {
     DefaultSamCliValidator,
     maxSamCliVersionExclusive,
-    minimumSamCliVersionInclusive,
+    minSamCliVersion,
     SamCliValidatorContext,
     SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
@@ -41,7 +41,7 @@ describe('DefaultSamCliValidator', async function () {
     const samCliVersionTestScenarios = [
         {
             situation: 'SAM CLI Version is valid',
-            version: minimumSamCliVersionInclusive,
+            version: minSamCliVersion,
             expectedVersionValidation: SamCliVersionValidation.Valid,
         },
         {
@@ -118,7 +118,7 @@ describe('DefaultSamCliValidator', async function () {
         })
 
         it('Uses the cached validation result', async function () {
-            const validatorContext = new TestSamCliValidatorContext(minimumSamCliVersionInclusive)
+            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
             await samCliValidator.getVersionValidatorResult()
@@ -128,7 +128,7 @@ describe('DefaultSamCliValidator', async function () {
         })
 
         it('Does not use the cached validation result if the SAM CLI timestamp changed', async function () {
-            const validatorContext = new TestSamCliValidatorContext(minimumSamCliVersionInclusive)
+            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
             await samCliValidator.getVersionValidatorResult()

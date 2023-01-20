@@ -24,7 +24,8 @@ const partnerSchemaExpectedPackageName = 'schema.aws.partner.mongodb_com_1234567
 const partnerSchemaName = 'aws.partner-mongodb.com/1234567-tickets@Ticket.Created'
 
 const customerUploadedSchemaName = 'someCustomer.SomeAwesomeSchema'
-const customerUploadedSchemaExpectedPackageName = 'schema.somecustomer_someawesomeschema'
+/** Expected package name. */
+const customerUploadedSchemaExpectedPackage = 'schema.somecustomer_someawesomeschema'
 const defaultEventSource = 'INSERT-YOUR-EVENT-SOURCE'
 const defaultEventDetailType = 'INSERT-YOUR-DETAIL-TYPE'
 
@@ -132,7 +133,7 @@ describe('Build template parameters for CustomerUploadedSchema', async function 
         assert.strictEqual(result.templateExtraContent.AWS_Schema_name, 'Some_Awesome_Schema', 'schemaRootEventName')
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_root,
-            customerUploadedSchemaExpectedPackageName,
+            customerUploadedSchemaExpectedPackage,
             'schemaPackageHierarchy'
         )
 

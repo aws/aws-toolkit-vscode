@@ -9,12 +9,12 @@ import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 
-export const minimumSamCliVersionInclusive = '0.47.0'
-export const minSamCliVersionInclusiveForImageSupport = '1.13.0'
+export const minSamCliVersion = '0.47.0'
+export const minSamCliVersionForImageSupport = '1.13.0'
 export const maxSamCliVersionExclusive = '2.0.0'
-export const minSamCliVersionInclusiveForGoSupport = '1.18.1'
-export const minSamCliVersionInclusiveForArmSupport = '1.33.0'
-export const minSamCliVersionInclusiveForDotnet31Support = '1.4.0'
+export const minSamCliVersionForGoSupport = '1.18.1'
+export const minSamCliVersionForArmSupport = '1.33.0'
+export const minSamCliVersionForDotnet31Support = '1.4.0'
 
 // Errors
 export class InvalidSamCliError extends Error {
@@ -120,7 +120,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             return SamCliVersionValidation.VersionNotParseable
         }
 
-        if (semver.lt(version, minimumSamCliVersionInclusive)) {
+        if (semver.lt(version, minSamCliVersion)) {
             return SamCliVersionValidation.VersionTooLow
         }
 
