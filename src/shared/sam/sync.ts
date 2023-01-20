@@ -148,7 +148,7 @@ interface TemplateItem {
 function createTemplatePrompter() {
     const folders = new Set<string>()
     const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const items = globals.templateRegistry.registeredItems.map(({ item, path: filePath }) => {
+    const items = globals.templateRegistry.cfn.registeredItems.map(({ item, path: filePath }) => {
         const uri = vscode.Uri.file(filePath)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath

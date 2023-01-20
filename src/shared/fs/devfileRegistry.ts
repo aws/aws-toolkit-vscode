@@ -26,13 +26,13 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
             const devfile = yaml.load(templateAsYaml) as Devfile
             // legacy (1.x) Devfiles do not contain a schemaVersion
             if (devfile.schemaVersion) {
-                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'devfile' })
+                globals.schemaService.registerMapping({ uri, type: 'yaml', schema: 'devfile', registry: this.name })
                 return devfile
             }
         } catch (e) {
             getLogger().warn(`could not load Devfile "${uri.fsPath}": ${e}`)
         }
-        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined })
+        globals.schemaService.registerMapping({ uri, type: 'yaml', schema: undefined, registry: this.name })
         return undefined
     }
 
@@ -42,6 +42,7 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
             uri: uri,
             type: 'yaml',
             schema: undefined,
+            registry: this.name,
         })
         await super.remove(path)
     }

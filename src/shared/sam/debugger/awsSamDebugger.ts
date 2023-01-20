@@ -246,7 +246,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = globals.templateRegistry.registeredItems
+            const templates = globals.templateRegistry.cfn.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
@@ -164,4 +165,34 @@ export function reloadWindowPrompt(message: string): void {
             vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
     })
+}
+
+/**
+ * Given some contents, create a starter YAML template file.
+ */
+export async function createStarterTemplateFile(content: string, window: Window = Window.vscode()): Promise<void> {
+    const wsFolder = vscode.workspace.workspaceFolders
+    const loc = await window.showSaveDialog({
+        filters: { YAML: ['yaml'] },
+        defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
+    })
+    if (loc) {
+        fs.writeFileSync(loc.fsPath, content)
+        await vscode.commands.executeCommand('vscode.open', loc)
+    }
+}
+
+export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
+    return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)
+}
+
+export async function getCompletionItems(
+    uri: vscode.Uri,
+    position: vscode.Position
+): Promise<vscode.CompletionList | undefined> {
+    return vscode.commands.executeCommand('vscode.executeCompletionItemProvider', uri, position)
+}
+
+export async function getHoverItems(uri: vscode.Uri, position: vscode.Position): Promise<vscode.Hover[] | undefined> {
+    return vscode.commands.executeCommand('vscode.executeHoverProvider', uri, position)
 }

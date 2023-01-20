@@ -210,7 +210,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        const template = globals.templateRegistry.getRegisteredItem(templatePath.fsPath)
+        const template = globals.templateRegistry.cfn.getRegisteredItem(templatePath.fsPath)
         const resources = template?.item?.Resources
         if (resources === undefined) {
             return false
@@ -933,7 +933,7 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = globals.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
+    const templateUris = globals.templateRegistry.cfn.registeredItems.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 

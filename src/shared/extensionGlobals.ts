@@ -9,6 +9,7 @@ import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
+import { BuildspecTemplateRegistry } from './buildspec/registry'
 import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
 import { CodelensRootRegistry } from './fs/codelensRootRegistry'
@@ -45,6 +46,7 @@ export function initialize(context: ExtensionContext, window: Window): ToolkitGl
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
+        templateRegistry: {} as ToolkitGlobals['templateRegistry'],
     })
 
     return globals
@@ -67,7 +69,10 @@ interface ToolkitGlobals {
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
-    templateRegistry: CloudFormationTemplateRegistry
+    templateRegistry: {
+        cfn: CloudFormationTemplateRegistry
+        buildspec: BuildspecTemplateRegistry
+    }
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager

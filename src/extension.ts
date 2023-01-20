@@ -18,6 +18,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+import { activate as activateBuildspecTemplateRegistry } from './shared/buildspec/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
@@ -50,6 +51,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateYamlExtPrompt } from './shared/extensions/yamlActivation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -191,6 +193,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await codecatalyst.activate(extContext)
 
         await activateCloudFormationTemplateRegistry(context)
+        await activateBuildspecTemplateRegistry(context)
 
         await activateAwsExplorer({
             context: extContext,
@@ -231,6 +234,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+
+        await activateYamlExtPrompt()
 
         showWelcomeMessage(context)
 

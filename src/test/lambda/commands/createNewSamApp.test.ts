@@ -75,7 +75,7 @@ describe('createNewSamApp', function () {
 
     afterEach(async function () {
         await fs.remove(tempFolder)
-        globals.templateRegistry.reset()
+        globals.templateRegistry.cfn.reset()
     })
 
     describe('getProjectUri', function () {
@@ -108,7 +108,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await globals.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.cfn.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -144,7 +144,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await globals.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.cfn.addItemToRegistry(tempTemplate)
             const launchConfigs = (await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -181,7 +181,7 @@ describe('createNewSamApp', function () {
         it('returns a blank array if it does not match any launch configs', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await globals.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.cfn.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -197,7 +197,7 @@ describe('createNewSamApp', function () {
 
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await globals.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.cfn.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -231,9 +231,9 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
             testutil.toFile('target file', path.join(otherFolder1, templateYaml))
 
-            await globals.templateRegistry.addItemToRegistry(tempTemplate)
-            await globals.templateRegistry.addItemToRegistry(otherTemplate1)
-            await globals.templateRegistry.addItemToRegistry(otherTemplate2)
+            await globals.templateRegistry.cfn.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.cfn.addItemToRegistry(otherTemplate1)
+            await globals.templateRegistry.cfn.addItemToRegistry(otherTemplate2)
 
             const launchConfigs1 = await addInitialLaunchConfiguration(
                 fakeContext,
