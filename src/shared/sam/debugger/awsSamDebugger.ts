@@ -336,8 +336,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
+    // eslint-disable-next-line id-length
     public async resolveDebugConfigurationWithSubstitutedVariables(
-        // eslint-disable-line id-length
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
