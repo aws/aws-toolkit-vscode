@@ -181,3 +181,18 @@ export async function createStarterTemplateFile(content: string, window: Window 
         await vscode.commands.executeCommand('vscode.open', loc)
     }
 }
+
+export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
+    return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)
+}
+
+export async function getCompletionItems(
+    uri: vscode.Uri,
+    position: vscode.Position
+): Promise<vscode.CompletionList | undefined> {
+    return vscode.commands.executeCommand('vscode.executeCompletionItemProvider', uri, position)
+}
+
+export async function getHoverItems(uri: vscode.Uri, position: vscode.Position): Promise<vscode.Hover[] | undefined> {
+    return vscode.commands.executeCommand('vscode.executeHoverProvider', uri, position)
+}
