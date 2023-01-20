@@ -4,6 +4,10 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
+import * as assert from 'assert'
+import * as fs from 'fs-extra'
+import { writeFileSync } from 'fs-extra'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import { UploadLambdaWizard, UploadLambdaWizardState, LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -54,6 +58,9 @@ describe('UploadLambdaWizard', function () {
             invokePath = vscode.Uri.file(tempDir)
             tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
+        afterEach(async function () {
+            await fs.remove(tempDir)
+        })
 
         it('skip select directory, auto selected', function () {
             tester.lambda.region.assertShow(1)
@@ -61,6 +68,32 @@ describe('UploadLambdaWizard', function () {
             tester.uploadType.assertValue('directory')
             tester.targetUri.assertDoesNotShow()
             tester.targetUri.assertValue(invokePath)
+            tester.lambda.name.assertShow(2)
+            tester.confirmedDeploy.assertShow(3)
+        })
+    })
+
+    describe('invoked from template', function () {
+        let tempDir: string
+        let tempDirUri: vscode.Uri
+        let invokePath: vscode.Uri
+        beforeEach(async function () {
+            tempDir = await makeTemporaryToolkitFolder()
+            tempDirUri = vscode.Uri.file(tempDir)
+            writeFileSync(path.join(tempDir, 'template.yaml'), '')
+            invokePath = vscode.Uri.file(path.join(tempDir, 'template.yaml'))
+            tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
+        })
+        afterEach(async function () {
+            await fs.remove(tempDir)
+        })
+
+        it('skip select directory, auto selected', function () {
+            tester.lambda.region.assertShow(1)
+            tester.uploadType.assertDoesNotShow()
+            tester.uploadType.assertValue('directory')
+            tester.targetUri.assertDoesNotShow()
+            assert.strictEqual(tester.targetUri.value?.fsPath, tempDirUri.fsPath)
             tester.lambda.name.assertShow(2)
             tester.confirmedDeploy.assertShow(3)
         })
