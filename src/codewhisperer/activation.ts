@@ -275,7 +275,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         }
                     })
                 context.extensionContext.globalState.update(
-                    CodeWhispererConstants.accessTokenMigrationDoNotShowAgainLastShown,
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowLastShown,
                     Date.now()
                 )
             } else {
@@ -330,12 +330,12 @@ export async function activate(context: ExtContext): Promise<void> {
             vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
         const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
         const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
-        const isWithCodeReferencesEnabled = codewhispererSettings.isWithCodeReferencesEnabled()
+        const isSuggestionsWithCodeReferencesEnabled = codewhispererSettings.isSuggestionsWithCodeReferencesEnabled()
         return {
             isShowMethodsEnabled,
             isManualTriggerEnabled,
             isAutomatedTriggerEnabled,
-            isWithCodeReferencesEnabled,
+            isSuggestionsWithCodeReferencesEnabled,
         }
     }
 
