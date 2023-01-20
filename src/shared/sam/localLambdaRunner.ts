@@ -530,7 +530,7 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     }
 }
 
-export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
+export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean {
     // getFamily will throw an error if the runtime doesn't exist
     switch (getFamily(runtime)) {
         case RuntimeFamily.NodeJS:

@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
-import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 import { TestAWSTreeNode } from './nodes/testAWSTreeNode'
 
 describe('makeChildrenNodes', async function () {
@@ -33,7 +33,7 @@ describe('makeChildrenNodes', async function () {
             },
         })
 
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('returns a placeholder node if there are no child nodes', async function () {

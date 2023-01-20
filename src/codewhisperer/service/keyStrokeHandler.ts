@@ -167,7 +167,7 @@ export class KeyStrokeHandler {
                 vsCodeState.isIntelliSenseActive = false
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = true
                 try {
-                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     await RecommendationHandler.instance.getRecommendations(
                         client,

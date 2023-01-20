@@ -67,7 +67,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
         handlers.push(...this.findCandidateHandlersInModuleExports())
         handlers.push(...this.findCandidateHandlersInExportedFunctions())
-        handlers.push(...this.findCandidateHandlersInExportDeclarations())
+        handlers.push(...this.findCandidateHandlersInExportDecls())
 
         return handlers
     }
@@ -158,7 +158,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     /**
      * @description Looks at "export { xyz }" statements to find candidate Lambda handlers
      */
-    private findCandidateHandlersInExportDeclarations(): RootlessLambdaHandlerCandidate[] {
+    private findCandidateHandlersInExportDecls(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
         this._candidateExportDeclarations.forEach(exportDeclaration => {

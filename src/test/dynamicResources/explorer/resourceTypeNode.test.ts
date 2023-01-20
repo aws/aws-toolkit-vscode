@@ -10,8 +10,8 @@ import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resource
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
@@ -50,7 +50,7 @@ describe('ResourceTypeNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has ResourceNode child nodes', async function () {
@@ -117,7 +117,7 @@ describe('ResourceTypeNode', function () {
         testNode = generateTestNode(instance(cloudControl))
 
         const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('has a placeholder node for a child if unsupported action', async function () {
@@ -128,7 +128,7 @@ describe('ResourceTypeNode', function () {
         testNode = generateTestNode(instance(cloudControl))
 
         const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has Documented contextValue if documentation available', function () {

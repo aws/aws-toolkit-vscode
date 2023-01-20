@@ -11,8 +11,8 @@ import { getIdeProperties } from '../../extensionUtilities'
 import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
-    maximumSamCliVersionExclusive,
-    minimumSamCliVersionInclusive,
+    maxSamCliVersionExclusive,
+    minSamCliVersion,
     SamCliNotFoundError,
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
@@ -129,8 +129,8 @@ function makeVersionValidationNotificationMessage(validationResult: SamCliVersio
         'AWS.samcli.notification.version.invalid',
         'Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}',
         validationResult.version,
-        minimumSamCliVersionInclusive,
-        maximumSamCliVersionExclusive,
+        minSamCliVersion,
+        maxSamCliVersionExclusive,
         recommendation
     )
 }
