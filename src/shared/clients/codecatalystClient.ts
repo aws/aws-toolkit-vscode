@@ -320,6 +320,7 @@ class CodeCatalystClientInternal {
         const resp = await this.call(this.sdkClient.verifySession(), false)
         assertHasProps(resp, 'identity')
 
+        CodeCatalystClientInternal.identityCache.set(accessToken, resp.identity)
         setTimeout(() => CodeCatalystClientInternal.identityCache.delete(accessToken), expiresAt.getTime() - Date.now())
 
         return resp.identity
