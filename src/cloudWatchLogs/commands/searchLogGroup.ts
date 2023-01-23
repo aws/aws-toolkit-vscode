@@ -12,7 +12,7 @@ import {
     LogDataRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
-    getInitialLogData,
+    initLogData,
 } from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -53,25 +53,27 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         }
     }
 
-    const initialStreamData = getInitialLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
+    const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
 
-    if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
-        recordTelemetryFilter(initialStreamData, 'logGroup', 'Command')
+    if (logData.parameters.startTime || logData.parameters.filterPattern) {
+        recordTelemetryFilter(logData, 'logGroup', 'Command')
     }
 
-    return initialStreamData
+    return logData
 }
 
 export async function prepareDocument(
     uri: vscode.Uri,
-    initialLogData: CloudWatchLogsData,
+    logData: CloudWatchLogsData,
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
         await registry.fetchNextLogEvents(uri)
-        const textDocument = await vscode.workspace.openTextDocument(uri)
-        await vscode.window.showTextDocument(textDocument, { preview: false })
-        vscode.languages.setTextDocumentLanguage(textDocument, 'log')
+        // Gets the data: calls filterLogEventsFromUriComponents().
+        const doc = await vscode.workspace.openTextDocument(uri)
+        await vscode.window.showTextDocument(doc, { preview: false })
+        vscode.languages.setTextDocumentLanguage(doc, 'log')
+
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
@@ -82,7 +84,7 @@ export async function prepareDocument(
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.cwl.searchLogGroup.errorRetrievingLogs',
-                    'Error retrieving logs for Log Group {0} : {1}',
+                    'Failed to get logs for {0} : {1}',
                     parseCloudWatchLogsUri(uri).logGroupInfo.groupName,
                     error.message
                 )
@@ -92,25 +94,18 @@ export async function prepareDocument(
     }
 }
 
+/** "Search Log Group" command */
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogDataRegistry): Promise<void> {
-    let response: SearchLogGroupWizardResponse | undefined
     let result: Result
-    let source: 'Explorer' | 'Command'
-
-    if (node) {
-        source = 'Explorer'
-        if (!node.logGroup.logGroupName) {
-            throw new Error('CWL: Log Group node does not have a name.')
-        }
-
-        response = await new SearchLogGroupWizard({
-            groupName: node.logGroup.logGroupName,
-            regionName: node.regionCode,
-        }).run()
-    } else {
-        source = 'Command'
-        response = await new SearchLogGroupWizard().run()
+    const source = node ? 'Explorer' : 'Command'
+    if (node && !node.logGroup.logGroupName) {
+        throw new Error('CWL: Log Group node does not have a name.')
     }
+
+    const wizard = node?.logGroup.logGroupName
+        ? new SearchLogGroupWizard({ groupName: node.logGroup.logGroupName, regionName: node.regionCode })
+        : new SearchLogGroupWizard()
+    const response = await wizard.run()
 
     if (!response) {
         result = 'Cancelled'
@@ -118,11 +113,11 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
         return
     }
 
-    const initialLogData = handleWizardResponse(response, registry)
+    const logData = handleWizardResponse(response, registry)
 
-    const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
+    const uri = createURIFromArgs(logData.logGroupInfo, logData.parameters)
 
-    result = await prepareDocument(uri, initialLogData, registry)
+    result = await prepareDocument(uri, logData, registry)
     telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
 }
 
@@ -154,7 +149,7 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
     )
     const placeHolderText = localize(
         'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
-        'search pattern (or empty for all events)'
+        'search pattern (case sensitive; empty matches all)'
     )
     const options = {
         title: titleText,
@@ -197,9 +192,9 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         })
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
+        this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
         this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
             createFilterpatternPrompter(submenuResponse!.data, logGroupInfo ? true : false)
         )
-        this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }
 }
