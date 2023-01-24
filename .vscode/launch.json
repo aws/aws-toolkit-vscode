@@ -19,7 +19,7 @@
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080",
-                "LANGUAGE_SERVER": "${cwd}/../aws-toolkit-common/lsp/out/server.js"
+                "LANGUAGE_SERVER": "${cwd}/../aws-toolkit-common/lsp/out/src/server.js"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "watch"
@@ -126,7 +126,7 @@
             "type": "node",
             "request": "attach",
             "port": 6012,
-            "outFiles": ["${cwd}/../aws-toolkit-common/lsp/out/**.js"],
+            "outFiles": ["${cwd}/../aws-toolkit-common/lsp/out/**/*.js"],
             "restart": {
                 "maxAttempts": 10,
                 "delay": 1000
