@@ -103,8 +103,8 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     }
 
     const wizard = node?.logGroup.logGroupName
-        ? new SearchLogGroupWizard({ groupName: node.logGroup.logGroupName, regionName: node.regionCode })
-        : new SearchLogGroupWizard()
+        ? new SearchLogGroupWizard(registry, { groupName: node.logGroup.logGroupName, regionName: node.regionCode })
+        : new SearchLogGroupWizard(registry)
     const response = await wizard.run()
 
     if (!response) {
@@ -139,7 +139,12 @@ async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.
     return logGroupsArray
 }
 
-export function createFilterpatternPrompter(logGroupName: string, isFirst: boolean): InputBoxPrompter {
+/** Prompts the user for a search query, and validates it. */
+export function createFilterpatternPrompter(
+    registry: LogDataRegistry,
+    logGroupName: string,
+    isFirst: boolean
+): InputBoxPrompter {
     const helpUri =
         'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
     const titleText = localize(
@@ -151,10 +156,34 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
         'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
         'search pattern (case sensitive; empty matches all)'
     )
+
+    async function validateSearchPattern(searchPattern: string, isFinalInput: boolean): Promise<string | undefined> {
+        if (!isFinalInput) {
+            return undefined // Skip validation while user is typing.
+        }
+        const logGroupInfo: CloudWatchLogsGroupInfo = {
+            groupName: '/aws/apprunner/aaaaaaa/5d2870895ec34e7d810fb316cd9c9bf0',
+            regionName: 'us-west-2',
+        }
+        const parameters: CloudWatchLogsParameters = {
+            limit: 1,
+            filterPattern: searchPattern,
+            startTime: 1,
+            endTime: 9999,
+        }
+        try {
+            await filterLogEventsFromUriComponents(logGroupInfo, parameters)
+        } catch (e) {
+            return (e as Error).message
+        }
+        return undefined
+    }
+
     const options = {
         title: titleText,
         placeholder: placeHolderText,
         buttons: [createHelpButton(helpUri), createExitButton()],
+        validateInput: validateSearchPattern,
     }
 
     if (!isFirst) {
@@ -179,7 +208,7 @@ export interface SearchLogGroupWizardResponse {
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo) {
+    public constructor(registry: LogDataRegistry, logGroupInfo?: CloudWatchLogsGroupInfo) {
         super({
             initState: {
                 submenuResponse: logGroupInfo
@@ -194,7 +223,7 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
         this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
-            createFilterpatternPrompter(submenuResponse!.data, logGroupInfo ? true : false)
+            createFilterpatternPrompter(registry, submenuResponse!.data, logGroupInfo ? true : false)
         )
     }
 }

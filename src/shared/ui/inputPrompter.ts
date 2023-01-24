@@ -9,16 +9,17 @@ import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wiz
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
-// TODO: allow `validateInput` to return a Thenable so we don't need to omit it from the options
 /** Additional options to configure the `InputBox` beyond the standard API */
-export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInput' | 'placeHolder'> & {
-    title?: string
-    step?: number
-    placeholder?: string
-    totalSteps?: number
-    buttons?: PrompterButtons<string>
-    validateInput?(value: string): string | undefined
-}
+export type ExtendedInputBoxOptions =
+    // TODO: allow `validateInput` to return Thenable so we don't need to omit it here.
+    Omit<vscode.InputBoxOptions, 'validateInput' | 'placeHolder'> & {
+        title?: string
+        step?: number
+        placeholder?: string
+        totalSteps?: number
+        buttons?: PrompterButtons<string>
+        validateInput?(value: string, isFinalInput?: boolean): string | undefined | Thenable<string | undefined>
+    }
 
 export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
@@ -40,7 +41,7 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
     const prompter = new InputBoxPrompter(inputBox)
 
     if (options?.validateInput !== undefined) {
-        prompter.setValidation(input => options.validateInput!(input))
+        prompter.setValidation(async (input, isFinalInput) => await options.validateInput!(input, isFinalInput))
     }
 
     return prompter
@@ -85,18 +86,21 @@ export class InputBoxPrompter extends Prompter<string> {
      * attempts to submit their response.
      *
      * @param validate Validator function
+     * @param isFinalInput true if the value was the final input (onDidAccept), false if this input is being typed by the user. For expensive validation (e.g. performs a service/SDK call) the validator can use this to skip validation until the final input.
      */
-    public setValidation(validate: (value: string) => string | undefined): void {
+    public setValidation(
+        validate: (value: string, isFinalInput: boolean) => string | undefined | Thenable<string | undefined>
+    ): void {
         this.validateEvents.forEach(d => d.dispose())
         this.validateEvents = []
 
         this.inputBox.onDidChangeValue(
-            value => (this.inputBox.validationMessage = validate(value)),
+            async value => (this.inputBox.validationMessage = await validate(value, false)),
             undefined,
             this.validateEvents
         )
         this.inputBox.onDidAccept(
-            () => (this.inputBox.validationMessage = validate(this.inputBox.value)),
+            async () => (this.inputBox.validationMessage = await validate(this.inputBox.value, true)),
             undefined,
             this.validateEvents
         )
