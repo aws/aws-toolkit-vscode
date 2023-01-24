@@ -201,7 +201,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
 
     // resolve ts lambda handler to point into build directory relative to codeRoot
     const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
-    config.invokeTarget.lambdaHandler = tsLambdaHandler
+    config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
     getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
     const tsc = await systemutil.SystemUtilities.findTypescriptCompiler()
