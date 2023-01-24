@@ -8,42 +8,43 @@ import { buildSchemaTemplateParameters } from '../../../eventSchemas/templates/s
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { stub } from '../../utilities/stubber'
 import {
-    AWS_EVENT_SCHEMA_CONTENT,
-    CUSTOMER_UPLOADED_SCHEMA,
-    CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
-    PARTNER_SCHEMA_CONTENT,
+    awsEventSchemaContent,
+    customerUploadedSchema,
+    customerUploadedSchemaMultipleTypes,
+    partnerSchemaContent,
 } from './schemasExamples'
 
-const AWS_SCHEMA_NAME = 'aws.ec2@EC2InstanceStateChangeNotification'
-const AWS_SCHEMA_EXPECTED_PACKAGE_NAME = 'schema.aws.ec2.ec2instancestatechangenotification'
-const REGISTRY_NAME = 'Registry'
-const SCHEMA_VERSION = '1'
-const AWS_TOOLKIT_USER_AGENT = 'AWSToolkit'
+const awsSchemaName = 'aws.ec2@EC2InstanceStateChangeNotification'
+const awsSchemaExpectedPackageName = 'schema.aws.ec2.ec2instancestatechangenotification'
+const registryName = 'Registry'
+const schemaVersion = '1'
+const awsToolkitUserAgent = 'AWSToolkit'
 
-const PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME = 'schema.aws.partner.mongodb_com_1234567_tickets.ticket_created'
-const PARTNER_SCHEMA_NAME = 'aws.partner-mongodb.com/1234567-tickets@Ticket.Created'
+const partnerSchemaExpectedPackageName = 'schema.aws.partner.mongodb_com_1234567_tickets.ticket_created'
+const partnerSchemaName = 'aws.partner-mongodb.com/1234567-tickets@Ticket.Created'
 
-const CUSTOMER_UPLOADED_SCHEMA_NAME = 'someCustomer.SomeAwesomeSchema'
-const CUSTOMER_UPLOADED_SCHEMA_EXPECTED_PACKAGE_NAME = 'schema.somecustomer_someawesomeschema'
-const DEFAULT_EVENT_SOURCE = 'INSERT-YOUR-EVENT-SOURCE'
-const DEFAULT_EVENT_DETAIL_TYPE = 'INSERT-YOUR-DETAIL-TYPE'
+const customerUploadedSchemaName = 'someCustomer.SomeAwesomeSchema'
+/** Expected package name. */
+const customerUploadedSchemaExpectedPackage = 'schema.somecustomer_someawesomeschema'
+const defaultEventSource = 'INSERT-YOUR-EVENT-SOURCE'
+const defaultEventDetailType = 'INSERT-YOUR-DETAIL-TYPE'
 
-const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME = 'someCustomer.multipleTypes@SomeOtherAwesomeSchema'
-const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME =
-    'schema.somecustomer_multipletypes.someotherawesomeschema'
+const customerUploadedSchemaMultipleTypesName = 'someCustomer.multipleTypes@SomeOtherAwesomeSchema'
+/** Expected package name. */
+const customerUploadedSchemaMultipleTypesPkg = 'schema.somecustomer_multipletypes.someotherawesomeschema'
 
 describe('Build template parameters for AwsEventSchema', async function () {
     it('should build correct template parameters for aws event schema', async function () {
         const schemaClient = stub(DefaultSchemaClient, { regionCode: 'region-1' })
         schemaClient.describeSchema.resolves({
-            Content: AWS_EVENT_SCHEMA_CONTENT,
-            SchemaVersion: SCHEMA_VERSION,
+            Content: awsEventSchemaContent,
+            SchemaVersion: schemaVersion,
         })
 
-        const result = await buildSchemaTemplateParameters(AWS_SCHEMA_NAME, REGISTRY_NAME, schemaClient)
+        const result = await buildSchemaTemplateParameters(awsSchemaName, registryName, schemaClient)
 
-        assert.strictEqual(result.SchemaVersion, SCHEMA_VERSION, 'Schema version not matching')
-        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, REGISTRY_NAME, 'Registry name not matching')
+        assert.strictEqual(result.SchemaVersion, schemaVersion, 'Schema version not matching')
+        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, registryName, 'Registry name not matching')
 
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_name,
@@ -52,7 +53,7 @@ describe('Build template parameters for AwsEventSchema', async function () {
         )
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_root,
-            AWS_SCHEMA_EXPECTED_PACKAGE_NAME,
+            awsSchemaExpectedPackageName,
             'schemaPackageHierarchy'
         )
 
@@ -68,7 +69,7 @@ describe('Build template parameters for AwsEventSchema', async function () {
         )
         assert.strictEqual(
             result.templateExtraContent.user_agent,
-            AWS_TOOLKIT_USER_AGENT,
+            awsToolkitUserAgent,
             'User agent should be hardcoded to AWSToolkit'
         )
     })
@@ -78,14 +79,14 @@ describe('Build template parameters for PartnerSchema', async function () {
     it('should build correct template parameters for partner schema', async function () {
         const schemaClient = stub(DefaultSchemaClient, { regionCode: 'region-1' })
         schemaClient.describeSchema.resolves({
-            Content: PARTNER_SCHEMA_CONTENT,
-            SchemaVersion: SCHEMA_VERSION,
+            Content: partnerSchemaContent,
+            SchemaVersion: schemaVersion,
         })
 
-        const result = await buildSchemaTemplateParameters(PARTNER_SCHEMA_NAME, REGISTRY_NAME, schemaClient)
+        const result = await buildSchemaTemplateParameters(partnerSchemaName, registryName, schemaClient)
 
-        assert.strictEqual(result.SchemaVersion, SCHEMA_VERSION, 'Schema version not matching')
-        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, REGISTRY_NAME, 'Registry name not matching')
+        assert.strictEqual(result.SchemaVersion, schemaVersion, 'Schema version not matching')
+        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, registryName, 'Registry name not matching')
 
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_name,
@@ -94,7 +95,7 @@ describe('Build template parameters for PartnerSchema', async function () {
         )
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_root,
-            PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME,
+            partnerSchemaExpectedPackageName,
             'schemaPackageHierarchy'
         )
 
@@ -110,7 +111,7 @@ describe('Build template parameters for PartnerSchema', async function () {
         )
         assert.strictEqual(
             result.templateExtraContent.user_agent,
-            AWS_TOOLKIT_USER_AGENT,
+            awsToolkitUserAgent,
             'User agent should be hardcoded to AWSToolkit'
         )
     })
@@ -120,35 +121,35 @@ describe('Build template parameters for CustomerUploadedSchema', async function 
     it('should build correct template parameters for customer uploaded schema with single type', async function () {
         const schemaClient = stub(DefaultSchemaClient, { regionCode: 'region-1' })
         schemaClient.describeSchema.resolves({
-            Content: CUSTOMER_UPLOADED_SCHEMA,
-            SchemaVersion: SCHEMA_VERSION,
+            Content: customerUploadedSchema,
+            SchemaVersion: schemaVersion,
         })
 
-        const result = await buildSchemaTemplateParameters(CUSTOMER_UPLOADED_SCHEMA_NAME, REGISTRY_NAME, schemaClient)
+        const result = await buildSchemaTemplateParameters(customerUploadedSchemaName, registryName, schemaClient)
 
-        assert.strictEqual(result.SchemaVersion, SCHEMA_VERSION, 'Schema version not matching')
-        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, REGISTRY_NAME, 'Registry name not matching')
+        assert.strictEqual(result.SchemaVersion, schemaVersion, 'Schema version not matching')
+        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, registryName, 'Registry name not matching')
 
         assert.strictEqual(result.templateExtraContent.AWS_Schema_name, 'Some_Awesome_Schema', 'schemaRootEventName')
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_root,
-            CUSTOMER_UPLOADED_SCHEMA_EXPECTED_PACKAGE_NAME,
+            customerUploadedSchemaExpectedPackage,
             'schemaPackageHierarchy'
         )
 
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_source,
-            DEFAULT_EVENT_SOURCE,
+            defaultEventSource,
             'custom schemas should have default event source'
         )
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_detail_type,
-            DEFAULT_EVENT_DETAIL_TYPE,
+            defaultEventDetailType,
             'custom schemas should have default detail type'
         )
         assert.strictEqual(
             result.templateExtraContent.user_agent,
-            AWS_TOOLKIT_USER_AGENT,
+            awsToolkitUserAgent,
             'User agent should be hardcoded to AWSToolkit'
         )
     })
@@ -158,18 +159,18 @@ describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', as
     it('should  build correct template parameters for customer uploaded schema with multiple types', async function () {
         const schemaClient = stub(DefaultSchemaClient, { regionCode: 'region-1' })
         schemaClient.describeSchema.resolves({
-            Content: CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
-            SchemaVersion: SCHEMA_VERSION,
+            Content: customerUploadedSchemaMultipleTypes,
+            SchemaVersion: schemaVersion,
         })
 
         const result = await buildSchemaTemplateParameters(
-            CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME,
-            REGISTRY_NAME,
+            customerUploadedSchemaMultipleTypesName,
+            registryName,
             schemaClient
         )
 
-        assert.strictEqual(result.SchemaVersion, SCHEMA_VERSION, 'Schema version not matching')
-        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, REGISTRY_NAME, 'Registry name not matching')
+        assert.strictEqual(result.SchemaVersion, schemaVersion, 'Schema version not matching')
+        assert.strictEqual(result.templateExtraContent.AWS_Schema_registry, registryName, 'Registry name not matching')
 
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_name,
@@ -178,23 +179,23 @@ describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', as
         )
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_root,
-            CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME,
+            customerUploadedSchemaMultipleTypesPkg,
             'schemaPackageHierarchy'
         )
 
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_source,
-            DEFAULT_EVENT_SOURCE,
+            defaultEventSource,
             'custom schemas should have default event source'
         )
         assert.strictEqual(
             result.templateExtraContent.AWS_Schema_detail_type,
-            DEFAULT_EVENT_DETAIL_TYPE,
+            defaultEventDetailType,
             'custom schemas should have default detail type'
         )
         assert.strictEqual(
             result.templateExtraContent.user_agent,
-            AWS_TOOLKIT_USER_AGENT,
+            awsToolkitUserAgent,
             'User agent should be hardcoded to AWSToolkit'
         )
     })

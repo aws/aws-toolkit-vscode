@@ -36,7 +36,7 @@ interface MissingTool {
     readonly reason?: string
 }
 
-export const HOST_NAME_PREFIX = 'aws-devenv-'
+export const hostNamePrefix = 'aws-devenv-'
 
 export async function ensureDependencies(
     window = vscode.window
@@ -180,7 +180,7 @@ async function ensureCodeCatalystSshConfig(sshPath: string) {
     return Result.ok()
 }
 
-const configHostName = `${HOST_NAME_PREFIX}*`
+const configHostName = `${hostNamePrefix}*`
 function createSSHConfigSection(proxyCommand: string): string {
     // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
     // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
@@ -205,7 +205,7 @@ async function verifySSHHost({
     section: string
     proxyCommand: string
 }) {
-    const matchResult = await matchSshSection(sshPath, `${HOST_NAME_PREFIX}test`)
+    const matchResult = await matchSshSection(sshPath, `${hostNamePrefix}test`)
     if (matchResult.isErr()) {
         return matchResult
     }

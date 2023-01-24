@@ -15,17 +15,17 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { getMinVsCodeVersion } from '../../../../scripts/test/launchTestUtilities' // TODO: don't use stuff from 'scripts'
 
-const TEST_REMOTE_NAME = 'test-origin'
-const TEST_REMOTE_URL = 'https://github.com/aws/aws-toolkit-vscode'
-const TEST_REMOTE_BRANCH = 'master'
-const TEST_REMOTE_HEAD = 'v1.32.0'
-const TEST_TIMEOUT = 1000
+const testRemoteName = 'test-origin'
+const testRemoteUrl = 'https://github.com/aws/aws-toolkit-vscode'
+const testRemoteBranch = 'master'
+const testRemoteHead = 'v1.32.0'
+const testTimeout = 1000
 
-const CONFIG_KEY = 'aws.test'
+const configKey = 'aws.test'
 
 // performance benchmarks
-const LIST_REMOTE_TIMEOUT = 5000
-const LIST_REMOTE_MAX_SIZE = 100000
+const listRemoteTimeout = 5000
+const listRemoteMaxSize = 100000
 
 /**
  * Error emitted by the git extension. This is undocumented!
@@ -85,7 +85,7 @@ describe('GitExtension', function () {
         }
 
         testRepo = repo
-        await testRepo.addRemote(TEST_REMOTE_NAME, TEST_REMOTE_URL)
+        await testRepo.addRemote(testRemoteName, testRemoteUrl)
 
         // make a single commit on 'master' to refer back to
         await testRepo.commit('test', { empty: true }).catch(parseGitError)
@@ -93,9 +93,9 @@ describe('GitExtension', function () {
 
     after(function () {
         try {
-            execFileSync(git.$api.git.path, ['config', '--global', '--unset', CONFIG_KEY])
+            execFileSync(git.$api.git.path, ['config', '--global', '--unset', configKey])
         } catch (err) {
-            getLogger().warn(`Unable to unset test git config value ${CONFIG_KEY}: %s`, err)
+            getLogger().warn(`Unable to unset test git config value ${configKey}: %s`, err)
         }
     })
 
@@ -107,7 +107,7 @@ describe('GitExtension', function () {
                     resolve(repo)
                 }
             })
-            setTimeout(() => reject(new Error('Timed out waiting for repository to open')), TEST_TIMEOUT)
+            setTimeout(() => reject(new Error('Timed out waiting for repository to open')), testTimeout)
         })
         await git.$api.init(newRepoUri).catch(parseGitError)
         await git.$api.openRepository(newRepoUri).catch(parseGitError)
@@ -123,7 +123,7 @@ describe('GitExtension', function () {
             wrapped.onDidChangeBranch(branch => {
                 resolve(branch)
             })
-            setTimeout(() => reject(new Error('Timed out waiting for branch to change')), TEST_TIMEOUT)
+            setTimeout(() => reject(new Error('Timed out waiting for branch to change')), testTimeout)
         })
         await testRepo.createBranch('new', true).catch(parseGitError)
         assert.strictEqual((await checkBranch)?.name, 'new')
@@ -135,12 +135,12 @@ describe('GitExtension', function () {
     })
 
     it('can list remotes and branches', async function () {
-        const TARGET_BRANCH = `${TEST_REMOTE_NAME}/${TEST_REMOTE_BRANCH}`
-        const remote = (await git.getRemotes()).find(r => r.name === TEST_REMOTE_NAME)
-        assert.ok(remote, `Did not find "${TEST_REMOTE_NAME}" in list of remotes`)
-        await testRepo.fetch({ remote: TEST_REMOTE_NAME, ref: TEST_REMOTE_BRANCH }).catch(parseGitError)
-        const branch = (await git.getBranchesForRemote(remote)).find(branch => branch.name === TARGET_BRANCH)
-        assert.ok(branch, `Failed to find "${TARGET_BRANCH}" associated with remote`)
+        const targetBranch = `${testRemoteName}/${testRemoteBranch}`
+        const remote = (await git.getRemotes()).find(r => r.name === testRemoteName)
+        assert.ok(remote, `Did not find "${testRemoteName}" in list of remotes`)
+        await testRepo.fetch({ remote: testRemoteName, ref: testRemoteBranch }).catch(parseGitError)
+        const branch = (await git.getBranchesForRemote(remote)).find(branch => branch.name === targetBranch)
+        assert.ok(branch, `Failed to find "${targetBranch}" associated with remote`)
     })
 
     it('can get repository config', async function () {
@@ -159,8 +159,8 @@ describe('GitExtension', function () {
     })
 
     it('can list files from a remote', async function () {
-        this.timeout(LIST_REMOTE_TIMEOUT)
-        const result = await git.listAllRemoteFiles({ fetchUrl: TEST_REMOTE_URL, branch: TEST_REMOTE_HEAD })
+        this.timeout(listRemoteTimeout)
+        const result = await git.listAllRemoteFiles({ fetchUrl: testRemoteUrl, branch: testRemoteHead })
 
         const readme = result.files.find(f => f.name === 'NOTICE')
         assert.ok(readme, 'Expected to find NOTICE file in repository root')
@@ -173,7 +173,7 @@ describe('GitExtension', function () {
             throw new Error('Download size was unable to be determined.')
         }
 
-        assert.ok(bytes(result.stats.downloadSize) < LIST_REMOTE_MAX_SIZE)
+        assert.ok(bytes(result.stats.downloadSize) < listRemoteMaxSize)
         assert.ok(await result.dispose())
         await assert.rejects(extension.read)
     })

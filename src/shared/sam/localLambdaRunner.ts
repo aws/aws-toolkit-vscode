@@ -73,8 +73,8 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
     }
 }
 
-const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
+const samLocalPortCheckRetryIntervalMillis: number = 125
+const attachDebuggerRetryDelayMillis: number = 1000
 
 export function getInputTemplatePath(config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }): string {
     const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
@@ -356,7 +356,7 @@ export async function runLambdaFunction(
 
         await attachDebugger({
             debugConfig: config,
-            retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
+            retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
 
         showDebugConsole()
@@ -395,8 +395,8 @@ async function requestLocalApi(
     apiPort: number,
     payload: any
 ): Promise<void> {
-    const RETRY_LIMIT = 10 // Number of attempts before showing a 'cancel' notification
-    const RETRY_DELAY = 200
+    const retryLimit = 10 // Number of attempts before showing a 'cancel' notification
+    const retryDelay = 200
     const reqMethod = api?.httpMethod || 'GET'
     const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
     const uri = `http://127.0.0.1:${apiPort}${api?.path}${qs}`
@@ -417,14 +417,14 @@ async function requestLocalApi(
                 }
                 if (obj.error.code === 'ETIMEDOUT' || obj.error.response?.statusCode === 403 || timeout.completed) {
                     return 0
-                } else if (!notificationShown && obj.attemptCount >= RETRY_LIMIT) {
+                } else if (!notificationShown && obj.attemptCount >= retryLimit) {
                     notificationShown = true
                     getLogger().debug('Local API: showing cancel notification')
                     showMessageWithCancel('Waiting for local API to start...', timeout)
                 }
 
                 getLogger().debug(`Local API: retry (${obj.attemptCount}): ${uri}: ${obj.error.message}`)
-                return RETRY_DELAY
+                return retryDelay
             },
         },
         // TODO: api?.stageVariables,
@@ -456,7 +456,7 @@ export interface AttachDebuggerContext {
 }
 
 export async function attachDebugger({
-    retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
+    retryDelayMillis = attachDebuggerRetryDelayMillis,
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
         getLogger().debug('attachDebugger: retrying...')
@@ -519,7 +519,7 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     const time = timeout.remainingTime
     try {
         // this function always attempts once no matter the timeoutDuration
-        await tcpPortUsed.waitUntilUsed(port, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, time)
+        await tcpPortUsed.waitUntilUsed(port, samLocalPortCheckRetryIntervalMillis, time)
     } catch (err) {
         getLogger().warn(`Timeout after ${time} ms: port was not used: ${port}`)
         if (isDebugPort) {
@@ -534,7 +534,7 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     }
 }
 
-export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
+export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean {
     // getFamily will throw an error if the runtime doesn't exist
     switch (getFamily(runtime)) {
         case RuntimeFamily.NodeJS:

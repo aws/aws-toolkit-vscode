@@ -21,6 +21,13 @@ describe('iamClient', function () {
         const incorrectPermissionsResponse = {
             EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'denied' }],
         }
+        const organizationsDenyPermissionsResponse = {
+            EvaluationResults: [{
+                EvalActionName: 'example:permission',
+                EvalDecision: 'implicitDeny',
+                OrganizationsDecisionDetail: { "AllowedByOrganizations": false },
+            }],
+        }
 
         afterEach(function () {
             sinon.restore()
@@ -36,6 +43,11 @@ describe('iamClient', function () {
 
         it('does not return correct task permissions', async function () {
             sinon.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
+            assert.deepStrictEqual(await iamClient.getDeniedActions(request), [])
+        })
+
+        it('does not return possibly false organizational implicitDeny', async function () {
+            sinon.stub(iamClient, 'simulatePrincipalPolicy').resolves(organizationsDenyPermissionsResponse)
             assert.deepStrictEqual(await iamClient.getDeniedActions(request), [])
         })
     })

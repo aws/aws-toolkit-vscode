@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
@@ -14,16 +14,16 @@ import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
 import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { stub } from '../../utilities/stubber'
 
-const FAKE_PARTITION_ID = 'aws'
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = [
+const fakePartitionId = 'aws'
+const fakeRegionCode = 'someregioncode'
+const unsortedText = [
     { name: 'zebra', id: "it's zee not zed" },
     { name: 'zebra', id: "it's actually zed" },
     { name: 'Antelope', id: 'anti-antelope' },
     { name: 'aardvark', id: 'a-a-r-d-vark' },
     { name: 'elephant', id: 'trunk capacity' },
 ]
-const SORTED_TEXT = [
+const sortedText = [
     'aardvark (a-a-r-d-vark)',
     'Antelope (anti-antelope)',
     'elephant (trunk capacity)',
@@ -37,7 +37,7 @@ describe('ApiGatewayNode', function () {
     let apiNames: { name: string; id: string }[]
 
     function createClient() {
-        const client = stub(DefaultApiGatewayClient, { regionCode: FAKE_REGION_CODE })
+        const client = stub(DefaultApiGatewayClient, { regionCode: fakeRegionCode })
         client.listApis.callsFake(() => asyncGenerator(apiNames))
 
         return client
@@ -49,7 +49,7 @@ describe('ApiGatewayNode', function () {
             { name: 'api2', id: '22222' },
         ]
 
-        testNode = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE, createClient())
+        testNode = new ApiGatewayNode(fakePartitionId, fakeRegionCode, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -57,7 +57,7 @@ describe('ApiGatewayNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has RestApi child nodes', async function () {
@@ -69,19 +69,19 @@ describe('ApiGatewayNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        apiNames = UNSORTED_TEXT
+        apiNames = unsortedText
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
         const client = createClient()
         client.listApis.throws(new Error())
 
-        const node = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE, client)
-        assertNodeListOnlyContainsErrorNode(await node.getChildren())
+        const node = new ApiGatewayNode(fakePartitionId, fakeRegionCode, client)
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 })

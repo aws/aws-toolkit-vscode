@@ -136,7 +136,7 @@ export class InlineCompletion {
 
         RecommendationHandler.instance.cancelPaginatedRequest()
         // report all recommendation as rejected
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
     }
 
     async rejectRecommendation(
@@ -329,7 +329,7 @@ export class InlineCompletion {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()
         this.setCodeWhispererStatusBarLoading()
         const isManualTrigger = triggerType === 'OnDemand'
@@ -355,7 +355,7 @@ export class InlineCompletion {
                 )
                 this.setCompletionItems(editor)
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
-                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     break
                 }
@@ -397,7 +397,7 @@ export class InlineCompletion {
                     RecommendationHandler.instance.recommendations.forEach((r, i) => {
                         RecommendationHandler.instance.setSuggestionState(i, 'Discard')
                     })
-                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                    RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     if (this._timer !== undefined) {
                         clearTimeout(this._timer)
@@ -427,7 +427,7 @@ export class InlineCompletion {
                         RecommendationHandler.instance.recommendations.forEach((r, i) => {
                             RecommendationHandler.instance.setSuggestionState(i, 'Discard')
                         })
-                        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                        RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                         RecommendationHandler.instance.clearRecommendations()
                     }
                     if (this._timer !== undefined) {
@@ -448,7 +448,7 @@ export class InlineCompletion {
                                     showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
                                 }
                             }
-                            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
+                            RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                             RecommendationHandler.instance.clearRecommendations()
                         }
                     }

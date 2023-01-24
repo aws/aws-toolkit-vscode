@@ -10,7 +10,7 @@ import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
-import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('EcrNode', function () {
     let ecr: EcrClient
@@ -65,7 +65,7 @@ describe('EcrNode', function () {
 
         const children = await new EcrNode(ecr).getChildren()
 
-        assertNodeListOnlyContainsErrorNode(children)
+        assertNodeListOnlyHasErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })
@@ -128,7 +128,7 @@ describe('EcrRepositoryNode', function () {
 
         const children = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 
-        assertNodeListOnlyContainsErrorNode(children)
+        assertNodeListOnlyHasErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })

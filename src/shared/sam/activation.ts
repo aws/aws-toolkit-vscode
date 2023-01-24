@@ -137,12 +137,12 @@ async function activateCodeLensRegistry(context: ExtContext) {
         // "**/…" string patterns watch recursively across _all_ workspace
         // folders (see documentation for addWatchPattern()).
         //
-        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
-        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
-        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
-        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
+        await registry.addWatchPattern(pyLensProvider.pythonBasePattern)
+        await registry.addWatchPattern(jsLensProvider.javascriptBasePattern)
+        await registry.addWatchPattern(csLensProvider.csharpBasePattern)
+        await registry.addWatchPattern(goLensProvider.goBasePattern)
+        await registry.addWatchPattern(javaLensProvider.gradleBasePattern)
+        await registry.addWatchPattern(javaLensProvider.mavenBasePattern)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -179,15 +179,15 @@ async function activateCodeLensProviders(
     const supportedLanguages: {
         [language: string]: codelensUtils.OverridableCodeLensProvider
     } = {
-        [jsLensProvider.JAVASCRIPT_LANGUAGE]: tsCodeLensProvider,
-        [pyLensProvider.PYTHON_LANGUAGE]: pyCodeLensProvider,
+        [jsLensProvider.javascriptLanguage]: tsCodeLensProvider,
+        [pyLensProvider.pythonLanguage]: pyCodeLensProvider,
     }
 
     if (!isCloud9()) {
-        supportedLanguages[javaLensProvider.JAVA_LANGUAGE] = javaCodeLensProvider
-        supportedLanguages[csLensProvider.CSHARP_LANGUAGE] = csCodeLensProvider
-        supportedLanguages[goLensProvider.GO_LANGUAGE] = goCodeLensProvider
-        supportedLanguages[jsLensProvider.TYPESCRIPT_LANGUAGE] = tsCodeLensProvider
+        supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
+        supportedLanguages[csLensProvider.csharpLanguage] = csCodeLensProvider
+        supportedLanguages[goLensProvider.goLanguage] = goCodeLensProvider
+        supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
     }
 
     disposables.push(
@@ -203,11 +203,11 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.TYPESCRIPT_ALL_FILES, tsCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.GO_ALLFILES, goCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.typescriptAllFiles, tsCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.pythonAllfiles, pyCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.javaAllfiles, javaCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.csharpAllfiles, csCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.goAllfiles, goCodeLensProvider))
 
     disposables.push(
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {

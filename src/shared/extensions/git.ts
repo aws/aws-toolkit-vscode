@@ -48,7 +48,7 @@ interface GitConfig {
 }
 
 const execFileAsync = promisify(execFile)
-const MIN_GIT_FILTER_VERSION = new SemVer('2.27.0')
+const minGitFilterVersion = new SemVer('2.27.0')
 
 function formatBranch(branch?: GitTypes.Branch): string {
     return branch?.name ?? branch?.commit ?? 'unknown'
@@ -333,9 +333,9 @@ export class GitExtension {
         const api = await this.validateApi(new Error('Cannot list files when the git extension is disabled'))
         const version = await this.getVersion()
 
-        if (version === undefined || version.compare(MIN_GIT_FILTER_VERSION) === -1) {
+        if (version === undefined || version.compare(minGitFilterVersion) === -1) {
             throw new Error(
-                `Git version is too low or could not be determined (min=${MIN_GIT_FILTER_VERSION}): ${
+                `Git version is too low or could not be determined (min=${minGitFilterVersion}): ${
                     version ?? 'unknown'
                 }`
             )

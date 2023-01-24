@@ -65,6 +65,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Many failure modes (as opposed to the "happy path") are not tested.
 -   No performance/benchmark regression tests.
 -   No UI tests (to exercise webviews).
+    - https://github.com/redhat-developer/vscode-extension-tester
 -   Missing acceptance tests:
     -   Connect to AWS
     -   Fixed credentials and fixed credentials with assume roles
