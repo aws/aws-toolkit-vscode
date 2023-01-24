@@ -15,13 +15,13 @@ import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
-const POLLING_INTERVAL = 20000
+const pollingInterval = 20000
 export class AppRunnerNode extends AWSTreeNodeBase {
     private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
     private readonly pollingNodes: Set<string> = new Set()
     private pollTimer?: NodeJS.Timeout
 
-    public constructor(public readonly region: string, public readonly client: AppRunnerClient) {
+    public constructor(public readonly regionCode: string, public readonly client: AppRunnerClient) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsAppRunnerNode'
     }
@@ -98,7 +98,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     public startPolling(id: string): void {
         this.pollingNodes.add(id)
-        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), POLLING_INTERVAL)
+        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), pollingInterval)
     }
 
     public stopPolling(id: string): void {

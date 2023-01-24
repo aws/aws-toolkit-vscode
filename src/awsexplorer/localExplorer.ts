@@ -4,30 +4,41 @@
  */
 
 import * as vscode from 'vscode'
-import * as telemetry from '../shared/telemetry/telemetry'
-import { cdkNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { once } from '../shared/utilities/functionUtils'
-import { AppNode } from '../cdk/explorer/nodes/appNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 
-export interface RootNode extends TreeNode {
-    canShow?(): Promise<boolean> | boolean
+export interface RootNode<T = unknown> extends TreeNode<T> {
+    /**
+     * An optional event to signal that this node's visibility has changed.
+     */
     readonly onDidChangeVisibility?: vscode.Event<void>
+
+    /**
+     * Determines whether this node should be rendered in the tree view.
+     *
+     * If not implemented, it is assumed that the node is always visible.
+     */
+    canShow?(): Promise<boolean> | boolean
 }
 
-const roots: readonly RootNode[] = [cdkNode]
+function throttle<T>(cb: () => T | Promise<T>, delay: number): () => Promise<T> {
+    let timer: NodeJS.Timeout | undefined
+    let promise: Promise<T> | undefined
 
-async function getChildren(roots: readonly RootNode[]) {
-    const nodes: TreeNode[] = []
+    return () => {
+        timer?.refresh()
 
-    for (const node of roots) {
-        if (!node.canShow || (await node.canShow())) {
-            nodes.push(node)
-        }
+        return (promise ??= new Promise<T>((resolve, reject) => {
+            timer = setTimeout(async () => {
+                timer = promise = undefined
+                try {
+                    resolve(await cb())
+                } catch (err) {
+                    reject(err)
+                }
+            }, delay)
+        }))
     }
-
-    return nodes
 }
 
 /**
@@ -37,31 +48,34 @@ async function getChildren(roots: readonly RootNode[]) {
  * Components placed under this view do not strictly need to be 'local'. They just need to place greater
  * emphasis on the developer's local development environment.
  */
-export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
-    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(roots) })
+export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<TreeNode> {
+    const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(rootNodes) })
     const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
 
-    roots.forEach(node => {
-        node.onDidChangeVisibility?.(() => treeDataProvider.refresh())
-    })
-
-    // Legacy CDK metric, remove this when we add something generic
-    const recordExpandCdkOnce = once(telemetry.recordCdkAppExpanded)
-    view.onDidExpandElement(e => {
-        if (e.element.resource instanceof AppNode) {
-            recordExpandCdkOnce()
-        }
-    })
-
-    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-    view.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+    rootNodes.forEach(node => node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
 
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
-        roots.forEach(node => {
-            node.onDidChangeChildren?.(() => treeDataProvider.refresh())
+        rootNodes.forEach(node => {
+            // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
+            // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
+            const refresh = throttle(() => treeDataProvider.refresh(node), 10)
+            node.onDidChangeTreeItem?.(() => refresh())
+            node.onDidChangeChildren?.(() => refresh())
         })
     }
 
     return view
+}
+
+async function getChildren(roots: RootNode[]) {
+    const nodes: TreeNode[] = []
+
+    for (const node of roots) {
+        if (!node.canShow || (await node.canShow())) {
+            nodes.push(node)
+        }
+    }
+
+    return nodes
 }

@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 
-import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
+import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -17,7 +17,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentItemNode } from './documentItemNode'
 import { DocumentItemNodeWriteable } from './documentItemNodeWriteable'
-import globals from '../../shared/extensionGlobals'
 
 export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
 export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
@@ -26,7 +25,12 @@ export const sharedRegistryName = localize('AWS.explorerNode.registry.name.share
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly documentNodes: Map<string, DocumentItemNode>
 
-    public constructor(public readonly regionCode: string, public registryName: string, readonly documentType: string) {
+    public constructor(
+        public readonly regionCode: string,
+        public registryName: string,
+        readonly documentType: string,
+        private readonly client = new DefaultSsmDocumentClient(regionCode)
+    ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.setLabel()
@@ -91,10 +95,9 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SsmDocumentClient = globals.toolkitClientBuilder.createSsmClient(this.regionCode)
         const documents = new Map<string, SSM.Types.DocumentIdentifier>()
 
-        const docs = await this.getDocumentByOwner(client)
+        const docs = await this.getDocumentByOwner(this.client)
         docs.forEach(doc => {
             documents.set(doc.Name!, doc)
         })
@@ -104,14 +107,14 @@ export class RegistryItemNode extends AWSTreeNodeBase {
                 this.documentNodes,
                 documents.keys(),
                 key => this.documentNodes.get(key)!.update(documents.get(key)!),
-                key => new DocumentItemNodeWriteable(documents.get(key)!, client, this.regionCode, this)
+                key => new DocumentItemNodeWriteable(documents.get(key)!, this.client, this.regionCode, this)
             )
         } else {
             updateInPlace(
                 this.documentNodes,
                 documents.keys(),
                 key => this.documentNodes.get(key)!.update(documents.get(key)!),
-                key => new DocumentItemNode(documents.get(key)!, client, this.regionCode)
+                key => new DocumentItemNode(documents.get(key)!, this.client, this.regionCode)
             )
         }
     }

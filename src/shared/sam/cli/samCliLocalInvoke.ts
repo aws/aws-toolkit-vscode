@@ -17,7 +17,7 @@ import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
-export const WAIT_FOR_DEBUGGER_MESSAGES = {
+export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
     PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
@@ -54,10 +54,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
     public constructor(
-        private readonly debuggerAttachCues: string[] = [
-            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
-        ]
+        private readonly debuggerAttachCues: string[] = [waitForDebuggerMessages.PYTHON, waitForDebuggerMessages.NODEJS]
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
@@ -214,7 +211,7 @@ export class SamCliLocalInvokeInvocation {
         this.args.skipPullImage = !!this.args.skipPullImage
     }
 
-    public async execute(timeout?: Timeout): Promise<void> {
+    public async execute(timeout?: Timeout): Promise<ChildProcess> {
         await this.validate()
 
         const sam = await this.config.getOrDetectSamCli()
@@ -251,7 +248,7 @@ export class SamCliLocalInvokeInvocation {
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
 
-        await this.args.invoker.invoke({
+        return await this.args.invoker.invoke({
             options: {
                 env: {
                     ...process.env,

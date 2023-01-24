@@ -6,19 +6,15 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 
 import { getLogger } from '../../../shared/logger'
-import {
-    recordStepfunctionsExecuteStateMachine,
-    recordStepfunctionsExecuteStateMachineView,
-    Result,
-} from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
-import globals from '../../../shared/extensionGlobals'
 import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface StateMachine {
     arn: string
@@ -55,11 +51,9 @@ export class ExecuteStateMachineWebview extends VueWebview {
         this.channel.appendLine('')
 
         try {
-            const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
-                this.stateMachine.region
-            )
+            const client = new DefaultStepFunctionsClient(this.stateMachine.region)
             const startExecResponse = await client.executeStateMachine(this.stateMachine.arn, input)
-            this.logger.info('Successfully started execution for Step Functions State Machine')
+            this.logger.info('started execution for Step Functions State Machine')
             this.channel.appendLine(
                 localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
             )
@@ -67,7 +61,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
         } catch (e) {
             executeResult = 'Failed'
             const error = e as Error
-            this.logger.error('Error starting execution for Step Functions State Machine: %O', error)
+            this.logger.error('Error starting execution for Step Functions State Machine: %s', error)
             this.channel.appendLine(
                 localize(
                     'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',
@@ -77,7 +71,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
             )
             this.channel.appendLine('')
         } finally {
-            recordStepfunctionsExecuteStateMachine({ result: executeResult })
+            telemetry.stepfunctions_executeStateMachine.emit({ result: executeResult })
         }
     }
 }
@@ -95,5 +89,5 @@ export async function executeStateMachine(context: ExtContext, node: StateMachin
         title: localize('AWS.executeStateMachine.title', 'Start Execution'),
         cssFiles: ['executeStateMachine.css'],
     })
-    recordStepfunctionsExecuteStateMachineView()
+    telemetry.stepfunctions_executeStateMachineView.emit()
 }

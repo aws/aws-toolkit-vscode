@@ -6,55 +6,95 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
-
+import { getIdeProperties } from '../extensionUtilities'
+import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
-import { Timeout, waitTimeout } from './timeoutUtils'
+import { Window } from '../vscode/window'
+import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
 
-export function isFileIconThemeSeti(): boolean {
-    const iconTheme = vscode.workspace.getConfiguration('workbench').get('iconTheme')
-    return !iconTheme || iconTheme === 'vs-seti'
-}
+/**
+ * Executes the close all editors command and waits for all visible editors to disappear
+ */
+export async function closeAllEditors() {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
-export function fileIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
-    // Workaround for https://github.com/microsoft/vscode/issues/85654
-    // Once this is resolved, ThemeIcons can be used for seti as well
-    if (isFileIconThemeSeti()) {
-        return {
-            dark: vscode.Uri.file(globals.iconPaths.dark.file),
-            light: vscode.Uri.file(globals.iconPaths.light.file),
-        }
-    } else {
-        return vscode.ThemeIcon.File
-    }
-}
+    // The output channel counts as an editor, but you can't really close that...
+    const noVisibleEditor: boolean | undefined = await waitUntil(
+        async () => {
+            const visibleEditors = vscode.window.visibleTextEditors.filter(
+                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+            )
 
-export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
-    // Workaround for https://github.com/microsoft/vscode/issues/85654
-    // Once this is resolved, ThemeIcons can be used for seti as well
-    if (isFileIconThemeSeti()) {
-        return {
-            dark: vscode.Uri.file(globals.iconPaths.dark.folder),
-            light: vscode.Uri.file(globals.iconPaths.light.folder),
+            return visibleEditors.length === 0
+        },
+        {
+            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            interval: 250,
+            truthy: true,
         }
-    } else {
-        return vscode.ThemeIcon.Folder
+    )
+
+    if (!noVisibleEditor) {
+        throw new Error(
+            `Editor "${
+                vscode.window.activeTextEditor!.document.fileName
+            }" was still open after executing "closeAllEditors"`
+        )
     }
 }
 
 /**
- * Checks if the given extension is installed and active.
+ * Checks if an extension is installed and active.
  */
 export function isExtensionActive(extId: string): boolean {
     const extension = vscode.extensions.getExtension(extId)
     return !!extension && extension.isActive
 }
 
+export function isExtensionInstalled(extId: string): boolean {
+    return !!vscode.extensions.getExtension(extId)
+}
+
 /**
- * Activates the given extension and returns it, or does nothing
- * if the extension is not installed.
+ * Checks if an extension is installed, and shows a message if not.
+ */
+export function showInstallExtensionMsg(
+    extId: string,
+    extName: string,
+    feat = `${getIdeProperties().company} Toolkit`,
+    window: Window = globals.window
+): boolean {
+    if (vscode.extensions.getExtension(extId)) {
+        return true
+    }
+
+    const msg = localize(
+        'AWS.missingExtension',
+        '{0} requires the {1} extension ({2}) to be installed and enabled.',
+        feat,
+        extName,
+        extId
+    )
+
+    const installBtn = localize('AWS.missingExtension.install', 'Install...')
+    const items = [installBtn]
+
+    const p = window.showErrorMessage(msg, ...items)
+    p.then<string | undefined>(selection => {
+        if (selection === installBtn) {
+            vscode.commands.executeCommand('extension.open', extId)
+        }
+        return selection
+    })
+    return false
+}
+
+/**
+ * Activates an extension and returns it, or does nothing if the extension is
+ * not installed.
  *
  * @param extId Extension id
  * @param silent Return undefined on failure, instead of throwing
@@ -102,4 +142,26 @@ export async function activateExtension<T>(
  */
 export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
     return new Promise((resolve, reject) => thenable.then(resolve, reject))
+}
+
+export function isUntitledScheme(uri: vscode.Uri): boolean {
+    return uri.scheme === 'untitled'
+}
+
+// If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path
+export function normalizeVSCodeUri(uri: vscode.Uri): string {
+    if (uri.scheme !== 'file') {
+        return uri.toString()
+    }
+    return pathutils.normalize(uri.fsPath)
+}
+
+export function reloadWindowPrompt(message: string): void {
+    const reload = 'Reload'
+
+    vscode.window.showInformationMessage(message, reload).then(selected => {
+        if (selected === reload) {
+            vscode.commands.executeCommand('workbench.action.reloadWindow')
+        }
+    })
 }

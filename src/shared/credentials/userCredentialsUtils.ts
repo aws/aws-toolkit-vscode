@@ -4,35 +4,38 @@
  */
 
 import * as path from 'path'
-
+import * as vscode from 'vscode'
 import { mkdirp, writeFile } from 'fs-extra'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
+import { loadSharedConfigFiles, Profile } from './credentialsFile'
+import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
+
+const header = `
+# AWS credentials file used by AWS CLI, SDKs, and tools.
+# Created by AWS Toolkit for VS Code. https://aws.amazon.com/visualstudiocode/
+#
+# Each [section] in this file declares a named "profile", which can be selected
+# in tools like AWS Toolkit to choose which credentials you want to use.
+#
+# See also:
+#   https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+#   https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
+
+`.trim()
 
 const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
     `
-# Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
-# This file was created by the AWS Toolkit for Visual Studio Code extension.
-#
-# Your AWS credentials are represented by access keys associated with IAM users.
-# For information about how to create and manage AWS access keys for a user, see:
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
-#
-# This credential file can store multiple access keys by placing each one in a
-# named "profile". For information about how to change the access keys in a 
-# profile or to add a new profile with a different access key, see:
-# https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html 
-#
 [${ctx.profileName}]
-# The access key and secret key pair identify your account and grant access to AWS.
+# This key identifies your AWS account.
 aws_access_key_id = ${ctx.accessKey}
-# Treat your secret key like a password. Never share your secret key with anyone. Do 
-# not post it in online forums, or store it in a source control system. If your secret 
-# key is ever disclosed, immediately use IAM to delete the access key and secret key
-# and create a new key pair. Then, update this file with the replacement key details.
+# Treat this secret key like a password. Never share it or store it in source
+# control. If your secret key is ever disclosed, immediately use IAM to delete
+# the key pair and create a new one.
 aws_secret_access_key = ${ctx.secretKey}
-`
+
+`.trim()
 
 export interface CredentialsTemplateContext {
     profileName: string
@@ -46,6 +49,9 @@ export interface CredentialsValidationResult {
     invalidMessage?: string
 }
 
+/**
+ * @deprecated
+ */
 export class UserCredentialsUtils {
     /**
      * @description Determines which credentials related files
@@ -53,14 +59,50 @@ export class UserCredentialsUtils {
      *
      * @returns array of filenames for files found.
      */
-    public static async findExistingCredentialsFilenames(): Promise<string[]> {
-        const candidateFiles: string[] = [getCredentialsFilename(), getConfigFilename()]
+    public static async findExistingCredentialsFilenames(isCredentialsRequired = false): Promise<string[]> {
+        const configFilename = getConfigFilename()
+        const credentialsFileName = getCredentialsFilename()
 
-        const existsResults: boolean[] = await Promise.all(
-            candidateFiles.map(async filename => await SystemUtilities.fileExists(filename))
-        )
+        const configs = await loadSharedConfigFiles({
+            config: vscode.Uri.file(configFilename),
+            credentials: vscode.Uri.file(credentialsFileName),
+        })
+        const credentials = new Map([
+            [credentialsFileName, configs.credentialsFile],
+            [configFilename, configs.configFile],
+        ])
 
-        return candidateFiles.filter((filename, index) => existsResults[index])
+        const credentialFiles = []
+        for (const [filename, profiles] of credentials.entries()) {
+            const exists = await SystemUtilities.fileExists(filename)
+            if (!exists) {
+                continue
+            }
+
+            if (!isCredentialsRequired) {
+                credentialFiles.push(filename)
+                continue
+            }
+
+            // ensure that the given filename has at least one valid profile
+            const validProfiles = []
+            const allProfiles = new Map(Object.entries(profiles).filter(item => item[1] !== undefined)) as Map<
+                string,
+                Profile
+            >
+            for (const profile of Object.keys(profiles)) {
+                const credProvider = new SharedCredentialsProvider(profile, allProfiles)
+                if (await credProvider.isAvailable()) {
+                    validProfiles.push(profile)
+                }
+            }
+
+            if (validProfiles.length !== 0) {
+                credentialFiles.push(filename)
+            }
+        }
+
+        return credentialFiles
     }
 
     /**
@@ -76,20 +118,20 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * @description Produces a credentials file from a template
-     * containing a single profile based on the given information
-     *
      * @param credentialsContext the profile to create in the file
      */
-    public static async generateCredentialsFile(credentialsContext: CredentialsTemplateContext): Promise<void> {
-        const credentialsFileContents = createNewCredentialsFile(credentialsContext)
+    public static async generateCredentialsFile(credentialsContext?: CredentialsTemplateContext): Promise<void> {
+        await this.generateCredentialDirectoryIfNonexistent()
+        const dest = getCredentialsFilename()
+        const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
-        // Make a final check
-        if (await SystemUtilities.fileExists(getCredentialsFilename())) {
-            throw new Error('Credentials file exists. Not overwriting it.')
+        if (await SystemUtilities.fileExists(dest)) {
+            contents.unshift(await SystemUtilities.readFile(dest))
+        } else {
+            contents.unshift(header)
         }
 
-        await writeFile(getCredentialsFilename(), credentialsFileContents, {
+        await writeFile(dest, contents.join('\n'), {
             encoding: 'utf8',
             mode: 0o100600, // basic file (type 100) with 600 permissions
         })

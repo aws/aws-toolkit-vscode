@@ -4,41 +4,36 @@
  */
 
 import * as assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
-import * as sinon from 'sinon'
-import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
+import { contextValueCloudwatchLog, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { stub } from '../../utilities/stubber'
 
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const fakeRegionCode = 'someregioncode'
+const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('CloudWatchLogsNode', function () {
-    let sandbox: sinon.SinonSandbox
     let testNode: CloudWatchLogsNode
 
     // Mocked Lambda Client returns Log Groups for anything listed in logGroupNames
     let logGroupNames: string[]
 
+    function createClient() {
+        const client = stub(DefaultCloudWatchLogsClient, { regionCode: fakeRegionCode })
+        client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map(name => ({ logGroupName: name }))))
+
+        return client
+    }
+
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
-
         logGroupNames = ['group1', 'group2']
-
-        initializeClientBuilders()
-
-        testNode = new CloudWatchLogsNode(FAKE_REGION_CODE)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
+        testNode = new CloudWatchLogsNode(fakeRegionCode, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -46,7 +41,7 @@ describe('CloudWatchLogsNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LogGroupNode child nodes', async function () {
@@ -63,47 +58,26 @@ describe('CloudWatchLogsNode', function () {
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_CLOUDWATCH_LOG,
+                contextValueCloudwatchLog,
                 'expected the node to have a CloudWatch Log contextValue'
             )
         )
     })
 
     it('sorts child nodes', async function () {
-        logGroupNames = UNSORTED_TEXT
+        logGroupNames = unsortedText
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createClient()
+        client.describeLogGroups.throws(new Error())
 
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        const node = new CloudWatchLogsNode(fakeRegionCode, client)
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
-
-    function initializeClientBuilders() {
-        const cloudWatchLogsClient = {
-            describeLogGroups: sandbox.stub().callsFake(() => {
-                return asyncGenerator<CloudWatchLogs.LogGroup>(
-                    logGroupNames.map<CloudWatchLogs.LogGroup>(name => {
-                        return {
-                            logGroupName: name,
-                        }
-                    })
-                )
-            }),
-        }
-
-        const clientBuilder = {
-            createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

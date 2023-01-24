@@ -200,6 +200,7 @@ describe('runSamCliInit', async function () {
         before(function () {
             lazyLoadSamTemplateStrings()
 
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             extraContent = {
                 AWS_Schema_registry: 'testRegistry',
                 AWS_Schema_name: 'testSchema',
@@ -212,7 +213,7 @@ describe('runSamCliInit', async function () {
             samInitArgsWithExtraContent = {
                 name: 'qwerty',
                 location: '/some/path/to/code.js',
-                runtime: 'python3.6',
+                runtime: 'python3.9',
                 template: eventBridgeStarterAppTemplate,
                 extraContent: extraContent,
                 dependencyManager: sampleDependencyManager,

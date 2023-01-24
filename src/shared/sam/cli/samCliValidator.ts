@@ -9,12 +9,12 @@ import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT = '1.13.0'
-export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '2.0.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT = '1.18.1'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT = '1.33.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT = '1.4.0'
+export const minSamCliVersion = '0.47.0'
+export const minSamCliVersionForImageSupport = '1.13.0'
+export const maxSamCliVersionExclusive = '2.0.0'
+export const minSamCliVersionForGoSupport = '1.18.1'
+export const minSamCliVersionForArmSupport = '1.33.0'
+export const minSamCliVersionForDotnet31Support = '1.4.0'
 
 // Errors
 export class InvalidSamCliError extends Error {
@@ -43,10 +43,15 @@ export enum SamCliVersionValidation {
     VersionNotParseable = 'VersionNotParseable',
 }
 
-export interface SamCliVersionValidatorResult {
-    version?: string
-    validation: SamCliVersionValidation
-}
+export type SamCliVersionValidatorResult =
+    | {
+          readonly validation: Exclude<SamCliVersionValidation, SamCliVersionValidation.VersionNotParseable>
+          readonly version: string
+      }
+    | {
+          readonly validation: SamCliVersionValidation.VersionNotParseable
+          readonly version?: string | undefined
+      }
 
 export interface SamCliValidatorResult {
     samCliFound: boolean
@@ -87,7 +92,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             this.cachedSamCliVersionId = samCliId
         }
 
-        const version: string = this.cachedSamInfoResponse!.version
+        const version = this.cachedSamInfoResponse!.version
 
         return {
             version,
@@ -115,11 +120,11 @@ export class DefaultSamCliValidator implements SamCliValidator {
             return SamCliVersionValidation.VersionNotParseable
         }
 
-        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+        if (semver.lt(version, minSamCliVersion)) {
             return SamCliVersionValidation.VersionTooLow
         }
 
-        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+        if (semver.gte(version, maxSamCliVersionExclusive)) {
             return SamCliVersionValidation.VersionTooHigh
         }
 

@@ -50,10 +50,10 @@ const saveData: Vue.ComponentOptionsMixin = {
         Object.keys(this.$data).forEach(k => {
             this.$watch(
                 k,
-                (v: any) => {
+                (v: unknown) => {
                     const globalState = vscode.getState() ?? {}
                     const componentState = Object.assign(globalState[unid] ?? {}, {
-                        [k]: JSON.parse(JSON.stringify(v)),
+                        [k]: v !== undefined ? JSON.parse(JSON.stringify(v)) : undefined,
                     })
                     vscode.setState(Object.assign(globalState, { [unid]: componentState }))
                 },

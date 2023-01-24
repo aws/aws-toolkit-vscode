@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { types } from 'util'
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
@@ -11,10 +10,12 @@ import { ConsoleLogTransport } from './consoleLogTransport'
 import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
+import { isSourceMappingAvailable } from '../vscode/env'
+import { formatError, ToolkitError, UnknownError } from '../errors'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
-const LOGMAP_SIZE: number = 1000
+const logmapSize: number = 1000
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     private readonly logger: winston.Logger
     private disposed: boolean = false
@@ -117,22 +118,28 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
               })
     }
 
+    private mapError(level: LogLevel, err: Error): Error | string {
+        if (isSourceMappingAvailable() && level === 'error') {
+            return err
+        }
+
+        return err instanceof ToolkitError ? err.trace : formatError(UnknownError.cast(err))
+    }
+
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
-        meta.filter(item => types.isNativeError(item))
+        meta = meta.map(o => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (types.isNativeError(message)) {
-            // `vslsStack` appears to be added by VS Code ?
-            delete (message as { vslsStack?: any[] }).vslsStack
+        if (message instanceof Error) {
             this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
         } else {
             this.logger.log(level, message, ...meta, { logID: this.idCounter })
         }
 
-        this.logMap[this.idCounter % LOGMAP_SIZE] = {}
+        this.logMap[this.idCounter % logmapSize] = {}
         return this.idCounter++
     }
 
@@ -152,12 +159,12 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         }
 
         // This prevents callers from getting stale logs
-        if (this.idCounter - logID > LOGMAP_SIZE) {
+        if (this.idCounter - logID > logmapSize) {
             return undefined
         }
 
-        if (this.logMap[logID % LOGMAP_SIZE]) {
-            return this.logMap[logID % LOGMAP_SIZE][file.toString(true)]
+        if (this.logMap[logID % logmapSize]) {
+            return this.logMap[logID % logmapSize][file.toString(true)]
         }
     }
 
@@ -169,7 +176,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * @param obj  Object passed from the event
      */
     private parseLogObject(file: vscode.Uri, obj: any): void {
-        const logID: number = parseInt(obj.logID) % LOGMAP_SIZE
+        const logID: number = parseInt(obj.logID) % logmapSize
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
         const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 

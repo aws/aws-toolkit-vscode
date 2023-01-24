@@ -55,6 +55,7 @@ describe('deploySamApplication', async function () {
     const goodValidatorResult: SamCliValidatorResult = {
         samCliFound: true,
         versionValidation: {
+            version: '',
             validation: SamCliVersionValidation.Valid,
         },
     }
@@ -62,7 +63,7 @@ describe('deploySamApplication', async function () {
     const goodValidator: SamCliValidator = {
         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-            return { validation: SamCliVersionValidation.Valid }
+            return { validation: SamCliVersionValidation.Valid, version: '' }
         },
     }
 
@@ -133,7 +134,7 @@ describe('deploySamApplication', async function () {
     beforeEach(async function () {
         didRefreshExplorer = false
         settings = new TestSettings() as any
-        config = new SamCliSettings({ getLocation: async () => '' }, settings)
+        config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')

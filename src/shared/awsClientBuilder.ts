@@ -8,6 +8,9 @@ import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
+import globals from './extensionGlobals'
+import { DevSettings } from './settings'
+import { getClientId } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 
 // These are not on the public API but are very useful for logging purposes.
@@ -21,7 +24,7 @@ interface RequestExtras {
 }
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
-type ServiceOptions = ServiceConfigurationOptions & {
+export type ServiceOptions = ServiceConfigurationOptions & {
     /**
      * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation
      * For example, 'error' may fire more than once for a single request
@@ -56,7 +59,8 @@ export interface AWSClientBuilder {
         type: new (o: ServiceConfigurationOptions) => T,
         options?: ServiceOptions,
         region?: string,
-        userAgent?: boolean
+        userAgent?: boolean,
+        settings?: DevSettings
     ): Promise<T>
 }
 
@@ -67,14 +71,15 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         type: new (o: ServiceConfigurationOptions) => T,
         options?: ServiceOptions,
         region?: string,
-        userAgent: boolean = true
+        userAgent: boolean = true,
+        settings = DevSettings.instance
     ): Promise<T> {
         const onRequest = options?.onRequestSetup ?? []
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
         const opt = { ...options }
         delete opt.onRequestSetup
 
-        if (!opt.credentials) {
+        if (!opt.credentials && !opt.token) {
             const shim = this.awsContext.credentialsShim
 
             if (!shim) {
@@ -102,13 +107,15 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
                     shim.refresh()
                         .then(creds => {
                             this.loadCreds(creds)
+                            // The SDK V2 sets `expired` on certain errors so we should only
+                            // unset the flag after acquiring new credentials via `refresh`
+                            this.expired = false
                             callback()
                         })
                         .catch(callback)
                 }
 
                 private loadCreds(creds: CredentialsOptions & { expiration?: Date }) {
-                    this.expired = false
                     this.accessKeyId = creds.accessKeyId
                     this.secretAccessKey = creds.secretAccessKey
                     this.sessionToken = creds.sessionToken ?? this.sessionToken
@@ -123,7 +130,15 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         if (userAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
-            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version}`
+            const clientId = await getClientId(globals.context.globalState)
+            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version} ClientId/${clientId}`
+        }
+
+        const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
+        const serviceName =
+            apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+        if (serviceName) {
+            opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()] ?? opt.endpoint
         }
 
         const service = new type(opt)

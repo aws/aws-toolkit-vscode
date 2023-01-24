@@ -3,51 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
 import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { invalidNumberWarning } from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { ToolkitError } from '../../shared/errors'
 
 export async function presignedURLCommand(
     node: S3FileNode,
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
-    let validTime: number
-    try {
-        validTime = await promptTime(node.file.key, window)
-    } catch (e) {
-        getLogger().error(e as Error)
-        telemetry.recordS3CopyUrl({ result: 'Cancelled', presigned: true })
-        return
-    }
+    await telemetry.s3_copyUrl.run(async span => {
+        span.record({ presigned: true })
 
-    const s3Client = node.s3
+        const validTime = await promptTime(node.file.key, window)
+        const s3Client = node.s3
+        const request: SignedUrlRequest = {
+            bucketName: node.bucket.name,
+            key: node.file.key,
+            time: validTime * 60,
+            operation: 'getObject',
+        }
 
-    const request: SignedUrlRequest = {
-        bucketName: node.bucket.name,
-        key: node.file.key,
-        time: validTime * 60,
-        operation: 'getObject',
-    }
+        const url = await s3Client.getSignedUrl(request).catch(e => {
+            throw ToolkitError.chain(
+                e,
+                'Error creating the presigned URL. Make sure you have access to the requested file.'
+            )
+        })
 
-    let url: string
-    try {
-        url = await s3Client.getSignedUrl(request)
-    } catch (e) {
-        window.showErrorMessage('Error creating the presigned URL. Make sure you have access to the requested file.')
-        telemetry.recordS3CopyUrl({ result: 'Failed', presigned: true })
-        return
-    }
-
-    await copyUrl(url, window, env)
-    telemetry.recordS3CopyUrl({ result: 'Succeeded', presigned: true })
+        await copyToClipboard(url, 'URL', window, env)
+    })
 }
 
 export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
@@ -65,21 +56,10 @@ export async function promptTime(fileName: string, window = Window.vscode()): Pr
     const time = Number(timeStr)
 
     if (isNaN(time) || time < 0) {
-        throw new Error(`promptTime: Invalid input by the user`)
+        throw new ToolkitError('The provided expiration time is not a positive number', { code: 'InvalidInput' })
     }
 
-    return Promise.resolve(time)
-}
-
-export async function copyUrl(url: string, window = Window.vscode(), env = Env.vscode()) {
-    await env.clipboard.writeText(url)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
+    return time
 }
 
 function validateTime(time: string): string | undefined {

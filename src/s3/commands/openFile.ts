@@ -4,22 +4,18 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
-import { ToolkitError } from '../../shared/toolkitError'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { S3FileViewerManager, TabMode } from '../fileViewerManager'
+import { S3FileViewerManager } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
-const SIZE_LIMIT = 50 * Math.pow(10, 6)
+const sizeLimit = 50 * Math.pow(10, 6)
 
 export async function openFileReadModeCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
-        return runWithTelemetry(() => manager.openInReadMode({ bucket: node.bucket, ...node.file }), TabMode.Read)
+        return telemetry.s3_openEditor.run(() => manager.openInReadMode({ bucket: node.bucket, ...node.file }))
     }
 }
 
@@ -31,39 +27,12 @@ export async function editFileCommand(uriOrNode: vscode.Uri | S3FileNode, manage
             return
         }
 
-        return runWithTelemetry(
-            () => manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file }),
-            TabMode.Edit
+        return telemetry.s3_editObject.run(() =>
+            manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file })
         )
     }
 
-    return runWithTelemetry(() => manager.openInEditMode(uriOrNode), TabMode.Edit)
-}
-
-function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void> {
-    // TODO: these metrics shouldn't be separate. A single one with a 'mode' field would work fine.
-    const recordMetric = (result: telemetry.Result) =>
-        mode === TabMode.Read ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
-
-    return fn()
-        .then(() => recordMetric('Succeeded'))
-        .catch(err => {
-            if (CancellationError.isUserCancelled(err)) {
-                return recordMetric('Cancelled')
-            }
-            if (!(err instanceof ToolkitError)) {
-                throw err // TODO: add util for 'fatal' errors unhandled by our own code
-            }
-
-            const result: telemetry.Result = err.cancelled ? 'Cancelled' : 'Failed'
-            if (result !== 'Cancelled') {
-                if (err.detail) {
-                    getLogger().error(err.detail)
-                }
-                showViewLogsMessage(err.message)
-            }
-            recordMetric(result)
-        })
+    return telemetry.s3_editObject.run(() => manager.openInEditMode(uriOrNode))
 }
 
 async function isFileSizeValid(
@@ -71,7 +40,7 @@ async function isFileSizeValid(
     fileNode: S3FileNode,
     window = Window.vscode()
 ): Promise<boolean> {
-    if (size && size > SIZE_LIMIT) {
+    if (size && size > sizeLimit) {
         const downloadAs = localize('AWS.s3.button.downloadAs', 'Download as..')
         window
             .showErrorMessage(

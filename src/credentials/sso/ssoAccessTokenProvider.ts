@@ -3,25 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSOOIDC, StartDeviceAuthorizationResponse } from '@aws-sdk/client-sso-oidc'
-import { SsoClientRegistration } from './ssoClientRegistration'
-import { openSsoPortalLink, SsoAccessToken } from './sso'
-import { DiskCache } from './diskCache'
-import { getLogger } from '../../shared/logger'
-import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
 
-const CLIENT_REGISTRATION_TYPE = 'public'
-const CLIENT_NAME = 'aws-toolkit-vscode'
-// Grant type specified by the 'SSO Login Token Flow' spec.
-const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
-const MS_PER_SECOND = 1000
-const BACKOFF_DELAY_MS = 5000
+import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
+import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
+import { getCache } from './cache'
+import { hasProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { OidcClient } from './clients'
+import { loadOr } from '../../shared/utilities/cacheUtils'
+import { isClientFault } from '../../shared/errors'
+
+const clientRegistrationType = 'public'
+const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
+const refreshGrantType = 'refresh_token'
 
 /**
  *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
  *    1. Get a client id (SSO-OIDC identifier, formatted per RFC6749).
- *       - Toolkit code: `registerClient()`
+ *       - Toolkit code: {@link SsoAccessTokenProvider.registerClient}
+ *          - Calls {@link OidcClient.registerClient}
  *       - RETURNS:
  *         - ClientSecret
  *         - ClientId
@@ -29,8 +30,8 @@ const BACKOFF_DELAY_MS = 5000
  *       - Client registration is valid for potentially months and creates state
  *         server-side, so the client SHOULD cache them to disk.
  *    2. Start device authorization.
- *       - Toolkit code: `authorizeClient()`
- *       - StartDeviceAuthorization(clientSecret, clientId, startUrl)
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link OidcClient.startDeviceAuthorization}
  *       - RETURNS (RFC: https://tools.ietf.org/html/rfc8628#section-3.2):
  *         - DeviceCode             : Device verification code
  *         - UserCode               : User verification code
@@ -39,157 +40,140 @@ const BACKOFF_DELAY_MS = 5000
  *         - ExpiresIn              : Lifetime (seconds) of `device_code` and `user_code`
  *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
  *    3. Poll for the access token.
- *       - Toolkit code: `pollForToken()`
- *       - Call CreateToken() in a loop.
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link OidcClient.pollForToken}
  *       - RETURNS:
  *         - AccessToken
  *         - ExpiresIn
+ *         - RefreshToken (optional)
+ *    4. (Repeat) Tokens SHOULD be refreshed if expired and a refresh token is available.
+ *        - Toolkit code: {@link SsoAccessTokenProvider.refreshToken}
+ *          - Calls {@link OidcClient.createToken}
+ *        - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ *         - RefreshToken (optional)
  */
 export class SsoAccessTokenProvider {
     public constructor(
-        private ssoRegion: string,
-        private ssoUrl: string,
-        private ssoOidcClient: SSOOIDC,
-        private cache: DiskCache
+        private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        private readonly cache = getCache(),
+        private readonly oidc = OidcClient.create(profile.region)
     ) {}
 
-    public async accessToken(): Promise<SsoAccessToken> {
-        const accessToken = this.cache.loadAccessToken(this.ssoUrl)
-        if (accessToken) {
-            return accessToken
-        }
-        // SSO step 1
-        const registration = await this.registerClient()
-        // SSO step 2
-        const authorization = await this.authorizeClient(registration)
-        // SSO step 3
-        const token = await this.pollForToken(registration, authorization)
-        this.cache.saveAccessToken(this.ssoUrl, token)
-        return token
+    public async invalidate(): Promise<void> {
+        await Promise.all([
+            this.cache.token.clear(this.tokenCacheKey),
+            this.cache.registration.clear(this.registrationCacheKey),
+        ])
     }
 
-    public invalidate(): void {
-        this.cache.invalidateAccessToken(this.ssoUrl)
-    }
+    public async getToken(): Promise<SsoToken | undefined> {
+        const data = await this.cache.token.load(this.tokenCacheKey)
 
-    /**
-     * SSO step 3: poll for the access token.
-     */
-    private async pollForToken(
-        registration: SsoClientRegistration,
-        authz: StartDeviceAuthorizationResponse
-    ): Promise<SsoAccessToken> {
-        // Device code expiration in milliseconds.
-        const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authz.expiresIn!)
-        const deviceCodeExpiredMsg = 'SSO: device code expired, login flow must be reinitiated'
-
-        getLogger().info(`SSO: to complete sign-in, visit: ${authz.verificationUriComplete}`)
-
-        /** Retry interval in milliseconds. */
-        let retryInterval =
-            authz.interval !== undefined && authz.interval! > 0 ? authz.interval! * MS_PER_SECOND : BACKOFF_DELAY_MS
-
-        const createTokenParams = {
-            clientId: registration.clientId,
-            clientSecret: registration.clientSecret,
-            grantType: GRANT_TYPE,
-            deviceCode: authz.deviceCode!,
+        if (!data || !isExpired(data.token)) {
+            return data?.token
         }
 
-        while (true) {
-            try {
-                const tokenResponse = await this.ssoOidcClient.createToken(createTokenParams)
-                const accessToken: SsoAccessToken = {
-                    startUrl: this.ssoUrl,
-                    region: this.ssoRegion,
-                    accessToken: tokenResponse.accessToken!,
-                    expiresAt: new globals.clock.Date(
-                        this.currentTimePlusSecondsInMs(tokenResponse.expiresIn!)
-                    ).toISOString(),
-                }
-                return accessToken
-            } catch (err) {
-                const error = err as { name: string }
-                if (error.name === 'SlowDownException') {
-                    retryInterval += BACKOFF_DELAY_MS
-                } else if (error.name === 'AuthorizationPendingException') {
-                    // Do nothing, try again after the interval.
-                } else if (error.name === 'ExpiredTokenException') {
-                    throw Error(deviceCodeExpiredMsg)
-                } else if (error.name === 'TimeoutException') {
-                    retryInterval *= 2
-                } else {
-                    throw err
-                }
-            }
-            if (globals.clock.Date.now() + retryInterval > deviceCodeExpiration) {
-                throw Error(deviceCodeExpiredMsg)
+        if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
+            const refreshed = await this.refreshToken(data.token, data.registration)
+
+            if (refreshed) {
+                await this.cache.token.save(this.tokenCacheKey, refreshed)
             }
 
-            await sleep(retryInterval)
+            return refreshed?.token
+        } else {
+            await this.invalidate()
         }
     }
 
-    /**
-     * SSO step 2: start device authorization.
-     */
-    public async authorizeClient(registration: SsoClientRegistration): Promise<StartDeviceAuthorizationResponse> {
-        const authorizationParams = {
-            clientId: registration.clientId,
-            clientSecret: registration.clientSecret,
-            startUrl: this.ssoUrl,
-        }
+    public async createToken(identityProvider?: (token: SsoToken) => Promise<string>): Promise<SsoToken> {
+        const access = await this.runFlow()
+        const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
+        await this.cache.token.save(identity, access)
+
+        return { ...access.token, identity }
+    }
+
+    private async runFlow() {
+        const cacheKey = this.registrationCacheKey
+        const registration = await loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+
         try {
-            const authorizationResponse = await this.ssoOidcClient.startDeviceAuthorization(authorizationParams)
-            const openedPortalLink = await openSsoPortalLink(authorizationResponse)
-            if (!openedPortalLink) {
-                throw Error(`User has canceled SSO login`)
-            }
-            return authorizationResponse
+            return await this.authorize(registration)
         } catch (err) {
-            getLogger().error(err as Error) // TODO: remove log? we are rethrowing
-            if ((err as { code: string }).code === 'InvalidClientException') {
-                this.cache.invalidateClientRegistration(this.ssoRegion)
+            if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
+                await this.cache.registration.clear(cacheKey)
             }
+
             throw err
         }
     }
 
-    /**
-     * SSO step 1: get a client id.
-     */
-    public async registerClient(): Promise<SsoClientRegistration> {
-        const currentRegistration = this.cache.loadClientRegistration(this.ssoRegion)
-        if (currentRegistration) {
-            return currentRegistration
+    private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
+        try {
+            const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
+            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
+
+            return this.formatToken(response, registration)
+        } catch (err) {
+            if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
+                await this.cache.token.clear(this.tokenCacheKey)
+            }
+
+            throw err
         }
-
-        // If ClientRegistration token is expired or does not exist, register ssoOidc client
-        const registerParams = {
-            clientType: CLIENT_REGISTRATION_TYPE,
-            clientName: CLIENT_NAME,
-        }
-        const registerResponse = await this.ssoOidcClient.registerClient(registerParams)
-        const formattedExpiry = new globals.clock.Date(
-            registerResponse.clientSecretExpiresAt! * MS_PER_SECOND
-        ).toISOString()
-
-        const registration: SsoClientRegistration = {
-            clientId: registerResponse.clientId!,
-            clientSecret: registerResponse.clientSecret!,
-            expiresAt: formattedExpiry,
-        }
-
-        this.cache.saveClientRegistration(this.ssoRegion, registration)
-
-        return registration
     }
 
-    /**
-     * Takes the current time and adds the param seconds, returns in milliseconds
-     * @param seconds Number of seconds to add
-     */
-    private currentTimePlusSecondsInMs(seconds: number) {
-        return seconds * MS_PER_SECOND + globals.clock.Date.now()
+    private formatToken(token: SsoToken, registration: ClientRegistration) {
+        return { token, registration, region: this.profile.region, startUrl: this.profile.startUrl }
+    }
+
+    protected get tokenCacheKey() {
+        return this.profile.identifier ?? this.profile.startUrl
+    }
+
+    private get registrationCacheKey() {
+        return { region: this.profile.region, scopes: this.profile.scopes }
+    }
+
+    private async authorize(registration: ClientRegistration) {
+        const authorization = await this.oidc.startDeviceAuthorization({
+            startUrl: this.profile.startUrl,
+            clientId: registration.clientId,
+            clientSecret: registration.clientSecret,
+        })
+
+        if (!(await openSsoPortalLink(authorization))) {
+            throw new CancellationError('user')
+        }
+
+        const tokenRequest = {
+            clientId: registration.clientId,
+            clientSecret: registration.clientSecret,
+            deviceCode: authorization.deviceCode,
+            grantType: deviceGrantType,
+        }
+
+        const token = await this.oidc.pollForToken(
+            tokenRequest,
+            registration.expiresAt.getTime(),
+            authorization.interval
+        )
+
+        return this.formatToken(token, registration)
+    }
+
+    private async registerClient(): Promise<ClientRegistration> {
+        return this.oidc.registerClient({
+            clientName: `aws-toolkit-vscode-${globals.clock.Date.now()}`,
+            clientType: clientRegistrationType,
+            scopes: this.profile.scopes,
+        })
+    }
+
+    public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
+        return new this(profile)
     }
 }

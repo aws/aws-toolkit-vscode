@@ -4,64 +4,48 @@
  */
 
 import * as assert from 'assert'
-import { Schemas } from 'aws-sdk'
 import * as os from 'os'
+import * as sinon from 'sinon'
+import { Schemas } from 'aws-sdk'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
-import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
-import globals from '../../../shared/extensionGlobals'
-import * as sinon from 'sinon'
+import { getIcon } from '../../../shared/icons'
+import { stub } from '../../utilities/stubber'
 
 function createSchemaClient(data?: { schemas?: Schemas.SchemaSummary[]; registries?: Schemas.RegistrySummary[] }) {
-    return {
-        regionCode: 'code',
-        async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
-            yield* data?.schemas ?? []
-        },
-        async *listRegistries() {
-            yield* data?.registries ?? []
-        },
-    } as unknown as SchemaClient
+    const client = stub(DefaultSchemaClient, { regionCode: 'code' })
+    client.listSchemas.callsFake(() => asyncGenerator(data?.schemas ?? []))
+    client.listRegistries.callsFake(() => asyncGenerator(data?.registries ?? []))
+
+    return client
 }
 
 describe('RegistryItemNode', function () {
     let fakeRegistry: Schemas.RegistrySummary
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeRegistry = {
             RegistryName: 'myRegistry',
             RegistryArn: 'arn:aws:schemas:us-west-2:434418839121:registry/myRegistry',
         }
     })
 
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     // Validates we tagged the node correctly.
-    it('initializes name and tooltip', async function () {
+    it('initializes name, tooltip, and icon', async function () {
         const testNode: RegistryItemNode = generateTestNode()
 
         assert.strictEqual(testNode.label, `${fakeRegistry.RegistryName}`)
         assert.strictEqual(testNode.tooltip, `${fakeRegistry.RegistryName}${os.EOL}${fakeRegistry.RegistryArn}`)
-    })
-
-    it('initializes icon', async function () {
-        const testNode: RegistryItemNode = generateTestNode()
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.registry, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.registry, 'Unexpected light icon path')
+        assert.strictEqual(testNode.iconPath, getIcon('aws-schemas-registry'))
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -89,23 +73,7 @@ describe('RegistryItemNode', function () {
             SchemaName: 'schema3Name',
         }
 
-        const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
-
-        const schemaClient = {
-            regionCode: 'code',
-
-            async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
-                yield* asyncGenerator<Schemas.SchemaSummary>(
-                    schemaItems.map<Schemas.SchemaSummary>(schema => {
-                        return {
-                            SchemaArn: schema.SchemaArn,
-                            SchemaName: schema.SchemaName,
-                        }
-                    })
-                )
-            },
-        } as any as SchemaClient
-
+        const schemaClient = createSchemaClient({ schemas: [schema1Item, schema2Item, schema3Item] })
         const testNode: RegistryItemNode = generateTestNode(schemaClient)
 
         const childNodes = await testNode.getChildren()
@@ -169,7 +137,7 @@ describe('DefaultRegistryNode', function () {
         const schemasNode = new SchemasNode(createSchemaClient())
         const childNodes = await schemasNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('handles error', async function () {
@@ -187,6 +155,6 @@ describe('DefaultRegistryNode', function () {
         const testNode: ThrowErrorDefaultSchemaRegistrynNode = new ThrowErrorDefaultSchemaRegistrynNode()
 
         const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 })

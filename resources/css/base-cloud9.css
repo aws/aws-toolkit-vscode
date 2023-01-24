@@ -1,0 +1,68 @@
+/* TODO: remove this when Cloud9 injects the correct styling information into webviews */
+@import url('./base.css');
+
+body {
+    /* Temporary variables for C9 to shade/tint elements. Best-effort styling based off current theme. */
+    /* Since these are applied as rgba, it's very easy to make things look 'washed-out' or too dark */
+    --tint: 255, 255, 255;
+    --shade: 0, 0, 0;
+}
+
+input[type='text'][data-invalid='true'],
+input[type='number'][data-invalid='true'] {
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-bottom: 0;
+    background: none;
+}
+
+/* "Cloud9 gray" in input boxes (not buttons/radios). */
+body.vscode-dark input:not([type='submit']):not([type='radio']) {
+    background-color: rgba(var(--shade), 0.1);
+}
+
+input:disabled {
+    filter: none;
+}
+
+body.vscode-dark select {
+    background: rgba(var(--shade), 0.1);
+}
+
+body.vscode-dark .header {
+    background-color: rgba(var(--tint), 0.02);
+}
+body.vscode-light .header {
+    background-color: rgba(var(--shade), 0.02);
+}
+
+body.vscode-dark .notification {
+    background-color: #2a2a2a;
+}
+body.vscode-light .notification {
+    background-color: #f7f7f7;
+    box-shadow: 2px 2px 8px #aaa;
+}
+
+button:disabled {
+    filter: none;
+}
+
+/* Text area */
+textarea {
+    background: none;
+}
+body.vscode-dark textarea {
+    background: rgba(var(--shade), 0.1);
+}
+
+/* Overrides */
+body.vscode-dark .settings-panel {
+    background: rgba(var(--tint), 0.02) !important;
+}
+body.vscode-light .settings-panel {
+    background: rgba(var(--shade), 0.02) !important;
+}
+
+.button-container h1 {
+    margin: 0px;
+}

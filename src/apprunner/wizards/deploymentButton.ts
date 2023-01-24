@@ -8,25 +8,20 @@ import * as vscode from 'vscode'
 
 import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { apprunnerPricingUrl } from '../../shared/constants'
-import globals from '../../shared/extensionGlobals'
 import { PromptSettings } from '../../shared/settings'
+import { getIcon } from '../../shared/icons'
+import { dontShow } from '../../shared/localizedText'
 
 const localize = nls.loadMessageBundle()
 
 function makeDeployButtons() {
     const autoDeploymentsEnable: QuickInputButton<void> = {
-        iconPath: {
-            light: globals.iconPaths.light.syncIgnore,
-            dark: globals.iconPaths.dark.syncIgnore,
-        },
+        iconPath: getIcon('vscode-sync-ignore'),
         tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
     }
 
     const autoDeploymentsDisable: QuickInputButton<void> = {
-        iconPath: {
-            light: globals.iconPaths.light.sync,
-            dark: globals.iconPaths.dark.sync,
-        },
+        iconPath: getIcon('vscode-sync'),
         tooltip: localize('AWS.apprunner.buttons.disableAutoDeploy', 'Turn off automatic deployment'),
     }
 
@@ -42,7 +37,6 @@ async function showDeploymentCostNotification(): Promise<void> {
             'App Runner automatic deployments incur an additional cost.'
         )
         const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
-        const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
         const pricingUri = vscode.Uri.parse(apprunnerPricingUrl)
 
         vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {

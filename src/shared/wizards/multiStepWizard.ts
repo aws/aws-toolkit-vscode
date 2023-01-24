@@ -33,14 +33,17 @@ export enum WizardNextState {
     TERMINATE,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_RETRY: Transition = {
     nextState: WizardNextState.RETRY,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_TERMINATE: Transition = {
     nextState: WizardNextState.TERMINATE,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_GOBACK: Transition = {
     nextState: WizardNextState.GO_BACK,
 }

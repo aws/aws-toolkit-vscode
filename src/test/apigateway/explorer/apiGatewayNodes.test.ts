@@ -4,28 +4,26 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
-import { RestApi } from 'aws-sdk/clients/apigateway'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { stub } from '../../utilities/stubber'
 
-const FAKE_PARTITION_ID = 'aws'
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = [
+const fakePartitionId = 'aws'
+const fakeRegionCode = 'someregioncode'
+const unsortedText = [
     { name: 'zebra', id: "it's zee not zed" },
     { name: 'zebra', id: "it's actually zed" },
     { name: 'Antelope', id: 'anti-antelope' },
     { name: 'aardvark', id: 'a-a-r-d-vark' },
     { name: 'elephant', id: 'trunk capacity' },
 ]
-const SORTED_TEXT = [
+const sortedText = [
     'aardvark (a-a-r-d-vark)',
     'Antelope (anti-antelope)',
     'elephant (trunk capacity)',
@@ -34,26 +32,24 @@ const SORTED_TEXT = [
 ]
 
 describe('ApiGatewayNode', function () {
-    let sandbox: sinon.SinonSandbox
     let testNode: ApiGatewayNode
 
     let apiNames: { name: string; id: string }[]
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
+    function createClient() {
+        const client = stub(DefaultApiGatewayClient, { regionCode: fakeRegionCode })
+        client.listApis.callsFake(() => asyncGenerator(apiNames))
 
+        return client
+    }
+
+    beforeEach(function () {
         apiNames = [
             { name: 'api1', id: '11111' },
             { name: 'api2', id: '22222' },
         ]
 
-        initializeClientBuilders()
-
-        testNode = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
+        testNode = new ApiGatewayNode(fakePartitionId, fakeRegionCode, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -61,7 +57,7 @@ describe('ApiGatewayNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has RestApi child nodes', async function () {
@@ -73,41 +69,19 @@ describe('ApiGatewayNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        apiNames = UNSORTED_TEXT
+        apiNames = unsortedText
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createClient()
+        client.listApis.throws(new Error())
 
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        const node = new ApiGatewayNode(fakePartitionId, fakeRegionCode, client)
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
-
-    function initializeClientBuilders() {
-        const apiGatewayClient = {
-            listApis: sandbox.stub().callsFake(() => {
-                return asyncGenerator<RestApi>(
-                    apiNames.map<RestApi>(({ name, id }) => {
-                        return {
-                            name,
-                            id,
-                        }
-                    })
-                )
-            }),
-        }
-
-        const clientBuilder = {
-            createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

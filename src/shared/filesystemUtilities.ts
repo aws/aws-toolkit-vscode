@@ -6,19 +6,49 @@
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
+import * as fsExtra from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
+import globals from '../shared/extensionGlobals'
 
-const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+const defaultEncoding: BufferEncoding = 'utf8'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
     os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
     'aws-toolkit-vscode'
 )
+
+export async function getDirSize(
+    dirPath: string,
+    startTime: number,
+    duration: number,
+    fileExt: string
+): Promise<number> {
+    if (performance.now() - startTime > duration) {
+        getLogger().warn('getDirSize: exceeds time limit')
+        return 0
+    }
+    const files = await fsExtra.readdir(dirPath, { withFileTypes: true })
+    const fileSizes = files.map(async file => {
+        const filePath = path.join(dirPath, file.name)
+        if (file.isSymbolicLink()) {
+            return 0
+        }
+        if (file.isDirectory()) {
+            return getDirSize(filePath, startTime, duration, fileExt)
+        }
+        if (file.isFile() && file.name.endsWith(fileExt)) {
+            const { size } = await fsExtra.stat(filePath)
+            return size
+        }
+        return 0
+    })
+    return (await Promise.all(fileSizes)).reduce((accumulator, size) => accumulator + size, 0)
+}
 
 export function downloadsDir(): string {
     const downloadPath = path.join(os.homedir(), 'Downloads')
@@ -52,10 +82,10 @@ export async function fileExists(p: string): Promise<boolean> {
  *
  * @returns the contents of the file as a string
  */
-export const readFileAsString = async (
+export async function readFileAsString(
     pathLike: string,
-    options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
-): Promise<string> => {
+    options: { encoding: BufferEncoding; flag?: string } = { encoding: defaultEncoding }
+): Promise<string> {
     return readFile(pathLike, options)
 }
 
@@ -194,4 +224,30 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
         }
     }
     return []
+}
+/**
+ * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
+ */
+export function getDefaultDownloadPath(): string {
+    const lastUsedPath = globals.context.globalState.get('aws.downloadPath')
+    if (lastUsedPath) {
+        if (typeof lastUsedPath === 'string') {
+            return lastUsedPath
+        }
+        getLogger().error('Expected "aws.downloadPath" to be string, got %O', typeof lastUsedPath)
+    }
+    return downloadsDir()
+}
+
+export async function setDefaultDownloadPath(downloadPath: string) {
+    try {
+        const savePath = await stat(downloadPath)
+        if (savePath.isDirectory()) {
+            globals.context.globalState.update('aws.downloadPath', downloadPath)
+        } else {
+            globals.context.globalState.update('aws.downloadPath', path.dirname(downloadPath))
+        }
+    } catch (err) {
+        getLogger().error('Error while setting "aws.downloadPath"', err as Error)
+    }
 }

@@ -93,7 +93,8 @@ export function cast<T>(input: any, type: TypeConstructor<T>): T {
     try {
         return type(input) ?? input
     } catch (error) {
-        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}: ${error}`)
+        // TODO: add chainable error that isn't `ToolkitError`
+        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}`)
     }
 }
 
@@ -109,10 +110,68 @@ export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<A
     })
 }
 
+export function RecordConstructor<K extends string, U>(
+    keyType: TypeConstructor<K>,
+    valueType: TypeConstructor<U>
+): TypeConstructor<Record<K, U>> {
+    return addTypeName(`Record<${(getTypeName(keyType), getTypeName(valueType))}>`, value => {
+        if (typeof value !== 'object' || !isNonNullable(value)) {
+            throw new TypeError('Value is not a non-null object')
+        }
+
+        const mapped: { [P in K]?: U } = {}
+        for (const [k, v] of Object.entries(value)) {
+            // TODO(sijaden): allow errors to accumulate, then return the final result + any errors
+            mapped[cast(k, keyType)] = cast(v, valueType)
+        }
+
+        return mapped
+    })
+}
+
+// It's _very_ important to note that `Object(null)` results in an empty object
+// This silent conversion may be unexpected, especially for any logic that relies
+// on the explicit presence (or absence) of `null`.
+function checkForObject(value: unknown): NonNullObject {
+    if (!isNonNullable(value)) {
+        throw new TypeError('Value is null or undefned')
+    }
+
+    return cast(value, Object)
+}
+
 function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | undefined> {
-    return addTypeName(`Optional<${getTypeName(type)}>`, input =>
-        isNonNullable(input) ? cast(input, type) : undefined
+    return addTypeName(`Optional<${getTypeName(type)}>`, value =>
+        isNonNullable(value) ? cast(value, type) : undefined
     )
+}
+
+function InstanceConstructor<T>(type: abstract new (...args: any[]) => T): TypeConstructor<T> {
+    return value => {
+        if (!(value instanceof type)) {
+            throw new TypeError('Value is not an instance of the expected type')
+        }
+
+        return value
+    }
+}
+
+export function Record<T extends PropertyKey, U>(
+    key: TypeConstructor<T>,
+    value: TypeConstructor<U>
+): TypeConstructor<Record<T, U>> {
+    return input => {
+        if (!(typeof input === 'object') || !input) {
+            throw new TypeError('Value is not a non-nullable object')
+        }
+
+        const result = {} as Record<T, U>
+        for (const [k, v] of Object.entries(input)) {
+            result[cast(k, key)] = cast(v, value)
+        }
+
+        return result
+    }
 }
 
 export type Optional<T> = TypeConstructor<T | undefined>
@@ -121,3 +180,21 @@ export const Optional = OptionalConstructor
 // Aliasing to distinguish from the concrete implementation the "primitive" object
 export type Any = any
 export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
+
+export type Instance<T extends abstract new (...args: any[]) => unknown> = InstanceType<T>
+export const Instance = InstanceConstructor
+
+export type NonNullObject = Record<any, unknown>
+export const NonNullObject = addTypeName('Object', checkForObject)
+
+export type Union<T, U> = TypeConstructor<T | U>
+export function Union<T, U>(left: TypeConstructor<T>, right: TypeConstructor<U>): Union<T, U> {
+    return input => {
+        try {
+            return cast(input, left)
+        } catch {
+            // TODO: chain errors up
+            return cast(input, right)
+        }
+    }
+}

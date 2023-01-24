@@ -28,13 +28,14 @@ import { sampleRequestPath } from '../../constants'
 import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
-import { recordSamOpenConfigUi } from '../../../shared/telemetry/telemetry.gen'
 import { getSampleLambdaPayloads } from '../../utils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
+import { Commands } from '../../../shared/vscode/commands2'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -159,7 +160,7 @@ export class SamInvokeWebview extends VueWebview {
      */
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
-        const NO_TEMPLATE = 'NOTEMPLATEFOUND'
+        const noTemplate = 'NOTEMPLATEFOUND'
         for (const template of globals.templateRegistry.registeredItems) {
             const resources = template.item.Resources
             if (resources) {
@@ -186,7 +187,7 @@ export class SamInvokeWebview extends VueWebview {
                     'No templates with valid SAM functions found.'
                 ),
                 detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-                templatePath: NO_TEMPLATE,
+                templatePath: noTemplate,
             })
         }
 
@@ -202,7 +203,7 @@ export class SamInvokeWebview extends VueWebview {
         })
         const selectedTemplate = picker.verifySinglePickerOutput(choices)
 
-        if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
+        if (!selectedTemplate || selectedTemplate.templatePath === noTemplate) {
             return
         }
 
@@ -302,14 +303,15 @@ export class SamInvokeWebview extends VueWebview {
 const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
-    return vscode.commands.registerCommand(
-        'aws.launchConfigForm',
-        async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-            webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
-            recordSamOpenConfigUi()
-        }
-    )
+    return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
+        const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
+        webview.show({
+            title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+            // TODO: make this only open `Beside` when executed via CodeLens
+            viewColumn: vscode.ViewColumn.Beside,
+        })
+        telemetry.sam_openConfigUi.emit()
+    })
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {

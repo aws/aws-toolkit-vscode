@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
-import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getFunctions } from '../shared/utilities/classUtils'
@@ -17,9 +16,7 @@ interface WebviewParams {
     webviewJs: string
 
     /**
-     * Styling sheets to use, applied to the entire webview.
-     *
-     * If none are provided, `base.css` is used by default.
+     * Stylesheets to use in addition to "base.css".
      */
     cssFiles?: string[]
 
@@ -325,12 +322,16 @@ export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & 
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
  */
 function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelParams): vscode.WebviewPanel {
+    // C9 doesn't support 'Beside'. The next best thing is always using the second column.
+    const viewColumn =
+        isCloud9() && params.viewColumn === vscode.ViewColumn.Beside
+            ? vscode.ViewColumn.Two
+            : params.viewColumn ?? vscode.ViewColumn.Active
+
     const panel = vscode.window.createWebviewPanel(
         params.id,
         params.title,
-        {
-            viewColumn: isCloud9() ? vscode.ViewColumn.Two : params.viewColumn ?? vscode.ViewColumn.Beside,
-        },
+        { viewColumn },
         {
             // The redundancy here is to correct a bug with Cloud9's Webview implementation
             // We need to assign certain things on instantiation, otherwise they'll never be applied to the view
@@ -344,53 +345,39 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
     return panel
 }
 
+function resolveRelative(webview: vscode.Webview, rootUri: vscode.Uri, files: string[]): vscode.Uri[] {
+    return files.map(f => webview.asWebviewUri(vscode.Uri.joinPath(rootUri, f)))
+}
+
 /**
  * Mutates a webview, applying various options and a static HTML page to bootstrap the Vue code.
  */
 function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, params: WebviewParams): vscode.Webview {
-    const libsPath: string = path.join(ctx.extensionPath, 'dist', 'libs')
-    const jsPath: string = path.join(ctx.extensionPath, 'media', 'js')
-    const cssPath: string = path.join(ctx.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(ctx.extensionPath, 'dist')
-    const resourcesPath: string = path.join(ctx.extensionPath, 'resources')
+    const dist = vscode.Uri.joinPath(ctx.extensionUri, 'dist')
+    const resources = vscode.Uri.joinPath(ctx.extensionUri, 'resources')
 
     webview.options = {
         enableScripts: true,
         enableCommandUris: true,
-        localResourceRoots: [
-            vscode.Uri.file(libsPath),
-            vscode.Uri.file(jsPath),
-            vscode.Uri.file(cssPath),
-            vscode.Uri.file(webviewPath),
-            vscode.Uri.file(resourcesPath),
-        ],
+        localResourceRoots: [dist, resources],
     }
 
-    const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(
-        libsPath,
-        ['vue.min.js', ...(params.libFiles ?? [])],
-        webview
-    ).concat(ExtensionUtilities.getFilesAsVsCodeResources(jsPath, ['loadVsCodeApi.js'], webview))
+    const libs = resolveRelative(webview, vscode.Uri.joinPath(dist, 'libs'), [
+        'vscode.js',
+        'vue.min.js',
+        ...(params.libFiles ?? []),
+    ])
 
-    const cssFiles = params.cssFiles ?? [isCloud9() ? 'base-cloud9.css' : 'base.css']
-    const loadCss = ExtensionUtilities.getFilesAsVsCodeResources(cssPath, [...cssFiles], webview)
+    const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'css'), [
+        isCloud9() ? 'base-cloud9.css' : 'base.css',
+        ...(params.cssFiles ?? []),
+    ])
 
-    let scripts: string = ''
-    let stylesheets: string = ''
-
-    loadLibs.forEach(element => {
-        scripts = scripts.concat(`<script src="${element}"></script>\n\n`)
-    })
-
-    loadCss.forEach(element => {
-        stylesheets = stylesheets.concat(`<link rel="stylesheet" href="${element}">\n\n`)
-    })
-
-    const mainScript = webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, params.webviewJs)))
+    const mainScript = webview.asWebviewUri(vscode.Uri.joinPath(dist, params.webviewJs))
 
     webview.html = resolveWebviewHtml({
-        scripts,
-        stylesheets,
+        scripts: libs.map(p => `<script src="${p}"></script>`).join('\n'),
+        stylesheets: css.map(p => `<link rel="stylesheet" href="${p}">\n`).join('\n'),
         main: mainScript,
         webviewJs: params.webviewJs,
         cspSource: updateCspSource(webview.cspSource),
@@ -410,10 +397,10 @@ function resolveWebviewHtml(params: {
     main: vscode.Uri
 }): string {
     const resolvedParams = { ...params, connectSource: `'none'` }
-    const LOCAL_SERVER = process.env.WEBPACK_DEVELOPER_SERVER
+    const localServer = process.env.WEBPACK_DEVELOPER_SERVER
 
-    if (LOCAL_SERVER) {
-        const local = vscode.Uri.parse(LOCAL_SERVER)
+    if (localServer) {
+        const local = vscode.Uri.parse(localServer)
         resolvedParams.cspSource = `${params.cspSource} ${local.toString()}`
         resolvedParams.main = local.with({ path: `/${params.webviewJs}` })
         resolvedParams.connectSource = `'self' ws:`
@@ -432,7 +419,7 @@ function resolveWebviewHtml(params: {
                 img-src ${resolvedParams.cspSource} https: data:;
                 script-src ${resolvedParams.cspSource};
                 style-src ${resolvedParams.cspSource} 'unsafe-inline';
-                font-src 'self' data:;"
+                font-src ${resolvedParams.cspSource} 'self' data:;"
         >
     </head>
     <body>

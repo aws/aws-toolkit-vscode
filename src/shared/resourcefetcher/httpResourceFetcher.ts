@@ -91,9 +91,11 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            const error = err as CancelError | { message?: string; code?: number }
-            this.logger.verbose(`download failed: %s: %s`, this.logText(), error.message ?? error.code)
-
+            const error = err as CancelError | RequestError
+            this.logger.verbose(
+                `Error downloading ${this.logText()}: %s`,
+                error.message ?? error.code ?? error.response?.statusMessage ?? error.response?.statusCode
+            )
             return undefined
         }
     }
@@ -144,13 +146,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
         promise.finally(() => cancelListener?.dispose())
 
-        return promise.catch((err: RequestError | CancelError) => {
-            // Cancel error has no sensitive info
-            if (err instanceof CancelError) {
-                throw err
-            }
-            throw { code: err.code } // Swallow URL since it may contain sensitive data
-        })
+        return promise
     }
 }
 

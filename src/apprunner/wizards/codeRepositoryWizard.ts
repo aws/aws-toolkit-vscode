@@ -9,18 +9,11 @@ import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from
 import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
 import * as vscode from 'vscode'
-import { CachedFunction, CachedPrompter } from '../../shared/ui/prompter'
 import { WizardForm } from '../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
-import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import {
-    createLabelQuickPick,
-    createQuickPick,
-    DataQuickPickItem,
-    QuickPickPrompter,
-} from '../../shared/ui/pickerPrompter'
+import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import {
     apprunnerConnectionHelpUrl,
@@ -29,7 +22,6 @@ import {
     apprunnerCreateServiceDocsUrl,
 } from '../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
-import { getLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -151,71 +143,41 @@ function createPortPrompter(): InputBoxPrompter {
     })
 }
 
-export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
-    public constructor(private readonly client: AppRunnerClient) {
-        super()
+export function createConnectionPrompter(client: AppRunnerClient) {
+    const noItemsFoundItem = {
+        label: 'No connections found',
+        detail: 'Click for documentation on creating a new GitHub connection for App Runner',
+        data: {} as any,
+        invalidSelection: true,
+        onClick: () => vscode.env.openExternal(vscode.Uri.parse(apprunnerConnectionHelpUrl)),
     }
 
-    protected load(): Promise<DataQuickPickItem<ConnectionSummary>[]> {
-        return this.client
-            .listConnections({})
-            .then(resp => {
-                const connections = resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(
-                    conn => ({
-                        label: conn.ConnectionName!,
-                        data: conn,
-                    })
-                )
-
-                if (connections.length === 0) {
-                    return [
-                        {
-                            label: 'No connections found',
-                            detail: 'Click for documentation on creating a new GitHub connection for App Runner',
-                            data: {} as any,
-                            invalidSelection: true,
-                            onClick: vscode.env.openExternal.bind(
-                                vscode.env,
-                                vscode.Uri.parse(apprunnerConnectionHelpUrl)
-                            ),
-                        },
-                    ]
-                } else {
-                    return connections
-                }
-            })
-            .catch(err => {
-                getLogger().error(`Failed to list GitHub connections: %O`, err)
-                return [
-                    {
-                        label: localize(
-                            'AWS.apprunner.createService.selectConnection.failed',
-                            'Failed to list GitHub connections'
-                        ),
-                        description: localize('AWS.generic.goBack', 'Click to go back'),
-                        data: WIZARD_BACK,
-                    },
-                ]
-            })
+    const errorItem = {
+        label: localize('AWS.apprunner.createService.selectConnection.failed', 'Failed to list GitHub connections'),
+        description: localize('AWS.generic.goBack', 'Click to go back'),
+        data: WIZARD_BACK,
     }
 
-    protected createPrompter(loader: CachedFunction<ConnectionPrompter['load']>): QuickPickPrompter<ConnectionSummary> {
-        const connections = loader()
-        const refreshButton = createRefreshButton()
-        const prompter = createQuickPick(connections, {
-            title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
-            buttons: [refreshButton, ...createCommonButtons(apprunnerConnectionHelpUrl)],
-        })
+    const getItems = async () => {
+        const resp = await client.listConnections()
 
-        const refresh = () => {
-            loader.clearCache()
-            prompter.clearAndLoadItems(loader())
-        }
-
-        refreshButton.onClick = refresh
-
-        return prompter
+        return resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(conn => ({
+            label: conn.ConnectionName!,
+            data: conn,
+        }))
     }
+
+    const refreshButton = createRefreshButton()
+    refreshButton.onClick = () => void prompter.clearAndLoadItems(getItems())
+
+    const prompter = createQuickPick(getItems(), {
+        errorItem,
+        noItemsFoundItem,
+        buttons: [refreshButton, ...createCommonButtons(apprunnerConnectionHelpUrl)],
+        title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
+    })
+
+    return prompter
 }
 
 function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource> {
@@ -276,10 +238,9 @@ export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfig
     ) {
         super()
         const form = this.form
-        const connectionPrompter = new ConnectionPrompter(client)
 
-        form.AuthenticationConfiguration.ConnectionArn.bindPrompter(
-            connectionPrompter.transform(conn => conn.ConnectionArn!)
+        form.AuthenticationConfiguration.ConnectionArn.bindPrompter(() =>
+            createConnectionPrompter(client).transform(conn => conn.ConnectionArn!)
         )
         form.CodeRepository.applyBoundForm(createCodeRepositorySubForm(git))
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')

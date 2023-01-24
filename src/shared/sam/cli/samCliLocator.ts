@@ -11,26 +11,26 @@ import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 
 export interface SamCliLocationProvider {
-    getLocation(): Promise<string | undefined>
+    getLocation(): Promise<{ path: string; version: string } | undefined>
 }
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
-    private static SAM_CLI_LOCATOR: BaseSamCliLocator | undefined
+    private static samCliLocator: BaseSamCliLocator | undefined
 
-    public async getLocation(): Promise<string | undefined> {
+    public async getLocation() {
         return DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
     }
 
     public static getSamCliLocator(): SamCliLocationProvider {
-        if (!DefaultSamCliLocationProvider.SAM_CLI_LOCATOR) {
+        if (!DefaultSamCliLocationProvider.samCliLocator) {
             if (process.platform === 'win32') {
-                DefaultSamCliLocationProvider.SAM_CLI_LOCATOR = new WindowsSamCliLocator()
+                DefaultSamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
             } else {
-                DefaultSamCliLocationProvider.SAM_CLI_LOCATOR = new UnixSamCliLocator()
+                DefaultSamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
             }
         }
 
-        return DefaultSamCliLocationProvider.SAM_CLI_LOCATOR
+        return DefaultSamCliLocationProvider.samCliLocator
     }
 }
 
@@ -44,11 +44,8 @@ abstract class BaseSamCliLocator {
     }
 
     // TODO: this method is being called multiple times on my Windows machine and is really slow
-    public async getLocation(): Promise<string | undefined> {
-        let location: string | undefined = await this.findFileInFolders(
-            this.getExecutableFilenames(),
-            this.getExecutableFolders()
-        )
+    public async getLocation() {
+        let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
         if (!location) {
             location = await this.getSystemPathLocation()
@@ -63,7 +60,7 @@ abstract class BaseSamCliLocator {
     protected abstract getExecutableFilenames(): string[]
     protected abstract getExecutableFolders(): string[]
 
-    protected async findFileInFolders(files: string[], folders: string[]): Promise<string | undefined> {
+    protected async findFileInFolders(files: string[], folders: string[]) {
         const fullPaths: string[] = files
             .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
             .reduce((accumulator, paths) => {
@@ -87,7 +84,7 @@ abstract class BaseSamCliLocator {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
                         BaseSamCliLocator.didFind = true
-                        return fullPath
+                        return { path: fullPath, version: validationResult.version }
                     }
                     this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
@@ -105,7 +102,7 @@ abstract class BaseSamCliLocator {
      * Searches for `getExecutableFilenames()` in `$PATH` and returns the first
      * path found on the filesystem, if any.
      */
-    private async getSystemPathLocation(): Promise<string | undefined> {
+    private async getSystemPathLocation() {
         const envVars = process.env as EnvironmentVariables
 
         if (envVars.PATH) {
@@ -119,10 +116,10 @@ abstract class BaseSamCliLocator {
 }
 
 class WindowsSamCliLocator extends BaseSamCliLocator {
-    // Do not access LOCATION_PATHS directly. Use getExecutableFolders()
-    private static LOCATION_PATHS: string[] | undefined
+    // Do not access locationPaths directly. Use getExecutableFolders()
+    private static locationPaths: string[] | undefined
 
-    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam.cmd', 'sam.exe']
+    private static readonly executableFilenames: string[] = ['sam.cmd', 'sam.exe']
 
     public constructor() {
         super()
@@ -135,32 +132,32 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
     }
 
     protected getExecutableFilenames(): string[] {
-        return WindowsSamCliLocator.EXECUTABLE_FILENAMES
+        return WindowsSamCliLocator.executableFilenames
     }
 
     protected getExecutableFolders(): string[] {
-        if (!WindowsSamCliLocator.LOCATION_PATHS) {
-            WindowsSamCliLocator.LOCATION_PATHS = []
+        if (!WindowsSamCliLocator.locationPaths) {
+            WindowsSamCliLocator.locationPaths = []
 
             const envVars = process.env as EnvironmentVariables
 
             const programFiles = envVars.PROGRAMFILES
             if (programFiles) {
-                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
+                WindowsSamCliLocator.locationPaths.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
             }
 
             const programFilesX86 = envVars['PROGRAMFILES(X86)']
             if (programFilesX86) {
-                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
+                WindowsSamCliLocator.locationPaths.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
             }
         }
 
-        return WindowsSamCliLocator.LOCATION_PATHS
+        return WindowsSamCliLocator.locationPaths
     }
 }
 
 class UnixSamCliLocator extends BaseSamCliLocator {
-    private static readonly LOCATION_PATHS: string[] = [
+    private static readonly locationPaths: string[] = [
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if
@@ -169,7 +166,7 @@ class UnixSamCliLocator extends BaseSamCliLocator {
         `${process.env.HOME}/.linuxbrew/bin`,
     ]
 
-    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam']
+    private static readonly executableFilenames: string[] = ['sam']
 
     public constructor() {
         super()
@@ -182,10 +179,10 @@ class UnixSamCliLocator extends BaseSamCliLocator {
     }
 
     protected getExecutableFilenames(): string[] {
-        return UnixSamCliLocator.EXECUTABLE_FILENAMES
+        return UnixSamCliLocator.executableFilenames
     }
 
     protected getExecutableFolders(): string[] {
-        return UnixSamCliLocator.LOCATION_PATHS
+        return UnixSamCliLocator.locationPaths
     }
 }

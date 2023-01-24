@@ -7,13 +7,14 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
-import { CloudFormationTemplateRegistry } from './templateRegistry'
+import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { getIdeProperties } from '../extensionUtilities'
-import { NoopWatcher } from '../watchedFiles'
+import { NoopWatcher } from '../fs/watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'
+import { Commands } from '../vscode/commands2'
 import globals from '../extensionGlobals'
 
-export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
+export const templateFileGlobPattern = '**/*.{yaml,yml}'
 
 /**
  * Match any file path that contains a .aws-sam folder. The way this works is:
@@ -21,7 +22,9 @@ export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
  * a '/' or '\' followed by any number of characters or end of a string (so it
  * matches both /.aws-sam or /.aws-sam/<any number of characters>)
  */
-export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
+export const templateFileExcludePattern = /.*[/\\]\.aws-sam([/\\].*|$)/
+
+export const devfileExcludePattern = /.*devfile\.(yaml|yml)/i
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
@@ -33,8 +36,10 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     try {
         const registry = new CloudFormationTemplateRegistry()
         globals.templateRegistry = registry
-        await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
-        await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        await registry.addExcludedPattern(devfileExcludePattern)
+        await registry.addExcludedPattern(templateFileExcludePattern)
+        await registry.addWatchPattern(templateFileGlobPattern)
+        await registry.watchUntitledFiles()
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -51,7 +56,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
         globals.templateRegistry,
-        vscode.commands.registerCommand('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
-        vscode.commands.registerCommand('aws.sam.newTemplate', () => createStarterTemplateFile(true))
+        Commands.register('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
+        Commands.register('aws.sam.newTemplate', () => createStarterTemplateFile(true))
     )
 }

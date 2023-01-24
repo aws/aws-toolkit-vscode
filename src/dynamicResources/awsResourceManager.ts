@@ -21,7 +21,7 @@ import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
 
-export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'
+export const resourceFileGlobPattern = '**/*.awsResource.json'
 
 export class AwsResourceManager {
     private folder: string | undefined
@@ -100,7 +100,7 @@ export class AwsResourceManager {
                 remove(uri.fsPath)
 
                 globals.schemaService.registerMapping({
-                    path: uri.fsPath,
+                    uri,
                     type: 'json',
                     schema: undefined,
                 })
@@ -170,7 +170,7 @@ export class AwsResourceManager {
 
     private async registerSchema(
         typeName: string,
-        file: vscode.Uri,
+        uri: vscode.Uri,
         cloudFormation: CloudFormationClient
     ): Promise<void> {
         await this.initialize()
@@ -199,7 +199,7 @@ export class AwsResourceManager {
 
         globals.schemaService.registerMapping(
             {
-                path: file.fsPath,
+                uri,
                 type: 'json',
                 schema: location,
             },

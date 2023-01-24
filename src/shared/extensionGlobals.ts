@@ -4,18 +4,19 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { LoginManager } from '../credentials/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
-import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
-import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
-import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
+import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
     typeof globalThis,
@@ -42,7 +43,6 @@ export function initialize(context: ExtensionContext, window: Window): ToolkitGl
         window,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        iconPaths: { dark: {}, light: {} } as ToolkitGlobals['iconPaths'],
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
     })
@@ -59,18 +59,19 @@ export default globals
 interface ToolkitGlobals {
     readonly context: ExtensionContext
     readonly window: Window
-    // TODO: make the rest of these readonly
+    // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
+    loginManager: LoginManager
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
-    toolkitClientBuilder: ToolkitClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
     templateRegistry: CloudFormationTemplateRegistry
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
+    uriHandler: UriHandler
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
@@ -84,11 +85,6 @@ interface ToolkitGlobals {
      * Keep in mind that this clock's `Date` constructor will be different than the global one when mocked.
      */
     readonly clock: Clock
-
-    readonly iconPaths: {
-        readonly dark: IconPaths
-        readonly light: IconPaths
-    }
 
     visualizationResourcePaths: {
         localWebviewScriptsPath: Uri
@@ -104,35 +100,4 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
-}
-
-export interface IconPaths {
-    apprunner: string
-    statemachine: string
-    help: string
-    cloudFormation: string
-    ecr: string
-    lambda: string
-    settings: string
-    registry: string
-    s3: string
-    folder: string
-    file: string
-    schema: string
-    cloudWatchLogGroup: string
-    bucket: string
-    createBucket: string
-    thing: string
-    certificate: string
-    policy: string
-    cluster: string
-    service: string
-    container: string
-    // temporary icons while Cloud9 does not have codicon support
-    plus: string
-    edit: string
-    exit: string
-    sync: string
-    syncIgnore: string
-    refresh: string
 }

@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { isNameMangled } from './env'
-import { UnknownError } from '../toolkitError'
+import { isAutomation, isNameMangled } from './env'
+import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { getLogger, NullLogger } from '../logger/logger'
-import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
+import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -132,16 +132,18 @@ export class Commands {
      * ```
      */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
-        const result = {} as Record<string, (id: string) => DeclaredCommand>
+        type Id = Parameters<Declare<T, Callback>>[0]
+        const result = {} as Record<string, Declare<T, Callback>>
 
         for (const [k, v] of Object.entries<Callback>(getFunctions(target))) {
             const mappedKey = `declare${toTitleCase(k)}`
-            const name = !isNameMangled() ? `${target.name}.${k}` : ''
+            const name = !isNameMangled() ? `${target.name}.${k}` : undefined
+            const mapInfo = (id: Id) => (typeof id === 'string' ? { id, name } : { name, ...id })
 
-            result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
+            result[mappedKey] = id => this.declare(mapInfo(id), (instance: T) => v.bind(instance))
         }
 
-        return result as Declarables<T>
+        return result as unknown as Declarables<T>
     }
 
     public dispose(): void {
@@ -149,9 +151,9 @@ export class Commands {
     }
 
     private addResource<T extends Callback, U extends any[]>(resource: CommandResource<T, U>): CommandResource<T, U> {
-        const registered = this.resources.get(resource.id)
+        const previous = this.resources.get(resource.id)
 
-        if (registered?.declared) {
+        if (previous !== undefined) {
             throw new Error(`Command "${resource.id}" has already been declared by the Toolkit`)
         }
 
@@ -186,7 +188,7 @@ export class Commands {
 }
 
 interface Declare<T, F extends Callback> {
-    (id: string): DeclaredCommand<F, [target: T]>
+    (id: string | Omit<CommandInfo<F>, 'args' | 'label'>): DeclaredCommand<F, [target: T]>
 }
 
 type Declarables<T> = {
@@ -216,16 +218,11 @@ interface Deferred<T extends Callback, U extends any[]> {
  * by the singleton.
  */
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
-    private disposed?: boolean
-    private subscription?: vscode.Disposable
+    private subscription: vscode.Disposable | undefined
     private idCounter = 0
     public readonly id = this.resource.info.id
 
     public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
-
-    public get declared() {
-        return !this.disposed
-    }
 
     public get registered() {
         return !!this.subscription
@@ -265,8 +262,8 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     }
 
     public dispose(): void {
-        this.disposed = true
         this.subscription?.dispose()
+        this.subscription = undefined
     }
 
     private buildUri(id: string, args: unknown[]) {
@@ -286,12 +283,15 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private buildTreeNode(id: string, args: unknown[]) {
         return (content: PartialTreeItem) => {
             const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
-            treeItem.command = { command: id, arguments: args, title: content.label }
+            Object.assign(treeItem, {
+                ...content,
+                command: { command: id, arguments: args, title: content.label },
+            })
 
             return {
                 id: `${id}-${(this.idCounter += 1)}`,
-                treeItem: Object.assign(treeItem, content),
                 resource: this,
+                getTreeItem: () => treeItem,
             }
         }
     }
@@ -306,34 +306,103 @@ interface CommandInfo<T extends Callback> {
     readonly logging?: boolean
     /** Does the command require credentials? (default: false) */
     readonly autoconnect?: boolean
-    readonly errorHandler?: (error: Error) => ReturnType<T> | void
+
+    /**
+     * The telemetry metric associated with this command.
+     *
+     * Metadata can be added during execution like so:
+     * ```ts
+     * telemetry.aws_foo.record({ exampleMetadata: 'bar' })
+     * ```
+     *
+     * Any metadata is sent with the metric on completion.
+     */
+    readonly telemetryName?: MetricName
 }
 
-async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | undefined> {
+// This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
+// commands with telemetry at once. The alternative is to do a gradual rollout although
+// it's not much safer in terms of weeding out problematic commands.
+const emitInfo = new Map<string, { token: number; startTime: number; debounceCounter: number }>()
+const emitTokens: Record<string, number> = {}
+
+function startRecordCommand(id: string, threshold: number): number {
+    const currentTime = Date.now()
+    const previousEmit = emitInfo.get(id)
+    const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
+
+    if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
+        emitInfo.set(id, { ...previousEmit, debounceCounter: previousEmit.debounceCounter + 1 })
+        return token
+    }
+
+    emitInfo.set(id, { token, startTime: currentTime, debounceCounter: previousEmit?.debounceCounter ?? 0 })
+    return token
+}
+
+function endRecordCommand(id: string, token: number, name?: MetricName, err?: unknown) {
+    const data = emitInfo.get(id)
+    const currentTime = Date.now()
+
+    if (token !== data?.token) {
+        getLogger().debug(`commands: skipped telemetry for "${id}"`)
+        return
+    }
+
+    emitInfo.set(id, { ...data, debounceCounter: 0 })
+
+    const metric = name ? (telemetry[name] as Metric<VscodeExecuteCommand>) : telemetry.vscode_executeCommand
+    metric.emit({
+        command: id,
+        debounceCount: data.debounceCounter,
+        result: getTelemetryResult(err),
+        reason: getTelemetryReason(err),
+        duration: currentTime - data.startTime,
+    })
+}
+
+async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
-
-    // TODO(sijaden): add telemetry instrumentation here
+    const threshold = isAutomation() || info.telemetryName ? 0 : 300_000 // 5 minutes
+    const telemetryToken = startRecordCommand(info.id, threshold)
 
     logger.debug(`command: running ${label}${withArgs}`)
 
+    if (info.telemetryName !== undefined) {
+        telemetry[info.telemetryName].record({ command: info.id })
+    }
+
     try {
         if (info.autoconnect === true) {
-            await LoginManager.tryAutoConnect()
+            await vscode.commands.executeCommand('_aws.auth.autoConnect')
         }
+
         const result = await fn(...args)
-        logger.debug(`command: ${label} succeeded`)
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName)
 
         return result
     } catch (error) {
-        // We should refrain from calling into extension-specific code directly from this module to avoid
-        // dependency issues. A "global" error handler may be added at a later date.
-        if (info.errorHandler) {
-            return info.errorHandler(UnknownError.cast(error)) ?? undefined
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
+
+        if (errorHandler !== undefined) {
+            errorHandler(info, error)
         } else {
-            logger.error(`command: ${label} failed: %O`, error)
+            logger.error(`command: ${label} failed without error handler: %s`, error)
             throw error
         }
     }
+}
+
+// Error handling may involve other Toolkit modules and so it must be defined and registered at
+// the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
+// This file should contain as little application-specific logic as possible.
+let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => void
+export function registerErrorHandler(handler: typeof errorHandler): void {
+    if (errorHandler !== undefined) {
+        throw new TypeError('Error handler has already been registered')
+    }
+
+    errorHandler = handler
 }

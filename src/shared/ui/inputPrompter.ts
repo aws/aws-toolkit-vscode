@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { assign } from '../utilities/collectionUtils'
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
@@ -22,7 +22,7 @@ export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInpu
 
 export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
-export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
+export const defaultInputboxOptions: vscode.InputBoxOptions = {
     ignoreFocusOut: true,
 }
 
@@ -34,7 +34,7 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
-    assign({ ...DEFAULT_INPUTBOX_OPTIONS, ...options }, inputBox)
+    assign({ ...defaultInputboxOptions, ...options }, inputBox)
     inputBox.buttons = options?.buttons ?? []
 
     const prompter = new InputBoxPrompter(inputBox)
@@ -44,6 +44,13 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
     }
 
     return prompter
+}
+
+export async function showInputBox(options?: ExtendedInputBoxOptions): Promise<string | undefined> {
+    const prompter = createInputBox(options)
+    const response = await prompter.prompt()
+
+    return isValidResponse(response) ? response : undefined
 }
 
 /**

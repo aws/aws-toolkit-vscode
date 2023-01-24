@@ -13,7 +13,6 @@ import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import * as telemetry from '../telemetry/telemetry'
 import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
@@ -21,6 +20,8 @@ import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
+import { telemetry } from '../telemetry/telemetry'
+import { Result, ToolId } from '../telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -43,13 +44,13 @@ interface Cli {
     name: string
 }
 
-type AwsClis = Extract<telemetry.ToolId, 'session-manager-plugin'>
+type AwsClis = Extract<ToolId, 'session-manager-plugin'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
+export const awsClis: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
@@ -74,12 +75,16 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
  * @param confirmBefore Prompt before starting install?
  * @returns CLI Path
  */
-export async function installCli(cli: AwsClis, confirm: boolean, window: Window = Window.vscode()): Promise<string> {
-    const cliToInstall = AWS_CLIS[cli]
+export async function installCli(
+    cli: AwsClis,
+    confirm: boolean,
+    window: Window = Window.vscode()
+): Promise<string | never> {
+    const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
     }
-    let result: telemetry.Result = 'Succeeded'
+    let result: Result = 'Succeeded'
 
     let tempDir: string | undefined
     const manualInstall = localize('AWS.cli.manualInstall', 'Install manually...')
@@ -164,10 +169,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
             })
         }
 
-        telemetry.recordAwsToolInstallation({
-            result,
-            toolId: cli,
-        })
+        telemetry.aws_toolInstallation.emit({ result, toolId: cli })
     }
 }
 
@@ -250,9 +252,9 @@ async function installSsmCli(
 ): Promise<string> {
     progress.report({ message: msgDownloading })
 
-    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin'], tempDir, timeout)
+    const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']))
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
@@ -321,12 +323,11 @@ export async function getOrInstallCli(
     confirm: boolean,
     window: Window = Window.vscode()
 ): Promise<string> {
-    let cliCommand: string | undefined
-    if (!DevSettings.instance.get('forceInstallTools', false)) {
-        cliCommand = await getCliCommand(AWS_CLIS[cli])
+    if (DevSettings.instance.get('forceInstallTools', false)) {
+        return installCli(cli, confirm, window)
+    } else {
+        return (await getCliCommand(awsClis[cli])) ?? installCli(cli, confirm, window)
     }
-
-    return cliCommand ?? (await installCli(cli, confirm, window))
 }
 
 // TODO: uncomment for AWS CLI installation
@@ -456,7 +457,7 @@ export async function getOrInstallCli(
 //         fs.link(existingPath, newPath, err => {
 //             if (err) {
 //                 const message = `Toolkit could not create a hard link for ${existingPath} to ${newPath}`
-//                 getLogger().error(`${message}: %O`, err)
+//                 getLogger().error(`${message}: %s`, err)
 //                 reject(new InstallerError(message))
 //             }
 //             resolve()

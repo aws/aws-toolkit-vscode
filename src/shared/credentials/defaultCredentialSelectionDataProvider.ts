@@ -11,10 +11,11 @@
 //
 // Based on the multiStepInput code in the QuickInput VSCode extension sample.
 
+import * as vscode from 'vscode'
+import * as semver from 'semver'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { ExtensionContext, QuickPickItem } from 'vscode'
 import { asString } from '../../credentials/providers/credentials'
 import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
@@ -25,6 +26,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { credentialHelpUrl } from '../constants'
 import { createHelpButton } from '../ui/buttons'
 import { recentlyUsed } from '../localizedText'
+import { messages } from '../utilities/messages'
 
 interface ProfileEntry {
     profileName: string
@@ -40,14 +42,39 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private readonly _credentialsMru: CredentialsProfileMru
     private readonly helpButton = createHelpButton(credentialHelpUrl)
 
-    public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
+    public constructor(public readonly existingProfileNames: string[], protected context: vscode.ExtensionContext) {
         this._credentialsMru = new CredentialsProfileMru(context)
     }
 
     public async pickCredentialProfile(
         input: MultiStepInputFlowController,
+        actions: vscode.QuickPickItem[],
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem> {
+    ): Promise<vscode.QuickPickItem> {
+        // Remove this stub after we bump minimum to vscode 1.64
+        const QuickPickItemKind = semver.gte(vscode.version, '1.64.0') ? (vscode as any).QuickPickItemKind : undefined
+        const menuTop: vscode.QuickPickItem[] = [
+            // vscode 1.64 supports QuickPickItemKind.Separator.
+            // https://github.com/microsoft/vscode/commit/eb416b4f9ebfda1c798aa7c8b2f4e81c6ce1984f
+            ...(!QuickPickItemKind
+                ? []
+                : [
+                      {
+                          label: localize('AWS.menu.actions', 'Actions'),
+                          kind: QuickPickItemKind.Separator,
+                      } as vscode.QuickPickItem,
+                  ]),
+            ...actions,
+            ...(!QuickPickItemKind
+                ? []
+                : [
+                      {
+                          label: localize('AWS.menu.profiles', 'Profiles'),
+                          kind: QuickPickItemKind.Separator,
+                      } as vscode.QuickPickItem,
+                  ]),
+        ]
+
         return await input.showQuickPick({
             title: localize(
                 'AWS.title.selectCredentialProfile',
@@ -57,7 +84,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             step: 1,
             totalSteps: 1,
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
-            items: this.getProfileSelectionList(),
+            items: menuTop.concat(this.getProfileSelectionList()),
             activeItem: state.credentialProfile,
             shouldResume: this.shouldResume.bind(this),
         })
@@ -163,12 +190,12 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     /**
      * Builds and returns the list of QuickPickItem objects representing the profile names to select from in the UI
      */
-    private getProfileSelectionList(): QuickPickItem[] {
+    private getProfileSelectionList(): vscode.QuickPickItem[] {
         const orderedProfiles: ProfileEntry[] = this.getOrderedProfiles()
 
-        const selectionList: QuickPickItem[] = []
+        const selectionList: vscode.QuickPickItem[] = []
         orderedProfiles.forEach(profile => {
-            const selectionItem: QuickPickItem = { label: profile.profileName }
+            const selectionItem: vscode.QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
                 selectionItem.description = recentlyUsed
@@ -230,13 +257,24 @@ export async function credentialProfileSelector(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ) {
-        state.credentialProfile = await dataProvider.pickCredentialProfile(input, state)
+        const actions = [
+            {
+                label: messages.editCredentials(true),
+                alwaysShow: true,
+                description: localize('AWS.credentials.edit.desc', 'open ~/.aws/credentials'),
+            },
+        ]
+        const item = await dataProvider.pickCredentialProfile(input, actions, state)
+        if (item.label === actions[0].label) {
+            vscode.commands.executeCommand('aws.credentials.edit')
+        } else {
+            state.credentialProfile = item
+        }
     }
 
     async function collectInputs() {
         const state: Partial<CredentialSelectionState> = {}
         await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
-
         return state as CredentialSelectionState
     }
 

@@ -11,18 +11,10 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
-import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import {
-    CredentialSourceId,
-    CredentialType,
-    recordAwsRefreshCredentials,
-    recordAwsValidateCredentials,
-    recordVscodeActiveRegions,
-    Result,
-} from '../shared/telemetry/telemetry'
+import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
-import { CredentialsSettings, notifyUserInvalidCredentials } from './credentialsUtilities'
+import { CredentialsSettings, showLoginFailedMessage } from './credentialsUtilities'
 import {
     asString,
     CredentialsProvider,
@@ -36,16 +28,24 @@ import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
-import { ToolkitError } from '../shared/toolkitError'
+import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
+import { DefaultStsClient } from '../shared/clients/stsClient'
+import { findAsync } from '../shared/utilities/collectionUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
 
+/**
+ * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
+ */
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
 
     public constructor(
         private readonly awsContext: AwsContext,
-        private readonly store: CredentialsStore,
-        public readonly recordAwsValidateCredentialsFn = recordAwsValidateCredentials
+        public readonly store: CredentialsStore,
+        public readonly recordAwsValidateCredentialsFn = telemetry.aws_validateCredentials.emit.bind(
+            telemetry.aws_validateCredentials
+        )
     ) {}
 
     /**
@@ -69,13 +69,7 @@ export class LoginManager {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
-            const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
-            const accountId = await getAccountId(credentials, credentialsRegion)
-            if (!accountId) {
-                throw new Error('Could not determine Account Id for credentials')
-            }
-            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
-
+            const accountId = await this.validateCredentials(credentials, provider.getDefaultRegion())
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
                 credentials,
@@ -89,9 +83,10 @@ export class LoginManager {
         } catch (err) {
             const credentialsId = asString(args.providerId)
             if (!CancellationError.isUserCancelled(err)) {
-                const msg = `login: failed to connect with "${credentialsId}": ${(err as Error).message}`
+                const errMsg = (err as Error).message
+                const msg = `login: failed to connect with "${credentialsId}": ${errMsg}`
                 if (!args.passive) {
-                    notifyUserInvalidCredentials(credentialsId)
+                    showLoginFailedMessage(credentialsId, errMsg)
                     getLogger().error(msg)
                 }
             } else {
@@ -114,11 +109,24 @@ export class LoginManager {
         }
     }
 
+    public async validateCredentials(credentials: Credentials, region = this.defaultCredentialsRegion) {
+        const stsClient = new DefaultStsClient(region, credentials)
+        const accountId = (await stsClient.getCallerIdentity()).Account
+        if (!accountId) {
+            throw new Error('Could not determine Account Id for credentials')
+        }
+
+        return accountId
+    }
+
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
+     *
+     * TODO: for SSO this should do a server-side logout.
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
+        this.awsContext.credentialsShim = undefined
     }
 
     private static didTryAutoConnect = false
@@ -139,7 +147,7 @@ export class LoginManager {
             const loginManager = new LoginManager(awsContext, new CredentialsStore())
             await loginWithMostRecentCredentials(new CredentialsSettings(), loginManager)
         } catch (err) {
-            getLogger().error('credentials: failed to auto-connect: %O', err)
+            getLogger().error('credentials: failed to auto-connect: %s', err)
             showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
         }
         return !!(await awsContext.getCredentials())
@@ -164,7 +172,7 @@ export async function loginWithMostRecentCredentials(
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
-        } else if (provider.canAutoConnect()) {
+        } else if (await provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
                 getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
@@ -214,21 +222,21 @@ export async function loginWithMostRecentCredentials(
     }
 
     // Try to auto-connect the default profile.
-    if (defaultProfile) {
+    if (defaultProfile && defaultProfile !== previousCredentialsId) {
         getLogger().info('autoconnect: trying "%s"', defaultProfile)
         if (await tryConnect(providerMap[defaultProfile], !isCloud9())) {
             return
         }
     }
 
-    // Try to auto-connect up to 3 other profiles (useful for Cloud9, ECS, …).
-    for (let i = 0; i < 4 && i < profileNames.length; i++) {
-        const p = profileNames[i]
-        if (p === defaultName) {
-            continue
-        }
-        getLogger().info('autoconnect: trying "%s"', p)
-        if (await tryConnect(providerMap[p], !isCloud9())) {
+    // Try to auto-connect any other non-default profile (useful for env vars, IMDS, Cloud9, ECS, …).
+    const nonDefault = await findAsync(profileNames, async p => {
+        const provider = await manager.getCredentialsProvider(providerMap[p])
+        return p !== defaultName && !!(await provider?.canAutoConnect())
+    })
+    if (nonDefault) {
+        getLogger().info('autoconnect: trying "%s"', nonDefault)
+        if (await tryConnect(providerMap[nonDefault], !isCloud9())) {
             return
         }
     }
@@ -309,7 +317,7 @@ function createCredentialsShim(
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (!provider.canAutoConnect()) {
+            if (!(await provider.canAutoConnect())) {
                 const message = localize('aws.credentials.expired', 'Credentials are expired or invalid, login again?')
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
@@ -338,7 +346,7 @@ function createCredentialsShim(
 
             throw error
         } finally {
-            recordAwsRefreshCredentials({
+            telemetry.aws_refreshCredentials.emit({
                 result,
                 passive: true,
                 credentialType,

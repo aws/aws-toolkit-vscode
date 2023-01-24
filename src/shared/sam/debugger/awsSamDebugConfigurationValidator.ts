@@ -10,8 +10,8 @@ import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/mo
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
-    AWS_SAM_DEBUG_REQUEST_TYPES,
-    AWS_SAM_DEBUG_TARGET_TYPES,
+    awsSamDebugRequestTypes,
+    awsSamDebugTargetTypes,
     AwsSamDebuggerConfiguration,
     CODE_TARGET_TYPE,
     TemplateTargetProperties,
@@ -47,17 +47,17 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 'Missing required field "{0}" in debug config',
                 'request'
             )
-        } else if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(config.request)) {
+        } else if (!awsSamDebugRequestTypes.includes(config.request)) {
             rv.message = localize(
                 'AWS.sam.debugger.invalidRequest',
                 'Debug Configuration has an unsupported request type. Supported types: {0}',
-                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+                awsSamDebugRequestTypes.join(', ')
             )
-        } else if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(config.invokeTarget.target)) {
+        } else if (!awsSamDebugTargetTypes.includes(config.invokeTarget.target)) {
             rv.message = localize(
                 'AWS.sam.debugger.invalidTarget',
                 'Debug Configuration has an unsupported target type. Supported types: {0}',
-                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+                awsSamDebugTargetTypes.join(', ')
             )
         } else if (
             config.invokeTarget.target === TEMPLATE_TARGET_TYPE ||

@@ -36,7 +36,7 @@ export async function migrateLegacySettings() {
     )
 }
 
-const LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
+const localTimeoutDefaultMillis: number = 90000
 interface SavedBuckets {
     [profile: string]: { [region: string]: string }
 }
@@ -79,6 +79,7 @@ const description = {
     lambdaTimeout: Number,
     enableCodeLenses: Boolean,
     manuallySelectedBuckets: SavedBuckets,
+    legacyDeploy: Boolean,
 }
 
 export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {
@@ -87,10 +88,6 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
         settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(settings)
-    }
-
-    public async detectLocation(): Promise<string | undefined> {
-        return this.locationProvider.getLocation()
     }
 
     /**
@@ -106,8 +103,8 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             return { path: fromConfig, autoDetected: false }
         }
 
-        const fromSearch = await this.detectLocation()
-        return { path: fromSearch, autoDetected: true }
+        const fromSearch = await this.locationProvider.getLocation()
+        return { path: fromSearch?.path, autoDetected: true }
     }
 
     public getSavedBuckets(): SavedBuckets | undefined {
@@ -135,7 +132,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
     }
 
     public getLocalInvokeTimeout(): number {
-        return this.get('lambdaTimeout', LOCAL_TIMEOUT_DEFAULT_MILLIS)
+        return this.get('lambdaTimeout', localTimeoutDefaultMillis)
     }
 
     static #instance: SamCliSettings

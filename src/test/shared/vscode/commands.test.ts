@@ -85,8 +85,12 @@ describe('Commands', function () {
 
         it('can execute a command', async function () {
             const registered = commands.register('sum', sum)
-
             assert.strictEqual(await registered.execute(2, 2), 4)
+        })
+
+        it('throws when registering a command multiple times', function () {
+            commands.register('sum', sum)
+            assert.throws(() => commands.register('sum', sum))
         })
 
         describe('Command', function () {
@@ -134,7 +138,7 @@ describe('Commands', function () {
             it('can build a tree node', function () {
                 const registered = commands.register('sum', sum)
                 const built = registered.build(5, 4).asTreeNode({ label: 'Sum' })
-                const item = built.treeItem
+                const item = built.getTreeItem()
 
                 assert.ok(item instanceof vscode.TreeItem)
                 assert.strictEqual(item.label, 'Sum')
@@ -164,17 +168,19 @@ describe('Commands', function () {
             assert.strictEqual(await registered.execute(2), 'moomoo')
         })
 
-        it('works with inheritance (no override)', function () {
+        it('works with inheritance (no override)', async function () {
             class Foo2 extends Foo {
-                public bar2(): void {}
+                public bar2(): number {
+                    return this.s.length
+                }
             }
 
             const bar1 = from(Foo2).declareBar('my.command1')
-            const bar2 = from(Foo2).declareBar('my.command2')
+            const bar2 = from(Foo2).declareBar2('my.command2')
 
             const instance = new Foo2('zero')
-            bar1.register(instance)
-            bar2.register(instance)
+            assert.strictEqual(await bar1.register(instance).execute(2), 'zerozero')
+            assert.strictEqual(await bar2.register(instance).execute(), 4)
         })
 
         it('works with inheritance (override)', async function () {
@@ -194,13 +200,13 @@ describe('Commands', function () {
             // make things harder to reason about. Commands are not really meant to be
             // dynamic, so any kind of differing behavior should rely on composition or
             // parametric polymorphism rather than classical polymorphism.
-            const declared = from(Foo2).declareBar('my.command')
-            const registered = declared.register(new Foo('one'))
-            assert.strictEqual(await registered.execute(2), 'ONEONE')
+            const declared1 = from(Foo2).declareBar('my.command')
+            const command1 = declared1.register(new Foo('one'))
+            assert.strictEqual(await command1.execute(2), 'ONEONE')
 
-            registered.dispose()
-            const next = from(Foo).declareBar('my.command')
-            assert.strictEqual(await next.register(new Foo2('one')).execute(3), 'oneoneone')
+            const declared2 = from(Foo).declareBar('my.command2')
+            const command2 = declared2.register(new Foo2('one'))
+            assert.strictEqual(await command2.execute(3), 'oneoneone')
         })
     })
 })

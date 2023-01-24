@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
 import { IteratorTransformer } from '../utilities/collectionUtils'
+import { createRefreshButton } from './buttons'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -169,17 +170,17 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices
  */
 export class IteratingQuickPickController<TResponse> {
     private state: IteratingQuickPickControllerState
+    private readonly refreshButton = createRefreshButton()
 
     // Default constructs are public static so they can be validated aganist by other functions.
-    public static readonly REFRESH_BUTTON: vscode.QuickInputButton = {
-        iconPath: new vscode.ThemeIcon('refresh'),
-        tooltip: localize('AWS.generic.refresh', 'Refresh'),
-    }
+
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     public static readonly NO_ITEMS_ITEM: vscode.QuickPickItem = {
         label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
         detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
         alwaysShow: true,
     }
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     public static readonly ERROR_ITEM: vscode.QuickPickItem = {
         label: localize('AWS.picker.dynamic.errorNode.label', 'There was an error retrieving more items.'),
         alwaysShow: true,
@@ -201,7 +202,7 @@ export class IteratingQuickPickController<TResponse> {
         ) => Promise<vscode.QuickPickItem[] | undefined>
     ) {
         // append buttons specific to iterating quickPick
-        this.quickPick.buttons = [...this.quickPick.buttons, IteratingQuickPickController.REFRESH_BUTTON]
+        this.quickPick.buttons = [...this.quickPick.buttons, this.refreshButton]
         this.quickPick.onDidHide(() => {
             // on selection, not "done" but we do want to stop background loading.
             // the caller should own the quick pick lifecycle, so we can either restart the picker from where it left off or dispose at that level.
@@ -272,7 +273,7 @@ export class IteratingQuickPickController<TResponse> {
         reject: (reason?: any) => void
     ): Promise<vscode.QuickPickItem[] | undefined> {
         switch (button) {
-            case IteratingQuickPickController.REFRESH_BUTTON:
+            case this.refreshButton:
                 await this.reset()
                 this.startRequests()
                 return undefined

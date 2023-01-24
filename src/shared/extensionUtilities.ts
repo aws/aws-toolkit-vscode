@@ -10,20 +10,19 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
-import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
+import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion } from './vscode/env'
-import globals from './extensionGlobals'
+import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
 
-const VSCODE_APPNAME = 'Visual Studio Code'
-const CLOUD9_APPNAME = 'AWS Cloud9'
-const CLOUD9_CN_APPNAME = 'Amazon Cloud9'
-const NOT_INITIALIZED = 'notInitialized'
+const vscodeAppname = 'Visual Studio Code'
+const cloud9Appname = 'AWS Cloud9'
+const cloud9CnAppname = 'Amazon Cloud9'
+const notInitialized = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
@@ -33,13 +32,13 @@ export enum IDE {
     unknown,
 }
 
-let computeRegion: string | undefined = NOT_INITIALIZED
+let computeRegion: string | undefined = notInitialized
 
 export function getIdeType(): IDE {
     const settings = DevSettings.instance
     if (
-        vscode.env.appName === CLOUD9_APPNAME ||
-        vscode.env.appName === CLOUD9_CN_APPNAME ||
+        vscode.env.appName === cloud9Appname ||
+        vscode.env.appName === cloud9CnAppname ||
         settings.get('forceCloud9', false)
     ) {
         return IDE.cloud9
@@ -47,7 +46,7 @@ export function getIdeType(): IDE {
 
     // Theia doesn't necessarily have all env propertie
     // so we should be defensive and assume appName is nullable.
-    if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
+    if (vscode.env.appName?.startsWith(vscodeAppname)) {
         return IDE.vscode
     }
 
@@ -99,53 +98,19 @@ function createCloud9Properties(company: string): IdeProperties {
 }
 
 /**
- * Returns whether or not this is Cloud9
+ * Decides if the current system is (the specified flavor of) Cloud9.
  */
-export function isCloud9(): boolean {
-    return getIdeType() === IDE.cloud9
+export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): boolean {
+    const cloud9 = getIdeType() === IDE.cloud9
+    if (!cloud9 || flavor === 'any') {
+        return cloud9
+    }
+    const codecat = getCodeCatalystDevEnvId() !== undefined
+    return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
 }
 
 export function isCn(): boolean {
     return getComputeRegion()?.startsWith('cn') ?? false
-}
-
-export class ExtensionUtilities {
-    public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'dist', 'libs')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'js')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'css')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const scripts: vscode.Uri[] = []
-        _.forEach(names, scriptName => {
-            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
-            scripts.push(webview.asWebviewUri(scriptPathOnDisk))
-        })
-
-        return scripts
-    }
-
-    public static getFilesAsVsCodeResources(rootdir: string, filenames: string[], webview: vscode.Webview) {
-        const arr: vscode.Uri[] = []
-        for (const filename of filenames) {
-            arr.push(webview.asWebviewUri(vscode.Uri.file(path.join(rootdir, filename))))
-        }
-
-        return arr
-    }
 }
 
 /**
@@ -215,7 +180,7 @@ export async function createQuickStartWebview(
         { enableScripts: true }
     )
 
-    const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+    const baseTemplateFn = _.template(BaseTemplates.simpleHtml)
 
     const htmlBody = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
@@ -304,8 +269,12 @@ async function promptQuickstart(): Promise<void> {
  * @param context VS Code Extension Context
  */
 export function showWelcomeMessage(context: vscode.ExtensionContext): void {
+    if (getCodeCatalystDevEnvId() !== undefined) {
+        // Do not show clippy in CodeCatalyst development environments.
+        return
+    }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
-    if (version === EXTENSION_ALPHA_VERSION) {
+    if (version === extensionAlphaVersion) {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.startup.toastIfAlpha',
@@ -390,7 +359,7 @@ export async function initializeComputeRegion(
 }
 
 export function getComputeRegion(): string | undefined {
-    if (computeRegion === NOT_INITIALIZED) {
+    if (computeRegion === notInitialized) {
         throw new Error('Attempted to get compute region without initializing.')
     }
 

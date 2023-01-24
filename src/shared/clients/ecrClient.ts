@@ -5,12 +5,11 @@
 
 import { ECR } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
-export interface EcrRepository {
-    repositoryName: string
-    repositoryArn: string
-    repositoryUri: string
-}
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
+import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+
+export type EcrRepository = RequiredProps<ECR.Repository, 'repositoryName' | 'repositoryUri' | 'repositoryArn'>
 
 export type EcrClient = ClassToInterfaceType<DefaultEcrClient>
 export class DefaultEcrClient {
@@ -58,6 +57,14 @@ export class DefaultEcrClient {
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
+    }
+
+    public listAllRepositories(): AsyncCollection<EcrRepository[]> {
+        const requester = async (req: ECR.DescribeRepositoriesRequest) =>
+            (await this.createSdkClient()).describeRepositories(req).promise()
+        const collection = pageableToCollection(requester, {}, 'nextToken', 'repositories')
+
+        return collection.filter(isNonNullable).map(list => list.map(repo => (assertHasProps(repo), repo)))
     }
 
     public async createRepository(repositoryName: string): Promise<void> {

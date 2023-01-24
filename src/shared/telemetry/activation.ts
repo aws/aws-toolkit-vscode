@@ -13,14 +13,14 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { fromExtensionManifest, openSettings, Settings } from '../settings'
-
-const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+import { openSettings, Settings } from '../settings'
+import { TelemetryConfig } from './util'
+import { isAutomation, isReleaseVersion } from '../vscode/env'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
 
 // Telemetry Notice Versions
@@ -28,55 +28,41 @@ export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionA
 // track scenarios when we may need to re-prompt the user about telemetry.
 // Version 1 was the original notice, allowing users to enable/disable/defer telemetry
 // Version 2 states that there is metrics gathering, which can be adjusted in the options
-const CURRENT_TELEMETRY_NOTICE_VERSION = 2
+const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-eslint/naming-convention
 
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
 export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+    const config = new TelemetryConfig(settings)
     globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
 
-    const config = new TelemetryConfig(
-        settings,
-        // Disable `throwInvalid` because:
+    try {
+        globals.telemetry.telemetryEnabled = config.isEnabled()
+
+        extensionContext.subscriptions.push(
+            config.onDidChange(event => {
+                if (event.key === 'telemetry') {
+                    globals.telemetry.telemetryEnabled = config.isEnabled()
+                }
+            })
+        )
+
+        // Prompt user about telemetry if they haven't been
+        if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
+            showTelemetryNotice(extensionContext)
+        }
+
+        await globals.telemetry.start()
+    } catch (e) {
+        // Only throw in a production build because:
         //   1. Telemetry must never prevent normal Toolkit operation.
-        //   2. For tests, bad data is intentional, so these errors add unwanted noise in the test logs.
-        false
-    )
-    globals.telemetry.telemetryEnabled = config.isEnabled()
+        //   2. We want to know if something is not working ASAP during development.
+        if (isAutomation() || !isReleaseVersion()) {
+            throw e
+        }
 
-    extensionContext.subscriptions.push(
-        config.onDidChange(event => {
-            if (event.key === 'telemetry') {
-                globals.telemetry.telemetryEnabled = config.isEnabled()
-            }
-        })
-    )
-
-    // Prompt user about telemetry if they haven't been
-    if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
-        showTelemetryNotice(extensionContext)
-    }
-}
-
-export function convertLegacy(value: unknown): boolean {
-    if (typeof value === 'boolean') {
-        return value
-    }
-
-    // Set telemetry value to boolean if the current value matches the legacy value
-    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
-        return false
-    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
-        return true
-    } else {
-        throw new TypeError(`Unknown telemetry setting: ${value}`)
-    }
-}
-
-export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
-    public isEnabled(): boolean {
-        return this.get('telemetry', true)
+        getLogger().error(`telemetry: failed to activate: %s`, e)
     }
 }
 

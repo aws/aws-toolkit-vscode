@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl } from '../../shared/constants'
-import { recordAwsHelp } from '../../shared/telemetry/telemetry.gen'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -20,25 +20,24 @@ export async function getAppNodes(): Promise<TreeNode[]> {
         return [createPlaceholderItem(localize('AWS.cdk.explorerNode.noApps', '[No CDK Apps found in Workspaces]'))]
     }
 
-    return appsFound.map(appLocation => new AppNode(appLocation))
+    return appsFound.map(appLocation => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
 }
 
 export class CdkRootNode implements TreeNode {
     public readonly id = 'cdk'
-    public readonly treeItem = this.createTreeItem()
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
 
-    public async getChildren() {
-        return (await getAppNodes()).sort((a, b) => a.treeItem?.label?.localeCompare(b.treeItem?.label ?? '') ?? 0)
+    public getChildren() {
+        return getAppNodes()
     }
 
     public refresh(): void {
         this.onDidChangeChildrenEmitter.fire()
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const item = new vscode.TreeItem('CDK')
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsCdkRootNode'
@@ -52,5 +51,5 @@ export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.r
 
 Commands.register('aws.cdk.viewDocs', () => {
     vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
-    recordAwsHelp({ name: 'cdk' })
+    telemetry.aws_help.emit({ name: 'cdk' })
 })

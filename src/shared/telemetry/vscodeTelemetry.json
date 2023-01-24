@@ -1,16 +1,16 @@
 {
     "types": [
         {
-            "name": "ssmOperation",
-            "type": "string",
-            "allowedValues": ["Create", "Update"],
-            "description": "SSM Publish Document operation type"
-        },
-        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
             "description": "SSM Create document format selection"
+        },
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
         },
         {
             "name": "starterTemplate",
@@ -18,13 +18,47 @@
             "description": "Starter template chosen during create document"
         },
         {
-            "name": "architecture",
+            "name": "command",
             "type": "string",
-            "description": "SAM Application architecture",
-            "allowedValues": ["x86_64", "arm64"]
+            "description": "The id of a VS Code command"
+        },
+        {
+            "name": "debounceCount",
+            "type": "int",
+            "description": "Number of times the telemetry event was debounced before emission"
+        },
+        {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
         }
     ],
     "metrics": [
+        {
+            "name": "vscode_executeCommand",
+            "description": "Emitted whenever a registered Toolkit command is executed",
+            "passive": true,
+            "metadata": [
+                { "type": "command" },
+                { "type": "debounceCount" },
+                { "type": "duration" },
+                { "type": "result" },
+                {
+                    "type": "reason",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "aws_autoUpdateBeta",
+            "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
+            "passive": true
+        },
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [{ "type": "result" }, { "type": "cli" }]
+        },
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
@@ -40,38 +74,6 @@
                 {
                     "type": "credentialSourceId",
                     "required": false
-                }
-            ]
-        },
-        {
-            "name": "stepfunctions_previewstatemachine",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_createStateMachineFromTemplate",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_downloadStateMachineDefinition",
-            "description": "",
-            "unit": "None",
-            "metadata": [
-                {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "stepfunctions_executeStateMachineView",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_executeStateMachine",
-            "description": "",
-            "unit": "None",
-            "metadata": [
-                {
-                    "type": "result"
                 }
             ]
         },
@@ -147,41 +149,85 @@
             ]
         },
         {
-            "name": "sam_init",
-            "description": "Called when initing a sam application",
+            "name": "stepfunctions_createStateMachineFromTemplate",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_downloadStateMachineDefinition",
+            "description": "",
+            "unit": "None",
             "metadata": [
-                { "type": "result" },
-                { "type": "runtime", "required": false },
-                { "type": "templateName", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType", "required": false },
-                { "type": "reason", "required": false },
-                { "type": "eventBridgeSchema", "required": false },
-                { "type": "architecture", "required": false }
+                {
+                    "type": "result"
+                }
             ]
         },
         {
-            "name": "apigateway_invokeLocal",
-            "description": "Invoking one simulated API Gateway call using the SAM cli",
+            "name": "stepfunctions_executeStateMachine",
+            "description": "",
+            "unit": "None",
             "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "httpMethod", "required": false },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
+                {
+                    "type": "result"
+                }
             ]
         },
         {
-            "name": "lambda_invokeLocal",
-            "description": "Called when invoking lambdas locally (with SAM in most toolkits)",
-            "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType" },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
-            ]
+            "name": "stepfunctions_executeStateMachineView",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_previewstatemachine",
+            "description": ""
+        },
+        {
+            "name": "vscode_activeRegions",
+            "description": "Record the number of active regions at startup and when regions are added/removed",
+            "unit": "Count",
+            "passive": true
+        },
+        {
+            "name": "aws_showExplorerErrorDetails",
+            "description": "Called when getting more details about errors thrown by the explorer",
+            "metadata": [{ "type": "result" }]
+        },
+        {
+            "name": "aws_showRegion",
+            "description": "Records a call to add a region to the explorer"
+        },
+        {
+            "name": "aws_hideRegion",
+            "description": "Records a call to remove a region from the explorer"
+        },
+        {
+            "name": "sam_detect",
+            "description": "Called when detecting the location of the SAM CLI",
+            "metadata": [{ "type": "result" }],
+            "passive": true
+        },
+        {
+            "name": "cdk_explorerDisabled",
+            "description": "Called when expanding the CDK explorer is disabled"
+        },
+        {
+            "name": "cdk_explorerEnabled",
+            "description": "Called when the CDK explorer is enabled"
+        },
+        {
+            "name": "cdk_appExpanded",
+            "description": "Called when the CDK explorer is expanded"
+        },
+        {
+            "name": "cdk_provideFeedback",
+            "description": "Called when providing feedback for CDK"
+        },
+        {
+            "name": "cdk_help",
+            "description": "Called when clicking on help for CDK"
+        },
+        {
+            "name": "cdk_refreshExplorer",
+            "description": "Called when refreshing the CDK explorer"
         },
         {
             "name": "sam_attachDebugger",
@@ -192,8 +238,12 @@
                 { "type": "runtime" },
                 { "type": "attempts" },
                 { "type": "duration" },
-                { "type": "architecture", "required": false }
+                { "type": "lambdaArchitecture", "required": false }
             ]
+        },
+        {
+            "name": "sam_openConfigUi",
+            "description": "Called after opening the SAM Config UI"
         }
     ]
 }

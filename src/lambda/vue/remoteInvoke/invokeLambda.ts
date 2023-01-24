@@ -7,8 +7,7 @@ import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { ExtContext } from '../../../shared/extensions'
 
 import { getLogger } from '../../../shared/logger'
@@ -19,7 +18,8 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import * as telemetry from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -54,7 +54,7 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async invokeLambda(input: string): Promise<void> {
-        let result: telemetry.Result = 'Succeeded'
+        let result: Result = 'Succeeded'
 
         this.channel.show()
         this.channel.appendLine('Loading response...')
@@ -78,7 +78,7 @@ export class RemoteInvokeWebview extends VueWebview {
             this.channel.appendLine('')
             result = 'Failed'
         } finally {
-            telemetry.recordLambdaInvokeRemote({ result, passive: false })
+            telemetry.lambda_invokeRemote.emit({ result, passive: false })
         }
     }
 
@@ -128,7 +128,7 @@ export async function invokeRemoteLambda(
     }
 ) {
     const inputs = await getSampleLambdaPayloads()
-    const client = globals.toolkitClientBuilder.createLambdaClient(params.functionNode.regionCode)
+    const client = new DefaultLambdaClient(params.functionNode.regionCode)
 
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
         FunctionName: params.functionNode.configuration.FunctionName ?? '',

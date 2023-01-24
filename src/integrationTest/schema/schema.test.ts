@@ -56,4 +56,8 @@ describe('Sam Schema Regression', function () {
         assertDefinition(samSchema, 'AWS::Serverless::Function.RequestModel')
         assertDefinition(samSchema, 'AWS::Serverless::Function.RequestParameter')
     })
+
+    it('has Property AddDefaultAuthorizerToCorsPreflight in AWS::Serverless::Api.Auth', function () {
+        assertDefinitionProperty(samSchema, 'AWS::Serverless::Api.Auth', 'AddDefaultAuthorizerToCorsPreflight')
+    })
 })

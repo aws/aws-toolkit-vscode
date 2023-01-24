@@ -36,6 +36,21 @@ export function shared<T, U extends any[]>(fn: (...args: U) => Promise<T>): (...
  */
 export function once<T>(fn: () => T): () => T {
     let val: T
+    let ran = false
 
-    return () => (val ??= fn())
+    return () => (ran ? val : ((val = fn()), (ran = true), val))
+}
+
+/**
+ * Creates a new function that stores the result of a call.
+ *
+ * ### Important
+ * This currently uses an extremely simple mechanism for creating keys from parameters.
+ * Objects are effectively treated as a single key, while primitive values will behave as
+ * expected with a few very uncommon exceptions.
+ */
+export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U) => T {
+    const cache: { [key: string]: T | undefined } = {}
+
+    return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
 }

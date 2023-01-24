@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import 'source-map-support/register'
+import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import * as Mocha from 'mocha'
 import * as glob from 'glob'
@@ -12,7 +12,7 @@ import * as fs from 'fs-extra'
 /**
  * @param initTests List of relative paths to test files to run before all discovered tests.
  */
-export async function runTestsInFolder(testFolder: string, initTests: string[] = []): Promise<void> {
+export async function runTests(testFolder: string, initTests: string[] = [], testFiles?: string[]): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
     }
@@ -57,6 +57,10 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
     const testFile = process.env['TEST_FILE']?.replace('.ts', '.js')
     const testFilePath = testFile ? path.resolve(dist, testFile) : undefined
 
+    if (testFile && testFiles) {
+        throw new Error('Individual file and list of files given to run tests on. One must be chosen.')
+    }
+
     // Explicitly add additional tests (globalSetup) as the first tests.
     // TODO: migrate to mochaHooks (requires mocha 8.x).
     // https://mochajs.org/#available-root-hooks
@@ -72,7 +76,6 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
 
     function runMocha(files: string[]): Promise<void> {
         files.forEach(f => mocha.addFile(path.resolve(dist, f)))
-
         return new Promise<void>((resolve, reject) => {
             mocha.run(failures => {
                 if (failures > 0) {
@@ -96,16 +99,17 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
             console.log('No test coverage found')
         }
     }
-
-    const files = await new Promise<string[]>((resolve, reject) => {
-        glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(files)
-            }
-        })
-    })
+    const files =
+        testFiles ??
+        (await new Promise<string[]>((resolve, reject) => {
+            glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(files)
+                }
+            })
+        }))
 
     await runMocha(files)
     await writeCoverage()

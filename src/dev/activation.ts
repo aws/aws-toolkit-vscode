@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as config from './config'
 import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
@@ -12,6 +13,11 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
+import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
+import { watchBetaVSIX } from './beta'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { entries } from '../shared/utilities/tsUtils'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 interface MenuOption {
     readonly label: string
@@ -21,19 +27,53 @@ interface MenuOption {
 }
 
 /**
- * Currently contains all known developer tools.
+ * Defines AWS Toolkit developer tools.
  *
  * Options are displayed as quick-pick items. The {@link MenuOption.executor} callback is ran
- * if the user selects an option. There is no support for name-spacing. Just add the relevant
+ * on selection. There is no support for name-spacing. Just add the relevant
  * feature/module as a description so it can be moved around easier.
  */
 const menuOptions: Record<string, MenuOption> = {
+    installVsix: {
+        label: 'Install VSIX on Remote Environment',
+        description: 'CodeCatalyst',
+        detail: 'Automatically upload/install a VSIX to a remote host',
+        executor: installVsixCommand,
+    },
+    openTerminal: {
+        label: 'Open Remote Terminal',
+        description: 'CodeCatalyst',
+        detail: 'Open a new terminal connected to the remote environment',
+        executor: openTerminalCommand,
+    },
+    deleteDevEnv: {
+        label: 'Delete Workspace',
+        description: 'CodeCatalyst',
+        detail: 'Deletes the selected Dev Environment',
+        executor: deleteDevEnvCommand,
+    },
     editStorage: {
         label: 'Edit Storage',
         description: 'VS Code',
         detail: 'Edit a key in global/secret storage as a JSON document',
         executor: openStorageFromInput,
     },
+    showGlobalState: {
+        label: 'Show Global State',
+        description: 'AWS Toolkit',
+        detail: 'Shows various state (including environment variables)',
+        executor: showGlobalState,
+    },
+}
+
+export class GlobalStateDocumentProvider implements vscode.TextDocumentContentProvider {
+    provideTextDocumentContent(uri: vscode.Uri): string {
+        let s = 'Environment variables known to AWS Toolkit:\n'
+        for (const [k, v] of Object.entries(process.env)) {
+            s += `${k}=${v}\n`
+        }
+        return s
+    }
 }
 
 /**
@@ -53,17 +93,18 @@ export function activate(ctx: ExtContext): void {
 
     ctx.extensionContext.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
-        vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions))
+        vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
+        vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new GlobalStateDocumentProvider())
     )
 
     updateMode()
 
     const editor = new ObjectEditor(ctx.extensionContext)
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
-}
 
-function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
-    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
+    if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
+        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
+    }
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
@@ -226,6 +267,12 @@ async function openStorageFromInput() {
     if (response) {
         return openStorageCommand.execute(response.target, response.key)
     }
+}
+
+async function showGlobalState() {
+    const uri = vscode.Uri.parse('aws-dev2:global-state')
+    const doc = await vscode.workspace.openTextDocument(uri)
+    await vscode.window.showTextDocument(doc, { preview: false })
 }
 
 export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')

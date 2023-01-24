@@ -4,19 +4,43 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
 import {
     Cache,
     credentialsRegionDataListMap,
     SchemasDataProvider,
 } from '../../../eventSchemas/providers/schemasDataProvider'
-import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import { stub } from '../../utilities/stubber'
 
 describe('schemasDataProvider', function () {
+    const testRegion = 'testRegion'
+    const testRegion2 = 'testRegion2'
+    const testRegistry = 'testRegistry'
+    const testRegistry2 = 'testRegistry2'
+    const testSchema = 'testSchema'
+    const testSchema2 = 'testSchema2'
+    const registrySummary1 = { RegistryName: testRegistry }
+    const registrySummary2 = { RegistryName: testRegistry2 }
+    const schemaSummary = { SchemaName: testSchema }
+    const schemaSummary2 = { SchemaName: testSchema2 }
+    const testCredentials = {} as any as AWS.Credentials
+    const testCredentials2 = {} as any as AWS.Credentials
+
     let dataProviderObject: SchemasDataProvider
     let cacheData: Cache
-    let schemaClient: SchemaClient
+
+    function createSchemaClient() {
+        const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
+
+        client.listRegistries.onCall(0).returns(asyncGenerator([registrySummary1, registrySummary2]))
+        client.listRegistries.onCall(1).returns(asyncGenerator([registrySummary1]))
+
+        client.listSchemas.onCall(0).returns(asyncGenerator([schemaSummary, schemaSummary2]))
+        client.listSchemas.onCall(1).returns(asyncGenerator([schemaSummary]))
+
+        return client
+    }
 
     beforeEach(async function () {
         const regionDataWithCredentials: credentialsRegionDataListMap = {
@@ -25,52 +49,24 @@ describe('schemasDataProvider', function () {
         }
         cacheData = new Cache([regionDataWithCredentials])
         dataProviderObject = new SchemasDataProvider(cacheData)
-        schemaClient = {
-            listRegistries() {
-                throw new Error('Not Implemented')
-            },
-            listSchemas() {
-                throw new Error('Not Implemented')
-            },
-        } as unknown as SchemaClient
-
-        const clientStubRegistry = sinon.stub(schemaClient, 'listRegistries')
-        clientStubRegistry.onCall(0).returns(asyncGenerator([registrySummary1, registrySummary2]))
-        clientStubRegistry.onCall(1).returns(asyncGenerator([registrySummary1]))
-
-        const clientStubSchema = sinon.stub(schemaClient, 'listSchemas')
-        clientStubSchema.onCall(0).returns(asyncGenerator([schemaSummary, schemaSummary2]))
-        clientStubSchema.onCall(1).returns(asyncGenerator([schemaSummary]))
     })
-
-    afterEach(function () {
-        sinon.restore()
-    })
-
-    const TEST_REGION = 'testRegion'
-    const TEST_REGION2 = 'testRegion2'
-    const TEST_REGISTRY = 'testRegistry'
-    const TEST_REGISTRY2 = 'testRegistry2'
-    const TEST_SCHEMA = 'testSchema'
-    const TEST_SCHEMA2 = 'testSchema2'
-    const registrySummary1 = { RegistryName: TEST_REGISTRY }
-    const registrySummary2 = { RegistryName: TEST_REGISTRY2 }
-    const schemaSummary = { SchemaName: TEST_SCHEMA }
-    const schemaSummary2 = { SchemaName: TEST_SCHEMA2 }
-    const testCredentials = {} as any as AWS.Credentials
-    const testCredentials2 = {} as any as AWS.Credentials
 
     describe('getRegistries', function () {
         it('should return registries for given region', async function () {
-            const registryNames = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
+            const registryNames = await dataProviderObject.getRegistries(
+                testRegion,
+                createSchemaClient(),
+                testCredentials
+            )
             assert.ok(registryNames!.length === 2, 'unexpected number of registries returned')
-            assert.strictEqual(registryNames![0], TEST_REGISTRY, 'TEST_REGISTRY name should match')
-            assert.strictEqual(registryNames![1], TEST_REGISTRY2, 'TEST_REGISTRY2 name should match')
+            assert.strictEqual(registryNames![0], testRegistry, 'testRegistry name should match')
+            assert.strictEqual(registryNames![1], testRegistry2, 'testRegistry2 name should match')
         })
 
         it('should retain results when it is queried with same credentials ', async function () {
-            await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
-            await dataProviderObject.getRegistries(TEST_REGION2, schemaClient, testCredentials)
+            const client = createSchemaClient()
+            await dataProviderObject.getRegistries(testRegion, client, testCredentials)
+            await dataProviderObject.getRegistries(testRegion2, client, testCredentials)
 
             assert.ok(
                 cacheData.credentialsRegionDataList.length === 1,
@@ -89,8 +85,8 @@ describe('schemasDataProvider', function () {
             const regionData1 = cacheData.credentialsRegionDataList[0].regionDataList[0]
             const regionData2 = cacheData.credentialsRegionDataList[0].regionDataList[1]
 
-            assert.strictEqual(regionData1.region, TEST_REGION)
-            assert.strictEqual(regionData2.region, TEST_REGION2)
+            assert.strictEqual(regionData1.region, testRegion)
+            assert.strictEqual(regionData2.region, testRegion2)
 
             assert.ok(regionData1.registryNames.length === 2, 'First region should have two registryNames')
             assert.ok(regionData2.registryNames.length === 1, 'Second region should have one registryName')
@@ -109,8 +105,9 @@ describe('schemasDataProvider', function () {
         })
 
         it('should retain results when it is queried with different credentials ', async function () {
-            await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
-            await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials2)
+            const client = createSchemaClient()
+            await dataProviderObject.getRegistries(testRegion, client, testCredentials)
+            await dataProviderObject.getRegistries(testRegion, client, testCredentials2)
 
             assert.ok(cacheData.credentialsRegionDataList.length === 2, 'Cache should contain data for two credentials')
             assert.strictEqual(
@@ -135,9 +132,11 @@ describe('schemasDataProvider', function () {
         })
 
         it('should return undefined when error occurs', async function () {
-            sinon.restore()
-            sinon.stub(schemaClient, 'listRegistries').throws(new Error('Custom error'))
-            const result = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
+            const client = createSchemaClient()
+            client.listRegistries.reset()
+            client.listRegistries.throws(new Error('Custom error'))
+
+            const result = await dataProviderObject.getRegistries(testRegion, client, testCredentials)
 
             assert.strictEqual(result, undefined)
             assert.ok(
@@ -150,9 +149,9 @@ describe('schemasDataProvider', function () {
     describe('getSchemas', function () {
         it('should return schemas for given region', async function () {
             const schemas = await dataProviderObject.getSchemas(
-                TEST_REGION,
-                TEST_REGISTRY,
-                schemaClient,
+                testRegion,
+                testRegistry,
+                createSchemaClient(),
                 testCredentials
             )
 
@@ -162,8 +161,9 @@ describe('schemasDataProvider', function () {
         })
 
         it('should retain results when it is queried with same credentials ', async function () {
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials)
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY2, schemaClient, testCredentials)
+            const client = createSchemaClient()
+            await dataProviderObject.getSchemas(testRegion, testRegistry, client, testCredentials)
+            await dataProviderObject.getSchemas(testRegion, testRegistry2, client, testCredentials)
 
             assert.ok(
                 cacheData.credentialsRegionDataList.length === 1,
@@ -199,8 +199,9 @@ describe('schemasDataProvider', function () {
         })
 
         it('should retain results when it is queried with different credentials ', async function () {
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials)
-            await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials2)
+            const client = createSchemaClient()
+            await dataProviderObject.getSchemas(testRegion, testRegistry, client, testCredentials)
+            await dataProviderObject.getSchemas(testRegion, testRegistry, client, testCredentials2)
 
             assert.ok(cacheData.credentialsRegionDataList.length === 2, 'Cache should contain data for two credentials')
             assert.strictEqual(
@@ -225,14 +226,11 @@ describe('schemasDataProvider', function () {
         })
 
         it('should return undefined when error occurs ', async function () {
-            sinon.restore()
-            sinon.stub(schemaClient, 'listSchemas').throws(new Error('Custom error'))
-            const result = await dataProviderObject.getSchemas(
-                TEST_REGION,
-                TEST_REGISTRY,
-                schemaClient,
-                testCredentials
-            )
+            const client = createSchemaClient()
+            client.listSchemas.reset()
+            client.listSchemas.throws(new Error('Custom error'))
+
+            const result = await dataProviderObject.getSchemas(testRegion, testRegistry, client, testCredentials)
 
             assert.strictEqual(result, undefined)
             assert.ok(

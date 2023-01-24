@@ -5,8 +5,9 @@
 
 import * as assert from 'assert'
 import { SSM } from 'aws-sdk'
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
+import { stub } from '../../utilities/stubber'
 
 describe('DocumentItemNode', async function () {
     let testNode: DocumentItemNode
@@ -17,7 +18,7 @@ describe('DocumentItemNode', async function () {
     const fakeRegion = 'us-east-1'
 
     beforeEach(function () {
-        const client = {} as unknown as SsmDocumentClient
+        const client = stub(DefaultSsmDocumentClient, { regionCode: fakeRegion })
         testNode = new DocumentItemNode(testDoc, client, fakeRegion)
     })
 

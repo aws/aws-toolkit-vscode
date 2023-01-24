@@ -19,9 +19,9 @@ import globals from '../../shared/extensionGlobals'
  * @see CredentialsProviderType
  */
 export class Ec2CredentialsProvider implements CredentialsProvider {
-    private credentials: Credentials | undefined
     private region: string | undefined
     private available: boolean | undefined
+    private readonly createTime = Date.now()
 
     public constructor(private metadata: Ec2MetadataClient = new DefaultEc2MetadataClient()) {}
 
@@ -80,17 +80,14 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
     }
 
     public getHashCode(): string {
-        return getStringHash(JSON.stringify(this.credentials))
+        return getStringHash(this.getProviderType() + `-${this.createTime}`)
     }
 
-    public canAutoConnect(): boolean {
+    public async canAutoConnect(): Promise<boolean> {
         return true
     }
 
     public async getCredentials(): Promise<Credentials> {
-        if (!this.credentials) {
-            this.credentials = await fromInstanceMetadata()()
-        }
-        return this.credentials
+        return fromInstanceMetadata()()
     }
 }

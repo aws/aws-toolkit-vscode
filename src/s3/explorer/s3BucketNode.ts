@@ -5,13 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import {
-    Bucket,
-    CreateFolderRequest,
-    CreateFolderResponse,
-    S3Client,
-    UploadFileRequest,
-} from '../../shared/clients/s3Client'
+import { Bucket, CreateFolderRequest, CreateFolderResponse, S3Client } from '../../shared/clients/s3Client'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -26,7 +20,7 @@ import { S3FolderNode } from './s3FolderNode'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from './s3Nodes'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
@@ -42,10 +36,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     ) {
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.s3),
-            light: vscode.Uri.file(globals.iconPaths.light.s3),
-        }
+        this.iconPath = getIcon('aws-s3-bucket')
         this.contextValue = 'awsS3BucketNode'
     }
 
@@ -92,14 +83,6 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
-    }
-
-    /**
-     * See {@link S3Client.uploadFile}.
-     */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
-        const managedUpload = await this.s3.uploadFile(request)
-        await managedUpload.promise()
     }
 
     /**

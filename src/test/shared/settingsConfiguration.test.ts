@@ -8,20 +8,21 @@ import * as vscode from 'vscode'
 import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
+import { Optional } from '../../shared/utilities/typeConstructors'
 
-const SETTINGS_TARGET = vscode.ConfigurationTarget.Workspace
+const settingsTarget = vscode.ConfigurationTarget.Workspace
 
 describe('Settings', function () {
     // These tests use an actual extension setting, because vscode.WorkspaceConfiguration fails when
     // you attempt to update one that isn't defined in package.json. We will restore the setting value
     // at the end of the tests.
-    const SETTING_KEY = 'aws.telemetry'
+    const settingKey = 'aws.samcli.lambdaTimeout'
 
     let sut: Settings
 
     beforeEach(async function () {
-        sut = new Settings(SETTINGS_TARGET)
-        await sut.update(SETTING_KEY, undefined)
+        sut = new Settings(settingsTarget)
+        await sut.update(settingKey, undefined)
     })
 
     const scenarios = [
@@ -48,9 +49,9 @@ describe('Settings', function () {
 
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.update(SETTING_KEY, scenario.testValue, SETTINGS_TARGET)
+                await settings.update(settingKey, scenario.testValue, settingsTarget)
 
-                const actualValue = sut.get(SETTING_KEY)
+                const actualValue = sut.get(settingKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
         })
@@ -67,22 +68,21 @@ describe('Settings', function () {
             //
             // Setting exists but has wrong type:
             //
-            await settings.update(SETTING_KEY, true, SETTINGS_TARGET)
-            assert.throws(() => sut.get(SETTING_KEY, String))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
-            assert.throws(() => sut.get(SETTING_KEY, Object))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
+            await settings.update(settingKey, 123, settingsTarget)
+            assert.throws(() => sut.get(settingKey, String))
+            assert.throws(() => sut.get(settingKey, Object))
+            assert.throws(() => sut.get(settingKey, Boolean))
         })
     })
 
     describe('update', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await sut.update(SETTING_KEY, scenario.testValue)
+                await sut.update(settingKey, scenario.testValue)
 
                 // Write tests need to retrieve vscode.WorkspaceConfiguration after writing the value
                 // because they seem to cache values.
-                const savedValue = vscode.workspace.getConfiguration().get(SETTING_KEY)
+                const savedValue = vscode.workspace.getConfiguration().get(settingKey)
 
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
@@ -90,7 +90,7 @@ describe('Settings', function () {
     })
 
     describe('onDidChangeSection', function () {
-        const rootSection = SETTING_KEY.split('.').shift() ?? ''
+        const rootSection = settingKey.split('.').shift() ?? ''
 
         it('fires after a section changes', async function () {
             let eventCount = 0
@@ -99,10 +99,10 @@ describe('Settings', function () {
             await sut.update('editor.tabSize', 4)
             assert.strictEqual(eventCount, 0)
 
-            await sut.update(SETTING_KEY, false)
+            await sut.update(settingKey, false)
             assert.strictEqual(eventCount, 1)
 
-            await sut.update(SETTING_KEY, true)
+            await sut.update(settingKey, true)
             assert.strictEqual(eventCount, 2)
         })
 
@@ -112,9 +112,9 @@ describe('Settings', function () {
                 sut.onDidChangeSection(rootSection, resolve)
             })
 
-            await sut.update(SETTING_KEY, true)
+            await sut.update(settingKey, true)
 
-            const subKey = SETTING_KEY.replace(`${rootSection}.`, '')
+            const subKey = settingKey.replace(`${rootSection}.`, '')
             const affectsConfiguration = await changedEvent.then(e => e.affectsConfiguration.bind(e))
 
             assert.strictEqual(affectsConfiguration('foo'), false)
@@ -140,6 +140,11 @@ describe('Settings', function () {
             assert.strictEqual(instance.get('profile', 'bar'), 'bar')
         })
 
+        it('can use `undefined` as a default value', function () {
+            const OptionalProfile = fromExtensionManifest('aws', { profile: Optional(String) })
+            assert.strictEqual(new OptionalProfile(settings).get('profile', undefined), undefined)
+        })
+
         it('can use a saved setting', async function () {
             await settings.update('aws.profile', 'foo')
             assert.strictEqual(instance.get('profile'), 'foo')
@@ -148,6 +153,11 @@ describe('Settings', function () {
         it('ignores the default value if the setting exists', async function () {
             await settings.update('aws.profile', 'foo')
             assert.strictEqual(instance.get('profile', 'bar'), 'foo')
+        })
+
+        it('uses the default value if the setting is invalid', async function () {
+            await settings.update('aws.profile', true)
+            assert.strictEqual(instance.get('profile', 'foo'), 'foo')
         })
 
         it('throws when the types do not match', async function () {
@@ -163,7 +173,7 @@ describe('Settings', function () {
 })
 
 describe('DevSetting', function () {
-    const TEST_SETTING = 'forceCloud9'
+    const testSetting = 'forceCloud9'
 
     let settings: ClassToInterfaceType<Settings>
     let sut: DevSettings
@@ -174,19 +184,19 @@ describe('DevSetting', function () {
     })
 
     it('can read settings', async function () {
-        assert.strictEqual(sut.get(TEST_SETTING, false), false)
-        await settings.update(`aws.dev.${TEST_SETTING}`, true)
-        assert.strictEqual(sut.get(TEST_SETTING, false), true)
+        assert.strictEqual(sut.get(testSetting, false), false)
+        await settings.update(`aws.dev.${testSetting}`, true)
+        assert.strictEqual(sut.get(testSetting, false), true)
     })
 
     it('only changes active settings if a value exists', function () {
-        assert.strictEqual(sut.get(TEST_SETTING, true), true)
+        assert.strictEqual(sut.get(testSetting, true), true)
         assert.deepStrictEqual(sut.activeSettings, {})
     })
 
     it('only changes active settings if the value is not the default', async function () {
-        await settings.update(`aws.dev.${TEST_SETTING}`, false)
-        assert.strictEqual(sut.get(TEST_SETTING, false), false)
+        await settings.update(`aws.dev.${testSetting}`, false)
+        assert.strictEqual(sut.get(testSetting, false), false)
         assert.deepStrictEqual(sut.activeSettings, {})
     })
 
@@ -196,25 +206,14 @@ describe('DevSetting', function () {
             sut.onDidChangeActiveSettings(() => resolve(sut.activeSettings))
         })
 
-        await settings.update(`aws.dev.${TEST_SETTING}`, true)
-        assert.strictEqual(sut.get(TEST_SETTING, false), true)
-        assert.deepStrictEqual(await state, { [TEST_SETTING]: true })
-    })
-
-    it('bubbles up errors when in automation', async function () {
-        await settings.update(`aws.dev.${TEST_SETTING}`, 'junk')
-        assert.throws(() => sut.get(TEST_SETTING, false))
-    })
-
-    it('only throws in automation', async function () {
-        const noAutomation = new DevSettings(settings, false)
-        await settings.update(`aws.dev.${TEST_SETTING}`, 'junk')
-        assert.strictEqual(noAutomation.get(TEST_SETTING, true), true)
+        await settings.update(`aws.dev.${testSetting}`, true)
+        assert.strictEqual(sut.get(testSetting, false), true)
+        assert.deepStrictEqual(await state, { [testSetting]: true })
     })
 })
 
 describe('PromptSetting', function () {
-    const PROMPT_SETTING_KEY = 'aws.suppressPrompts'
+    const promptSettingKey = 'aws.suppressPrompts'
     const target = vscode.ConfigurationTarget.Workspace
 
     let settings: Settings
@@ -243,10 +242,10 @@ describe('PromptSetting', function () {
         ]
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                const defaultSetting = settings.get(PROMPT_SETTING_KEY, Object)
-                await settings.update(PROMPT_SETTING_KEY, scenario.testValue)
+                const defaultSetting = settings.get(promptSettingKey, Object)
+                await settings.update(promptSettingKey, scenario.testValue)
                 await sut.disablePrompt(promptName)
-                const actual = settings.get(PROMPT_SETTING_KEY)
+                const actual = settings.get(promptSettingKey)
                 const expected = { ...defaultSetting, ...scenario.expected }
                 assert.deepStrictEqual(actual, expected)
             })
@@ -285,13 +284,13 @@ describe('PromptSetting', function () {
 
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.update(PROMPT_SETTING_KEY, scenario.testValue)
-                const before = settings.get(PROMPT_SETTING_KEY, Object, {})
+                await settings.update(promptSettingKey, scenario.testValue)
+                const before = settings.get(promptSettingKey, Object, {})
                 const result = await sut.isPromptEnabled(promptName)
 
                 assert.deepStrictEqual(result, scenario.expected)
                 assert.deepStrictEqual(
-                    { ...before, ...settings.get(PROMPT_SETTING_KEY, Object) },
+                    { ...before, ...settings.get(promptSettingKey, Object) },
                     { ...before, ...scenario.promptAfter }
                 )
             })

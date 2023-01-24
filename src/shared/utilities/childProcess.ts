@@ -57,6 +57,8 @@ export interface ChildProcessResult {
     signal?: string
 }
 
+export const eof = Symbol('EOF')
+
 /**
  * Convenience class to manage a child process
  * To use:
@@ -169,7 +171,7 @@ export class ChildProcess {
             // [2] https://nodejs.org/api/child_process.html
             try {
                 this.childProcess = crossSpawn.spawn(this.command, args, options.spawnOptions)
-                this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
+                this.registerLifecycleListeners(this.childProcess, errorHandler, options)
             } catch (err) {
                 return reject(err)
             }
@@ -261,7 +263,7 @@ export class ChildProcess {
      */
     public stop(force: boolean = false, signal?: NodeJS.Signals): void {
         const child = this.childProcess
-        if (!child) {
+        if (!child || child.stdin?.destroyed) {
             return
         }
         const command = this.command
@@ -288,14 +290,14 @@ export class ChildProcess {
     private registerLifecycleListeners(
         process: child_process.ChildProcess,
         errorHandler: (error: Error, forceStop?: boolean) => void,
-        timeout?: Timeout
+        options?: ChildProcessOptions
     ): void {
         const pid = process.pid
         ChildProcess.runningProcesses.set(pid, this)
 
-        const timeoutListener = timeout?.token.onCancellationRequested(({ agent }) => {
+        const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
-            this.log.verbose(`${message}${this}`)
+            this.log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
             errorHandler(new CancellationError(agent), true)
         })
 
@@ -306,6 +308,28 @@ export class ChildProcess {
 
         process.on('exit', dispose)
         process.on('error', dispose)
+    }
+
+    /**
+     * Sends data to the process
+     *
+     * This throws if the process hasn't started or if the write fails.
+     */
+    public async send(input: string | Buffer | typeof eof) {
+        if (this.childProcess === undefined) {
+            throw new Error('Cannot write to non-existent process')
+        }
+
+        const stdin = this.childProcess.stdin
+        if (!stdin) {
+            throw new Error('Cannot write to non-existent stdin')
+        }
+
+        if (input === eof) {
+            return new Promise<void>(resolve => stdin.end('', resolve))
+        }
+
+        return new Promise<void>((resolve, reject) => stdin.write(input, e => (e ? reject(e) : resolve())))
     }
 
     /**

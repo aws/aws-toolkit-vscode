@@ -22,7 +22,6 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { Window } from '../../shared/vscode/window'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
@@ -33,12 +32,15 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
-import { ToolkitError } from '../../shared/toolkitError'
+import { ToolkitError } from '../../shared/errors'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import globals from '../../shared/extensionGlobals'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result, Runtime } from '../../shared/telemetry/telemetry'
 
 interface SavedLambdas {
     [profile: string]: { [region: string]: string }
@@ -89,7 +91,7 @@ export interface LambdaFunction {
  * @param path Uri to the template.yaml file or the directory the command was invoked from
  */
 export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vscode.Uri) {
-    let result: telemetry.Result = 'Cancelled'
+    let result: Result = 'Cancelled'
     let lambda: LambdaFunction | undefined
 
     try {
@@ -114,12 +116,12 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
             getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
         } else {
             showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
-            getLogger().error(`Lambda upload failed: %O`, err)
+            getLogger().error(`Lambda upload failed: %s`, err)
         }
     } finally {
-        telemetry.recordLambdaUpdateFunctionCode({
+        telemetry.lambda_updateFunctionCode.emit({
             result,
-            runtime: lambda?.configuration?.Runtime as telemetry.Runtime | undefined,
+            runtime: lambda?.configuration?.Runtime as Runtime | undefined,
         })
         if (result === 'Succeeded') {
             const profile = globals.awsContext.getCredentialProfileName()
@@ -210,9 +212,13 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+        if (invokePath) {
             this.form.uploadType.setDefault('directory')
-            this.form.targetUri.setDefault(invokePath)
+            if (fs.statSync(invokePath.fsPath).isFile()) {
+                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
+            } else {
+                this.form.targetUri.setDefault(invokePath)
+            }
         } else {
             this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
             this.form.targetUri.bindPrompter(({ uploadType }) => {
@@ -472,7 +478,7 @@ async function uploadZipBuffer(
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = globals.toolkitClientBuilder.createLambdaClient(lambda.region)
+    lambdaClient = new DefaultLambdaClient(lambda.region)
 ) {
     progress.report({
         message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
@@ -482,7 +488,7 @@ async function uploadZipBuffer(
     })
 
     Window.vscode().showInformationMessage(
-        localize('AWS.lambda.upload.done', 'Successfully uploaded Lambda function {0}', lambda.name)
+        localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
     )
 }
 
@@ -563,7 +569,7 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
     }
 
     // Get Lambda functions from user AWS account.
-    const lambdaClient = globals.toolkitClientBuilder.createLambdaClient(region)
+    const lambdaClient = new DefaultLambdaClient(region)
     try {
         const foundLambdas = await toArrayAsync(listLambdaFunctions(lambdaClient))
         for (const l of foundLambdas) {
@@ -580,7 +586,6 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
         let isInList = false
         for (const l of lambdaFunctionNames) {
             if (l.label === recent[profile][region]) {
-                l.description = localizedText.recentlyUsed
                 l.recentlyUsed = true
                 isInList = true
             }
@@ -590,7 +595,6 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
                 label: recent[profile][region],
                 recentlyUsed: true,
                 data: recent[profile][region],
-                description: localizedText.recentlyUsed,
             })
         }
     }
@@ -611,12 +615,5 @@ function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
         filterBoxInputSettings: { label: 'Existing lambda function: ', transform: input => input },
     })
 
-    prompter.onDidShow(async () => {
-        for (const item of await items) {
-            if (item.recentlyUsed) {
-                prompter.recentItem = item
-            }
-        }
-    })
     return prompter
 }

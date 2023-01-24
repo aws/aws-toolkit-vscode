@@ -5,7 +5,9 @@
 
 import { ECS } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
+import { ClassToInterfaceType, isNonNullable } from '../utilities/tsUtils'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 
@@ -14,15 +16,13 @@ export type EcsResourceAndToken = {
     nextToken?: string
 }
 
-const MAX_RESULTS_PER_RESPONSE = 10
+const maxResultsPerResponse = 10
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
     public async getClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const clusterArnList = await sdkClient
-            .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
-            .promise()
+        const clusterArnList = await sdkClient.listClusters({ maxResults: maxResultsPerResponse, nextToken }).promise()
         if (clusterArnList.clusterArns?.length === 0) {
             return { resource: [] }
         }
@@ -34,10 +34,25 @@ export class DefaultEcsClient {
         return response
     }
 
+    public listClusters(request: ECS.ListClustersRequest = {}): AsyncCollection<ECS.Cluster[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: ECS.ListClustersRequest) => (await client).listClusters(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'clusterArns')
+
+        return collection.filter(isNonNullable).map(async clusters => {
+            if (clusters.length === 0) {
+                return []
+            }
+
+            const resp = await (await client).describeClusters({ clusters }).promise()
+            return resp.clusters!
+        })
+    }
+
     public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
         const serviceArnList = await sdkClient
-            .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
+            .listServices({ cluster: cluster, maxResults: maxResultsPerResponse, nextToken })
             .promise()
         if (serviceArnList.serviceArns?.length === 0) {
             return { resource: [] }
@@ -48,6 +63,21 @@ export class DefaultEcsClient {
             nextToken: serviceArnList.nextToken,
         }
         return response
+    }
+
+    public listServices(request: ECS.ListServicesRequest = {}): AsyncCollection<ECS.Service[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: ECS.ListServicesRequest) => (await client).listServices(req).promise()
+        const collection = pageableToCollection(requester, request, 'nextToken', 'serviceArns')
+
+        return collection.filter(isNonNullable).map(async services => {
+            if (services.length === 0) {
+                return []
+            }
+
+            const resp = await (await client).describeServices({ cluster: request.cluster, services }).promise()
+            return resp.services!
+        })
     }
 
     public async describeTaskDefinition(taskDefinition: string): Promise<ECS.DescribeTaskDefinitionResponse> {
@@ -61,16 +91,9 @@ export class DefaultEcsClient {
         return listTasksResponse.taskArns ?? []
     }
 
-    public async updateService(cluster: string, serviceName: string, enable: boolean): Promise<void> {
+    public async updateService(request: ECS.UpdateServiceRequest): Promise<void> {
         const sdkClient = await this.createSdkClient()
-
-        const params: ECS.UpdateServiceRequest = {
-            cluster,
-            service: serviceName,
-            enableExecuteCommand: enable,
-            forceNewDeployment: true,
-        }
-        await sdkClient.updateService(params).promise()
+        await sdkClient.updateService(request).promise()
     }
 
     public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
@@ -91,23 +114,17 @@ export class DefaultEcsClient {
     }
 
     public async executeCommand(
-        cluster: string,
-        container: string,
-        task: string,
-        command: string
+        request: Omit<ECS.ExecuteCommandRequest, 'interactive'>
     ): Promise<ECS.ExecuteCommandResponse> {
         const sdkClient = await this.createSdkClient()
 
         // Currently the 'interactive' flag is required and needs to be true for ExecuteCommand: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ExecuteCommand.html
         // This may change 'in the near future' as explained here: https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
-        const params: ECS.ExecuteCommandRequest = {
-            command: command,
-            interactive: true,
-            task: task,
-            cluster: cluster,
-            container: container,
-        }
+        return await sdkClient.executeCommand({ ...request, interactive: true }).promise()
+    }
 
-        return await sdkClient.executeCommand(params).promise()
+    public async registerTaskDefinition(request: ECS.RegisterTaskDefinitionRequest) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.registerTaskDefinition(request).promise()
     }
 }

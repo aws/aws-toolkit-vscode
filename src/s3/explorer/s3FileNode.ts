@@ -9,12 +9,13 @@ import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/client
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 import globals from '../../shared/extensionGlobals'
+import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -24,7 +25,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
  * US: Jan 5, 2020 5:30:20 PM GMT-0700
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
-export const S3_DATE_FORMAT = 'll LTS [GMT]ZZ'
+export const s3DateFormat = 'll LTS [GMT]ZZ'
 
 /**
  * Represents an object in an S3 bucket.
@@ -41,19 +42,16 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         if (file.sizeBytes !== undefined && file.lastModified) {
             const readableSize = formatBytes(file.sizeBytes)
 
-            // Prevent clock skew showing future date
-            const readableDate = moment(file.lastModified).subtract(5, 'second').from(now)
-
             this.tooltip = localize(
                 'AWS.explorerNode.s3.fileTooltip',
                 '{0}\nSize: {1}\nLast Modified: {2}',
                 this.file.key,
                 readableSize,
-                moment(file.lastModified).format(S3_DATE_FORMAT)
+                moment(file.lastModified).format(s3DateFormat)
             )
-            this.description = `${readableSize}, ${readableDate}`
+            this.description = `${readableSize}, ${getRelativeDate(file.lastModified, now)}`
         }
-        this.iconPath = fileIconPath()
+        this.iconPath = getIcon('vscode-file')
         this.contextValue = 'awsS3FileNode'
         this.command = !isCloud9()
             ? {

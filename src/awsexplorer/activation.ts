@@ -4,20 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { AwsContext } from '../shared/awsContext'
-import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import globals from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
@@ -28,18 +24,24 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
+import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
+import { once } from '../shared/utilities/functionUtils'
+import { Auth, AuthNode } from '../credentials/auth'
+import { CodeCatalystRootNode } from '../codecatalyst/explorer'
+import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
  */
 export async function activate(args: {
     context: ExtContext
-    awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.context.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -49,17 +51,42 @@ export async function activate(args: {
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
 
-    globals.context.subscriptions.push(
-        view.onDidChangeVisibility(async e => {
-            if (e.visible) {
-                await LoginManager.tryAutoConnect(args.context.awsContext)
+    telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
+
+    args.context.extensionContext.subscriptions.push(
+        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
+            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
+            awsExplorer.refresh()
+
+            if (credentialsChangedEvent.profileName) {
+                await checkExplorerForDefaultRegion(
+                    credentialsChangedEvent.profileName,
+                    args.regionProvider,
+                    awsExplorer
+                )
             }
         })
     )
 
-    args.awsContextTrees.addTree(awsExplorer)
+    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
+    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
+    const developerTools = createLocalExplorerView(nodes)
+    args.context.extensionContext.subscriptions.push(developerTools)
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
+    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
+    // Legacy CDK metric, remove this when we add something generic
+    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
+    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
+    developerTools.onDidExpandElement(e => {
+        if (e.element.resource instanceof CdkRootNode) {
+            recordExpandCdkOnce()
+        } else if (e.element.resource instanceof CodeWhispererNode) {
+            onDidExpandCodeWhisperer()
+        }
+    })
 }
 
 async function registerAwsExplorerCommands(
@@ -72,8 +99,8 @@ async function registerAwsExplorerCommands(
             try {
                 await globals.awsContextCommands.onCommandShowRegion()
             } finally {
-                recordAwsShowRegion()
-                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+                telemetry.aws_setRegion.emit()
+                telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
         Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
@@ -83,7 +110,7 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh()
 
             if (!passive) {
-                recordAwsRefreshExplorer()
+                telemetry.aws_refreshExplorer.emit()
             }
         }),
         Commands.register(
@@ -102,14 +129,11 @@ async function registerAwsExplorerCommands(
     )
 
     context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
+        Commands.register(
             'aws.executeStateMachine',
             async (node: StateMachineNode) => await executeStateMachine(context, node)
-        )
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
+        ),
+        Commands.register(
             'aws.renderStateMachineGraph',
             async (node: StateMachineNode) =>
                 await downloadStateMachineDefinition({
@@ -117,46 +141,12 @@ async function registerAwsExplorerCommands(
                     outputChannel: toolkitOutputChannel,
                     isPreviewAndRender: true,
                 })
-        )
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node))
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
+        ),
+        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node)),
+        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node)),
+        Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
-            await loadMoreChildrenCommand(node, awsExplorer)
-        })
-    )
-
-    const developerTools = createLocalExplorerView()
-    context.extensionContext.subscriptions.push(developerTools)
-}
-
-function updateAwsExplorerWhenAwsContextCredentialsChange(
-    awsExplorer: AwsExplorer,
-    awsContext: AwsContext,
-    extensionContext: vscode.ExtensionContext
-) {
-    extensionContext.subscriptions.push(
-        awsContext.onDidChangeContext(async credentialsChangedEvent => {
-            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
-            awsExplorer.refresh()
-
-            if (credentialsChangedEvent.profileName) {
-                await checkExplorerForDefaultRegion(credentialsChangedEvent.profileName, awsContext, awsExplorer)
-            }
-        })
+        }),
+        loadMoreChildrenCommand.register(awsExplorer)
     )
 }

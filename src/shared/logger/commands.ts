@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { Logger } from '.'
-import { recordVscodeViewLogs } from '../telemetry/telemetry'
+import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
@@ -31,7 +31,7 @@ export class Logging {
     public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
 
     public async openLogUri(logUri = this.defaultLogUri): Promise<vscode.TextEditor | undefined> {
-        recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
+        telemetry.toolkit_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
 
         return vscode.window.showTextDocument(logUri)
     }
@@ -39,20 +39,25 @@ export class Logging {
     public async openLogId(logId: number, logUri = this.defaultLogUri) {
         const msg = this.logger.getLogById(logId, logUri)
         const editor = await this.openLogUri(logUri)
-
         if (!msg || !editor) {
             return
         }
 
         // Retrieve where the message starts by counting number of newlines
         const text = editor.document.getText()
+        const textStart = text.indexOf(msg)
+        if (textStart === -1) {
+            this.logger.debug(`logging: unable to find message with id "${logId}"`)
+            return
+        }
+
         const lineStart = text
-            .slice(0, text.indexOf(msg))
+            .slice(0, textStart)
             .split(/\r?\n/)
             .filter(x => x).length
 
         if (lineStart > 0) {
-            const lineEnd = lineStart + msg.split(/\r?\n/).filter(x => x).length
+            const lineEnd = Math.min(editor.document.lineCount, lineStart + msg.split(/\r?\n/).filter(x => x).length)
             revealLines(editor, lineStart, lineEnd)
         } else {
             clearSelection(editor)

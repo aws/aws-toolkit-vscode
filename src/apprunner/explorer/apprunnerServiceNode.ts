@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
@@ -17,42 +15,39 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
-const CONTEXT_BASE = 'awsAppRunnerServiceNode'
+const contextBase = 'awsAppRunnerServiceNode'
 
-const OPERATION_STATUS = {
-    START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'),
-    CREATE_SERVICE: localize('AWS.apprunner.operationStatus.create', 'Creating...'),
-    PAUSE_SERVICE: localize('AWS.apprunner.operationStatus.pause', 'Pausing...'),
-    RESUME_SERVICE: localize('AWS.apprunner.operationStatus.resume', 'Resuming...'),
-    DELETE_SERVICE: localize('AWS.apprunner.operationStatus.delete', 'Deleting...'),
-    UPDATE_SERVICE: localize('AWS.apprunner.operationStatus.update', 'Updating...'),
+const operationStatus = {
+    START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'), // eslint-disable-line @typescript-eslint/naming-convention
+    CREATE_SERVICE: localize('AWS.apprunner.operationStatus.create', 'Creating...'), // eslint-disable-line @typescript-eslint/naming-convention
+    PAUSE_SERVICE: localize('AWS.apprunner.operationStatus.pause', 'Pausing...'), // eslint-disable-line @typescript-eslint/naming-convention
+    RESUME_SERVICE: localize('AWS.apprunner.operationStatus.resume', 'Resuming...'), // eslint-disable-line @typescript-eslint/naming-convention
+    DELETE_SERVICE: localize('AWS.apprunner.operationStatus.delete', 'Deleting...'), // eslint-disable-line @typescript-eslint/naming-convention
+    UPDATE_SERVICE: localize('AWS.apprunner.operationStatus.update', 'Updating...'), // eslint-disable-line @typescript-eslint/naming-convention
 }
 
-type ServiceOperation = keyof typeof OPERATION_STATUS
+type ServiceOperation = keyof typeof operationStatus
 
 export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResourceNode {
     public readonly name: string
     public readonly arn: string
     private readonly lock: AsyncLock = new AsyncLock()
+    protected readonly placeholderMessage = localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
 
     constructor(
         public readonly parent: AppRunnerNode,
         private readonly client: AppRunnerClient,
         private _info: AppRunner.Service,
-        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {}
+        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
+        cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
     ) {
-        super(
-            'App Runner Service',
-            parent.region,
-            localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
-        )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(globals.iconPaths.light.apprunner),
-        }
+        super('App Runner Service', parent.regionCode, cloudwatchClient)
+
+        this.iconPath = getIcon('aws-apprunner-service')
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName
         this.arn = _info.ServiceArn
@@ -68,10 +63,10 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         return `https://${this._info.ServiceUrl}`
     }
 
-    protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
         return toMap(
             await toArrayAsync(
-                client.describeLogGroups({
+                this.cloudwatchClient.describeLogGroups({
                     logGroupNamePrefix: `/aws/apprunner/${this._info.ServiceName}/${this._info.ServiceId}`,
                 })
             ),
@@ -81,7 +76,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
 
     private setLabel(): void {
         const displayStatus = this.currentOperation.Type
-            ? OPERATION_STATUS[this.currentOperation.Type]
+            ? operationStatus[this.currentOperation.Type]
             : `${this._info.Status.charAt(0)}${this._info.Status.slice(1).toLowerCase().replace(/\_/g, ' ')}`
         this.label = `${this._info.ServiceName} [${displayStatus}]`
     }
@@ -132,7 +127,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
                 getLogger().warn(
                     `Failed to list operations for service "${this._info.ServiceName}", service may be in an unstable state.`
                 )
-                getLogger().debug(`Failed to list operations for service "${this.arn}": %O`, err)
+                getLogger().debug(`Failed to list operations for service "${this.arn}": %s`, err)
             })
     }
 
@@ -143,7 +138,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         }
 
         this._info = Object.assign(this._info, info)
-        this.contextValue = `${CONTEXT_BASE}.${this._info.Status}`
+        this.contextValue = `${contextBase}.${this._info.Status}`
         this.setLabel()
     }
 

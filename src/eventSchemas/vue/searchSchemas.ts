@@ -12,15 +12,15 @@ import { RegistryItemNode } from '../explorer/registryItemNode'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { SchemasNode } from '../explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../utils'
-import { SchemaClient } from '../../shared/clients/schemaClient'
+import { DefaultSchemaClient, SchemaClient } from '../../shared/clients/schemaClient'
 
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import globals from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
 import { VueWebview } from '../../webviews/main'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface InitialData {
     Header: string
@@ -49,7 +49,7 @@ export class SearchSchemasWebview extends VueWebview {
     }
 
     public init() {
-        recordSchemasView({ result: 'Succeeded' })
+        telemetry.schemas_view.emit({ result: 'Succeeded' })
 
         return this.data
     }
@@ -80,14 +80,14 @@ export class SearchSchemasWebview extends VueWebview {
     public async searchSchemas(keyword: string) {
         try {
             const results = await getSearchResults(this.client, this.data.RegistryNames, keyword)
-            recordSchemasSearch({ result: 'Succeeded' })
+            telemetry.schemas_search.emit({ result: 'Succeeded' })
 
             return {
                 results: results,
                 resultsNotFound: results.length === 0,
             }
         } catch (error) {
-            recordSchemasSearch({ result: 'Failed' })
+            telemetry.schemas_search.emit({ result: 'Failed' })
             throw error
         }
     }
@@ -110,7 +110,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
     let webviewResult: Result = 'Succeeded'
 
     try {
-        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(node.regionCode)
+        const client = new DefaultSchemaClient(node.regionCode)
         const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
             vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
@@ -137,10 +137,9 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
-        logger.error('Error searching schemas: %O', error)
+        logger.error('Error searching schemas: %s', error)
     } finally {
-        // TODO make this telemetry actually record failures
-        recordSchemasSearch({ result: webviewResult })
+        telemetry.schemas_search.emit({ result: webviewResult })
     }
 }
 

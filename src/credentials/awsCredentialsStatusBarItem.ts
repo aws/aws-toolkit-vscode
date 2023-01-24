@@ -7,24 +7,19 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
+import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
-import globals from '../shared/extensionGlobals'
 import { DevSettings } from '../shared/settings'
+import { Auth, login } from './auth'
 
-const STATUSBAR_PRIORITY = 1
-const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
-const STATUSBAR_CONNECTED_DELAY = 1000
-
-// This is a module global since this code doesn't really warrant its own class
-let timeoutID: NodeJS.Timeout
+const statusbarPriority = 1
 
 export async function initializeAwsCredentialsStatusBarItem(
     awsContext: AwsContext,
     context: vscode.ExtensionContext
 ): Promise<void> {
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUSBAR_PRIORITY)
-    statusBarItem.command = 'aws.login'
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, statusbarPriority)
+    statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
 
@@ -34,8 +29,9 @@ export async function initializeAwsCredentialsStatusBarItem(
     handleDevSettings(devSettings, statusBarItem)
 
     context.subscriptions.push(
-        awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
-            updateCredentialsStatusBarItem(statusBarItem, ev.profileName)
+        Auth.instance.onDidChangeActiveConnection(conn => {
+            const color = conn?.state === 'invalid' ? new vscode.ThemeColor('statusBarItem.errorBackground') : undefined
+            updateCredentialsStatusBarItem(statusBarItem, conn?.label, color)
             handleDevSettings(devSettings, statusBarItem)
         }),
         devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
@@ -46,21 +42,19 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
     const developerMode = Object.keys(devSettings.activeSettings)
 
     if (developerMode.length > 0) {
-        ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+        ;(statusBarItem as any).backgroundColor ??= new vscode.ThemeColor('statusBarItem.warningBackground')
 
         const devSettingsStr = developerMode.join('  \n')
         statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
-    } else {
-        ;(statusBarItem as any).backgroundColor = undefined
     }
 }
 
 // Resolves when the status bar reaches its final state
 export async function updateCredentialsStatusBarItem(
     statusBarItem: vscode.StatusBarItem,
-    credentialsId?: string
+    credentialsId?: string,
+    color?: vscode.ThemeColor
 ): Promise<void> {
-    globals.clock.clearTimeout(timeoutID)
     const connectedMsg = localize(
         'AWS.credentials.statusbar.connected',
         'Connected to {0} with "{1}" (click to change)',
@@ -73,20 +67,8 @@ export async function updateCredentialsStatusBarItem(
         getIdeProperties().company
     )
 
+    const company = getIdeProperties().company
     statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
-
-    // Shows "connected" message briefly.
-    let delay = 0
-    if (credentialsId) {
-        delay = STATUSBAR_CONNECTED_DELAY
-        statusBarItem.text = `${getIdeProperties().company}: ${STATUSBAR_CONNECTED_MSG}`
-    }
-
-    return new Promise<void>(
-        resolve =>
-            (timeoutID = globals.clock.setTimeout(() => {
-                const company = getIdeProperties().company
-                ;(statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company), resolve()
-            }, delay))
-    )
+    statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company
+    ;(statusBarItem as any).backgroundColor = color
 }

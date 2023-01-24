@@ -8,9 +8,10 @@ import * as nls from 'vscode-nls'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { millisecondsSince, recordDynamicresourceMutateResource, Result } from '../../shared/telemetry/telemetry'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { millisecondsSince, Result } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 export async function deleteResource(
@@ -76,7 +77,7 @@ export async function deleteResource(
                     return false
                 }
                 result = 'Failed'
-                getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %O`, e)
+                getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %s`, e)
                 showViewLogsMessage(
                     localize(
                         'aws.resources.deleteResource.failure',
@@ -88,7 +89,7 @@ export async function deleteResource(
                 )
                 return false
             } finally {
-                recordDynamicresourceMutateResource({
+                telemetry.dynamicresource_mutateResource.emit({
                     dynamicResourceOperation: 'Delete',
                     duration: millisecondsSince(startTime),
                     resourceType: typeName,

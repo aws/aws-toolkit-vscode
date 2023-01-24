@@ -11,14 +11,14 @@ import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
-import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
 import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
-    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
-    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
-    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
+    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
+    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
 
     export function isZipLambdaResource(
         resource?: ZipResourceProperties | ImageResourceProperties
@@ -371,14 +371,17 @@ export namespace CloudFormation {
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.load(templateAsYaml, {
+        return loadByContents(templateAsYaml, validate)
+    }
+
+    export async function loadByContents(contents: string, validate: boolean = true): Promise<Template> {
+        const template = yaml.load(contents, {
             schema: schema as any,
         }) as Template
 
         if (validate) {
             validateTemplate(template)
         }
-
         return template
     }
 
@@ -418,7 +421,7 @@ export namespace CloudFormation {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (resource.Properties) {
-            if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
+            if (resource.Properties.PackageType === lambdaPackageTypeImage) {
                 if (!validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
                 }

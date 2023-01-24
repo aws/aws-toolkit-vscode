@@ -19,8 +19,20 @@ describe('tech debt', function () {
         )
 
         assert.ok(
+            semver.lt(minVscode, '1.53.0'),
+            'remove `SecretMemento` from src/codecatalyst/auth.ts added in https://github.com/aws/aws-toolkit-vscode-staging/pull/466'
+        )
+
+        assert.ok(
             semver.lt(minVscode, '1.51.0'),
             'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
+        )
+
+        assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
+
+        assert.ok(
+            semver.lt(minVscode, '1.56.0'),
+            'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
         )
     })
 

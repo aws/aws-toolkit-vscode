@@ -68,7 +68,7 @@ export function toMap<TKey, TValue>(
     return result
 }
 
-export function toRecord<T, K extends PropertyKey>(keys: K[], fn: (key: K) => T): { [P in K]: T } {
+export function toRecord<T, K extends PropertyKey>(keys: Iterable<K>, fn: (key: K) => T): { [P in K]: T } {
     const result = {} as Record<K, T>
 
     for (const key of keys) {
@@ -135,6 +135,21 @@ export function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean
     }
 
     return result
+}
+
+/**
+ * Gets the first item matching predicate, or undefined.
+ */
+export async function findAsync<T>(
+    sequence: Iterable<T>,
+    predicate: (item: T) => Promise<boolean>
+): Promise<T | undefined> {
+    for (const item of sequence) {
+        if (await predicate(item)) {
+            return item
+        }
+    }
+    return undefined
 }
 
 export async function* filterAsync<T>(
@@ -276,7 +291,9 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
 }
 
 /** Recursively delete undefined key/value pairs */
-export function stripUndefined(obj: any): void {
+export function stripUndefined<T extends Record<string, any>>(
+    obj: T
+): asserts obj is { [P in keyof T]-?: NonNullable<T[P]> } {
     Object.keys(obj).forEach(key => {
         if (obj[key] === undefined) {
             delete obj[key]
@@ -326,4 +343,24 @@ export function pageableToCollection<
     }
 
     return toCollection(gen)
+}
+
+/**
+ * Converts an iterable of promises into an unordered stream of values.
+ *
+ * The resulting stream will throw if any of the promises are rejected.
+ */
+export async function* toStream<T>(values: Iterable<Promise<T>>): AsyncGenerator<T, void> {
+    const unresolved = new Map<number, Promise<T>>()
+    for (const promise of values) {
+        const index = unresolved.size
+        unresolved.set(
+            index,
+            promise.then(val => (unresolved.delete(index), val))
+        )
+    }
+
+    while (unresolved.size > 0) {
+        yield Promise.race(unresolved.values())
+    }
 }
