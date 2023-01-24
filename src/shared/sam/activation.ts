@@ -185,6 +185,7 @@ async function activateCodeLensProviders(
         supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
         supportedLanguages[csLensProvider.csharpLanguage] = csCodeLensProvider
         supportedLanguages[goLensProvider.goLanguage] = goCodeLensProvider
+        supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
     }
 
     disposables.push(
