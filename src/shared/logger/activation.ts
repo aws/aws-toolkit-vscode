@@ -74,13 +74,18 @@ export async function activate(
     getLogger().debug(`Logging started: ${logUri}`)
 
     const commands = new Logging(logUri, mainLogger)
-    extensionContext.subscriptions.push(
-        ...Object.values(Logging.declared).map(c => c.register(commands)),
-        await createLogWatcher(logUri.fsPath)
-    )
+    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
+
+    createLogWatcher(logUri)
+        .then(sub => {
+            extensionContext.subscriptions.push(sub)
+        })
+        .catch(err => {
+            getLogger().warn('Failed to start log file watcher: %s', err)
+        })
 
     cleanLogFiles(path.dirname(logUri.fsPath)).catch(err => {
-        getLogger().warn('Failed to clean-up old logs: %s', (err as Error).message)
+        getLogger().warn('Failed to clean-up old logs: %s', err)
     })
 }
 
@@ -152,11 +157,11 @@ function makeLogFilename(): string {
 /**
  * Watches for renames on the log file and notifies the user.
  */
-async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
-    const exists = await waitUntil(() => fs.pathExists(logPath), { interval: 1000, timeout: 60000 })
+async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
+    const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
-        getLogger().warn(`Log file ${logPath} does not exist!`)
+        getLogger().warn(`Log file ${logFile.path} does not exist!`)
         return { dispose: () => {} }
     }
 
@@ -164,13 +169,12 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
     // TODO: fs.watch() has many problems, consider instead:
     //   - https://github.com/paulmillr/chokidar
     //   - https://www.npmjs.com/package/fb-watchman
-    const watcher = fs.watch(logPath, async eventType => {
+    const watcher = fs.watch(logFile.fsPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return
         }
         checking = true
-        const exists = await fs.pathExists(logPath).catch(() => true)
-        if (!exists) {
+        if (!(await SystemUtilities.fileExists(logFile))) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
