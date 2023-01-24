@@ -158,13 +158,13 @@ export class LogDataRegistry {
 
     public registerInitialLog(
         uri: vscode.Uri,
-        retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUriComponents
+        retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUri
     ): void {
         if (this.isRegistered(uri)) {
             throw new Error(`Already registered: ${uri.toString()}`)
         }
         const data = parseCloudWatchLogsUri(uri)
-        this.setLogData(uri, getInitialLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
+        this.setLogData(uri, initLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
     }
 
     public getRegisteredLog(uri: vscode.Uri): CloudWatchLogsData {

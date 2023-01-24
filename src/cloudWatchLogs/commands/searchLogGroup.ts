@@ -15,7 +15,7 @@ import {
     initLogData,
 } from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Wizard } from '../../shared/wizards/wizard'
+import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -23,10 +23,11 @@ import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { ExtendedInputBoxOptions, InputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
 import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
+import { PromptResult } from '../../shared/ui/prompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -68,8 +69,8 @@ export async function prepareDocument(
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
+        // Gets the data: calls filterLogEventsFromUri().
         await registry.fetchNextLogEvents(uri)
-        // Gets the data: calls filterLogEventsFromUriComponents().
         const doc = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(doc, { preview: false })
         vscode.languages.setTextDocumentLanguage(doc, 'log')
@@ -103,8 +104,8 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     }
 
     const wizard = node?.logGroup.logGroupName
-        ? new SearchLogGroupWizard(registry, { groupName: node.logGroup.logGroupName, regionName: node.regionCode })
-        : new SearchLogGroupWizard(registry)
+        ? new SearchLogGroupWizard({ groupName: node.logGroup.logGroupName, regionName: node.regionCode })
+        : new SearchLogGroupWizard()
     const response = await wizard.run()
 
     if (!response) {
@@ -139,58 +140,116 @@ async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.
     return logGroupsArray
 }
 
-/** Prompts the user for a search query, and validates it. */
-export function createFilterpatternPrompter(
-    registry: LogDataRegistry,
-    logGroupName: string,
-    isFirst: boolean
-): InputBoxPrompter {
+/**
+ * HACK: this subclass overrides promptUser() so that we can validate the
+ * search pattern against the service and if it fails, keep the prompt displayed.
+ *
+ * This is necessary until vscode's inputbox.onDidAccept() awaits async callbacks:
+ *    - https://github.com/aws/aws-toolkit-vscode/pull/3114#discussion_r1085484630
+ *    - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/extensions/git-base/src/remoteSource.ts#L13
+ *    - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/src/vs/base/browser/ui/inputbox/inputBox.ts#L511
+ */
+export class SearchPatternPrompter extends InputBoxPrompter {
+    constructor(
+        public logGroup: CloudWatchLogsGroupInfo,
+        public logParams: CloudWatchLogsParameters,
+        /** HACK: also maintain ad-hoc state because `wizardState` is not mutable. */
+        public readonly retryState: any,
+        public override readonly inputBox: InputBox,
+        protected override readonly options: ExtendedInputBoxOptions = {},
+        private noValidate: boolean
+    ) {
+        super(inputBox, options)
+        this.inputBox.validationMessage = retryState.validationMessage ? retryState.validationMessage : undefined
+        if (this.retryState.searchPattern) {
+            this.inputBox.value = this.retryState.searchPattern
+        }
+        this.inputBox.onDidChangeValue(val => {
+            this.inputBox.validationMessage = undefined
+        })
+    }
+
+    protected override async promptUser(): Promise<PromptResult<string>> {
+        const rv = await super.promptUser()
+        this.inputBox.busy = true
+        try {
+            if (isWizardControl(rv)) {
+                return rv
+            }
+
+            const validationResult = await this.validateSearchPattern(this.inputBox.value, this.noValidate)
+            // HACK: maintain our own state and restore it.
+            this.retryState.searchPattern = isValidResponse(rv) ? rv : undefined
+            this.retryState.validationMessage = validationResult
+
+            if (validationResult !== undefined) {
+                return WIZARD_RETRY
+            }
+            return this.inputBox.value
+        } finally {
+            this.inputBox.busy = false
+        }
+    }
+
+    async validateSearchPattern(searchPattern: string, noValidate: boolean): Promise<string | undefined> {
+        if (noValidate) {
+            return undefined // Skip validation (service call) in tests.
+        }
+        getLogger().debug('cwl: validateSearchPattern: %O', searchPattern)
+        try {
+            await filterLogEventsFromUri(this.logGroup, {
+                ...this.logParams,
+                filterPattern: searchPattern,
+                limit: 1,
+            })
+        } catch (e) {
+            return (e as Error).message
+        }
+        return undefined
+    }
+}
+
+/**
+ * Prompts the user for a search query, and validates it.
+ *
+ * @param noValidate For testing only: disable validation (which does a service call).
+ */
+export function createSearchPatternPrompter(
+    logGroup: CloudWatchLogsGroupInfo,
+    logParams: CloudWatchLogsParameters,
+    retryState: any,
+    isFirst: boolean,
+    noValidate: boolean
+): SearchPatternPrompter {
     const helpUri =
         'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
     const titleText = localize(
         'AWS.cwl.searchLogGroup.filterPatternTitle',
         `Search Log Group {0}`,
-        truncate(logGroupName, -50)
+        truncate(logGroup.groupName, -50)
     )
     const placeHolderText = localize(
         'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
         'search pattern (case sensitive; empty matches all)'
     )
 
-    async function validateSearchPattern(searchPattern: string, isFinalInput: boolean): Promise<string | undefined> {
-        if (!isFinalInput) {
-            return undefined // Skip validation while user is typing.
-        }
-        const logGroupInfo: CloudWatchLogsGroupInfo = {
-            groupName: '/aws/apprunner/aaaaaaa/5d2870895ec34e7d810fb316cd9c9bf0',
-            regionName: 'us-west-2',
-        }
-        const parameters: CloudWatchLogsParameters = {
-            limit: 1,
-            filterPattern: searchPattern,
-            startTime: 1,
-            endTime: 9999,
-        }
-        try {
-            await filterLogEventsFromUri(logGroupInfo, parameters)
-        } catch (e) {
-            return (e as Error).message
-        }
-        return undefined
-    }
-
     const options = {
         title: titleText,
         placeholder: placeHolderText,
         buttons: [createHelpButton(helpUri), createExitButton()],
-        validateInput: validateSearchPattern,
     }
 
     if (!isFirst) {
         options.buttons = [...options.buttons, createBackButton()]
     }
 
-    return createInputBox(options)
+    const inputBox = vscode.window.createInputBox() as InputBox
+    // assign({ ...defaultInputboxOptions, ...options }, inputBox)
+    inputBox.title = titleText
+    inputBox.placeholder = placeHolderText
+    inputBox.buttons = options.buttons
+    const prompter = new SearchPatternPrompter(logGroup, logParams, retryState, inputBox, {}, noValidate)
+    return prompter
 }
 
 export function createRegionSubmenu() {
@@ -208,7 +267,10 @@ export interface SearchLogGroupWizardResponse {
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(registry: LogDataRegistry, logGroupInfo?: CloudWatchLogsGroupInfo) {
+    /** HACK: maintain our own state and restore it because WizardState is not mutable. */
+    private retryState: any = {}
+
+    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo) {
         super({
             initState: {
                 submenuResponse: logGroupInfo
@@ -222,8 +284,24 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
-        this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
-            createFilterpatternPrompter(registry, submenuResponse!.data, logGroupInfo ? true : false)
-        )
+        this.form.filterPattern.bindPrompter(state => {
+            if (!state.submenuResponse) {
+                throw Error('state.submenuResponse is null')
+            }
+            return createSearchPatternPrompter(
+                {
+                    groupName: state.submenuResponse.data,
+                    regionName: state.submenuResponse.region,
+                },
+                {
+                    startTime: state.timeRange?.start,
+                    endTime: state.timeRange?.end,
+                    filterPattern: undefined,
+                },
+                this.retryState,
+                logGroupInfo ? true : false,
+                false
+            )
+        })
     }
 }

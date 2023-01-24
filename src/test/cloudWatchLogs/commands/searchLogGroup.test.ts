@@ -5,12 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
+import { SearchLogGroupWizard, createSearchPatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { TimeFilterSubmenu } from '../../../cloudWatchLogs/timeFilterSubmenu'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
+import { CloudWatchLogsGroupInfo, CloudWatchLogsParameters } from '../../../cloudWatchLogs/registry/logDataRegistry'
 
 describe('searchLogGroup', async function () {
     describe('Wizard', async function () {
@@ -22,7 +23,13 @@ describe('searchLogGroup', async function () {
         let filterPatternPrompter: InputBoxPrompter
 
         before(function () {
-            filterPatternPrompter = createFilterpatternPrompter('test-loggroup', false)
+            const logGroup: CloudWatchLogsGroupInfo = {
+                groupName: 'est-loggroup',
+                regionName: 'us-east-1',
+            }
+            const logParams: CloudWatchLogsParameters = {}
+
+            filterPatternPrompter = createSearchPatternPrompter(logGroup, logParams, {}, false, true)
             testWizard = createWizardTester(new SearchLogGroupWizard())
             filterPatternInputBox = exposeEmitters(filterPatternPrompter.inputBox, [
                 'onDidAccept',
@@ -33,8 +40,8 @@ describe('searchLogGroup', async function () {
         it('shows logGroup prompt first and filterPattern second, then timerange submenu', function () {
             testWizard = createWizardTester(new SearchLogGroupWizard())
             testWizard.submenuResponse.assertShowFirst()
-            testWizard.filterPattern.assertShowSecond()
-            testWizard.timeRange.assertShowThird()
+            testWizard.timeRange.assertShowSecond()
+            testWizard.filterPattern.assertShowThird()
         })
 
         it('prompts for filterPattern and accepts input', async function () {
@@ -115,7 +122,7 @@ describe('searchLogGroup', async function () {
                 regionName: 'region-test',
             })
         )
-        nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.filterPattern.assertShowSecond()
         nodeTestWizard.submenuResponse.assertDoesNotShow()
     })
 
@@ -126,7 +133,7 @@ describe('searchLogGroup', async function () {
                 regionName: 'region-test',
             })
         )
-        nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.timeRange.assertShowFirst()
         nodeTestWizard.submenuResponse.assertDoesNotShow()
     })
 })
