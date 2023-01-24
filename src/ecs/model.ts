@@ -8,11 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { ECS } from 'aws-sdk'
-import { DefaultEcsClient } from '../shared/clients/ecsClient'
 import { ResourceTreeNode } from '../shared/treeview/resource'
 import { getIcon } from '../shared/icons'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
 import { prepareCommand } from './util'
+import { EcsClient } from './client'
 
 function createValidTaskFilter(containerName: string) {
     return function (t: ECS.Task): t is ECS.Task & { taskArn: string } {
@@ -33,11 +33,13 @@ interface ContainerDescription extends ECS.ContainerDefinition {
 export class Container {
     public readonly id = this.description.name!
 
-    public constructor(private readonly client: DefaultEcsClient, public readonly description: ContainerDescription) {}
+    public constructor(private readonly client: EcsClient, public readonly description: ContainerDescription) {}
 
     public async listTasks() {
-        const resp = await this.client.listTasks({ cluster: this.description.clusterArn })
-        const tasks = await this.client.describeTasks(this.description.clusterArn, resp)
+        const tasks = await this.client
+            .listAndDescribeTasks({ cluster: this.description.clusterArn })
+            .flatten()
+            .promise()
 
         return tasks.filter(createValidTaskFilter(this.description.name!))
     }
@@ -73,7 +75,7 @@ export class Service {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
 
-    public constructor(private readonly client: DefaultEcsClient, public readonly description: ECS.Service) {}
+    public constructor(private readonly client: EcsClient, public readonly description: ECS.Service) {}
 
     public async listContainers(): Promise<Container[]> {
         const definition = await this.getDefinition()
@@ -95,7 +97,9 @@ export class Service {
             throw new Error(`No task definition found for ECS service ${this.id}`)
         }
 
-        const resp = await this.client.describeTaskDefinition(this.description.taskDefinition!)
+        const resp = await this.client.describeTaskDefinition({
+            taskDefinition: this.description.taskDefinition,
+        })
 
         return resp.taskDefinition!
     }
@@ -142,11 +146,11 @@ export class Service {
 export class Cluster {
     public readonly id = this.cluster.clusterArn!
 
-    public constructor(private readonly client: DefaultEcsClient, private readonly cluster: ECS.Cluster) {}
+    public constructor(private readonly client: EcsClient, private readonly cluster: ECS.Cluster) {}
 
     public listServices(): AsyncCollection<Service[]> {
         return this.client
-            .listServices({ cluster: this.cluster.clusterArn! })
+            .listAndDescribeServices({ cluster: this.cluster.clusterArn! })
             .map(services => services.map(s => new Service(this.client, s)))
     }
 
@@ -172,7 +176,7 @@ export class Cluster {
 
 class Ecs {
     public readonly id = 'ecs'
-    public constructor(private readonly client: DefaultEcsClient) {}
+    public constructor(private readonly client: EcsClient) {}
 
     public getTreeItem() {
         const item = new vscode.TreeItem('ECS')
@@ -182,12 +186,12 @@ class Ecs {
     }
 
     public listClusters(): AsyncCollection<Cluster[]> {
-        return this.client.listClusters().map(clusters => clusters.map(c => new Cluster(this.client, c)))
+        return this.client.listAndDescribeClusters().map(clusters => clusters.map(c => new Cluster(this.client, c)))
     }
 }
 
 export function getEcsRootNode(region: string) {
-    const controller = new Ecs(new DefaultEcsClient(region))
+    const controller = new Ecs(new EcsClient(region))
 
     return new ResourceTreeNode(controller, {
         placeholder: localize('AWS.explorerNode.ecs.noClusters', '[No Clusters found]'),

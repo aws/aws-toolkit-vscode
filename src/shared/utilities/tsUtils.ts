@@ -106,7 +106,7 @@ export type SharedTypes<T1, T2> = {
 }
 
 /* All of the string keys of the shared type */
-export type SharedProp<T1, T2> = string & keyof SharedTypes<T1, T2>
+export type SharedKeys<T1, T2> = string & keyof SharedTypes<T1, T2>
 
 /* Any key that can be accumulated (i.e. an array) */
 export type AccumulableKeys<T> = NonNullable<
