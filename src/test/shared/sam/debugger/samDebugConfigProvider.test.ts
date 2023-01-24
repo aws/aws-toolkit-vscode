@@ -718,7 +718,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'app.handler',
-                invokeTarget: { ...input.invokeTarget },
+                invokeTarget: {
+                    ...input.invokeTarget,
+                },
                 lambda: {
                     ...input.lambda,
                 },
