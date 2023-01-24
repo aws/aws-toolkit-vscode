@@ -10,7 +10,7 @@ import {
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
     LogDataRegistry,
-    filterLogEventsFromUriComponents,
+    filterLogEventsFromUri,
     CloudWatchLogsParameters,
     initLogData,
 } from '../registry/logDataRegistry'
@@ -53,7 +53,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         }
     }
 
-    const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
+    const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
 
     if (logData.parameters.startTime || logData.parameters.filterPattern) {
         recordTelemetryFilter(logData, 'logGroup', 'Command')
@@ -172,7 +172,7 @@ export function createFilterpatternPrompter(
             endTime: 9999,
         }
         try {
-            await filterLogEventsFromUriComponents(logGroupInfo, parameters)
+            await filterLogEventsFromUri(logGroupInfo, parameters)
         } catch (e) {
             return (e as Error).message
         }

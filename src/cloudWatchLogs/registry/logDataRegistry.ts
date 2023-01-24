@@ -176,7 +176,7 @@ export class LogDataRegistry {
     }
 }
 
-export async function filterLogEventsFromUriComponents(
+export async function filterLogEventsFromUri(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
     nextToken?: string
