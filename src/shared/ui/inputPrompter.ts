@@ -92,10 +92,12 @@ export class InputBoxPrompter extends Prompter<string> {
 
         this.inputBox.onDidChangeValue(
             value => (this.inputBox.validationMessage = validate(value)),
+            undefined,
             this.validateEvents
         )
         this.inputBox.onDidAccept(
             () => (this.inputBox.validationMessage = validate(this.inputBox.value)),
+            undefined,
             this.validateEvents
         )
     }
