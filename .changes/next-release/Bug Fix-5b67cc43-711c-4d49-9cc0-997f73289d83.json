@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Improve extension start-up performance, especially on devices with slower file systems"
+}
