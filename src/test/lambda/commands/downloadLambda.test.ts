@@ -3,9 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createApplicationJson, openLambdaFile } from '../../../lambda/commands/downloadLambda'
+import { ApplicationJson, createApplicationJson, openLambdaFile } from '../../../lambda/commands/downloadLambda'
+import * as fs from 'fs-extra'
+import * as path from 'path'
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('downloadLambda', async function () {
     describe('openLambdaFile', async function () {
@@ -15,6 +18,8 @@ describe('downloadLambda', async function () {
     })
 
     describe('createApplicationJson', function () {
+        let tempFolder: string
+
         const lambdaDeploymentMethod: Lambda.GetFunctionResponse = {
             Configuration: {
                 FunctionName: 'lambda-func-from-lambda',
@@ -31,22 +36,46 @@ describe('downloadLambda', async function () {
             },
         }
 
+        const expectedLambdaDeploymentAppJson: ApplicationJson = {
+            DeploymentMethod: 'lambda',
+            Functions: {
+                'lambda-func-from-lambda': {
+                    PhysicalId: {
+                        'us-west-2': 'lambda-func-from-lambda',
+                    },
+                },
+            },
+        }
+
+        const expectedCloudFormationDeploymentAppJson: ApplicationJson = {
+            DeploymentMethod: 'cloudformation',
+            Functions: {
+                HelloWorldFunction: {
+                    PhysicalId: {
+                        'us-west-2': 'sam-stack-HelloWorldFunction',
+                    },
+                },
+            },
+            StackName: 'sam-stack',
+        }
+
+        beforeEach(async function () {
+            tempFolder = await makeTemporaryToolkitFolder()
+        })
+        afterEach(async function () {
+            await fs.remove(tempFolder)
+        })
+
         it('creates ApplicationJson with lambda deployment method', function () {
-            const appJson = createApplicationJson(lambdaDeploymentMethod, 'region')
-            assert.strictEqual(appJson.DeploymentMethod, 'lambda', 'wrong deployment method')
-            const logicalId = Object.keys(appJson.Functions)[0]
-            assert.strictEqual(logicalId, 'lambda-func-from-lambda', 'wrong logicalId')
-            const physicalId = appJson.Functions['lambda-func-from-lambda'].PhysicalId['region']
-            assert.strictEqual(physicalId, 'lambda-func-from-lambda', 'wrong physicalId')
+            createApplicationJson(lambdaDeploymentMethod, 'us-west-2', tempFolder)
+            const appJsonFromFile = JSON.parse(fs.readFileSync(path.join(tempFolder, '.application.json'), 'utf8'))
+            assert.deepStrictEqual(appJsonFromFile, expectedLambdaDeploymentAppJson)
         })
 
         it('creates ApplicationJson with cloudformation deployment method', function () {
-            const appJson = createApplicationJson(cfDeploymentMethod, 'region')
-            assert.strictEqual(appJson.DeploymentMethod, 'cloudformation', 'wrong deployment method')
-            const logicalId = Object.keys(appJson.Functions)[0]
-            assert.strictEqual(logicalId, 'HelloWorldFunction', 'wrong logicalId')
-            const physicalId = appJson.Functions['HelloWorldFunction'].PhysicalId['region']
-            assert.strictEqual(physicalId, 'sam-stack-HelloWorldFunction', 'wrong physicalId')
+            createApplicationJson(cfDeploymentMethod, 'us-west-2', tempFolder)
+            const appJsonFromFile = JSON.parse(fs.readFileSync(path.join(tempFolder, '.application.json'), 'utf8'))
+            assert.deepStrictEqual(appJsonFromFile, expectedCloudFormationDeploymentAppJson)
         })
     })
 })

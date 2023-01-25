@@ -94,8 +94,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Wind
             try {
                 lambdaLocation = path.join(downloadLocation, getLambdaDetails(functionNode.configuration).fileName)
                 const lambdaFunction = await downloadAndUnzipLambda(progress, functionNode, downloadLocation)
-                const appJson = createApplicationJson(lambdaFunction, functionNode.regionCode)
-                writeAppJsonFile(downloadLocation, appJson)
+                createApplicationJson(lambdaFunction, functionNode.regionCode, downloadLocation)
             } catch (e) {
                 // initial download failed or runtime is unsupported.
                 // show error and return a failure
@@ -146,7 +145,6 @@ async function downloadAndUnzipLambda(
     window = Window.vscode(),
     lambda = new DefaultLambdaClient(functionNode.regionCode)
 ): Promise<Lambda.GetFunctionResponse> {
-
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined
     try {
@@ -251,17 +249,23 @@ export type ApplicationJson = {
     StackName?: string
 }
 
-export function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: string): ApplicationJson {
-    const physicalId =
-        lambdaFunc.Configuration?.FunctionName !== undefined ? lambdaFunc.Configuration?.FunctionName : ''
-    const logicalId = lambdaFunc.Tags?.['aws:cloudformation:logical-id']
-        ? lambdaFunc.Tags['aws:cloudformation:logical-id']
-        : physicalId
-    const stackName = lambdaFunc.Tags?.['aws:cloudformation:stack-name']
-        ? lambdaFunc.Tags['aws:cloudformation:stack-name']
-        : undefined
+/**
+ * Create and write a '.application.json' file to hold metadata about
+ * the downloaded lambda function
+ * @param lambdaFunc Lambda function
+ * @param region aws region
+ * @param downloadLocation dir path where the file will be written
+ */
+export function createApplicationJson(
+    lambdaFunc: Lambda.GetFunctionResponse,
+    region: string,
+    downloadLocation: string
+) {
+    const physicalId = lambdaFunc.Configuration?.FunctionName ?? ''
+    const logicalId = lambdaFunc.Tags?.['aws:cloudformation:logical-id'] ?? physicalId
+    const stackName = lambdaFunc.Tags?.['aws:cloudformation:stack-name'] ?? undefined
     const deploymentMethod = stackName !== undefined ? 'cloudformation' : 'lambda'
-    return {
+    const appJson: ApplicationJson = {
         DeploymentMethod: deploymentMethod,
         Functions: {
             [logicalId]: {
@@ -272,14 +276,16 @@ export function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, re
         },
         StackName: stackName,
     }
+
+    writeAppJsonFile(downloadLocation, appJson)
 }
 
 function writeAppJsonFile(destinationPath: string, appJson: ApplicationJson) {
     // Should not block download lambda if there is an error writing .application.json file
     try {
-        fs.writeFile(path.join(destinationPath, '.application.json'), JSON.stringify(appJson))
+        fs.writeFileSync(path.join(destinationPath, '.application.json'), JSON.stringify(appJson))
     } catch (e) {
         const err = e as Error
-        getLogger().error('download lambda: Error writing .application.json file, %O', err)
+        getLogger().error('download lambda: Error writing .application.json file, %s', err.message)
     }
 }
