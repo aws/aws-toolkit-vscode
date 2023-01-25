@@ -97,6 +97,13 @@ export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () 
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
+export const showAccessTokenErrorLearnMore = Commands.declare(
+    'aws.codeWhisperer.accessTokenErrorLearnMore',
+    () => async () => {
+        vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.accessTokenMigrationLearnMoreUri))
+    }
+)
+
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))

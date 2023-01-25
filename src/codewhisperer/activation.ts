@@ -34,6 +34,7 @@ import {
     showFreeTierLimit,
     updateReferenceLog,
     showIntroduction,
+    showAccessTokenErrorLearnMore,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -167,6 +168,8 @@ export async function activate(context: ExtContext): Promise<void> {
         showSsoSignIn.register(),
         // learn more about CodeWhisperer
         showLearnMore.register(),
+        // learn more about CodeWhisperer access token migration
+        showAccessTokenErrorLearnMore.register(),
         // show free tier limit
         showFreeTierLimit.register(),
         // update reference log instance
@@ -284,7 +287,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 vscode.window
                     .showErrorMessage(
                         CodeWhispererConstants.accessTokenMigrationErrorMessage,
-                        CodeWhispererConstants.accessTokenMigrationErrorButtonMessage
+                        CodeWhispererConstants.accessTokenMigrationErrorButtonMessage,
+                        CodeWhispererConstants.accessTokenMigrationLearnMore,
+                        CodeWhispererConstants.accessTokenMigrationDoNotShowAgain
                     )
                     .then(async resp => {
                         if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
@@ -295,8 +300,14 @@ export async function activate(context: ExtContext): Promise<void> {
                                 CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey,
                                 true
                             )
+                        } else if (resp === CodeWhispererConstants.accessTokenMigrationLearnMore) {
+                            await vscode.commands.executeCommand('aws.codeWhisperer.accessTokenErrorLearnMore')
                         }
                     })
+                context.extensionContext.globalState.update(
+                    CodeWhispererConstants.accessTokenMigrationDoNotShowLastShown,
+                    Date.now()
+                )
             }
         }
     }
