@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867"
+}
