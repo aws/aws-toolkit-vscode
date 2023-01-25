@@ -180,7 +180,19 @@ class CodeCatalystClientInternal {
     private userDetails?: UserDetails
     private readonly log: logger.Logger
 
+    /**
+     * Maps bearer tokens to CAWS identities via `verifySession`
+     *
+     * It's assumed that an identity will never change over the lifetime of a token
+     */
     private static identityCache = new Map<string, string>()
+
+    /**
+     * Maps CAWS identities to user details via  `getUserDetails`
+     *
+     * User details _might_ change at some point, however, this is an uncommon occurence.
+     * Cached user details are cleared when the access token is refreshed.
+     */
     private static userDetailsCache = new Map<UserDetails['userId'], UserDetails>()
 
     public constructor(private readonly connection: SsoConnection, private readonly sdkClient: CodeCatalyst) {
@@ -321,7 +333,10 @@ class CodeCatalystClientInternal {
         assertHasProps(resp, 'identity')
 
         CodeCatalystClientInternal.identityCache.set(accessToken, resp.identity)
-        setTimeout(() => CodeCatalystClientInternal.identityCache.delete(accessToken), expiresAt.getTime() - Date.now())
+        setTimeout(() => {
+            CodeCatalystClientInternal.identityCache.delete(accessToken)
+            CodeCatalystClientInternal.userDetailsCache.delete(resp.identity)
+        }, expiresAt.getTime() - Date.now())
 
         return resp.identity
     }
