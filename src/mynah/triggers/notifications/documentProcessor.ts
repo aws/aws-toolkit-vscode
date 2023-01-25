@@ -8,7 +8,8 @@ import { NotificationInfoStore } from '../../stores/notificationsInfoStore'
 import { getSimpleAndFqnNames } from '../../utils/document'
 import { mynahSelectedCodeDecorator } from '../../decorations/selectedCode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-export class OnDidOpenTextDocumentNotificationsProcessor {
+import { NotificationMetadata } from '../../telemetry/telemetry-metadata'
+export class OnDidOpenDocNotificationsProcessor {
     constructor(private readonly notificationInfoStore: NotificationInfoStore) {}
 
     readonly apiHelpGuideNotificationName = 'api_help_guide'
@@ -92,39 +93,42 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                 )
                 .then(async selection => {
                     if (selection === muteButtonName) {
+                        const notificationMetadata: NotificationMetadata = {
+                            name: this.apiHelpGuideNotificationName,
+                            action: muteButtonName,
+                        }
                         telemetry.mynah_actOnNotification.emit({
                             mynahContext: JSON.stringify({
-                                notificationMetadata: {
-                                    name: this.apiHelpGuideNotificationName,
-                                    action: muteButtonName,
-                                },
+                                notificationMetadata,
                             }),
                         })
 
-                        await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
+                        await this.notificationInfoStore.setMuteStatusInGlobalStore(
                             this.apiHelpGuideNotificationName,
                             true
                         )
                         return
                     }
                     if (selection === declineButtonName) {
+                        const notificationMetadata: NotificationMetadata = {
+                            name: this.apiHelpGuideNotificationName,
+                            action: declineButtonName,
+                        }
                         telemetry.mynah_actOnNotification.emit({
                             mynahContext: JSON.stringify({
-                                notificationMetadata: {
-                                    name: this.apiHelpGuideNotificationName,
-                                    action: declineButtonName,
-                                },
+                                notificationMetadata,
                             }),
                         })
                         return
                     }
                     if (selection === startButtonName) {
+                        const notificationMetadata: NotificationMetadata = {
+                            name: this.apiHelpGuideNotificationName,
+                            action: startButtonName,
+                        }
                         telemetry.mynah_actOnNotification.emit({
                             mynahContext: JSON.stringify({
-                                notificationMetadata: {
-                                    name: this.apiHelpGuideNotificationName,
-                                    action: startButtonName,
-                                },
+                                notificationMetadata,
                             }),
                         })
 
@@ -146,11 +150,12 @@ export class OnDidOpenTextDocumentNotificationsProcessor {
                 })
 
             await this.notificationInfoStore.addNewViewToNotificationInGlobalStore(this.apiHelpGuideNotificationName)
+            const notificationMetadata: NotificationMetadata = {
+                name: this.apiHelpGuideNotificationName,
+            }
             telemetry.mynah_viewNotification.emit({
                 mynahContext: JSON.stringify({
-                    notificationMetadata: {
-                        name: this.apiHelpGuideNotificationName,
-                    },
+                    notificationMetadata,
                 }),
             })
         })

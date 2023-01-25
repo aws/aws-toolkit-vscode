@@ -465,6 +465,18 @@
                     "type": "mynahContext"
                 }
             ]
+        },
+        {
+            "name": "mynah_clearSearch",
+            "description": "Emitted when user clears the search form",
+            "metadata": [
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
         }
     ]
 }

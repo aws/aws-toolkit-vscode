@@ -19,7 +19,7 @@ import { LiveSearchDisplay } from '../views/live-search'
 import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import { Query } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
+import { ErrorMetadata, ErrorState, ErrorType, NotificationMetadata } from '../telemetry/telemetry-metadata'
 
 const PythonJSErrorTrace: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
 const JVMError: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
@@ -110,24 +110,25 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
         const yes = 'Yes'
         const no = 'No'
         const items = [yes, no, mute]
+        let notificationMetadata: NotificationMetadata = {
+            name: TerminalErrorNotifications,
+        }
         telemetry.mynah_viewNotification.emit({
             mynahContext: JSON.stringify({
-                notificationMetadata: {
-                    name: TerminalErrorNotifications,
-                },
+                notificationMetadata,
             }),
         })
         const result = await window.showInformationMessage(
             'Mynah search is available to help resolve the error. Would you like to see the results?',
             ...items
         )
-
+        notificationMetadata = {
+            name: TerminalErrorNotifications,
+            action: result,
+        }
         telemetry.mynah_actOnNotification.emit({
             mynahContext: JSON.stringify({
-                notificationMetadata: {
-                    name: TerminalErrorNotifications,
-                    action: result,
-                },
+                notificationMetadata,
             }),
         })
 
@@ -138,10 +139,7 @@ export class TerminalLinkSearch implements TerminalLinkProvider<SearchTerminalLi
             case no:
                 break
             case mute:
-                await this.notificationInfoStore.setMuteStatusForNotificationInWorkplaceStore(
-                    TerminalErrorNotifications,
-                    true
-                )
+                await this.notificationInfoStore.setMuteStatusInWorkplaceStore(TerminalErrorNotifications, true)
                 break
             default:
                 break

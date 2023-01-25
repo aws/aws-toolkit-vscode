@@ -21,7 +21,7 @@ import { extractLanguageAndOtherContext } from './languages'
 import { LiveSearchDisplay } from '../views/live-search'
 import { Query } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ErrorMetadata, ErrorState, ErrorType } from '../telemetry/telemetry-metadata'
+import { ErrorMetadata, ErrorState, ErrorType, NotificationMetadata } from '../telemetry/telemetry-metadata'
 
 export class DebugErrorSearch implements DebugAdapterTrackerFactory {
     constructor(readonly queryEmitter: EventEmitter<Query>, readonly liveSearchDisplay: LiveSearchDisplay) {}
@@ -121,11 +121,12 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
         const no = 'No'
         const yes = 'Yes'
         const items = [yes, no]
+        let notificationMetadata: NotificationMetadata = {
+            name: notificationName,
+        }
         telemetry.mynah_viewNotification.emit({
             mynahContext: JSON.stringify({
-                notificationMetadata: {
-                    name: notificationName,
-                },
+                notificationMetadata,
             }),
         })
         const result = await window.showInformationMessage(
@@ -135,12 +136,13 @@ class DebugErrorSearchTracker implements DebugAdapterTracker {
         if (result === yes) {
             this.queryEmitter.fire(query)
         }
+        notificationMetadata = {
+            name: notificationName,
+            action: result,
+        }
         telemetry.mynah_actOnNotification.emit({
             mynahContext: JSON.stringify({
-                notificationMetadata: {
-                    name: notificationName,
-                    action: result,
-                },
+                notificationMetadata,
             }),
         })
     }

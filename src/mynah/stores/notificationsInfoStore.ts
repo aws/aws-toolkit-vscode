@@ -34,10 +34,7 @@ export class NotificationInfoStore {
         }
     }
 
-    public async setMuteStatusForNotificationInWorkplaceStore(
-        notificationName: string,
-        isMuted: boolean
-    ): Promise<void> {
+    public async setMuteStatusInWorkplaceStore(notificationName: string, isMuted: boolean): Promise<void> {
         let record = await this.getRecordFromWorkplaceStore(notificationName)
         if (record === undefined) {
             record = this.getEmptyRecord(notificationName)
@@ -48,7 +45,7 @@ export class NotificationInfoStore {
         await this.workplaceStore.update(StorageKey + notificationName, record)
     }
 
-    public async setMuteStatusForNotificationInGlobalStore(notificationName: string, isMuted: boolean): Promise<void> {
+    public async setMuteStatusInGlobalStore(notificationName: string, isMuted: boolean): Promise<void> {
         let record = await this.getRecordFromGlobalStore(notificationName)
         if (record === undefined) {
             record = this.getEmptyRecord(notificationName)

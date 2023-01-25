@@ -241,4 +241,10 @@ export class Connector {
             autocompleteSuggestionsCount: suggestionCount,
         })
     }
+
+    resetStore = (): void => {
+        this.postMessageHandler({
+            command: 'resetStore',
+        })
+    }
 }

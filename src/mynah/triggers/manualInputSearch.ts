@@ -15,6 +15,7 @@ import { mynahSelectedCodeDecorator } from '../decorations/selectedCode'
 import { StatusBar } from '../utils/status-bar'
 import { CodeQuery, Query, QueryContext, SearchInput, Trigger } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { NotificationMetadata, TriggerInteractionType } from '../telemetry/telemetry-metadata'
 
 export class ManualInputSearch extends SearchInput {
     private apiHelpStatusBar!: StatusBar | undefined
@@ -40,15 +41,15 @@ export class ManualInputSearch extends SearchInput {
         context.subscriptions.push(
             commands.registerCommand('Mynah.show', async parameters => {
                 let range: vs.Range
-                let inputTrigger: string
+                let inputTrigger: TriggerInteractionType
                 if (typeof parameters === 'string') {
                     parameters = JSON.parse(parameters)
                 }
                 // Workaround to define context menu call
                 if (parameters && parameters.authority !== undefined) {
-                    inputTrigger = 'MENU'
+                    inputTrigger = TriggerInteractionType.MENU
                 } else {
-                    inputTrigger = parameters.inputTrigger
+                    inputTrigger = parameters.inputTrigger as TriggerInteractionType
                 }
 
                 if (parameters.range) {
@@ -68,7 +69,11 @@ export class ManualInputSearch extends SearchInput {
                     //Checks target word has FQNs
                     if (await this.checkIfSelectionHasFQNs(hoveredWordRange)) {
                         // Mynah.show command arguments to simulate a code selection with hover
-                        const args = { range: hoveredWordRange, isFromHover: true, inputTrigger: 'HOVER_BUBBLE' }
+                        const args = {
+                            range: hoveredWordRange,
+                            isFromHover: true,
+                            inputTrigger: TriggerInteractionType.HOVER_BUBBLE,
+                        }
                         const contents = new vs.MarkdownString(
                             `[Find real world examples for **${document.getText(
                                 hoveredWordRange
@@ -136,7 +141,7 @@ export class ManualInputSearch extends SearchInput {
         })
     }
 
-    public async show(customRangeInDocument?: vs.Range, inputTrigger?: string): Promise<void> {
+    public async show(customRangeInDocument?: vs.Range, inputTrigger?: TriggerInteractionType): Promise<void> {
         const selectedCode = customRangeInDocument
             ? window.activeTextEditor?.document.getText(customRangeInDocument)
             : this.getSelectedCodeFromEditor()
@@ -145,7 +150,7 @@ export class ManualInputSearch extends SearchInput {
         let hasUnsupportedLanguage = false
         if (isCodeSelected && !this.supportedLanguages.has(this.getDocumentLanguage())) {
             hasUnsupportedLanguage = true
-            await this.createNotificationAboutUnsupportedLanguage()
+            await this.createNotificationForUnsupportedLanguage()
         }
 
         let hasCodeQuery = false
@@ -181,10 +186,7 @@ export class ManualInputSearch extends SearchInput {
                       }
                     : this.extractCodeSelection(customRangeInDocument),
             })
-            await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
-                this.apiHelpGuideNotificationName,
-                true
-            )
+            await this.notificationInfoStore.setMuteStatusInGlobalStore(this.apiHelpGuideNotificationName, true)
         } catch (err: any) {
             // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
             console.error(`Query was incorrect because ${err.message}.`)
@@ -192,16 +194,17 @@ export class ManualInputSearch extends SearchInput {
         }
     }
 
-    private async createNotificationAboutUnsupportedLanguage(): Promise<void> {
+    private async createNotificationForUnsupportedLanguage(): Promise<void> {
         const notificationName = 'api_help_unsupported_languages'
         const notificationInfo = await this.notificationInfoStore.getRecordFromGlobalStore(notificationName)
 
         if (notificationInfo === undefined || !notificationInfo.muted) {
+            const notificationMetadata: NotificationMetadata = {
+                name: notificationName,
+            }
             telemetry.mynah_viewNotification.emit({
                 mynahContext: JSON.stringify({
-                    notificationMetadata: {
-                        name: notificationName,
-                    },
+                    notificationMetadata,
                 }),
             })
 
@@ -212,16 +215,14 @@ export class ManualInputSearch extends SearchInput {
                 )
                 .then(async selection => {
                     if (selection !== undefined) {
-                        await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
-                            notificationName,
-                            true
-                        )
+                        await this.notificationInfoStore.setMuteStatusInGlobalStore(notificationName, true)
+                        const notificationMetadata: NotificationMetadata = {
+                            name: notificationName,
+                            action: this.muteNotificationButtonText,
+                        }
                         telemetry.mynah_actOnNotification.emit({
                             mynahContext: JSON.stringify({
-                                notificationMetadata: {
-                                    name: notificationName,
-                                    action: this.muteNotificationButtonText,
-                                },
+                                notificationMetadata,
                             }),
                         })
                     }
@@ -447,10 +448,7 @@ export class ManualInputSearch extends SearchInput {
                     )
                     .then(async selection => {
                         if (selection !== undefined) {
-                            await this.notificationInfoStore.setMuteStatusForNotificationInGlobalStore(
-                                notificationName,
-                                true
-                            )
+                            await this.notificationInfoStore.setMuteStatusInGlobalStore(notificationName, true)
                         }
                     })
                 await this.notificationInfoStore.addNewViewToNotificationInGlobalStore(notificationName)

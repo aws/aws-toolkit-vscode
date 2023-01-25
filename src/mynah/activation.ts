@@ -7,7 +7,7 @@ import { EventEmitter, ExtensionContext, window } from 'vscode'
 import { registerSearchTriggers } from './triggers'
 import { ResultDisplay } from './views/result-display'
 
-import { OnDidOpenTextDocumentNotificationsProcessor } from './triggers/notifications/documentProcessor'
+import { OnDidOpenDocNotificationsProcessor } from './triggers/notifications/documentProcessor'
 
 import { SearchHistoryStore } from './stores/searchHistoryStore'
 import { PanelStore } from './stores/panelStore'
@@ -22,6 +22,7 @@ import { HeartbeatListener } from './telemetry/heartbeat-listener'
 import { telemetry } from '../shared/telemetry/telemetry'
 import * as mynahClient from './client/mynah'
 import * as AutocompleteClient from './autocomplete-client/autocomplete'
+import { ExtensionMetadata, ExtensionState } from './telemetry/telemetry-metadata'
 
 let heartbeatListener: HeartbeatListener
 
@@ -46,12 +47,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
         panelStore,
     })
 
-    const onDidOpenTextDocumentNotificationsProcessor = new OnDidOpenTextDocumentNotificationsProcessor(
-        notificationInfoStore
-    )
+    const onDidOpenDocNotificationsProcessor = new OnDidOpenDocNotificationsProcessor(notificationInfoStore)
 
     vs.workspace.onDidOpenTextDocument(async d => {
-        await onDidOpenTextDocumentNotificationsProcessor.process(d)
+        await onDidOpenDocNotificationsProcessor.process(d)
     })
 
     vs.workspace.onDidChangeTextDocument(d => {
@@ -76,11 +75,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
         liveSearchDisplay,
         autocompleteDisplay,
     })
+    const extensionMetadata: ExtensionMetadata = {
+        state: ExtensionState.ACTIVE,
+    }
     telemetry.mynah_updateExtensionState.emit({
         mynahContext: JSON.stringify({
-            extensionMetadata: {
-                state: 'ACTIVE',
-            },
+            extensionMetadata,
         }),
     })
     suggestionsEmitter.event(output => {
@@ -94,12 +94,12 @@ export const deactivate = async (context: ExtensionContext): Promise<void> => {
     if (heartbeatListener !== undefined) {
         heartbeatListener.dispose()
     }
-
+    const extensionMetadata: ExtensionMetadata = {
+        state: ExtensionState.INACTIVE,
+    }
     telemetry.mynah_updateExtensionState.emit({
         mynahContext: JSON.stringify({
-            extensionMetadata: {
-                state: 'INACTIVE',
-            },
+            extensionMetadata,
         }),
     })
 }

@@ -53,5 +53,6 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onSuggestionClipboardInteraction: connector.triggerSuggestionClipboardInteraction,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
         onSuggestionInteraction: connector.triggerSuggestionEvent,
+        onResetStore: connector.resetStore,
     })
 }
