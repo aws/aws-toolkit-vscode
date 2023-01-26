@@ -249,6 +249,8 @@ export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN
 
 export const accessTokenExpiredDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN'
 
+export const accessTokenExpriedKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED'
+
 export const accessTokenMigrationDoNotShowLastShown =
     'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN_LAST_SHOWN_TIME'
 

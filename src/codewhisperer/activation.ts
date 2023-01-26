@@ -51,6 +51,7 @@ import { AuthUtil, isUpgradeableConnection } from './util/authUtil'
 import { Auth } from '../credentials/auth'
 import { isUserCancelledError } from '../shared/errors'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import globals from '../shared/extensionGlobals'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -223,6 +224,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     async function showAccessTokenMigrationDialogue() {
         // TODO: Change the color of the buttons
+        const accessTokenExpired =
+            context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.accessTokenExpriedKey) || false
+
         if (AuthUtil.instance.hasAccessToken()) {
             await Auth.instance.tryAutoConnect()
             const conn = Auth.instance.activeConnection
@@ -247,8 +251,12 @@ export async function activate(context: ExtContext): Promise<void> {
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 maybeShowTokenMigrationWarning()
             } else {
+                globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+                globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
                 maybeShowTokenMigrationError()
             }
+        } else if (accessTokenExpired) {
+            maybeShowTokenMigrationError()
         }
     }
 
