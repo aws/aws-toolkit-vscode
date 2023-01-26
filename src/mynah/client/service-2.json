@@ -36,6 +36,10 @@
         }
     },
     "shapes": {
+        "Boolean": {
+            "type": "boolean",
+            "box": true
+        },
         "CodeQuery": {
             "type": "structure",
             "members": {
@@ -82,6 +86,10 @@
             "max": 25,
             "min": 0
         },
+        "Integer": {
+            "type": "integer",
+            "box": true
+        },
         "InternalServerException": {
             "type": "structure",
             "required": ["message"],
@@ -115,6 +123,7 @@
         },
         "MaxResults": {
             "type": "integer",
+            "box": true,
             "max": 100,
             "min": 1
         },
@@ -134,8 +143,7 @@
                     "shape": "Trigger"
                 },
                 "maxResults": {
-                    "shape": "MaxResults",
-                    "box": true
+                    "shape": "MaxResults"
                 },
                 "codeQuery": {
                     "shape": "CodeQuery"
@@ -163,6 +171,23 @@
             "max": 100,
             "min": 0
         },
+        "StackOverflowMetadata": {
+            "type": "structure",
+            "members": {
+                "answerCount": {
+                    "shape": "Integer"
+                },
+                "isAccepted": {
+                    "shape": "Boolean"
+                },
+                "score": {
+                    "shape": "Integer"
+                },
+                "lastActivityDate": {
+                    "shape": "Timestamp"
+                }
+            }
+        },
         "String": {
             "type": "string"
         },
@@ -183,8 +208,20 @@
                 },
                 "type": {
                     "shape": "SuggestionType"
+                },
+                "metadata": {
+                    "shape": "SuggestionMetadata"
                 }
             }
+        },
+        "SuggestionMetadata": {
+            "type": "structure",
+            "members": {
+                "StackOverflow": {
+                    "shape": "StackOverflowMetadata"
+                }
+            },
+            "union": true
         },
         "SuggestionType": {
             "type": "string",
@@ -200,6 +237,9 @@
             "type": "string",
             "max": 1000,
             "min": 0
+        },
+        "Timestamp": {
+            "type": "timestamp"
         },
         "Trigger": {
             "type": "string",
