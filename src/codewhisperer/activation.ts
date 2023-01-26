@@ -251,8 +251,9 @@ export async function activate(context: ExtContext): Promise<void> {
             if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
                 maybeShowTokenMigrationWarning()
             } else {
-                globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-                globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
+                await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+                await globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
+                await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
                 maybeShowTokenMigrationError()
             }
         } else if (accessTokenExpired) {
