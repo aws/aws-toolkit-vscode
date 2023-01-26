@@ -69,16 +69,34 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
         actionState.value[CodeWhispererExploreStateType.HasShownHowToUseCodeWhisperer] = hasShownHowToUseCodeWhisperer
     }
 
-    fun setAccountlessNotificationTimestamp() {
+    fun setAccountlessNotificationWarnTimestamp() {
         actionState.accountlessWarnTimestamp = LocalDateTime.now().format(CodeWhispererConstants.TIMESTAMP_FORMATTER)
     }
 
-    fun getAccountlessNotificationTimestamp(): String? = actionState.accountlessWarnTimestamp
+    fun setAccountlessNotificationErrorTimestamp() {
+        actionState.accountlessErrorTimestamp = LocalDateTime.now().format(CodeWhispererConstants.TIMESTAMP_FORMATTER)
+    }
 
-    fun getDoNotShowAgain(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgain, false)
+    fun getAccountlessWarnNotificationTimestamp(): String? = actionState.accountlessWarnTimestamp
 
-    fun setDoNotShowAgain(doNotShowAgain: Boolean) {
-        actionState.value[CodeWhispererExploreStateType.DoNotShowAgain] = doNotShowAgain
+    fun getAccountlessErrorNotificationTimestamp(): String? = actionState.accountlessErrorTimestamp
+
+    fun getDoNotShowAgainWarn(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgainWarn, false)
+
+    fun setDoNotShowAgainWarn(doNotShowAgain: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.DoNotShowAgainWarn] = doNotShowAgain
+    }
+
+    fun getDoNotShowAgainError(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgainError, false)
+
+    fun setDoNotShowAgainError(doNotShowAgain: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.DoNotShowAgainError] = doNotShowAgain
+    }
+
+    fun getAccountlessNullified(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.AccountlessNullified, false)
+
+    fun setAccountlessNullified(accountlessNullified: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.AccountlessNullified] = accountlessNullified
     }
 
     fun setAutoSuggestion(project: Project, isAutoEnabled: Boolean) {
@@ -121,6 +139,7 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
 
     fun nullifyAccountlessCredentialIfNeeded() {
         if (actionState.token != null) {
+            setAccountlessNullified(true)
             actionState.token = null
         }
     }
@@ -129,6 +148,7 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
         value.putAll(actionState.value)
         token = actionState.token
         accountlessWarnTimestamp = actionState.accountlessWarnTimestamp
+        accountlessErrorTimestamp = actionState.accountlessErrorTimestamp
     }
 
     override fun loadState(state: CodeWhispererExploreActionState) {
@@ -136,6 +156,7 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
         actionState.token = state.token
         actionState.value.putAll(state.value)
         actionState.accountlessWarnTimestamp = state.accountlessWarnTimestamp
+        actionState.accountlessErrorTimestamp = state.accountlessErrorTimestamp
     }
 
     companion object {
@@ -160,6 +181,9 @@ internal class CodeWhispererExploreActionState : BaseState() {
 
     @get:Property
     var accountlessWarnTimestamp by string()
+
+    @get:Property
+    var accountlessErrorTimestamp by string()
 }
 
 // TODO: Don't remove IsManualEnabled
@@ -168,7 +192,9 @@ internal enum class CodeWhispererExploreStateType {
     IsManualEnabled,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,
-    DoNotShowAgain,
+    DoNotShowAgainWarn,
+    DoNotShowAgainError,
+    AccountlessNullified
 }
 
 interface CodeWhispererActivationChangedListener {

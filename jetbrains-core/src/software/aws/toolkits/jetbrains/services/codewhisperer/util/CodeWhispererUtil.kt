@@ -24,7 +24,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionError
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionWarn
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainAction
+import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionError
+import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionWarn
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
@@ -74,7 +75,7 @@ object CodeWhispererUtil {
         "",
         message("codewhisperer.notification.accountless.warn.message"),
         null,
-        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionWarn(), DoNotShowAgainAction())
+        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionWarn(), DoNotShowAgainActionWarn())
     )
 
     // show after user selects Don't Show Again in Accountless login message
@@ -90,7 +91,7 @@ object CodeWhispererUtil {
         "",
         message("codewhisperer.notification.accountless.error.message"),
         null,
-        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionError())
+        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionError(), DoNotShowAgainActionError())
     )
 
     fun isConnectionExpired(project: Project): Boolean {

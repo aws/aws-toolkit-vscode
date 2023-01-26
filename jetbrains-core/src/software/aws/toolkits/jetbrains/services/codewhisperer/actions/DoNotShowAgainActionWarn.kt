@@ -10,9 +10,16 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyInfoAccountless
 import software.aws.toolkits.resources.message
 
-class DoNotShowAgainAction : AnAction(message("codewhisperer.notification.accountless.warn.dont.show.again")), DumbAware {
+class DoNotShowAgainActionWarn : AnAction(message("codewhisperer.notification.accountless.warn.dont.show.again")), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         notifyInfoAccountless()
-        CodeWhispererExplorerActionManager.getInstance().setDoNotShowAgain(true)
+        CodeWhispererExplorerActionManager.getInstance().setDoNotShowAgainWarn(true)
+    }
+}
+
+class DoNotShowAgainActionError : AnAction(message("codewhisperer.notification.accountless.warn.dont.show.again")), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
+        notifyInfoAccountless()
+        CodeWhispererExplorerActionManager.getInstance().setDoNotShowAgainError(true)
     }
 }

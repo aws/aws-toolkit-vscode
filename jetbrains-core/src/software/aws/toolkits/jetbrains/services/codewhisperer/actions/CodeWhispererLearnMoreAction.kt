@@ -27,7 +27,7 @@ class CodeWhispererLearnMoreAction :
 
 class CodeWhispererSsoLearnMoreAction : AnAction(message("aws.settings.learn_more")), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        BrowserUtil.browse(URI("https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer.html"))
+        BrowserUtil.browse(URI("https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer-auth.html"))
     }
 }
 
