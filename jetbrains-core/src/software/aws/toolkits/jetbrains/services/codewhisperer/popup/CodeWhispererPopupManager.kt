@@ -159,7 +159,8 @@ class CodeWhispererPopupManager {
             return
         }
         val typeahead = resolveTypeahead(states, selectedIndex, typeaheadOriginal)
-        sessionContext = SessionContext(typeahead, typeaheadOriginal, selectedIndex, sessionContext.seen)
+        val isFirstTimeShowingPopup = indexChange == 0 && typeaheadChange.isEmpty()
+        sessionContext = SessionContext(typeahead, typeaheadOriginal, selectedIndex, sessionContext.seen, isFirstTimeShowingPopup)
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CODEWHISPERER_POPUP_STATE_CHANGED).stateChanged(
             states, sessionContext
@@ -205,13 +206,15 @@ class CodeWhispererPopupManager {
         val caretPoint = states.requestContext.editor.offsetToXY(states.requestContext.caretPosition.offset)
         sessionContext.seen.add(sessionContext.selectedIndex)
 
-        // There are three cases that render() is called:
+        // There are four cases that render() is called:
         // 1. Popup showing for the first time, both booleans are false, we should show the popup and update the latency
         // end time, and emit the event if it's at the pagination end.
         // 2. New recommendations being added to the existing ones, we should not update the latency end time, and emit
         // the event if it's at the pagination end.
         // 3. User scrolling (so popup is changing positions), we should not update the latency end time and should not
         // emit any events.
+        // 4. User nagivating through the completions or typing as the completion shows. We should not update the latency
+        // end time and should not emit any events in this case.
         if (!isRecommendationAdded) {
             showPopup(states, sessionContext, states.popup, caretPoint, overlappingLinesCount)
             if (!isScrolling) {
@@ -219,7 +222,10 @@ class CodeWhispererPopupManager {
                 states.requestContext.latencyContext.codewhispererEndToEndEnd = System.nanoTime()
             }
         }
-        if (isScrolling || CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) return
+        if (isScrolling ||
+            CodeWhispererInvocationStatus.getInstance().hasExistingInvocation() ||
+            !sessionContext.isFirstTimeShowingPopup
+        ) return
         CodeWhispererTelemetryService.getInstance().sendClientComponentLatencyEvent(states)
     }
 

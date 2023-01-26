@@ -44,7 +44,8 @@ data class SessionContext(
     val typeahead: String = "",
     val typeaheadOriginal: String = "",
     val selectedIndex: Int = 0,
-    val seen: MutableSet<Int> = mutableSetOf()
+    val seen: MutableSet<Int> = mutableSetOf(),
+    val isFirstTimeShowingPopup: Boolean = true
 )
 
 data class RecommendationChunk(
