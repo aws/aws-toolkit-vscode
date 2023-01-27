@@ -35,7 +35,7 @@
 
     --mynah-color-deep: var(--vscode-checkbox-background);
     --mynah-color-deep-reverse: var(--vscode-checkbox-foreground);
-    --mynah-color-border-default: rgba(0, 0, 0, 0.1);
+    --mynah-color-border-default: var(--vscode-editorGroup-border);
     --mynah-color-input-bg: var(--vscode-input-background);
 
     --mynah-color-highlight: rgba(255, 199, 72, 0.3);
@@ -72,12 +72,6 @@
     --mynah-shadow-card-active: none;
     --mynah-shadow-prioritization-menu: 0 10px 20px -10px var(--vscode-editorGroup-border);
     --mynah-shadow-feedback-form: 0 0px 40px 0px var(--mynah-color-bg);
-
-    --mynah-font-size-xsmall: 0.75rem;
-    --mynah-font-size-small: 0.825rem;
-    --mynah-font-size-medium: 1rem;
-    --mynah-font-size-large: 1.15rem;
-    --mynah-font-size-xlarge: 1.275rem;
 
     --mynah-card-radius: 0;
     --mynah-button-radius: var(--mynah-sizing-1);
