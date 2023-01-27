@@ -1,3 +1,6 @@
+# _1.59_ (2023-01-27)
+- **(Feature)** Added an option to submit feedback for the AWS Toolkit in JetBrains Gateway
+
 # _1.58_ (2023-01-12)
 - **(Feature)** CodeWhisperer: more responsive Auto-Suggestions
 - **(Feature)** Added Nodejs18.x Lambda runtime support

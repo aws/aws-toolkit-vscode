@@ -1,0 +1,8 @@
+{
+  "date" : "2023-01-27",
+  "version" : "1.59",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Added an option to submit feedback for the AWS Toolkit in JetBrains Gateway"
+  } ]
+}
