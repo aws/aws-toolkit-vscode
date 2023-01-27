@@ -9,7 +9,7 @@ import globals from '../../shared/extensionGlobals'
 import * as MynahClient from './mynahclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 
-const SearchEndpoint = 'https://eeokcea2t5.execute-api.us-east-1.amazonaws.com/prod'
+const SearchEndpoint = 'https://zip88rz00d.execute-api.us-east-1.amazonaws.com/prod'
 const SearchRegion = 'us-east-1'
 
 export type Context = Readonly<MynahClient.Context>

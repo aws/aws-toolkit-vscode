@@ -9,7 +9,7 @@ import globals from '../../shared/extensionGlobals'
 import * as AutocompleteClient from './autocompleteclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 
-const AutocompleteEndpoint = 'https://u1bqell147.execute-api.us-east-1.amazonaws.com/prod'
+const AutocompleteEndpoint = 'https://g75syrp43k.execute-api.us-east-1.amazonaws.com/prod'
 const Region = 'us-east-1'
 
 export type Context = Readonly<AutocompleteClient.Context>
