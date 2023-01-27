@@ -210,9 +210,9 @@ export interface UploadLambdaWizardState {
 export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
     constructor(lambda?: LambdaFunction, invokePath?: vscode.Uri) {
         super({ initState: { lambda } })
-        this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
         if (invokePath) {
+            this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
             this.form.uploadType.setDefault('directory')
             if (fs.statSync(invokePath.fsPath).isFile()) {
                 this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
@@ -220,6 +220,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
                 this.form.targetUri.setDefault(invokePath)
             }
         } else {
+            this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
             this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
             this.form.targetUri.bindPrompter(({ uploadType }) => {
                 if (uploadType === 'directory') {
@@ -616,4 +617,34 @@ function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
     })
 
     return prompter
+}
+
+function getRegionsFromAppJson(file: vscode.Uri) {
+    try {
+        const regions: string[] = []
+        const appData = JSON.parse(fs.readFileSync(file.fsPath, { encoding: 'utf-8' }).toString())
+        if (appData['Functions']) {
+            const functions = Object.keys(appData['Functions'])
+            if (functions) {
+                for (const func of functions) {
+                    if (appData['Functions'][func]['PhysicalId']) {
+                        regions.push(Object.keys(appData['Functions'][func]['PhysicalId'])[0])
+                    }
+                }
+            }
+        } else {
+            getLogger().info('lambda: Incorrect JSON structure for .application.json file. Missing: "Functions"')
+        }
+        return regions
+    } catch (error) {
+        getLogger().error('lambda: failed to parse .application.json: %s', (error as Error).message)
+    }
+}
+
+function discoverAppJsonRegions(path: vscode.Uri) {
+    return findApplicationJsonFile(path).then(appFile => {
+        if (appFile) {
+            return getRegionsFromAppJson(appFile)
+        }
+    })
 }
