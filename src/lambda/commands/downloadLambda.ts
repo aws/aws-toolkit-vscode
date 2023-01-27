@@ -283,7 +283,7 @@ export function createApplicationJson(
 function writeAppJsonFile(destinationPath: string, appJson: ApplicationJson) {
     // Should not block download lambda if there is an error writing .application.json file
     try {
-        fs.writeFileSync(path.join(destinationPath, '.application.json'), JSON.stringify(appJson))
+        fs.writeFileSync(path.join(destinationPath, '.application.json'), JSON.stringify(appJson, undefined, 4))
     } catch (e) {
         const err = e as Error
         getLogger().error('download lambda: Error writing .application.json file, %s', err.message)
