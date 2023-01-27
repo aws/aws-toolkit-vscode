@@ -44,7 +44,6 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         },
         onClickAutocompleteItem: connector.clickAutocompleteSuggestionItem,
         onChangeLiveSearchState: connector.toggleLiveSearch,
-        onRequestAutocompleteList: connector.requestAutocomplete,
         onChangeContext: connector.recordContextChange,
         onClickCodeDetails: connector.clickCodeDetails,
         onClickSuggestionVote: connector.updateVoteOfSuggestion,
