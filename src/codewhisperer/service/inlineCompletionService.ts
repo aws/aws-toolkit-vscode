@@ -21,7 +21,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
-import AsyncLock = require('async-lock')
+import { shared } from '../../shared/utilities/functionUtils'
 
 class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -217,7 +217,6 @@ export class InlineCompletionService {
     private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
     private _timer?: NodeJS.Timer
     private _showRecommendationTimer?: NodeJS.Timer
-    private readonly lock: AsyncLock = new AsyncLock()
     private documentUri: vscode.Uri | undefined = undefined
     private hide: vscode.Disposable
     private next: vscode.Disposable
@@ -229,11 +228,7 @@ export class InlineCompletionService {
         this.next = nextCommand.register(this)
         this.hide = hideCommand.register(this)
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
-            // to prevent concurrency
-            this.lock.acquire(RecommendationHandler.instance.sessionId, done => {
-                this.startShowRecommendationTimer()
-                done()
-            })
+            this.startShowRecommendationTimer()
         })
     }
 
@@ -247,6 +242,8 @@ export class InlineCompletionService {
         return this.documentUri?.fsPath
     }
 
+    private sharedTryShowRecommendation = shared(this.tryShowRecommendation.bind(this))
+
     private startShowRecommendationTimer() {
         if (this._showRecommendationTimer) {
             clearInterval(this._showRecommendationTimer)
@@ -259,7 +256,7 @@ export class InlineCompletionService {
                 return
             }
             try {
-                this.tryShowRecommendation()
+                this.sharedTryShowRecommendation()
             } finally {
                 if (this._showRecommendationTimer) {
                     clearInterval(this._showRecommendationTimer)
