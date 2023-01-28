@@ -228,7 +228,7 @@ export class InlineCompletionService {
         this.next = nextCommand.register(this)
         this.hide = hideCommand.register(this)
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
-            this.startShowRecommendationTimer()
+            this.sharedStartShowRecommendationTimer()
         })
     }
 
@@ -242,21 +242,20 @@ export class InlineCompletionService {
         return this.documentUri?.fsPath
     }
 
-    private sharedTryShowRecommendation = shared(this.tryShowRecommendation.bind(this))
+    private sharedStartShowRecommendationTimer = shared(this.startShowRecommendationTimer.bind(this))
 
-    private startShowRecommendationTimer() {
+    private async startShowRecommendationTimer() {
         if (this._showRecommendationTimer) {
             clearInterval(this._showRecommendationTimer)
             this._showRecommendationTimer = undefined
         }
-
         this._showRecommendationTimer = setInterval(() => {
             const delay = performance.now() - vsCodeState.lastUserModificationTime
             if (delay < CodeWhispererConstants.inlineSuggestionShowDelay) {
                 return
             }
             try {
-                this.sharedTryShowRecommendation()
+                this.tryShowRecommendation()
             } finally {
                 if (this._showRecommendationTimer) {
                     clearInterval(this._showRecommendationTimer)
