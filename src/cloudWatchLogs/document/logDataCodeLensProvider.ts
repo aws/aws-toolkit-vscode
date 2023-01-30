@@ -58,7 +58,8 @@ export class LogDataCodeLensProvider implements vscode.CodeLensProvider {
                   },
         }
 
-        if (isLogStreamUri(uri)) {
+        // log stream documents always start at the oldest log event, so no need to get older events
+        if (!isLogStreamUri(uri)) {
             codelenses.push(oldCodeLense)
         }
         codelenses.push(newerCodelense)

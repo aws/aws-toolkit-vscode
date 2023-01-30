@@ -193,6 +193,10 @@ export async function filterLogEventsFromUri(
         limit: parameters.limit,
     }
 
+    if (logGroupInfo.streamName !== undefined) {
+        cwlParameters.logStreamNames = [logGroupInfo.streamName]
+    }
+
     if (parameters.startTime && parameters.endTime) {
         cwlParameters.startTime = parameters.startTime
         cwlParameters.endTime = parameters.endTime
@@ -229,44 +233,6 @@ export async function filterLogEventsFromUri(
         }
     } else {
         throw new Error('cwl: filterLogEvents returned null')
-    }
-}
-
-/**
- * @see filterLogEventsFromUri
- */
-export async function getLogEventsFromUriComponents(
-    logGroupInfo: CloudWatchLogsGroupInfo,
-    parameters: CloudWatchLogsParameters,
-    nextToken?: string
-): Promise<CloudWatchLogsResponse> {
-    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
-
-    if (!logGroupInfo.streamName) {
-        throw new Error(
-            `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
-        )
-    }
-    const cwlParameters = {
-        logGroupName: logGroupInfo.groupName,
-        logStreamName: logGroupInfo.streamName,
-        nextToken,
-        limit: parameters.limit,
-    }
-
-    const timeout = new Timeout(300000)
-    showMessageWithCancel(`Fetching logs: ${logGroupInfo.streamName}`, timeout, 1200)
-    const responsePromise = client.getLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
-
-    if (!response) {
-        throw new Error('cwl:`getLogEvents` did not return anything.')
-    }
-
-    return {
-        events: response.events ? response.events : [],
-        nextForwardToken: response.nextForwardToken,
-        nextBackwardToken: response.nextBackwardToken,
     }
 }
 
