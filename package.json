@@ -1,8 +1,8 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit",
-    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.62.0-SNAPSHOT",
+    "displayName": "AWS Toolkit (Mynah Beta)",
+    "description": "Amazon Web Services toolkit for browsing and updating cloud resources (Mynah Beta)",
+    "version": "1.999.0-c882f86f37bc",
     "extensionKind": [
         "workspace"
     ],
