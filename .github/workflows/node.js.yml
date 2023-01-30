@@ -15,7 +15,7 @@ jobs:
         runs-on: macos-latest
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -47,7 +47,7 @@ jobs:
         runs-on: windows-2019
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
