@@ -228,7 +228,7 @@ export class InlineCompletionService {
         this.next = nextCommand.register(this)
         this.hide = hideCommand.register(this)
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
-            this.sharedStartShowRecommendationTimer()
+            this.startShowRecommendationTimer()
         })
     }
 
@@ -242,9 +242,9 @@ export class InlineCompletionService {
         return this.documentUri?.fsPath
     }
 
-    private sharedStartShowRecommendationTimer = shared(this.startShowRecommendationTimer.bind(this))
+    private sharedTryShowRecommendation = shared(this.tryShowRecommendation.bind(this))
 
-    private async startShowRecommendationTimer() {
+    private startShowRecommendationTimer() {
         if (this._showRecommendationTimer) {
             clearInterval(this._showRecommendationTimer)
             this._showRecommendationTimer = undefined
@@ -255,7 +255,7 @@ export class InlineCompletionService {
                 return
             }
             try {
-                this.tryShowRecommendation()
+                this.sharedTryShowRecommendation()
             } finally {
                 if (this._showRecommendationTimer) {
                     clearInterval(this._showRecommendationTimer)
