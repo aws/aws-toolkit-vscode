@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Duplicate resource type definitions break the \"Resources\" node (#3132)"
+}
