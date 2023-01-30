@@ -9,7 +9,7 @@ import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shar
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
-import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
@@ -60,10 +60,17 @@ export class ResourcesNode extends AWSTreeNodeBase {
         const defaultResources = isCloud9() ? Array.from(resourceTypes.keys()) : []
         const enabledResources = this.settings.get('enabledResources', defaultResources)
 
-        const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
-            await toArrayAsync(this.cloudFormation.listTypes()),
-            type => type.TypeName
-        )
+        // Use the most recently update type definition per-type
+        const types = await toArrayAsync(this.cloudFormation.listTypes())
+        types.sort((a, b) => (a.LastUpdated?.getTime() ?? 0) - (b.LastUpdated?.getTime() ?? 0))
+
+        const availableTypes: Map<string, CloudFormation.TypeSummary> = new Map()
+        for (const type of types) {
+            if (type.TypeName) {
+                availableTypes.set(type.TypeName!, type)
+            }
+        }
+
         updateInPlace(
             this.resourceTypeNodes,
             enabledResources,
