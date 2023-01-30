@@ -89,6 +89,12 @@ describe('ResourcesNode', function () {
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
+    it('handles duplicate type entries without failing', async function () {
+        prepareMock(['type1', 'type2', 'type1'])
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
+    })
+
     async function setConfiguration(resourceTypes: string[]) {
         await settings.update('enabledResources', resourceTypes)
     }
