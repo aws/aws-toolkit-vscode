@@ -179,12 +179,6 @@
                 },
                 "isAccepted": {
                     "shape": "Boolean"
-                },
-                "score": {
-                    "shape": "Integer"
-                },
-                "lastActivityDate": {
-                    "shape": "Timestamp"
                 }
             }
         },
