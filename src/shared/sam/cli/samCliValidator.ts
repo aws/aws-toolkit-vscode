@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
+import { ToolkitError } from '../../errors'
 
 export const minSamCliVersion = '0.47.0'
 export const minSamCliVersionForImageSupport = '1.13.0'
@@ -17,21 +18,17 @@ export const minSamCliVersionForArmSupport = '1.33.0'
 export const minSamCliVersionForDotnet31Support = '1.4.0'
 
 // Errors
-export class InvalidSamCliError extends Error {
-    public constructor(message?: string | undefined) {
-        super(message)
-    }
-}
+export class InvalidSamCliError extends ToolkitError {}
 
 export class SamCliNotFoundError extends InvalidSamCliError {
     public constructor() {
-        super('SAM CLI was not found')
+        super('SAM CLI was not found', { code: 'MissingSamCli' })
     }
 }
 
 export class InvalidSamCliVersionError extends InvalidSamCliError {
     public constructor(public versionValidation: SamCliVersionValidatorResult) {
-        super('SAM CLI has an invalid version')
+        super('SAM CLI has an invalid version', { code: 'InvalidSamCliVersion' })
     }
 }
 
