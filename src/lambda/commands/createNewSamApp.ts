@@ -47,8 +47,7 @@ import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
-
-type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
+import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -59,7 +58,7 @@ export async function resumeCreateNewSamApp(
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
     let createResult: Result = 'Succeeded'
-    let reason: CreateReason = 'complete'
+    let reason: string | undefined
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
@@ -134,7 +133,7 @@ export async function createNewSamApplication(
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
-    let reason: CreateReason = 'unknown'
+    let reason: string | undefined
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let samVersion: string | undefined
@@ -323,8 +322,8 @@ export async function createNewSamApplication(
             await vscode.workspace.openTextDocument(templateUri)
         }
     } catch (err) {
-        createResult = 'Failed'
-        reason = 'error'
+        createResult = getTelemetryResult(err)
+        reason = getTelemetryReason(err)
 
         globals.outputChannel.show(true)
         getLogger('channel').error(
