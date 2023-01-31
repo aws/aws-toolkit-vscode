@@ -40,8 +40,8 @@ const baseConfig = {
     },
     resolve: {
         extensions: ['.ts', '.js'],
+        mainFields: ['main', 'module'],
     },
-    experiments: { asyncWebAssembly: true },
     node: {
         __dirname: false, //preserve the default node.js behavior for __dirname
     },
@@ -67,7 +67,7 @@ const baseConfig = {
                 ],
             },
             {
-                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice)/,
+                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice|jsonc-parser)/,
                 use: { loader: 'umd-compat-loader' },
             },
         ],
