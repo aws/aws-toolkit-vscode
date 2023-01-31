@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "iam: ignore permission check when denial comes from organization csp policy"
-}
