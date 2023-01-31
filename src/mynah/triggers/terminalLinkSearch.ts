@@ -22,7 +22,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ErrorMetadata, ErrorState, ErrorType, NotificationMetadata } from '../telemetry/telemetry-metadata'
 
 const PythonJSErrorTrace: RegExp = /^(?<errorName>\w*Error): (?<errorMessage>.*)$/
-const JVMError: RegExp = /Exception in thread "(?<thread>[^"]+)" (?<errorName>[\w.]+): (?<errorMessage>.*)/
+const JVMError: RegExp = /(?<errorName>[\w.]*)(Exception|Error): (?<errorMessage>.*)($|\n)?/
 const TerminalErrorNotifications = 'live_search_terminal_error'
 
 interface ErrorCache {
