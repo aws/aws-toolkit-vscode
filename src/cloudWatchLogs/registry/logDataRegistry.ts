@@ -74,6 +74,21 @@ export class LogDataRegistry {
         }
 
         const isHead = headOrTail === 'head'
+
+        // We are at the earliest data and trying to go back in time, there is nothing to see.
+        // If we don't return now, redundant data will be retrieved.
+        if (isHead && logData.previous?.token === undefined) {
+            const msgId = uriToKey(uri)
+            // show something so the user doesn't think nothing happened.
+            await Message.putMessage(
+                msgId,
+                `Loading data from log group: '${logData.logGroupInfo.groupName}'`,
+                undefined,
+                500
+            )
+            return []
+        }
+
         const stream = pageableToCollection(
             (r: typeof request) =>
                 logData.retrieveLogsFunction(
@@ -230,7 +245,7 @@ export async function filterLogEventsFromUri(
     })
 
     const responsePromise = client.filterLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false, completeTimeout: false })
+    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.

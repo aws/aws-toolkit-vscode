@@ -18,6 +18,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
+    backwardToken,
     fakeGetLogEvents,
     fakeSearchLogGroup,
     logGroupsData,
@@ -84,6 +85,9 @@ describe('LogDataRegistry', async function () {
         })
 
         it("properly paginates the results with 'head'", async () => {
+            // Manually set a backwards token to exist
+            registry.setLogData(paginatedUri, { ...paginatedData, previous: { token: backwardToken } })
+
             const newEvents = await registry.fetchNextLogEvents(paginatedUri, 'head')
 
             // // check that newData is changed to what it should be.
@@ -97,6 +101,12 @@ describe('LogDataRegistry', async function () {
             // // check that newData is changed to what it should be.
             const expected = (await fakeGetLogEvents()).events
             assert.deepStrictEqual(newEvents, expected)
+        })
+
+        it("returns empty list if no 'head' token", async () => {
+            const newEvents = await registry.fetchNextLogEvents(paginatedUri, 'head')
+            // // check that newData is changed to what it should be.
+            assert.deepStrictEqual(newEvents, [])
         })
     })
 
