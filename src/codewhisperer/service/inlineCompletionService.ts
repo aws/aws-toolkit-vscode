@@ -21,6 +21,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
+import { shared } from '../../shared/utilities/functionUtils'
 
 class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -215,6 +216,7 @@ export class InlineCompletionService {
     private maxPage = 100
     private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
     private _timer?: NodeJS.Timer
+    private _showRecommendationTimer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined = undefined
     private hide: vscode.Disposable
     private next: vscode.Disposable
@@ -226,7 +228,7 @@ export class InlineCompletionService {
         this.next = nextCommand.register(this)
         this.hide = hideCommand.register(this)
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
-            this.tryShowRecommendation()
+            this.startShowRecommendationTimer()
         })
     }
 
@@ -238,6 +240,29 @@ export class InlineCompletionService {
 
     filePath(): string | undefined {
         return this.documentUri?.fsPath
+    }
+
+    private sharedTryShowRecommendation = shared(this.tryShowRecommendation.bind(this))
+
+    private startShowRecommendationTimer() {
+        if (this._showRecommendationTimer) {
+            clearInterval(this._showRecommendationTimer)
+            this._showRecommendationTimer = undefined
+        }
+        this._showRecommendationTimer = setInterval(() => {
+            const delay = performance.now() - vsCodeState.lastUserModificationTime
+            if (delay < CodeWhispererConstants.inlineSuggestionShowDelay) {
+                return
+            }
+            try {
+                this.sharedTryShowRecommendation()
+            } finally {
+                if (this._showRecommendationTimer) {
+                    clearInterval(this._showRecommendationTimer)
+                    this._showRecommendationTimer = undefined
+                }
+            }
+        }, CodeWhispererConstants.showRecommendationTimerPollPeriod)
     }
 
     // These commands override the vs code inline completion commands
