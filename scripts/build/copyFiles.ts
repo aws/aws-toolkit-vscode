@@ -56,7 +56,7 @@ const tasks: CopyTask[] = [
 
     // Mynah
     {
-        target: path.join('node_modules', '@aws', 'fully-qualified-names', 'fully_qualified_names_bg.wasm'),
+        target: path.join('node_modules', '@aws', 'fully-qualified-names', 'node', 'fully_qualified_names_bg.wasm'),
         destination: path.join('src', 'fully_qualified_names_bg.wasm'),
     },
     {

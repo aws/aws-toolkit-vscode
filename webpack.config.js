@@ -41,6 +41,7 @@ const baseConfig = {
     resolve: {
         extensions: ['.ts', '.js'],
     },
+    experiments: { asyncWebAssembly: true },
     node: {
         __dirname: false, //preserve the default node.js behavior for __dirname
     },
