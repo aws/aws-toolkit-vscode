@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
-import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { Message } from '../../shared/utilities/messages'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
@@ -98,7 +98,14 @@ export class LogDataRegistry {
             return last
         }
 
-        const responseData = await firstOrLast(stream, resp => resp.events.length > 0)
+        const msgId = uriToKey(uri)
+        const msgTimeout = await Message.putMessage(
+            msgId,
+            `Loading data from log group: '${logData.logGroupInfo.groupName}'`
+        )
+        const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
+            msgTimeout.dispose()
+        })
 
         if (!responseData) {
             return []
@@ -217,10 +224,13 @@ export async function filterLogEventsFromUri(
         delete cwlParameters.logStreamNames
     }
 
-    const timeout = new Timeout(300000)
-    showMessageWithCancel(`Searching log group: ${logGroupInfo.groupName}`, timeout, 1200)
+    const msgId = uriToKey(createURIFromArgs(logGroupInfo, parameters))
+    const msgTimeout = await Message.putMessage(msgId, `${logGroupInfo.groupName}`, {
+        message: logGroupInfo.streamName ?? '',
+    })
+
     const responsePromise = client.filterLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false, completeTimeout: false })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
