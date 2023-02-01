@@ -66,5 +66,27 @@ describe('cliUtils', async function () {
                 toolId: 'session-manager-plugin',
             })
         })
+
+        it('downloads and installs the SAM CLI automatically', async function () {
+            const samCli = await installCli('sam-cli', false, testWindow)
+            assert.ok(await hasFunctionalCli(samCli))
+            assertTelemetry({
+                result: 'Succeeded',
+                toolId: 'sam-cli',
+            })
+        })
+
+        it('downloads and installs the SAM CLI if prompted and accepted', async function () {
+            const ssmCli = installCli('sam-cli', true, testWindow)
+            const message = await testWindow.waitForMessage(/Install/)
+            message.assertSeverity(SeverityLevel.Information)
+            message.selectItem('Install')
+
+            assert.ok(await hasFunctionalCli(await ssmCli))
+            assertTelemetry({
+                result: 'Succeeded',
+                toolId: 'sam-cli',
+            })
+        })
     })
 })

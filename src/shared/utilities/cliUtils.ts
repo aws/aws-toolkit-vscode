@@ -109,7 +109,7 @@ export async function installCli(
             : await window.showInformationMessage(
                   localize(
                       'AWS.cli.installCliPrompt',
-                      '{0} could not find {1} CLI. Install a local copy?',
+                      '{0} could not find {1}. Install a local copy?',
                       localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
                       cliToInstall.name
                   ),
@@ -126,7 +126,7 @@ export async function installCli(
 
         const timeout = new Timeout(600000)
         const progress = await showMessageWithCancel(
-            localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
+            localize('AWS.cli.installProgress', 'Installing: {0}', cliToInstall.name),
             timeout
         )
 
@@ -163,7 +163,7 @@ export async function installCli(
 
         window
             .showErrorMessage(
-                localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
+                localize('AWS.cli.failedInstall', 'Installation of the {0} failed.', cliToInstall.name),
                 manualInstall
             )
             .then(button => {
