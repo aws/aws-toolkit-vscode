@@ -24,7 +24,7 @@ export class DebugConsoleTransport extends Transport {
         super(options)
     }
 
-    public log(info: LogEntry, next: () => void): void {
+    public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             vscode.debug.activeDebugConsole.append(info[MESSAGE])
             this.emit('logged', info)

@@ -23,7 +23,7 @@ export class S3Node extends AWSTreeNodeBase {
         this.contextValue = 'awsS3Node'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const response = await this.s3.listBuckets()

@@ -21,7 +21,7 @@ export class AslVisualizationCDK extends AslVisualization {
         this.stateMachineName = stateMachineName
     }
 
-    protected getText(textDocument: vscode.TextDocument): string {
+    protected override getText(textDocument: vscode.TextDocument): string {
         this.updateWebviewTitle()
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.stateMachineName, this.templatePath)
         return toUnescapedAslJsonString(definitionString ? definitionString : '')

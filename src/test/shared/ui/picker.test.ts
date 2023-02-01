@@ -680,7 +680,7 @@ describe('IteratingQuickPickController', async function () {
                     callback
                 )
             }
-            public async reset(): Promise<void> {
+            public override async reset(): Promise<void> {
                 this.spy()
             }
         }
