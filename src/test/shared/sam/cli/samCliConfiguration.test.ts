@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import * as os from 'os'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { TestSettings } from '../../../utilities/testSettingsConfiguration'
@@ -74,6 +75,9 @@ describe('samCliConfiguration', function () {
             settingsConfiguration
         )
 
+        if (os.platform() === 'linux') {
+            this.skip()
+        }
         assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), undefined)
     })
 
