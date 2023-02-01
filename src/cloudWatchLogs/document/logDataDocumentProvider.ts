@@ -69,7 +69,9 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
 
-            await this.registry.registerLog(streamUri, initialStreamData)
+            // dont await so doc content is loaded asynchronously, prevents stuttering on hover
+            this.registry.registerLog(streamUri, initialStreamData)
+
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
 
