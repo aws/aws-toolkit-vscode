@@ -760,8 +760,14 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
 
     const placeholder =
         type === 'iam'
-            ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
-            : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
+            ? localize(
+                  'aws.auth.promptConnection.iam.placeholder',
+                  'Select an IAM credential (also sets AWS_* environment variables)'
+              )
+            : localize(
+                  'aws.auth.promptConnection.all.placeholder',
+                  'Select a connection (also sets AWS_* environment variables)'
+              )
 
     const resp = await showQuickPick<Connection | 'addNewConnection' | 'editCredentials'>(items, {
         placeholder,

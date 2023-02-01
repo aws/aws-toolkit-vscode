@@ -78,6 +78,19 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion(),
             })
 
+            globals.context.environmentVariableCollection.replace('AWS_PROFILE', args.providerId.credentialTypeId)
+            const region = provider.getDefaultRegion()
+            if (region) {
+                globals.context.environmentVariableCollection.replace('AWS_REGION', region)
+            }
+            globals.context.environmentVariableCollection.replace('AWS_ACCESS_KEY_ID', credentials.accessKeyId)
+            globals.context.environmentVariableCollection.replace('AWS_SECRET_ACCESS_KEY', credentials.secretAccessKey)
+            if (credentials.sessionToken) {
+                globals.context.environmentVariableCollection.replace('AWS_SESSION_TOKEN', credentials.sessionToken)
+            } else {
+                globals.context.environmentVariableCollection.delete('AWS_SESSION_TOKEN')
+            }
+
             telemetryResult = 'Succeeded'
             return true
         } catch (err) {
@@ -328,6 +341,20 @@ function createCredentialsShim(
 
             const credentials = await provider.getCredentials()
             store.setCredentials(credentials, provider)
+
+            globals.context.environmentVariableCollection.replace('AWS_PROFILE', providerId.credentialTypeId)
+            const region = provider.getDefaultRegion()
+            if (region) {
+                globals.context.environmentVariableCollection.replace('AWS_REGION', region)
+            }
+            globals.context.environmentVariableCollection.replace('AWS_ACCESS_KEY_ID', credentials.accessKeyId)
+            globals.context.environmentVariableCollection.replace('AWS_SECRET_ACCESS_KEY', credentials.secretAccessKey)
+            if (credentials.sessionToken) {
+                globals.context.environmentVariableCollection.replace('AWS_SESSION_TOKEN', credentials.sessionToken)
+            } else {
+                globals.context.environmentVariableCollection.delete('AWS_SESSION_TOKEN')
+            }
+
             getLogger().debug(`credentials: refresh succeeded for: ${formatProviderId()}`)
             result = 'Succeeded'
 
