@@ -37,6 +37,7 @@ import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.await
 import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
 import software.amazon.awssdk.services.codecatalyst.model.DevEnvironmentStatus
+import software.amazon.awssdk.services.codecatalyst.model.InstanceType
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
@@ -144,6 +145,12 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                             isIndeterminate = true,
                         ) {
                             validateEnvironmentIsRunning(indicator, environmentActions)
+                            val isSmallInstance = cawsClient.getDevEnvironment {
+                                it.id(envId)
+                                it.projectName(projectName)
+                                it.spaceName(spaceName)
+                            }.instanceType().equals(InstanceType.DEV_STANDARD1_SMALL)
+
                             lifetime.launchIOBackground {
                                 ApplicationManager.getApplication().messageBus.syncPublisher(WorkspaceNotifications.TOPIC)
                                     .environmentStarted(
@@ -237,7 +244,8 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                 handle,
                                 envId,
                                 connectionParams.gitSettings,
-                                toolkitInstallSettings
+                                toolkitInstallSettings,
+                                isSmallInstance
                             ).await()
                         }.invokeOnCompletion { e ->
                             if (e == null) {
@@ -355,6 +363,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
         envId: String,
         gitSettings: GitSettings,
         toolkitInstallSettings: ToolkitInstallSettings,
+        isSmallInstance: Boolean
     ): AsyncPromise<Unit> {
         val remoteScriptPath = "/tmp/${UUID.randomUUID()}"
         val remoteProjectName = (gitSettings as? GitSettings.GitRepoSettings)?.repoName
@@ -392,7 +401,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
             if (AwsToolkit.isDeveloperMode()) {
                 add(PatchBackend(gatewayHandle, executor, lifetime))
             }
-            add(StartBackend(gatewayHandle, remoteScriptPath, remoteProjectName, executor, lifetime, envId))
+            add(StartBackend(gatewayHandle, remoteScriptPath, remoteProjectName, executor, lifetime, envId, isSmallInstance))
         }
 
         val promise = AsyncPromise<Unit>()

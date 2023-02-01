@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Small Dev Environment instance sizes not connecting to the thin clients"
+}
