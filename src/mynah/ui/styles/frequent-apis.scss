@@ -65,10 +65,9 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
     .amzn-mynah-frequently-used-fqns-panel {
         position: relative;
         margin-top: var(--mynah-sizing-2) !important;
-        border: 1px solid var(--mynah-color-border-default);
+        border: 1px solid var(--mynah-color-status-warning);
         border-radius: var(--mynah-button-radius);
         padding: var(--mynah-sizing-2);
-        opacity: 0.85;
         display: flex;
         flex-flow: column nowrap;
         gap: var(--mynah-sizing-2);
@@ -80,8 +79,8 @@ $maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
             right: 0;
             bottom: 0;
             left: 0;
-            background-color: var(--mynah-color-highlight);
-            opacity: 0.2;
+            background-color: var(--mynah-color-status-warning);
+            opacity: 0.015;
             pointer-events: none;
         }
         > span:last-child {
