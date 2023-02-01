@@ -3545,7 +3545,7 @@
         "@typescript-eslint/eslint-plugin": "^5.38.0",
         "@typescript-eslint/parser": "^5.38.0",
         "@vscode/codicons": "^0.0.32",
-        "@vscode/test-electron": "^2.1.5",
+        "@vscode/test-electron": "^2.2.3",
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
