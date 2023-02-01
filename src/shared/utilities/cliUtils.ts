@@ -358,22 +358,15 @@ export async function installSamCli(
             throw new InvalidPlatformError(`Cannot use Linux installer on operating system: ${process.platform}`)
         }
         const dirname = path.dirname(samInstaller)
-        const installDir = path.join(getToolkitCliDir(), 'Amazon', 'AWSSAMCLI')
         new admZip(samInstaller).extractAllTo(dirname, true)
         await fs.chmod(path.join(dirname, 'install'), 0o755)
-        const result = await new ChildProcess('sh', [
-            path.join(dirname, 'install'),
-            '-i',
-            installDir,
-            '-b',
-            installDir,
-        ]).run()
+        const result = await new ChildProcess('sh', [path.join(dirname, 'install'), '-i', outDir, '-b', outDir]).run()
         if (result.exitCode !== 0) {
             throw new InstallerError(
                 `Installation of Linux CLI archive ${samInstaller} failed: Error Code ${result.exitCode}`
             )
         }
-        await fs.chmod(path.join(installDir, 'dist', 'sam'), 0o755)
+        await fs.chmod(path.join(outDir, 'dist', 'sam'), 0o755)
 
         return path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['sam-cli']))
     }
