@@ -9,6 +9,8 @@ import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { ToolkitError } from '../../errors'
+import path = require('path')
+import { awsClis, getToolkitLocalCliCommandPath } from '../../utilities/cliUtils'
 
 export const minSamCliVersion = '0.47.0'
 export const minSamCliVersionForImageSupport = '1.13.0'
@@ -53,6 +55,7 @@ export type SamCliVersionValidatorResult =
 export interface SamCliValidatorResult {
     samCliFound: boolean
     versionValidation?: SamCliVersionValidatorResult
+    isUpdatable?: boolean
 }
 
 export interface SamCliValidator {
@@ -77,6 +80,9 @@ export class DefaultSamCliValidator implements SamCliValidator {
         if (sam) {
             result.samCliFound = true
             result.versionValidation = await this.getVersionValidatorResult()
+            if (process.platform === 'linux' && sam === getToolkitLocalCliCommandPath('sam-cli')) {
+                result.isUpdatable = true
+            }
         }
 
         return result
