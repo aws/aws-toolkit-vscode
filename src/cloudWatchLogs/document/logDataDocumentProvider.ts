@@ -83,7 +83,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             // Highlights the whole line on hover
             const locationLink: vscode.LocationLink = {
                 originSelectionRange: new vscode.Range(
-                    position.with(undefined, 0),
+                    position.with(undefined, curLine.firstNonWhitespaceCharacterIndex),
                     position.with(undefined, curLine.range.end.character)
                 ),
                 targetUri: streamUri,
