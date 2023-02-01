@@ -5,7 +5,7 @@ env:
 phases:
     install:
         runtime-versions:
-            nodejs: 14
+            nodejs: 16
         commands:
             - |
                 if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
