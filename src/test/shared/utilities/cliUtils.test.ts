@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import * as os from 'os'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import globals from '../../../shared/extensionGlobals'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
@@ -68,6 +69,10 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SAM CLI automatically', async function () {
+            // sam cli install scoped to just Linux
+            if (os.platform() !== 'linux') {
+                this.skip()
+            }
             const samCli = await installCli('sam-cli', false, testWindow)
             assert.ok(await hasFunctionalCli(samCli))
             assertTelemetry({
@@ -77,6 +82,10 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SAM CLI if prompted and accepted', async function () {
+            // sam cli install scoped to just Linux
+            if (os.platform() !== 'linux') {
+                this.skip()
+            }
             const samCli = installCli('sam-cli', true, testWindow)
             const message = await testWindow.waitForMessage(/Install/)
             message.assertSeverity(SeverityLevel.Information)
