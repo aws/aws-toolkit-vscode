@@ -5,7 +5,9 @@
 
 import { getLogger } from '../../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../../settings'
+import { getOrInstallCli } from '../../utilities/cliUtils'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
+import { shared } from '../../utilities/functionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
 
@@ -104,8 +106,16 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
         }
 
         const fromSearch = await this.locationProvider.getLocation()
-        return { path: fromSearch?.path, autoDetected: true }
+
+        if (fromSearch?.path || process.platform !== 'linux') {
+            return { path: fromSearch?.path, autoDetected: true }
+        }
+
+        const fromInstall = await this.installSamCli()
+        return { path: fromInstall, autoDetected: true }
     }
+
+    private readonly installSamCli = shared(() => getOrInstallCli('sam-cli', true))
 
     public getSavedBuckets(): SavedBuckets | undefined {
         try {

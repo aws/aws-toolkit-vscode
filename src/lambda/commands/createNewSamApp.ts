@@ -26,8 +26,6 @@ import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
-import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -141,8 +139,6 @@ export async function createNewSamApplication(
     let initArguments: SamCliInitArgs | undefined
 
     try {
-        await validateSamCli(samCliContext.validator)
-
         const credentials = await awsContext.getCredentials()
         samVersion = await getSamCliVersion(samCliContext)
         const schemaRegions = regionProvider.getRegions().filter(r => regionProvider.isServiceInRegion('schemas', r.id))
@@ -344,11 +340,6 @@ export async function createNewSamApplication(
             version: samVersion,
         })
     }
-}
-
-async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
-    const validationResult = await samCliValidator.detectValidSamCli()
-    throwAndNotifyIfInvalid(validationResult)
 }
 
 export async function getProjectUri(
