@@ -375,7 +375,7 @@ export async function installSamCli(
         }
         await fs.chmod(path.join(installDir, 'dist', 'sam'), 0o755)
 
-        return path.join(getToolkitCliDir(), getOsCommand(awsClis['sam-cli']))
+        return path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['sam-cli']))
     }
 }
 
