@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Selecting credentials sets AWS_* environment variables in new and existing Terminals #3139"
+}
