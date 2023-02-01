@@ -77,12 +77,12 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SAM CLI if prompted and accepted', async function () {
-            const ssmCli = installCli('sam-cli', true, testWindow)
+            const samCli = installCli('sam-cli', true, testWindow)
             const message = await testWindow.waitForMessage(/Install/)
             message.assertSeverity(SeverityLevel.Information)
             message.selectItem('Install')
 
-            assert.ok(await hasFunctionalCli(await ssmCli))
+            assert.ok(await hasFunctionalCli(await samCli))
             assertTelemetry({
                 result: 'Succeeded',
                 toolId: 'sam-cli',
