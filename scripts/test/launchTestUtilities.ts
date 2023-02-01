@@ -56,6 +56,7 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
     })
 
     if (spawnResult.status !== 0) {
+        console.log('output: %s', spawnResult.output)
         throw new Error(`VS Code CLI command failed (exit-code: ${spawnResult.status}): ${cli} ${cmdArgs}`)
     }
 
