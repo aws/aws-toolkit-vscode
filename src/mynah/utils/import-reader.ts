@@ -4,6 +4,7 @@
  */
 
 import { Java, Python, TypeScript, Tsx } from '@aws/fully-qualified-names'
+import { extractContextFromJavaImports } from './java-import-reader'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
     let names: any = {}
@@ -26,10 +27,14 @@ export async function readImports(text: string, languageId: string): Promise<str
     if (names.fullyQualified === undefined) {
         return []
     }
-    const imports = names.fullyQualified?.declaredSymbols
-        .map((symbol: { source: string[] }): string => {
-            return symbol.source[0].replace('@', '')
-        })
-        .filter((source: string) => source.length !== 0)
-    return imports
+    if (languageId === 'java') {
+        return extractContextFromJavaImports(names)
+    } else {
+        const imports = names.fullyQualified?.declaredSymbols
+            .map((symbol: { source: string[] }): string => {
+                return symbol.source[0].replace('@', '')
+            })
+            .filter((source: string) => source.length !== 0)
+        return imports
+    }
 }
