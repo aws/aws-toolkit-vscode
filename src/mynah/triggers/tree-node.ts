@@ -21,7 +21,6 @@ export class MynahTreeNode implements TreeNode {
             command: 'Mynah.show',
             arguments: [{ inputTrigger: TriggerInteractionType.TOOLKITS_MENU }],
         }
-        // mynahTreeItem.contextValue = 'mynahTreeNodeNode'
         return mynahTreeItem
     }
 }
