@@ -1347,11 +1347,6 @@
             ],
             "view/item/context": [
                 {
-                    "command": "Mynah.show",
-                    "when": "viewItem =~ /^mynahTreeNodeNode/",
-                    "group": "0@1"
-                },
-                {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "0@1"
