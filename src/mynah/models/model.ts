@@ -6,7 +6,7 @@
 import { NotificationType } from '@aws/mynah-ui'
 import { Range } from 'vscode-languageserver-protocol'
 
-export const MynahInstallationStoreKey = 'mnynah-installed'
+export const MynahInstallationStoreKey = 'mynah-installed'
 
 export abstract class SearchInput {
     public abstract searchText(
