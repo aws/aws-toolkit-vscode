@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { TriggerInteractionType } from '../telemetry/telemetry-metadata'
 
 export class MynahTreeNode implements TreeNode {
     public readonly id = 'Mynah'
@@ -18,6 +19,7 @@ export class MynahTreeNode implements TreeNode {
         mynahTreeItem.command = {
             title: 'Mynah',
             command: 'Mynah.show',
+            arguments: [{ inputTrigger: TriggerInteractionType.TOOLKIT_MENU }],
         }
         mynahTreeItem.contextValue = 'mynahTreeNodeNode'
         return mynahTreeItem
