@@ -179,6 +179,12 @@
                 },
                 "isAccepted": {
                     "shape": "Boolean"
+                },
+                "lastActivityDate": {
+                    "shape": "Integer"
+                },
+                "score": {
+                    "shape": "Integer"
                 }
             }
         },

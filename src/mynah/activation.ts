@@ -17,12 +17,12 @@ import { LiveSearchDisplay } from './views/live-search'
 import * as vs from 'vscode'
 import { NotificationInfoStore } from './stores/notificationsInfoStore'
 import { mynahSelectedCodeDecorator } from './decorations/selectedCode'
-import { SearchOutput } from './models/model'
+import { MynahInstallationStoreKey, SearchOutput } from './models/model'
 import { HeartbeatListener } from './telemetry/heartbeat-listener'
 import { telemetry } from '../shared/telemetry/telemetry'
 import * as mynahClient from './client/mynah'
 import * as AutocompleteClient from './autocomplete-client/autocomplete'
-import { ExtensionMetadata, ExtensionState } from './telemetry/telemetry-metadata'
+import { ExtensionMetadata, ExtensionState, TriggerInteractionType } from './telemetry/telemetry-metadata'
 
 let heartbeatListener: HeartbeatListener
 
@@ -75,6 +75,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
         liveSearchDisplay,
         autocompleteDisplay,
     })
+
+    if (!context.globalState.get(MynahInstallationStoreKey)) {
+        vs.commands.executeCommand('Mynah.show', { inputTrigger: TriggerInteractionType.FIRST_INSTALL })
+        context.globalState.update(MynahInstallationStoreKey, true)
+    }
+
     const extensionMetadata: ExtensionMetadata = {
         state: ExtensionState.ACTIVE,
     }
