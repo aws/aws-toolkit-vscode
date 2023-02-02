@@ -61,6 +61,8 @@ export enum TriggerInteractionType {
     CLICK = 'CLICK',
     MENU = 'MENU',
     HOVER_BUBBLE = 'HOVER_BUBBLE',
+    STATUS_BAR = 'STATUS_BAR',
+    FIRST_INSTALL = 'FIRST_INSTALL',
 }
 export interface CodeQuery {
     simpleNames: string[]

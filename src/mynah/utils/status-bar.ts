@@ -4,6 +4,7 @@
  */
 
 import * as vs from 'vscode'
+import { TriggerInteractionType } from '../telemetry/telemetry-metadata'
 
 const StatusBarStartPrority = 1000
 
@@ -43,7 +44,7 @@ export class StatusBar {
                 this.statusBar.command = {
                     title: props.text,
                     command: props.commands[Object.keys(props.commands)[0]],
-                    arguments: [{ inputTrigger: 'STATUS_BAR' }],
+                    arguments: [{ inputTrigger: TriggerInteractionType.STATUS_BAR }],
                 }
             } else {
                 this.statusBar.command = this.createQuickPick(props.commands)
