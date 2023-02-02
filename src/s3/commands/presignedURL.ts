@@ -88,35 +88,36 @@ export interface PresignedUrlWizardState {
 
 export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
     constructor(node?: S3FileNode) {
-        super()
-        // region, for CP
-        if (node) {
-            this.form.region.setDefault(node.bucket.region)
-        } else {
-            this.form.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
-        }
-        // GET or PUT
+        super({
+            initState: {
+                region: node?.bucket.region,
+                signedUrlParams: node
+                    ? ({ bucketName: node.bucket.name, key: node.file.key } as SignedUrlRequest)
+                    : undefined,
+            },
+        })
+        this.form.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
         this.form.signedUrlParams.operation.bindPrompter(() => createOperationPrompter())
-        // CP path, bucket next
-        if (node) {
-            this.form.signedUrlParams.bucketName.setDefault(node.bucket.name)
-        } else {
-            // ????????????? How should I do this ??  region is string | undefined for some reason
-            this.form.signedUrlParams.bucketName.bindPrompter(({ region }) => createBucketPrompter(region))
-        }
+        this.form.signedUrlParams.bucketName.bindPrompter(({ region }) =>
+            createBucketPrompter(assertDefined(region, 'region'))
+        )
 
-        // CP path, GET needs a file
-        if (node) {
-            this.form.signedUrlParams.key.setDefault(node.file.key)
-        } else {
-            this.form.signedUrlParams.key.setDefault(Math.ceil(Math.random() * 10 ** 10).toString())
-            this.form.signedUrlParams.key.bindPrompter(
-                ({ region, signedUrlParams }) => createS3FilePrompter(region, signedUrlParams?.bucketName),
-                { showWhen: state => state.signedUrlParams?.operation === 'getObject' }
+        this.form.signedUrlParams.key.bindPrompter(({ region, signedUrlParams }) =>
+            createS3FilePrompter(
+                assertDefined(region, 'region'),
+                assertDefined(signedUrlParams?.bucketName, 'bucketName'),
+                assertDefined(signedUrlParams?.operation, 'operation')
             )
-        }
+        )
 
         this.form.signedUrlParams.time.bindPrompter(() => createExpiryPrompter().transform(s => Number(s) * 60))
+
+        function assertDefined<T>(val: T | undefined, key: string): T {
+            if (val === undefined) {
+                throw Error(`PresignedUrlWizard: "${key}" is undefined`)
+            }
+            return val
+        }
     }
 }
 
@@ -139,11 +140,7 @@ function createExpiryPrompter() {
     })
 }
 
-function createBucketPrompter(region: string | undefined) {
-    // THIS IS JUST TO AVOID ERRORS, FIND OUT HOW TO GET REGION FROM PREVIOUS RESPONSE
-    if (!region) {
-        region = 'us-west-2'
-    }
+function createBucketPrompter(region: string) {
     const client = new DefaultS3Client(region)
     const items = client.listBucketsIterable().map(b => [
         {
@@ -155,17 +152,16 @@ function createBucketPrompter(region: string | undefined) {
     return createQuickPick(items, { title: 'Select an S3 Bucket', buttons: createCommonButtons() })
 }
 
-function createS3FilePrompter(region: string | undefined, bucket: string | undefined) {
-    // hack until I can guarantee arguments
-    if (!region) {
-        region = 'us-west-2'
+function createS3FilePrompter(region: string, bucket: string, operation: string) {
+    if (operation === 'getObject') {
+        const items = getS3Files(region, bucket)
+        return createQuickPick(items, {
+            title: 'Choose the file for the presigned URL',
+            buttons: createCommonButtons(),
+        })
     }
-    if (!bucket) {
-        bucket = 'gsweet-temp'
-    }
-    const items = getS3Files(region, bucket)
-    return createQuickPick(items, {
-        title: 'Choose the file for the presigned URL',
+    return createInputBox({
+        title: 'Create a key',
         buttons: createCommonButtons(),
     })
 }
