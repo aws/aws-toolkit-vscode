@@ -6,10 +6,6 @@
 import * as vscode from 'vscode'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 
-/**
- * Represents a CDK App
- * Existence of apps is determined by the presence of `cdk.json` in a workspace folder
- */
 export class MynahTreeNode implements TreeNode {
     public readonly id = 'Mynah'
     public readonly resource = this
