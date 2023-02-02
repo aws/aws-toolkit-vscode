@@ -92,8 +92,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
 export async function installCli(
     cli: AwsClis,
     confirm: boolean,
-    window: Window = Window.vscode(),
-    update: boolean = false
+    window: Window = Window.vscode()
 ): Promise<string | never> {
     const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
@@ -139,7 +138,7 @@ export async function installCli(
                     cliPath = await installSsmCli(tempDir, progress, timeout)
                     break
                 case 'sam-cli':
-                    cliPath = await installSamCli(tempDir, progress, timeout, update)
+                    cliPath = await installSamCli(tempDir, progress, timeout)
                     break
                 default:
                     throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -339,8 +338,7 @@ async function installSsmCli(
 export async function installSamCli(
     tempDir: string,
     progress: vscode.Progress<{ message?: string; increment?: number }>,
-    timeout: Timeout,
-    update: boolean = false
+    timeout: Timeout
 ): Promise<string> {
     progress.report({ message: msgDownloading })
 
@@ -365,12 +363,15 @@ export async function installSamCli(
         }
         const dirname = path.dirname(samInstaller)
         new admZip(samInstaller).extractAllTo(dirname, true)
-        await fs.chmod(path.join(dirname, 'install'), 0o755)
-        const args = [path.join(dirname, 'install'), '-i', outDir, '-b', outDir]
-        if (update) {
-            args.push('--update')
-        }
-        const result = await new ChildProcess('sh', args).run()
+
+        const result = await new ChildProcess('sh', [
+            path.join(dirname, 'install'),
+            '-u',
+            '-i',
+            outDir,
+            '-b',
+            outDir,
+        ]).run()
         if (result.exitCode !== 0) {
             throw new InstallerError(
                 `Installation of Linux CLI archive ${samInstaller} failed: Error Code ${result.exitCode}`
