@@ -47,7 +47,7 @@ export class LogDataRegistry {
 
     public fetchCachedLogEvents(uri: vscode.Uri): CloudWatchLogsEvent[] {
         if (!this.isRegistered(uri)) {
-            this.registerLog(uri)
+            this.registerInitialLog(uri)
         }
         return this.getRegisteredLog(uri).events
     }
@@ -63,7 +63,7 @@ export class LogDataRegistry {
         headOrTail: 'head' | 'tail' = 'tail'
     ): Promise<CloudWatchLogsEvent[]> {
         if (!this.isRegistered(uri)) {
-            this.registerLog(uri)
+            this.registerInitialLog(uri)
         }
 
         const logData = this.getRegisteredLog(uri)
@@ -156,10 +156,13 @@ export class LogDataRegistry {
         return this.registry.get(uriToKey(uri))
     }
 
-    public registerLog(
+    public registerInitialLog(
         uri: vscode.Uri,
         retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUriComponents
     ): void {
+        if (this.isRegistered(uri)) {
+            throw Error(`Already registered: ${uri.toString()}`)
+        }
         const data = parseCloudWatchLogsUri(uri)
         this.setLogData(uri, getInitialLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
     }

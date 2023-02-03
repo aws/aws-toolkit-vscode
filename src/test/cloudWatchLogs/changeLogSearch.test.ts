@@ -39,14 +39,14 @@ describe('changeLogSearch', async function () {
     before(function () {
         testRegistry = new LogDataRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
 
-        testRegistry.registerLog(oldUri, testLogData)
+        testRegistry.registerInitialLog(oldUri, testLogData)
     })
 
     it('unregisters old log and registers a new one', async function () {
         assert.deepStrictEqual(testRegistry.hasLog(oldUri), true)
         testRegistry.disposeRegistryData(oldUri)
         const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-        await testRegistry.registerLog(newUri, newData)
+        await testRegistry.registerInitialLog(newUri, newData)
         assert.deepStrictEqual(testRegistry.hasLog(oldUri), false)
         assert.deepStrictEqual(testRegistry.getLogData(newUri)?.parameters.filterPattern, newText)
     })

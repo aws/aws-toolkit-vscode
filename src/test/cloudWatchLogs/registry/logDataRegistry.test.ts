@@ -89,7 +89,7 @@ describe('LogDataRegistry', async function () {
 
     describe('registerLog', async function () {
         it("registers logs and doesn't overwrite existing logs", async () => {
-            await registry.registerLog(unregisteredUri, unregisteredData)
+            await registry.registerInitialLog(unregisteredUri, unregisteredData)
             const blankPostRegister = registry.getLogData(unregisteredUri)
             assert(blankPostRegister)
             assert.strictEqual(blankPostRegister.events[0].message, newText)
