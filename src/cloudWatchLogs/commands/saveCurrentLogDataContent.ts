@@ -13,6 +13,7 @@ import { Window } from '../../shared/vscode/window'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogDataRegistry } from '../registry/logDataRegistry'
 import { telemetry, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
+import { generateTextFromLogEvents } from '../document/textContent'
 
 export async function saveCurrentLogDataContent(
     uri: vscode.Uri | undefined,
@@ -32,7 +33,8 @@ export async function saveCurrentLogDataContent(
             }
         }
         resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
-        const content = registry.getLogContent(uri, { timestamps: true })
+        const cachedLogEvents = await registry.fetchLogEvents(uri)
+        const content: string = generateTextFromLogEvents(cachedLogEvents, { timestamps: true }).text
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(SystemUtilities.getHomeDirectory())
