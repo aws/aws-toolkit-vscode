@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, isLogStreamUri } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
@@ -24,8 +22,7 @@ export class LogDataRegistry {
     private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
         backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
     })
-    // if no timestamp for some reason, entering a blank of equal length (29 characters long)
-    public readonly timestampSpaceEquivalent = '                             '
+
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
@@ -68,47 +65,6 @@ export class LogDataRegistry {
         return this.activeLogs.has(uriToKey(uri))
     }
 
-    /**
-     * Returns the currently-held log content for a URI as a formatted string.
-     * @param uri Document URI
-     * @param formatting Optional params for outputting log messages.
-     */
-    public getLogContent(uri: vscode.Uri, formatting?: { timestamps?: boolean }): string | undefined {
-        const inlineNewLineRegex = /((\r\n)|\n|\r)(?!$)/g
-        const currData = this.getLogData(uri)
-
-        if (!currData) {
-            return undefined
-        }
-
-        let output: string = ''
-        let lineNumber = 0
-        for (const datum of currData.data) {
-            let line: string = datum.message ?? ''
-            if (formatting?.timestamps) {
-                // TODO: Handle different timezones and unix timestamps?
-                const timestamp = datum.timestamp
-                    ? moment(datum.timestamp).format(INSIGHTS_TIMESTAMP_FORMAT)
-                    : this.timestampSpaceEquivalent
-                line = timestamp.concat('\t', line)
-                // log entries containing newlines are indented to the same length as the timestamp.
-                line = line.replace(inlineNewLineRegex, `\n${this.timestampSpaceEquivalent}\t`)
-            }
-
-            if (!line.endsWith('\n')) {
-                line = line.concat('\n')
-            }
-
-            const lineBreaks = (line.match(/\n/g) || []).length
-            if (datum.logStreamName) {
-                this.setRangeForStreamIdMap(uri, lineNumber, lineNumber + lineBreaks - 1, datum.logStreamName)
-            }
-            lineNumber += lineBreaks
-
-            output = output.concat(line)
-        }
-        return output
-    }
     /**
      * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
      * @param uri Document URI
@@ -238,21 +194,6 @@ export class LogDataRegistry {
 
     public getStreamIdMap(uri: vscode.Uri): Map<number, string> | undefined {
         return this.activeLogs.get(uriToKey(uri))?.streamIds
-    }
-
-    private setRangeForStreamIdMap(uri: vscode.Uri, lowerBound: number, upperBound: number, streamID: string): void {
-        // Note: Inclusive of both bounds.
-        for (let currentLine = lowerBound; currentLine <= upperBound; currentLine++) {
-            this.setStreamIdMap(uri, currentLine, streamID)
-        }
-    }
-
-    private setStreamIdMap(uri: vscode.Uri, lineNum: number, streamID: string): void {
-        const activeTab = this.getActiveTab(uri)
-        if (!activeTab) {
-            throw new Error(`cwl: Cannot set streamID for unregistered uri ${uri.path}`)
-        }
-        activeTab.streamIds.set(lineNum, streamID)
     }
 
     public clearStreamIdMap(uri: vscode.Uri): void {
