@@ -49,7 +49,7 @@ export class LogDataRegistry {
         if (!this.isRegistered(uri)) {
             this.registerLog(uri)
         }
-        return this.getRegisteredLog(uri).data
+        return this.getRegisteredLog(uri).events
     }
 
     /**
@@ -106,8 +106,8 @@ export class LogDataRegistry {
 
         const newData =
             headOrTail === 'head'
-                ? (responseData.events ?? []).concat(logData.data)
-                : logData.data.concat(responseData.events ?? [])
+                ? (responseData.events ?? []).concat(logData.events)
+                : logData.events.concat(responseData.events ?? [])
 
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
@@ -126,7 +126,7 @@ export class LogDataRegistry {
         this.setLogData(uri, {
             ...logData,
             ...tokens,
-            data: newData,
+            events: newData,
         })
 
         this._onDidChange.fire(uri)
@@ -256,7 +256,7 @@ export function getInitialLogData(
     retrieveLogsFunction: CloudWatchLogsAction
 ): CloudWatchLogsData {
     return {
-        data: [],
+        events: [],
         parameters: parameters,
         logGroupInfo: logGroupInfo,
         retrieveLogsFunction: retrieveLogsFunction,
@@ -296,7 +296,7 @@ export type CloudWatchLogsEvent = CloudWatchLogs.OutputLogEvent & {
 }
 
 export class CloudWatchLogsData {
-    data: CloudWatchLogsEvent[] = []
+    events: CloudWatchLogsEvent[] = []
     parameters: CloudWatchLogsParameters = {}
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction

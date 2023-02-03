@@ -58,7 +58,7 @@ describe('LogDataDocumentProvider', function () {
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
     const getLogsStream: CloudWatchLogsData = {
-        data: [
+        events: [
             {
                 message,
             },
@@ -75,7 +75,7 @@ describe('LogDataDocumentProvider', function () {
     const getLogsUri = createURIFromArgs(getLogsStream.logGroupInfo, getLogsStream.parameters)
 
     const filterLogsStream: CloudWatchLogsData = {
-        data: [],
+        events: [],
         parameters: { filterPattern: 'lookForThis' },
         logGroupInfo: {
             groupName: 'group',

@@ -89,7 +89,7 @@ export const testComponents = {
 }
 
 export const testLogData: CloudWatchLogsData = {
-    data: [
+    events: [
         {
             timestamp: 1,
             message: 'is the loneliest number\n',
@@ -117,7 +117,7 @@ export const testLogData: CloudWatchLogsData = {
 }
 
 export const newLineData: CloudWatchLogsData = {
-    data: [
+    events: [
         {
             timestamp: 12745641600000,
             message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
@@ -134,7 +134,7 @@ export const newLineData: CloudWatchLogsData = {
 }
 
 export const unregisteredData: CloudWatchLogsData = {
-    data: [],
+    events: [],
     parameters: {},
     logGroupInfo: {
         groupName: 'ANOTHER',
@@ -146,7 +146,7 @@ export const unregisteredData: CloudWatchLogsData = {
 }
 
 export const logGroupsData: CloudWatchLogsData = {
-    data: [],
+    events: [],
     parameters: {},
     logGroupInfo: {
         groupName: 'thisIsAGroupName',
@@ -157,7 +157,7 @@ export const logGroupsData: CloudWatchLogsData = {
 }
 
 export const paginatedData: CloudWatchLogsData = {
-    data: [],
+    events: [],
     parameters: {},
     logGroupInfo: {
         groupName: 'g',

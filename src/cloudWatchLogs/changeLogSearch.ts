@@ -26,7 +26,7 @@ export async function getNewData(
     const newData: CloudWatchLogsData = {
         ...oldData,
         parameters: { ...oldData.parameters },
-        data: [],
+        events: [],
         next: undefined,
         previous: undefined,
     }

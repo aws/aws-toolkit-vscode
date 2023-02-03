@@ -63,13 +63,13 @@ describe('LogDataRegistry', async function () {
         const oldData = registry.getLogData(paginatedUri)
         // check that oldData is unchanged.
         assert(oldData)
-        assert.deepStrictEqual(oldData.data, paginatedData.data)
+        assert.deepStrictEqual(oldData.events, paginatedData.events)
 
         const newData = await updateLogAndGetResult(paginatedUri, headOrTail)
 
         // check that newData is changed to what it should be.
         const expected = headOrTail === 'head' ? (await fakeSearchLogGroup()).events : (await fakeGetLogEvents()).events
-        assert.deepStrictEqual(newData.data, expected)
+        assert.deepStrictEqual(newData.events, expected)
     }
 
     beforeEach(function () {
@@ -92,11 +92,11 @@ describe('LogDataRegistry', async function () {
             await registry.registerLog(unregisteredUri, unregisteredData)
             const blankPostRegister = registry.getLogData(unregisteredUri)
             assert(blankPostRegister)
-            assert.strictEqual(blankPostRegister.data[0].message, newText)
+            assert.strictEqual(blankPostRegister.events[0].message, newText)
 
             const preregisteredLogData = registry.getLogData(registeredUri)
             assert(preregisteredLogData)
-            assert.strictEqual(preregisteredLogData.data[0].message, testLogData.data[0].message)
+            assert.strictEqual(preregisteredLogData.events[0].message, testLogData.events[0].message)
         })
     })
 
@@ -173,7 +173,7 @@ describe('LogDataRegistry', async function () {
             const firstUpdatedData = await updateLogAndGetResult(paginatedUri)
 
             const firstActual = {
-                events: firstUpdatedData.data,
+                events: firstUpdatedData.events,
                 nextForwardToken: firstUpdatedData.next?.token,
                 nextBackwardToken: firstUpdatedData.previous?.token,
             }
@@ -184,7 +184,7 @@ describe('LogDataRegistry', async function () {
             const secondUpdatedData = await updateLogAndGetResult(paginatedUri)
 
             const secondActual = {
-                events: secondUpdatedData.data,
+                events: secondUpdatedData.events,
                 nextForwardToken: secondUpdatedData.next?.token,
                 nextBackwardToken: secondUpdatedData.previous?.token,
             }
@@ -202,7 +202,7 @@ describe('LogDataRegistry', async function () {
             thirdExpected.events = firstExpected.events.concat(thirdExpected.events)
 
             const thirdActual = {
-                events: thirdUpdatedData.data,
+                events: thirdUpdatedData.events,
                 nextForwardToken: thirdUpdatedData.next?.token,
                 nextBackwardToken: thirdUpdatedData.previous?.token,
             }
@@ -217,7 +217,7 @@ describe('LogDataRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${testLogData.data[0].message}${testLogData.data[1].message}${testLogData.data[2].message}${testLogData.data[3].message}`
+                `${testLogData.events[0].message}${testLogData.events[1].message}${testLogData.events[2].message}${testLogData.events[3].message}`
             )
         })
 
@@ -226,11 +226,13 @@ describe('LogDataRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testLogData.data[0].message}${moment(2).format(
+                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testLogData.events[0].message}${moment(
+                    2
+                ).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testLogData.events[1].message}${moment(3).format(
                     INSIGHTS_TIMESTAMP_FORMAT
-                )}${'\t'}${testLogData.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
-                    testLogData.data[2].message
-                }                             ${'\t'}${testLogData.data[3].message}`
+                )}${'\t'}${testLogData.events[2].message}                             ${'\t'}${
+                    testLogData.events[3].message
+                }`
             )
         })
 
@@ -238,10 +240,10 @@ describe('LogDataRegistry', async function () {
             const timestampText = registry.getLogContent(newLineUri, { timestamps: true })
             const noTimestampText = registry.getLogContent(newLineUri)
 
-            assert.strictEqual(noTimestampText, newLineData.data[0].message)
+            assert.strictEqual(noTimestampText, newLineData.events[0].message)
             assert.strictEqual(
                 timestampText,
-                `${moment(newLineData.data[0].timestamp).format(
+                `${moment(newLineData.events[0].timestamp).format(
                     INSIGHTS_TIMESTAMP_FORMAT
                 )}${'\t'}the${'\n'}                             ${'\t'}line${'\n'}                             ${'\t'}must${'\n'}                             ${'\t'}be${'\n'}                             ${'\t'}drawn${'\n'}                             ${'\t'}HERE${'\n'}                             ${'\t'}right${'\n'}                             ${'\t'}here${'\n'}                             ${'\t'}no${'\n'}                             ${'\t'}further\n`
             )
@@ -270,7 +272,7 @@ describe('LogDataRegistry', async function () {
                 assert(oldData)
                 registry.setLogData(searchLogGroupUri, {
                     ...oldData,
-                    data: [
+                    events: [
                         {
                             message: 'This \n is \n a \n message \n spanning \n many \n lines',
                             logStreamName: 'stream1',
@@ -321,8 +323,8 @@ describe('LogDataRegistry', async function () {
             const initialWithTail = registry.getLogData(registeredUri)
             assert(initialWithTail)
             // concat new message on the end to test tail functionality.
-            const testStreamDataTailData = testLogData.data.concat({ message: newText })
-            assert.deepStrictEqual(initialWithTail.data, testStreamDataTailData)
+            const testStreamDataTailData = testLogData.events.concat({ message: newText })
+            assert.deepStrictEqual(initialWithTail.events, testStreamDataTailData)
 
             await registry.updateLog(registeredUri, 'head')
             const initialWithHeadAndTail = registry.getLogData(registeredUri)
@@ -330,7 +332,7 @@ describe('LogDataRegistry', async function () {
             // concat new message on the beginning to test head functionality.
             const testStreamDataHeadAndTailData =
                 (testStreamDataTailData.unshift({ message: newText }), testStreamDataTailData)
-            assert.deepStrictEqual(initialWithHeadAndTail.data, testStreamDataHeadAndTailData)
+            assert.deepStrictEqual(initialWithHeadAndTail.events, testStreamDataHeadAndTailData)
 
             await registry.updateLog(unregisteredUri, 'tail')
             const unregisteredGet = registry.getLogContent(unregisteredUri)

@@ -23,7 +23,7 @@ describe('changeLogSearch', async function () {
     }
 
     const newData: CloudWatchLogsData = {
-        data: [
+        events: [
             {
                 message: 'Here is the new text that we want to have.',
             },
