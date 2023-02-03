@@ -13,24 +13,25 @@ import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
-    ActiveTab,
 } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { Settings } from '../../../shared/settings'
 import { LogDataCodeLensProvider } from '../../../cloudWatchLogs/document/logDataCodeLensProvider'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
-function testGetLogEvents(
+const getLogEventsMessage = 'This is from getLogEvents'
+
+export async function testGetLogEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     apiParameters: CloudWatchLogsParameters,
     nextToken?: string
 ): Promise<CloudWatchLogsResponse> {
-    return Promise.resolve({
+    return {
         events: [
             {
-                message: 'This is from getLogEvents',
+                message: getLogEventsMessage,
             },
         ],
-    })
+    }
 }
 
 async function testFilterLogEvents(
@@ -48,31 +49,18 @@ async function testFilterLogEvents(
 }
 
 describe('LogDataDocumentProvider', function () {
-    const map = new Map<string, ActiveTab>()
     let provider: LogDataDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
-    const registry = new LogDataRegistry(new CloudWatchLogsSettings(config), map)
+    const registry = new LogDataRegistry(new CloudWatchLogsSettings(config))
 
     const codeLensProvider = new LogDataCodeLensProvider(registry)
 
-    // TODO: Make this less flaky when we add manual timestamp controls.
-    const message = "i'm just putting something here because it's a friday"
-    const getLogsStream: CloudWatchLogsData = {
-        events: [
-            {
-                message,
-            },
-        ],
-        parameters: {},
-        logGroupInfo: {
-            groupName: 'group',
-            regionName: 'region',
-            streamName: 'stream',
-        },
-        retrieveLogsFunction: testGetLogEvents,
-        busy: false,
+    const getLogsLogGroupInfo: CloudWatchLogsGroupInfo = {
+        groupName: 'group',
+        regionName: 'region',
+        streamName: 'stream',
     }
-    const getLogsUri = createURIFromArgs(getLogsStream.logGroupInfo, getLogsStream.parameters)
+    const getLogsUri = createURIFromArgs(getLogsLogGroupInfo, {})
 
     const filterLogsStream: CloudWatchLogsData = {
         events: [],
@@ -88,18 +76,26 @@ describe('LogDataDocumentProvider', function () {
     const filterLogsUri = createURIFromArgs(filterLogsStream.logGroupInfo, filterLogsStream.parameters)
 
     before(async function () {
-        registry.setLogData(getLogsUri, getLogsStream)
-        registry.setLogData(filterLogsUri, filterLogsStream)
+        registry.registerInitialLog(getLogsUri, testGetLogEvents)
+        registry.registerInitialLog(filterLogsUri, testFilterLogEvents)
         provider = new LogDataDocumentProvider(registry)
     })
 
-    it('provides content if it exists and a blank string if it does not', function () {
-        assert.strictEqual(
-            provider.provideTextDocumentContent(getLogsUri),
-            `                             \t${message}\n`
-        )
+    it('provides content if it exists', async function () {
+        await registry.fetchNextLogEvents(getLogsUri)
+
+        const result = provider.provideTextDocumentContent(getLogsUri)
+        const expected = `                             \t${getLogEventsMessage}\n`
+        assert.strictEqual(result, expected)
+    })
+
+    it('throws error on attempt to get content from non-cwl uri', async function () {
+        await registry.fetchNextLogEvents(getLogsUri)
+
         const emptyUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:has:Not`)
-        assert.strictEqual(provider.provideTextDocumentContent(emptyUri), '')
+        assert.throws(() => provider.provideTextDocumentContent(emptyUri), {
+            message: `Uri is not a CWL Uri, so no text can be provided: ${emptyUri.toString()}`,
+        })
     })
 
     it("Give backward codelense if viewing log stream and doesn't if not", async function () {
