@@ -69,7 +69,9 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
 
-            await this.registry.registerLog(streamUri, initialStreamData)
+            // dont await so doc content is loaded asynchronously, prevents stuttering on hover
+            this.registry.registerLog(streamUri, initialStreamData)
+
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
 
@@ -83,7 +85,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             // Highlights the whole line on hover
             const locationLink: vscode.LocationLink = {
                 originSelectionRange: new vscode.Range(
-                    position.with(undefined, 0),
+                    position.with(undefined, curLine.firstNonWhitespaceCharacterIndex),
                     position.with(undefined, curLine.range.end.character)
                 ),
                 targetUri: streamUri,
