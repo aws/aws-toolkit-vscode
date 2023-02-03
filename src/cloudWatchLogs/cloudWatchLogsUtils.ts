@@ -81,6 +81,11 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
         parameters: JSON.parse(uri.query),
     }
 }
+
+export function patternFromCwlUri(uri: vscode.Uri): CloudWatchLogsParameters['filterPattern'] {
+    return parseCloudWatchLogsUri(uri).parameters.filterPattern
+}
+
 /**
  * Determines if loadOlder codelense should be visible on virtual document
  * @param uri CloudWatchLogs Document URI

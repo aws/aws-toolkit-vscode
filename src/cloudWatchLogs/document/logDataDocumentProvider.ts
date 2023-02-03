@@ -111,7 +111,7 @@ export function getActiveDocumentUri(registry: LogDataRegistry) {
     }
 
     const activeUri = currentEditor.document.uri
-    if (!registry.hasLog(activeUri)) {
+    if (!registry.isRegistered(activeUri)) {
         throw new Error('cwl: Document open has unregistered uri.')
     }
 
