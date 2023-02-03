@@ -91,9 +91,7 @@ export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
         super({
             initState: {
                 region: node?.bucket.region,
-                signedUrlParams: node
-                    ? ({ bucketName: node.bucket.name, key: node.file.key } as SignedUrlRequest)
-                    : undefined,
+                signedUrlParams: node ? ({ bucketName: node.bucket.name } as SignedUrlRequest) : undefined,
             },
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
@@ -102,13 +100,26 @@ export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
             createBucketPrompter(assertDefined(region, 'region'))
         )
 
-        this.form.signedUrlParams.key.bindPrompter(({ region, signedUrlParams }) =>
-            createS3FilePrompter(
-                assertDefined(region, 'region'),
-                assertDefined(signedUrlParams?.bucketName, 'bucketName'),
-                assertDefined(signedUrlParams?.operation, 'operation')
+        if (node) {
+            this.form.signedUrlParams.key.setDefault(node.file.key)
+            this.form.signedUrlParams.key.bindPrompter(
+                ({ region, signedUrlParams }) =>
+                    createS3FilePrompter(
+                        assertDefined(region, 'region'),
+                        assertDefined(signedUrlParams?.bucketName, 'bucketName'),
+                        assertDefined(signedUrlParams?.operation, 'operation')
+                    ),
+                { showWhen: state => state.signedUrlParams?.operation === 'putObject' }
             )
-        )
+        } else {
+            this.form.signedUrlParams.key.bindPrompter(({ region, signedUrlParams }) =>
+                createS3FilePrompter(
+                    assertDefined(region, 'region'),
+                    assertDefined(signedUrlParams?.bucketName, 'bucketName'),
+                    assertDefined(signedUrlParams?.operation, 'operation')
+                )
+            )
+        }
 
         this.form.signedUrlParams.time.bindPrompter(() => createExpiryPrompter().transform(s => Number(s) * 60))
 
