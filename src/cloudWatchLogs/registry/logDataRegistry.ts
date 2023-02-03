@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
-import { getLogger } from '../../shared/logger'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
@@ -33,20 +32,6 @@ export class LogDataRegistry {
         return this._onDidChange.event
     }
 
-    /**
-     * Adds an entry to the registry for the given URI.
-     * @param uri Document URI
-     * @param initialLogData Initial Data to populate the registry ActiveTab Data.
-     */
-    public async registerLog(uri: vscode.Uri, initialLogData: CloudWatchLogsData): Promise<void> {
-        // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
-        parseCloudWatchLogsUri(uri)
-        if (!this.hasLog(uri)) {
-            this.setLogData(uri, initialLogData)
-            await this.updateLog(uri, 'tail')
-        }
-    }
-
     /** Disposes registry structures associated with the given document. Does not dispose the document itself. */
     public disposeRegistryData(uri: vscode.Uri): void {
         this.registry.delete(uriToKey(uri))
@@ -56,8 +41,15 @@ export class LogDataRegistry {
      * Returns whether or not the log is registered.
      * @param uri Document URI
      */
-    public hasLog(uri: vscode.Uri): boolean {
+    public isRegistered(uri: vscode.Uri): boolean {
         return this.registry.has(uriToKey(uri))
+    }
+
+    public fetchCachedLogEvents(uri: vscode.Uri): CloudWatchLogsEvent[] {
+        if (!this.isRegistered(uri)) {
+            this.registerLog(uri)
+        }
+        return this.getRegisteredLog(uri).data
     }
 
     /**
@@ -66,12 +58,15 @@ export class LogDataRegistry {
      * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
-    public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
-        const logData = this.getLogData(uri)
-        if (!logData) {
-            getLogger().debug(`No registry entry for ${uri.path}`)
-            return
+    public async fetchNextLogEvents(
+        uri: vscode.Uri,
+        headOrTail: 'head' | 'tail' = 'tail'
+    ): Promise<CloudWatchLogsEvent[]> {
+        if (!this.isRegistered(uri)) {
+            this.registerLog(uri)
         }
+
+        const logData = this.getRegisteredLog(uri)
         const request: CloudWatchLogsResponse = {
             events: [],
             nextForwardToken: logData.next?.token,
@@ -106,7 +101,7 @@ export class LogDataRegistry {
         const responseData = await firstOrLast(stream, resp => resp.events.length > 0)
 
         if (!responseData) {
-            return
+            return []
         }
 
         const newData =
@@ -135,10 +130,11 @@ export class LogDataRegistry {
         })
 
         this._onDidChange.fire(uri)
+        return newData
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
-        const log = this.getLogData(uri)
+        const log = this.getRegisteredLog(uri)
         if (log) {
             this.setLogData(uri, {
                 ...log,
@@ -148,17 +144,32 @@ export class LogDataRegistry {
     }
 
     public getBusyStatus(uri: vscode.Uri): boolean {
-        const log = this.getLogData(uri)
-
+        const log = this.getRegisteredLog(uri)
         return (log && log.busy) ?? false
     }
 
-    public setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
+    private setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
         this.registry.set(uriToKey(uri), newData)
     }
 
-    public getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
+    private getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.registry.get(uriToKey(uri))
+    }
+
+    public registerLog(
+        uri: vscode.Uri,
+        retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUriComponents
+    ): void {
+        const data = parseCloudWatchLogsUri(uri)
+        this.setLogData(uri, getInitialLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
+    }
+
+    private getRegisteredLog(uri: vscode.Uri): CloudWatchLogsData {
+        const logData = this.getLogData(uri)
+        if (!logData) {
+            throw Error(`Cannot get data for unregistered uri: ${uri.toString()}`)
+        }
+        return logData
     }
 }
 

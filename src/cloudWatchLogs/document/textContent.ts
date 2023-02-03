@@ -10,7 +10,7 @@ import { CloudWatchLogsEvent } from '../registry/logDataRegistry'
 
 export type StreamIdMap = Map<number, string>
 
-function generateTextFromLogEvents(
+export function generateTextFromLogEvents(
     events: CloudWatchLogsEvent[],
     formatting?: { timestamps?: boolean }
 ): { text: string; streamIdMap: StreamIdMap } {
