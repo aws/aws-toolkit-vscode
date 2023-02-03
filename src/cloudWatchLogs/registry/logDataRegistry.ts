@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, isLogStreamUri } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
@@ -14,6 +14,8 @@ import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
+/** Uri as a string */
+type UriString = string
 /**
  * Operations and persistence for CloudWatch Log Data (events from a single logstream or events from log group search)
  */
@@ -25,7 +27,7 @@ export class LogDataRegistry {
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
-        private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
+        private readonly registry: Map<UriString, CloudWatchLogsData> = new Map()
     ) {}
 
     /**
@@ -51,10 +53,7 @@ export class LogDataRegistry {
 
     /** Disposes registry structures associated with the given document. Does not dispose the document itself. */
     public disposeRegistryData(uri: vscode.Uri): void {
-        if (this.hasLog(uri) && !isLogStreamUri(uri)) {
-            this.clearStreamIdMap(uri)
-        }
-        this.activeLogs.delete(uriToKey(uri))
+        this.registry.delete(uriToKey(uri))
     }
 
     /**
@@ -62,7 +61,7 @@ export class LogDataRegistry {
      * @param uri Document URI
      */
     public hasLog(uri: vscode.Uri): boolean {
-        return this.activeLogs.has(uriToKey(uri))
+        return this.registry.has(uriToKey(uri))
     }
 
     /**
@@ -159,65 +158,15 @@ export class LogDataRegistry {
     }
 
     public setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
-        this.activeLogs.set(uriToKey(uri), {
-            data: newData,
-            editor: this.getTextEditor(uri),
-            streamIds: this.getStreamIdMap(uri) ?? new Map<number, string>(),
-        })
+        this.registry.set(uriToKey(uri), newData)
     }
 
     public getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
-        return this.activeLogs.get(uriToKey(uri))?.data
-    }
-
-    public setTextEditor(uri: vscode.Uri, textEditor: vscode.TextEditor): void {
-        const oldData = this.getLogData(uri)
-        const streamIds = this.getStreamIdMap(uri)
-        if (!oldData) {
-            throw new Error(`cwl: Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no log data.`)
-        }
-        if (!streamIds) {
-            throw new Error(
-                `cwl: Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no streamIDs map.`
-            )
-        }
-        this.activeLogs.set(uriToKey(uri), { data: oldData, editor: textEditor, streamIds: streamIds })
-    }
-
-    public getTextEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
-        return this.activeLogs.get(uriToKey(uri))?.editor
-    }
-
-    public hasTextEditor(uri: vscode.Uri): boolean {
-        return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
-    }
-
-    public getStreamIdMap(uri: vscode.Uri): Map<number, string> | undefined {
-        return this.activeLogs.get(uriToKey(uri))?.streamIds
-    }
-
-    public clearStreamIdMap(uri: vscode.Uri): void {
-        console.log(uri)
-        const currentActiveTab = this.getActiveTab(uri)
-        if (!currentActiveTab) {
-            throw new Error(`cwl: Cannot clear streamIdMap for ununregistered uri ${uri.path}`)
-        }
-        this.setActiveTab(uri, {
-            ...currentActiveTab,
-            streamIds: new Map<number, string>(),
-        })
-    }
-
-    private setActiveTab(uri: vscode.Uri, newActiveTab: ActiveTab): void {
-        this.activeLogs.set(uriToKey(uri), newActiveTab)
-    }
-
-    public getActiveTab(uri: vscode.Uri): ActiveTab | undefined {
-        return this.activeLogs.get(uriToKey(uri))
+        return this.registry.get(uriToKey(uri))
     }
 
     public async highlightDocument(uri: vscode.Uri): Promise<void> {
-        const textEditor = this.getTextEditor(uri)
+        const textEditor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri))
         const logData = this.getLogData(uri)
 
         if (!logData) {
@@ -324,12 +273,6 @@ export function getInitialLogData(
         retrieveLogsFunction: retrieveLogsFunction,
         busy: false,
     }
-}
-
-export interface ActiveTab {
-    data: CloudWatchLogsData
-    editor?: vscode.TextEditor
-    streamIds: Map<number, string>
 }
 
 export type CloudWatchLogsGroupInfo = {
