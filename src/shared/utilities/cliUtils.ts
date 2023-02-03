@@ -205,7 +205,7 @@ export async function getCliCommand(cli: Cli): Promise<string | undefined> {
  * Returns whether or not a command is accessible on the user's $PATH
  * @param command CLI Command name
  */
-async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
+export async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
     const command = global ? path.parse(getOsCommand(cli)).base : path.join(getToolkitLocalCliPath(), getOsCommand(cli))
     const result = await new ChildProcess(command, ['--version']).run()
 

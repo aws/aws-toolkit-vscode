@@ -5,8 +5,10 @@
 
 import * as path from 'path'
 import { EnvironmentVariables } from '../../environmentVariables'
+import { isCloud9 } from '../../extensionUtilities'
 import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
+import { awsClis, hasCliCommand } from '../../utilities/cliUtils'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 
@@ -45,7 +47,22 @@ abstract class BaseSamCliLocator {
 
     // TODO: this method is being called multiple times on my Windows machine and is really slow
     public async getLocation() {
-        let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
+        let location:
+            | {
+                  path: string
+                  version: string
+              }
+            | undefined
+        if (isCloud9()) {
+            const localSamCliPath = await hasCliCommand(awsClis['sam-cli'], false)
+            if (localSamCliPath) {
+                BaseSamCliLocator.didFind = true
+                location = { path: localSamCliPath, version: '' }
+                this.logger.info(`SAM CLI location: ${location}`)
+                return location
+            }
+        }
+        location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
         if (!location) {
             location = await this.getSystemPathLocation()
