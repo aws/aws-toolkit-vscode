@@ -66,6 +66,10 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
             logGroupInfo.streamName = streamID
 
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
+            this.registry.fetchNextLogEvents(streamUri)
+
+            const doc = await vscode.workspace.openTextDocument(streamUri)
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
 
             telemetry.cloudwatchlogs_open.emit({
                 result: 'Succeeded',
