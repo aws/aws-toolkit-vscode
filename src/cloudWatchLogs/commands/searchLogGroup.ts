@@ -68,7 +68,7 @@ export async function prepareDocument(
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
-        await registry.fetchLogEvents(uri)
+        await registry.fetchNextLogEvents(uri)
         // Initial highlighting of the document and then for any addLogEvent calls.
         // TODO: get initial content
         return 'Succeeded'

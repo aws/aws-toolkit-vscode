@@ -33,7 +33,7 @@ export async function saveCurrentLogDataContent(
             }
         }
         resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
-        const cachedLogEvents = await registry.fetchLogEvents(uri)
+        const cachedLogEvents = registry.fetchCachedLogEvents(uri)
         const content: string = generateTextFromLogEvents(cachedLogEvents, { timestamps: true }).text
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri

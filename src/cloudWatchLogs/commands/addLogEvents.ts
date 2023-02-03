@@ -36,7 +36,7 @@ export async function addLogEvents(
             if (onDidChangeCodeLensEvent) {
                 onDidChangeCodeLensEvent.fire()
             }
-            await registry.fetchLatestLogEvents(uri, headOrTail)
+            await registry.fetchNextLogEvents(uri, headOrTail)
             getLogger().debug('Update done, releasing lock...')
         })
     } catch (e) {

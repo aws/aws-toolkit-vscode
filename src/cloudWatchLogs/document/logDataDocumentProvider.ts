@@ -26,7 +26,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        const events = await this.registry.fetchLatestLogEvents(uri)
+        const events = await this.registry.fetchNextLogEvents(uri)
         const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })
         this.uriToStreamIdMap.set(uri.toString(), streamIdMap)
         return text
