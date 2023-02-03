@@ -10,22 +10,28 @@ import * as fs from 'fs-extra'
 
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
-import { LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
+import { CloudWatchLogsEvent, LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('saveCurrentLogDataContent', async function () {
-    const logContent = 'shutdown is imminent'
     let filename: string
     let fakeRegistry: LogDataRegistry
     let tempDir: string
+    const expectedText = `1970-01-20T09:24:11.113+00:00\tThe first log event
+1970-01-20T09:24:11.114+00:00\tThe second log event
+`
 
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         filename = path.join(tempDir, 'bobLoblawsLawB.log')
         fakeRegistry = {
-            getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
-                return logContent
+            fetchCachedLogEvents: (uri: vscode.Uri) => {
+                const events: CloudWatchLogsEvent[] = [
+                    { message: 'The first log event', logStreamName: 'stream1', timestamp: 1675451113 },
+                    { message: 'The second log event', logStreamName: 'stream2', timestamp: 1675451114 },
+                ]
+                return events
             },
         } as any as LogDataRegistry
     })
@@ -53,7 +59,7 @@ describe('saveCurrentLogDataContent', async function () {
         )
 
         assert.ok(await fileExists(filename))
-        assert.strictEqual(await readFileAsString(filename), logContent)
+        assert.strictEqual(await readFileAsString(filename), expectedText)
     })
 
     it('does not do anything if the URI is invalid', async function () {
