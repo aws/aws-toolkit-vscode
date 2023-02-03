@@ -13,7 +13,7 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
 /** Uri as a string */
-type UriString = string
+export type UriString = string
 /**
  * Operations and persistence for CloudWatch Log Data (events from a single logstream or events from log group search)
  */
@@ -148,11 +148,11 @@ export class LogDataRegistry {
         return (log && log.busy) ?? false
     }
 
-    private setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
+    protected setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
         this.registry.set(uriToKey(uri), newData)
     }
 
-    private getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
+    protected getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.registry.get(uriToKey(uri))
     }
 
@@ -161,7 +161,7 @@ export class LogDataRegistry {
         retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUriComponents
     ): void {
         if (this.isRegistered(uri)) {
-            throw Error(`Already registered: ${uri.toString()}`)
+            throw new Error(`Already registered: ${uri.toString()}`)
         }
         const data = parseCloudWatchLogsUri(uri)
         this.setLogData(uri, getInitialLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
