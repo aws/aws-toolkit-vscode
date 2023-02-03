@@ -10,7 +10,7 @@ import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtil
 import { generateTextFromLogEvents, StreamIdMap } from './textContent'
 
 export class LogDataDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
-    readonly uriTostreamIdMap: Map<vscode.Uri, StreamIdMap> = new Map()
+    readonly uriToStreamIdMap: Map<string, StreamIdMap> = new Map()
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -26,11 +26,9 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        const textDocument = await vscode.workspace.openTextDocument(uri)
-        vscode.languages.setTextDocumentLanguage(textDocument, 'log')
         const events = await this.registry.fetchLatestLogEvents(uri)
         const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })
-        this.uriTostreamIdMap.set(uri, streamIdMap)
+        this.uriToStreamIdMap.set(uri.toString(), streamIdMap)
         return text
     }
 
@@ -48,7 +46,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
         }
         const curLine = document.lineAt(position.line)
         try {
-            const streamIDMap = this.uriTostreamIdMap.get(activeUri)
+            const streamIDMap = this.uriToStreamIdMap.get(activeUri.toString())
             if (!streamIDMap || streamIDMap.size === 0) {
                 throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri.path}`)
             }
