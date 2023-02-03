@@ -52,7 +52,8 @@ describe('SsoAccessTokenProvider', function () {
         return {
             interval: 1,
             deviceCode: 'dummyCode',
-            verificationUriComplete: 'dummyLink',
+            userCode: 'dummyUserCode',
+            verificationUri: 'dummyLink',
             expiresAt: new clock.Date(clock.Date.now() + timeDelta),
         }
     }

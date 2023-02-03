@@ -3518,7 +3518,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.87",
+        "@aws-toolkits/telemetry": "^1.0.100",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
