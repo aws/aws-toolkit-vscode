@@ -164,7 +164,7 @@ export class LogDataRegistry {
         this.setLogData(uri, getInitialLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
     }
 
-    private getRegisteredLog(uri: vscode.Uri): CloudWatchLogsData {
+    public getRegisteredLog(uri: vscode.Uri): CloudWatchLogsData {
         const logData = this.getLogData(uri)
         if (!logData) {
             throw Error(`Cannot get data for unregistered uri: ${uri.toString()}`)

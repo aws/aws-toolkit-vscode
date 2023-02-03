@@ -74,9 +74,7 @@ export async function changeLogSearchParams(
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
     const oldUri = getActiveDocumentUri(registry)
-
-    const oldData = registry.getLogData(oldUri)
-    if (!oldData) {
+    if (!registry.isRegistered(oldUri)) {
         telemetry.cloudwatchlogs_filter.emit({
             result: 'Failed',
             source: 'Editor',
@@ -86,6 +84,8 @@ export async function changeLogSearchParams(
         })
         throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
     }
+
+    const oldData = registry.getRegisteredLog(oldUri)
     const newData = await getNewData(param, oldData)
 
     if (!newData) {
