@@ -6,7 +6,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CloudWatchLogsParameters, LogDataRegistry } from '../registry/logDataRegistry'
 import { getLogger } from '../../shared/logger'
-import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { parseCloudWatchLogsUri, createURIFromArgs, isCwlUri } from '../cloudWatchLogsUtils'
 import { generateTextFromLogEvents, StreamIdMap } from './textContent'
 
 export class LogDataDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
@@ -26,10 +26,8 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
-        try {
-            parseCloudWatchLogsUri(uri)
-        } catch {
-            return ''
+        if (!isCwlUri(uri)) {
+            throw new Error(`Uri is not a CWL Uri, so no text can be provided: ${uri.toString()}`)
         }
         const events = this.registry.fetchCachedLogEvents(uri)
         const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })

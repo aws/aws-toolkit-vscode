@@ -82,6 +82,16 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     }
 }
 
+/** True if given URI is a valid Cloud Watch Logs Uri */
+export function isCwlUri(uri: vscode.Uri): boolean {
+    try {
+        parseCloudWatchLogsUri(uri)
+        return true
+    } catch {
+        return false
+    }
+}
+
 export function patternFromCwlUri(uri: vscode.Uri): CloudWatchLogsParameters['filterPattern'] {
     return parseCloudWatchLogsUri(uri).parameters.filterPattern
 }
