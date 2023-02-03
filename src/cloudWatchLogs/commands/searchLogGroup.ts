@@ -68,10 +68,7 @@ export async function prepareDocument(
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
-        await registry.registerLog(uri, initialLogData)
-        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-        vscode.languages.setTextDocumentLanguage(doc, 'log')
-
+        await registry.fetchLogEvents(uri)
         // Initial highlighting of the document and then for any addLogEvent calls.
         // TODO: get initial content
         return 'Succeeded'
