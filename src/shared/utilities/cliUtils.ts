@@ -370,7 +370,7 @@ export async function installSamCli(
         const result = await new ChildProcess('sh', [
             path.join(dirname, 'install'),
             '--update',
-            '--install',
+            '--install-dir',
             outDir,
             '--bin-dir',
             outDir,

@@ -100,7 +100,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
      * @returns `autoDetected=true` if auto-detection was _attempted_.
      */
     public async getOrDetectSamCli(
-        install: boolean = true
+        options: { install: boolean } = { install: true }
     ): Promise<{ path: string | undefined; autoDetected: boolean }> {
         const fromConfig = this.get('location', '')
 
@@ -114,7 +114,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             return { path: fromSearch?.path, autoDetected: true }
         }
 
-        if (install) {
+        if (options.install) {
             const fromInstall = await this.installSamCli()
             return { path: fromInstall, autoDetected: true }
         }
