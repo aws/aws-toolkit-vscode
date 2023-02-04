@@ -48,7 +48,7 @@ type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'sam-cli'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
- * TODO: Add SAM? Other CLIs?
+ * TODO: Other CLIs?
  */
 export const awsClis: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
@@ -247,7 +247,7 @@ function getToolkitCliDir(): string {
  * Gets the toolkit local CLI path
  * Instantiated as a function instead of a const to prevent being called before `ext.context` is set
  */
-function getToolkitLocalCliPath(): string {
+export function getToolkitLocalCliPath(): string {
     return path.join(getToolkitCliDir(), 'Amazon')
 }
 
@@ -351,25 +351,28 @@ export async function installSamCli(
     return handleError(install())
 
     async function install() {
-        if (process.platform !== 'linux') {
-            throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
+        switch (process.platform) {
+            case 'linux':
+                return installOnLinux()
+            case 'darwin':
+            case 'win32':
+            default:
+                throw new InvalidPlatformError(
+                    `Platform ${process.platform} is not supported for CLI autoinstallation.`
+                )
         }
-        return installOnLinux()
     }
 
     async function installOnLinux() {
-        if (process.platform !== 'linux') {
-            throw new InvalidPlatformError(`Cannot use Linux installer on operating system: ${process.platform}`)
-        }
         const dirname = path.dirname(samInstaller)
         new admZip(samInstaller).extractAllTo(dirname, true)
 
         const result = await new ChildProcess('sh', [
             path.join(dirname, 'install'),
-            '-u',
-            '-i',
+            '--update',
+            '--install',
             outDir,
-            '-b',
+            '--bin-dir',
             outDir,
         ]).run()
         if (result.exitCode !== 0) {

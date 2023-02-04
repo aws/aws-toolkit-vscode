@@ -78,7 +78,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
         if (sam) {
             result.samCliFound = true
             result.versionValidation = await this.getVersionValidatorResult()
-            if (process.platform === 'linux' && sam === getToolkitLocalCliCommandPath('sam-cli')) {
+            if (sam === getToolkitLocalCliCommandPath('sam-cli')) {
                 result.isToolkitLocal = true
             }
         }
