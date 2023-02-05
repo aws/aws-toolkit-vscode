@@ -69,8 +69,8 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SAM CLI automatically', async function () {
-            // sam cli install scoped to just Linux
-            if (os.platform() !== 'linux') {
+            // sam cli install scoped to just Linux and Windows
+            if (os.platform() === 'darwin') {
                 this.skip()
             }
             const samCli = await installCli('sam-cli', false, testWindow)
@@ -82,8 +82,8 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SAM CLI if prompted and accepted', async function () {
-            // sam cli install scoped to just Linux
-            if (os.platform() !== 'linux') {
+            // sam cli install scoped to just Linux and Windows
+            if (os.platform() === 'darwin') {
                 this.skip()
             }
             const samCli = installCli('sam-cli', true, testWindow)

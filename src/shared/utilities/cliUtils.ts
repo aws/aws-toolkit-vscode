@@ -22,6 +22,7 @@ import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
+import { SystemUtilities } from '../systemUtilities'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -69,11 +70,11 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
     },
     'sam-cli': {
         command: {
-            windows: '',
+            windows: path.join('AWSSAMCLI', 'bin', 'sam.cmd'),
             unix: path.join('sam', 'sam'),
         },
         source: {
-            windows: '',
+            windows: 'https://github.com/aws/aws-sam-cli/releases/latest/download/AWS_SAM_CLI_64_PY3.msi',
             linux: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip',
             macos: '',
         },
@@ -248,6 +249,9 @@ function getToolkitCliDir(): string {
  * Instantiated as a function instead of a const to prevent being called before `ext.context` is set
  */
 export function getToolkitLocalCliPath(): string {
+    if (process.platform === 'win32') {
+        return path.join(SystemUtilities.getHomeDirectory(), '.aws', 'toolkit', 'Amazon')
+    }
     return path.join(getToolkitCliDir(), 'Amazon')
 }
 
@@ -343,7 +347,10 @@ export async function installSamCli(
     progress.report({ message: msgDownloading })
 
     const samInstaller = await downloadCliSource(awsClis['sam-cli'], tempDir, timeout)
-    const outDir = path.join(getToolkitLocalCliPath(), 'sam')
+    const outDir =
+        process.platform === 'win32'
+            ? path.join(SystemUtilities.getHomeDirectory(), '.aws', 'toolkit')
+            : path.join(getToolkitLocalCliPath(), 'sam')
 
     getLogger('channel').info(`Installing AWS SAM CLI from ${samInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
@@ -356,6 +363,7 @@ export async function installSamCli(
                 return installOnLinux()
             case 'darwin':
             case 'win32':
+                return installToolkitLocalMsi(samInstaller)
             default:
                 throw new InvalidPlatformError(
                     `Platform ${process.platform} is not supported for CLI autoinstallation.`
@@ -381,6 +389,15 @@ export async function installSamCli(
             )
         }
         await fs.chmod(path.join(outDir, 'dist', 'sam'), 0o755)
+
+        return path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['sam-cli']))
+    }
+
+    async function installToolkitLocalMsi(msiPath: string): Promise<string> {
+        const result = await new ChildProcess('msiexec', ['/a', msiPath, '/quiet', `TARGETDIR=${outDir}`]).run()
+        if (result.exitCode !== 0) {
+            throw new InstallerError(`Installation of MSI file ${msiPath} failed: Error Code ${result.exitCode}`)
+        }
 
         return path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['sam-cli']))
     }
