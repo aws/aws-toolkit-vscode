@@ -32,8 +32,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
         await config.delete('location')
     }
 
-    // this will be called on startup, do not prompt for installation
-    const sam = await config.getOrDetectSamCli({ install: false })
+    const sam = await config.getOrDetectSamCli()
     const notFound = sam.path === ''
 
     // Update the user setting.

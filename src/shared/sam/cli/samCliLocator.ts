@@ -57,7 +57,7 @@ abstract class BaseSamCliLocator {
             location = await this.getToolkitLocalLocation()
         }
 
-        this.logger.info(`SAM CLI location: ${location}`)
+        this.logger.info(`SAM CLI location: ${location?.path}`)
 
         return location
     }
@@ -199,12 +199,12 @@ class UnixSamCliLocator extends BaseSamCliLocator {
 
     protected getExecutableFolders(): string[] {
         if (isCloud9()) {
-            return [path.join(getToolkitLocalCliPath(), 'AWSSAMCLI', 'bin'), ...UnixSamCliLocator.locationPaths]
+            return [path.join(getToolkitLocalCliPath(), 'sam'), ...UnixSamCliLocator.locationPaths]
         }
         return UnixSamCliLocator.locationPaths
     }
 
     protected getLocalExecutableFolders(): string[] {
-        return [path.join(getToolkitLocalCliPath(), 'AWSSAM', 'bin')]
+        return [path.join(getToolkitLocalCliPath(), 'sam')]
     }
 }

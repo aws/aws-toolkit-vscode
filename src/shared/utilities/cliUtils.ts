@@ -70,7 +70,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
     'sam-cli': {
         command: {
             windows: '',
-            unix: path.join('AWSSAMCLI', 'bin', 'sam'),
+            unix: path.join('sam', 'sam'),
         },
         source: {
             windows: '',
@@ -343,7 +343,7 @@ export async function installSamCli(
     progress.report({ message: msgDownloading })
 
     const samInstaller = await downloadCliSource(awsClis['sam-cli'], tempDir, timeout)
-    const outDir = path.join(getToolkitLocalCliPath(), 'AWSSAMCLI')
+    const outDir = path.join(getToolkitLocalCliPath(), 'sam')
 
     getLogger('channel').info(`Installing AWS SAM CLI from ${samInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
