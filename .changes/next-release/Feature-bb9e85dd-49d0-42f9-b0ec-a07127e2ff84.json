@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM: Auto install the AWS SAM CLI locally if not found"
+}
