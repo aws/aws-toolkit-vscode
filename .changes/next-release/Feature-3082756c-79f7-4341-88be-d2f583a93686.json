@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Reveal the log stream prompt when selecting a log group from the explorer."
+}
