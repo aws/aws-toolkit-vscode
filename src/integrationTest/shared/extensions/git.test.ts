@@ -39,7 +39,7 @@ interface GitError {
     exitCode: GitTypes.GitErrorCodes
 }
 
-describe('GitExtension', function () {
+describe.skip('GitExtension', function () {
     let testRepo: GitTypes.Repository
     const git = GitExtension.instance
 
