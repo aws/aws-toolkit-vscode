@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "S3: Generate presigned PUT (upload) URLs"
+}
