@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import moment = require('moment')
+import * as vscode from 'vscode'
+import * as moment from 'moment'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { CloudWatchLogsEvent } from '../registry/logDataRegistry'
 

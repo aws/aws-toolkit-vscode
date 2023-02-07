@@ -10,7 +10,6 @@ import { getLogger } from '../../shared/logger'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
@@ -21,9 +20,6 @@ type UriString = string
  */
 export class LogDataRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
-    private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
-        backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
-    })
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
@@ -163,24 +159,6 @@ export class LogDataRegistry {
 
     public getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.registry.get(uriToKey(uri))
-    }
-
-    public async highlightDocument(uri: vscode.Uri): Promise<void> {
-        const textEditor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri))
-        const logData = this.getLogData(uri)
-
-        if (!logData) {
-            throw new Error(`cwl: Unable to highlight. Missing log data in registry for uri key: ${uriToKey(uri)}.`)
-        }
-
-        if (!textEditor) {
-            throw new Error(`cwl: Unable to highlight. Missing textEditor in registry for uri key: ${uriToKey(uri)}.`)
-        }
-
-        if (logData.parameters.filterPattern) {
-            const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-            textEditor.setDecorations(this.searchHighlight, ranges)
-        }
     }
 }
 
