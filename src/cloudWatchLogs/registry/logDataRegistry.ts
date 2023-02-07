@@ -195,8 +195,19 @@ export async function filterLogEventsFromUriComponents(
         cwlParameters.endTime = parameters.endTime
     }
 
+    cwlParameters.logStreamNames = []
+
     if (parameters.streamNameOptions) {
-        cwlParameters.logStreamNames = parameters.streamNameOptions
+        cwlParameters.logStreamNames.concat(parameters.streamNameOptions)
+    }
+
+    if (logGroupInfo.streamName) {
+        cwlParameters.logStreamNames.push(logGroupInfo.streamName)
+    }
+
+    if (cwlParameters.logStreamNames.length === 0) {
+        // API fails on empty array
+        delete cwlParameters.logStreamNames
     }
 
     const timeout = new Timeout(300000)
