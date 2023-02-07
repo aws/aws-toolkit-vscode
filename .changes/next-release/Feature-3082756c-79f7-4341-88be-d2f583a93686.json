@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Reveal the log stream prompt when selecting a log group from the explorer."
+	"description": "CloudWatch Logs: one click to list log streams for a log group"
 }
