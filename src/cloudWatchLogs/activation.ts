@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { Settings } from '../shared/settings'
-import { CloudWatchLogsSettings, isLogStreamUri } from './cloudWatchLogsUtils'
+import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
 import { saveCurrentLogDataContent } from './commands/saveCurrentLogDataContent'
