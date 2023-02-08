@@ -24,9 +24,6 @@ phases:
             choco install -y --no-progress codecov
         }
       - dotnet --list-sdks
-      - choco uninstall -y dotnet-sdk --version 5.0.100 dotnet-5.0-sdk --version 5.0.100
-      - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\5.0.100'"
-      - "Remove-Item -Recurse -Force 'C:\\Program\ Files\\dotnet\\sdk\\6.0.202'"
       - |
         Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';
         ./dotnet-install.ps1 -Verbose -InstallDir 'C:\Program Files\dotnet' -Channel '5.0'
