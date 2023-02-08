@@ -633,19 +633,7 @@ export class ResultDisplay {
         const logoUri = logoPath ? panel.webviewPanel.webview.asWebviewUri(logoPath) : undefined
         const javascriptUri = vs.Uri.joinPath(this.assetsPath, 'dist', source)
 
-        const context =
-            queryContext !== undefined
-                ? JSON.stringify({
-                      should: Array.from(queryContext.should),
-                      must: Array.from(queryContext.must),
-                      mustNot: Array.from(queryContext.mustNot),
-                  })
-                : ''
-
-        const codeSelectionString = codeSelection !== undefined ? JSON.stringify(codeSelection) : ''
-        const codeQueryString = codeQuery !== undefined ? JSON.stringify(codeQuery) : ''
         const localLanguage = vs.env.language
-        const headerInfoString = headerInfo !== undefined ? JSON.stringify(headerInfo) : ''
 
         // Use the webpack dev server if available
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
@@ -658,13 +646,13 @@ export class ResultDisplay {
             entrypoint.toString(),
             logoUri,
             input,
-            context,
+            queryContext,
             input !== undefined,
             live,
-            codeSelectionString,
-            codeQueryString,
+            codeSelection,
+            codeQuery,
             localLanguage,
-            headerInfoString
+            headerInfo
         )
     }
 
@@ -691,6 +679,7 @@ export class ResultDisplay {
             should: [],
             mustNot: [],
         }
+
         if (this.uiReady[panelId]) {
             void panel.webviewPanel.webview.postMessage(
                 JSON.stringify({
@@ -843,36 +832,41 @@ const getWebviewContent = (
     scriptUri: string,
     logoUri?: vs.Uri,
     queryText?: string,
-    context?: string,
+    context?: QueryContext,
     loading?: boolean,
     live?: boolean,
-    codeSelection?: string,
-    codeQuery?: string,
+    codeSelection?: CodeSelection,
+    codeQuery?: CodeQuery,
     language?: string,
-    headerInfo?: string
+    headerInfo?: HeaderInfo
 ): string => {
-    const initialDataJSONString: string[] = []
+    const initialData: any = {}
     if (queryText !== undefined && queryText.trim() !== '') {
-        initialDataJSONString.push(`query: \`${queryText}\``)
+        initialData.query = queryText
     }
-    if (context !== undefined && context.trim() !== '') {
-        initialDataJSONString.push(`matchPolicy: ${context}`)
+    if (context !== undefined) {
+        initialData.matchPolicy = {
+            should: Array.from(context.should),
+            must: Array.from(context.must),
+            mustNot: Array.from(context.mustNot),
+        }
     }
-    if (codeQuery !== undefined && codeQuery.trim() !== '') {
-        initialDataJSONString.push(`codeQuery: ${codeQuery}`)
+    if (codeQuery !== undefined) {
+        initialData.codeQuery = codeQuery
     }
-    if (codeSelection !== undefined && codeSelection.trim() !== '') {
-        initialDataJSONString.push(`codeSelection: ${codeSelection}`)
+    if (codeSelection !== undefined) {
+        initialData.codeSelection = codeSelection
     }
-    if (headerInfo !== undefined && headerInfo.trim() !== '') {
-        initialDataJSONString.push(`headerInfo: ${headerInfo}`)
+    if (headerInfo !== undefined) {
+        initialData.headerInfo = headerInfo
     }
     if (loading) {
-        initialDataJSONString.push(`loading: true`)
+        initialData.loading = true
     }
     if (live) {
-        initialDataJSONString.push(`liveSearchState: "resumeLiveSearch"`)
+        initialData.liveSearchState = 'resumeLiveSearch'
     }
+    const jsonData = JSON.stringify(initialData)
     return `<!DOCTYPE html>
             <html>
                 <head>
@@ -881,7 +875,7 @@ const getWebviewContent = (
                     <script type="text/javascript" src="${scriptUri}" defer onload="init()"></script>
                     <script type="text/javascript">
                         const init = () => {
-                            createMynahUI({${initialDataJSONString.join(',')}});
+                            createMynahUI(${jsonData});
                         }
                     </script>
                 </head>
