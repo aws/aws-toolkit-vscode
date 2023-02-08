@@ -1,3 +1,13 @@
+## 1.62.0 2023-01-31
+
+- **Bug Fix** SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867
+- **Bug Fix** iam: ignore permission check when denial comes from organization csp policy
+- **Bug Fix** Improve extension start-up performance, especially on devices with slower file systems
+- **Bug Fix** Duplicate resource type definitions break the "Resources" node (#3132)
+- **Bug Fix** SAM template.yaml syntax support for FunctionResponseTypes #2924
+- **Feature** SAM: run/debug now works for a larger variety of TypeScript projects
+- **Feature** Upload Lambda wizard will skip prompts and auto select parent directory when invoked from a template file.
+
 ## 1.61.0 2023-01-12
 
 - **Bug Fix** AWS regions are not dynamically fetched by the Toolkit
