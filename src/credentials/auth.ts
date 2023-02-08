@@ -1014,7 +1014,7 @@ function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): 
 export class AuthNode implements TreeNode<Auth> {
     public readonly id = 'auth'
     public readonly onDidChangeTreeItem = mapEventType(this.resource.onDidChangeActiveConnection)
-
+    public readonly onDidChangeChildren = mapEventType(this.resource.onDidChangeActiveConnection)
     public constructor(public readonly resource: Auth) {}
 
     public getTreeItem() {
@@ -1036,6 +1036,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         const item = new vscode.TreeItem(itemLabel)
         item.contextValue = 'awsAuthNode'
+        item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded
 
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
@@ -1059,5 +1060,12 @@ export class AuthNode implements TreeNode<Auth> {
         } else {
             item.description = text
         }
+    }
+
+    public getChildren() {
+        if (this.resource.activeConnection !== undefined && this.resource.activeConnection.state !== 'valid') {
+            return [reauth.build(this.resource, this.resource.activeConnection).asTreeNode({ label: 'Login' })]
+        }
+        return []
     }
 }
