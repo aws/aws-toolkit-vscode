@@ -103,7 +103,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     private readonly getAuthNode = once(() => new TreeShim(new AuthNode(this.auth)))
     private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
         const conn = this.auth.activeConnection
-        if (conn !== undefined && conn.type !== 'iam') {
+        if ((conn !== undefined && conn.state !== 'valid') || conn === undefined) {
             // TODO: this should show up as a child node?
             const selectIamNode = useIamCredentials.build(this.auth).asTreeNode({
                 // label: `No IAM credentials linked to ${conn.label}`,
@@ -113,8 +113,6 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             })
 
             return [this.getAuthNode(), new TreeShim(selectIamNode)]
-        } else if (conn === undefined || conn.state !== 'valid') {
-            return [this.getAuthNode()]
         }
 
         const partitionRegions = this.regionProvider.getRegions()

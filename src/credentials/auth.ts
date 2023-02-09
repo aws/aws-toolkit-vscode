@@ -16,7 +16,7 @@ import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
@@ -303,12 +303,28 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly ssoCache = getCache()
     private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
     public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    public pendingTimer: Timeout | undefined = undefined
 
     public constructor(
         private readonly store: ProfileStore,
         private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider),
         private readonly iamProfileProvider = CredentialsProviderManager.getInstance()
     ) {}
+
+    public setPendingTimeout(timeout: Timeout | undefined) {
+        this.pendingTimer = timeout
+    }
+
+    public cancelLogin() {
+        if (this.pendingTimer) {
+            this.pendingTimer.cancel()
+            this.pendingTimer.dispose()
+        }
+        this.setPendingTimeout(undefined)
+        if (this.activeConnection) {
+            this.updateConnectionState(this.activeConnection.id, 'invalid')
+        }
+    }
 
     #activeConnection: Mutable<StatefulConnection> | undefined
     public get activeConnection(): StatefulConnection | undefined {
@@ -969,8 +985,11 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
 })
 
 const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
+    const timeout = new Timeout(600000)
+
+    auth.setPendingTimeout(timeout)
     try {
-        await auth.reauthenticate(conn)
+        await waitTimeout(auth.reauthenticate(conn), timeout)
     } catch (err) {
         throw ToolkitError.chain(err, 'Unable to authenticate connection')
     }
@@ -1063,9 +1082,25 @@ export class AuthNode implements TreeNode<Auth> {
     }
 
     public getChildren() {
-        if (this.resource.activeConnection !== undefined && this.resource.activeConnection.state !== 'valid') {
-            return [reauth.build(this.resource, this.resource.activeConnection).asTreeNode({ label: 'Login' })]
+        const conn = this.resource.activeConnection
+        const children = []
+        if (conn !== undefined) {
+            if (conn.state !== 'valid') {
+                children.push(reauth.build(this.resource, conn).asTreeNode({ label: 'Login' }))
+            }
+            if (conn.state === 'authenticating') {
+                children.push(
+                    cancelLogin
+                        .build(this.resource)
+                        .asTreeNode({ label: 'Cancel', iconPath: getIcon('vscode-loading~spin') })
+                )
+            }
         }
-        return []
+        return children
     }
 }
+
+const cancelLogin = Commands.register('_aws.auth.cancelLogin', (auth: Auth) => {
+    auth.cancelLogin()
+    // globals.clock.clearTimeout())
+})
