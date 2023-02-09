@@ -42,18 +42,21 @@ export class ManualInputSearch extends SearchInput {
             commands.registerCommand('Mynah.show', async parameters => {
                 let range: vs.Range
                 let inputTrigger: TriggerInteractionType
-                if (typeof parameters === 'string') {
-                    parameters = JSON.parse(parameters)
-                }
-                // Workaround to define context menu call
-                if (parameters && parameters.authority !== undefined) {
-                    inputTrigger = TriggerInteractionType.MENU
+                if (parameters === undefined) {
+                    inputTrigger = TriggerInteractionType.COMMAND_PALETTE
                 } else {
-                    inputTrigger = parameters.inputTrigger as TriggerInteractionType
-                }
-
-                if (parameters.range) {
-                    range = new vs.Range(parameters.range[0], parameters.range[1])
+                    if (typeof parameters === 'string') {
+                        parameters = JSON.parse(parameters)
+                    }
+                    // Workaround to define context menu call
+                    if (parameters && parameters.authority !== undefined) {
+                        inputTrigger = TriggerInteractionType.MENU
+                    } else {
+                        inputTrigger = parameters.inputTrigger as TriggerInteractionType
+                    }
+                    if (parameters.range) {
+                        range = new vs.Range(parameters.range[0], parameters.range[1])
+                    }
                 }
                 return await this.show(range!, inputTrigger)
             })

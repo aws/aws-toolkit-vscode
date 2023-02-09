@@ -58,6 +58,7 @@ export enum SearchTrigger {
 
 export enum TriggerInteractionType {
     KEYBOARD = 'KEYBOARD',
+    COMMAND_PALETTE = 'COMMAND_PALETTE',
     CLICK = 'CLICK',
     MENU = 'MENU',
     HOVER_BUBBLE = 'HOVER_BUBBLE',
