@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { installFakeClock, tickPromise } from '../../../test/testUtil'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
@@ -51,7 +51,7 @@ describe('timeoutUtils', async function () {
             clock.tick(timerLengthMs + 1)
             await assert.rejects(
                 shortTimer.promisify(),
-                new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE),
+                new Error(timeoutUtils.timeoutExpiredMessage),
                 'Timer did not reject due to timeout'
             )
         })
@@ -391,7 +391,7 @@ describe('timeoutUtils', async function () {
             clock.tick(300)
             timeout.dispose() // Promise now resolves undefined
             clock.tick(200)
-            await assert.rejects(timedPromise, new Error(timeoutUtils.TIMEOUT_UNEXPECTED_RESOLVE))
+            await assert.rejects(timedPromise, new Error(timeoutUtils.timeoutUnexpectedResolve))
         })
 
         it('"completeTimeout" option set to false throws expired error', async function () {
@@ -400,7 +400,7 @@ describe('timeoutUtils', async function () {
             clock.tick(600)
             await timedPromise
             clock.tick(300)
-            await assert.rejects(timeout.promisify(), new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE))
+            await assert.rejects(timeout.promisify(), new Error(timeoutUtils.timeoutExpiredMessage))
         })
     })
 })

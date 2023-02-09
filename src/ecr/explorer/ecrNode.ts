@@ -6,9 +6,8 @@
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { inspect } from 'util'
 import { EcrClient } from '../../shared/clients/ecrClient'
@@ -32,7 +31,6 @@ export class EcrNode extends AWSTreeNodeBase {
 
                 return response.map(item => new EcrRepositoryNode(this, this.ecr, item))
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noRepositories', '[No repositories found]')),
             sort: (item1, item2) => item1.repository.repositoryName.localeCompare(item2.repository.repositoryName),

@@ -4,55 +4,40 @@
  */
 
 import * as assert from 'assert'
-import { Lambda } from 'aws-sdk'
-import * as sinon from 'sinon'
-import globals from '../../../shared/extensionGlobals'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
+import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
+import { stub } from '../../utilities/stubber'
+import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const regionCode = 'someregioncode'
+
+function createLambdaClient(...functionNames: string[]) {
+    const client = stub(DefaultLambdaClient, { regionCode })
+    client.listFunctions.returns(asyncGenerator(functionNames.map(name => ({ FunctionName: name }))))
+
+    return client
+}
+
+function createNode(...functionNames: string[]) {
+    return new LambdaNode(regionCode, createLambdaClient(...functionNames))
+}
 
 describe('LambdaNode', function () {
-    let sandbox: sinon.SinonSandbox
-    let testNode: LambdaNode
-
-    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
-    let lambdaFunctionNames: string[]
-
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-
-        lambdaFunctionNames = ['function1', 'function2']
-
-        initializeClientBuilders()
-
-        testNode = new LambdaNode(FAKE_REGION_CODE)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
-
     it('returns placeholder node if no children are present', async function () {
-        lambdaFunctionNames = []
+        const childNodes = await createNode().getChildren()
 
-        const childNodes = await testNode.getChildren()
-
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LambdaFunctionNode child nodes', async function () {
-        const childNodes = await testNode.getChildren()
+        const childNodes = await createNode('f1', 'f2').getChildren()
 
-        assert.strictEqual(childNodes.length, lambdaFunctionNames.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
         childNodes.forEach(node =>
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
@@ -60,52 +45,29 @@ describe('LambdaNode', function () {
     })
 
     it('has child nodes with Lambda Function contextValue', async function () {
-        const childNodes = await testNode.getChildren()
+        const childNodes = await createNode('f1', 'f2').getChildren()
 
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_LAMBDA_FUNCTION,
+                contextValueLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
         )
     })
 
     it('sorts child nodes', async function () {
-        lambdaFunctionNames = UNSORTED_TEXT
-
-        const childNodes = await testNode.getChildren()
+        const childNodes = await createNode('b', 'c', 'a').getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, ['a', 'b', 'c'], 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createLambdaClient()
+        client.listFunctions.throws()
+        const node = new LambdaNode(regionCode, client)
 
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
-
-    function initializeClientBuilders() {
-        const lambdaClient = {
-            listFunctions: sandbox.stub().callsFake(() => {
-                return asyncGenerator<Lambda.FunctionConfiguration>(
-                    lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
-                        return {
-                            FunctionName: name,
-                        }
-                    })
-                )
-            }),
-        }
-
-        const clientBuilder = {
-            createLambdaClient: sandbox.stub().returns(lambdaClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

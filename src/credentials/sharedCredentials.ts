@@ -70,7 +70,7 @@ function mergeProfileProperties(credentialsProfile?: Profile, configProfile?: Pr
     return profile
 }
 
-export async function updateAwsSdkLoadConfigEnvironmentVariable(): Promise<void> {
+export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
     const configFileExists = await SystemUtilities.fileExists(getConfigFilename())
     process.env.AWS_SDK_LOAD_CONFIG = configFileExists ? 'true' : ''
 }

@@ -5,19 +5,30 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { memoizedGetResourceTypes } from '../model/resources'
+import { fromExtensionManifest } from '../../shared/settings'
+import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
-export async function configureResources(): Promise<boolean> {
+export class ResourcesSettings extends fromExtensionManifest('aws.resources', {
+    enabledResources: ArrayConstructor(String),
+}) {}
+
+/**
+ * Shows a picker menu and stores the selected Resources in user settings.
+ *
+ * @returns true if the user accepted the picker, false if they canceled it
+ */
+export async function configureResources(settings = new ResourcesSettings()): Promise<boolean> {
     const window = vscode.window
-    const configuration = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
+    const enabledResources = settings.get('enabledResources', [])
 
     const quickPickItems: vscode.QuickPickItem[] = []
     const resourceTypes = memoizedGetResourceTypes().keys()
     for (const type of resourceTypes) {
         quickPickItems.push({
             label: type,
-            picked: configuration ? configuration.includes(type) : false,
+            picked: enabledResources.includes(type),
         })
     }
 
@@ -27,11 +38,11 @@ export async function configureResources(): Promise<boolean> {
     })
 
     if (result) {
-        const enabledResources = result?.map(res => res.label)
-        await vscode.workspace
-            .getConfiguration()
-            .update('aws.resources.enabledResources', enabledResources, vscode.ConfigurationTarget.Global)
-        recordDynamicresourceSelectResources()
+        await settings.update(
+            'enabledResources',
+            result.map(res => res.label)
+        )
+        telemetry.dynamicresource_selectResources.emit()
         return true
     }
 

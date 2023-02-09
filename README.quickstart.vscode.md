@@ -1,9 +1,11 @@
 # <a id="top"></a>AWS Toolkit
 
-AWS Toolkit is an extension for Visual Studio Code that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
-See the [AWS Toolkit for Visual Studio Code user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for complete documentation.
+The AWS Toolkit extension for Visual Studio Code enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
+See the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for complete documentation.
 
-See [Setup](#additional-setup-steps) for installation requirements, or [Get help](#get-help) for support.
+Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
+
+See [Setup](#additional-setup-steps) for prerequisites. If you run into a problem, try [support](#get-help).
 
 # <a id="features"></a>Features
 
@@ -13,12 +15,15 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
     -   CloudFormation stacks
     -   CloudWatch Logs
     -   ECR
+    -   [ECS](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html)
     -   EventBridge schemas
     -   [IoT explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/iot-start.html)
     -   Lambda functions
     -   S3 explorer
     -   Step Functions
--   [CDK Explorer](#ui-components-cdk-expl)
+-   [Developer Tools](#ui-components-dev-tools)
+    -   [CDK Explorer](#ui-components-cdk-expl)
+    -   [CodeWhisperer](#codewhisperer)
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
 -   [Amazon CloudWatch Logs](#cloudwatchlogs)
 -   [Amazon EventBridge Schemas](#eventbridge)
@@ -38,6 +43,14 @@ The **AWS Explorer** provides access to the AWS services that you can work with 
 
 { [Return to Top](#top) }
 
+## <a id="ui-components-dev-tools"></a>Developer Tools
+
+The **Developer Tools** panel is a section for developer-focused tooling curated for working in an IDE. The **Developer Tools** panel can be found underneath the **AWS Explorer** when the **AWS icon** is selected in the **Activity bar**.
+
+![Overview, Developer Tools](./resources/marketplace/vscode/overview-codewhisperer.png)
+
+## { [Return to Top](#top) }
+
 ## <a id="ui-components-cdk-expl"></a>CDK Explorer
 
 The **AWS CDK Explorer** enables you to work with [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) applications. It shows a top-level view of your CDK applications that have been sythesized in your workspace.
@@ -52,7 +65,19 @@ For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-
 
 { [Return to Top](#top) }
 
----
+## <a id="codewhisperer"></a>Amazon CodeWhisperer
+
+**Amazon CodeWhisperer** provides inline code suggestions using machine learning and natural language processing on the contents of your current file. Supported languages include: Java, Python and Javascript.
+
+Once enabled, CodeWhisperer will provide code suggestions automatically and can also be requested manually using option+c (mac) / alt+c (PC). CodeWhisperer may provide multiple suggestions; use the left- and right-arrow to navigate between suggestions. To accept a suggestion and add it to your file, press Tab. To dismiss a suggestion, press escape or keep typing.
+
+In addition to providing code suggestions within your current file, CodeWhisperer can scan your entire package to identify security issues. To initiate a security scan, go to the CodeWhisperer section in the **Developer Tools** panel and select “Run security scan”. Results will be listed in the Problems panel.
+
+![CodeWhisperer](./resources/marketplace/vscode/overview-codewhisperer.png)
+
+For more information, see [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer) in our user guide.
+
+{ [Return to Top](#top) }
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 
@@ -211,7 +236,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AWS: About Toolkit`                                 | Displays information about the AWS Toolkit.                                                                                                                                                                                                                                                                    |
 | `AWS: Add SAM Debug Configuration`                   | Creates an `aws-sam` Debug Configuration from a function in the current source file                                                                                                                                                                                                                            |
-| `AWS: Connect to AWS`                                | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                                                                                                       |
+| `AWS: Connect to AWS`                                | Select or create a connection to AWS. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect).                                                                                                                                                           |
 | `AWS: Copy Log Stream Name`                          | Copies the name of the active CloudWatch Log Stream                                                                                                                                                                                                                                                            |
 | `AWS: Create a new Step Functions state machine`     | Generates a new Amazon States Language definition to use as the definition for a new Step Functions state machine. For more information, see [State Machine Templates](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#templates-stepfunctions) in the user guide. |
 | `AWS: Create a new Issue on Github`                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
@@ -222,15 +247,16 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Create new SAM Template`                       | Creates a new starter SAM Template                                                                                                                                                                                                                                                                             |
 | `AWS: Deploy SAM Application`                        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
 | `AWS: Detect SAM CLI`                                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                                                                                   |
+| `AWS: Edit Credentials`                              | Opens the `~/.aws/credentials` or `~/.aws/config` file for editing.                                                                                                                                                                                                                                            |
+| `AWS: Edit SAM Debug Configuration`                  | Shows a tool that helps you create, edit, run, and debug a SAM _launch config_ (`type:aws-sam`).                                                                                                                                                                                                               |
 | `AWS: Focus on Explorer View`                        | Opens the **AWS** panel and focuses the [_Explorer_](#ui-components-aws-expl).                                                                                                                                                                                                                                 |
-| `AWS: Hide region from the Explorer`                 | Hides an AWS Region from the **AWS Explorer**.                                                                                                                                                                                                                                                                 |
 | `AWS: Publish state machine to Step Functions`       | Creates or updates a remote state machine using the local Amazon States Language definition file. For more information, see [Work With State Machines in VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#starting-stepfunctions) in the user guide.        |
 | `AWS: Publish a Systems Manager Document`            | Creates a new document or updates an existing document in your account using the currently open document.                                                                                                                                                                                                      |
 | `AWS: Render state machine graph`                    | Renders the state machine definition into a graph visualization. For more information, see [State Machine Graph Visualization](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#bulding-stepfunctions-visualizations) in the user guide.                            |
 | `AWS: Report an Issue`                               | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                    |
 | `AWS: Save Current Log Content To File`              | Saves currently-loaded CloudWatch Log Stream data to a local `.log` file.                                                                                                                                                                                                                                      |
-| `AWS: Show region in the Explorer`                   | Displays an AWS Region in the **AWS Explorer**.                                                                                                                                                                                                                                                                |
-| `AWS: Sign out`                                      | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                                                                                                              |
+| `AWS: Show or Hide Regions`                          | Adds or removes AWS Regions in the **AWS Explorer**.                                                                                                                                                                                                                                                           |
+| `AWS: Sign out`                                      | Disconnect the Toolkit from the current AWS connection.                                                                                                                                                                                                                                                        |
 | `AWS: Submit Quick Feedback...`                      | Submit a private, one-way message and sentiment to the AWS Toolkit dev team. For larger issues that warrant conversations or bugfixes, please submit an issue in Github with the **AWS: Create a New Issue on Github** command.                                                                                |
 | `AWS: Toggle SAM hints in source files`              | Toggles AWS SAM-related Codelenses in source files                                                                                                                                                                                                                                                             |
 | `AWS: View Toolkit Logs`                             | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                                                                                        |

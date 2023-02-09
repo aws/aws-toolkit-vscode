@@ -5,22 +5,23 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { StateMachineGraphCache } from '../../utils'
 
 import { Logger } from '../../../shared/logger'
+import { AslVisualization } from './aslVisualization'
 
 const localize = nls.loadMessageBundle()
 
-export abstract class AbstractAslVisualizationManager {
-    protected abstract name: string
-    protected cache: StateMachineGraphCache = new StateMachineGraphCache()
+export abstract class AbstractAslVisualizationManager<T extends AslVisualization = AslVisualization> {
+    protected abstract readonly name: string
+    protected readonly managedVisualizations = new Map<string, T>()
+    protected readonly cache = new StateMachineGraphCache()
 
     public constructor(private readonly extensionContext: vscode.ExtensionContext) {}
 
     public abstract visualizeStateMachine(
         globalStorage: vscode.Memento,
-        input: vscode.Uri | vscode.TextEditor | ConstructNode | undefined
+        uri: vscode.Uri
     ): Promise<vscode.WebviewPanel | undefined>
 
     protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable): void {
@@ -36,6 +37,23 @@ export abstract class AbstractAslVisualizationManager {
         )
 
         logger.debug(`${this.name}: Unable to setup webview panel.`)
-        logger.error(`${this.name}: unexpected exception: %O`, err)
+        logger.error(`${this.name}: unexpected exception: %s`, err)
+    }
+
+    public getManagedVisualizations(): Map<string, T> {
+        return this.managedVisualizations
+    }
+
+    protected handleNewVisualization(key: string, visualization: T): void {
+        this.managedVisualizations.set(key, visualization)
+
+        const visualizationDisposable = visualization.onVisualizationDisposeEvent(() => {
+            this.managedVisualizations.delete(key)
+        })
+        this.pushToExtensionContextSubscriptions(visualizationDisposable)
+    }
+
+    protected getExistingVisualization(key: string): T | undefined {
+        return this.managedVisualizations.get(key)
     }
 }

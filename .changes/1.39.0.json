@@ -1,0 +1,38 @@
+{
+	"date": "2022-06-06",
+	"version": "1.39.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "StepFunctions: allow state machines with non-object values for Parameters property"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix incorrect use of Markdown in new SAM application READMEs"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Credential profiles that do not require user-input now correctly refresh when expired"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Upload Lambda\" from any folder in VS Code File Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Send Feedback\" form always enables Send button and doesn't require text input"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: create, run and debug nodejs16.x Lambdas"
+		},
+		{
+			"type": "Feature",
+			"description": "CDK features are now found in the _Developer Tools_ view. This view will contain more ways to work with local project resources in future releases."
+		}
+	]
+}

@@ -1,0 +1,10 @@
+{
+	"date": "2022-06-30",
+	"version": "1.44.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode"
+		}
+	]
+}

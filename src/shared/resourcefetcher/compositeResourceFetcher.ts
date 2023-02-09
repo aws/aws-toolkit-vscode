@@ -6,6 +6,7 @@
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 
+// TODO: replace this with something more generic like Log.all(...)
 export class CompositeResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
     private readonly fetchers: ResourceFetcher[]
@@ -23,7 +24,7 @@ export class CompositeResourceFetcher implements ResourceFetcher {
     public async get(): Promise<string | undefined> {
         for (const fetcher of this.fetchers) {
             const contents = await fetcher.get().catch(err => {
-                this.logger.debug('Error loading resource from resource fetcher: %s', (err as Error).message)
+                this.logger.debug('fetch failed: %s', (err as Error).message)
             })
             if (contents) {
                 return contents

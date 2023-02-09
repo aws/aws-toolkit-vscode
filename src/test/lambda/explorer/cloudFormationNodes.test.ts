@@ -4,95 +4,107 @@
  */
 
 import * as assert from 'assert'
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { CloudFormation } from 'aws-sdk'
 import * as os from 'os'
-import * as sinon from 'sinon'
 import {
     CloudFormationNode,
     CloudFormationStackNode,
-    CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+    contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
+import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
-    assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode,
+    assertNodeListOnlyHasErrorNode,
+    assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
+import { stub } from '../../utilities/stubber'
 
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const regionCode = 'someregioncode'
+
+function createLambdaClient(...functionNames: string[]) {
+    const client = stub(DefaultLambdaClient, { regionCode })
+    client.listFunctions.returns(asyncGenerator(functionNames.map(name => ({ FunctionName: name }))))
+
+    return client
+}
+
+function createCloudFormationClient(...stackNames: string[]) {
+    const client = stub(DefaultCloudFormationClient, { regionCode })
+    client.describeStackResources.resolves({ StackResources: [] })
+    client.listStacks.returns(
+        asyncGenerator(
+            stackNames.map(name => {
+                return {
+                    StackId: name,
+                    StackName: name,
+                    CreationTime: new globals.clock.Date(),
+                    StackStatus: 'CREATE_COMPLETE',
+                }
+            })
+        )
+    )
+
+    return client
+}
 
 describe('CloudFormationStackNode', function () {
-    let fakeStackSummary: CloudFormation.StackSummary
-    let sandbox: sinon.SinonSandbox
-    let testNode: CloudFormationStackNode
-
-    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
-    let lambdaFunctionNames: string[]
-
-    // Mocked CloudFormation Client returns Lambda Function Stack Resources for anything listed in cloudFormationStacklambdaFunctionNames
-    let cloudFormationStacklambdaFunctionNames: string[]
-
-    before(async function () {
-        setupTestIconPaths()
-        fakeStackSummary = {
+    function createStackSummary() {
+        return {
             CreationTime: new globals.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
         }
-    })
+    }
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
+    function generateTestNode({
+        summary = createStackSummary(),
+        lambdaClient = createLambdaClient(),
+        cloudFormationClient = createCloudFormationClient(),
+    } = {}): CloudFormationStackNode {
+        const parentNode = new TestAWSTreeNode('test node')
 
-        lambdaFunctionNames = ['function1', 'function2']
-        cloudFormationStacklambdaFunctionNames = ['function1', 'function2']
+        return new CloudFormationStackNode(parentNode, regionCode, summary, lambdaClient, cloudFormationClient)
+    }
 
-        initializeClientBuilders()
-
-        testNode = generateTestNode()
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
+    function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
+        return functionNames.map(name => ({
+            PhysicalResourceId: name,
+            LogicalResourceId: name,
+            ResourceStatus: 'CREATED',
+            ResourceType: 'Lambda::Function',
+            Timestamp: new globals.clock.Date(),
+        }))
+    }
 
     it('initializes name and tooltip', async function () {
-        assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
-        assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
-    })
-
-    it('initializes icon', async function () {
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.cloudFormation, 'Unexpected light icon path')
+        const summary = createStackSummary()
+        const node = generateTestNode({ summary })
+        assert.strictEqual(node.label, `${summary.StackName} [${summary.StackStatus}]`)
+        assert.strictEqual(node.tooltip, `${summary.StackName}${os.EOL}${summary.StackId}`)
     })
 
     it('returns placeholder node if no children are present', async function () {
-        lambdaFunctionNames = []
-        cloudFormationStacklambdaFunctionNames = []
+        const node = generateTestNode()
+        const childNodes = await node.getChildren()
 
-        const childNodes = await testNode.getChildren()
-
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has LambdaFunctionNode child nodes', async function () {
-        const childNodes = await testNode.getChildren()
+        const lambdaClient = createLambdaClient('function1', 'function2')
+        const cloudFormationClient = createCloudFormationClient('foo')
+        cloudFormationClient.describeStackResources.resolves({
+            StackResources: generateStackResources('function1', 'function2'),
+        })
+        const node = generateTestNode({ lambdaClient, cloudFormationClient })
+        const childNodes = await node.getChildren()
 
-        assert.strictEqual(childNodes.length, cloudFormationStacklambdaFunctionNames.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
         childNodes.forEach(node =>
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
@@ -100,133 +112,54 @@ describe('CloudFormationStackNode', function () {
     })
 
     it('has child nodes with CloudFormation contextValue', async function () {
-        const childNodes = await testNode.getChildren()
+        const lambdaClient = createLambdaClient('function1', 'function2')
+        const cloudFormationClient = createCloudFormationClient('foo')
+        cloudFormationClient.describeStackResources.resolves({
+            StackResources: generateStackResources('function1', 'function2'),
+        })
+        const node = generateTestNode({ lambdaClient, cloudFormationClient })
+        const childNodes = await node.getChildren()
 
         childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
-                CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+                contextValueCloudformationLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
         )
     })
 
     it('only includes functions which are in a CloudFormation stack', async function () {
-        lambdaFunctionNames = ['lambda1', 'lambda2', 'lambda3']
-        cloudFormationStacklambdaFunctionNames = ['lambda1', 'lambda3']
+        const lambdaClient = createLambdaClient('lambda3', 'lambda1')
+        const cloudFormationClient = createCloudFormationClient('foo')
+        cloudFormationClient.describeStackResources.resolves({
+            StackResources: generateStackResources('lambda1', 'lambda2', 'lambda3'),
+        })
+        const node = generateTestNode({ lambdaClient, cloudFormationClient })
+        const childNodes = await node.getChildren()
 
-        const childNodes = await testNode.getChildren()
-        assert.strictEqual(
-            childNodes.length,
-            cloudFormationStacklambdaFunctionNames.length,
-            'Unexpected child node count'
-        )
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
 
         assert.deepStrictEqual(
             new Set<string>(childNodes.map(node => node.label!)),
-            new Set<string>(cloudFormationStacklambdaFunctionNames),
+            new Set<string>(['lambda1', 'lambda3']),
             'Unexpected child sort order'
         )
     })
 
-    it('sorts child nodes', async function () {
-        lambdaFunctionNames = UNSORTED_TEXT
-        cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT
-
-        const childNodes = await testNode.getChildren()
-
-        const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
-    })
-
     it('has an error node for a child if an error happens during loading', async function () {
-        const lambdaClient = {
-            listFunctions: sandbox.stub().callsFake(() => {
-                throw new Error('loading failure')
-            }),
-        }
+        const cloudFormationClient = createCloudFormationClient()
+        cloudFormationClient.describeStackResources.throws()
 
-        const cloudFormationClient = {
-            describeStackResources: sandbox.stub().callsFake(() => {
-                throw new Error('loading failure')
-            }),
-        }
-
-        const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-            createLambdaClient: sandbox.stub().returns(lambdaClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        const node = generateTestNode({ cloudFormationClient })
+        assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
-
-    function generateTestNode(): CloudFormationStackNode {
-        const parentNode = new TestAWSTreeNode('test node')
-
-        return new CloudFormationStackNode(parentNode, FAKE_REGION_CODE, fakeStackSummary)
-    }
-
-    function initializeClientBuilders() {
-        const lambdaClient = {
-            listFunctions: sandbox.stub().callsFake(() => {
-                return asyncGenerator<Lambda.FunctionConfiguration>(
-                    lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
-                        return {
-                            FunctionName: name,
-                        }
-                    })
-                )
-            }),
-        }
-
-        const cloudFormationClient = {
-            describeStackResources: sandbox.stub().callsFake(() => {
-                return {
-                    StackResources: cloudFormationStacklambdaFunctionNames.map(name => {
-                        return {
-                            ResourceType: 'Lambda::Function',
-                            PhysicalResourceId: name,
-                        }
-                    }),
-                }
-            }),
-        }
-
-        const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-            createLambdaClient: sandbox.stub().returns(lambdaClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })
 
 describe('CloudFormationNode', function () {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
-
     it('has CloudFormationStackNode child nodes', async function () {
-        const inputStackNames: string[] = ['stack123']
-
-        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
-
-        const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-
-        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
-
+        const client = createCloudFormationClient('stack123')
+        const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
         children.forEach(node =>
@@ -235,66 +168,27 @@ describe('CloudFormationNode', function () {
     })
 
     it('has sorted child nodes', async function () {
-        const inputStackNames = UNSORTED_TEXT
-        const expectedChildOrder = SORTED_TEXT
-
-        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
-
-        const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-
-        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
-
+        const client = createCloudFormationClient('b', 'a')
+        const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
         const actualChildOrder = children.map(node => (node as CloudFormationStackNode).stackName)
-
-        assert.deepStrictEqual(actualChildOrder, expectedChildOrder, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, ['a', 'b'], 'Unexpected child sort order')
     })
 
     it('returns placeholder node if no children are present', async function () {
-        const cloudFormationClient = makeCloudFormationClient([])
-
-        const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-
-        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
-
+        const client = createCloudFormationClient()
+        const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(children)
+        assertNodeListOnlyHasPlaceholderNode(children)
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        const testNode = new CloudFormationNode(FAKE_REGION_CODE)
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createCloudFormationClient()
+        client.listStacks.throws()
+        const cloudFormationNode = new CloudFormationNode(regionCode, client)
 
-        const childNodes: AWSTreeNodeBase[] = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(await cloudFormationNode.getChildren())
     })
-
-    function makeCloudFormationClient(stackNames: string[]): any {
-        return {
-            listStacks: sandbox.stub().callsFake(() => {
-                return asyncGenerator<CloudFormation.StackSummary>(
-                    stackNames.map<CloudFormation.StackSummary>(name => {
-                        return {
-                            StackId: name,
-                            StackName: name,
-                            CreationTime: new globals.clock.Date(),
-                            StackStatus: 'CREATE_COMPLETE',
-                        }
-                    })
-                )
-            }),
-        }
-    }
 })

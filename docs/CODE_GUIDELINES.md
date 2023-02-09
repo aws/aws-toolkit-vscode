@@ -143,6 +143,9 @@ that is a net cost.
 
     -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
+-   Use [`testCommand`](../src/test/shared/vscode/testUtils.ts) for testing commands created by `Commands.declare`
+    -   Prefer executing the real command directly when possible
+
 ## Code guidelines
 
 -   Use maps to group variables, rather than ad-hoc/informal grouping.
@@ -205,6 +208,14 @@ that is a net cost.
         ```
 
 ## User settings
+
+This codebase offers some convenient abstractions for manipulating user settings. The implementations and relevant documenation can be found [here](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts).
+
+-   Prefer using shared abstractions when possible. Many cross-cutting concerns, such as logging and validation, are handled automatically.
+
+-   Use "workspace" scope for automated tests, or an [in-memory implementation](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/test/utilities/testSettingsConfiguration.ts). Otherwise developers running the tests will have their settings changed!
+
+### Technical Notes
 
 -   Global scope is shared across all vscode instances _including_ remote/SSH
     instances. Programmatically setting a Global scope config value will raise

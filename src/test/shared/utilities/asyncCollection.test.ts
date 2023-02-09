@@ -19,6 +19,12 @@ describe('AsyncCollection', function () {
         yield 2
     }
 
+    async function* returnGen() {
+        yield 0
+        yield 1
+        return 2
+    }
+
     async function* genPage() {
         yield [0, 1, 2]
         yield [3, 4, 5]
@@ -70,6 +76,23 @@ describe('AsyncCollection', function () {
         assert.deepStrictEqual(await flat.promise(), expected)
     })
 
+    it('can flatten generators that return things', async function () {
+        const collection = toCollection(async function* () {
+            yield await toCollection(returnGen).promise()
+            yield await toCollection(returnGen)
+                .map(i => i + 1)
+                .promise()
+            return await toCollection(returnGen)
+                .map(i => i + 2)
+                .promise()
+        })
+
+        const flat = collection.flatten().map(i => i * 2)
+        const expected = 0 + 2 + 4 + (2 + 4 + 6) + (4 + 6 + 8) // Writing it all out for readability
+        const actual = (await flat.promise()).reduce((a, b) => a + b, 0)
+        assert.deepStrictEqual(actual, expected)
+    })
+
     it('can filter', async function () {
         const filtered = toCollection(genPage)
             .filter(o => o.includes(5))
@@ -78,16 +101,16 @@ describe('AsyncCollection', function () {
         assert.deepStrictEqual(await filtered.promise(), expected)
     })
 
-    it('can take', async function () {
-        const take = toCollection(gen).take(2)
-        assert.deepStrictEqual(await take.promise(), [0, 1])
+    it('can limit', async function () {
+        const limited = toCollection(gen).limit(2)
+        assert.deepStrictEqual(await limited.promise(), [0, 1])
     })
 
-    it('returns nothing if using non-positive count', async function () {
-        const takeZero = toCollection(gen).take(0)
-        const takeNeg1 = toCollection(gen).take(-1)
-        assert.deepStrictEqual(await takeZero.promise(), [])
-        assert.deepStrictEqual(await takeNeg1.promise(), [])
+    it('returns nothing if using non-positive limit count', async function () {
+        const limitZero = toCollection(gen).limit(0)
+        const limitNeg1 = toCollection(gen).limit(-1)
+        assert.deepStrictEqual(await limitZero.promise(), [])
+        assert.deepStrictEqual(await limitNeg1.promise(), [])
     })
 
     it('is immutable', async function () {
@@ -101,6 +124,19 @@ describe('AsyncCollection', function () {
         assert.deepStrictEqual(await x.promise(), [0, 1, 2])
         assert.deepStrictEqual(await y.promise(), [1, 2, 3])
         assert.deepStrictEqual(await z.promise(), [2, 2, 3, 3])
+    })
+
+    it('can map with async functions', async function () {
+        const double = async (n: number) => 2 * n
+
+        const mapped = toCollection(gen)
+            .map(o => o + 1)
+            .map(double)
+            .map(o => o - 1)
+            .map(double)
+            .map(o => `${o}!`)
+
+        assert.deepStrictEqual(await mapped.promise(), ['2!', '6!', '10!'])
     })
 
     it('does not iterate over the generator when applying transformations', async function () {
@@ -117,7 +153,7 @@ describe('AsyncCollection', function () {
             .flatten()
         await new Promise(r => setImmediate(r))
         assert.strictEqual(callCount, 0)
-        assert.deepStrictEqual(await x.take(6).promise(), [2, 4, 3, 9, 4, 16])
+        assert.deepStrictEqual(await x.limit(6).promise(), [2, 4, 3, 9, 4, 16])
         assert.strictEqual(callCount, 6)
     })
 

@@ -7,7 +7,6 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     getCodeRoot,
     getHandlerName,
@@ -17,6 +16,7 @@ import {
     GoDebugConfiguration,
     getTemplate,
     getArchitecture,
+    isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
 import {
     Architecture,
@@ -49,23 +49,64 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
+import { getInputTemplatePath, makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
-import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { getSamCliVersion } from '../cli/samCliContext'
-import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
-} from '../cli/samCliValidator'
+import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
+import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
+import { Runtime, telemetry } from '../../telemetry/telemetry'
+import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
+import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
+import { Logging } from '../../logger/commands'
+import { credentialHelpUrl } from '../../constants'
+import { Auth } from '../../../credentials/auth'
 
 const localize = nls.loadMessageBundle()
+
+interface NotificationButton<T = unknown> {
+    readonly label: string
+    readonly onClick: () => Promise<T> | T
+}
+
+class SamLaunchRequestError extends ToolkitError.named('SamLaunchRequestError') {
+    private readonly buttons: NotificationButton[]
+
+    public constructor(message: string, info?: ErrorInformation & { readonly extraButtons?: NotificationButton[] }) {
+        super(message, info)
+        this.buttons = info?.extraButtons ?? [
+            {
+                label: localize('AWS.generic.message.openConfig', 'Open Launch Config'),
+                onClick: openLaunchJsonFile,
+            },
+        ]
+    }
+
+    public async showNotification(): Promise<void> {
+        if (isUserCancelledError(this)) {
+            getLogger().verbose(`SAM run/debug: user cancelled`)
+            return
+        }
+
+        const logId = getLogger().error(this.trace)
+
+        const viewLogsButton = {
+            label: localize('AWS.generic.message.viewLogs', 'View Logs...'),
+            onClick: () => Logging.declared.viewLogsAtMessage.execute(logId),
+        }
+
+        const buttonsWithLogs = [viewLogsButton, ...this.buttons]
+
+        await vscode.window.showErrorMessage(this.message, ...buttonsWithLogs.map(b => b.label)).then(resp => {
+            return buttonsWithLogs.find(({ label }) => label === resp)?.onClick()
+        })
+    }
+}
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -295,6 +336,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
+    // eslint-disable-next-line id-length
     public async resolveDebugConfigurationWithSubstitutedVariables(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
@@ -309,12 +351,31 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<undefined> {
-        const resolvedConfig = await this.makeConfig(folder, config, token)
-        if (!resolvedConfig) {
-            return undefined
+    ): Promise<void> {
+        try {
+            if (config.invokeTarget.target === 'api') {
+                await telemetry.apigateway_invokeLocal.run(async span => {
+                    const resolved = await this.makeConfig(folder, config, token)
+                    span.record({ httpMethod: resolved.api?.httpMethod })
+
+                    return this.invokeConfig(resolved)
+                })
+            } else {
+                await telemetry.lambda_invokeLocal.run(async () => {
+                    const resolved = await this.makeConfig(folder, config, token)
+
+                    return this.invokeConfig(resolved)
+                })
+            }
+        } catch (err) {
+            if (err instanceof SamLaunchRequestError) {
+                err.showNotification()
+            } else if (err instanceof ToolkitError) {
+                new SamLaunchRequestError(err.message, { ...err }).showNotification()
+            } else {
+                SamLaunchRequestError.chain(err, 'Failed to run launch configuration').showNotification()
+            }
         }
-        await this.invokeConfig(resolvedConfig)
     }
 
     /**
@@ -331,22 +392,21 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<SamLaunchRequestArgs | undefined> {
+    ): Promise<SamLaunchRequestArgs> {
         if (token?.isCancellationRequested) {
-            return undefined
+            throw new ToolkitError('Cancellation requested', { cancelled: true })
         }
+
         folder =
             folder ?? (vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined)
         if (!folder) {
-            getLogger().error(`SAM debug: no workspace folder`)
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.sam.debugger.noWorkspace',
-                    '{0} SAM debug: choose a workspace, then try again',
-                    getIdeProperties().company
-                )
+            const message = localize(
+                'AWS.sam.debugger.noWorkspace',
+                'Choose a workspace, then try again',
+                getIdeProperties().company
             )
-            return undefined
+
+            throw new SamLaunchRequestError(message, { code: 'NoWorkspaceFolder', extraButtons: [] })
         }
 
         // If "request" field is missing this means launch.json does not exist.
@@ -355,28 +415,24 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(folder)
 
         if (!hasLaunchJson) {
-            vscode.window
-                .showErrorMessage(
-                    localize(
-                        'AWS.sam.debugger.noLaunchJson',
-                        '{0} SAM: To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.',
-                        getIdeProperties().company
-                    ),
-                    localize('AWS.gotoRunPanel', 'Run panel')
-                )
-                .then(async result => {
-                    if (!result) {
-                        return
-                    }
-                    await vscode.commands.executeCommand('workbench.view.debug')
-                })
-            return undefined
+            const message = localize(
+                'AWS.sam.debugger.noLaunchJson',
+                'To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.'
+            )
+
+            throw new SamLaunchRequestError(message, {
+                code: 'NoLaunchConfig',
+                extraButtons: [
+                    {
+                        label: localize('AWS.gotoRunPanel', 'Run panel'),
+                        onClick: () => vscode.commands.executeCommand('workbench.view.debug'),
+                    },
+                ],
+            })
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
-                getLogger().error(`SAM debug: invalid config: ${rv.message!}`)
-                vscode.window.showErrorMessage(rv.message!)
-                return undefined
+                throw new ToolkitError(`Invalid launch configuration: ${rv.message}`, { code: 'BadLaunchConfig' })
             } else if (rv.message) {
                 vscode.window.showInformationMessage(rv.message)
             }
@@ -408,7 +464,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             codeConfig.invokeTarget.projectRoot = pathutil.normalize(
                 resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
             )
-            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
+            templateInvoke.templatePath = getInputTemplatePath(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -431,40 +487,36 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: Remove this when min sam version is > 1.13.0
         if (!isZip) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
-                getLogger().error(`SAM debug: version (${samCliVersion}) too low for Image lambdas: ${config})`)
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.output.sam.no.image.support',
-                        'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
-                    )
+            if (semver.lt(samCliVersion, minSamCliVersionForImageSupport)) {
+                const message = localize(
+                    'AWS.output.sam.no.image.support',
+                    'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
                 )
-                return undefined
+
+                throw new SamLaunchRequestError(message, { code: 'UnsupportedSamVersion', details: { samCliVersion } })
             }
         }
 
         if (!runtime) {
-            getLogger().error(`SAM debug: failed to launch config (missing runtime): ${config})`)
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.sam.debugger.failedLaunch.missingRuntime',
-                    'Toolkit could not infer a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
-                    config.name
-                )
+            const message = localize(
+                'AWS.sam.debugger.failedLaunch.missingRuntime',
+                'Toolkit could not infer a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
+                config.name
             )
-            return undefined
+
+            throw new SamLaunchRequestError(message, { code: 'MissingRuntime' })
         }
 
         // SAM CLI versions before 1.18.1 do not work correctly for Go debugging.
         // TODO: remove this when min sam version is >= 1.18.1
         if (goRuntimes.includes(runtime) && !config.noDebug) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForGoSupport)) {
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.go.support',
                         'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
-                        MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+                        minSamCliVersionForGoSupport
                     )
                 )
                 config.noDebug = true
@@ -477,16 +529,38 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.templatePath!)
 
-        let awsCredentials: Credentials | undefined
-
-        if (config.aws?.credentials) {
-            const credentials = fromString(config.aws.credentials)
+        let awsCredentials = await this.ctx.awsContext.getCredentials()
+        if (!awsCredentials && !config.aws?.credentials) {
+            getLogger().warn('SAM debug: missing AWS credentials (Toolkit is not connected)')
+        } else if (config.aws?.credentials) {
+            // "aws.credentials" defined in the launch-config takes precedence
+            // over Toolkit's current active credentials.
+            let fromStore: Credentials | undefined
             try {
-                awsCredentials = await getCredentialsFromStore(credentials, this.ctx.credentialsStore)
-            } catch (err) {
-                getLogger().error(err as Error)
-                notifyUserInvalidCredentials(credentials)
-                return undefined
+                const credentialsId = fromString(config.aws.credentials)
+                fromStore = await getCredentialsFromStore(credentialsId, this.ctx.credentialsStore)
+            } catch {
+                getLogger().error(`SAM debug: fromString('${config.aws.credentials}') failed`)
+            }
+            if (fromStore) {
+                awsCredentials = fromStore
+            } else {
+                const credentialsId = config.aws.credentials
+                const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
+                // TODO: getHelp page for Cloud9.
+                const extraButtons = isCloud9()
+                    ? []
+                    : [
+                          {
+                              label: getHelp,
+                              onClick: () => vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl)),
+                          },
+                      ]
+
+                throw new SamLaunchRequestError(`Invalid credentials found in launch configuration: ${credentialsId}`, {
+                    code: 'InvalidCredentials',
+                    extraButtons,
+                })
             }
         }
 
@@ -515,7 +589,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             request: 'attach',
             codeRoot: codeRoot ?? '',
             workspaceFolder: folder,
-            runtime: runtime,
+            runtime: runtime as Runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
             documentUri: documentUri,
@@ -524,6 +598,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             envFile: '', // Populated by makeConfig().
             apiPort: apiPort,
             debugPort: debugPort,
+            invokeTarget: {
+                ...config.invokeTarget,
+            },
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,
@@ -569,18 +646,22 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 break
             }
             default: {
-                getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.sam.debugger.invalidRuntime',
-                        '{0} SAM debug: unknown runtime: {1}',
-                        getIdeProperties().company,
-                        runtime
-                    )
+                const message = localize(
+                    'AWS.sam.debugger.invalidRuntime',
+                    'Unknown or unsupported runtime: {0}',
+                    runtime
                 )
-                return undefined
+
+                throw new ToolkitError(message, { code: 'UnsupportedRuntime' })
             }
         }
+
+        // generate template for target=code
+        if (launchConfig.invokeTarget.target === 'code') {
+            const codeConfig = launchConfig as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            await makeInputTemplate(codeConfig)
+        }
+
         await makeJsonFiles(launchConfig)
 
         // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().
@@ -606,6 +687,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * Performs the EXECUTE phase of SAM run/debug.
      */
     public async invokeConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+        telemetry.record({
+            debug: !config.noDebug,
+            runtime: config.runtime as Runtime,
+            lambdaArchitecture: config.architecture,
+            lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
+            version: await getSamCliVersion(getSamCliContext()),
+        })
+
+        await Auth.instance.tryAutoConnect()
         switch (config.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 config.type = 'node'
@@ -629,7 +719,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 return await javaDebug.invokeJavaLambda(this.ctx, config)
             }
             default: {
-                throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
+                throw new Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
             }
         }
     }

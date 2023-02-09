@@ -45,7 +45,7 @@ describe('deleteFileCommand', function () {
     it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         const commands = new FakeCommands()
-        await deleteFileCommand(node, window, commands)
+        await assert.rejects(() => deleteFileCommand(node, window, commands), /cancelled/i)
 
         verify(s3.deleteObject(anything())).never()
         assert.strictEqual(window.statusBar.message, undefined)
@@ -58,9 +58,7 @@ describe('deleteFileCommand', function () {
 
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
-        await deleteFileCommand(node, window, commands)
-
-        assert.ok(window.message.error?.startsWith('Failed to delete file bar.jpg'))
+        await assert.rejects(() => deleteFileCommand(node, window, commands), /failed to delete file bar.jpg/i)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

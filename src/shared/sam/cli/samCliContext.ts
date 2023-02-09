@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SettingsConfiguration } from '../../settingsConfiguration'
-import { DefaultSamCliConfiguration } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 
@@ -19,31 +17,12 @@ export interface SamCliContext {
 // Sam Cli Context is lazy loaded on first request to reduce the
 // amount of work done during extension activation.
 let samCliContext: SamCliContext | undefined
-let samCliContextInitialized: boolean = false
-
-// Components required to load Sam Cli Context
-let settingsConfiguration: SettingsConfiguration
-
-export function initialize(params: { settingsConfiguration: SettingsConfiguration }) {
-    settingsConfiguration = params.settingsConfiguration
-
-    samCliContext = undefined
-    samCliContextInitialized = true
-}
 
 /**
  * Sam Cli Context is lazy loaded on first request
  */
 export function getSamCliContext() {
-    if (!samCliContextInitialized) {
-        throw new Error('SamCliContext not initialized! initialize() must be called prior to use.')
-    }
-
-    if (!samCliContext) {
-        samCliContext = makeSamCliContext()
-    }
-
-    return samCliContext
+    return (samCliContext ??= makeSamCliContext())
 }
 
 export async function getSamCliVersion(context: SamCliContext): Promise<string> {
@@ -54,11 +33,8 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
 }
 
 function makeSamCliContext(): SamCliContext {
-    const samCliConfiguration = new DefaultSamCliConfiguration(
-        settingsConfiguration,
-        new DefaultSamCliLocationProvider()
-    )
-    const invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: samCliConfiguration })
+    const samCliConfiguration = SamCliSettings.instance
+    const invoker = new DefaultSamCliProcessInvoker(samCliConfiguration)
 
     const validatorContext = new DefaultSamCliValidatorContext(samCliConfiguration)
     const validator = new DefaultSamCliValidator(validatorContext)

@@ -41,7 +41,7 @@ export async function createPolicyVersionCommand(
             localize('AWS.iot.createPolicy.success', 'Created new version of {0}', policyName)
         )
     } catch (e) {
-        getLogger().error('Failed to create new policy version: %O', e)
+        getLogger().error('Failed to create new policy version: %s', e)
         showViewLogsMessage(
             localize('AWS.iot.createPolicyVersion.error', 'Failed to create new version of {0}', policyName),
             window

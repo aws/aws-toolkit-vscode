@@ -18,15 +18,16 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesy
 import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
+import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { SamDeployWizardResponse, writeSavedBucket } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -59,10 +60,15 @@ export async function deploySamApplication(
         awsContext,
         settings,
         window = getDefaultWindowFunctions(),
+        refreshFn = () => {
+            // no need to await, doesn't need to block further execution (true -> no telemetry)
+            vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        },
     }: {
         awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
-        settings: SettingsConfiguration
+        settings: SamCliSettings
         window?: WindowFunctions
+        refreshFn?: () => void
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
@@ -71,7 +77,7 @@ export async function deploySamApplication(
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
-            throw new NoActiveCredentialError()
+            throw new Error('No AWS profile selected')
         }
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
@@ -115,13 +121,12 @@ export async function deploySamApplication(
         )
 
         await deployApplicationPromise
-        // no need to await, doesn't need to block further execution (true -> no telemetry)
-        vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        refreshFn()
 
         // successful deploy: retain S3 bucket for quick future access
         const profile = awsContext.getCredentialProfileName()
         if (profile) {
-            writeSavedBucket(settings, profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
+            await settings.updateSavedBuckets(profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
         } else {
             getLogger().warn('Profile not provided; cannot write recent buckets.')
         }
@@ -133,7 +138,7 @@ export async function deploySamApplication(
         )
     } finally {
         await tryRemoveFolder(deployFolder)
-        recordSamDeploy({ result: deployResult, version: samVersion })
+        telemetry.sam_deploy.emit({ result: deployResult, version: samVersion })
     }
 }
 
@@ -283,7 +288,7 @@ async function deploy(params: {
     getLogger('channel').info(
         localize(
             'AWS.samcli.deploy.workflow.success',
-            'Successfully deployed SAM Application to CloudFormation Stack: {0}',
+            'Deployed SAM Application to CloudFormation Stack: {0}',
             params.deployParameters.destinationStackName
         )
     )

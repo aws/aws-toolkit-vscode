@@ -1,24 +1,30 @@
 /*! * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <h1>Invoke methods on {{ initialData.ApiName }} ({{ initialData.ApiId }})</h1>
-    <pre>{{ initialData.ApiArn }}</pre>
-    <br />
     <div id="app">
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>API: {{ initialData.ApiName }} ({{ initialData.ApiId }})</h1>
+            <div v-if="errors.length">
+                <b>Validation error(s):</b>
+                <ul>
+                    <li v-for="error in errors" :key="error">{{ error }}</li>
+                </ul>
+            </div>
+            <div>
+                <button class="" @click="sendInput" :disabled="isLoading">{{ invokeText }}</button>
+            </div>
+        </div>
+        <pre>{{ initialData.ApiArn }}</pre>
         <h3>Select a resource:</h3>
         <select v-model="selectedApiResource" v-on:change="setApiResource">
             <option disabled value="">Select a resource</option>
             <option
-                v-for="resource in Object.keys(initialData.Resources)"
-                :key="initialData.Resources[resource].id"
-                :disabled="!initialData.Resources[resource].resourceMethods"
-                :value="initialData.Resources[resource].id"
+                v-for="resource in initialData.Resources"
+                :key="resource.id"
+                :disabled="!resource.resourceMethods"
+                :value="resource.id"
             >
-                {{
-                    `resource.path${
-                        initialData.Resources[resource].resourceMethods === undefined ? ' -- No methods' : ''
-                    }`
-                }}
+                {{ `${resource.path}${resource.resourceMethods === undefined ? ' -- No methods' : ''}` }}
             </option>
         </select>
         <h3>Select a method:</h3>
@@ -36,16 +42,7 @@
         <input type="text" v-model="queryString" />
         <br />
         <br />
-        <textarea rows="20" cols="90" v-model="jsonInput"></textarea>
-        <br />
-        <input type="submit" v-on:click="sendInput" value="Invoke" :disabled="isLoading" />
-        <br />
-        <div v-if="errors.length">
-            <b>Please correct the following error(s):</b>
-            <ul>
-                <li v-for="error in errors" :key="error">{{ error }}</li>
-            </ul>
-        </div>
+        <textarea style="width: 100%; margin-bottom: 10px" rows="10" cols="90" v-model="jsonInput"></textarea>
     </div>
 </template>
 
@@ -53,7 +50,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
-import { InvokeRemoteRestApiInitialData, RemoteRestInvokeWebview } from '../commands/invokeRemoteRestApi'
+import { InvokeRemoteRestApiInitialData, RemoteRestInvokeWebview } from './invokeRemoteRestApi'
 
 const client = WebviewClientFactory.create<RemoteRestInvokeWebview>()
 
@@ -75,7 +72,7 @@ export default defineComponent({
         initialData: defaultInitialData,
         selectedApiResource: '',
         selectedMethod: '',
-        methods: [],
+        methods: [] as string[],
         jsonInput: '',
         queryString: '',
         errors: [] as string[],
@@ -84,35 +81,11 @@ export default defineComponent({
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
     },
-    mounted() {
-        this.$nextTick(function () {
-            window.addEventListener('message', this.handleMessageReceived)
-        })
-    },
     methods: {
-        handleMessageReceived: function (event: any) {
-            const message = event.data
-            switch (message.command) {
-                case 'setMethods':
-                    this.methods = message.methods
-                    if (this.methods) {
-                        this.selectedMethod = this.methods[0]
-                    }
-                    break
-                case 'invokeApiStarted':
-                    this.isLoading = true
-                    break
-                case 'invokeApiFinished':
-                    this.isLoading = false
-                    break
-            }
-        },
-        setApiResource: function () {
-            client.handler({
-                command: 'apiResourceSelected',
-                resource: this.initialData.Resources[this.selectedApiResource],
-                region: this.initialData.Region,
-            })
+        setApiResource: async function () {
+            const methods = await client.listValidMethods(this.initialData.Resources[this.selectedApiResource])
+            this.methods = methods
+            this.selectedMethod = methods[0]
         },
         sendInput: function () {
             this.errors = []
@@ -126,15 +99,22 @@ export default defineComponent({
                 return
             }
 
-            client.handler({
-                command: 'invokeApi',
-                body: this.jsonInput,
-                api: this.initialData.ApiId,
-                selectedApiResource: this.initialData.Resources[this.selectedApiResource],
-                selectedMethod: this.selectedMethod,
-                queryString: this.queryString,
-                region: this.initialData.Region,
-            })
+            this.isLoading = true
+            client
+                .invokeApi({
+                    body: this.jsonInput,
+                    api: this.initialData.ApiId,
+                    selectedApiResource: this.initialData.Resources[this.selectedApiResource],
+                    selectedMethod: this.selectedMethod,
+                    queryString: this.queryString,
+                    region: this.initialData.Region,
+                })
+                .finally(() => (this.isLoading = false))
+        },
+    },
+    computed: {
+        invokeText() {
+            return this.isLoading ? 'Invoking...' : 'Invoke'
         },
     },
 })

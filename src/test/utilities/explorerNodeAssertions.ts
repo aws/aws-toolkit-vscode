@@ -5,16 +5,15 @@
 
 import * as assert from 'assert'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 
-export function assertNodeListOnlyContainsErrorNode(nodes: AWSTreeNodeBase[]) {
+export function assertNodeListOnlyHasErrorNode(nodes: AWSTreeNodeBase[]) {
     assert(nodes !== undefined)
     assert.strictEqual(nodes.length, 1, 'Unexpected node count')
-    assert.ok(nodes[0] instanceof ErrorNode, 'Expected ErrorNode in the list')
+    assert.strictEqual(nodes[0].contextValue, 'awsErrorNode', 'Expected ErrorNode in the list')
 }
 
-export function assertNodeListOnlyContainsPlaceholderNode(nodes: AWSTreeNodeBase[]) {
+export function assertNodeListOnlyHasPlaceholderNode(nodes: AWSTreeNodeBase[]) {
     assert(nodes !== undefined)
     assert.strictEqual(nodes.length, 1, 'Unexpected node count')
     assert.ok(nodes[0] instanceof PlaceholderNode, 'Expected placeholder node in the list')

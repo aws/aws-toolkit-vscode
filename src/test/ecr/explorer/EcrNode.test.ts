@@ -5,13 +5,12 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('EcrNode', function () {
     let ecr: EcrClient
@@ -19,7 +18,7 @@ describe('EcrNode', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = new DefaultEcrClient('')
     })
 
     afterEach(function () {
@@ -64,11 +63,9 @@ describe('EcrNode', function () {
             yield {} as EcrRepository
         })
 
-        const [firstNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
+        const children = await new EcrNode(ecr).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
-
-        assert.strictEqual(otherNodes.length, 0)
+        assertNodeListOnlyHasErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })
@@ -80,7 +77,7 @@ describe('EcrRepositoryNode', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = new DefaultEcrClient('')
     })
 
     afterEach(function () {
@@ -129,11 +126,9 @@ describe('EcrRepositoryNode', function () {
             yield 'string'
         })
 
-        const [firstNode, ...otherNodes] = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
+        const children = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
-
-        assert.strictEqual(otherNodes.length, 0)
+        assertNodeListOnlyHasErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })

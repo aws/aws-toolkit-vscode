@@ -7,13 +7,12 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { EcrClient } from '../../../shared/clients/ecrClient'
+import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { createRepository } from '../../../ecr/commands/createRepository'
-import { MockEcrClient } from '../../shared/clients/mockClients'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
 describe('createRepositoryCommand', function () {
-    const ecr: EcrClient = new MockEcrClient({})
+    const ecr = new DefaultEcrClient('')
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
 
@@ -40,7 +39,7 @@ describe('createRepositoryCommand', function () {
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new repository name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Repository Name')
 
-        assert.strictEqual(window.message.information, `Created repository ${repoName}`)
+        assert.strictEqual(window.message.information, `Created repository: ${repoName}`)
         assert.ok(stub.calledOnce)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')

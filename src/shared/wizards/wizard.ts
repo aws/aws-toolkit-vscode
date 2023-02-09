@@ -34,15 +34,18 @@ export type WizardState<T> = {
 }
 
 // We use a symbol to safe-guard against collisions (alternatively this can be a class and use 'instanceof')
-const WIZARD_CONTROL = Symbol()
+const WIZARD_CONTROL = Symbol() // eslint-disable-line @typescript-eslint/naming-convention
 const makeControlString = (type: string) => `[WIZARD_CONTROL] ${type}`
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_RETRY = {
     id: WIZARD_CONTROL,
     type: ControlSignal.Retry,
     toString: () => makeControlString('Retry'),
 }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back, toString: () => makeControlString('Back') }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit, toString: () => makeControlString('Exit') }
 
 /** Control signals allow for alterations of the normal wizard flow */
@@ -74,9 +77,9 @@ export interface WizardOptions<TState> {
  * class. Wizards will modify a single property of their internal state with each prompt.
  */
 export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
-    private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
-    private readonly _form: WizardForm<TState>
-    private stateController: StateMachineController<TState>
+    protected readonly _form: WizardForm<TState>
+    protected readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
+    protected stateController: StateMachineController<TState>
     private _stepOffset: [number, number] = [0, 0]
     private _exitStep?: StepFunction<TState>
 
@@ -101,6 +104,10 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     /** The internal wizard form with bound prompters. This can be applied to other wizards. */
     public get boundForm() {
         return this._form
+    }
+
+    public get initialState(): Readonly<Partial<TState>> | undefined {
+        return this.options.initState
     }
 
     private _estimator: ((state: TState) => number) | undefined

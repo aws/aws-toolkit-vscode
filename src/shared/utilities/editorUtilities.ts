@@ -4,10 +4,14 @@
  */
 
 import * as _path from 'path'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { Settings } from '../settings'
 
-const DEFAULT_TAB_SIZE = 4
+const defaultTabSize = 4
 
 export function getTabSizeSetting(): number {
-    return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || DEFAULT_TAB_SIZE
+    return Settings.instance.getSection('editor').get('tabSize', defaultTabSize)
+}
+
+export function getInlineSuggestEnabled(): boolean {
+    return Settings.instance.getSection('editor').get('inlineSuggest.enabled', true)
 }

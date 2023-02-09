@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { TemplateSymbolResolver } from '../../../shared/cloudformation/templateSymbolResolver'
 import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplateCodeLensProvider'
@@ -30,11 +31,11 @@ describe('SamTemplateCodeLensProvider', async function () {
     })
 
     it('provides a CodeLens for a file with a new resource', async function () {
-        if (vscode.version.startsWith('1.44')) {
+        // redhat.vscode-yaml requires vscode 1.52
+        // https://github.com/redhat-developer/vscode-yaml/blob/main/package.json
+        if (semver.lt(vscode.version, '1.52.0')) {
             this.skip()
         }
-
-        // Note: redhat.vscode-yaml no longer works on vscode 1.44.2
         await activateExtension(VSCODE_EXTENSION_ID.yaml, false)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(

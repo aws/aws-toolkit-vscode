@@ -21,7 +21,7 @@ describe('cliUtils', async function () {
     })
 
     afterEach(async function () {
-        fs.remove(path.join(globals.context.globalStoragePath, 'tools'))
+        fs.remove(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
     })
 
     describe('installCli', async function () {

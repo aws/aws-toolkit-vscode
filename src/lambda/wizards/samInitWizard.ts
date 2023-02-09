@@ -9,9 +9,8 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
-import { SchemaClient } from '../../shared/clients/schemaClient'
+import { DefaultSchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
-
 import {
     Architecture,
     createRuntimeQuickPick,
@@ -28,10 +27,7 @@ import {
     SamTemplate,
 } from '../models/samTemplates'
 import * as semver from 'semver'
-import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
-} from '../../shared/sam/cli/samCliValidator'
+import { minSamCliVersionForArmSupport, minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createFolderPrompt } from '../../shared/ui/common/location'
@@ -40,8 +36,7 @@ import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
-import globals from '../../shared/extensionGlobals'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -59,7 +54,7 @@ export interface CreateNewSamAppWizardForm {
 
 function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimeAndPackage> {
     return createRuntimeQuickPick({
-        showImageRuntimes: semver.gte(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
+        showImageRuntimes: semver.gte(samCliVersion, minSamCliVersionForImageSupport),
         buttons: createCommonButtons(samInitDocUrl),
     })
 }
@@ -101,7 +96,7 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
 }
 
 function createRegistryPrompter(region: string, credentials?: AWS.Credentials): QuickPickPrompter<string> {
-    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
+    const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
@@ -131,7 +126,7 @@ function createSchemaPrompter(
     registry: string,
     credentials?: AWS.Credentials
 ): QuickPickPrompter<string> {
-    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
+    const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {
@@ -204,7 +199,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         credentials?: AWS.Credentials
     }) {
         super({
-            exitPrompterProvider: new BasicExitPrompterProvider(),
+            exitPrompterProvider: createExitPrompter,
         })
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
@@ -228,7 +223,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
                 return false
             }
 
-            if (semver.lt(context.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT)) {
+            if (semver.lt(context.samCliVersion, minSamCliVersionForArmSupport)) {
                 return false
             }
 
@@ -269,7 +264,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         this.form.location.bindPrompter(() =>
             createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
                 buttons: createCommonButtons(samInitDocUrl),
-                title: localize('AWS.samInit.location.title', 'Select a workspace folder for your new project'),
+                title: localize('AWS.samInit.location.title', 'Select the folder for your new SAM application'),
                 browseFolderDetail: localize(
                     'AWS.samInit.location.detail',
                     'The selected folder will be added to the workspace.'

@@ -4,26 +4,22 @@ When you set up your credentials, the AWS Toolkit for Visual Studio Code automat
 
 ## Add a Region to the AWS Explorer
 
-1. [Click here](command:aws.showRegion) to select a Region to add.
+1. [Click here](command:aws.showRegion) to select a Region to add or remove.
 
-    > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: Show Region in the Explorer**\.
+    > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: Show or Hide Regions**\.
     >
-    > ![[AWS Toolkit Command Palette showing Regions.]](images/aws-toolkit-show-regions.png)
+    > ![AWS Toolkit Command Palette showing Regions.](./images/aws-toolkit-show-regions.png)
 
-2. Choose the Region that you want to add to the **AWS Explorer**\.
+2. Choose one or more regions to add to the **AWS Explorer**\.
 
-    ![[AWS Regions menu.]](images/aws-toolkit-select-region.png)
+    ![AWS Regions menu.](./images/aws-toolkit-select-region.png)
 
-    > **Note**
-    >
-    > The list contains only those Regions that are available to add to the **AWS Explorer**\. Regions you've already added don't appear in the list\.
+3. Verify that the regions appear in the **AWS Explorer**\.
 
-3. Verify that the Region now appears in the **AWS Explorer**\.
-
-    ![[AWS Explorer Regions list.]](images/aws-toolkit-region-added.png)
+    ![AWS Explorer Regions list.](./images/aws-toolkit-region-added.png)
 
 ## Hide a Region from the AWS Explorer
 
-You can hide a Region by right clicking it in the AWS Explorer and selecting **Hide Region from the Explorer**.
+You can hide a region by using the same command, **AWS: Show or Hide Regions**\. Unselect one or more regions in the menu, then choose OK.
 
-![[AWS ALL Regions menu.]](images/aws-toolkit-region-context-menu.png)
+![AWS ALL Regions menu.](./images/aws-toolkit-region-context-menu.png)

@@ -9,13 +9,11 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
-import globals from '../../shared/extensionGlobals'
 
 // TODO: Add debug logging statements
 
@@ -26,7 +24,7 @@ export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
     public constructor(
-        private readonly configuration: SettingsConfiguration,
+        private readonly configuration: CloudWatchLogsSettings,
         private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
             string,
             CloudWatchLogStreamData
@@ -57,7 +55,7 @@ export class LogStreamRegistry {
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
             this.setLog(uri, new CloudWatchLogStreamData())
-            await this.updateLog(uri, 'tail', this.configuration, getLogEventsFromUriComponentsFn)
+            await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
         }
     }
 
@@ -116,7 +114,6 @@ export class LogStreamRegistry {
     public async updateLog(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
-        configuration: SettingsConfiguration,
         getLogEventsFromUriComponentsFn?: (
             logGroupInfo: {
                 groupName: string
@@ -216,15 +213,13 @@ export class LogStreamRegistry {
         },
         nextToken?: string
     ): Promise<CloudWatchLogs.GetLogEventsResponse> {
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
-            logGroupInfo.regionName
-        )
+        const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
         return await client.getLogEvents({
             logGroupName: logGroupInfo.groupName,
             logStreamName: logGroupInfo.streamName,
             nextToken,
-            limit: this.configuration.readSetting('cloudWatchLogs.limit', 1000),
+            limit: this.configuration.get('limit', 1000),
         })
     }
 }

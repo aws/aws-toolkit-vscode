@@ -8,7 +8,13 @@ env:
 phases:
     install:
         runtime-versions:
-            nodejs: 14
+            nodejs: 16
+
+        commands:
+            # Without this, "Unable to locate package libatk1.0-0".
+            - '>/dev/null apt-get -yqq update'
+            # Dependencies for running vscode.
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
 
     pre_build:
         commands:
@@ -32,8 +38,6 @@ phases:
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
-            - test -n "$CODE_COV_TOKEN" && curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
-            - test -n "$CODE_COV_TOKEN" && bash ./codecov.sh -t $CODE_COV_TOKEN || true
 
 reports:
     unit-test:

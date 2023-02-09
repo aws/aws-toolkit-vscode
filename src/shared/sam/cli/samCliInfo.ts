@@ -4,9 +4,8 @@
  */
 
 import { getLogger, Logger } from '../../logger'
-import { SamCliConfiguration } from './samCliConfiguration'
-import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
+import { ChildProcess } from '../../utilities/childProcess'
+import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
 /**
  * Maps out the response text from the sam cli command `sam --info`
@@ -16,36 +15,10 @@ export interface SamCliInfoResponse {
 }
 
 export class SamCliInfoInvocation {
-    private readonly invoker: SamCliProcessInvoker
-    public constructor(params: {
-        invoker?: SamCliProcessInvoker
-        preloadedConfig?: SamCliConfiguration
-        locationProvider?: { getLocation(): Promise<string | undefined> }
-    }) {
-        if (
-            (params.invoker && params.preloadedConfig) ||
-            (params.invoker && params.locationProvider) ||
-            (params.preloadedConfig && params.locationProvider)
-        ) {
-            throw new Error('Invalid constructor args for SamCliInfoInvocation')
-        }
-        if (params.invoker) {
-            this.invoker = params.invoker
-        } else if (params.preloadedConfig) {
-            this.invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: params.preloadedConfig })
-        } else if (params.locationProvider) {
-            this.invoker = new DefaultSamCliProcessInvoker({ locationProvider: params.locationProvider })
-        } else {
-            throw new Error('Invalid constructor args for SamCliInfoInvocation')
-        }
-    }
+    public constructor(private readonly samPath: string) {}
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const childProcessResult = await this.invoker.invoke({
-            // "info" command is noisy and uninteresting, don't log it.
-            logging: false,
-            arguments: ['--info'],
-        })
+        const childProcessResult = await new ChildProcess(this.samPath, ['--info'], { logging: 'no' }).run()
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
         const response = this.convertOutput(childProcessResult.stdout)

@@ -1,0 +1,22 @@
+{
+	"date": "2022-06-17",
+	"version": "1.40.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "The `Upload Lambda` command now automatically causes the Toolkit to login"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "S3 \"Presigned URL\" feature may silently fail #2687"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix issue where some http errors were logging undefined on error"
+		},
+		{
+			"type": "Feature",
+			"description": "UI: buttons for Lambda invoke, API invoke, and other forms are now always visible at the top of the form"
+		}
+	]
+}

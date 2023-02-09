@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import globals from '../extensionGlobals'
+
+import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
@@ -23,34 +27,35 @@ import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { PromiseSharer } from '../utilities/promiseUtilities'
-import { NoopWatcher } from '../watchedFiles'
-import { initialize as initializeSamCliContext } from './cli/samCliContext'
+import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
-import { CodelensRootRegistry } from './codelensRootRegistry'
+import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import { extensionSettingsPrefix } from '../constants'
-import globals from '../extensionGlobals'
-const localize = nls.loadMessageBundle()
+import { PromptSettings } from '../settings'
+import { shared } from '../utilities/functionUtils'
+import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
+import { Commands } from '../vscode/commands2'
+import { registerSync } from './sync'
+
+const sharedDetectSamCli = shared(detectSamCli)
 
 /**
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    initializeSamCliContext({ settingsConfiguration: ctx.settings })
-
     await createYamlExtensionPrompt()
+    await migrateLegacySettings()
+    const config = SamCliSettings.instance
 
     ctx.extensionContext.subscriptions.push(
-        ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
+        ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
     )
 
-    await registerServerlessCommands(ctx)
+    await registerServerlessCommands(ctx, config)
 
     ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
@@ -68,37 +73,37 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    ctx.extensionContext.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
-            if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
-                // This only shows a message (passive=true), does not set anything.
-                detectSamCli({ passive: true, showMessage: true })
-            }
-        })
-    )
+    config.onDidChange(event => {
+        if (event.key === 'location') {
+            // This only shows a message (passive=true), does not set anything.
+            sharedDetectSamCli({ passive: true, showMessage: true })
+        }
+    })
+
+    ctx.extensionContext.subscriptions.push(config)
 
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
+
+    registerSync()
 }
 
-async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.samcli.detect',
-            async () =>
-                await PromiseSharer.getExistingPromiseOrCreate(
-                    'samcli.detect',
-                    async () => await detectSamCli({ passive: false, showMessage: true })
-                )
+        Commands.register({ id: 'aws.samcli.detect', autoconnect: false }, () =>
+            sharedDetectSamCli({ passive: false, showMessage: true })
         ),
-        vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
+        Commands.register({ id: 'aws.lambda.createNewSamApp', autoconnect: false }, async () => {
             await createNewSamApplication(ctx)
         }),
-        vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+        Commands.register({ id: 'aws.addSamDebugConfiguration', autoconnect: false }, addSamDebugConfiguration),
+        Commands.register(
+            { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
+            codelensUtils.pickAddSamDebugConfiguration
+        ),
+        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async arg => {
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
@@ -116,7 +121,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 },
                 {
                     awsContext: ctx.awsContext,
-                    settings: ctx.settings,
+                    settings,
                 }
             )
         })
@@ -127,12 +132,17 @@ async function activateCodeLensRegistry(context: ExtContext) {
     try {
         const registry = new CodelensRootRegistry()
         globals.codelensRootRegistry = registry
-        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
-        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
-        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
-        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
+
+        //
+        // "**/…" string patterns watch recursively across _all_ workspace
+        // folders (see documentation for addWatchPattern()).
+        //
+        await registry.addWatchPattern(pyLensProvider.pythonBasePattern)
+        await registry.addWatchPattern(jsLensProvider.javascriptBasePattern)
+        await registry.addWatchPattern(csLensProvider.csharpBasePattern)
+        await registry.addWatchPattern(goLensProvider.goBasePattern)
+        await registry.addWatchPattern(javaLensProvider.gradleBasePattern)
+        await registry.addWatchPattern(javaLensProvider.mavenBasePattern)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -151,7 +161,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
 
 async function activateCodeLensProviders(
     context: ExtContext,
-    configuration: SettingsConfiguration,
+    configuration: SamCliSettings,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
@@ -169,14 +179,15 @@ async function activateCodeLensProviders(
     const supportedLanguages: {
         [language: string]: codelensUtils.OverridableCodeLensProvider
     } = {
-        [jsLensProvider.JAVASCRIPT_LANGUAGE]: tsCodeLensProvider,
-        [pyLensProvider.PYTHON_LANGUAGE]: pyCodeLensProvider,
+        [jsLensProvider.javascriptLanguage]: tsCodeLensProvider,
+        [pyLensProvider.pythonLanguage]: pyCodeLensProvider,
     }
 
     if (!isCloud9()) {
-        supportedLanguages[javaLensProvider.JAVA_LANGUAGE] = javaCodeLensProvider
-        supportedLanguages[csLensProvider.CSHARP_LANGUAGE] = csCodeLensProvider
-        supportedLanguages[goLensProvider.GO_LANGUAGE] = goCodeLensProvider
+        supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
+        supportedLanguages[csLensProvider.csharpLanguage] = csCodeLensProvider
+        supportedLanguages[goLensProvider.goLanguage] = goCodeLensProvider
+        supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
     }
 
     disposables.push(
@@ -192,25 +203,21 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.TYPESCRIPT_ALL_FILES, tsCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
-    disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.GO_ALLFILES, goCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.typescriptAllFiles, tsCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.pythonAllfiles, pyCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.javaAllfiles, javaCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.csharpAllfiles, csCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.goAllfiles, goCodeLensProvider))
 
     disposables.push(
-        vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
-            const toggled = !configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
-            configuration.writeSetting(
-                codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                toggled,
-                vscode.ConfigurationTarget.Global
-            )
+        Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
+            const toggled = !configuration.get('enableCodeLenses', false)
+            configuration.update('enableCodeLenses', toggled)
         })
     )
 
     disposables.push(
-        vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {
+        Commands.register('aws.addSamDebugConfig', async () => {
             const activeEditor = vscode.window.activeTextEditor
             if (!activeEditor) {
                 getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
@@ -253,12 +260,12 @@ async function activateCodeLensProviders(
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
 async function createYamlExtensionPrompt(): Promise<void> {
-    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const settings = PromptSettings.instance
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
-        (await settingsConfig.isPromptEnabled('yamlExtPrompt')) &&
+        (await settings.isPromptEnabled('yamlExtPrompt')) &&
         getIdeType() === IDE.vscode &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {
@@ -269,7 +276,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
         // user opens a template file
         vscode.workspace.onDidOpenTextDocument(
             async (doc: vscode.TextDocument) => {
-                promptInstallYamlPlugin(doc.fileName, yamlPromptDisposables)
+                promptInstallYamlPluginFromFilename(doc.fileName, yamlPromptDisposables)
             },
             undefined,
             yamlPromptDisposables
@@ -283,6 +290,46 @@ async function createYamlExtensionPrompt(): Promise<void> {
             undefined,
             yamlPromptDisposables
         )
+
+        /**
+         * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
+         * in the document
+         * @param event An vscode text document change event
+         * @returns nothing
+         */
+        async function promptOnAWSTemplateFormatVersion(event: vscode.TextDocumentChangeEvent): Promise<void> {
+            for (const change of event.contentChanges) {
+                const changedLine = event.document.lineAt(change.range.start.line)
+                if (changedLine.text.includes('AWSTemplateFormatVersion')) {
+                    promptInstallYamlPlugin(yamlPromptDisposables)
+                    return
+                }
+            }
+            return
+        }
+
+        const promptNotifications = new Map<string, Promise<unknown>>()
+        vscode.workspace.onDidChangeTextDocument(
+            (event: vscode.TextDocumentChangeEvent) => {
+                const uri = event.document.uri.toString()
+                if (
+                    event.document.languageId === 'yaml' &&
+                    !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml) &&
+                    !promptNotifications.has(uri)
+                ) {
+                    promptNotifications.set(
+                        uri,
+                        promptOnAWSTemplateFormatVersion(event).finally(() => promptNotifications.delete(uri))
+                    )
+                }
+            },
+            undefined,
+            yamlPromptDisposables
+        )
+
+        vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
+            promptNotifications.delete(event.uri.toString())
+        })
 
         // user already has an open template with focus
         // prescreen if a template.yaml is current open so we only call once
@@ -302,56 +349,62 @@ async function promptInstallYamlPluginFromEditor(
     disposables: vscode.Disposable[]
 ): Promise<void> {
     if (editor) {
-        promptInstallYamlPlugin(editor.document.fileName, disposables)
+        promptInstallYamlPluginFromFilename(editor.document.fileName, disposables)
     }
 }
 
 /**
- * Looks for template.yaml and template.yml files and disp[oses prompts
+ * Prompt user to install YAML plugin for template.yaml and template.yml files
  * @param fileName File name to check against
  * @param disposables List of disposables to dispose of when the filename is a template YAML file
  */
-async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
+async function promptInstallYamlPluginFromFilename(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
     if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
-        // immediately dispose other triggers so it doesn't flash again
-        for (const prompt of disposables) {
-            prompt.dispose()
-        }
-        const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+        promptInstallYamlPlugin(disposables)
+    }
+}
 
-        const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
-        const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
-        const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
+/**
+ * Show the install YAML extension prompt and dispose other listeners
+ * @param disposables
+ */
+async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
+    // immediately dispose other triggers so it doesn't flash again
+    for (const prompt of disposables) {
+        prompt.dispose()
+    }
+    const settings = PromptSettings.instance
 
-        const response = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.info.yaml.prompt',
-                'Install YAML extension for additional {0} features.',
-                getIdeProperties().company
-            ),
-            goToMarketplace,
-            dismiss,
-            permanentlySuppress
-        )
+    const installBtn = localize('AWS.missingExtension.install', 'Install...')
+    const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Don't show again")
 
-        switch (response) {
-            case goToMarketplace:
-                // Available options are:
-                // extension.open: opens extension page in VS Code extension marketplace view
-                // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
-                // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+    const response = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.info.yaml.prompt',
+            'Install YAML extension for more {0} features in CloudFormation templates',
+            getIdeProperties().company
+        ),
+        installBtn,
+        permanentlySuppress
+    )
 
-                // not sure if these are 100% stable.
-                // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
-                try {
-                    await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
-                } catch (e) {
-                    const err = e as Error
-                    getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
-                }
-                break
-            case permanentlySuppress:
-                settingsConfig.disablePrompt('yamlExtPrompt')
-        }
+    switch (response) {
+        case installBtn:
+            // Available options are:
+            // extension.open: opens extension page in VS Code extension marketplace view
+            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
+            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+
+            // not sure if these are 100% stable.
+            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
+            try {
+                await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
+            } catch (e) {
+                const err = e as Error
+                getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
+            }
+            break
+        case permanentlySuppress:
+            settings.disablePrompt('yamlExtPrompt')
     }
 }

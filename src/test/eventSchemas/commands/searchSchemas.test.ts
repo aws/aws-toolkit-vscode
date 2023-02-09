@@ -7,31 +7,25 @@ import * as assert from 'assert'
 
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
+import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
+import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
+import { asyncGenerator } from '../../utilities/collectionUtils'
+
+import * as vscode from 'vscode'
+import { MockOutputChannel } from '../../mockOutputChannel'
 import {
-    CommandMessages,
     getPageHeader,
     getRegistryNames,
     getSearchListForSingleRegistry,
     getSearchResults,
-    handleSchemaSearchMessage,
-} from '../../../eventSchemas/commands/searchSchemas'
+    SearchSchemasWebview,
+} from '../../../eventSchemas/vue/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
-import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
-import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
-import { asyncGenerator } from '../../utilities/collectionUtils'
-
-import * as vscode from 'vscode'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { ExtContext } from '../../../shared/extensions'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
+import { stub } from '../../utilities/stubber'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
-    let fakeExtContext: ExtContext
-
-    before(async function () {
-        fakeExtContext = await FakeExtensionContext.getFakeExtContext()
-    })
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
@@ -41,12 +35,11 @@ describe('Search Schemas', function () {
         sandbox.restore()
     })
 
-    const schemaClient = new MockSchemaClient()
-    const TEST_REGISTRY = 'testRegistry'
-    const TEST_REGISTRY2 = 'testRegistry2'
-    const FAIL_REGISTRY = 'failRegistry'
-    const FAIL_REGISTRY2 = 'failRegistry2'
-    const fakeRegion = 'testRegion'
+    const schemaClient = new DefaultSchemaClient('')
+    const testRegistry = 'testRegistry'
+    const testRegistry2 = 'testRegistry2'
+    const failRegistry = 'failRegistry'
+    const failRegistry2 = 'failRegistry2'
 
     const versionSummary1: Schemas.SearchSchemaVersionSummary = {
         SchemaVersion: '1',
@@ -55,33 +48,45 @@ describe('Search Schemas', function () {
         SchemaVersion: '2',
     }
     const searchSummary1: Schemas.SearchSchemaSummary = {
-        RegistryName: TEST_REGISTRY,
+        RegistryName: testRegistry,
         SchemaName: 'testSchema1',
         SchemaVersions: [versionSummary1, versionSummary2],
     }
 
     const searchSummary2: Schemas.SearchSchemaSummary = {
-        RegistryName: TEST_REGISTRY,
+        RegistryName: testRegistry,
         SchemaName: 'testSchema2',
         SchemaVersions: [versionSummary1],
     }
 
     const searchSummary3: Schemas.SearchSchemaSummary = {
-        RegistryName: TEST_REGISTRY2,
+        RegistryName: testRegistry2,
         SchemaName: 'testSchema3',
         SchemaVersions: [versionSummary1],
     }
 
+    function createWebview(registryNames: string[]): SearchSchemasWebview {
+        return new SearchSchemasWebview(new MockOutputChannel(), schemaClient, {
+            RegistryNames: registryNames,
+            Header: getPageHeader(registryNames),
+            SearchInputPlaceholder: '',
+            VersionPrefix: '',
+            Region: '',
+            LocalizedMessages: {
+                noSchemasFound: '',
+                searching: '',
+                loading: '',
+                select: '',
+            },
+        })
+    }
+
     describe('getSearchListForSingleRegistry', function () {
         it('should return summaries', async function () {
-            const searchSummaryList = [searchSummary1, searchSummary2]
+            const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
+            client.searchSchemas.returns(asyncGenerator([searchSummary1, searchSummary2]))
 
-            sandbox
-                .stub(schemaClient, 'searchSchemas')
-                .withArgs('searchText', TEST_REGISTRY)
-                .returns(asyncGenerator(searchSummaryList))
-
-            const results = await getSearchListForSingleRegistry(schemaClient, TEST_REGISTRY, 'searchText')
+            const results = await getSearchListForSingleRegistry(client, testRegistry, 'searchText')
 
             assert.strictEqual(results.length, 2, 'search should return 2 summaries')
 
@@ -102,23 +107,17 @@ describe('Search Schemas', function () {
                 'title should be same as schemaName, no prefix appended'
             )
 
-            assert.strictEqual(results[0].RegistryName, TEST_REGISTRY, 'summary should belong to requested registry')
-            assert.strictEqual(results[1].RegistryName, TEST_REGISTRY, 'summary should belong to requested registry')
+            assert.strictEqual(results[0].RegistryName, testRegistry, 'summary should belong to requested registry')
+            assert.strictEqual(results[1].RegistryName, testRegistry, 'summary should belong to requested registry')
         })
 
         it('should display an error message when search api call fails', async function () {
-            const searchSummaryList = [searchSummary1, searchSummary2]
-
+            const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
-            const displayMessage = `Unable to search registry ${FAIL_REGISTRY}`
-
-            sandbox
-                .stub(schemaClient, 'searchSchemas')
-                .withArgs('randomText', TEST_REGISTRY)
-                .returns(asyncGenerator(searchSummaryList))
+            const displayMessage = `Unable to search registry ${failRegistry}`
 
             //make an api call with non existent registryName - should return empty results
-            const results = await getSearchListForSingleRegistry(schemaClient, FAIL_REGISTRY, 'randomText')
+            const results = await getSearchListForSingleRegistry(client, failRegistry, 'randomText')
 
             assert.strictEqual(results.length, 0, 'should return 0 summaries')
             assert.strictEqual(vscodeSpy.callCount, 1, ' error message should be shown exactly once')
@@ -129,21 +128,18 @@ describe('Search Schemas', function () {
     describe('getSearchResults', function () {
         it('should display error message for failed registries and return summaries for successful ones', async function () {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
-            const displayMessage = `Unable to search registry ${FAIL_REGISTRY}`
-            const displayMessage2 = `Unable to search registry ${FAIL_REGISTRY2}`
+            const displayMessage = `Unable to search registry ${failRegistry}`
+            const displayMessage2 = `Unable to search registry ${failRegistry2}`
 
             const searchSummaryList1 = [searchSummary1, searchSummary2]
             const searchSummaryList2 = [searchSummary3]
 
             const searchSchemaStub = sandbox.stub(schemaClient, 'searchSchemas')
-            searchSchemaStub.withArgs('randomText', TEST_REGISTRY).returns(asyncGenerator(searchSummaryList1)).onCall(0)
-            searchSchemaStub
-                .withArgs('randomText', TEST_REGISTRY2)
-                .returns(asyncGenerator(searchSummaryList2))
-                .onCall(1)
+            searchSchemaStub.withArgs('randomText', testRegistry).returns(asyncGenerator(searchSummaryList1)).onCall(0)
+            searchSchemaStub.withArgs('randomText', testRegistry2).returns(asyncGenerator(searchSummaryList2)).onCall(1)
             const results = await getSearchResults(
                 schemaClient,
-                [TEST_REGISTRY, TEST_REGISTRY2, FAIL_REGISTRY, FAIL_REGISTRY2],
+                [testRegistry, testRegistry2, failRegistry, failRegistry2],
                 'randomText'
             )
 
@@ -153,13 +149,13 @@ describe('Search Schemas', function () {
             results.sort(function (a, b) {
                 return a.RegistryName > b.RegistryName ? 1 : b.RegistryName > a.RegistryName ? -1 : 0
             })
-            const expectedTitle1 = TEST_REGISTRY.concat('/', searchSummary1.SchemaName!)
-            const expectedTitle2 = TEST_REGISTRY.concat('/', searchSummary2.SchemaName!)
-            const expectedTitle3 = TEST_REGISTRY2.concat('/', searchSummary3.SchemaName!)
+            const expectedTitle1 = testRegistry.concat('/', searchSummary1.SchemaName!)
+            const expectedTitle2 = testRegistry.concat('/', searchSummary2.SchemaName!)
+            const expectedTitle3 = testRegistry2.concat('/', searchSummary3.SchemaName!)
 
-            assert.strictEqual(results[0].RegistryName, TEST_REGISTRY, 'sumnmary should belong to requested registry')
-            assert.strictEqual(results[1].RegistryName, TEST_REGISTRY, 'sumnmary should belong to requested registry')
-            assert.strictEqual(results[2].RegistryName, TEST_REGISTRY2, 'sumnmary should belong to requested registry')
+            assert.strictEqual(results[0].RegistryName, testRegistry, 'sumnmary should belong to requested registry')
+            assert.strictEqual(results[1].RegistryName, testRegistry, 'sumnmary should belong to requested registry')
+            assert.strictEqual(results[2].RegistryName, testRegistry2, 'sumnmary should belong to requested registry')
 
             assert.strictEqual(results[0].Title, expectedTitle1, 'title should be prefixed with registryName')
             assert.strictEqual(results[1].Title, expectedTitle2, 'title should be prefixed with registryName')
@@ -177,204 +173,108 @@ describe('Search Schemas', function () {
     })
 
     describe('handleMessage', function () {
-        let postMessageSpy: sinon.SinonSpy<[any], Thenable<boolean>>
-        beforeEach(function () {
-            postMessageSpy = sandbox.spy(onPostMessage)
-        })
-
-        const singleRegistryName = [TEST_REGISTRY]
-        const multipleRegistryNames = [TEST_REGISTRY, TEST_REGISTRY2]
-        const AWS_EVENT_SCHEMA_RAW =
+        const singleRegistryName = [testRegistry]
+        const multipleRegistryNames = [testRegistry, testRegistry2]
+        const awsEventSchemaRaw =
             '{"openapi":"3.0.0","info":{"version":"1.0.0","title":"Event"},"paths":{},"components":{"schemas":{"Event":{"type":"object"}}}}'
         const schemaResponse: Schemas.DescribeSchemaResponse = {
-            Content: AWS_EVENT_SCHEMA_RAW,
+            Content: awsEventSchemaRaw,
         }
 
         it('shows schema content for latest matching schema version by default', async function () {
             const versionedSummary = {
-                RegistryName: TEST_REGISTRY,
+                RegistryName: testRegistry,
                 Title: getPageHeader(singleRegistryName),
                 VersionList: ['3', '2', '1'],
-            }
-            const fakeMessage: CommandMessages = {
-                command: 'fetchSchemaContent',
-                schemaSummary: versionedSummary,
-                regionCode: 'us-weast-1',
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
-            const expectedArgument1 = {
-                command: 'showSchemaContent',
-                results: JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting()),
-                version: '3',
-            }
-
-            const expectedArgument2 = {
-                command: 'setVersionsDropdown',
-                results: fakeMessage.schemaSummary!.VersionList,
-            }
-
-            await handleSchemaSearchMessage(
-                { postMessage: postMessageSpy, context: fakeExtContext },
-                fakeMessage,
-                schemaClient
-            )
+            const webview = createWebview(singleRegistryName)
+            const resp = await webview.fetchSchemaContent(versionedSummary)
 
             assert.strictEqual(
-                postMessageSpy.callCount,
-                2,
-                'post message should be called twice, for showingSchemaContent and setVersionsDropdown'
+                resp.results,
+                JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting())
             )
-            assert.deepStrictEqual(
-                postMessageSpy.firstCall.lastArg,
-                expectedArgument1,
-                'should call showSchemaContent command with pretty schema and latest version 3'
-            )
-            assert.deepStrictEqual(
-                postMessageSpy.secondCall.lastArg,
-                expectedArgument2,
-                'should call setVersionDropdown command with correct list of versions'
-            )
+            assert.strictEqual(resp.version, '3')
+            assert.strictEqual(resp.versionList, versionedSummary.VersionList)
         })
 
         it('shows schema content for user selected version', async function () {
             const versionedSummary = {
-                RegistryName: TEST_REGISTRY,
+                RegistryName: testRegistry,
                 Title: getPageHeader(multipleRegistryNames),
                 VersionList: ['1'],
-            }
-            const fakeMessage: CommandMessages = {
-                command: 'fetchSchemaContent',
-                regionCode: 'us-weast-1',
-                schemaSummary: versionedSummary,
-                version: '1',
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
-            const expectedArgument = {
-                command: 'showSchemaContent',
-                results: JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting()),
-                version: '1',
-            }
-
-            await handleSchemaSearchMessage(
-                { postMessage: postMessageSpy, context: fakeExtContext },
-                fakeMessage,
-                schemaClient
-            )
-
+            const webview = createWebview(multipleRegistryNames)
+            const resp = await webview.fetchSchemaContent(versionedSummary, '1')
             assert.strictEqual(
-                postMessageSpy.callCount,
-                1,
-                'post message should be called once since the user has selected version'
+                resp.results,
+                JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting())
             )
-            assert.deepStrictEqual(
-                postMessageSpy.firstCall.lastArg,
-                expectedArgument,
-                'should call showSchemaContent command with pretty schema and latest version 1'
-            )
+            assert.strictEqual(resp.version, '1')
+            assert.strictEqual(resp.versionList, undefined)
         })
 
         it('shows schema list when user makes a search', async function () {
-            const fakeMessage: CommandMessages = {
-                command: 'searchSchemas',
-                keyword: 'searchText',
-                regionCode: 'us-weast-1',
-                registryNames: [TEST_REGISTRY, TEST_REGISTRY],
-            }
-
             const expectResults1 = {
-                RegistryName: TEST_REGISTRY,
-                Title: TEST_REGISTRY + '/testSchema1',
+                RegistryName: testRegistry,
+                Title: testRegistry + '/testSchema1',
                 VersionList: ['2', '1'],
             }
             const expectResults2 = {
-                RegistryName: TEST_REGISTRY,
-                Title: TEST_REGISTRY + '/testSchema2',
+                RegistryName: testRegistry,
+                Title: testRegistry + '/testSchema2',
                 VersionList: ['1'],
-            }
-
-            const expectedArgument = {
-                command: 'showSearchSchemaList',
-                results: [expectResults1, expectResults2],
-                resultsNotFound: false,
             }
 
             const searchSummaryList = [searchSummary1, searchSummary2]
             sandbox
                 .stub(schemaClient, 'searchSchemas')
-                .withArgs('searchText', TEST_REGISTRY)
+                .withArgs('searchText', testRegistry)
                 .returns(asyncGenerator(searchSummaryList))
 
-            await handleSchemaSearchMessage(
-                { postMessage: postMessageSpy, context: fakeExtContext },
-                fakeMessage,
-                schemaClient
-            )
+            const webview = createWebview([testRegistry, testRegistry])
+            const resp = await webview.searchSchemas('searchText')
 
-            assert.strictEqual(postMessageSpy.callCount, 1, 'postMessage should call showSearchSchemaList command')
-            assert.deepStrictEqual(
-                postMessageSpy.firstCall.lastArg,
-                expectedArgument,
-                'postMessage should have correct results'
-            )
+            assert.deepStrictEqual(resp.results, [expectResults1, expectResults2])
+            assert.strictEqual(resp.resultsNotFound, false)
         })
-
-        it('throws an error for an invalid command message', async function () {
-            const fakeMessage: CommandMessages = { command: 'invalidCommand', regionCode: 'us-weast-1' }
-            const errorMessage = `Search webview command ${fakeMessage.command} is invalid`
-
-            await assert.rejects(
-                handleSchemaSearchMessage(
-                    { postMessage: postMessageSpy, context: fakeExtContext },
-                    fakeMessage,
-                    schemaClient
-                ),
-                new Error(errorMessage),
-                'Should fail for invalidCommand'
-            )
-        })
-
-        function onPostMessage(message: any): Thenable<boolean> {
-            if (message) {
-                return Promise.resolve(true)
-            }
-
-            return Promise.resolve(false)
-        }
     })
 
     describe('getRegistryNameList', function () {
         it('should return list with single registry name for registryItemNode', async function () {
             const fakeRegistryNew = {
-                RegistryName: TEST_REGISTRY,
+                RegistryName: testRegistry,
                 RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
             }
 
-            const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistryNew)
+            const registryItemNode = new RegistryItemNode(fakeRegistryNew, schemaClient)
 
             const result = await getRegistryNames(registryItemNode, schemaClient)
-            assert.deepStrictEqual(result, [TEST_REGISTRY], 'should have a single registry name in it')
+            assert.deepStrictEqual(result, [testRegistry], 'should have a single registry name in it')
         })
 
         it('should return list with multiple registry names for schemasNode', async function () {
-            const schemasNode = new SchemasNode(fakeRegion)
-            const registrySummary1 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY, RegistryName: TEST_REGISTRY }
-            const registrySummary2 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY2, RegistryName: TEST_REGISTRY2 }
+            const schemasNode = new SchemasNode(schemaClient)
+            const registrySummary1 = { RegistryArn: 'arn:aws:registry/' + testRegistry, RegistryName: testRegistry }
+            const registrySummary2 = { RegistryArn: 'arn:aws:registry/' + testRegistry2, RegistryName: testRegistry2 }
 
             sandbox.stub(schemaClient, 'listRegistries').returns(asyncGenerator([registrySummary1, registrySummary2]))
 
             const result = await getRegistryNames(schemasNode, schemaClient)
-            assert.deepStrictEqual(result, [TEST_REGISTRY, TEST_REGISTRY2], 'should have two registry names in it')
+            assert.deepStrictEqual(result, [testRegistry, testRegistry2], 'should have two registry names in it')
         })
 
         it('should return an empty list and display error message if schemas service not available in the region', async function () {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = 'Error loading Schemas resources'
 
-            const schemasNode = new SchemasNode(fakeRegion)
+            const schemasNode = new SchemasNode(schemaClient)
             sandbox.stub(schemaClient, 'listRegistries')
 
             const results = await getRegistryNames(schemasNode, schemaClient)

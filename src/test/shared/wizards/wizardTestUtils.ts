@@ -10,6 +10,8 @@ import { Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 
 interface MockWizardFormElement<TProp> {
+    readonly value: TProp | undefined
+
     applyInput(input: TProp): void
     clearInput(): void
     /**
@@ -37,19 +39,21 @@ type MockForm<T, TState = T> = {
 }
 
 type FormTesterMethodKey = keyof MockWizardFormElement<any>
-const APPLY_INPUT: FormTesterMethodKey = 'applyInput'
-const CLEAR_INPUT: FormTesterMethodKey = 'clearInput'
-const ASSERT_SHOW: FormTesterMethodKey = 'assertShow'
-const ASSERT_SHOW_FIRST: FormTesterMethodKey = 'assertShowFirst'
-const ASSERT_SHOW_SECOND: FormTesterMethodKey = 'assertShowSecond'
-const ASSERT_SHOW_THIRD: FormTesterMethodKey = 'assertShowThird'
-const ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertShowAny'
-const NOT_ASSERT_SHOW: FormTesterMethodKey = 'assertDoesNotShow'
-const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
-const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
-const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
+const VALUE: FormTesterMethodKey = 'value' // eslint-disable-line @typescript-eslint/naming-convention
+const APPLY_INPUT: FormTesterMethodKey = 'applyInput' // eslint-disable-line @typescript-eslint/naming-convention
+const CLEAR_INPUT: FormTesterMethodKey = 'clearInput' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_SHOW: FormTesterMethodKey = 'assertShow' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_SHOW_FIRST: FormTesterMethodKey = 'assertShowFirst' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_SHOW_SECOND: FormTesterMethodKey = 'assertShowSecond' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_SHOW_THIRD: FormTesterMethodKey = 'assertShowThird' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertShowAny' // eslint-disable-line @typescript-eslint/naming-convention
+const NOT_ASSERT_SHOW: FormTesterMethodKey = 'assertDoesNotShow' // eslint-disable-line @typescript-eslint/naming-convention
+const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny' // eslint-disable-line @typescript-eslint/naming-convention
+const ASSERT_VALUE: FormTesterMethodKey = 'assertValue' // eslint-disable-line @typescript-eslint/naming-convention
+const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount' // eslint-disable-line @typescript-eslint/naming-convention
 
-export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+type Tester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+export type WizardTester<T> = T extends Wizard<infer U> ? Tester<U> : Tester<T>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {
@@ -57,9 +61,9 @@ function failIf(cond: boolean, message?: string): void {
     }
 }
 
-export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
+export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): Tester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
-    const state = {} as T
+    const state = (wizard instanceof Wizard ? JSON.parse(JSON.stringify(wizard.initialState ?? {})) : {}) as T
 
     function canShowPrompter(prop: string): boolean {
         const defaultState = form.applyDefaults(state)
@@ -114,7 +118,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
     }
 
-    function createFormWrapper(path: string[] = []): WizardTester<T> {
+    function createFormWrapper(path: string[] = []): Tester<T> {
         return new Proxy(
             {},
             {
@@ -123,6 +127,8 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
 
                     // Using a switch rather than a map since a generic index signature is not yet possible
                     switch (prop) {
+                        case VALUE:
+                            return _.get(form.applyDefaults(state), path)
                         case APPLY_INPUT:
                             return <TProp>(input: TProp) => _.set(state, path, input)
                         case CLEAR_INPUT:
@@ -156,7 +162,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
                     }
                 },
             }
-        ) as WizardTester<T>
+        ) as Tester<T>
     }
 
     return createFormWrapper()

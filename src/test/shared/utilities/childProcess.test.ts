@@ -8,8 +8,8 @@ import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { ChildProcess, eof } from '../../../shared/utilities/childProcess'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('ChildProcess', async function () {
@@ -26,162 +26,10 @@ describe('ChildProcess', async function () {
     })
 
     describe('run', async function () {
-        if (process.platform === 'win32') {
-            it('runs and captures stdout - windows', async function () {
-                const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFile(batchFile)
-
-                const childProcess = new ChildProcess(batchFile)
-
-                const result = await childProcess.run()
-
-                validateChildProcessResult({
-                    childProcessResult: result,
-                    expectedExitCode: 0,
-                    expectedOutput: 'hi',
-                })
-            })
-
-            it('runs cmd files containing a space in the filename and folder', async function () {
-                const subfolder: string = path.join(tempFolder, 'sub folder')
-                const command: string = path.join(subfolder, 'test script.cmd')
-
-                fs.mkdirSync(subfolder)
-
-                writeWindowsCommandFile(command)
-
-                const childProcess = new ChildProcess(command)
-
-                const result = await childProcess.run()
-
-                validateChildProcessResult({
-                    childProcessResult: result,
-                    expectedExitCode: 0,
-                    expectedOutput: 'hi',
-                })
-            })
-
-            it('errs when starting twice - windows', async function () {
-                const batchFile = path.join(tempFolder, 'test-script.bat')
-                writeBatchFile(batchFile)
-
-                const childProcess = new ChildProcess(batchFile)
-
-                // We want to verify that the error is thrown even if the first
-                // invocation is still in progress, so we don't await the promise.
-                childProcess.run()
-
-                try {
-                    await childProcess.run()
-                } catch (err) {
-                    return
-                }
-
-                assert.fail('Expected exception, but none was thrown.')
-            })
-        } else {
-            it('runs and captures stdout - unix', async function () {
-                const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
-
-                const childProcess = new ChildProcess(scriptFile)
-
-                const result = await childProcess.run()
-
-                validateChildProcessResult({
-                    childProcessResult: result,
-                    expectedExitCode: 0,
-                    expectedOutput: 'hi',
-                })
-            })
-
-            it('errs when starting twice - unix', async function () {
-                const scriptFile = path.join(tempFolder, 'test-script.sh')
-                writeShellFile(scriptFile)
-
-                const childProcess = new ChildProcess(scriptFile)
-
-                // We want to verify that the error is thrown even if the first
-                // invocation is still in progress, so we don't await the promise.
-                childProcess.run()
-
-                try {
-                    await childProcess.run()
-                } catch (err) {
-                    return
-                }
-
-                assert.fail('Expected exception, but none was thrown.')
-            })
-        } // END Linux only tests
-
-        it('runs scripts containing a space in the filename and folder', async function () {
-            const subfolder: string = path.join(tempFolder, 'sub folder')
-            let command: string
-
-            fs.mkdirSync(subfolder)
-
-            if (process.platform === 'win32') {
-                command = path.join(subfolder, 'test script.bat')
-                writeBatchFile(command)
-            } else {
-                command = path.join(subfolder, 'test script.sh')
-                writeShellFile(command)
-            }
-
-            const childProcess = new ChildProcess(command)
-
-            const result = await childProcess.run()
-
-            validateChildProcessResult({
-                childProcessResult: result,
-                expectedExitCode: 0,
-                expectedOutput: 'hi',
-            })
-        })
-
-        it('reports error for missing executable', async function () {
-            const batchFile = path.join(tempFolder, 'nonExistentScript')
-
-            const childProcess = new ChildProcess(batchFile)
-
-            const result = await childProcess.run()
-
-            assert.notStrictEqual(result.exitCode, 0)
-            assert.notStrictEqual(result.error, undefined)
-        })
-
-        function validateChildProcessResult({
-            childProcessResult,
-            expectedExitCode,
-            expectedOutput,
-        }: {
-            childProcessResult: ChildProcessResult
-            expectedExitCode: number
-            expectedOutput: string
-        }) {
-            assert.strictEqual(
-                childProcessResult.exitCode,
-                expectedExitCode,
-                `Expected exit code ${expectedExitCode}, got ${childProcessResult.exitCode}`
-            )
-
-            assert.strictEqual(
-                childProcessResult.stdout,
-                expectedOutput,
-                `Expected stdout to be ${expectedOutput} , got: ${childProcessResult.stdout}`
-            )
-        }
-    })
-
-    describe('run', async function () {
         async function assertRegularRun(childProcess: ChildProcess): Promise<void> {
-            const result = await childProcess.run({
-                onStdout: text => {
-                    assert.strictEqual(text, 'hi' + os.EOL, 'Unexpected stdout')
-                },
-            })
+            const result = await childProcess.run()
             assert.strictEqual(result.exitCode, 0, 'Unexpected close code')
+            assert.strictEqual(result.stdout, 'hi', 'Unexpected stdout')
         }
 
         if (process.platform === 'win32') {
@@ -402,7 +250,7 @@ describe('ChildProcess', async function () {
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Windows', async function () {
+            it('can stop() previously stopped processes - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
@@ -414,9 +262,7 @@ describe('ChildProcess', async function () {
                 childProcess.stop()
                 await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
-                assert.throws(() => {
-                    childProcess.stop()
-                })
+                assert.doesNotThrow(() => childProcess.stop())
             })
         } // END Windows-only tests
 
@@ -426,31 +272,37 @@ describe('ChildProcess', async function () {
                 writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess('sh', [scriptFile])
-
-                // `await` is intentionally not used, we want to check the process while it runs.
-                childProcess.run()
+                const result = childProcess.run()
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
-                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
+                await result
+
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Unix', async function () {
+            it('can stop() previously stopped processes - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
                 const childProcess = new ChildProcess(scriptFile)
 
-                // `await` is intentionally not used, we want to check the process while it runs.
-                childProcess.run()
+                const result = childProcess.run()
 
                 childProcess.stop()
-                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
+                await result
+
                 assert.strictEqual(childProcess.stopped, true)
-                assert.throws(() => {
-                    childProcess.stop()
-                })
+                assert.doesNotThrow(() => childProcess.stop())
+            })
+
+            it('can send input - Unix', async function () {
+                const childProcess = new ChildProcess('cat')
+                const result = childProcess.run()
+                await childProcess.send('foo')
+                await childProcess.send(eof)
+                const { stdout } = await result
+                assert.strictEqual(stdout, 'foo')
             })
         } // END Unix-only tests
     })
@@ -471,8 +323,8 @@ describe('ChildProcess', async function () {
         fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
     }
 
-    function writeShellFile(filename: string, contents?: string): void {
-        fs.writeFileSync(filename, contents ?? 'echo hi')
+    function writeShellFile(filename: string, contents = 'echo hi'): void {
+        fs.writeFileSync(filename, `#!/bin/sh\n${contents}`)
         fs.chmodSync(filename, 0o744)
     }
 
@@ -481,7 +333,6 @@ describe('ChildProcess', async function () {
         echo hi
         sleep 20
         echo bye`
-        fs.writeFileSync(filename, file)
-        fs.chmodSync(filename, 0o744)
+        writeShellFile(filename, file)
     }
 })

@@ -10,21 +10,18 @@ import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
-import { LOG_OUTPUT_CHANNEL } from './outputChannel'
+import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
-import globals from '../extensionGlobals'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
+import { Settings } from '../settings'
+import { Logging } from './commands'
+import { SystemUtilities } from '../systemUtilities'
 
 const localize = nls.loadMessageBundle()
 
-const DEFAULT_LOG_LEVEL: LogLevel = 'info'
-
-/** One log per session */
-let logPath: string
+const defaultLogLevel: LogLevel = 'info'
 
 /**
  * Activate Logger functionality for the extension.
@@ -33,29 +30,28 @@ export async function activate(
     extensionContext: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const logOutputChannel = LOG_OUTPUT_CHANNEL
-    logPath = getLogPath()
+    const chan = logOutputChannel
+    const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
-    await fs.ensureDir(path.dirname(logPath))
+    await SystemUtilities.createDirectory(extensionContext.logUri)
 
-    // default logger
-    setLogger(
-        makeLogger(
-            {
-                logPaths: [logPath],
-                outputChannels: [logOutputChannel],
-            },
-            extensionContext.subscriptions
-        )
+    const mainLogger = makeLogger(
+        {
+            logPaths: [logUri.fsPath],
+            outputChannels: [chan],
+        },
+        extensionContext.subscriptions
     )
+
+    setLogger(mainLogger)
     getLogger().error(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
         makeLogger(
             {
-                logPaths: [logPath],
-                outputChannels: [outputChannel, logOutputChannel],
+                logPaths: [logUri.fsPath],
+                outputChannels: [outputChannel, chan],
             },
             extensionContext.subscriptions
         ),
@@ -67,7 +63,7 @@ export async function activate(
         makeLogger(
             {
                 staticLogLevel: 'verbose', // verbose will log anything
-                outputChannels: [outputChannel, logOutputChannel],
+                outputChannels: [outputChannel, chan],
                 useDebugConsole: true,
             },
             extensionContext.subscriptions
@@ -75,13 +71,21 @@ export async function activate(
         'debugConsole'
     )
 
-    await registerLoggerCommands(extensionContext)
-    getLogger().debug(`Logging started: ${logPath}`)
+    getLogger().debug(`Logging started: ${logUri}`)
 
-    extensionContext.subscriptions.push(await createLogWatcher(logPath))
+    const commands = new Logging(logUri, mainLogger)
+    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
 
-    cleanLogFiles(path.dirname(logPath)).catch(err => {
-        getLogger().warn('Failed to clean-up old logs: %s', (err as Error).message)
+    createLogWatcher(logUri)
+        .then(sub => {
+            extensionContext.subscriptions.push(sub)
+        })
+        .catch(err => {
+            getLogger().warn('Failed to start log file watcher: %s', err)
+        })
+
+    cleanLogFiles(path.dirname(logUri.fsPath)).catch(err => {
+        getLogger().warn('Failed to clean-up old logs: %s', err)
     })
 }
 
@@ -135,24 +139,9 @@ export function makeLogger(
 }
 
 function getLogLevel(): LogLevel {
-    const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const configuration = Settings.instance.getSection(extensionSettingsPrefix)
 
-    return configuration.readSetting<LogLevel>('logLevel', DEFAULT_LOG_LEVEL)
-}
-
-function getLogPath(): string {
-    if (logPath !== undefined) {
-        return logPath
-    }
-
-    // TODO: 'globalStoragePath' is deprecated in later versions of VS Code, use 'globalStorageUri' when min >= 1.48
-    const logsDir = path.join(globals.context.globalStoragePath, 'logs')
-
-    return path.join(logsDir, makeLogFilename())
-}
-
-function getLogUri(): vscode.Uri {
-    return vscode.Uri.file(path.normalize(getLogPath()))
+    return configuration.get('logLevel', defaultLogLevel)
 }
 
 function makeLogFilename(): string {
@@ -165,54 +154,14 @@ function makeLogFilename(): string {
     return `aws_toolkit_${datetime}.log`
 }
 
-async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
-    recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
-    return await vscode.window.showTextDocument(logUri)
-}
-
-async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(getLogUri())))
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.viewLogsAtMessage',
-            async (logID: number = -1, logUri: vscode.Uri = getLogUri()) => {
-                const msg: string | undefined = getLogger().getLogById(logID, logUri)
-                const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
-
-                if (!msg || !editor) {
-                    return
-                }
-
-                // Retrieve where the message starts by counting number of newlines
-                const text: string = editor.document.getText()
-                const lineStart: number = text
-                    .substring(0, text.indexOf(msg))
-                    .split(/\r?\n/)
-                    .filter(x => x).length
-
-                if (lineStart > 0) {
-                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
-                    const startPos = editor.document.lineAt(lineStart).range.start
-                    const endPos = editor.document.lineAt(lineEnd - 1).range.end
-                    editor.selection = new vscode.Selection(startPos, endPos)
-                    editor.revealRange(new vscode.Range(startPos, endPos))
-                } else {
-                    // No message found, clear selection
-                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
-                }
-            }
-        )
-    )
-}
-
 /**
  * Watches for renames on the log file and notifies the user.
  */
-async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
-    const exists = await waitUntil(() => fs.pathExists(logPath), { interval: 1000, timeout: 60000 })
+async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
+    const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
-        getLogger().warn(`Log file ${logPath} does not exist!`)
+        getLogger().warn(`Log file ${logFile.path} does not exist!`)
         return { dispose: () => {} }
     }
 
@@ -220,13 +169,12 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
     // TODO: fs.watch() has many problems, consider instead:
     //   - https://github.com/paulmillr/chokidar
     //   - https://www.npmjs.com/package/fb-watchman
-    const watcher = fs.watch(logPath, async eventType => {
+    const watcher = fs.watch(logFile.fsPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return
         }
         checking = true
-        const exists = await fs.pathExists(logPath).catch(() => true)
-        if (!exists) {
+        if (!(await SystemUtilities.fileExists(logFile))) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )

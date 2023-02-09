@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as testutil from '../testUtil'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -16,7 +17,6 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
@@ -33,9 +33,9 @@ describe('ResourceManager', function () {
     let schemaService: SchemaService
     let tempFolder: string
 
-    const FAKE_TYPE_NAME = 'sometype'
-    const FAKE_IDENTIFIER = 'someidentifier'
-    const FAKE_REGION = 'someregion'
+    const fakeTypeName = 'sometype'
+    const fakeIdentifier = 'someidentifier'
+    const fakeRegion = 'someregion'
 
     const fakeResourceDescription = {
         Role: 'arn:aws:iam::1234:role/service-role/fooResource',
@@ -55,16 +55,16 @@ describe('ResourceManager', function () {
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
 
-        const rootNode = new ResourcesNode(FAKE_REGION, instance(cloudFormation), cloudControl)
+        const rootNode = new ResourcesNode(fakeRegion, instance(cloudFormation), cloudControl)
         resourceTypeNode = new ResourceTypeNode(
             rootNode,
-            FAKE_TYPE_NAME,
+            fakeTypeName,
             instance(cloudControl),
             {} as ResourceTypeMetadata
         )
-        resourceNode = new ResourceNode(resourceTypeNode, FAKE_IDENTIFIER)
-        const fakeContext = new FakeExtensionContext()
-        fakeContext.globalStoragePath = tempFolder
+        resourceNode = new ResourceNode(resourceTypeNode, fakeIdentifier)
+        const fakeContext = await FakeExtensionContext.create()
+        fakeContext.globalStorageUri = vscode.Uri.file(tempFolder)
         resourceManager = new AwsResourceManager(fakeContext)
         globals.schemaService = instance(schemaService)
     })
@@ -86,7 +86,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'awsResource')
-        assert.strictEqual(capturedUri.fsPath, `${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.preview.json`)
+        assert.strictEqual(capturedUri.fsPath, `${fakeIdentifier}.${fakeTypeName}.preview.json`)
         assert.strictEqual(capturedUri.query, formatResourceModel(JSON.stringify(fakeResourceDescription)))
 
         assert.strictEqual(showTextDocumentStub.getCall(0).args[0], mockTextDocument)
@@ -106,7 +106,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.fsPath.endsWith(`${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`${fakeIdentifier}.${fakeTypeName}.awsResource.json`), true)
 
         const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, fakeResourceDescription)
@@ -151,7 +151,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.fsPath.endsWith(`new.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`new.${fakeTypeName}.awsResource.json`), true)
 
         const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, {})
@@ -185,7 +185,7 @@ describe('ResourceManager', function () {
 
     it('registers schema mappings when opening in edit', async function () {
         const editor = await resourceManager.open(resourceNode, false)
-        verify(schemaService.registerMapping(anything())).once()
+        verify(schemaService.registerMapping(anything(), anything())).once()
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()
@@ -193,7 +193,7 @@ describe('ResourceManager', function () {
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
         assert.ok(existsSync(expectedSchemaLocation))
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.path.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        testutil.assertEqualPaths(mapping.uri.fsPath, editor.document.uri.fsPath)
         const schema = mapping.schema as vscode.Uri
         assert.strictEqual(schema.fsPath.toLowerCase(), expectedSchemaLocation.toLowerCase())
     })
@@ -212,12 +212,13 @@ describe('ResourceManager', function () {
     it('deletes resource mapping on file close', async function () {
         const editor = await resourceManager.open(resourceNode, false)
         await resourceManager.close(editor.document.uri)
-        verify(schemaService.registerMapping(anything())).twice()
+        verify(schemaService.registerMapping(anything())).once()
+        verify(schemaService.registerMapping(anything(), anything())).once()
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.path.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
+        testutil.assertEqualPaths(mapping.uri.fsPath, editor.document.uri.fsPath)
         assert.strictEqual(mapping.schema, undefined)
     })
 
@@ -225,8 +226,8 @@ describe('ResourceManager', function () {
         when(
             cloudControl.getResource(
                 deepEqual({
-                    TypeName: FAKE_TYPE_NAME,
-                    Identifier: FAKE_IDENTIFIER,
+                    TypeName: fakeTypeName,
+                    Identifier: fakeIdentifier,
                 })
             )
         ).thenResolve({
@@ -236,7 +237,7 @@ describe('ResourceManager', function () {
                 Properties: JSON.stringify(fakeResourceDescription),
             },
         })
-        when(cloudFormation.describeType(FAKE_TYPE_NAME)).thenResolve({
+        when(cloudFormation.describeType(fakeTypeName)).thenResolve({
             Schema: '{}',
         })
     }

@@ -6,10 +6,11 @@
 import * as path from 'path'
 import * as fs from 'fs-extra'
 
-import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
-import { sleep } from '../../shared/utilities/promiseUtilities'
+import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
+import { isMinimumVersion } from '../../shared/vscode/env'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -31,12 +32,12 @@ describe('CloudFormation Template Registry', async function () {
         testDirNested = path.join(testDir, 'nested')
         await fs.mkdirp(testDirNested)
         registry = new CloudFormationTemplateRegistry()
+        dir++
     })
 
     afterEach(async function () {
         registry.dispose()
         await fs.remove(testDir)
-        dir++
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async function () {
@@ -49,6 +50,9 @@ describe('CloudFormation Template Registry', async function () {
     })
 
     it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function () {
+        if (!isMinimumVersion()) {
+            this.skip()
+        }
         await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
@@ -100,8 +104,10 @@ describe('CloudFormation Template Registry', async function () {
 })
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
-    while (registry.registeredItems.length !== target) {
-        await sleep(20)
+    if (!(await waitUntil(async () => registry.registeredItems.length === target, { timeout: 30000 }))) {
+        throw new Error(
+            `watchedFiles found wrong number files: expected ${target}, got ${registry.registeredItems.length}`
+        )
     }
 }
 

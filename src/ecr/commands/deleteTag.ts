@@ -5,11 +5,11 @@
 
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
-import { recordEcrDeleteTags } from '../../shared/telemetry/telemetry'
 import { EcrTagNode } from '../explorer/ecrTagNode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function deleteTag(
     node: EcrTagNode,
@@ -32,8 +32,7 @@ export async function deleteTag(
     )
     if (!ok) {
         getLogger().info(`Cancelled delete tag ${node.tag} from repository ${node.repository.repositoryName}`)
-        // We only have single select in vsc so we alway say that 1 tag was deleted (or not)
-        recordEcrDeleteTags({ result: 'Cancelled', value: 1 })
+        telemetry.ecr_deleteTags.emit({ result: 'Cancelled', value: 1 })
         return
     }
     try {
@@ -49,9 +48,9 @@ export async function deleteTag(
                 node.repository.repositoryName
             )
         )
-        recordEcrDeleteTags({ result: 'Succeeded', value: 1 })
+        telemetry.ecr_deleteTags.emit({ result: 'Succeeded', value: 1 })
     } catch (e) {
-        getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %O`, e)
+        getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %s`, e)
         showViewLogsMessage(
             localize(
                 'AWS.ecr.deleteTag.failure',
@@ -61,7 +60,7 @@ export async function deleteTag(
             ),
             window
         )
-        recordEcrDeleteTags({ result: 'Failed', value: 1 })
+        telemetry.ecr_deleteTags.emit({ result: 'Failed', value: 1 })
     } finally {
         await commands.execute('aws.refreshAwsExplorerNode', node.parent)
     }

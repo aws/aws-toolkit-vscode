@@ -1,0 +1,54 @@
+{
+	"date": "2022-05-12",
+	"version": "1.38.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Removed the `aws.onDefaultRegionMissing` setting"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM template.yaml syntax support for condition, requestmodel, requestparameters, custom resources, SSMParameterReadPolicy and AWSSecretsManagerGetSecretValuePolicy"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fixed issue with API Gateway 'Invoke on AWS' resource names always showing 'resource.path'"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "S3 File Viewer: file paths containing reserved URI characters are now handled correctly"
+		},
+		{
+			"type": "Feature",
+			"description": "`Edit SAM Debug Configuration` and `View Toolkit Logs` commands are now shown in the AWS Explorer main menu"
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda: Use Upload Lambda from a folder, template file, or the command palette."
+		},
+		{
+			"type": "Feature",
+			"description": "renamed `SAM Debug Configuration Editor` command to `Edit SAM Debug Configuration`"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug now uses the current active credentials (if the `aws.credentials` launch-config field is not set)"
+		},
+		{
+			"type": "Feature",
+			"description": "Show \"Add Debug Config\" codelens in JS/TS files even if package.json is missing #2579"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Show or Hide Regions\" is now one command that supports multiple selections"
+		},
+		{
+			"type": "Feature",
+			"description": "added `Show AWS Commands...` command to AWS Explorer menu"
+		},
+		{
+			"type": "Feature",
+			"description": "Open schemas directly when clicking on schema item nodes"
+		}
+	]
+}

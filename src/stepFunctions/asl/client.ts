@@ -40,6 +40,7 @@ import {
 } from 'vscode-languageclient'
 
 import { YAML_ASL, JSON_ASL, ASL_FORMATS } from '../constants/aslFormats'
+import { StepFunctionsSettings } from '../utils'
 
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
@@ -53,6 +54,7 @@ interface Settings {
 }
 
 export async function activate(extensionContext: ExtensionContext) {
+    const config = new StepFunctionsSettings()
     const toDispose = extensionContext.subscriptions
 
     let rangeFormatting: Disposable | undefined
@@ -93,7 +95,7 @@ export async function activate(extensionContext: ExtensionContext) {
         middleware: {
             workspace: {
                 didChangeConfiguration: () =>
-                    client.sendNotification(DidChangeConfigurationNotification.type, { settings: getSettings() }),
+                    client.sendNotification(DidChangeConfigurationNotification.type, { settings: getSettings(config) }),
             },
         },
     }
@@ -120,7 +122,7 @@ export async function activate(extensionContext: ExtensionContext) {
     languages.setLanguageConfiguration('asl', languageConfiguration)
 
     function updateFormatterRegistration() {
-        const formatEnabled = workspace.getConfiguration().get('aws.stepfunctions.asl.format.enable')
+        const formatEnabled = config.get('format.enable', false)
         if (!formatEnabled && rangeFormatting) {
             rangeFormatting.dispose()
             rangeFormatting = undefined
@@ -155,11 +157,7 @@ export async function activate(extensionContext: ExtensionContext) {
         updateFormatterRegistration()
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
-        toDispose.push(
-            workspace.onDidChangeConfiguration(
-                e => e.affectsConfiguration('html.format.enable') && updateFormatterRegistration()
-            )
-        )
+        toDispose.push(config.onDidChange(({ key }) => key === 'format.enable' && updateFormatterRegistration()))
 
         client.onNotification(ResultLimitReachedNotification.type, message => {
             window.showInformationMessage(
@@ -173,10 +171,8 @@ export async function deactivate(): Promise<any> {
     return Promise.resolve(undefined)
 }
 
-function getSettings(): Settings {
-    const resultLimit: number =
-        Math.trunc(Math.max(0, Number(workspace.getConfiguration().get('aws.stepfunctions.asl.maxItemsComputed')))) ||
-        5000
+function getSettings(config: StepFunctionsSettings): Settings {
+    const resultLimit = config.get('maxItemsComputed', 5000)
 
     return {
         asl: {

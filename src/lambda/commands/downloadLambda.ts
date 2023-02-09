@@ -17,7 +17,6 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -25,21 +24,20 @@ import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
-import globals from '../../shared/extensionGlobals'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result, Runtime } from '../../shared/telemetry/telemetry'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
 
-    telemetry.recordLambdaImport({
+    telemetry.lambda_import.emit({
         result,
-        runtime: functionNode.configuration.Runtime as telemetry.Runtime | undefined,
+        runtime: functionNode.configuration.Runtime as Runtime | undefined,
     })
 }
 
-async function runDownloadLambda(
-    functionNode: LambdaFunctionNode,
-    window = Window.vscode()
-): Promise<telemetry.Result> {
+async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<Result> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
@@ -78,7 +76,7 @@ async function runDownloadLambda(
         }
     }
 
-    return await window.withProgress<telemetry.Result>(
+    return await window.withProgress<Result>(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -143,7 +141,7 @@ async function downloadAndUnzipLambda(
     functionNode: LambdaFunctionNode,
     extractLocation: string,
     window = Window.vscode(),
-    lambda = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambda = new DefaultLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined
@@ -232,5 +230,5 @@ function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionN
 
     const lambdaIndex = normalizedLocation.indexOf(`/${lambdaDetails.fileName}`)
 
-    return lambdaIndex > -1 ? normalizedLocation.substr(0, lambdaIndex) : path.dirname(normalizedLocation)
+    return lambdaIndex > -1 ? normalizedLocation.slice(0, lambdaIndex) : path.dirname(normalizedLocation)
 }

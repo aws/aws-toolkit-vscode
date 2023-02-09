@@ -17,12 +17,10 @@ export class FileResourceFetcher implements ResourceFetcher {
      */
     public async get(): Promise<string | undefined> {
         try {
-            this.logger.verbose(`Loading resource from ${this.filepath}`)
-
+            this.logger.verbose('loading file resource: "%s"', this.filepath)
             return (await fs.readFile(this.filepath)).toString()
         } catch (err) {
-            this.logger.verbose(`Error loading resource from ${this.filepath}: %s`, (err as Error).message)
-
+            this.logger.verbose('failed to load file resource: "%s": %s', this.filepath, (err as Error).message)
             return undefined
         }
     }

@@ -1,99 +1,131 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import globals from './extensionGlobals'
+
+import type * as packageJson from '../../package.json'
+import * as fs from 'fs'
+import * as path from 'path'
+import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
+import { memoize } from './utilities/functionUtils'
+import { getLogger } from './logger/logger'
 
-// TODO: either make this not mutate the global object or allow individual features to contribute to the globals module
-// globals aren't bad per-se but they need to be handled carefully since static analysis is much more difficult
-// also, we can just generate interfaces/paths instead of hard-coding everything
-export function initializeIconPaths(context: vscode.ExtensionContext) {
-    globals.iconPaths.dark.help = isCloud9()
-        ? context.asAbsolutePath('resources/dark/cloud9/help.svg')
-        : context.asAbsolutePath('resources/dark/help.svg')
-    globals.iconPaths.light.help = isCloud9()
-        ? context.asAbsolutePath('resources/light/cloud9/help.svg')
-        : context.asAbsolutePath('resources/light/help.svg')
+// Animation:
+// https://code.visualstudio.com/api/references/icons-in-labels#animation
 
-    globals.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
-    globals.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+type ContributedIcon = keyof typeof packageJson.contributes.icons
+type IconPath = { light: Uri; dark: Uri } | Icon
+type IconId = `vscode-${string}` | ContributedIcon
 
-    globals.iconPaths.dark.ecr = context.asAbsolutePath('resources/dark/ecr.svg')
-    globals.iconPaths.light.ecr = context.asAbsolutePath('resources/light/ecr.svg')
+/**
+ * Gets an icon associated with the specified `id`.
+ *
+ * May return either {@link ThemeIcon} or URIs to icons. Callers should just pass the result directly
+ * to any consuming APIs.
+ *
+ * Icons contributed by the extension are prefixed based off their location in the `icons` directory.
+ *
+ * For example, `aws-s3-bucket` refers to `bucket.svg` in `icons/aws/s3`. Note that while identifiers
+ * may be derived from their source, that doesn't mean all valid identifiers have locations on disk.
+ */
+export const getIcon = memoize(resolveIconId)
 
-    globals.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
-    globals.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
+/**
+ * Convenient way to add icons provided by {@link getIcon} into a string.
+ *
+ * Invalid icons are simply omitted. This function also removes any leading
+ * or trailing white space from the final result.
+ *
+ * #### Example:
+ * ```ts
+ * vscode.window.setStatusBarMessage(codicon`${getIcon('vscode-clippy')} Copied to clipboard`)
+ * ```
+ */
+export function codicon(parts: TemplateStringsArray, ...components: (string | IconPath)[]): string {
+    const canUse = (sub: string | IconPath) => typeof sub === 'string' || (!isCloud9() && sub instanceof Icon)
+    const resolved = components.filter(canUse).map(String)
 
-    globals.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
-    globals.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
+    return parts
+        .map((v, i) => `${v}${i < resolved.length ? resolved[i] : ''}`)
+        .join('')
+        .trim()
+}
 
-    globals.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
-    globals.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+/**
+ * See {@link ThemeIcon}.
+ *
+ * Used to expose the icon identifier which is otherwise hidden.
+ */
+export class Icon extends ThemeIcon {
+    public constructor(public readonly id: string, public readonly source?: Uri, public readonly color?: ThemeColor) {
+        super(id)
+    }
 
-    globals.iconPaths.dark.s3 = context.asAbsolutePath('resources/dark/s3/bucket.svg')
-    globals.iconPaths.light.s3 = context.asAbsolutePath('resources/light/s3/bucket.svg')
+    public toString() {
+        return `$(${this.id})`
+    }
+}
 
-    globals.iconPaths.dark.folder = context.asAbsolutePath('third-party/resources/from-vscode/dark/folder.svg')
-    globals.iconPaths.light.folder = context.asAbsolutePath('third-party/resources/from-vscode/light/folder.svg')
+/**
+ * Adds a new {@link ThemeColor} to an existing icon.
+ *
+ * You can find theme color identifiers
+ * {@link https://code.visualstudio.com/api/references/contribution-points#contributes.colors here}
+ */
+export function addColor(icon: IconPath, color: string | ThemeColor): IconPath {
+    if (isCloud9() || !(icon instanceof Icon)) {
+        return icon
+    }
 
-    globals.iconPaths.dark.file = context.asAbsolutePath('third-party/resources/from-vscode/dark/document.svg')
-    globals.iconPaths.light.file = context.asAbsolutePath('third-party/resources/from-vscode/light/document.svg')
+    return new Icon(icon.id, icon.source, typeof color === 'string' ? new ThemeColor(color) : color)
+}
 
-    globals.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
-    globals.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+function resolveIconId(
+    id: IconId,
+    shouldUseCloud9 = isCloud9(),
+    iconsPath = globals.context.asAbsolutePath(path.join('resources', 'icons'))
+): IconPath {
+    const [namespace, ...rest] = id.split('-')
+    const name = rest.join('-')
 
-    globals.iconPaths.dark.apprunner = context.asAbsolutePath('resources/dark/apprunner.svg')
-    globals.iconPaths.light.apprunner = context.asAbsolutePath('resources/light/apprunner.svg')
+    // This 'override' logic is to support legacy use-cases, though ideally we wouldn't need it at all
+    const cloud9Override = shouldUseCloud9 ? resolvePathsSync(path.join(iconsPath, 'cloud9'), id) : undefined
+    const override = cloud9Override ?? resolvePathsSync(path.join(iconsPath, namespace), name)
+    if (override) {
+        getLogger().verbose(`icons: using override for "${id}"`)
+        return override
+    }
 
-    globals.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
-    globals.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+    // TODO: remove when they support codicons + the contribution point
+    if (shouldUseCloud9) {
+        const generated = resolvePathsSync(path.join(iconsPath, 'cloud9', 'generated'), id)
 
-    globals.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
-    globals.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
+        if (generated) {
+            return generated
+        }
+    }
 
-    globals.iconPaths.dark.createBucket = context.asAbsolutePath('resources/dark/s3/create-bucket.svg')
-    globals.iconPaths.light.createBucket = context.asAbsolutePath('resources/light/s3/create-bucket.svg')
+    // TODO: potentially embed the icon source in `package.json` to avoid this messy mapping
+    // of course, doing that implies we must always bundle both the original icon files and the font file
+    const source = !['cloud9', 'vscode'].includes(namespace)
+        ? Uri.joinPath(Uri.file(iconsPath), namespace, rest[0], `${rest.slice(1).join('-')}.svg`)
+        : undefined
 
-    globals.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
-    globals.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
+    return new Icon(namespace === 'vscode' ? name : id, source)
+}
 
-    globals.iconPaths.dark.thing = context.asAbsolutePath('resources/dark/iot/thing.svg')
-    globals.iconPaths.light.thing = context.asAbsolutePath('resources/light/iot/thing.svg')
+function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
+    const darkPath = path.join(rootDir, 'dark', `${target}.svg`)
+    const lightPath = path.join(rootDir, 'light', `${target}.svg`)
 
-    globals.iconPaths.dark.certificate = context.asAbsolutePath('resources/dark/iot/certificate.svg')
-    globals.iconPaths.light.certificate = context.asAbsolutePath('resources/light/iot/certificate.svg')
-
-    globals.iconPaths.dark.policy = context.asAbsolutePath('resources/dark/iot/policy.svg')
-    globals.iconPaths.light.policy = context.asAbsolutePath('resources/light/iot/policy.svg')
-
-    globals.iconPaths.light.cluster = context.asAbsolutePath('resources/light/ecs/cluster.svg')
-    globals.iconPaths.dark.cluster = context.asAbsolutePath('resources/dark/ecs/cluster.svg')
-
-    globals.iconPaths.light.service = context.asAbsolutePath('resources/light/ecs/service.svg')
-    globals.iconPaths.dark.service = context.asAbsolutePath('resources/dark/ecs/service.svg')
-
-    globals.iconPaths.light.container = context.asAbsolutePath('resources/light/ecs/container.svg')
-    globals.iconPaths.dark.container = context.asAbsolutePath('resources/dark/ecs/container.svg')
-
-    // temporary icons while Cloud9 does not have Codicon support
-    globals.iconPaths.dark.plus = context.asAbsolutePath('resources/dark/plus.svg')
-    globals.iconPaths.light.plus = context.asAbsolutePath('resources/light/plus.svg')
-
-    globals.iconPaths.dark.edit = context.asAbsolutePath('resources/dark/edit.svg')
-    globals.iconPaths.light.edit = context.asAbsolutePath('resources/light/edit.svg')
-
-    globals.iconPaths.dark.sync = context.asAbsolutePath('resources/dark/sync.svg')
-    globals.iconPaths.light.sync = context.asAbsolutePath('resources/light/sync.svg')
-
-    globals.iconPaths.dark.syncIgnore = context.asAbsolutePath('resources/dark/sync-ignore.svg')
-    globals.iconPaths.light.syncIgnore = context.asAbsolutePath('resources/light/sync-ignore.svg')
-
-    globals.iconPaths.dark.refresh = context.asAbsolutePath('resources/dark/refresh.svg')
-    globals.iconPaths.light.refresh = context.asAbsolutePath('resources/light/refresh.svg')
-
-    globals.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
-    globals.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
+    try {
+        if (fs.existsSync(darkPath) && fs.existsSync(lightPath)) {
+            return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
+        }
+    } catch (error) {
+        getLogger().warn(`icons: path resolution failed for "${target}": %s`, error)
+    }
 }

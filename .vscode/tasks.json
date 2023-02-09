@@ -49,12 +49,28 @@
         {
             "type": "npm",
             "script": "compile",
+            "dependsOn": ["Kill Tasks"],
             "problemMatcher": "$tsc"
         },
         {
             "type": "npm",
             "script": "clean",
+            "dependsOn": ["Kill Tasks"],
             "problemMatcher": []
+        },
+        {
+            "label": "Kill Tasks",
+            "type": "process",
+            "command": "${input:killTasks}",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "killTasks",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "terminateAll"
         }
     ]
 }

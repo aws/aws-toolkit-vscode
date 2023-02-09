@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
-import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-
+import { CredentialsShim } from '../credentials/loginManager'
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
     readonly credentialsId: string
@@ -16,22 +15,21 @@ export interface AwsContextCredentials {
     readonly defaultRegion?: string
 }
 
-// Carries the current context data on events
+/** AWS Toolkit context change */
 export interface ContextChangeEventsArgs {
+    /** AWS credentials profile name. */
     readonly profileName?: string
+    /** AWS account. */
     readonly accountId?: string
-    readonly developerMode: Set<string>
 }
 
-// Represents a credential profile and zero or more regions.
+/**
+ * Represents the current AWS credentials and zero or more regions.
+ */
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
-export class NoActiveCredentialError extends Error {
-    public message = 'No AWS profile selected'
-}
-
 const logged = new Set<string>()
-const DEFAULT_REGION = 'us-east-1'
+const defaultRegion = 'us-east-1'
 
 /**
  * Wraps an AWS context in terms of credential profile and zero or more regions. The
@@ -40,20 +38,22 @@ const DEFAULT_REGION = 'us-east-1'
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
-
-    // the collection of regions the user has expressed an interest in working with in
-    // the current workspace
-    private readonly explorerRegions: string[]
+    private shim?: CredentialsShim
+    public lastTouchedRegion?: string
 
     private currentCredentials: AwsContextCredentials | undefined
-    private developerMode = new Set<string>()
 
-    public constructor(private context: vscode.ExtensionContext) {
+    public constructor() {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
+    }
 
-        const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
-        this.explorerRegions = persistedRegions || []
+    public get credentialsShim(): CredentialsShim | undefined {
+        return this.shim
+    }
+
+    public set credentialsShim(shim: CredentialsShim | undefined) {
+        this.shim = shim
     }
 
     /**
@@ -73,31 +73,15 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     /**
-     * Sets "developer mode" when a Toolkit developer setting is active.
-     *
-     * @param enable  Set "developer mode" as enabled or disabled
-     * @param settingName  Name of the detected setting, or undefined for `enable=false`.
-     */
-    public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {
-        const enabled = this.developerMode.size > 0
-        if (enable === enabled && (!enable || this.developerMode.has(settingName ?? '?'))) {
-            // Do nothing. Besides performance, this avoids infinite loops.
-            return
-        }
-
-        if (!enable) {
-            this.developerMode.clear()
-        } else {
-            this.developerMode.add(settingName ?? '?')
-        }
-        this.emitEvent()
-    }
-
-    /**
      * @description Gets the Credentials currently used by the Toolkit.
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.currentCredentials?.credentials
+        return (
+            this.shim?.get().catch(error => {
+                getLogger().warn(`credentials: failed to retrieve latest credentials: ${error.message}`)
+                return undefined
+            }) ?? this.currentCredentials?.credentials
+        )
     }
 
     // returns the configured profile, if any
@@ -115,43 +99,11 @@ export class DefaultAwsContext implements AwsContext {
         if (!logged.has(credId) && !this.currentCredentials?.defaultRegion) {
             logged.add(credId)
             getLogger().warn(
-                `AwsContext: no default region in credentials profile, falling back to ${DEFAULT_REGION}: ${credId}`
+                `AwsContext: no default region in credentials profile, falling back to ${defaultRegion}: ${credId}`
             )
         }
 
-        return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
-    }
-
-    // async so that we could *potentially* support other ways of obtaining
-    // region in future - for example from instance metadata if the
-    // user was running Code on an EC2 instance.
-    public async getExplorerRegions(): Promise<string[]> {
-        return this.explorerRegions
-    }
-
-    // adds one or more regions into the preferred set, persisting the set afterwards as a
-    // comma-separated string.
-    public async addExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
-            if (index === -1) {
-                this.explorerRegions.push(r)
-            }
-        })
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-    }
-
-    // removes one or more regions from the user's preferred set, persisting the set afterwards as a
-    // comma-separated string.
-    public async removeExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
-            if (index >= 0) {
-                this.explorerRegions.splice(index, 1)
-            }
-        })
-
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
+        return this.currentCredentials?.defaultRegion ?? defaultRegion
     }
 
     private emitEvent() {
@@ -159,7 +111,6 @@ export class DefaultAwsContext implements AwsContext {
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
-            developerMode: this.developerMode,
         })
     }
 }

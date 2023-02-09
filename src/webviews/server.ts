@@ -4,98 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { Message } from './client'
 
 interface Command<T extends any[] = any, R = any> {
     (...args: T): R | never
-    (this: WebviewServer, ...args: T): R | never
 }
 
-export interface Protocol<U = any, S = any> {
-    /**
-     * Called when the frontend wants to submit the webview. If the result is valid, the webview is closed.
-     */
-    submit?: (result: S) => Promise<void> | void | never
-    /**
-     * Initial data to load. This is called only once, even if the view is refreshed.
-     * Further calls return undefined.
-     */
-    init?: () => Promise<U | undefined>
-    [key: string]: Command<any, any> | vscode.EventEmitter<any> | undefined
-}
-
-export interface Commands {
-    [key: string]: Command<any, any> | undefined
-}
-
-export interface Events {
-    [key: string]: vscode.EventEmitter<any>
-}
-
-export interface WebviewCompileOptions<
-    C extends Commands = any,
-    E extends Events = any,
-    D extends any[] = any[],
-    S = any,
-    O = any,
-    P = any
-> {
-    /**
-     * Events emitters provided by the backend. Note that whatever is passed into this option is
-     * only used for type and key generation. Do not assume the same reference will exist on instantiation.
-     */
-    events?: E
-    /**
-     * Commands provided by the backend. These are called with a `this` type with the following shape:
-     * ```ts
-     * interface {
-     *    emitters: typeof events
-     *    arguments: typeof validateData
-     * }
-     * ```
-     * Merged with {@link WebviewServer}
-     */
-    commands?: C
-    /**
-     * Called when the webview is started.
-     *
-     * Whatever is returned by this function is then passed into the frontend code via {@link Protocol.init}.
-     * Note that if this function is not provided or if it returns `undefined` then the arguments are passed directly
-     * to the frontend code. This function and {@link WebviewCompileOptions.submit} can be thought of as 'glue' code
-     * that exists as interfaces between the frontend/backend logic. The purpose is primarily to infer types, though
-     * it can also be used for pre/post processing of the inputs/outputs of the webview.
-     */
-    start?(this: ThisType<WebviewServer>, ...args: D): Promise<P> | P
-    /**
-     * Called when the webview calls {@link Protocol.submit}.
-     *
-     * Whatever is returned by this function is then forwarded to the creator of the webview. If this function does not
-     * exist, or if it returns `undefined`, then `result` is passed directly. A successful submission will close the
-     * webview, disposing any related listeners or handlers. Submissions can be rejected by throwing an error.
-     */
-    submit?(this: ThisType<WebviewServer>, result: S): Promise<O> | O
-}
-
-export type CompileContext<T> = T extends WebviewCompileOptions<any, infer E>
-    ? ThisType<WebviewServer & { emitters: E } & { data: ReturnType<NonNullable<T['start']>> }>
-    : never
-export type SubmitFromOptions<O> = O extends WebviewCompileOptions<any, any, any, infer S> ? S : never
-export type DataFromOptions<O> = O extends WebviewCompileOptions<any, any, infer D> ? D : never
-export type OutputFromOptions<O> = O extends WebviewCompileOptions<any, any, any, any, infer O> ? O : never
-export type PropsFromOptions<O> = O extends WebviewCompileOptions<any, any, any, any, any, infer P> ? P : never
-export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, any, infer S, any, infer P>
-    ? {
-          submit: (result: S) => Promise<void> | void | never
-          init: () => Promise<P | undefined> | P | undefined
-      } & C &
-          E
-    : never
-
-export type WebviewServer = vscode.Webview & {
-    context: ExtContext
-    dispose(): void
+export interface Protocol {
+    [key: string]: Command | vscode.EventEmitter<any> | undefined
 }
 
 /**
@@ -104,7 +21,7 @@ export type WebviewServer = vscode.Webview & {
  * @param webview Target webview to add the event hook.
  * @param commands Commands to register.
  */
-export function registerWebviewServer(webview: WebviewServer, commands: Protocol): vscode.Disposable {
+export function registerWebviewServer(webview: vscode.Webview, commands: Protocol): vscode.Disposable {
     const eventListeners: vscode.Disposable[] = []
     const disposeListeners = () => {
         while (eventListeners.length) {
@@ -139,11 +56,6 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
         let result: any
         try {
             result = await handler.call(webview, ...data)
-            // For now undefined means we should not send any data back
-            // Later on the commands should specify how undefined is handled
-            if (result === undefined) {
-                return
-            }
         } catch (err) {
             if (!(err instanceof Error)) {
                 getLogger().debug(`Webview server threw on comamnd "${command}" but it was not an error: `, err)

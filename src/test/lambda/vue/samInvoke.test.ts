@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { finalizeConfig } from '../../../lambda/configEditor/vue/samInvokeBackend'
+import { finalizeConfig } from '../../../lambda/vue/configEditor/samInvokeBackend'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 
 describe('Sam Invoke Vue Backend', () => {

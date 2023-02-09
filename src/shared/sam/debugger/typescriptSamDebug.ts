@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { existsSync, PathLike, readFileSync } from 'fs'
 import { writeFileSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -14,9 +15,14 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { getLogger } from '../../logger'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+
+const tsConfigFile = 'aws-toolkit-tsconfig.json'
+
+// use project tsconfig.json as initial base - if unable to parse existing config
+const tsConfigInitialBaseFile = 'tsconfig.json'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -25,12 +31,11 @@ export async function invokeTypescriptLambda(
     ctx: ExtContext,
     config: NodejsDebugConfiguration
 ): Promise<NodejsDebugConfiguration> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
 
-    const onAfterBuild = () => compileTypeScript(config)
-    const c = (await runLambdaFunction(ctx, config, onAfterBuild)) as NodejsDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
     return c
 }
 
@@ -67,6 +72,9 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     let localRoot: string | undefined
     let remoteRoot: string | undefined
     config.codeRoot = pathutil.normalize(config.codeRoot)
+
+    // compile typescript code and convert lambda handler if necessary
+    await compileTypeScript(config)
 
     const isImageLambda = isImageLambdaConfig(config)
 
@@ -113,9 +121,9 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
  * Compiles non-template (target=code) debug configs, using a temporary default
  * tsconfig.json file.
  *
- * Assumes that `sam build` was already performed.
+ * Assumes that `sam build` was not already performed.
  */
-async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
+async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     if (!config.baseBuildDir) {
         throw Error('invalid state: config.baseBuildDir was not set')
     }
@@ -134,46 +142,76 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
 
     // Require tsconfig.json or *.ts in the top-level of the source app, to
     // indicate a typescript Lambda. #2086
-    // Note: we don't use this tsconfig.json for compiling the target=code
-    // Lambda app below, instead we generate a minimal one.
+    // Note: we use this tsconfig.json as a base for compiling the target=code
+    // Lambda app below. If it does not exist, we generate a minimal one.
     const isTsApp = (await findTsOrTsConfig(config.codeRoot, false)) !== undefined
     if (!isTsApp) {
         return
     }
 
-    const buildOutputDir = path.join(config.baseBuildDir, 'output')
-    const buildDirTsFile = await findTsOrTsConfig(buildOutputDir, true)
-    if (!buildDirTsFile) {
-        // Should never happen: `sam build` should have copied the tsconfig.json from the source app dir.
-        throw new Error(`tsconfig.json or *.ts not found in: "${buildOutputDir}/*"`)
+    const loadBaseConfig = (tsConfigPath: PathLike) => {
+        if (!existsSync(tsConfigPath)) {
+            return undefined
+        }
+
+        try {
+            const tsConfig = JSON.parse(readFileSync(tsConfigPath).toString())
+            getLogger('channel').info(`Using base TypeScript config: ${tsConfigPath}`)
+            return tsConfig
+        } catch (err) {
+            getLogger('channel').error(`Unable to use TypeScript base: ${tsConfigPath}`)
+        }
+
+        return undefined
     }
-    // XXX: `sam` may rename the CodeUri (and thus "output/<app>/" dir) if the
-    // original "<app>/" dir contains special chars, so get it this way. #2086
-    const buildDirApp = path.dirname(buildDirTsFile)
-    const buildDirTsConfig = path.join(buildDirApp, 'tsconfig.json')
+
+    const tsConfigPath = path.join(config.codeRoot, tsConfigFile)
+
+    const tsConfig =
+        loadBaseConfig(tsConfigPath) ?? loadBaseConfig(path.join(config.codeRoot, tsConfigInitialBaseFile)) ?? {}
+
+    if (tsConfig.compilerOptions === undefined) {
+        getLogger('channel').info('Creating TypeScript config')
+        tsConfig.compilerOptions = {
+            target: 'es6',
+            module: 'commonjs',
+            inlineSourceMap: true,
+        }
+    }
+
+    const compilerOptions = tsConfig.compilerOptions
+
+    // determine build directory
+    const tsBuildDir = path.resolve(config.codeRoot, config.sam?.buildDir ?? compilerOptions.outDir ?? '.')
+    compilerOptions.outDir = tsBuildDir
+
+    // overwrite rootDir, sourceRoot
+    compilerOptions.rootDir = '.'
+    compilerOptions.sourceRoot = config.codeRoot
+
+    const typeRoots: string[] = Array.isArray(compilerOptions.typeRoots) ? compilerOptions.typeRoots : []
+    typeRoots.push('node_modules/@types')
+    compilerOptions.typeRoots = [...new Set(typeRoots)]
+
+    const types: string[] = Array.isArray(compilerOptions.types) ? compilerOptions.types : []
+    types.push('node')
+    compilerOptions.types = [...new Set(types)]
+
+    writeFileSync(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
+
+    // resolve ts lambda handler to point into build directory relative to codeRoot
+    const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
+    config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
+    getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
     const tsc = await systemutil.SystemUtilities.findTypescriptCompiler()
     if (!tsc) {
         throw new Error('TypeScript compiler "tsc" not found in node_modules/ or the system.')
     }
 
-    // Default config.
-    // Adapted from: https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
-    const defaultTsconfig = {
-        compilerOptions: {
-            target: 'es6',
-            module: 'commonjs',
-            typeRoots: ['node_modules/@types'],
-            types: ['node'],
-            rootDir: '.',
-            inlineSourceMap: true,
-        },
-    }
     try {
-        // Overwrite the tsconfig.json copied by `sam build`.
-        writeFileSync(buildDirTsConfig, JSON.stringify(defaultTsconfig, undefined, 4))
         getLogger('channel').info(`Compiling TypeScript app with: "${tsc}"`)
-        await new ChildProcess(tsc, ['--project', buildDirApp]).run()
+        await new ChildProcess(tsc, ['--project', tsConfigPath]).run()
     } catch (error) {
         getLogger('channel').error(`TypeScript compile error: ${error}`)
         throw Error('Failed to compile TypeScript app')

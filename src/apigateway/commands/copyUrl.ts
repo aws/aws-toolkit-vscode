@@ -4,22 +4,19 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { Env } from '../../shared/vscode/env'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { copyToClipboard } from '../../shared/utilities/messages'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { RestApiNode } from '../explorer/apiNodes'
 import * as picker from '../../shared/ui/picker'
 import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
-import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { RegionProvider } from '../../shared/regions/regionProvider'
-import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
+import { defaultDnsSuffix, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
-import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -29,12 +26,11 @@ interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
 export async function copyUrlCommand(
     node: RestApiNode,
     regionProvider: RegionProvider,
-    window = Window.vscode(),
-    env = Env.vscode()
+    window = Window.vscode()
 ): Promise<void> {
     const region = node.regionCode
-    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
-    const client: ApiGatewayClient = globals.toolkitClientBuilder.createApiGatewayClient(region)
+    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
+    const client = new DefaultApiGatewayClient(region)
 
     let stages: Stage[]
     try {
@@ -51,8 +47,8 @@ export async function copyUrlCommand(
             }
         )
     } catch (e) {
-        getLogger().error(`Failed to load stages: %O`, e)
-        recordApigatewayCopyUrl({ result: 'Failed' })
+        getLogger().error(`Failed to load stages: %s`, e)
+        telemetry.apigateway_copyUrl.emit({ result: 'Failed' })
         return
     }
 
@@ -65,11 +61,12 @@ export async function copyUrlCommand(
         window.showInformationMessage(
             localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
         )
-        recordApigatewayCopyUrl({ result: 'Failed' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Failed' })
         return
     } else if (quickPickItems.length === 1) {
         const url = quickPickItems[0].detail
-        await copyUrl(window, env, url)
+        await copyToClipboard(url, 'URL')
+        telemetry.apigateway_copyUrl.emit({ result: 'Succeeded' })
         return
     }
 
@@ -92,27 +89,15 @@ export async function copyUrlCommand(
     const pickerResponse = picker.verifySinglePickerOutput<StageInvokeUrlQuickPick>(choices)
 
     if (!pickerResponse) {
-        recordApigatewayCopyUrl({ result: 'Cancelled' })
+        telemetry.apigateway_copyUrl.emit({ result: 'Cancelled' })
         return
     }
 
     const url = pickerResponse.detail
-    await copyUrl(window, env, url)
+    await copyToClipboard(url, 'URL')
+    telemetry.apigateway_copyUrl.emit({ result: 'Succeeded' })
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {
     return `https://${apiId}.execute-api.${region}.${dnsSuffix}/${stage}`
-}
-
-async function copyUrl(window: Window, env: Env, url: string) {
-    await env.clipboard.writeText(url)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
-
-    recordApigatewayCopyUrl({ result: 'Succeeded' })
 }

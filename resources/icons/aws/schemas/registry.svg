@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
+    <title>icon-folder-in-dark-mode</title>
+    <desc>Created with Sketch.</desc>
+    <g id="icon-folder-in-dark-mode" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" fill="currentColor" x="2" y="2" width="12" height="3"></rect>
+        <path d="M14,6 L14,10 L2,10 L2,6 L14,6 Z M13,7 L3,7 L3,9 L13,9 L13,7 Z" id="Combined-Shape" fill="currentColor"></path>
+        <rect id="Rectangle" fill="currentColor" x="2" y="11" width="12" height="3"></rect>
+    </g>
+</svg>

@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
-import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
+import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 
@@ -61,15 +61,10 @@ export type ExtendedQuickPickOptions<T> = Omit<
     // TODO: this could optionally be a callback accepting the error and returning an item
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
-    /**
-     * Controls whether "Selected previously" is set as the description of the `recentItem` (default: true).
-     * This currently mutates the item as it is expected that callers regenerate items every prompt
-     */
-    recentItemText?: boolean
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
-const DEFAULT_NO_ITEMS_ITEM = {
+const defaultNoItemsItem = {
     label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
     detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
     alwaysShow: true,
@@ -77,18 +72,17 @@ const DEFAULT_NO_ITEMS_ITEM = {
 }
 
 /** See {@link ExtendedQuickPickOptions.errorItem errorItem} for setting a different error item */
-const DEFAULT_ERROR_ITEM = {
+const defaultErrorItem = {
     // TODO: add icon, check for C9
     label: localize('AWS.picker.dynamic.error.label', '[Error loading items]'),
     alwaysShow: true,
     data: WIZARD_BACK,
 }
 
-export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
+export const defaultQuickpickOptions: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
-    recentItemText: true,
-    noItemsFoundItem: DEFAULT_NO_ITEMS_ITEM,
-    errorItem: DEFAULT_ERROR_ITEM,
+    noItemsFoundItem: defaultNoItemsItem,
+    errorItem: defaultErrorItem,
 }
 
 type QuickPickData<T> = PromptResult<T> | (() => Promise<PromptResult<T>>)
@@ -104,13 +98,14 @@ export type DataQuickPickItem<T> = vscode.QuickPickItem & {
     onClick?: () => any | Promise<any>
     /** Stops the QuickPick from estimating how many steps an item would add in a Wizard flow */
     skipEstimate?: boolean
+    recentlyUsed?: boolean
 }
 
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
 
-export const CUSTOM_USER_INPUT = Symbol()
+export const customUserInput = Symbol()
 
-function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
+export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
 }
 
@@ -136,8 +131,8 @@ export function createQuickPick<T>(
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
-    const mergedOptions = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
-    applyPrimitives(picker, mergedOptions)
+    const mergedOptions = { ...defaultQuickpickOptions, ...options }
+    assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
 
     const prompter =
@@ -148,6 +143,16 @@ export function createQuickPick<T>(
     prompter.loadItems(items)
 
     return prompter
+}
+
+export async function showQuickPick<T>(
+    items: ItemLoadTypes<T>,
+    options?: ExtendedQuickPickOptions<T>
+): Promise<T | undefined> {
+    const prompter = createQuickPick(items, options)
+    const response = await prompter.prompt()
+
+    return isValidResponse(response) ? response : undefined
 }
 
 // Note: the generic type used in `createLabelQuickPick` is needed to infer the correct type when using string
@@ -258,7 +263,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * of the items and makes it the active selection.
      */
     public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
-        this.setRecentItem(response, true)
+        this.setRecentItem(response)
     }
 
     public get recentItem() {
@@ -324,7 +329,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         // selectedItems will change as options are clicked (and not when accepting).
         this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
 
-        if (this.quickPick.activeItems.length === 0 && this.quickPick.items.length > 0) {
+        if (!items.length || (this.quickPick.activeItems.length === 0 && this.quickPick.items.length > 0)) {
             this.quickPick.activeItems = [this.quickPick.items[0]]
         }
     }
@@ -335,15 +340,36 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     private appendItems(items: DataQuickPickItem<T>[]): void {
         const picker = this.quickPick
         const recent = picker.activeItems
+        const mergedItems = picker.items.concat(items)
 
-        picker.items = picker.items.concat(items).sort(this.options.compare)
+        const recentlyUsedItem = mergedItems.find(item => item.recentlyUsed)
+        if (recentlyUsedItem !== undefined) {
+            if (items.includes(recentlyUsedItem)) {
+                const prefix = recentlyUsedItem.description
+                recentlyUsedItem.description = prefix ? `${prefix} (${recentlyUsed})` : `(${recentlyUsed})`
+            }
 
-        if (picker.items.length === 0 && !this.busy) {
-            this.isShowingPlaceholder = true
-            picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            picker.items = mergedItems.sort((a, b) => {
+                if (a === recentlyUsedItem) {
+                    return -1
+                } else if (b === recentlyUsedItem) {
+                    return 1
+                } else {
+                    return this.options.compare?.(a, b) ?? 0
+                }
+            })
+
+            picker.activeItems = [recentlyUsedItem]
+        } else {
+            picker.items = mergedItems.sort(this.options.compare)
+
+            if (picker.items.length === 0 && !this.busy) {
+                this.isShowingPlaceholder = true
+                picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
+            }
+
+            this.selectItems(...recent.filter(i => !i.invalidSelection))
         }
-
-        this.selectItems(...recent)
     }
 
     // TODO: add options to this to clear items _before_ loading them
@@ -357,7 +383,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param disableInput Disables the prompter until the items have been loaded, only relevant for async loads (default: true)
      * @returns A promise that is resolved when loading has finished
      */
-    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = true): Promise<void> {
+    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = false): Promise<void> {
         // This code block assumes that callers never try to load items in parallel
         // For now this okay since we don't have any pickers that require that capability
 
@@ -400,7 +426,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                         break
                     }
                 } catch (err) {
-                    getLogger().error('QuickPickPrompter: loading items from AsyncIterable failed: %O', err)
+                    getLogger().error('QuickPickPrompter: loading items from AsyncIterable failed: %s', err)
                     addErrorItem(err as Error)
                     break
                 }
@@ -410,7 +436,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             try {
                 this.appendItems(await items)
             } catch (err) {
-                getLogger().error('QuickPickPrompter: loading items from Promise failed: %O', err)
+                getLogger().error('QuickPickPrompter: loading items from Promise failed: %s', err)
                 addErrorItem(err as Error)
             }
         } else {
@@ -455,18 +481,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
-     * Sets the "last selected/accepted" item or input, moves it to the start
-     * of the items and makes it the active selection.
+     * Sets the "last selected/accepted" item or input and makes it the active selection.
      *
      * @param picked  Recent item.
-     * @param first Controls whether the recent item is moved to the start of the items.
      */
-    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
-        const recentItemText = `(${recentlyUsed})`
-        // HACK: Scrub any "selected previously" descriptions, in case this is
-        // "backwards navigation". #2148
-        this.quickPick.items.forEach(item => item.description?.replace(recentItemText, ''))
-
+    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined): void {
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -475,24 +494,6 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === recovered?.label)
         } else {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
-        }
-
-        if (this.options.recentItemText) {
-            this.quickPick.activeItems.forEach(
-                item => (item.description = `${item.description ?? ''} ${recentItemText}`)
-            )
-            // Needed to force a UI update.
-            this.quickPick.items = [...this.quickPick.items]
-        }
-
-        if (first) {
-            const activeItems = this.quickPick.activeItems
-            function recentFirst(a: DataQuickPickItem<T>, b: DataQuickPickItem<T>): number {
-                const isRecent = activeItems.find(val => val.label === a.label)
-                return isRecent ? -1 : 0
-            }
-            this.quickPick.items = [...this.quickPick.items].sort(recentFirst)
-            this.quickPick.activeItems = this.quickPick.items.length > 0 ? [this.quickPick.items[0]] : []
         }
 
         if (this.quickPick.activeItems.length === 0) {
@@ -581,7 +582,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         super(quickPick)
 
         this.transform(selection => {
-            if ((selection as T | typeof CUSTOM_USER_INPUT) === CUSTOM_USER_INPUT) {
+            if ((selection as T | typeof customUserInput) === customUserInput) {
                 return settings.transform(quickPick.value) ?? selection
             }
             return selection
@@ -601,7 +602,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         const picker = this.quickPick as DataQuickPick<T | symbol>
         const validator = (input: string) =>
             this.settings.validator !== undefined ? this.settings.validator(input) : undefined
-        const items = picker.items.filter(item => item.data !== CUSTOM_USER_INPUT)
+        const items = picker.items.filter(item => item.data !== customUserInput)
         const { label } = this.settings
 
         function update(value: string = '') {
@@ -610,7 +611,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
                     label,
                     description: value,
                     alwaysShow: true,
-                    data: CUSTOM_USER_INPUT,
+                    data: customUserInput,
                     invalidSelection: validator(value) !== undefined,
                     detail: validator(value),
                 } as DataQuickPickItem<T | symbol>
@@ -626,6 +627,6 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     }
 
     private isUserInput(picked: any): picked is DataQuickPickItem<symbol> {
-        return picked !== undefined && picked.data === CUSTOM_USER_INPUT
+        return picked !== undefined && picked.data === customUserInput
     }
 }

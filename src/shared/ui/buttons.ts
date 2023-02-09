@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
-import globals from '../extensionGlobals'
+import { getIcon } from '../icons'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
-const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
+const helpTooltip = localize('AWS.command.help', 'View Toolkit Documentation')
 
 type WizardButton<T> = QuickInputButton<T | WizardControl> | QuickInputButton<void>
 export type PrompterButtons<T> = readonly WizardButton<T>[]
@@ -31,12 +31,9 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  */
 export function createHelpButton(
     uri: string | vscode.Uri = documentationUrl,
-    tooltip: string = HELP_TOOLTIP
+    tooltip: string = helpTooltip
 ): QuickInputLinkButton {
-    const iconPath = {
-        light: vscode.Uri.file(globals.iconPaths.light.help),
-        dark: vscode.Uri.file(globals.iconPaths.dark.help),
-    }
+    const iconPath = getIcon('vscode-help')
 
     return new QuickInputLinkButton(uri, iconPath, tooltip)
 }
@@ -114,10 +111,7 @@ export function createBackButton(): QuickInputButton<WizardControl> {
 
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
-        iconPath: {
-            light: globals.iconPaths.light.exit,
-            dark: globals.iconPaths.dark.exit,
-        },
+        iconPath: getIcon('vscode-close'),
         tooltip: localize('AWS.generic.exit', 'Exit'),
         onClick: () => WIZARD_EXIT,
     }
@@ -125,10 +119,7 @@ export function createExitButton(): QuickInputButton<WizardControl> {
 
 export function createRefreshButton(): QuickInputButton<void> {
     return {
-        iconPath: {
-            light: globals.iconPaths.light.refresh,
-            dark: globals.iconPaths.dark.refresh,
-        },
+        iconPath: getIcon('vscode-refresh'),
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
 }
@@ -136,10 +127,7 @@ export function createRefreshButton(): QuickInputButton<void> {
 /** Creates a '+' button. Usually used to add new resources during a prompt. */
 export function createPlusButton(tooltip?: string): QuickInputButton<void> {
     return {
-        iconPath: {
-            light: globals.iconPaths.light.plus,
-            dark: globals.iconPaths.dark.plus,
-        },
+        iconPath: getIcon('vscode-add'),
         tooltip,
     }
 }

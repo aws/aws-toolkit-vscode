@@ -15,7 +15,7 @@ jobs:
         runs-on: macos-latest
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
@@ -26,33 +26,50 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm install
+            - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
               with:
                   run: npm test
             - name: Code coverage
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              run: bash <(curl -s https://codecov.io/bash) -s .coverage
+              uses: codecov/codecov-action@v2
+              with:
+                  verbose: true
+                  file: ./coverage/coverage-final.json
+                  flags: macos-unittests
 
     windows:
         name: Windows nodejs
         runs-on: windows-2019
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [stable, insiders]
         env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm install
+            - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
+            - name: Code coverage
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              uses: codecov/codecov-action@v2
+              with:
+                  verbose: true
+                  file: ./coverage/coverage-final.json
+                  flags: windows-unittests

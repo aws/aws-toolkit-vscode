@@ -4,28 +4,20 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    Bucket,
-    CreateFolderRequest,
-    CreateFolderResponse,
-    Folder,
-    S3Client,
-    UploadFileRequest,
-} from '../../shared/clients/s3Client'
+import { Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../shared/clients/s3Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { folderIconPath } from '../../shared/utilities/vsCodeUtils'
 import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Represents a folder in an S3 bucket that may contain subfolders and/or objects.
@@ -41,14 +33,13 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = folder.path
-        this.iconPath = folderIconPath()
+        this.iconPath = getIcon('vscode-folder')
         this.contextValue = 'awsS3FolderNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noObjects', '[No Objects found]')),
         })
@@ -90,14 +81,6 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
-    }
-
-    /**
-     * See {@link S3Client.uploadFile}.
-     */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
-        const managedUpload = await this.s3.uploadFile(request)
-        await managedUpload.promise()
     }
 
     public get arn(): string {

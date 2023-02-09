@@ -7,7 +7,9 @@ import { TreeItem, TreeItemCollapsibleState, commands } from 'vscode'
 import { isCloud9 } from '../../extensionUtilities'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
-    protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
+    public readonly regionCode?: string
+
+    public constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)
     }
 

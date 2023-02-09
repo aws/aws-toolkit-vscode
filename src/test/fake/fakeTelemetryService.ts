@@ -4,7 +4,7 @@
  */
 
 import { TelemetryPublisher } from '../../shared/telemetry/telemetryPublisher'
-import { TelemetryFeedback } from '../../shared/telemetry/telemetryFeedback'
+import { TelemetryFeedback } from '../../shared/telemetry/telemetryClient'
 import { MetricDatum } from '../../shared/telemetry/clienttelemetry'
 
 export class FakeTelemetryPublisher implements TelemetryPublisher {

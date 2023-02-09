@@ -3,19 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { getLogger, Logger } from '../logger'
+import { getLogger } from '../logger'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { Endpoints, loadEndpoints } from './endpoints'
 
 export class EndpointsProvider {
-    private readonly logger: Logger = getLogger()
-    public get onEndpointsUpdated(): vscode.Event<EndpointsProvider> {
-        return this.onEndpointsUpdatedEmitter.event
-    }
-    private readonly onEndpointsUpdatedEmitter: vscode.EventEmitter<EndpointsProvider> = new vscode.EventEmitter()
-    private endpoints: Endpoints | undefined
-
     /**
      * @param localFetcher Retrieves endpoints manifest from local sources available to the toolkit. Expected
      *                      to resolve fast, and is both a placeholder until the remote resources are loaded, and
@@ -27,36 +19,25 @@ export class EndpointsProvider {
         private readonly remoteFetcher: ResourceFetcher
     ) {}
 
-    public getEndpoints(): Endpoints | undefined {
-        return this.endpoints
-    }
-
-    public async load(): Promise<void> {
-        this.logger.info('Retrieving AWS endpoint data')
-        const localEndpointsJson = await this.localFetcher.get()
-        if (localEndpointsJson) {
-            const localEndpoints = loadEndpoints(localEndpointsJson)
-            if (localEndpoints) {
-                this.updateEndpoints(localEndpoints)
-            }
-        }
-
+    public async load(): Promise<Endpoints> {
+        getLogger().info('Retrieving AWS endpoint data')
         const remoteEndpointsJson = await this.remoteFetcher.get()
         if (remoteEndpointsJson) {
             const remoteEndpoints = loadEndpoints(remoteEndpointsJson)
             if (remoteEndpoints) {
-                this.updateEndpoints(remoteEndpoints)
+                return remoteEndpoints
+            }
+        }
+
+        const localEndpointsJson = await this.localFetcher.get()
+        if (localEndpointsJson) {
+            const localEndpoints = loadEndpoints(localEndpointsJson)
+            if (localEndpoints) {
+                return localEndpoints
             }
         }
 
         // If endpoints were never loaded by this point, we have a critical error
-        if (!this.endpoints) {
-            throw new Error('Failure to load any endpoints manifest data')
-        }
-    }
-
-    private updateEndpoints(endpoints: Endpoints) {
-        this.endpoints = endpoints
-        this.onEndpointsUpdatedEmitter.fire(this)
+        throw new Error('Failure to load any endpoints manifest data')
     }
 }

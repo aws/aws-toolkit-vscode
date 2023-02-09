@@ -4,8 +4,10 @@
  */
 
 import * as assert from 'assert'
+import { TreeItem } from 'vscode'
 import { copyArnCommand } from '../../../awsexplorer/commands/copyArn'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { TreeShim } from '../../../shared/treeview/utils'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
@@ -36,6 +38,17 @@ describe('copyArnCommand', function () {
         assert.strictEqual(env.clipboard.text, undefined)
         assert.strictEqual(window.statusBar.message, undefined)
         assert.ok(window.message.error?.includes('Could not find an ARN'))
+    })
+
+    it('handles `TreeShim`', async function () {
+        const node = new TreeShim({
+            id: 'shim',
+            resource: { name: 'resource', arn: 'arn' },
+            getTreeItem: () => new TreeItem(''),
+        })
+
+        await copyArnCommand(node, window, env)
+        assert.strictEqual(env.clipboard.text, 'arn')
     })
 })
 

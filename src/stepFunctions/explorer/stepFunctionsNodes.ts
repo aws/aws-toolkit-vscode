@@ -9,19 +9,18 @@ const localize = nls.loadMessageBundle()
 
 import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
+export const contextValueStateMachine = 'awsStateMachineNode'
 
 const sfnNodeMap = new Map<string, StepFunctionsNode>()
 
@@ -40,11 +39,13 @@ export function refreshStepFunctionsTree(regionCode: string) {
 export class StepFunctionsNode extends AWSTreeNodeBase {
     private readonly stateMachineNodes: Map<string, StateMachineNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly client = new DefaultStepFunctionsClient(regionCode)
+    ) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
         this.contextValue = 'awsStepFunctionsNode'
-
         sfnNodeMap.set(regionCode, this)
     }
 
@@ -55,7 +56,6 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
@@ -66,9 +66,8 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
         const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
-            await toArrayAsync(listStateMachines(client)),
+            await toArrayAsync(listStateMachines(this.client)),
             details => details.name
         )
 
@@ -89,10 +88,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     ) {
         super('')
         this.update(details)
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.statemachine),
-            light: vscode.Uri.file(globals.iconPaths.light.statemachine),
-        }
+        this.iconPath = getIcon('aws-stepfunctions-preview')
     }
 
     public update(details: StepFunctions.StateMachineListItem): void {
@@ -124,7 +120,7 @@ function makeStateMachineNode(
     details: StepFunctions.StateMachineListItem
 ): StateMachineNode {
     const node = new StateMachineNode(parent, regionCode, details)
-    node.contextValue = CONTEXT_VALUE_STATE_MACHINE
+    node.contextValue = contextValueStateMachine
 
     return node
 }

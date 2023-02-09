@@ -1,0 +1,18 @@
+{
+	"date": "2022-08-29",
+	"version": "1.49.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer adds redundant closing brackets/parens/braces"
+		},
+		{
+			"type": "Feature",
+			"description": "Don't open webviews in a split window (except SAM debug configuration editor)."
+		},
+		{
+			"type": "Removal",
+			"description": "Python 3.6 is no longer supported"
+		}
+	]
+}

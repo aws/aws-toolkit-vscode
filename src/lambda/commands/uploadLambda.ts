@@ -9,185 +9,289 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as AdmZip from 'adm-zip'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
-import { showConfirmationMessage } from '../../shared/utilities/messages'
-
-import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
+import {
+    fileExists,
+    cloud9Findfile,
+    makeTemporaryToolkitFolder,
+    tryRemoveFolder,
+} from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
-import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { Window } from '../../shared/vscode/window'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { getLambdaDetails } from '../utils'
-import { getIdeProperties } from '../../shared/extensionUtilities'
+import { getLambdaDetails, listLambdaFunctions } from '../utils'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
+import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
+import { Prompter, PromptResult } from '../../shared/ui/prompter'
+import { ToolkitError } from '../../shared/errors'
+import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import globals from '../../shared/extensionGlobals'
+import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { fromExtensionManifest } from '../../shared/settings'
+import { createRegionPrompter } from '../../shared/ui/common/region'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result, Runtime } from '../../shared/telemetry/telemetry'
+
+interface SavedLambdas {
+    [profile: string]: { [region: string]: string }
+}
+
+class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploaded: Object }) {
+    static #instance: LambdaSettings
+
+    public getRecentLambdas(): SavedLambdas | undefined {
+        try {
+            return this.get('recentlyUploaded')
+        } catch (error) {
+            this.delete('recentlyUploaded')
+        }
+    }
+
+    /**
+     * Adds a new "recently used Lambda" to user settings for the given profile
+     * and region (limit of one item per profile+region).
+     */
+    public setRecentLambda(profile: string, region: string, lambdaName: string): Promise<boolean> {
+        const oldLambdas = this.getRecentLambdas()
+        return this.update('recentlyUploaded', {
+            ...oldLambdas,
+            [profile]: {
+                ...(oldLambdas?.[profile] ?? {}),
+                [region]: lambdaName,
+            },
+        })
+    }
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}
+
+export interface LambdaFunction {
+    readonly name: string
+    readonly region: string
+    readonly configuration?: FunctionConfiguration
+}
 
 /**
  * Executes the "Upload Lambda..." command.
  * Allows for uploads of zip files, and both built and unbuilt directories.
  * Does not discriminate on runtime.
- * @param functionNode Function node from AWS Explorer
+ * @param lambdaArg LambdaFunction
+ * @param path Uri to the template.yaml file or the directory the command was invoked from
  */
-export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
-    const result = await selectUploadTypeAndRunUpload(functionNode)
+export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vscode.Uri) {
+    let result: Result = 'Cancelled'
+    let lambda: LambdaFunction | undefined
 
-    telemetry.recordLambdaUpdateFunctionCode({
-        result,
-        runtime: functionNode.configuration.Runtime as telemetry.Runtime | undefined,
-    })
+    try {
+        const response = await new UploadLambdaWizard(lambdaArg, path).run()
+        if (!response) {
+            getLogger().debug('lambda: UploadLambdaWizard returned undefined. User cancelled.')
+            return
+        }
+        lambda = response.lambda
+        if (response.uploadType === 'zip') {
+            await runUploadLambdaZipFile(lambda, response.targetUri)
+            result = 'Succeeded'
+        } else if (response.uploadType === 'directory' && response.directoryBuildType) {
+            result = (await runUploadDirectory(lambda, response.directoryBuildType, response.targetUri)) ?? result
+            result = 'Succeeded'
+        }
+        // TODO(sijaden): potentially allow the wizard to easily support tagged-union states
+    } catch (err) {
+        result = 'Failed'
+        if (err instanceof ToolkitError) {
+            showViewLogsMessage(`Could not upload lambda: ${err.message}`)
+            getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
+        } else {
+            showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
+            getLogger().error(`Lambda upload failed: %s`, err)
+        }
+    } finally {
+        telemetry.lambda_updateFunctionCode.emit({
+            result,
+            runtime: lambda?.configuration?.Runtime as Runtime | undefined,
+        })
+        if (result === 'Succeeded') {
+            const profile = globals.awsContext.getCredentialProfileName()
+            if (profile && lambda) {
+                LambdaSettings.instance.setRecentLambda(profile, lambda.region, lambda.name)
+            }
+        }
+    }
 }
 
 /**
  * Selects the type of file to upload (zip/dir) and proceeds with the rest of the workflow.
- * @param functionNode Function node from AWS Explorer
  */
-async function selectUploadTypeAndRunUpload(functionNode: LambdaFunctionNode): Promise<telemetry.Result> {
-    const uploadZipItem: vscode.QuickPickItem = {
-        label: addCodiconToString('file-zip', localize('AWS.generic.filetype.zipfile', 'ZIP Archive')),
-    }
-    const uploadDirItem: vscode.QuickPickItem = {
-        label: addCodiconToString('folder', localize('AWS.generic.filetype.directory', 'Directory')),
-    }
-
-    // TODO: Add help button? Consult with doc writers.
-    const picker = createQuickPick({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: true,
-            title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
-            step: 1,
-            totalSteps: 1,
+function createUploadTypePrompter() {
+    const items: DataQuickPickItem<'zip' | 'directory'>[] = [
+        {
+            label: addCodiconToString('file-zip', localize('AWS.generic.filetype.zipfile', 'ZIP Archive')),
+            data: 'zip',
         },
-        items: [uploadZipItem, uploadDirItem],
-        buttons: [vscode.QuickInputButtons.Back],
+        {
+            label: addCodiconToString('folder', localize('AWS.generic.filetype.directory', 'Directory')),
+            data: 'directory',
+        },
+    ]
+
+    return createQuickPick(items, {
+        title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
+        buttons: createCommonButtons(),
     })
-    const response = verifySinglePickerOutput(
-        await promptUser({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
+}
+
+function createBuildPrompter() {
+    const items: DataQuickPickItem<'zip' | 'sam'>[] = [
+        {
+            label: addCodiconToString('exclude', localizedText.no),
+            detail: localize(
+                'AWS.lambda.upload.prebuiltDir.detail',
+                '{0} Toolkit will upload a ZIP of the selected directory.',
+                getIdeProperties().company
+            ),
+            data: 'zip',
+        },
+        {
+            label: addCodiconToString('gear', localizedText.yes),
+            detail: localize(
+                'AWS.lambda.upload.unbuiltDir.detail',
+                '{0} Toolkit will attempt to build the selected directory using the sam build command.',
+                getIdeProperties().company
+            ),
+            data: 'sam',
+        },
+    ]
+
+    return createQuickPick(items, {
+        title: localize('AWS.lambda.upload.buildDirectory.title', 'Build directory?'),
+        buttons: createCommonButtons(),
+    })
+}
+
+function createConfirmDeploymentPrompter(lambda: LambdaFunction) {
+    // TODO(sijaden): make this a quick pick? Tried to keep as close to possible as the original impl.
+    return new (class extends Prompter<boolean> {
+        protected promptUser(): Promise<PromptResult<boolean>> {
+            return confirmLambdaDeployment(lambda).then(res => res || WIZARD_BACK)
+        }
+
+        // Stubs. Need to thin-out the `Prompter` interface to avoid this.
+        public setStepEstimator(estimator: StepEstimator<boolean>): void {}
+        public setSteps(current: number, total: number): void {}
+
+        public set recentItem(response: any) {}
+        public get recentItem(): any {
+            return undefined
+        }
+    })()
+}
+
+export interface UploadLambdaWizardState {
+    readonly uploadType: 'zip' | 'directory'
+    readonly targetUri: vscode.Uri
+    readonly directoryBuildType: 'zip' | 'sam'
+    readonly confirmedDeploy: boolean
+    readonly lambda: LambdaFunction
+}
+
+export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
+    constructor(lambda?: LambdaFunction, invokePath?: vscode.Uri) {
+        super({ initState: { lambda } })
+        this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
+
+        if (invokePath) {
+            this.form.uploadType.setDefault('directory')
+            if (fs.statSync(invokePath.fsPath).isFile()) {
+                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
+            } else {
+                this.form.targetUri.setDefault(invokePath)
+            }
+        } else {
+            this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
+            this.form.targetUri.bindPrompter(({ uploadType }) => {
+                if (uploadType === 'directory') {
+                    return createSingleFileDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: false,
+                    })
+                } else {
+                    return createSingleFileDialog({
+                        canSelectFolders: false,
+                        canSelectFiles: true,
+                        filters: {
+                            'ZIP archive': ['zip'],
+                        },
+                    })
                 }
-            },
+            })
+        }
+
+        this.form.lambda.name.bindPrompter(state => {
+            // invoking from the command palette passes no arguments
+            if (!invokePath) {
+                if (state.uploadType === 'directory') {
+                    return createFunctionNamePrompter(state.lambda!.region!, state.targetUri)
+                } else {
+                    // if a zip file is chosen, pass the parent directory
+                    return createFunctionNamePrompter(
+                        state.lambda!.region!,
+                        vscode.Uri.file(path.dirname(state.targetUri!.fsPath))
+                    )
+                }
+            } else {
+                return createFunctionNamePrompter(state.lambda!.region!, invokePath)
+            }
         })
-    )
+        if (lambda) {
+            this.form.directoryBuildType.bindPrompter(() => createBuildPrompter(), {
+                showWhen: ({ uploadType }) => uploadType === 'directory',
+            })
+        } else {
+            this.form.directoryBuildType.setDefault('zip')
+        }
 
-    if (!response) {
-        return 'Cancelled'
-    }
-
-    if (response === uploadZipItem) {
-        return await runUploadLambdaZipFile(functionNode)
-    } else {
-        return await runUploadDirectory(functionNode)
+        this.form.confirmedDeploy.bindPrompter(state => createConfirmDeploymentPrompter(state.lambda!))
     }
 }
 
 /**
  * Allows the user to decide whether or not they want to build the directory in question and proceeds with the rest of the deployment workflow.
- * @param functionNode Function node from AWS Explorer
+ * @param lambda LambdaFunction from either a node or input manually
+ * @param type Whether to zip or sam build the directory
  * @param window Wrapper around vscode.window functionality for testing
  */
 async function runUploadDirectory(
-    functionNode: LambdaFunctionNode,
+    lambda: LambdaFunction,
+    type: 'zip' | 'sam',
+    parentDir: vscode.Uri,
     window = Window.vscode()
-): Promise<telemetry.Result> {
-    const parentDir = await selectFolderForUpload()
-
-    if (!parentDir) {
-        return await selectUploadTypeAndRunUpload(functionNode)
-    }
-
-    const zipDirItem: vscode.QuickPickItem = {
-        label: addCodiconToString('exclude', localizedText.no),
-        detail: localize(
-            'AWS.lambda.upload.prebuiltDir.detail',
-            '{0} Toolkit will upload a ZIP of the selected directory.',
-            getIdeProperties().company
-        ),
-    }
-    const buildDirItem: vscode.QuickPickItem = {
-        label: addCodiconToString('gear', localizedText.yes),
-        detail: localize(
-            'AWS.lambda.upload.unbuiltDir.detail',
-            '{0} Toolkit will attempt to build the selected directory using the sam build command.',
-            getIdeProperties().company
-        ),
-    }
-
-    // TODO: Add help button? Consult with doc writers.
-    const picker = createQuickPick({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: true,
-            title: localize('AWS.lambda.upload.buildDirectory.title', 'Build directory?'),
-            step: 2,
-            totalSteps: 2,
-        },
-        items: [zipDirItem, buildDirItem],
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-    const response = verifySinglePickerOutput(
-        await promptUser({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-    )
-
-    if (!response) {
-        return await selectUploadTypeAndRunUpload(functionNode)
-    }
-
-    if (!(await confirmLambdaDeployment(functionNode))) {
-        return 'Cancelled'
-    }
-
-    if (response === zipDirItem) {
+) {
+    if (type === 'sam' && lambda.configuration) {
+        return await runUploadLambdaWithSamBuild({ ...lambda, configuration: lambda.configuration }, parentDir)
+    } else {
         return await window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false,
             },
             async progress => {
-                return await zipAndUploadDirectory(functionNode, parentDir.fsPath, progress)
+                return await zipAndUploadDirectory(lambda, parentDir.fsPath, progress)
             }
         )
-    } else {
-        return await runUploadLambdaWithSamBuild(functionNode, parentDir)
     }
-}
-
-/**
- * Selects a folder for upload. Returns selected folder URI on success.
- * Otherwise, returns undefined if nothing is selected or if more than one folder is selected (should never happen)
- * Does not vet return URI type; this is left up to VS Code.
- * @param window Wrapper around vscode.window functionality for testing
- */
-async function selectFolderForUpload(window = Window.vscode()): Promise<vscode.Uri | undefined> {
-    const workspaceFolders = vscode.workspace.workspaceFolders || []
-
-    const parentDirArr = await window.showOpenDialog({
-        canSelectFolders: true,
-        canSelectFiles: false,
-        canSelectMany: false,
-        defaultUri: workspaceFolders[0]?.uri,
-    })
-
-    if (!parentDirArr || parentDirArr.length !== 1) {
-        return undefined
-    }
-
-    return parentDirArr[0]
 }
 
 /**
@@ -196,18 +300,18 @@ async function selectFolderForUpload(window = Window.vscode()): Promise<vscode.U
  * * Creates a temporary template based on the parent dir and the upstream handler name
  * * Executes `sam build` on the temporary template
  * * Sends directory to be archived and uploaded
- * @param functionNode Function node from AWS Explorer
+ * @param lambda LambdaFunction from either a node or input manually
  * @param parentDir Parent dir to build
  * @param window Wrapper around vscode.window functionality for testing
  */
 async function runUploadLambdaWithSamBuild(
-    functionNode: LambdaFunctionNode,
+    lambda: Required<LambdaFunction>,
     parentDir: vscode.Uri,
     window = Window.vscode()
-): Promise<telemetry.Result> {
+) {
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
-        const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(functionNode.configuration).fileName)
+        const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
         if (!(await fileExists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage(
                 {
@@ -215,7 +319,7 @@ async function runUploadLambdaWithSamBuild(
                         'AWS.lambda.upload.handlerNotFound',
                         "{0} Toolkit can't find a file corresponding to handler: {1} at filepath {2}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
                         getIdeProperties().company,
-                        functionNode.configuration.Handler,
+                        lambda.configuration.Handler,
                         handlerFile
                     ),
                     confirm: localizedText.yes,
@@ -258,9 +362,9 @@ async function runUploadLambdaWithSamBuild(
                     ),
                 })
                 await new SamTemplateGenerator()
-                    .withFunctionHandler(functionNode.configuration.Handler!)
+                    .withFunctionHandler(lambda.configuration.Handler!)
                     .withResourceName(resourceName)
-                    .withRuntime(functionNode.configuration.Runtime!)
+                    .withRuntime(lambda.configuration.Runtime!)
                     .withCodeUri(parentDir.fsPath)
                     .generate(templatePath)
 
@@ -283,13 +387,9 @@ async function runUploadLambdaWithSamBuild(
                 }).execute()
 
                 // App builds into a folder named after the resource name. Zip the contents of that, not the whole output dir.
-                return await zipAndUploadDirectory(functionNode, path.join(buildDir, resourceName), progress)
-            } catch (e) {
-                const err = e as Error
-                window.showErrorMessage(err.message)
-                getLogger().error('runUploadLambdaWithSamBuild failed: ', err.message)
-
-                return 'Failed'
+                return await zipAndUploadDirectory(lambda, path.join(buildDir, resourceName), progress)
+            } catch (err) {
+                throw new ToolkitError('Failed to build directory', { cause: err as Error })
             } finally {
                 await tryRemoveFolder(tempDir)
             }
@@ -299,16 +399,16 @@ async function runUploadLambdaWithSamBuild(
 
 /**
  * Confirms whether or not the user wants to deploy the Lambda as it is a destructive action.
- * @param functionNode Function node from AWS Explorer
+ * @param lambda LambdaFunction
  * @param window Wrapper around vscode.window functionality for testing
  */
-async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<boolean> {
+async function confirmLambdaDeployment(lambda: LambdaFunction, window = Window.vscode()): Promise<boolean> {
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize(
                 'AWS.lambda.upload.confirm',
                 'This will immediately publish the selected code as the $LATEST version of Lambda: {0}.\n\nContinue?',
-                functionNode.functionName
+                lambda.name
             ),
             confirm: localizedText.yes,
             cancel: localizedText.no,
@@ -323,118 +423,197 @@ async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window 
     return isConfirmed
 }
 
-/**
- * Prompts the user to select a `.zip` file for upload to Lambda, confirms, and attempts to upload.
- * @param functionNode Function node from AWS Explorer
- * @param window Wrapper around vscode.window functionality for testing
- */
-async function runUploadLambdaZipFile(
-    functionNode: LambdaFunctionNode,
-    window = Window.vscode()
-): Promise<telemetry.Result> {
-    const workspaceFolders = vscode.workspace.workspaceFolders || []
-
-    const zipFileArr = await window.showOpenDialog({
-        canSelectFolders: false,
-        canSelectFiles: true,
-        canSelectMany: false,
-        defaultUri: workspaceFolders[0]?.uri,
-        filters: {
-            'ZIP archive': ['zip'],
+async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode.Uri, window = Window.vscode()) {
+    return await window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
         },
-    })
-
-    if (!zipFileArr || zipFileArr.length !== 1) {
-        return 'Cancelled'
-    }
-
-    const isConfirmed = await confirmLambdaDeployment(functionNode)
-
-    return isConfirmed
-        ? await window.withProgress(
-              {
-                  location: vscode.ProgressLocation.Notification,
-                  cancellable: false,
-              },
-              async progress => {
-                  try {
-                      const zipFile = fs.readFileSync(zipFileArr[0].fsPath)
-                      return await uploadZipBuffer(functionNode, zipFile, progress)
-                  } catch (e) {
-                      const err = e as Error
-                      Window.vscode().showErrorMessage(err.message)
-                      getLogger().error('runUploadLambdaZipFile failed: ', err.message)
-
-                      return 'Failed'
-                  }
-              }
-          )
-        : 'Cancelled'
+        async progress => {
+            const zipFile = await fs.readFile(zipFileUri.fsPath).catch(err => {
+                throw new ToolkitError('Failed to read zip', { cause: err })
+            })
+            return await uploadZipBuffer(lambda, zipFile, progress)
+        }
+    )
 }
 
 /**
  * Zips a selected directory in memory and attempts to upload archive to Lambda
- * @param functionNode Function node from AWS Explorer
+ * @param lambda LambdaFunction
  * @param path Directory path to zip
  * @param progress Progress notification for displaying a status message
  */
 async function zipAndUploadDirectory(
-    functionNode: LambdaFunctionNode,
+    lambda: LambdaFunction,
     path: string,
     progress: vscode.Progress<{
         message?: string | undefined
         increment?: number | undefined
     }>
-): Promise<telemetry.Result> {
-    try {
-        progress.report({ message: localize('AWS.lambda.upload.progress.archivingDir', 'Archiving files...') })
-        const zipBuffer = await new Promise<Buffer>(resolve => {
-            const zip = new AdmZip()
-            zip.addLocalFolder(path)
-            resolve(zip.toBuffer())
-        })
+) {
+    progress.report({ message: localize('AWS.lambda.upload.progress.archivingDir', 'Archiving files...') })
+    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
+        const zip = new AdmZip()
+        zip.addLocalFolder(path)
+        zip.toBuffer(resolve, reject)
+    }).catch(err => {
+        throw new ToolkitError('Failed to archive directory', { cause: err })
+    })
 
-        return await uploadZipBuffer(functionNode, zipBuffer, progress)
-    } catch (e) {
-        const err = e as Error
-        Window.vscode().showErrorMessage(err.message)
-        getLogger().error('zipAndUploadDirectory failed: ', err.message)
-
-        return 'Failed'
-    }
+    return await uploadZipBuffer(lambda, zipBuffer, progress)
 }
 
 /**
  * Attempts to upload Buffer representation of a `.zip` file to an existing Lambda function
- * @param functionNode Function node from AWS Explorer
+ * @param lambda LambdaFunction
  * @param zip Buffer to upload to Lambda
  * @param progress Progress notification for displaying a status message
  * @param lambdaClient Overwriteable Lambda client for testing purposes
  */
 async function uploadZipBuffer(
-    functionNode: LambdaFunctionNode,
+    lambda: LambdaFunction,
     zip: Buffer,
     progress: vscode.Progress<{
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
-): Promise<telemetry.Result> {
-    try {
-        progress.report({
-            message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
-        })
-        await lambdaClient.updateFunctionCode(functionNode.configuration.FunctionName!, zip)
+    lambdaClient = new DefaultLambdaClient(lambda.region)
+) {
+    progress.report({
+        message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
+    })
+    await lambdaClient.updateFunctionCode(lambda.name, zip).catch(err => {
+        throw new ToolkitError('Failed to upload zip archive', { cause: err })
+    })
 
-        Window.vscode().showInformationMessage(
-            localize('AWS.lambda.upload.done', 'Successfully uploaded Lambda function {0}', functionNode.functionName)
+    Window.vscode().showInformationMessage(
+        localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
+    )
+}
+
+export async function findApplicationJsonFile(
+    startPath: vscode.Uri,
+    cloud9 = isCloud9()
+): Promise<vscode.Uri | undefined> {
+    if (!(await fileExists(startPath.fsPath))) {
+        getLogger().error(
+            'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
+            startPath.fsPath
         )
-        return 'Succeeded'
-    } catch (e) {
-        const err = e as Error
-        Window.vscode().showErrorMessage(err.message)
-        getLogger().error('uploadZipBuffer failed: ', err.message)
-
-        return 'Failed'
+        return undefined
     }
+    const isdir = fs.statSync(startPath.fsPath).isDirectory()
+    const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
+    const found = cloud9
+        ? await cloud9Findfile(parentDir, '.application.json')
+        : await vscode.workspace.findFiles(
+              new vscode.RelativePattern(parentDir, '**/.application.json'),
+              // exclude:
+              // - null      = NO excludes apply
+              // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
+              // eslint-disable-next-line no-null/no-null
+              null,
+              1
+          )
+    if (!found || found.length === 0) {
+        getLogger().debug('uploadLambda: .application.json not found in: "%s"', parentDir)
+    }
+    return found[0]
+}
+
+export function getFunctionNames(file: vscode.Uri, region: string): string[] | undefined {
+    try {
+        const names: string[] = []
+        const appData = JSON.parse(fs.readFileSync(file.fsPath, { encoding: 'utf-8' }).toString())
+        if (appData['Functions']) {
+            const functions = Object.keys(appData['Functions'])
+            if (functions) {
+                for (const func of functions) {
+                    if (appData['Functions'][func]['PhysicalId'] && appData['Functions'][func]['PhysicalId'][region]) {
+                        names.push(appData['Functions'][func]['PhysicalId'][region])
+                    }
+                }
+            }
+        } else {
+            getLogger().info('lambda: Incorrect JSON structure for .application.json file. Missing: "Functions"')
+        }
+        return names.length > 0 ? names : undefined
+    } catch (error) {
+        getLogger().error('lambda: failed to parse .application.json: %s', (error as Error).message)
+    }
+}
+
+async function listAllLambdaNames(region: string, path?: vscode.Uri) {
+    const lambdaFunctionNames: DataQuickPickItem<string>[] = []
+
+    // Get Lambda functions from .application.json #2588
+    if (path) {
+        const appFile = await findApplicationJsonFile(path)
+        const namesFromAppFile = appFile ? getFunctionNames(appFile, region) : undefined
+        if (!appFile) {
+            getLogger().debug('lambda: .application.json not found')
+        } else if (!namesFromAppFile) {
+            getLogger().debug('lambda: no functions in .application.json for region: %s', region)
+        } else {
+            lambdaFunctionNames.push(
+                ...namesFromAppFile.map(n => {
+                    return {
+                        label: n,
+                        description: localize('AWS.lambda.upload.fromAppJson', 'from .application.json'),
+                        data: n,
+                    }
+                })
+            )
+        }
+    }
+
+    // Get Lambda functions from user AWS account.
+    const lambdaClient = new DefaultLambdaClient(region)
+    try {
+        const foundLambdas = await toArrayAsync(listLambdaFunctions(lambdaClient))
+        for (const l of foundLambdas) {
+            lambdaFunctionNames.push({ label: l.FunctionName!, data: l.FunctionName })
+        }
+    } catch (error) {
+        getLogger().error('lambda: failed to list Lambda functions: %s', (error as Error).message)
+    }
+
+    // Get "recently used" Lambda functions.
+    const recent = LambdaSettings.instance.getRecentLambdas()
+    const profile = globals.awsContext.getCredentialProfileName()
+    if (profile && recent?.[profile]?.[region]) {
+        let isInList = false
+        for (const l of lambdaFunctionNames) {
+            if (l.label === recent[profile][region]) {
+                l.recentlyUsed = true
+                isInList = true
+            }
+        }
+        if (!isInList) {
+            lambdaFunctionNames.splice(0, 0, {
+                label: recent[profile][region],
+                recentlyUsed: true,
+                data: recent[profile][region],
+            })
+        }
+    }
+
+    return lambdaFunctionNames
+}
+
+function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
+    const items = listAllLambdaNames(region, path)
+
+    const prompter = createQuickPick(items, {
+        title: localize('AWS.lambda.upload.selectFunctionName', 'Select a Function'),
+        buttons: createCommonButtons(),
+        placeholder: localize(
+            'aws.lambda.upload.manualEntry.placeholder',
+            'Filter or enter existing function name or ARN'
+        ),
+        filterBoxInputSettings: { label: 'Existing lambda function: ', transform: input => input },
+    })
+
+    return prompter
 }

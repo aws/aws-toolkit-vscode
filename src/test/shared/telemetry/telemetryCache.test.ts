@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { filterTelemetryCacheEvents } from '../../../shared/telemetry/defaultTelemetryService'
+import { filterTelemetryCacheEvents } from '../../../shared/telemetry/telemetryService'
 
 describe('Telemetry cache', function () {
     it('Rejects bad data', function () {

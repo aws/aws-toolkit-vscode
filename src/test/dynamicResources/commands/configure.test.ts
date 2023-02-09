@@ -6,34 +6,28 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { configureResources } from '../../../dynamicResources/commands/configure'
+import { configureResources, ResourcesSettings } from '../../../dynamicResources/commands/configure'
+import { Settings } from '../../../shared/settings'
 
 describe('configureCommand', function () {
-    let sandbox: sinon.SinonSandbox
+    let settings: ResourcesSettings
 
-    // These tests operate against the user's configuration.
-    // Restore the initial value after testing is complete.
-    let originalResourcesValue: any
-    let settings: vscode.WorkspaceConfiguration
-
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-        settings = vscode.workspace.getConfiguration('aws.resources')
-        originalResourcesValue = settings.get('enabledResources')
+    beforeEach(async function () {
+        const workspaceSettings = new Settings(vscode.ConfigurationTarget.Workspace)
+        settings = new ResourcesSettings(workspaceSettings)
+        await settings.reset()
     })
 
-    afterEach(async function () {
-        sandbox.restore()
-        await settings.update('enabledResources', originalResourcesValue, vscode.ConfigurationTarget.Global)
+    afterEach(function () {
+        sinon.restore()
     })
 
     it('maps selected services to configuration', async function () {
         const testItems: vscode.QuickPickItem[] = [{ label: 'Foo' }, { label: 'Bar' }, { label: 'Baz' }]
 
-        sandbox.stub(vscode.window, 'showQuickPick' as any).returns(Promise.resolve(testItems))
-        await configureResources()
+        sinon.stub(vscode.window, 'showQuickPick' as any).returns(Promise.resolve(testItems))
+        await configureResources(settings)
 
-        const updatedConfiguration = vscode.workspace.getConfiguration('aws.resources').get('enabledResources')
-        assert.deepStrictEqual(updatedConfiguration, ['Foo', 'Bar', 'Baz'])
+        assert.deepStrictEqual(settings.get('enabledResources'), ['Foo', 'Bar', 'Baz'])
     })
 })

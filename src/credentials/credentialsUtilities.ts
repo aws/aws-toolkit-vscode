@@ -8,16 +8,16 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
-import { credentialHelpUrl } from '../shared/constants'
+import { authHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { CredentialsId, asString } from './providers/credentials'
-import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
-import { showMessageWithCancel } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
+import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
+import { fromExtensionManifest } from '../shared/settings'
 
-const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
-const CREDENTIALS_PROGRESS_DELAY = 1000
+const credentialsTimeout = 300000 // 5 minutes
+const credentialsProgressDelay = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -32,28 +32,25 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
     return environmentVariables
 }
 
-export function notifyUserInvalidCredentials(credentialProviderId: CredentialsId): void {
+export function showLoginFailedMessage(credentialsId: string, errMsg: string): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
-    const viewLogs = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    // TODO: getHelp link does not have a corresponding doc page in Cloud9 as of initial launch.
-    const buttons = isCloud9() ? [viewLogs] : [getHelp, viewLogs]
+    const editCreds = messages.editCredentials(false)
+    // TODO: getHelp page for Cloud9.
+    const buttons = isCloud9() ? [editCreds] : [editCreds, getHelp]
 
-    vscode.window
-        .showErrorMessage(
-            localize(
-                'AWS.message.credentials.invalid',
-                'Invalid Credentials {0}, see logs for more information.',
-                asString(credentialProviderId)
-            ),
-            ...buttons
-        )
-        .then((selection: string | undefined) => {
-            if (selection === getHelp) {
-                vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
-            } else if (selection === viewLogs) {
-                vscode.commands.executeCommand('aws.viewLogs')
-            }
-        })
+    showViewLogsMessage(
+        localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
+        vscode.window,
+        'error',
+        buttons
+    ).then((selection: string | undefined) => {
+        if (selection === getHelp) {
+            vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
+        }
+        if (selection === editCreds) {
+            vscode.commands.executeCommand('aws.credentials.edit')
+        }
+    })
 }
 
 export function hasProfileProperty(profile: Profile, propertyName: string): boolean {
@@ -73,7 +70,7 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
 export async function resolveProviderWithCancel(
     profile: string,
     provider: Promise<Credentials>,
-    timeout: Timeout | number = CREDENTIALS_TIMEOUT
+    timeout: Timeout | number = credentialsTimeout
 ): Promise<Credentials> {
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
@@ -87,7 +84,7 @@ export async function resolveProviderWithCancel(
                 timeout
             )
         }
-    }, CREDENTIALS_PROGRESS_DELAY)
+    }, credentialsProgressDelay)
 
     return await waitTimeout(provider, timeout, {
         allowUndefined: false,
@@ -99,3 +96,5 @@ export async function resolveProviderWithCancel(
         },
     })
 }
+
+export class CredentialsSettings extends fromExtensionManifest('aws', { profile: String }) {}

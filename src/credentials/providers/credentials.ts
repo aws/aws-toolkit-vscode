@@ -4,9 +4,9 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import * as telemetry from '../../shared/telemetry/telemetry.gen'
+import { CredentialSourceId, CredentialType } from '../../shared/telemetry/telemetry'
 
-const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
+const credentialsProviderIdSeparator = ':'
 
 /**
  * "Fully-qualified" credentials structure (source + name).
@@ -28,11 +28,11 @@ export interface CredentialsId {
  * @param credentials  Value to be formatted.
  */
 export function asString(credentials: CredentialsId): string {
-    return [credentials.credentialSource, credentials.credentialTypeId].join(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+    return [credentials.credentialSource, credentials.credentialTypeId].join(credentialsProviderIdSeparator)
 }
 
 export function fromString(credentials: string): CredentialsId {
-    const separatorPos = credentials.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+    const separatorPos = credentials.indexOf(credentialsProviderIdSeparator)
 
     if (separatorPos === -1) {
         throw new Error(`Unexpected credentialsId format: ${credentials}`)
@@ -64,16 +64,19 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
  *   https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-credential_source.html
  * - "env" means we read the credentials from `AWS_XX` environment variables.
  *   https://docs.aws.amazon.com/sdkref/latest/guide/environment-variables.html
+ * - "sso" refers to all SSO-based profiles. Currently, any profile with a start URL will
+ *   be treated as SSO _by the Toolkit_. Incomplete profiles may be rejected by the SDKs, so
+ *   valid SSO profiles may not necessarily be considered valid among all tools.
  *
  * Compare the similar concept `telemetry.CredentialSourceId`.
  */
 export type CredentialsProviderType = typeof credentialsProviderType[number]
-export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
+export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env', 'sso'] as const
 
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId
  */
-export function credentialsProviderToTelemetryType(o: CredentialsProviderType): telemetry.CredentialSourceId {
+export function credentialsProviderToTelemetryType(o: CredentialsProviderType): CredentialSourceId {
     switch (o) {
         case 'ec2':
             return 'ec2'
@@ -104,7 +107,7 @@ export interface CredentialsProvider {
      *
      * Compare getCredentialsProviderType() which is type of the _provider_.
      */
-    getTelemetryType(): telemetry.CredentialType
+    getTelemetryType(): CredentialType
     getDefaultRegion(): string | undefined
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
@@ -113,7 +116,7 @@ export interface CredentialsProvider {
      * first use (in particular, credentials that may prompt, such as SSO/MFA,
      * should _not_ attempt to auto-connect).
      */
-    canAutoConnect(): boolean
+    canAutoConnect(): Promise<boolean>
     /**
      * Determines if the provider is currently capable of producing credentials.
      */

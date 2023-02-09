@@ -5,7 +5,8 @@
 
 import { IAM } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { getLogger } from '../logger/logger'
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type IamClient = ClassToInterfaceType<DefaultIamClient>
@@ -16,34 +17,17 @@ const maxPages = 500
 export class DefaultIamClient {
     public constructor(public readonly regionCode: string) {}
 
-    /** Iterates all roles. */
-    public async *getRoles(request: IAM.ListRolesRequest = {}): AsyncIterableIterator<IAM.Role> {
-        request = { ...request }
-        const sdkClient = await this.createSdkClient()
+    public getRoles(request: IAM.ListRolesRequest = {}): AsyncCollection<IAM.Role[]> {
+        const requester = async (request: IAM.ListRolesRequest) =>
+            (await this.createSdkClient()).listRoles(request).promise()
+        const collection = pageableToCollection(requester, request, 'Marker', 'Roles')
 
-        for (let i = 0; true; i++) {
-            const response = await sdkClient.listRoles(request).promise()
-            for (const role of response.Roles) {
-                yield role
-            }
-            if (!response.IsTruncated) {
-                break
-            }
-            if (i > maxPages) {
-                getLogger().warn('getRoles: too many pages')
-                break
-            }
-            request.Marker = response.Marker
-        }
+        return collection.limit(maxPages)
     }
 
     /** Gets all roles. */
     public async listRoles(request: IAM.ListRolesRequest = {}): Promise<IAM.Role[]> {
-        const roles: IAM.Role[] = []
-        for await (const role of this.getRoles(request)) {
-            roles.push(role)
-        }
-        return roles
+        return this.getRoles(request).flatten().promise()
     }
 
     public async createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
@@ -67,28 +51,17 @@ export class DefaultIamClient {
 
     /**
      * Attempts to verify if a role has the provided permissions.
-     * @param roleArn IAM.SimulatePrinicipalPolicyRequest
-     * @returns True if the role has the provided permissions. Undefined when the role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
      */
-    public async hasRolePermissions(request: IAM.SimulatePrincipalPolicyRequest): Promise<boolean | undefined> {
-        if (request.PolicySourceArn === undefined) {
-            return undefined
+    public async getDeniedActions(request: IAM.SimulatePrincipalPolicyRequest): Promise<IAM.EvaluationResult[]> {
+        const permissionResponse = await this.simulatePrincipalPolicy(request)
+        if (!permissionResponse.EvaluationResults) {
+            throw new Error('No evaluation results found')
         }
-        try {
-            const permissionResponse = await this.simulatePrincipalPolicy(request)
-            if (!permissionResponse || !permissionResponse.EvaluationResults) {
-                return undefined
-            }
-            for (const evalResult of permissionResponse.EvaluationResults) {
-                if (evalResult.EvalDecision !== 'allowed') {
-                    return false
-                }
-            }
-            return true
-        } catch (error) {
-            getLogger().error('iam: Error during policy simulation. Skipping permissions check. Error: %O', error)
-            return undefined
-        }
+
+        // Ignore deny from Organization SCP.  These can result in false negatives.
+        // See https://github.com/aws/aws-sdk/issues/102
+        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false)
+
     }
 
     private async createSdkClient(): Promise<IAM> {

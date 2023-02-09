@@ -50,7 +50,7 @@ describe('extensionUtilities', function () {
     })
 
     describe('createQuickStartWebview', async function () {
-        const context = new FakeExtensionContext()
+        const context = await FakeExtensionContext.create()
         let tempDir: string | undefined
 
         beforeEach(async function () {
@@ -96,24 +96,24 @@ describe('extensionUtilities', function () {
     })
 
     describe('isDifferentVersion', function () {
-        it('returns false if the version exists and matches the existing version exactly', function () {
+        it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
-            const extContext = new FakeExtensionContext()
+            const extContext = await FakeExtensionContext.create()
             extContext.globalState.update(mostRecentVersionKey, goodVersion)
 
             assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
         })
 
-        it("returns true if a most recent version isn't set", () => {
-            const extContext = new FakeExtensionContext()
+        it("returns true if a most recent version isn't set", async () => {
+            const extContext = await FakeExtensionContext.create()
 
             assert.ok(isDifferentVersion(extContext))
         })
 
-        it("returns true if a most recent version doesn't match the current version", () => {
+        it("returns true if a most recent version doesn't match the current version", async () => {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
-            const extContext = new FakeExtensionContext()
+            const extContext = await FakeExtensionContext.create()
             extContext.globalState.update(mostRecentVersionKey, oldVersion)
 
             assert.ok(isDifferentVersion(extContext, newVersion))
@@ -121,8 +121,8 @@ describe('extensionUtilities', function () {
     })
 
     describe('setMostRecentVersion', function () {
-        it('sets the most recent version', function () {
-            const extContext = new FakeExtensionContext()
+        it('sets the most recent version', async function () {
+            const extContext = await FakeExtensionContext.create()
             setMostRecentVersion(extContext)
 
             assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), extensionVersion)

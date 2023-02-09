@@ -6,21 +6,20 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { downloadsDir } from '../../shared/filesystemUtilities'
-import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
+import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
-import { S3Client } from '../../shared/clients/s3Client'
+import { showOutputMessage } from '../../shared/utilities/messages'
+import { DefaultS3Client, S3Client } from '../../shared/clients/s3Client'
 import { Timeout, CancellationError } from '../../shared/utilities/timeoutUtils'
-import { ToolkitError } from '../../shared/toolkitError'
+import { ToolkitError } from '../../shared/errors'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 interface DownloadFileOptions {
     /**
@@ -92,19 +91,13 @@ async function downloadS3File(
 export async function downloadFile(file: S3File, options: FileOptions): Promise<void>
 export async function downloadFile(file: S3File, options?: BufferOptions): Promise<Buffer>
 export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
-    const client = options?.client ?? globals.toolkitClientBuilder.createS3Client(file.bucket.region)
+    const client = options?.client ?? new DefaultS3Client(file.bucket.region)
 
     return downloadS3File(client, file, options).catch(err => {
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
-        const extraDetail = options?.saveLocation ? ` to ${options?.saveLocation.fsPath}` : ''
 
-        throw new ToolkitError(message, {
-            cause: err,
-            detail: `Failed to download ${readablePath({ bucket: file.bucket, path: file.key })}${extraDetail}`,
-            metric: {
-                name: 's3_downloadObject',
-                result: CancellationError.isUserCancelled(err) ? 'Cancelled' : 'Failed',
-            },
+        throw ToolkitError.chain(err, message, {
+            details: { bucket: file.bucket, path: file.key, destination: options?.saveLocation?.path },
         })
     })
 }
@@ -123,19 +116,18 @@ export async function downloadFileAsCommand(
     outputChannel = globals.outputChannel
 ): Promise<void> {
     const { bucket, file } = node
-
-    getLogger().debug('DownloadFile called for %O', node)
-
-    const saveLocation = await promptForSaveLocation(file.name, window)
-    if (!saveLocation) {
-        getLogger().info('DownloadFile cancelled')
-        telemetry.recordS3DownloadObject({ result: 'Cancelled' })
-        return
-    }
-
     const sourcePath = readablePath(node)
-    try {
-        showOutputMessage(`Downloading file from ${sourcePath} to ${saveLocation}`, outputChannel)
+
+    await telemetry.s3_downloadObject.run(async () => {
+        const downloadPath = getDefaultDownloadPath()
+
+        const saveLocation = await promptForSaveLocation(file.name, window, downloadPath)
+        if (!saveLocation) {
+            throw new CancellationError('user')
+        }
+        setDefaultDownloadPath(saveLocation.fsPath)
+
+        showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
 
         await downloadFile(
             { ...file, bucket },
@@ -147,25 +139,15 @@ export async function downloadFileAsCommand(
             }
         )
 
-        showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
-        telemetry.recordS3DownloadObject({ result: 'Succeeded' })
-    } catch (e) {
-        if (e instanceof ToolkitError) {
-            const result: telemetry.Result = e.cancelled ? 'Cancelled' : 'Failed'
-            if (result !== 'Cancelled') {
-                if (e.detail) {
-                    getLogger().error(e.detail)
-                }
-                showViewLogsMessage(e.message, window)
-            }
-            telemetry.recordS3DownloadObject({ result })
-        } else {
-            throw e
-        }
-    }
+        showOutputMessage(`Downloaded: ${saveLocation}`, outputChannel)
+    })
 }
 
-async function promptForSaveLocation(fileName: string, window: Window): Promise<vscode.Uri | undefined> {
+async function promptForSaveLocation(
+    fileName: string,
+    window: Window,
+    saveLocation: string
+): Promise<vscode.Uri | undefined> {
     const extension = path.extname(fileName)
 
     // Insertion order matters, as it determines the ordering in the filters dropdown
@@ -174,7 +156,7 @@ async function promptForSaveLocation(fileName: string, window: Window): Promise<
         ? { [`*${extension}`]: [extension.slice(1)], 'All Files': ['*'] }
         : { 'All Files': ['*'] }
 
-    const downloadPath = path.join(downloadsDir(), fileName)
+    const downloadPath = path.join(saveLocation, fileName)
     return window.showSaveDialog({
         defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),

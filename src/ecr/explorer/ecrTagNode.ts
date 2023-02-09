@@ -9,7 +9,9 @@ import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { EcrRepositoryNode } from './ecrRepositoryNode'
 
 export class EcrTagNode extends AWSTreeNodeBase {
-    constructor(
+    public readonly regionCode = this.parent.regionCode
+
+    public constructor(
         public readonly parent: EcrRepositoryNode,
         private readonly ecr: EcrClient,
         public readonly repository: EcrRepository,

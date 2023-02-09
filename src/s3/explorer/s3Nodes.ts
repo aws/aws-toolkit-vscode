@@ -7,9 +7,8 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { CreateBucketRequest, CreateBucketResponse, S3Client } from '../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { S3BucketNode } from './s3BucketNode'
 import { inspect } from 'util'
 
@@ -31,8 +30,6 @@ export class S3Node extends AWSTreeNodeBase {
 
                 return response.buckets.map(bucket => new S3BucketNode(bucket, this, this.s3))
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noBuckets', '[No Buckets found]')),
         })

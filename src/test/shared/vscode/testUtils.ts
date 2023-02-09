@@ -4,23 +4,20 @@
  */
 
 import * as vscode from 'vscode'
+import { toTitleCase } from '../../../shared/utilities/textUtilities'
+import { Command, Commands } from '../../../shared/vscode/commands2'
 
 type EventEmitters<T> = {
-    [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
+    [P in keyof T]: T[P] extends vscode.Event<any> ? P & string : never
 }[keyof T]
 
 type InterceptEmitters<T, K extends keyof T> = {
     [P in K as `fire${Capitalize<P & string>}`]: T[P] extends vscode.Event<infer R>
         ? vscode.EventEmitter<R>['fire']
         : never
-} &
-    T // prettier really wants to keep this T separate
+} & T // prettier really wants to keep this T separate
 type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
 type NoNever<T> = Pick<T, FilteredKeys<T>>
-
-function capitalize<S extends string>(s: S): Capitalize<S> {
-    return `${s[0].toUpperCase()}${s.slice(1)}` as any
-}
 
 /**
  * Adds references to event emitters for all known public events as specified by the generic K type.
@@ -39,18 +36,62 @@ export type ExposeEmitters<T, K extends EventEmitters<T>> = NoNever<InterceptEmi
  * @returns The extended object with {@link ExposeEmitters exposed methods}
  * @throws Throws an error listing any events that did not have matching emitters
  */
-export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[]): ExposeEmitters<T, K> {
+export function exposeEmitters<T extends Record<string, any>, K extends EventEmitters<T>>(
+    obj: T,
+    keys: K[]
+): ExposeEmitters<T, K> {
     Object.entries(obj).forEach(([key, value]) => {
         if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
             const targetEvent = key.slice(1).replace('Emitter', '')
             keys = keys.filter(k => k !== targetEvent)
-            Object.assign(obj, { [`fire${capitalize(targetEvent)}`]: value.fire.bind(value) })
+            Object.assign(obj, { [`fire${toTitleCase(targetEvent)}`]: value.fire.bind(value) })
         }
     })
 
-    if (keys.length > 0) {
-        throw new Error(`exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${k}"`).join(', ')}`)
+    // Patch in emitters if they weren't found
+    // The patched `fire___` method won't work on listeners
+    // subscribed prior to `exposeEmitters` being called
+    for (const key of keys) {
+        const event = obj[key] as vscode.Event<any>
+        const emitter = new vscode.EventEmitter<T[K]>()
+        event(v => emitter.fire(v))
+
+        Object.assign(obj, {
+            [key]: emitter.event,
+            [`fire${toTitleCase(key)}`]: emitter.fire.bind(emitter),
+        })
     }
 
     return obj as any
+}
+
+/**
+ * Creates a copy of the target command, injecting dependencies and registering it with a new id.
+ *
+ * ### Example
+ * ```ts
+ * const foo = Commands.declare('aws.foo', (memento: vscode.Memento) => () => memento.get<string>('foo'))
+ * const testMemento = new FakeMemento()
+ * const testFoo = testCommand(foo, testMemento)
+ *
+ * // Test commands are always prefixed with 'test.'
+ * assert.strictEqual(testFoo.id, 'test.aws.foo')
+ *
+ * await testMemento.update('foo', 'bar')
+ * assert.strictEqual(await testFoo.execute(), 'bar')
+ *
+ * // Clean-up the command afterwards
+ * testFoo.dispose()
+ * ```
+ */
+export function testCommand<T extends (...args: any[]) => unknown, U extends any[]>(
+    command: ReturnType<typeof Commands.declare<T, U>>,
+    ...args: U
+): Command<T> & vscode.Disposable {
+    const testCommands = new Commands()
+    const testId = `test.${command.id}`
+    // `command` refers to the hidden 'CommandResource' class in 'commands2.ts'
+    const resource = (command as any).resource as { id: string; factory: (...args: U) => any; info: any }
+
+    return testCommands.register({ ...resource.info, id: testId }, resource.factory(...args))
 }

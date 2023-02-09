@@ -9,17 +9,21 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { amazonRegistryName, RegistryItemNode, sharedRegistryName, userRegistryName } from './registryItemNode'
+import { DefaultSsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 export class DocumentTypeNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
     private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
 
-    public constructor(public readonly regionCode: string, public documentType: string) {
+    public constructor(
+        public readonly regionCode: string,
+        public documentType: string,
+        private readonly client = new DefaultSsmDocumentClient(regionCode)
+    ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.setLabel()
@@ -43,7 +47,6 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
 
                 return [...this.registryNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
@@ -58,7 +61,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
             this.registryNodes,
             this.childRegistryNames,
             key => this.registryNodes.get(key)!.update(key),
-            key => new RegistryItemNode(this.regionCode, key, this.documentType)
+            key => new RegistryItemNode(this.regionCode, key, this.documentType, this.client)
         )
     }
 }

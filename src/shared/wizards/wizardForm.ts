@@ -59,7 +59,7 @@ interface ParentFormElement<TProp extends Record<string, any>, TState> {
 
 type PrompterBind<TProp, TState> = FormElement<TProp, TState>['bindPrompter']
 type SetDefault<TProp, TState> = FormElement<TProp, TState>['setDefault']
-type ApplyBoundForm<TProp, TState> = ParentFormElement<TProp, TState>['applyBoundForm']
+type ApplyBoundForm<TProp extends Record<string, any>, TState> = ParentFormElement<TProp, TState>['applyBoundForm']
 
 /** Transforms an interface into a collection of FormElements, applied recursively */
 type Form<T, TState = T> = {
@@ -81,9 +81,9 @@ function checkParent<TState>(prop: string, state: TState, options: FormDataEleme
 }
 
 type FormProperty = keyof (FormElement<any, any> & ParentFormElement<any, any>)
-const BIND_PROMPTER: FormProperty = 'bindPrompter'
-const APPLY_FORM: FormProperty = 'applyBoundForm'
-const SET_DEFAULT: FormProperty = 'setDefault'
+const BIND_PROMPTER: FormProperty = 'bindPrompter' // eslint-disable-line @typescript-eslint/naming-convention
+const APPLY_FORM: FormProperty = 'applyBoundForm' // eslint-disable-line @typescript-eslint/naming-convention
+const SET_DEFAULT: FormProperty = 'setDefault' // eslint-disable-line @typescript-eslint/naming-convention
 
 /**
  * Maps individual {@link Prompter prompters} to a desired property of the output interface as defined by
@@ -194,7 +194,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createApplyFormMethod<TProp>(prop: string): ApplyBoundForm<TProp, TState> {
+    private createApplyFormMethod<TProp extends Record<string, any>>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
             form.formData.forEach((element, key) => {
                 // TODO: use an assert here to ensure that no elements are rewritten

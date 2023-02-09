@@ -6,68 +6,39 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from '../../../shared/logger'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { cdk } from '../../globals'
 import { CdkAppLocation, getApp } from '../cdkProject'
-import { includeConstructInTree } from '../tree/treeInspector'
-import { ConstructNode } from './constructNode'
+import { ConstructNode, generateConstructNodes } from './constructNode'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
+import { getIcon } from '../../../shared/icons'
 
 /**
  * Represents a CDK App
  * Existence of apps is determined by the presence of `cdk.json` in a workspace folder
  */
-export class AppNode extends AWSTreeNodeBase {
-    public expandMetricRecorded: boolean = false
+export class AppNode implements TreeNode {
+    public readonly id = this.location.cdkJsonUri.toString()
+    public readonly resource = this.location
+    public readonly label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
 
-    public constructor(public readonly app: CdkAppLocation) {
-        super(app.cdkJsonPath, vscode.TreeItemCollapsibleState.Collapsed)
-        this.contextValue = 'awsCdkAppNode'
-        this.label = path.relative(path.dirname(app.workspaceFolder.uri.fsPath), path.dirname(app.cdkJsonPath))
+    public constructor(private readonly location: CdkAppLocation) {}
 
-        this.iconPath = {
-            dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-            light: vscode.Uri.file(cdk.iconPaths.light.cdk),
-        }
-
-        this.id = app.treePath
-        this.tooltip = app.cdkJsonPath
-    }
-
-    public async getChildren(): Promise<(ConstructNode | PlaceholderNode)[]> {
+    public async getChildren(): Promise<(ConstructNode | TreeNode)[]> {
         const constructs = []
         try {
-            const successfulApp = await getApp(this.app)
+            const successfulApp = await getApp(this.location)
 
-            const constructsInTree = successfulApp.metadata.tree.children
+            const constructsInTree = successfulApp.constructTree.tree.children
             if (constructsInTree) {
-                for (const construct of Object.keys(constructsInTree)) {
-                    const entity = constructsInTree[construct]
-                    if (includeConstructInTree(entity)) {
-                        constructs.push(
-                            new ConstructNode(
-                                this,
-                                entity.id,
-                                entity.children
-                                    ? vscode.TreeItemCollapsibleState.Collapsed
-                                    : vscode.TreeItemCollapsibleState.None,
-                                entity
-                            )
-                        )
-                    }
-                }
+                constructs.push(...generateConstructNodes(this.location, constructsInTree))
             }
 
             // indicate that App exists, but it is empty
             if (constructs.length === 0) {
                 return [
-                    new PlaceholderNode(
-                        this,
-                        localize('AWS.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')
-                    ),
+                    createPlaceholderItem(localize('AWS.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')),
                 ]
             }
 
@@ -76,8 +47,7 @@ export class AppNode extends AWSTreeNodeBase {
             getLogger().error(`Could not load the construct tree located at '${this.id}': %O`, error as Error)
 
             return [
-                new PlaceholderNode(
-                    this,
+                createPlaceholderItem(
                     localize(
                         'AWS.cdk.explorerNode.app.noConstructTree',
                         '[Unable to load construct tree for this App. Run `cdk synth`]'
@@ -85,5 +55,15 @@ export class AppNode extends AWSTreeNodeBase {
                 ),
             ]
         }
+    }
+
+    public getTreeItem() {
+        const item = new vscode.TreeItem(this.label, vscode.TreeItemCollapsibleState.Collapsed)
+
+        item.contextValue = 'awsCdkAppNode'
+        item.iconPath = getIcon('aws-cdk-logo')
+        item.tooltip = this.location.cdkJsonUri.path
+
+        return item
     }
 }

@@ -9,6 +9,7 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger } from '../logger/logger'
 import { getIdeProperties } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
+import { AWS_SCHEME } from '../constants'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -21,8 +22,6 @@ interface YamlExtensionApi {
     ): boolean
 }
 
-const AWS_SCHEME = 'aws'
-
 function applyScheme(scheme: string, path: vscode.Uri): vscode.Uri {
     return path.with({ scheme })
 }
@@ -34,6 +33,7 @@ function evaluate(schema: vscode.Uri | (() => vscode.Uri)): vscode.Uri {
 export interface YamlExtension {
     assignSchema(path: vscode.Uri, schema: vscode.Uri | (() => vscode.Uri)): void
     removeSchema(path: vscode.Uri): void
+    getSchema(path: vscode.Uri): vscode.Uri | undefined
 }
 
 export async function activateYamlExtension(): Promise<YamlExtension | undefined> {
@@ -50,6 +50,8 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
         },
         uri => {
             try {
+                // SLOW: This request happens on every keystroke! (5MB+ read from filesystem).
+                // This is a design flaw in this registerContributor() API.
                 return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
@@ -61,5 +63,6 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     return {
         assignSchema: (path, schema) => schemaMap.set(path.toString(), applyScheme(AWS_SCHEME, evaluate(schema))),
         removeSchema: path => schemaMap.delete(path.toString()),
+        getSchema: path => schemaMap.get(path.toString()),
     }
 }

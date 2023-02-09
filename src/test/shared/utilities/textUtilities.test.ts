@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { getStringHash, removeAnsi } from '../../../shared/utilities/textUtilities'
+import { getRelativeDate, getStringHash, removeAnsi } from '../../../shared/utilities/textUtilities'
 
 describe('removeAnsi', async function () {
     it('removes ansi code from text', async function () {
@@ -24,5 +24,22 @@ describe('getStringHash', async function () {
 
     it('produces a different hash for different strings', async function () {
         assert.notStrictEqual(getStringHash('hello'), getStringHash('hello '))
+    })
+})
+
+describe('getRelativeDate', function () {
+    const now = new Date(2020, 2, 2, 2, 2, 2)
+    it('produces readable dates', function () {
+        const year = getRelativeDate(new Date(2019, 2, 2, 2, 2, 2), now)
+        const month = getRelativeDate(new Date(2020, 1, 2, 2, 2, 2), now)
+        const day = getRelativeDate(new Date(2020, 2, 1, 2, 2, 2), now)
+        const hour = getRelativeDate(new Date(2020, 2, 2, 1, 2, 2), now)
+        const minute = getRelativeDate(new Date(2020, 2, 2, 2, 1, 2), now)
+
+        assert.strictEqual(year, 'a year ago')
+        assert.strictEqual(month, 'a month ago')
+        assert.strictEqual(day, 'a day ago')
+        assert.strictEqual(hour, 'an hour ago')
+        assert.strictEqual(minute, 'a minute ago')
     })
 })

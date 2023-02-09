@@ -19,16 +19,16 @@ import { WizardForm } from '../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
 import { makeDeploymentButton } from './deploymentButton'
 import { IamClient } from '../../shared/clients/iamClient'
-import { RolePrompter } from '../../shared/ui/common/rolePrompter'
+import { createRolePrompter } from '../../shared/ui/common/roles'
 import { getLogger } from '../../shared/logger/logger'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
-const PUBLIC_ECR = 'public.ecr.aws'
-const APP_RUNNER_ECR_ENTITY = 'build.apprunner.amazonaws'
+const publicEcr = 'public.ecr.aws'
+const appRunnerEcrEntity = 'build.apprunner.amazonaws'
 
 export type TaggedEcrRepository = EcrRepository & { tag?: string }
 
@@ -81,7 +81,7 @@ function createImagePrompter(
                 return repos
             })
             .catch(err => {
-                getLogger().error(`Unabled to list repositories: %O`, err)
+                getLogger().error(`Unabled to list repositories: %s`, err)
                 return [
                     {
                         label: localize(
@@ -119,11 +119,11 @@ function createImagePrompter(
 
         const privateRegExp = /[0-9]+\.dkr\.ecr\.[a-zA-z0-9\-]+\.amazonaws\.com/
 
-        if (options.noPublicMessage && userInputParts[0].startsWith(PUBLIC_ECR)) {
+        if (options.noPublicMessage && userInputParts[0].startsWith(publicEcr)) {
             return options.noPublicMessage
         }
 
-        if (!userInputParts[0].startsWith(PUBLIC_ECR) && !userInputParts[0].match(privateRegExp)) {
+        if (!userInputParts[0].startsWith(publicEcr) && !userInputParts[0].match(privateRegExp)) {
             return 'not a valid ECR URL'
         }
     }
@@ -187,7 +187,7 @@ function createTagPrompter(
                 return tagT
             })
             .catch(err => {
-                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %O`, err)
+                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %s`, err)
                 return [
                     {
                         label: localize(
@@ -228,7 +228,7 @@ function createImageRepositorySubForm(
     // note: this is intentionally initialized only once to preserve caches
     const imageIdentifierWizard = new Wizard({
         initForm: new ImageIdentifierForm(ecrClient),
-        exitPrompterProvider: new BasicExitPrompterProvider(),
+        exitPrompterProvider: createExitPrompter,
     })
 
     form.ImageIdentifier.bindPrompter(() =>
@@ -255,20 +255,19 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.form
-        const rolePrompter = new RolePrompter(iamClient, {
-            title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
-            helpUri: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
-            filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
-            createRole: createEcrRole.bind(undefined, iamClient),
-        })
+        const createAccessRolePrompter = () => {
+            return createRolePrompter(iamClient, {
+                title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
+                helpUrl: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
+                roleFilter: role => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
+                createRole: createEcrRole.bind(undefined, iamClient),
+            }).transform(resp => resp.Arn)
+        }
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
-        form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(
-            rolePrompter.transform(resp => resp.Arn),
-            {
-                showWhen: form => form.ImageRepository?.ImageRepositoryType === 'ECR',
-            }
-        )
+        form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(createAccessRolePrompter, {
+            showWhen: form => form.ImageRepository?.ImageRepositoryType === 'ECR',
+        })
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
     }
 }

@@ -3,23 +3,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import 'source-map-support/register'
+import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import * as Mocha from 'mocha'
 import * as glob from 'glob'
-import * as fs from 'fs'
-import * as os from 'os'
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const istanbul = require('istanbul')
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const remapIstanbul = require('remap-istanbul')
+import * as fs from 'fs-extra'
 
 /**
  * @param initTests List of relative paths to test files to run before all discovered tests.
  */
-export function runTestsInFolder(testFolder: string, initTests: string[] = []): Promise<void> {
-    const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
+export async function runTests(testFolder: string, initTests: string[] = [], testFiles?: string[]): Promise<void> {
+    if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
+        throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
+    }
+
+    function getRoot(): string {
+        const abs = process.env['DEVELOPMENT_PATH'] ?? process.cwd()
+
+        if (process.platform !== 'win32') {
+            return abs
+        }
+
+        // Force all drive letters (or whatever else is before the first colon) to be lowercase.
+        //
+        // Node's `require` will always cache modules based off case-sensitive paths, regardless
+        // of the underlying file system. This is normally not a problem, but VS Code also happens
+        // to normalize paths on Windows to use lowercase drive letters when using its bootstrap loader.
+        // This means that each module ends up getting loaded twice, once by the extension and once
+        // by any test code, causing all sorts of bizarre behavior during tests.
+        const [drive, ...rest] = abs.split(':')
+        return rest.length === 0 ? abs : [drive.toLowerCase(), ...rest].join(':')
+    }
+
+    const root = getRoot()
+    const outputFile = path.resolve(root, '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
     // Create the mocha test
@@ -36,230 +53,64 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
         timeout: 0,
     })
 
-    // __dirname is dist/src
-    // This becomes dist
-    const testsRoot = path.resolve(__dirname, '..')
+    const dist = path.resolve(root, 'dist')
+    const testFile = process.env['TEST_FILE']?.replace('.ts', '.js')
+    const testFilePath = testFile ? path.resolve(dist, testFile) : undefined
 
-    return new Promise((c, e) => {
-        // Read configuration for the coverage file
-        const coverOptions: TestRunnerOptions = _readCoverOptions(testsRoot)
-        if (coverOptions && coverOptions.enabled && !process.env['NO_COVERAGE']) {
-            // Setup coverage pre-test, including post-test hook to report
-            const coverageRunner = new CoverageRunner(coverOptions, testsRoot)
-            coverageRunner.setupCoverage()
+    if (testFile && testFiles) {
+        throw new Error('Individual file and list of files given to run tests on. One must be chosen.')
+    }
+
+    // Explicitly add additional tests (globalSetup) as the first tests.
+    // TODO: migrate to mochaHooks (requires mocha 8.x).
+    // https://mochajs.org/#available-root-hooks
+    initTests.forEach(relativePath => {
+        const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
+        if (!fs.pathExistsSync(fullPath)) {
+            console.error(`error: missing ${fullPath}`)
+            throw Error(`missing ${fullPath}`)
         }
 
-        const testFile = process.env['TEST_FILE'] === 'null' ? undefined : process.env['TEST_FILE']
-        const testFilePath = testFile?.replace(/^src[\\\/]/, '')?.concat('.js')
-
-        // Explicitly add additional tests (globalSetup) as the first tests.
-        // TODO: migrate to mochaHooks (requires mocha 8.x).
-        // https://mochajs.org/#available-root-hooks
-        initTests.forEach(relativePath => {
-            const fullPath = path.join(testsRoot, relativePath)
-            if (!fs.existsSync(fullPath)) {
-                console.error(`error: missing ${fullPath}`)
-                throw Error(`missing ${fullPath}`)
-            }
-
-            mocha.addFile(fullPath)
-        })
-
-        glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {
-            if (err) {
-                return e(err)
-            }
-
-            // Add files to the test suite
-            files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)))
-
-            try {
-                // Run the mocha test
-                mocha.run(failures => {
-                    if (failures > 0) {
-                        e(new Error(`${failures} tests failed.`))
-                    } else {
-                        c()
-                    }
-                })
-            } catch (err) {
-                console.error(err)
-                e(err)
-            }
-        })
+        mocha.addFile(fullPath)
     })
-}
 
-// Adapted from https://github.com/codecov/example-typescript-vscode-extension
-class CoverageRunner {
-    private coverageVar: string = `$$cov_${new Date().getTime()}$$`
-    private transformer: any = undefined
-    private matchFn: any = undefined
-    private instrumenter: any = undefined
-
-    constructor(private options: TestRunnerOptions, private testsRoot: string) {}
-
-    public setupCoverage(): void {
-        // Set up Code Coverage, hooking require so that instrumented code is returned
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const self = this
-        self.instrumenter = new istanbul.Instrumenter({ coverageVariable: self.coverageVar })
-        const sourceRoot = path.join(self.testsRoot, self.options.relativeSourcePath)
-
-        // Glob source files
-        const srcFiles = glob.sync('**/**.js', {
-            cwd: sourceRoot,
-            ignore: self.options.ignorePatterns,
-        })
-
-        // Create a match function - taken from the run-with-cover.js in istanbul.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const decache = require('decache')
-        const fileMap = {}
-        srcFiles.forEach(file => {
-            const fullPath = path.join(sourceRoot, file)
-            // @ts-ignore - Implicit any
-            fileMap[fullPath] = true
-
-            if (os.platform() === 'win32') {
-                ;(fileMap as any)[fullPath.toLowerCase()] = true
-            }
-
-            // On Windows, extension is loaded pre-test hooks and this mean we lose
-            // our chance to hook the Require call. In order to instrument the code
-            // we have to decache the JS file so on next load it gets instrumented.
-            // This breaks tests that depend on global state, e.g. any test
-            // that depends on implicit VSCode features (launch.json processing,
-            // LSP symbols, ...).
-            decache(fullPath)
-        })
-
-        self.matchFn = (file: string): boolean => {
-            let fileIsInMap: boolean = !!(fileMap as any)[file]
-            if (os.platform() === 'win32') {
-                fileIsInMap = fileIsInMap || !!(fileMap as any)[file.toLowerCase()]
-            }
-            return fileIsInMap
-        }
-        self.matchFn.files = Object.keys(fileMap)
-
-        // Hook up to the Require function so that when this is called, if any of our source files
-        // are required, the instrumented version is pulled in instead. These instrumented versions
-        // write to a global coverage variable with hit counts whenever they are accessed
-        self.transformer = self.instrumenter.instrumentSync.bind(self.instrumenter)
-        const hookOpts = { verbose: false, extensions: ['.js'] }
-        istanbul.hook.hookRequire(self.matchFn, self.transformer, hookOpts)
-
-        // initialize the global variable to stop mocha from complaining about leaks
-        // @ts-ignore - Implicit any
-        global[self.coverageVar] = {}
-
-        // Hook the process exit event to handle reporting
-        // Only report coverage if the process is exiting successfully
-        // @ts-ignore - Implicit any
-        process.on('exit', code => {
-            self.reportCoverage()
+    function runMocha(files: string[]): Promise<void> {
+        files.forEach(f => mocha.addFile(path.resolve(dist, f)))
+        return new Promise<void>((resolve, reject) => {
+            mocha.run(failures => {
+                if (failures > 0) {
+                    reject(new Error(`${failures} tests failed.`))
+                } else {
+                    resolve()
+                }
+            })
         })
     }
 
-    /**
-     * Writes a coverage report. Note that as this is called in the process exit callback, all calls must be synchronous.
-     *
-     * @returns {void}
-     *
-     * @memberOf CoverageRunner
-     */
-    public reportCoverage(): void {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const self = this
-        istanbul.hook.unhookRequire()
-        let cov: any
-        // @ts-ignore - Implicit any
-        if (typeof global[self.coverageVar] === 'undefined' || Object.keys(global[self.coverageVar]).length === 0) {
-            console.error('No coverage information was collected, exit without writing coverage information')
-            return
+    async function writeCoverage(): Promise<void> {
+        const coverage = (globalThis as typeof globalThis & { __coverage__?: any }).__coverage__
+
+        if (coverage) {
+            const dst = path.resolve(root, '.nyc_output', 'out.json')
+            console.log(`Writing test coverage to "${dst}"`)
+            await fs.ensureDir(path.dirname(dst))
+            await fs.writeFile(dst, JSON.stringify(coverage))
         } else {
-            // @ts-ignore - Implicit any
-            cov = global[self.coverageVar]
+            console.log('No test coverage found')
         }
-
-        // TODO consider putting this under a conditional flag
-        // Files that are not touched by code ran by the test runner is manually instrumented, to
-        // illustrate the missing coverage.
-        // @ts-ignore - Implicit any
-        self.matchFn.files.forEach(file => {
-            try {
-                if (!cov[file]) {
-                    console.log(file)
-                    self.transformer(fs.readFileSync(file, 'utf-8'), file)
-
-                    // When instrumenting the code, istanbul will give each FunctionDeclaration a value of 1 in coverState.s,
-                    // presumably to compensate for function hoisting. We need to reset this, as the function was not hoisted,
-                    // as it was never loaded.
-                    Object.keys(self.instrumenter.coverState.s).forEach(key => {
-                        self.instrumenter.coverState.s[key] = 0
-                    })
-
-                    cov[file] = self.instrumenter.coverState
+    }
+    const files =
+        testFiles ??
+        (await new Promise<string[]>((resolve, reject) => {
+            glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(files)
                 }
-            } catch (e) {
-                console.error(e)
-            }
-        })
+            })
+        }))
 
-        // TODO Allow config of reporting directory with
-        const reportingDir = path.join(self.testsRoot, self.options.relativeCoverageDir)
-        const includePid = self.options.includePid
-        const pidExt = includePid ? `-${process.pid}` : ''
-        const coverageFile = path.resolve(reportingDir, 'coverage' + pidExt + '.json')
-
-        _mkDirIfExists(reportingDir) // yes, do this again since some test runners could clean the dir initially created
-
-        fs.writeFileSync(coverageFile, JSON.stringify(cov), 'utf8')
-
-        const remappedCollector = remapIstanbul.remap(cov, {
-            // @ts-ignore - Implicit any
-            warn: warning => {
-                // We expect some warnings as any JS file without a typescript mapping will cause this.
-                // By default, we"ll skip printing these to the console as it clutters it up
-                if (self.options.verbose) {
-                    console.warn(warning)
-                }
-            },
-        })
-
-        const reporter = new istanbul.Reporter(undefined, reportingDir)
-        const reportTypes = self.options.reports instanceof Array ? self.options.reports : ['lcov']
-        reporter.addAll(reportTypes)
-        reporter.write(remappedCollector, true, () => {
-            console.log(`Code coverage reports written to ${reportingDir}`)
-        })
-    }
-}
-
-function _mkDirIfExists(dir: string): void {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir)
-    }
-}
-
-interface TestRunnerOptions {
-    enabled?: boolean
-    relativeCoverageDir: string
-    relativeSourcePath: string
-    ignorePatterns: string[]
-    includePid?: boolean
-    reports?: string[]
-    verbose?: boolean
-}
-
-function _readCoverOptions(testsRoot: string): TestRunnerOptions {
-    const coverConfigPath = path.join(testsRoot, '..', '..', 'coverconfig.json')
-    // @ts-ignore - Type 'undefined' not assignable
-    let coverConfig: ITestRunnerOptions = undefined
-    if (fs.existsSync(coverConfigPath)) {
-        const configContent = fs.readFileSync(coverConfigPath, 'utf-8')
-        coverConfig = JSON.parse(configContent)
-    }
-    return coverConfig
+    await runMocha(files)
+    await writeCoverage()
 }

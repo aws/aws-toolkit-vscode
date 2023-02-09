@@ -33,14 +33,17 @@ export enum WizardNextState {
     TERMINATE,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_RETRY: Transition = {
     nextState: WizardNextState.RETRY,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_TERMINATE: Transition = {
     nextState: WizardNextState.TERMINATE,
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_GOBACK: Transition = {
     nextState: WizardNextState.GO_BACK,
 }
@@ -191,7 +194,7 @@ export async function promptUserForLocation(
             ignoreFocusOut: true,
             title: additionalParams?.overrideText?.title
                 ? additionalParams.overrideText.title
-                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your project'),
             step: additionalParams?.step,
             totalSteps: additionalParams?.totalSteps,
         },

@@ -5,7 +5,9 @@
 
 import { CloudFormation } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
+import { ClassToInterfaceType, isNonNullable } from '../utilities/tsUtils'
 
 export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
 export class DefaultCloudFormationClient {
@@ -50,6 +52,14 @@ export class DefaultCloudFormationClient {
 
             request.NextToken = response.NextToken
         } while (request.NextToken)
+    }
+
+    public listAllStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (req: CloudFormation.ListStacksInput) => (await client).listStacks(req).promise()
+        const collection = pageableToCollection(requester, request, 'NextToken', 'StackSummaries')
+
+        return collection.filter(isNonNullable)
     }
 
     public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {

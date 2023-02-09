@@ -10,9 +10,9 @@ import * as path from 'path'
 import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
-import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
+import { Settings } from './settings'
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
@@ -51,6 +51,27 @@ export class SystemUtilities {
         return decoder.decode(await vscode.workspace.fs.readFile(uri))
     }
 
+    public static async writeFile(file: string | vscode.Uri, data: string | Buffer): Promise<void> {
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
+
+        if (isCloud9()) {
+            return fs.writeFile(uri.fsPath, content)
+        }
+
+        return vscode.workspace.fs.writeFile(uri, content)
+    }
+
+    public static async remove(dir: string | vscode.Uri): Promise<void> {
+        const uri = typeof dir === 'string' ? vscode.Uri.file(dir) : dir
+
+        if (isCloud9()) {
+            return fs.remove(uri.fsPath)
+        }
+
+        return vscode.workspace.fs.delete(uri, { recursive: true })
+    }
+
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 
@@ -62,6 +83,16 @@ export class SystemUtilities {
             () => true,
             err => !(err instanceof vscode.FileSystemError && err.code === this.fileNotFound)
         )
+    }
+
+    public static async createDirectory(file: string | vscode.Uri): Promise<void> {
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+
+        if (isCloud9()) {
+            return fs.ensureDir(uri.fsPath)
+        }
+
+        return vscode.workspace.fs.createDirectory(uri)
     }
 
     /**
@@ -141,13 +172,13 @@ export class SystemUtilities {
             return SystemUtilities.sshPath
         }
 
-        const settings = new DefaultSettingsConfiguration()
-        const sshSettingPath = settings.getSetting<string>('remote.SSH.path', 'string', { silent: 'yes' })
+        const sshSettingPath = Settings.instance.get('remote.SSH.path', String, '')
         const paths = [
             sshSettingPath,
             'ssh', // Try $PATH _before_ falling back to common paths.
             '/usr/bin/ssh',
             'C:/Windows/System32/OpenSSH/ssh.exe',
+            'C:/Program Files/Git/usr/bin/ssh.exe',
         ]
         for (const p of paths) {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {

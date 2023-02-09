@@ -57,11 +57,11 @@ export async function deleteThingCommand(
         }
         await node.iot.deleteThing({ thingName })
 
-        getLogger().info(`Successfully deleted Thing ${thingName}`)
-        window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing {0}', thingName))
+        getLogger().info(`deleted Thing: ${thingName}`)
+        window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing: {0}', thingName))
     } catch (e) {
-        getLogger().error(`Failed to delete Thing ${thingName}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing {0}', thingName), window)
+        getLogger().error(`Failed to delete Thing: ${thingName}: %s`, e)
+        showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName), window)
     }
 
     //Refresh the Things Folder node

@@ -8,7 +8,7 @@ import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
 
 // java8.al2 image does a while to pull
-const LAMBDA_SESSION_TIMEOUT = 60000
+const lambdaSessionTimeout = 60000
 
 // Retrieves CodeLenses from VS Code
 export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
@@ -28,8 +28,10 @@ export function getTestWorkspaceFolder(): string {
 
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
-    // This changes how long the toolkit will wait for SAM CLI output before ending a session
-    await configAws.update('samcli.lambda.timeout', LAMBDA_SESSION_TIMEOUT, false)
+    // How long the Toolkit will wait for SAM CLI output before ending a session.
+    await configAws.update('samcli.lambdaTimeout', lambdaSessionTimeout, false)
+    // Enable codelenses.
+    await configAws.update('samcli.enableCodeLenses', true, false)
 }
 
 export async function configurePythonExtension(): Promise<void> {

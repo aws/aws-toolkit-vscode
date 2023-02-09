@@ -6,11 +6,12 @@
 import * as vscode from 'vscode'
 import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
-import { SettingsConfiguration } from './settingsConfiguration'
 import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
+import { UriHandler } from './vscode/uriHandler'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
     python: 'ms-python.python',
@@ -31,14 +32,14 @@ export interface ExtContext {
     awsContext: AwsContext
     samCliContext: () => SamCliContext
     regionProvider: RegionProvider
-    settings: SettingsConfiguration
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     credentialsStore: CredentialsStore
+    uriHandler: UriHandler
     invokeOutputChannel: vscode.OutputChannel
 }
 
 /**
  * Version of the .vsix produced by package.ts with the --debug option.
  */
-export const EXTENSION_ALPHA_VERSION = '1.99.0-SNAPSHOT'
+export const extensionAlphaVersion = '1.99.0-SNAPSHOT'

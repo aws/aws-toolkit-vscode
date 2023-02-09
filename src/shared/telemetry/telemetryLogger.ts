@@ -8,10 +8,15 @@ import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
 
 export interface MetricQuery {
-    /** Metric name to look up in the log */
+    /**
+     * Metric name to look up in the log
+     */
     readonly metricName: string
-    /** Attributes to filter out of the metadata */
-    readonly filters?: string[]
+
+    /**
+     * Exclude metadata items matching these keys.
+     */
+    readonly excludeKeys?: string[]
 }
 
 interface Metadata {
@@ -25,11 +30,11 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
 /**
  * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
  */
-const mapMetadata = (filters: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
+const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
     const result: Metadata = {}
     return metadata
         .filter(isValidEntry)
-        .filter(a => !filters.includes(a.Key))
+        .filter(a => !excludeKeys.includes(a.Key))
         .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
 }
 
@@ -45,12 +50,22 @@ export class TelemetryLogger {
         return this._metrics.length
     }
 
+    public clear(): void {
+        this._metrics.length = 0
+    }
+
     public log(metric: MetricDatum): void {
         const msg = `telemetry: emitted metric "${metric.MetricName}"`
+
         if (!isReleaseVersion()) {
             this._metrics.push(metric)
             const stringified = JSON.stringify(metric)
             getLogger().debug(`${msg} -> ${stringified}`)
+
+            if (this.metricCount > 1000) {
+                this.clear()
+                getLogger().debug('telemetry: cleared buffered metrics')
+            }
         } else {
             getLogger().debug(msg)
         }
@@ -65,7 +80,7 @@ export class TelemetryLogger {
     public query(query: MetricQuery): Metadata[] {
         return this.queryFull(query)
             .map(m => m.Metadata ?? [])
-            .map(mapMetadata(query.filters ?? []))
+            .map(mapMetadata(query.excludeKeys ?? []))
     }
 
     /**

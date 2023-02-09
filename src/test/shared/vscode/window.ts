@@ -13,11 +13,6 @@ export interface TestWindow {
     waitForMessage(expected: string | RegExp, timeout?: number): Promise<ShownMessage>
 }
 
-// TODO: it's better to just buffer event emitters until they have a listener
-function fireNext<T>(emitter: vscode.EventEmitter<T>, data?: T): void {
-    setTimeout(() => emitter.fire(data))
-}
-
 /**
  * A test window proxies {@link vscode.window}, intercepting calls whilst
  * allowing for introspection and mocking as-needed.
@@ -25,6 +20,12 @@ function fireNext<T>(emitter: vscode.EventEmitter<T>, data?: T): void {
 export function createTestWindow(): Window & TestWindow {
     // TODO: write mix-in Proxy factory function
     const onDidShowMessageEmitter = new vscode.EventEmitter<ShownMessage>()
+    const shownMessages: ShownMessage[] = []
+
+    function fireOnDidShowMessage(message: ShownMessage) {
+        shownMessages.push(message)
+        onDidShowMessageEmitter.fire(message)
+    }
 
     return new Proxy(vscode.window, {
         get: (target, prop, recv) => {
@@ -34,6 +35,11 @@ export function createTestWindow(): Window & TestWindow {
             if (prop === 'waitForMessage') {
                 return (expected: string | RegExp, timeout: number = 5000) => {
                     return new Promise<ShownMessage>((resolve, reject) => {
+                        const alreadyShown = shownMessages.find(m => m.visible && m.message.match(expected))
+                        if (alreadyShown) {
+                            return resolve(alreadyShown)
+                        }
+
                         const d = onDidShowMessageEmitter.event(shownMessage => {
                             if (shownMessage.message.match(expected)) {
                                 d.dispose()
@@ -48,15 +54,13 @@ export function createTestWindow(): Window & TestWindow {
                 }
             }
             if (prop === 'showInformationMessage') {
-                return TestMessage.create(SeverityLevel.Information, message =>
-                    fireNext(onDidShowMessageEmitter, message)
-                )
+                return TestMessage.create(SeverityLevel.Information, fireOnDidShowMessage)
             }
             if (prop === 'showWarningMessage') {
-                return TestMessage.create(SeverityLevel.Warning, message => fireNext(onDidShowMessageEmitter, message))
+                return TestMessage.create(SeverityLevel.Warning, fireOnDidShowMessage)
             }
             if (prop === 'showErrorMessage') {
-                return TestMessage.create(SeverityLevel.Error, message => fireNext(onDidShowMessageEmitter, message))
+                return TestMessage.create(SeverityLevel.Error, fireOnDidShowMessage)
             }
             return Reflect.get(target, prop, recv)
         },

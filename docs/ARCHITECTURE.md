@@ -2,6 +2,115 @@
 
 An overview of the architecture for various components within the Toolkit.
 
+## Commands
+
+Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.
+
+For the Toolkit, common command functionality is implemented in [Commands](../src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+
+### Examples
+
+-   Registering and execution:
+
+    ```ts
+    const command = Commands.register('helloWorld', () => console.log('Hello, World!'))
+    command.execute()
+    ```
+
+-   Using parameters:
+
+    ```ts
+    const showMessage = async (message: string) => vscode.window.showInformationMessage(message)
+    const command = Commands.register('aws.showMessage', showMessage)
+    command.execute('Hello, World!')
+    ```
+
+-   Creating a CodeLens:
+
+    ```ts
+    // The built CodeLens should be returned through a `vscode.CodeLensProvider` implementation
+    const range = new vscode.Range(0, 0, 0, 0)
+    const lens = command.build('Hello, World!').asCodeLens(range, { title: 'Click me!' })
+    ```
+
+-   Creating a tree node:
+
+    ```ts
+    // `node` will execute the command when clicked in the explorer tree
+    // This object should be returned as a child of some other tree node
+    const node = command.build('Hello, World!').asTreeNode({ label: 'Click me!' })
+    ```
+
+### Advanced Uses
+
+Complex programs often require more than just simple functions to act as entry-points. Large amounts of state may be involved, which can be very difficult to test and reason about without proper management. One way to make it easier to isolate state from a given command is by 'declaring' it. This associates a command with all the required dependencies while still making it look like any other command.
+
+-   Command declaration and registration:
+
+    ```ts
+    const command = Commands.declare('aws.showMessage2', (state: Record<string, string>) => (key: string) => {
+        return showMessage(state[key] ?? 'Message not found')
+    })
+
+    command.register({ hello: 'Hello, World!', goodbye: 'Goodbye, World!' })
+    command.execute('goodbye')
+    ```
+
+-   Prototype binding:
+
+    ```ts
+    // This class won't show duplicate messages that use the same key unlike the previous example
+    class Messages {
+        private readonly shown = new Map<string, Promise<unknown>>()
+        public constructor(private readonly state: Record<string, string>) {}
+
+        public showMessage(key: string) {
+            const promise = this.shown.get(key) ?? showMessage(this.state[key] ?? 'Message not found')
+            this.shown.set(
+                key,
+                promise.finally(() => this.shown.delete(key))
+            )
+
+            return promise
+        }
+    }
+
+    const command = Commands.from(Messages).declareShowMessage('aws.showMessage3')
+    const messages = new Messages({ hello: 'Hello, World!', goodbye: 'Goodbye, World!' })
+
+    command.register(messages)
+    command.execute('goodbye')
+    command.execute('hello')
+    command.execute('goodbye')
+    ```
+
+## Exceptions
+
+Large applications often have a correspondingly large number of failure points. For feature-level logic, these failures are often non-recoverable. The best we can do is show the user that something went wrong and maybe offer guidance on how to fix it.
+
+Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
+
+### Chaining
+
+Exceptions that occur deep in a call stack often do not contain enough context to correctly diagnose the problem. A stack trace is helpful, but only if the reader has access to both the source code and source map.
+
+By adding additional information as the exception bubbles up, we can create a better view of the program state when the problem occured. This is done via `ToolkitError.chain`. The `chain` function serves as a standard way to establish a clear cause-and-effect relationship for errors.
+
+### Handlers
+
+Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
+
+### Best Practices
+
+Implementations still need to adhere to some basic principles for this to work nicely:
+
+-   Do not catch errors unless something meaningful can be added.
+-   Do not swallow errors unless the functionality is non-critical to the feature.
+-   Do not directly show the user an error message for failed actions. Use `ToolkitError` instead.
+-   Use `chain` when re-throwing errors with additional information.
+-   Use `CancellationError` for explicit workflow cancellations.
+-   Define meaninful error codes when creating new errors.
+
 ## Webviews (Vue framework)
 
 The current implementation uses Vue 3 with Single File Components (SFCs) for modularity. Each webview
@@ -17,9 +126,9 @@ Be very mindful about state managment; violating these principles will lead to b
 
 ### Bundling
 
-Each webview is bundled into a single file to speed up load times as well as isolate the 'web' modules from the 'node' modules. Webview bundles are automatically generated on compilation by targeting `entry.ts` files when located under a `vue` directory. All bundles are placed directly under `dist`.
+Each webview is bundled into a single file to speed up load times as well as isolate the 'web' modules from the 'node' modules. Webview bundles are automatically generated on compilation by targeting `index.ts` files when located under a `vue` directory. All bundles are placed under `dist` in the same relative location.
 
-Generated bundle names map based off their path relative to `src`: `src/foo/vue/bar/entry.ts` -> `fooBarVue.js`
+Generated bundle names map based off their path relative to `src`: `src/foo/vue/bar/index.ts` -> `dist/src/foo/vue/bar/index.js`
 
 Running the extension in development mode (e.g. via the `Extension` launch task) starts a local server to automatically rebuild and serve webviews in real-time via hot-module reloading. It's assumed that the server runs on port `8080`, so make sure that nothing is already using that port. Otherwise webviews will not be displayed during development.
 
@@ -29,37 +138,41 @@ The VS Code API restricts our Webviews to a single `postMessage` function. To si
 
 Webview (frontend) clients can be created via `WebviewClientFactory`. This generates a simple Proxy to send messages to the extension, mapping the function name to the command name. Unique IDs are also generated to stop requests from receiving extraneous responses. It is **highly** recommended to use the [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar) extension for syntax highlighting and type-checking when working with SFCs. Keep in mind that this is purely a development tool: users of the toolkits do not require Volar to view webviews.
 
-Commands and events are defined on the backend via `compileVueWebview` or `compileVueWebviewView` for the special 'view' case. This takes a configuration object that contains information about the webview, such as the name of the main script, the panel id, and the commands/events that the backend provides. This returns a class that can be instantiated into the webview. Webviews can then be executed by calling `start` with any initial data (if applicable). Webviews can be cleared of their internal state without reloading the HTML by calling `clear` with any re-initialization data (if applicable).
+Commands and events are defined on the backend via sub-classes of `VueWebview`. Classes define all the functions and events that will be available to the frontend. These sub-classes can be turned into a fully-resolved class by using either `VueWeview.compilePanel` or `VueWebview.compileView`. The resulting classes can finally be used to instantiate webview panels or view. Panels are shown by calling `show`, while views must be registered before they can be seen.
 
 ### Examples
 
 -   Creating and executing a webview:
 
     ```ts
-    const VueWebview = compileVueWebview({
-        id: 'my.view',
-        title: 'A title',
-        webviewJs: 'myView.js',
-        start: (param?: string) => param ?? 'foo',
-        events: {
-            onBar: new vscode.EventEmitter<number>(),
-        },
-        commands: {
-            foo: () => 'hello!',
-            bar() {
-                // All commands have access to `WebviewServer` via `this`
-                this.emiters.onBar.fire(0)
-            },
-        },
-    })
+    // Export the class so the frontend code can use it for types
+    export class MyVueWebview extends VueWebview {
+        public readonly id = 'my.view'
+        public readonly source = 'myView.js'
+        public readonly onBar = new vscode.EventEmitter<number>()
+
+        public constructor(private readonly myData: string) {}
+
+        public init() {
+            return this.myData
+        }
+
+        public foo() {
+            return 'foo'
+        }
+
+        public bar() {
+            this.onBar.fire(0)
+        }
+    }
+
+    // Create panel bindings using our class
+    const Panel = VueWebview.compilePanel(MyVueWebview)
 
     // `context` is `ExtContext` provided on activation
-    const view = new VueWebview(context)
-    view.start('some data')
-    view.emitters.onFoo.fire(1)
-
-    // Export a class so the frontend code can use it for types
-    export class MyView extends VueWebview {}
+    const view = new Panel(context, 'hello')
+    view.show({ title: 'My title' })
+    view.server.onFoo.fire(1)
     ```
 
 -   Creating the client on the frontend:
@@ -86,21 +199,11 @@ Commands and events are defined on the backend via `compileVueWebview` or `compi
     client.onBar(num => console.log(num))
     ```
 
--   Retrieving initialization data by calling the `init` method:
+-   Methods called `init` will only return data on the initial webview load:
 
     ```ts
-    client.init(data => console.log(data))
+    client.init(data => (this.data = data ?? this.data))
     ```
-
-    Note that data is retrieved only **once**. Subsequent calls made by the same webview resolve `undefined` unless the state is cleared either by `clear` or refreshing the view.
-
--   Submitting a result (this destroys the view on success):
-
-    ```ts
-    client.submit(result).catch(err => console.error('Something went wrong!'))
-    ```
-
-    `submit` does nothing on views registered as a `WebviewView` as they cannot be disposed of by the extension.
 
 ### Testing
 

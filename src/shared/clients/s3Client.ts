@@ -5,22 +5,22 @@
 
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import * as mime from 'mime-types'
-import * as path from 'path'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
-import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
+import { defaultPartition } from '../regions/regionProvider'
+import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
+import { toStream } from '../utilities/collectionUtils'
 
-export const DEFAULT_MAX_KEYS = 300
-export const DEFAULT_DELIMITER = '/'
+export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
+export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
 
 export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
-export type File = InterfaceNoSymbol<DefaultFile>
 export type S3Client = InterfaceNoSymbol<DefaultS3Client>
 
 interface S3Object {
@@ -129,12 +129,10 @@ export interface DeleteBucketRequest {
     readonly bucketName: string
 }
 
-const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
-
 export class DefaultS3Client {
     public constructor(
-        private readonly partitionId: string,
-        private readonly regionCode: string,
+        public readonly regionCode: string,
+        private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {}
@@ -152,20 +150,15 @@ export class DefaultS3Client {
         getLogger().debug('CreateBucket called with request: %O', request)
         const s3 = await this.createS3()
 
-        try {
-            await s3
-                .createBucket({
-                    Bucket: request.bucketName,
-                    // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
-                    // not pass a region, so check for this case.
-                    CreateBucketConfiguration:
-                        this.regionCode == 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to create bucket %s: %O', request.bucketName, e)
-            throw e
-        }
+        await s3
+            .createBucket({
+                Bucket: request.bucketName,
+                // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
+                // not pass a region, so check for this case.
+                CreateBucketConfiguration:
+                    this.regionCode == 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
+            })
+            .promise()
 
         const response: CreateBucketResponse = {
             bucket: new DefaultBucket({
@@ -192,19 +185,8 @@ export class DefaultS3Client {
         const { bucketName } = request
         const s3 = await this.createS3()
 
-        try {
-            await this.emptyBucket(bucketName)
-        } catch (e) {
-            getLogger().error('Failed to empty bucket %s before deleting: %O', bucketName, e)
-            throw e
-        }
-
-        try {
-            await s3.deleteBucket({ Bucket: bucketName }).promise()
-        } catch (e) {
-            getLogger().error('Failed to delete bucket %s: %O', bucketName, e)
-            throw e
-        }
+        await this.emptyBucket(bucketName)
+        await s3.deleteBucket({ Bucket: bucketName }).promise()
 
         getLogger().debug('DeleteBucket succeeded')
     }
@@ -235,18 +217,13 @@ export class DefaultS3Client {
             bucketName: request.bucketName,
         })
 
-        try {
-            await s3
-                .upload({
-                    Bucket: request.bucketName,
-                    Key: request.path,
-                    Body: '',
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to create folder %s: %O', folder.name, e)
-            throw e
-        }
+        await s3
+            .upload({
+                Bucket: request.bucketName,
+                Key: request.path,
+                Body: '',
+            })
+            .promise()
 
         const response: CreateFolderResponse = { folder }
         getLogger().debug('CreateFolder returned response: %O', response)
@@ -275,13 +252,8 @@ export class DefaultS3Client {
         const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
 
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
+        await pipe(readStream, writeStream, request.progressListener)
 
-        try {
-            await pipe(readStream, writeStream, request.progressListener)
-        } catch (e) {
-            getLogger().error(`Failed to download %s from bucket %s: %O`, request.key, request.bucketName, e)
-            throw e
-        }
         getLogger().debug('DownloadFile succeeded')
     }
 
@@ -310,7 +282,7 @@ export class DefaultS3Client {
         const operation = request.operation ? request.operation : 'getObject'
         const s3 = await this.createS3()
 
-        const url = s3.getSignedUrl(operation, {
+        const url = await s3.getSignedUrlPromise(operation, {
             Bucket: request.bucketName,
             Key: request.key,
             Body: request.body,
@@ -341,17 +313,11 @@ export class DefaultS3Client {
                 ? this.fileStreams.createReadStream(request.content)
                 : bufferToStream(request.content)
 
-        const contentType =
-            request.contentType ??
-            (request.content instanceof vscode.Uri
-                ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
-                : DEFAULT_CONTENT_TYPE)
-
         const managedUploaded = s3.upload({
             Bucket: request.bucketName,
             Key: request.key,
             Body: readStream,
-            ContentType: contentType,
+            ContentType: request.contentType,
         })
 
         const progressListener = request.progressListener
@@ -374,16 +340,35 @@ export class DefaultS3Client {
      */
     public async listAllBuckets(): Promise<S3.Bucket[]> {
         const s3 = await this.createS3()
+        const output = await s3.listBuckets().promise()
 
-        let s3Buckets: S3.Bucket[]
-        try {
-            const output = await s3.listBuckets().promise()
-            s3Buckets = output.Buckets ?? []
-        } catch (e) {
-            getLogger().error('Failed to list buckets: %O', e)
-            throw e
+        return output.Buckets ?? []
+    }
+
+    public listAllBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
+        async function* fn(this: DefaultS3Client) {
+            const s3 = await this.createS3()
+            const buckets = await this.listAllBuckets()
+
+            yield* toStream(
+                buckets.map(async bucket => {
+                    assertHasProps(bucket, 'Name')
+                    const region = await this.lookupRegion(bucket.Name, s3)
+                    if (region) {
+                        return { ...bucket, region }
+                    }
+                })
+            )
         }
-        return s3Buckets
+
+        return toCollection(fn.bind(this)).filter(isNonNullable)
+    }
+
+    /**
+     * Filters the results of {@link listAllBucketsIterable} to the region of the client
+     */
+    public listBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
+        return this.listAllBucketsIterable().filter(b => b.region === this.regionCode)
     }
 
     /**
@@ -455,36 +440,27 @@ export class DefaultS3Client {
         getLogger().debug('ListFiles called with request: %O', request)
 
         const s3 = await this.createS3()
-
-        let output: S3.ListObjectsV2Output
-        try {
-            output = await s3
-                .listObjectsV2({
-                    Bucket: request.bucketName,
-                    Delimiter: DEFAULT_DELIMITER,
-                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                    Prefix: request.folderPath,
-                    ContinuationToken: request.continuationToken,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list files for bucket %s: %O', request.bucketName, e)
-            throw e
-        }
+        const bucket = new DefaultBucket({
+            partitionId: this.partitionId,
+            region: this.regionCode,
+            name: request.bucketName,
+        })
+        const output = await s3
+            .listObjectsV2({
+                Bucket: bucket.name,
+                Delimiter: DEFAULT_DELIMITER,
+                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+                Prefix: request.folderPath,
+                ContinuationToken: request.continuationToken,
+            })
+            .promise()
 
         const files: File[] = _(output.Contents)
             .reject(file => file.Key === request.folderPath)
-            .map(
-                file =>
-                    new DefaultFile({
-                        key: file.Key!,
-                        partitionId: this.partitionId,
-                        bucketName: request.bucketName,
-                        lastModified: file.LastModified,
-                        sizeBytes: file.Size,
-                        eTag: file.ETag,
-                    })
-            )
+            .map(file => {
+                assertHasProps(file, 'Key')
+                return toFile(bucket, file)
+            })
             .value()
 
         const folders: Folder[] = _(output.CommonPrefixes)
@@ -517,20 +493,14 @@ export class DefaultS3Client {
         getLogger().debug('ListObjectVersions called with request: %O', request)
         const s3 = await this.createS3()
 
-        let output: S3.ListObjectVersionsOutput
-        try {
-            output = await s3
-                .listObjectVersions({
-                    Bucket: request.bucketName,
-                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                    KeyMarker: request.continuationToken?.keyMarker,
-                    VersionIdMarker: request.continuationToken?.versionIdMarker,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list object versions: %O', e)
-            throw e
-        }
+        const output = await s3
+            .listObjectVersions({
+                Bucket: request.bucketName,
+                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+                KeyMarker: request.continuationToken?.keyMarker,
+                VersionIdMarker: request.continuationToken?.versionIdMarker,
+            })
+            .promise()
 
         const response: ListObjectVersionsResponse = {
             objects: (output.Versions ?? []).map(version => ({
@@ -577,17 +547,12 @@ export class DefaultS3Client {
         getLogger().debug('DeleteObject called with request: %O', request)
         const s3 = await this.createS3()
 
-        try {
-            await s3
-                .deleteObject({
-                    Bucket: request.bucketName,
-                    Key: request.key,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to delete object: %O', e)
-            throw e
-        }
+        await s3
+            .deleteObject({
+                Bucket: request.bucketName,
+                Key: request.key,
+            })
+            .promise()
 
         getLogger().debug('DeleteObject succeeded')
     }
@@ -605,25 +570,17 @@ export class DefaultS3Client {
         getLogger().debug('DeleteObjects called with request: %O', request)
         const s3 = await this.createS3()
 
-        let errors: S3.Error[]
-        try {
-            const output = await s3
-                .deleteObjects({
-                    Bucket: request.bucketName,
-                    Delete: {
-                        Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
-                        Quiet: true,
-                    },
-                })
-                .promise()
+        const output = await s3
+            .deleteObjects({
+                Bucket: request.bucketName,
+                Delete: {
+                    Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
+                    Quiet: true,
+                },
+            })
+            .promise()
 
-            errors = output.Errors ?? []
-        } catch (e) {
-            getLogger().error('Failed to delete objects: %O', e)
-            throw e
-        }
-
-        const response: DeleteObjectsResponse = { errors }
+        const response: DeleteObjectsResponse = { errors: output.Errors ?? [] }
         getLogger().debug('DeleteObjects returned response: %O', response)
         return response
     }
@@ -631,18 +588,17 @@ export class DefaultS3Client {
     /**
      * Looks up the region for the given bucket
      *
-     * Use the getBucketLocation API to avoid cross region lookups.
+     * Use the getBucketLocation API to avoid cross region lookups. #1806
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
-        getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
-
         try {
             const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
             // getBucketLocation returns an explicit empty string location contraint for us-east-1
             const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
-            getLogger().debug('LookupRegion returned region: %s', region)
+            getLogger().debug('LookupRegion(%s) returned: %s', bucketName, region)
             return region
         } catch (e) {
+            getLogger().error('LookupRegion(%s) failed: %s', bucketName, (e as Error).message ?? '?')
             // Try to recover region from the error
             return (e as AWSError).region
         }
@@ -657,26 +613,24 @@ export class DefaultS3Client {
      * @throws Error if there is an error listing or deleting.
      */
     private async emptyBucket(bucketName: string): Promise<void> {
-        try {
-            for await (const { objects } of this.listObjectVersionsIterable({ bucketName })) {
-                if (_(objects).isEmpty()) {
-                    continue
-                }
-
-                const deleteObjectsResponse = await this.deleteObjects({ bucketName, objects })
-                if (!_(deleteObjectsResponse.errors).isEmpty()) {
-                    const e = new Error(inspect(deleteObjectsResponse.errors[0]))
-                    getLogger().error('Failed to delete %d objects: %O...', deleteObjectsResponse.errors.length, e)
-                    throw e
-                }
+        for await (const { objects } of this.listObjectVersionsIterable({ bucketName })) {
+            if (_(objects).isEmpty()) {
+                continue
             }
-        } catch (e) {
-            getLogger().error('Failed to empty bucket %s: %O', bucketName, e)
-            throw e
+
+            const deleteObjectsResponse = await this.deleteObjects({ bucketName, objects })
+            if (!_(deleteObjectsResponse.errors).isEmpty()) {
+                const e = new Error(inspect(deleteObjectsResponse.errors[0]))
+                getLogger().error('Failed to delete %d objects: %O...', deleteObjectsResponse.errors.length, e)
+                throw e
+            }
         }
     }
 }
 
+/**
+ * @deprecated This should be refactored the same way as {@link toFile}
+ */
 export class DefaultBucket {
     public readonly name: string
     public readonly region: string
@@ -693,6 +647,9 @@ export class DefaultBucket {
     }
 }
 
+/**
+ * @deprecated This should be refactored the same way as {@link toFile}
+ */
 export class DefaultFolder {
     public readonly name: string
     public readonly path: string
@@ -709,39 +666,24 @@ export class DefaultFolder {
     }
 }
 
-export class DefaultFile {
-    public readonly name: string
-    public readonly key: string
-    public readonly arn: string
-    public readonly lastModified?: Date
-    public readonly sizeBytes?: number
-    public readonly eTag?: string
+export interface File extends S3.Object, S3.HeadObjectOutput {
+    readonly name: string
+    readonly key: string
+    readonly arn: string
+    readonly lastModified?: Date
+    readonly sizeBytes?: number
+    readonly eTag?: string
+}
 
-    public constructor({
-        partitionId,
-        bucketName,
-        key,
-        lastModified,
-        sizeBytes,
-        eTag,
-    }: {
-        partitionId: string
-        bucketName: string
-        key: string
-        lastModified?: Date
-        sizeBytes?: number
-        eTag?: string
-    }) {
-        this.name = _(key).split(DEFAULT_DELIMITER).last()!
-        this.key = key
-        this.arn = buildArn({ partitionId, bucketName, key })
-        this.lastModified = lastModified
-        this.sizeBytes = sizeBytes
-        this.eTag = eTag
-    }
-
-    public [inspect.custom](): string {
-        return `File (name=${this.name}, key=${this.key}, arn=${this.arn}, lastModified=${this.lastModified}, sizeBytes=${this.sizeBytes})`
+export function toFile(bucket: Bucket, resp: RequiredProps<S3.Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
+    return {
+        key: resp.Key,
+        arn: `${bucket.arn}/${resp.Key}`,
+        name: resp.Key.split(delimiter).pop()!,
+        eTag: resp.ETag,
+        lastModified: resp.LastModified,
+        sizeBytes: resp.Size,
+        ...resp,
     }
 }
 

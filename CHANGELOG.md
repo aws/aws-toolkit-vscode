@@ -1,3 +1,180 @@
+## 1.62.0 2023-01-31
+
+- **Bug Fix** SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867
+- **Bug Fix** iam: ignore permission check when denial comes from organization csp policy
+- **Bug Fix** Improve extension start-up performance, especially on devices with slower file systems
+- **Bug Fix** Duplicate resource type definitions break the "Resources" node (#3132)
+- **Bug Fix** SAM template.yaml syntax support for FunctionResponseTypes #2924
+- **Feature** SAM: run/debug now works for a larger variety of TypeScript projects
+- **Feature** Upload Lambda wizard will skip prompts and auto select parent directory when invoked from a template file.
+
+## 1.61.0 2023-01-12
+
+- **Bug Fix** AWS regions are not dynamically fetched by the Toolkit
+- **Bug Fix** S3: saving files from the editor overwrites existing content types
+- **Bug Fix** S3: file editor fails on binary files with no file extension
+- **Feature** CodeWhisperer: more responsive Auto-Suggestions
+- **Feature** Copy Lambda Function URL in AWS Explorer
+
+## 1.60.0 2022-12-16
+
+- **Bug Fix** CodeWhisperer: fix potential undefined reference
+
+## 1.59.0 2022-12-15
+
+- **Bug Fix** Help button on the "save connection" prompt does nothing
+- **Bug Fix** CodeWhisperer may alter editor.hover.enabled configuration
+- **Feature** CodeWhisperer: Add 'Do not show again' button to authentication migration prompt
+
+## 1.58.0 2022-12-06
+
+- **Feature** S3: "Download As" action defaults to the last-used download path.
+- **Feature** Amazon CodeCatalyst: faster listing of repositories and Dev Environments
+- **Feature** Cloud9: browse and generate code for EventBridge Schemas from AWS Explorer
+- **Feature** Amazon CodeCatalyst: Connecting to AWS Builder ID when coming from the browser has been made easier
+
+## 1.57.0 2022-12-01
+
+- **Feature** Amazon CodeCatalyst: Connect VS Code to your remote Dev Environments.
+- **Feature** Amazon CodeCatalyst: Clone your repositories to your local workspace.
+- **Feature** Amazon CodeCatalyst: Connect using your AWS Builder ID.
+
+## 1.56.0 2022-11-28
+
+- **Feature** Amazon CodeWhisperer now adds new access methods with AWS Builder ID and AWS IAM Identity Center to enable and get started. 
+- **Feature** Amazon CodeWhisperer recommendations are more context aware. We are removing the overlaps from CodeWhisperer suggestions specifically when the cursor is inside a code block.
+- **Feature** Amazon CodeWhisperer now supports TypeScript and C# programming languages.
+- **Feature** Amazon CodeWhisperer is now available as a supported feature and no longer an experimental feature.
+- **Feature** Amazon CodeWhisperer now supports JavaScript for Security Scan to catch security vulnerabilities.
+
+## 1.55.0 2022-11-23
+
+- **Bug Fix** logging: `aws.viewLogsAtMessage` no longer fails when the log message cannot be found
+- **Feature** SAM: the `Sync SAM Application` command remembers your most recent selections per-region.
+- **Feature** SAM: deployment of CloudFormation templates now uses `sam sync` by default, reducing the amount of time it takes to deploy to AWS. The `aws.samcli.legacyDeploy` setting can be used to revert to the old experience.
+
+## 1.54.0 2022-11-19
+
+- **Bug Fix** JSON-schemas download logic is brittle #2957
+- **Bug Fix** "Connect" and "Choose Profile" open create credentials wizard/profile selector when credentials aren't present in aws configs
+- **Feature** SAM: create, run and debug nodejs18.x Lambdas
+- **Feature** New credentials experience. Includes the ability to set up SSO ("IAM Identity Center") from AWS Toolkit (`AWS: Connect to AWS` > `Add New Connection`)
+
+## 1.53.0 2022-10-24
+
+- **Bug Fix** Execessive CodeWhisperer latency caused by unnecessary refreshing of credentials
+- **Bug Fix** CodeWhisperer auto trigger not working correctly in certain circumstances
+
+## 1.52.0 2022-10-20
+
+- **Bug Fix** CodeWhisperer left/right arrow keybinding conflict with other plugins
+- **Feature** Enable syntax features for untitled (unsaved) cloudformation/sam yaml files
+
+## 1.51.0 2022-10-01
+
+- **Bug Fix** styling issue in CodeWhisperer reference log
+- **Bug Fix** CodeWhisperer duplicate closing bracket when using recommendation inside brackets
+- **Bug Fix** CodeWhisperer triggered by React plugin generated code snippets
+- **Bug Fix** cached ECS/EC2 credentials not refreshed when expired
+- **Bug Fix** malformed ECS icons on recent versions of VS Code
+- **Bug Fix** CodeWhisperer sometimes edits user's code
+- **Feature** running commands on ECS tasks can now be cancelled
+- **Feature** "AWS (Developer)" menu now includes a "Show Global State" item
+- **Feature** Resources (in AWS Explorer) can list more resource types for EC2, IoT, RDS, Redshift, NetworkManager, and other services
+- **Feature** Prompt users to install YAML plugin when AWSTemplateFormatVersion becomes available in their YAML document
+- **Feature** ECS tasks can be opened up in the terminal
+- **Feature** Improved CodeWhisperer inline suggestion experience
+
+## 1.50.0 2022-09-13
+
+- **Bug Fix** Debugging Python image-based lambdas fails with `Init failed error=exec: "-m": executable file not found`
+- **Feature** if "Create Credentials Profile" fails, error message now shows "Edit Credentials" button
+- **Feature** Decrease the amount of space SAM/CFN schemas take on the status bar
+- **Feature** CodeWhisperer now supports .jsx files
+
+## 1.49.0 2022-08-29
+
+- **Bug Fix** CodeWhisperer adds redundant closing brackets/parens/braces
+- **Feature** Don't open webviews in a split window (except SAM debug configuration editor).
+- **Removal** Python 3.6 is no longer supported
+
+## 1.48.0 2022-08-15
+
+- **Bug Fix** "API proposal" error on vscode 1.63 or older
+
+## 1.47.0 2022-08-06
+
+- **Bug Fix** Delve debugger installation fails for Go Lambdas on MacOS
+- **Bug Fix** restored `Connect to AWS` command (alias to the `Choose AWS Profile` command)
+- **Bug Fix** CodeWhisperer: when pressing up or down does not move cursor when suggestion is active
+- **Bug Fix** CodeWhisperer access token validation may sometimes fail
+- **Bug Fix** "Connect to AWS" does not handle missing credentials file
+- **Feature** basic syntax highlighting for ~/.aws/credentials and ~/.aws/config files
+- **Feature** `Choose AWS Profile` quickpick now includes an `Edit Credentials` action
+- **Feature** Add `Edit Credentials` command which opens all known credential files
+- **Feature** CodeWhisperer: References include a link to the source repository if possible.
+- **Feature** Auto-connect tries a maximum of one non-default profile instead of three
+
+## 1.46.0 2022-07-25
+
+- **Bug Fix** "Read-only file system" error when deploying or debugging a SAM project #2395
+
+## 1.45.0 2022-07-07
+
+- **Bug Fix** `Add SAM Debug Configuration` codelenses in source files are now disabled by default. (To enable the codelenses, use the `AWS: Toggle SAM hints in source files` command or the `Enable SAM hints` setting.)
+- **Bug Fix** CodeWhisperer features were not fully disabled if the experiment was disabled
+- **Bug Fix** 'security token expired' errors when using CodeWhisperer in Cloud9 with managed credentials
+
+## 1.44.0 2022-06-30
+
+- **Bug Fix** Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode
+
+## 1.42.0 2022-06-23
+
+- **Feature** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
+
+## 1.41.0 2022-06-22
+
+- **Bug Fix** Credentials are now automatically refreshed on certain AWS API errors
+
+## 1.40.0 2022-06-17
+
+- **Bug Fix** The `Upload Lambda` command now automatically causes the Toolkit to login
+- **Bug Fix** S3 "Presigned URL" feature may silently fail #2687
+- **Bug Fix** Fix issue where some http errors were logging undefined on error
+- **Feature** UI: buttons for Lambda invoke, API invoke, and other forms are now always visible at the top of the form
+
+## 1.39.0 2022-06-06
+
+- **Bug Fix** StepFunctions: allow state machines with non-object values for Parameters property
+- **Bug Fix** Fix incorrect use of Markdown in new SAM application READMEs
+- **Bug Fix** Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work
+- **Bug Fix** Credential profiles that do not require user-input now correctly refresh when expired
+- **Feature** "Upload Lambda" from any folder in VS Code File Explorer
+- **Feature** "Send Feedback" form always enables Send button and doesn't require text input
+- **Feature** SAM: create, run and debug nodejs16.x Lambdas
+- **Feature** CDK features are now found in the _Developer Tools_ view. This view will contain more ways to work with local project resources in future releases.
+
+## 1.38.0 2022-05-12
+
+- **Breaking Change** Removed the `aws.onDefaultRegionMissing` setting
+- **Bug Fix** SAM template.yaml syntax support for condition, requestmodel, requestparameters, custom resources, SSMParameterReadPolicy and AWSSecretsManagerGetSecretValuePolicy
+- **Bug Fix** Fixed issue with API Gateway 'Invoke on AWS' resource names always showing 'resource.path'
+- **Bug Fix** S3 File Viewer: file paths containing reserved URI characters are now handled correctly
+- **Feature** `Edit SAM Debug Configuration` and `View Toolkit Logs` commands are now shown in the AWS Explorer main menu
+- **Feature** Lambda: Use Upload Lambda from a folder, template file, or the command palette.
+- **Feature** renamed `SAM Debug Configuration Editor` command to `Edit SAM Debug Configuration`
+- **Feature** SAM run/debug now uses the current active credentials (if the `aws.credentials` launch-config field is not set)
+- **Feature** Show "Add Debug Config" codelens in JS/TS files even if package.json is missing #2579
+- **Feature** "Show or Hide Regions" is now one command that supports multiple selections
+- **Feature** added `Show AWS Commands...` command to AWS Explorer menu
+- **Feature** Open schemas directly when clicking on schema item nodes
+
+## 1.37.0 2022-03-25
+
+- **Bug Fix** SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing
+- **Feature** "Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service"
+
 ## 1.36.0 2022-03-03
 
 - **Bug Fix** Step Functions: fixed issue with opening a graph render from the editor

@@ -9,19 +9,18 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { listRegistryItems } from '../../eventSchemas/utils'
-import { SchemaClient } from '../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
-import globals from '../../shared/extensionGlobals'
+import { SchemaClient } from '../../shared/clients/schemaClient'
 
 export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
+    public readonly regionCode = this.client.regionCode
 
-    public constructor(public readonly regionCode: string) {
+    public constructor(private readonly client: SchemaClient) {
         super('Schemas', vscode.TreeItemCollapsibleState.Collapsed)
         this.registryNodes = new Map<string, RegistryItemNode>()
         this.contextValue = 'awsSchemasNode'
@@ -34,7 +33,6 @@ export class SchemasNode extends AWSTreeNodeBase {
 
                 return [...this.registryNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]')),
             sort: (nodeA, nodeB) => nodeA.registryName.localeCompare(nodeB.registryName),
@@ -42,14 +40,13 @@ export class SchemasNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(this.regionCode)
-        const registries = await toMapAsync(listRegistryItems(client), registry => registry.RegistryName)
+        const registries = await toMapAsync(listRegistryItems(this.client), registry => registry.RegistryName)
 
         updateInPlace(
             this.registryNodes,
             registries.keys(),
             key => this.registryNodes.get(key)!.update(registries.get(key)!),
-            key => new RegistryItemNode(this.regionCode, registries.get(key)!)
+            key => new RegistryItemNode(registries.get(key)!, this.client)
         )
     }
 }

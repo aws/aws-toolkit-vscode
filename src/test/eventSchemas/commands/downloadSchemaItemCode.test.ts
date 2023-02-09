@@ -21,10 +21,10 @@ import {
 } from '../../../eventSchemas/commands/downloadSchemaItemCode'
 
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
 
 import admZip = require('adm-zip')
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 
 describe('CodeDownloader', function () {
     let tempFolder: string
@@ -55,7 +55,7 @@ describe('CodeDownloader', function () {
 
     const language = 'Java8'
     const schemaVersion = 'testVersion'
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const codeDownloader = new CodeDownloader(schemaClient)
 
     describe('codeDownloader', async function () {
@@ -140,7 +140,7 @@ describe('CodeGenerator', function () {
         CREATE_FAILED = 'CREATE_FAILED',
     }
 
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const codeGenerator = new CodeGenerator(schemaClient)
 
     describe('codeGenerator', async function () {
@@ -207,8 +207,8 @@ describe('CodeGeneratorStatusPoller', function () {
     const language = 'Java8'
     const schemaVersion = 'testVersion'
 
-    const RETRY_INTERVAL_MS = 1
-    const MAX_RETRIES = 2
+    const retryIntervalMs = 1
+    const maxRetries = 2
 
     enum CodeGenerationStatus {
         CREATE_COMPLETE = 'CREATE_COMPLETE',
@@ -216,7 +216,7 @@ describe('CodeGeneratorStatusPoller', function () {
         CREATE_FAILED = 'CREATE_FAILED',
     }
 
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const statuspoller = new CodeGenerationStatusPoller(schemaClient)
 
     describe('getCurrentStatus', async function () {
@@ -273,7 +273,7 @@ describe('CodeGeneratorStatusPoller', function () {
                 .returns(Promise.resolve(schemaResponse.Status))
 
             await assert.rejects(
-                statuspoller.pollForCompletion(request, RETRY_INTERVAL_MS, MAX_RETRIES),
+                statuspoller.pollForCompletion(request, retryIntervalMs, maxRetries),
                 new Error(
                     `Failed to download code for schema ${request.schemaName} before timeout. Please try again later`
                 ),
@@ -281,8 +281,8 @@ describe('CodeGeneratorStatusPoller', function () {
             )
             assert.strictEqual(
                 statusPoll.callCount,
-                MAX_RETRIES,
-                'getCurrentStatus should be called MAX_RETRIES times before timing out'
+                maxRetries,
+                'getCurrentStatus should be called maxRetries times before timing out'
             )
         })
 
@@ -295,7 +295,7 @@ describe('CodeGeneratorStatusPoller', function () {
                 .stub(statuspoller, 'getCurrentStatus')
                 .withArgs(request)
                 .returns(Promise.resolve(schemaResponse.Status))
-            const status = await statuspoller.pollForCompletion(request, RETRY_INTERVAL_MS, MAX_RETRIES)
+            const status = await statuspoller.pollForCompletion(request, retryIntervalMs, maxRetries)
             assert.strictEqual(
                 statusPoll.callCount,
                 1,
@@ -309,11 +309,11 @@ describe('CodeGeneratorStatusPoller', function () {
             statusPoll.onCall(0).returns(Promise.resolve(CodeGenerationStatus.CREATE_IN_PROGRESS))
             statusPoll.onCall(1).returns(Promise.resolve(CodeGenerationStatus.CREATE_COMPLETE)) // After maxAttempts
 
-            const status = await statuspoller.pollForCompletion(request, RETRY_INTERVAL_MS, MAX_RETRIES)
+            const status = await statuspoller.pollForCompletion(request, retryIntervalMs, maxRetries)
             assert.strictEqual(
                 statusPoll.callCount,
-                MAX_RETRIES,
-                'getCurrentStatus should be called MAX_RETRIES(2) times as it returns CREATE_COMPLETE on the 2nd call'
+                maxRetries,
+                'getCurrentStatus should be called maxRetries(2) times as it returns CREATE_COMPLETE on the 2nd call'
             )
             assert.strictEqual(status, CodeGenerationStatus.CREATE_COMPLETE, 'status should match')
         })
@@ -359,7 +359,7 @@ describe('SchemaCodeDownload', function () {
     const schemaVersion = 'testVersion'
 
     const fileContent = 'Test file contents'
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const poller = new CodeGenerationStatusPoller(schemaClient)
     const downloader = new CodeDownloader(schemaClient)
     const generator = new CodeGenerator(schemaClient)

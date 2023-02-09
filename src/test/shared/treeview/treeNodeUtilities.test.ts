@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 import { TestAWSTreeNode } from './nodes/testAWSTreeNode'
 
 describe('makeChildrenNodes', async function () {
@@ -17,7 +17,6 @@ describe('makeChildrenNodes', async function () {
     it('returns child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeA, nodeB],
-            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
@@ -27,25 +26,20 @@ describe('makeChildrenNodes', async function () {
 
     it('returns an error node if an error is encountered', async function () {
         const expectedError = new Error('loading error')
-        const expectedErrorNode = makeErrorNode(expectedError)
 
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => {
                 throw expectedError
             },
-            getErrorNode: async (error: Error, logID: number) => expectedErrorNode,
         })
 
-        assert.strictEqual(childNodes.length, 1, 'Unexpected child node count')
-        const actualChildNode = childNodes[0]
-        assert.deepStrictEqual(actualChildNode, expectedErrorNode, 'Child node was not the error node')
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('returns a placeholder node if there are no child nodes', async function () {
         const expectedPlaceholderNode = new PlaceholderNode(parentNode, 'No child nodes found')
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
-            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
             getNoChildrenPlaceholderNode: async () => expectedPlaceholderNode,
         })
 
@@ -57,7 +51,6 @@ describe('makeChildrenNodes', async function () {
     it('returns an empty list if there are no child nodes and no placeholder', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
-            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 0, 'Unexpected child node count')
@@ -66,7 +59,6 @@ describe('makeChildrenNodes', async function () {
     it('sorts the child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
-            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
             sort: (a, b) => a.label!.localeCompare(b.label!),
         })
 
@@ -78,15 +70,10 @@ describe('makeChildrenNodes', async function () {
     it('does not sort the child nodes if a sort method is not provided', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
-            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
         assert.deepStrictEqual(childNodes[0], nodeB, 'Unexpected first child node')
         assert.deepStrictEqual(childNodes[1], nodeA, 'Unexpected second child node')
     })
-
-    function makeErrorNode(error: Error): ErrorNode {
-        return new ErrorNode(parentNode, error)
-    }
 })

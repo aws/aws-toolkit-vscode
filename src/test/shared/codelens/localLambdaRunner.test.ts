@@ -13,11 +13,12 @@ import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import { assertLogsContain } from '../../globalSetup.test'
+import { ToolkitError } from '../../../shared/errors'
 
 describe('localLambdaRunner', async function () {
     let tempDir: string
     before(async function () {
-        await FakeExtensionContext.getNew()
+        await FakeExtensionContext.create()
     })
 
     beforeEach(async function () {
@@ -74,85 +75,31 @@ describe('localLambdaRunner', async function () {
             assertLogsContain('Debugger attached', false, 'info')
         })
 
-        it('Successful attach records a success metric', async function () {
-            await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry,
-                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
-                    assert.ok(attachResult, 'Expected to be logging an attach success metric')
-                    assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
-                },
-            })
-        })
-
-        it('Successful attach returns success', async function () {
-            const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry,
-            })
-
-            assert.ok(results.success, 'Expected attach results to be successful')
-        })
-
-        it('Failure to attach logs that the debugger did not attach', async function () {
-            await localLambdaRunner.attachDebugger({
+        it('Failure to attach throws an error', async function () {
+            const results = localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
 
-            // match start of string 'AWS.output.sam.local.attach.failure'
-            assertLogsContain('Unable to attach Debugger', false, 'error')
+            await assert.rejects(results, /failed to attach debugger/i)
         })
 
-        it('Failure to attach records a fail metric', async function () {
+        it('Uses a code for exceeding the retry limit', async function () {
+            const results = await localLambdaRunner
+                .attachDebugger({
+                    debugConfig: {} as any as SamLaunchRequestArgs,
+                    onStartDebugging: startDebuggingReturnsFalse,
+                    onWillRetry,
+                })
+                .catch(e => e)
+
+            assert.ok(results instanceof ToolkitError)
+            assert.strictEqual(results.code, 'DebuggerRetryLimit')
+        })
+
+        it('Does not fail if attach succeeds during retries', async function () {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
-                    assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
-                },
-            })
-        })
-
-        it('Failure to attach returns failure', async function () {
-            const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-            })
-
-            assert.strictEqual(results.success, false, 'Expected attach results to fail')
-        })
-
-        it('Logs about exceeding the retry limit', async function () {
-            await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-            })
-
-            // match string 'AWS.output.sam.local.attach.retry.limit.exceeded'
-            assertLogsContain('Retry limit reached', false, 'error')
-        })
-
-        it('Does not log metrics when startDebugging returns false', async function () {
-            await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                    assert.strictEqual(actualRetries, 1, 'Metrics should only be recorded once')
-                    assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
-                },
-                onWillRetry,
-            })
-        })
-
-        it('Returns true if attach succeeds during retries', async function () {
-            const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as SamLaunchRequestArgs,
                 onStartDebugging: async (
                     folder: vscode.WorkspaceFolder | undefined,
@@ -164,18 +111,6 @@ describe('localLambdaRunner', async function () {
                 },
                 onWillRetry,
             })
-
-            assert.ok(results.success, 'Expected attach results to succeed')
-        })
-
-        it('Returns false if retry count exceeded', async function () {
-            const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as SamLaunchRequestArgs,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-            })
-
-            assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
     })
 

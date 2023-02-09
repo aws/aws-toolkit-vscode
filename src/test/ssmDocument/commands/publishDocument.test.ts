@@ -9,171 +9,50 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import * as publish from '../../../ssmDocument/commands/publishDocument'
 import * as ssmUtils from '../../../ssmDocument/util/util'
 import {
+    PublishSSMDocumentAction,
     PublishSSMDocumentWizardResponse,
-    PublishSSMDocumentWizard,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
-import * as picker from '../../../shared/ui/picker'
-import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
-import globals from '../../../shared/extensionGlobals'
-
-let sandbox: sinon.SinonSandbox
-
-const mockUriOne: vscode.Uri = {
-    authority: 'MockAuthorityOne',
-    fragment: 'MockFragmentOne',
-    fsPath: 'MockFSPathOne',
-    query: 'MockQueryOne',
-    path: 'MockPathOne',
-    scheme: 'MockSchemeOne',
-    with: () => {
-        return mockUriOne
-    },
-    toJSON: sinon.spy(),
-}
-
-const mockDoc: vscode.TextDocument = {
-    eol: 1,
-    fileName: 'MockFileNameOne',
-    isClosed: false,
-    isDirty: false,
-    isUntitled: false,
-    languageId: 'ssm-json',
-    lineCount: 0,
-    uri: mockUriOne,
-    version: 0,
-    getText: () => {
-        return 'MockDocumentTextOne'
-    },
-    getWordRangeAtPosition: sinon.spy(),
-    lineAt: sinon.spy(),
-    offsetAt: sinon.spy(),
-    positionAt: sinon.spy(),
-    save: sinon.spy(),
-    validatePosition: sinon.spy(),
-    validateRange: sinon.spy(),
-}
-
-describe('publishSSMDocument', async function () {
-    let sandbox: sinon.SinonSandbox
-    const fakeAwsContext = new FakeAwsContext()
-    const fakeRegionProvider = new FakeRegionProvider()
-
-    const fakeRegions = [
-        {
-            label: 'us-east-1',
-            description: 'us-east-1',
-        },
-    ]
-
-    const fakeRegion = {
-        label: 'us-east-1',
-        description: 'us-east-1',
-    }
-
-    let textDocument: vscode.TextDocument
-    let apiCalled: string
-
-    beforeEach(async function () {
-        sandbox = sinon.createSandbox()
-        apiCalled = ''
-        textDocument = { ...mockDoc }
-        sandbox.stub(vscode.window, 'activeTextEditor').value({
-            document: textDocument,
-        })
-        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeRegions))
-        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeRegion)
-        initializeClientBuilders()
-    })
-
-    afterEach(async function () {
-        sandbox.restore()
-    })
-
-    it('tests calling createDocument', async function () {
-        const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
-            Promise.resolve({
-                PublishSsmDocAction: 'Create',
-                name: 'testName',
-                documentType: 'Command',
-                region: '',
-            })
-        )
-
-        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider)
-
-        sinon.assert.calledOnce(wizardStub)
-        assert.strictEqual(apiCalled, 'createDocument')
-    })
-
-    it('tests calling updateDocument', async function () {
-        const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
-            Promise.resolve({
-                PublishSsmDocAction: 'Update',
-                name: 'testName',
-                region: '',
-            })
-        )
-        sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider)
-
-        sinon.assert.calledOnce(wizardStub)
-        assert.strictEqual(apiCalled, 'updateDocument')
-    })
-
-    function initializeClientBuilders(): void {
-        const ssmDocumentClient = {
-            createDocument: (request: SSM.CreateDocumentRequest) => {
-                apiCalled = 'createDocument'
-                return {} as SSM.CreateDocumentResult
-            },
-            updateDocument: (request: SSM.UpdateDocumentRequest) => {
-                apiCalled = 'updateDocument'
-                return {} as SSM.UpdateDocumentResult
-            },
-        }
-
-        const clientBuilder = {
-            createSsmClient: sandbox.stub().returns(ssmDocumentClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
-})
+import { closeAllEditors } from '../../testUtil'
+import { stub } from '../../utilities/stubber'
 
 describe('publishDocument', async function () {
     let wizardResponse: PublishSSMDocumentWizardResponse
     let textDocument: vscode.TextDocument
     let result: SSM.CreateDocumentResult | SSM.UpdateDocumentResult
-    let client: SsmDocumentClient
+
     const fakeCreateRequest: SSM.CreateDocumentRequest = {
-        Content: 'MockDocumentTextOne',
+        Content: 'foo',
         DocumentFormat: 'JSON',
         DocumentType: 'Automation',
         Name: 'test',
     }
     const fakeUpdateRequest: SSM.UpdateDocumentRequest = {
-        Content: 'MockDocumentTextOne',
+        Content: 'foo',
         DocumentFormat: 'JSON',
         DocumentVersion: '$LATEST',
         Name: 'test',
     }
 
-    beforeEach(async function () {
-        sandbox = sinon.createSandbox()
+    before(async function () {
+        textDocument = await vscode.workspace.openTextDocument({ content: 'foo', language: 'ssm-json' })
+        await vscode.window.showTextDocument(textDocument)
+    })
 
+    after(async function () {
+        await closeAllEditors()
+    })
+
+    beforeEach(async function () {
         wizardResponse = {
-            PublishSsmDocAction: 'Update',
+            action: PublishSSMDocumentAction.QuickUpdate,
             name: 'test',
             documentType: 'Automation',
             region: '',
         }
-        textDocument = { ...mockDoc }
         result = {
             DocumentDescription: {
                 Name: 'testName',
@@ -182,49 +61,32 @@ describe('publishDocument', async function () {
     })
 
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
     describe('createDocument', async function () {
         it('createDocument API returns successfully', async function () {
-            client = new MockSsmDocumentClient(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                req => {
-                    return new Promise<SSM.CreateDocumentResult>((resolve, reject) => {
-                        resolve(result)
-                    })
-                },
-                undefined,
-                undefined
-            )
-            const createSpy = sandbox.spy(client, 'createDocument')
+            wizardResponse = {
+                action: PublishSSMDocumentAction.QuickCreate,
+                name: 'test',
+                documentType: 'Automation',
+                region: '',
+            }
+
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.createDocument.resolves(result)
+
             await publish.createDocument(wizardResponse, textDocument, client)
-            assert(createSpy.calledOnce)
-            assert(createSpy.calledWith(fakeCreateRequest))
+
+            assert(client.createDocument.calledOnce)
+            assert(client.createDocument.calledWith(fakeCreateRequest))
         })
 
         it('createDocument API failed', async function () {
-            client = new MockSsmDocumentClient(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                req => {
-                    return new Promise<SSM.CreateDocumentResult>((resolve, reject) => {
-                        throw new Error('Create Error')
-                    })
-                },
-                undefined,
-                undefined
-            )
-            const createErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.getDocument.rejects(new Error('Create Error'))
+
+            const createErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
             await publish.createDocument(wizardResponse, textDocument, client)
             assert(createErrorSpy.calledOnce)
             assert(
@@ -236,44 +98,22 @@ describe('publishDocument', async function () {
 
     describe('updateDocument', async function () {
         it('updateDocument API returns successfully', async function () {
-            client = new MockSsmDocumentClient(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                req => {
-                    return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
-                        resolve(result)
-                    })
-                }
-            )
-            const updateSpy = sandbox.spy(client, 'updateDocument')
-            sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.updateDocument.resolves(result)
+
+            sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
-            assert(updateSpy.calledOnce)
-            assert(updateSpy.calledWith(fakeUpdateRequest))
+
+            assert(client.updateDocument.calledOnce)
+            assert(client.updateDocument.calledWith(fakeUpdateRequest))
         })
 
         it('updateDocument API failed', async function () {
-            client = new MockSsmDocumentClient(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                req => {
-                    return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
-                        throw new Error('Update Error')
-                    })
-                }
-            )
-            const updateErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
-            sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.updateDocument.rejects(new Error('Update Error'))
+
+            const updateErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
+            sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
             assert(updateErrorSpy.calledOnce)
             assert(

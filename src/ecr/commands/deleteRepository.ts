@@ -9,7 +9,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { recordEcrDeleteRepository } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function deleteRepository(
     node: EcrRepositoryNode,
@@ -23,7 +23,7 @@ export async function deleteRepository(
     const isConfirmed = await showConfirmationDialog(repositoryName, window)
     if (!isConfirmed) {
         getLogger().info('DeleteRepository cancelled')
-        recordEcrDeleteRepository({ result: 'Cancelled' })
+        telemetry.ecr_deleteRepository.emit({ result: 'Cancelled' })
         return
     }
 
@@ -31,19 +31,19 @@ export async function deleteRepository(
     try {
         await node.deleteRepository()
 
-        getLogger().info(`Successfully deleted repository ${repositoryName}`)
+        getLogger().info(`deleted repository: ${repositoryName}`)
 
         window.showInformationMessage(
-            localize('AWS.ecr.deleteRepository.success', 'Deleted repository {0}', repositoryName)
+            localize('AWS.ecr.deleteRepository.success', 'Deleted repository: {0}', repositoryName)
         )
-        recordEcrDeleteRepository({ result: 'Succeeded' })
+        telemetry.ecr_deleteRepository.emit({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to delete repository ${repositoryName}: %O`, e)
+        getLogger().error(`Failed to delete repository ${repositoryName}: %s`, e)
         showViewLogsMessage(
-            localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository {0}', repositoryName),
+            localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository: {0}', repositoryName),
             window
         )
-        recordEcrDeleteRepository({ result: 'Failed' })
+        telemetry.ecr_deleteRepository.emit({ result: 'Failed' })
     } finally {
         await commands.execute('aws.refreshAwsExplorerNode', node.parent)
     }

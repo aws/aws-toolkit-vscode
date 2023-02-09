@@ -5,17 +5,19 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as picker from '../../../shared/ui/pickerPrompter'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { AppRunnerCodeRepositoryWizard, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import {
+    AppRunnerCodeRepositoryWizard,
+    createConnectionPrompter,
+} from '../../../apprunner/wizards/codeRepositoryWizard'
+import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import { Prompter } from '../../../shared/ui/prompter'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
-import { exposeEmitters, ExposeEmitters } from '../../shared/vscode/testUtils'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
+import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
+import { stub } from '../../utilities/stubber'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -63,26 +65,20 @@ describe('AppRunnerCodeRepositoryWizard', function () {
 
 type ConnectionStatus = 'AVAILABLE' | 'PENDING_HANDSHAKE' | 'ERROR' | 'DELETED'
 
-describe('ConnectionPrompter', function () {
-    let connections: ConnectionSummary[]
-    let prompterProvider: ConnectionPrompter
-    let sandbox: sinon.SinonSandbox
-    let fakePicker: ExposeEmitters<vscode.QuickPick<picker.DataQuickPickItem<string>>, 'onDidTriggerButton'>
-    let prompter: Prompter<ConnectionSummary>
-    let itemsPromise: Promise<void>
+describe('createConnectionPrompter', function () {
     let openExternal: sinon.SinonSpy<Parameters<typeof vscode.env.openExternal>>
 
-    const fakeState = {
-        stepCache: {},
-        estimator: () => 0,
-    }
+    const defaultConnections = [
+        makeConnection('connection-name-1', 'connection-arn-1'),
+        makeConnection('connection-name-2', 'connection-arn-2'),
+    ]
 
-    const fakeApprunnerClient: AppRunnerClient = {
-        listConnections: (request: any) =>
-            Promise.resolve({
-                ConnectionSummaryList: connections,
-            }),
-    } as any
+    function makeTester(connections = defaultConnections): QuickPickTester<ConnectionSummary> {
+        const client = stub(DefaultAppRunnerClient, { regionCode: '' })
+        client.listConnections.resolves({ ConnectionSummaryList: connections })
+
+        return createQuickPickTester(createConnectionPrompter(client))
+    }
 
     function makeConnection(name: string, arn: string, status: ConnectionStatus = 'AVAILABLE'): ConnectionSummary {
         return {
@@ -92,106 +88,51 @@ describe('ConnectionPrompter', function () {
         }
     }
 
-    before(function () {
-        sandbox = sinon.createSandbox()
-        openExternal = sinon.stub(vscode.env, 'openExternal')
-        sinon.stub(picker, 'createQuickPick').callsFake((items, options) => {
-            fakePicker = exposeEmitters(vscode.window.createQuickPick(), ['onDidTriggerButton'])
-            fakePicker.buttons = options?.buttons ?? [] // TODO: use 'applyPrimitives'
-            const prompter = new picker.QuickPickPrompter(fakePicker as any)
-            itemsPromise = prompter.loadItems(items)
-
-            return prompter
-        })
-    })
-
     beforeEach(function () {
-        connections = [
-            makeConnection('connection-name-1', 'connection-arn-1'),
-            makeConnection('connection-name-2', 'connection-arn-2'),
-        ]
-        fakeState.stepCache = {}
-        prompterProvider = new ConnectionPrompter(fakeApprunnerClient)
+        openExternal = sinon.stub(vscode.env, 'openExternal')
     })
 
     afterEach(function () {
-        sandbox.restore()
-        openExternal.resetHistory()
-    })
-
-    after(function () {
         sinon.restore()
     })
 
-    function onShow(picker: typeof fakePicker): Promise<void> {
-        return new Promise(resolve => {
-            picker.onDidChangeActive(actives => {
-                if (actives.length > 0) {
-                    resolve()
-                }
-            })
-        })
-    }
-
     it('lists connections', async function () {
-        prompter = prompterProvider(fakeState)
-        await itemsPromise
-        fakePicker.items.forEach((item, index) => {
-            assert.strictEqual(item.data, connections[index])
-        })
-    })
-
-    it('can accept a connection', async function () {
-        prompter = prompterProvider(fakeState)
-        await itemsPromise
-        const result = prompter.prompt()
-        await onShow(fakePicker)
-        fakePicker.selectedItems = fakePicker.activeItems
-        assert.strictEqual(await result, connections[0])
+        const tester = makeTester()
+        tester.assertItems(['connection-name-1', 'connection-name-2'])
+        tester.acceptItem('connection-name-2')
+        await tester.result(defaultConnections[1])
     })
 
     it('lists only available connections', async function () {
-        const original = [...connections]
+        const connections = [...defaultConnections]
         connections.push(makeConnection('pending', 'pending', 'PENDING_HANDSHAKE'))
         connections.push(makeConnection('error', 'error', 'ERROR'))
         connections.unshift(makeConnection('deleted', 'deleted', 'DELETED'))
 
-        prompter = prompterProvider(fakeState)
-        await itemsPromise
-        fakePicker.items.forEach((item, index) => {
-            assert.strictEqual(item.data, original[index])
-        })
+        const tester = makeTester(connections)
+        tester.assertItems(['connection-name-1', 'connection-name-2'])
+        tester.hide()
+        await tester.result()
     })
 
     it('can refresh connections', async function () {
-        prompter = prompterProvider(fakeState)
-        await itemsPromise
-        const result = prompter.prompt()
-        await onShow(fakePicker)
-        connections.push(makeConnection('new-connection', 'new-arn'))
-        fakePicker.onDidChangeActive(() => {
-            if (fakePicker.items.length > 2) {
-                fakePicker.selectedItems = [fakePicker.items[2]]
-            }
-        })
-        fakePicker.fireOnDidTriggerButton(fakePicker.buttons.filter(b => b.tooltip === 'Refresh')[0])
-        assert.strictEqual(await result, connections[2])
+        const connections = [...defaultConnections]
+        const newConnection = makeConnection('new-connection', 'new-arn')
+        const tester = makeTester(connections)
+
+        tester.addCallback(() => connections.push(newConnection))
+        tester.pressButton('Refresh')
+        tester.assertItems(['connection-name-1', 'connection-name-2', 'new-connection'])
+        tester.acceptItem('new-connection')
+        await tester.result(newConnection)
     })
 
-    it('shows an option to create a new connection when no connections are available', async function () {
-        connections = []
-
-        prompter = prompterProvider(fakeState)
-        await itemsPromise
-        assert.strictEqual(fakePicker.items.length, 1)
-        assert.strictEqual(fakePicker.items[0].invalidSelection, true)
-        assert.strictEqual(fakePicker.items[0].label, 'No connections found')
-        const result = prompter.prompt()
-        await onShow(fakePicker)
-
-        fakePicker.selectedItems = fakePicker.activeItems
-        fakePicker.hide()
-        assert.strictEqual(await result, WIZARD_EXIT)
+    it('shows an option to go to documentation when no connections are available', async function () {
+        const tester = makeTester([])
+        tester.assertItems(['No connections found'])
+        tester.acceptItem('No connections found')
+        tester.hide()
+        await tester.result(WIZARD_EXIT)
         assert.strictEqual(openExternal.firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
     })
 })

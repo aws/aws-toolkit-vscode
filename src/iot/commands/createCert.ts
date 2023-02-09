@@ -15,7 +15,9 @@ import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const PEM_FILE_ENCODING = 'ascii'
 
 /**
@@ -43,7 +45,7 @@ export async function createCertificateCommand(
             setAsActive: false,
         })
     } catch (e) {
-        getLogger().error('Failed to create certificate: %O', e)
+        getLogger().error('Failed to create certificate: %s', e)
         showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
         return undefined
     }
@@ -69,7 +71,7 @@ export async function createCertificateCommand(
         try {
             await node.iot.deleteCertificate({ certificateId: certId! })
         } catch (e) {
-            getLogger().error(`Failed to delete Certificate ${certId}: %O`, e)
+            getLogger().error(`Failed to delete Certificate ${certId}: %s`, e)
             showViewLogsMessage(
                 localize('AWS.iot.deleteCert.error', 'Failed to delete Certificate {0}', certId),
                 window
@@ -154,7 +156,7 @@ async function saveCredentials(
         await fs.writeFile(privateKeyPath, privateKey, { encoding: PEM_FILE_ENCODING, mode: MODE_RW_R_R })
         await fs.writeFile(publicKeyPath, publicKey, { encoding: PEM_FILE_ENCODING, mode: MODE_RW_R_R })
     } catch (e) {
-        getLogger().error('Could not save certificate: %O', e)
+        getLogger().error('Could not save certificate: %s', e)
         showViewLogsMessage(localize('AWS.iot.createCert.saveError', 'Failed to save certificate'), window)
         return false
     }

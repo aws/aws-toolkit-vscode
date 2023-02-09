@@ -14,12 +14,10 @@ export class AslVisualizationCDK extends AslVisualization {
     public constructor(
         textDocument: vscode.TextDocument,
         public readonly templatePath: string,
-        public readonly cdkAppName: string,
         public readonly stateMachineName: string
     ) {
         super(textDocument)
         this.templatePath = templatePath
-        this.cdkAppName = cdkAppName
         this.stateMachineName = stateMachineName
     }
 

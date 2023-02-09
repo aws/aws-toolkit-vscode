@@ -5,18 +5,17 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
-import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { isCloud9 } from '../../../shared/extensionUtilities'
-import globals from '../../../shared/extensionGlobals'
+import { ResourcesSettings } from '../../commands/configure'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,12 +24,9 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
-            region
-        ),
-        private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
-            region
-        )
+        public readonly cloudFormation: CloudFormationClient = new DefaultCloudFormationClient(region),
+        private readonly cloudControl: CloudControlClient = new DefaultCloudControlClient(region),
+        private readonly settings = new ResourcesSettings()
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()
@@ -43,7 +39,6 @@ export class ResourcesNode extends AWSTreeNodeBase {
                 await this.updateChildren()
                 return [...this.resourceTypeNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () => {
                 const placeholder = new PlaceholderNode(
                     this,
@@ -62,24 +57,29 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const resourceTypes = memoizedGetResourceTypes()
-        const configuredResources = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
-        const enabledResources = configuredResources?.length || !isCloud9() ? configuredResources : resourceTypes.keys()
+        const defaultResources = isCloud9() ? Array.from(resourceTypes.keys()) : []
+        const enabledResources = this.settings.get('enabledResources', defaultResources)
 
-        if (enabledResources) {
-            const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
-                await toArrayAsync(this.cloudFormation.listTypes()),
-                type => type.TypeName
-            )
-            updateInPlace(
-                this.resourceTypeNodes,
-                enabledResources,
-                key => this.resourceTypeNodes.get(key)!.clearChildren(),
-                key => {
-                    const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
-                    metadata.available = availableTypes.has(key)
-                    return new ResourceTypeNode(this, key, this.cloudControl, metadata)
-                }
-            )
+        // Use the most recently update type definition per-type
+        const types = await toArrayAsync(this.cloudFormation.listTypes())
+        types.sort((a, b) => (a.LastUpdated?.getTime() ?? 0) - (b.LastUpdated?.getTime() ?? 0))
+
+        const availableTypes: Map<string, CloudFormation.TypeSummary> = new Map()
+        for (const type of types) {
+            if (type.TypeName) {
+                availableTypes.set(type.TypeName!, type)
+            }
         }
+
+        updateInPlace(
+            this.resourceTypeNodes,
+            enabledResources,
+            key => this.resourceTypeNodes.get(key)!.clearChildren(),
+            key => {
+                const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
+                metadata.available = availableTypes.has(key)
+                return new ResourceTypeNode(this, key, this.cloudControl, metadata)
+            }
+        )
     }
 }

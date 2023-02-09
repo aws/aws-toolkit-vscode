@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
-import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { Settings } from '../shared/settings'
+import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
 import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
@@ -14,9 +15,11 @@ import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { Commands } from '../shared/vscode/commands2'
 
-export async function activate(context: vscode.ExtensionContext, configuration: SettingsConfiguration): Promise<void> {
-    const registry = new LogStreamRegistry(configuration)
+export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
+    const settings = new CloudWatchLogsSettings(configuration)
+    const registry = new LogStreamRegistry(settings)
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(
@@ -43,29 +46,24 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         )
     )
 
-    context.subscriptions.push(vscode.commands.registerCommand('aws.copyLogStreamName', copyLogStreamName))
+    context.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
     context.subscriptions.push(
-        vscode.commands.registerCommand(
+        Commands.register(
             'aws.addLogEvents',
             async (
                 document: vscode.TextDocument,
                 registry: LogStreamRegistry,
                 headOrTail: 'head' | 'tail',
                 onDidChangeCodeLensEvent: vscode.EventEmitter<void>
-            ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent, configuration)
-        )
-    )
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
+            ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
+        ),
+        Commands.register(
             'aws.saveCurrentLogStreamContent',
             async (uri?: vscode.Uri) => await saveCurrentLogStreamContent(uri, registry)
-        )
-    )
-
-    // AWS Explorer right-click action
-    // Here instead of in ../awsexplorer/activation due to dependence on the registry.
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
+        ),
+        // AWS Explorer right-click action
+        // Here instead of in ../awsexplorer/activation due to dependence on the registry.
+        Commands.register(
             'aws.cloudWatchLogs.viewLogStream',
             async (node: LogGroupNode) => await viewLogStream(node, registry)
         )

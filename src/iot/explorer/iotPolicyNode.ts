@@ -14,13 +14,12 @@ import { inspect } from 'util'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
 import { IotCertificateNode } from './iotCertificateNode'
 import { IotPolicyVersionNode } from './iotPolicyVersionNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -42,10 +41,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             policy.name,
             certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.policy),
-            light: vscode.Uri.file(globals.iconPaths.light.policy),
-        }
+        this.iconPath = getIcon('aws-iot-policy')
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }
 
@@ -99,7 +95,6 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
             sort: (a: IotPolicyVersionNode, b: IotPolicyVersionNode) => {
                 return b.version.createDate!.getTime() - a.version.createDate!.getTime()
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.iot.noVersions', '[No Policy Versions found]')),
         })

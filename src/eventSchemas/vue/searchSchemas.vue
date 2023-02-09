@@ -1,19 +1,30 @@
 <template>
-    <h1>
-        {{ initialData.Header }}
-    </h1>
     <div id="app">
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>{{ initialData.Header }}</h1>
+            <div>
+                <input
+                    type="submit"
+                    :disabled="downloadDisabled"
+                    v-on:click="downloadClicked"
+                    value="Download Code Bindings"
+                />
+            </div>
+        </div>
+
         <div id="search_input">
             <input type="search" v-model="searchText" :placeholder="initialData.SearchInputPlaceholder" />
         </div>
         <div id="result_content">
             <select id="searchList" v-model="selectedSchema" v-on:change="userSelectedSchema" size="100">
                 <option disabled value="">{{ searchProgressInfo }}</option>
-                <option v-for="result in searchResults" :key="result" :value="result">{{ result.Title }}</option>
+                <option v-for="result in searchResults" :key="result.RegistryName" :value="result">
+                    {{ result.Title }}
+                </option>
             </select>
 
             <div id="schemaContent_versionDropdown">
-                <select id="versionList" v-model="selectedVersion" v-on:change="userSelectedVersion">
+                <select id="versionList" v-model="selectedVersion" v-on:change="fetchSchemaContent">
                     <option v-for="result in schemaVersions" :key="result" :value="result">
                         {{ initialData.VersionPrefix }} {{ result }}
                     </option>
@@ -21,19 +32,17 @@
                 <textarea readonly v-model="schemaContent"></textarea>
             </div>
         </div>
-
-        <input type="submit" :disabled="downloadDisabled" v-on:click="downloadClicked" value="Download Code Bindings" />
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import _ from 'lodash'
 import { WebviewClientFactory } from '../../webviews/client'
-import { SchemaVersionedSummary, SearchSchemasWebview } from '../commands/searchSchemas'
+import { SchemaVersionedSummary, SearchSchemasWebview } from './searchSchemas'
 import saveData from '../../webviews/mixins/saveData'
 
 const client = WebviewClientFactory.create<SearchSchemasWebview>()
+let searchTimeout: number
 
 export default defineComponent({
     data() {
@@ -57,27 +66,21 @@ export default defineComponent({
             selectedSchema: {} as SchemaVersionedSummary,
             selectedVersion: '',
             schemaContent: '',
-            schemaVersions: [],
+            schemaVersions: [] as string[],
             downloadDisabled: true,
         }
     },
-    mounted() {
-        this.$nextTick(function () {
-            window.addEventListener('message', this.handleMessageReceived)
-        })
-    },
     watch: {
         searchText: function (newKeyword, oldKeyword) {
-            this.debouncedSearch()
+            window.clearTimeout(searchTimeout)
+            searchTimeout = window.setTimeout(() => this.userSearchedText(), 250)
         },
     },
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
-        this.debouncedSearch = _.debounce(this.userSearchedText, 300)
     },
     methods: {
-        debouncedSearch: () => {},
-        userSearchedText: function () {
+        async userSearchedText() {
             this.resetSearchResults()
             this.resetSchemaContentAndVersionDropdown()
             this.downloadDisabled = true
@@ -86,73 +89,28 @@ export default defineComponent({
                 return
             }
             this.searchProgressInfo = this.initialData.LocalizedMessages.searching
-            client.handler({
-                command: 'searchSchemas',
-                keyword: this.searchText,
-                regionCode: this.initialData.Region,
-                registryNames: this.initialData.RegistryNames,
-            })
+            const resp = await client.searchSchemas(this.searchText)
+            if (resp.resultsNotFound) {
+                this.searchProgressInfo = this.initialData.LocalizedMessages.noSchemasFound
+                return
+            }
+            this.searchProgressInfo = this.initialData.LocalizedMessages.select
+            this.searchResults = resp.results
         },
         userSelectedSchema: function () {
             this.resetSchemaContentAndVersionDropdown()
             this.downloadDisabled = false
-            this.schemaContent = this.initialData.LocalizedMessages.loading
-            client.handler({
-                command: 'fetchSchemaContent',
-                schemaSummary: this.selectedSchema,
-                regionCode: this.initialData.Region,
-                version: this.selectedVersion,
-            })
-        },
-
-        userSelectedVersion: function () {
-            this.schemaContent = this.initialData.LocalizedMessages.loading
-            client.handler({
-                command: 'fetchSchemaContent',
-                schemaSummary: this.selectedSchema,
-                regionCode: this.initialData.Region,
-                version: this.selectedVersion,
-            })
+            this.fetchSchemaContent()
         },
         downloadClicked: function () {
-            client.handler({
-                command: 'downloadCodeBindings',
-                schemaSummary: this.selectedSchema,
-                regionCode: this.initialData.Region,
-            })
+            client.downloadCodeBindings(this.selectedSchema)
         },
-        handleMessageReceived: function (event: any) {
-            const message = event.data
-            switch (message.command) {
-                case 'showSchemaContent':
-                    this.loadSchemaContent(message.results)
-                    this.selectedVersion = message.version
-                    break
-                case 'showSearchSchemaList':
-                    if (message.resultsNotFound || this.searchText === '') {
-                        this.searchProgressInfo = this.initialData.LocalizedMessages.noSchemasFound
-                        return
-                    }
-                    this.searchProgressInfo = this.initialData.LocalizedMessages.select
-                    this.loadSchemaList(message.results)
-                    break
-                case 'setVersionsDropdown':
-                    this.schemaVersions = message.results
-                    break
-                case 'setLocalizedMessages':
-                    this.initialData.LocalizedMessages.noSchemasFound = message.noSchemasFound
-                    this.initialData.LocalizedMessages.searching = message.searching
-                    this.initialData.LocalizedMessages.loading = message.loading
-                    this.initialData.LocalizedMessages.select = message.select
-                    break
-            }
-        },
-        loadSchemaContent: function (content: string) {
-            this.schemaContent = content
-        },
-
-        loadSchemaList: function (results: SchemaVersionedSummary[]) {
-            this.searchResults = results
+        async fetchSchemaContent() {
+            this.schemaContent = this.initialData.LocalizedMessages.loading
+            const resp = await client.fetchSchemaContent(this.selectedSchema, this.selectedVersion)
+            this.schemaContent = resp.results
+            this.selectedVersion = resp.version
+            this.schemaVersions = resp.versionList ?? this.schemaVersions
         },
         resetSearchResults: function () {
             this.selectedSchema = {} as SchemaVersionedSummary

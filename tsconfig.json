@@ -9,19 +9,15 @@
         "module": "commonjs",
         "target": "es6",
         "outDir": "dist",
-        "lib": ["dom", "es6", "esnext.asynciterable"],
         "sourceMap": true,
         "moduleResolution": "node",
-        "rootDirs": ["src", "third-party"],
+        "rootDir": ".",
         "resolveJsonModule": true,
-        /* Strict Type-Checking Option */
-        "strict": true /* enable all strict type-checking options */,
-        /* Additional Checks */
-        "noUnusedLocals": true /* Report errors on unused locals. */,
-        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
-        "skipLibCheck": true /* Skip type checking of *.d.ts files */
+        "strict": true,
+        "noUnusedLocals": true,
+        "lib": ["dom", "es6", "esnext.asynciterable"],
+        "skipLibCheck": true,
+        "jsx": "preserve"
     },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures"]
+    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }

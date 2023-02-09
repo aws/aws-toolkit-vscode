@@ -5,32 +5,30 @@
 
 import { stat } from 'fs-extra'
 import * as semver from 'semver'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { ClassToInterfaceType } from '../../utilities/tsUtils'
+import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
+import { ToolkitError } from '../../errors'
 
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT = '1.13.0'
-export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '2.0.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT = '1.18.1'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT = '1.33.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT = '1.4.0'
+export const minSamCliVersion = '0.47.0'
+export const minSamCliVersionForImageSupport = '1.13.0'
+export const maxSamCliVersionExclusive = '2.0.0'
+export const minSamCliVersionForGoSupport = '1.18.1'
+export const minSamCliVersionForArmSupport = '1.33.0'
+export const minSamCliVersionForDotnet31Support = '1.4.0'
 
 // Errors
-export class InvalidSamCliError extends Error {
-    public constructor(message?: string | undefined) {
-        super(message)
-    }
-}
+export class InvalidSamCliError extends ToolkitError {}
 
 export class SamCliNotFoundError extends InvalidSamCliError {
     public constructor() {
-        super('SAM CLI was not found')
+        super('SAM CLI was not found', { code: 'MissingSamCli' })
     }
 }
 
 export class InvalidSamCliVersionError extends InvalidSamCliError {
     public constructor(public versionValidation: SamCliVersionValidatorResult) {
-        super('SAM CLI has an invalid version')
+        super('SAM CLI has an invalid version', { code: 'InvalidSamCliVersion' })
     }
 }
 
@@ -42,10 +40,15 @@ export enum SamCliVersionValidation {
     VersionNotParseable = 'VersionNotParseable',
 }
 
-export interface SamCliVersionValidatorResult {
-    version?: string
-    validation: SamCliVersionValidation
-}
+export type SamCliVersionValidatorResult =
+    | {
+          readonly validation: Exclude<SamCliVersionValidation, SamCliVersionValidation.VersionNotParseable>
+          readonly version: string
+      }
+    | {
+          readonly validation: SamCliVersionValidation.VersionNotParseable
+          readonly version?: string | undefined
+      }
 
 export interface SamCliValidatorResult {
     samCliFound: boolean
@@ -57,11 +60,7 @@ export interface SamCliValidator {
     getVersionValidatorResult(): Promise<SamCliVersionValidatorResult>
 }
 
-export interface SamCliValidatorContext {
-    samCliLocation(): Promise<string>
-    getSamCliExecutableId(): Promise<string>
-    getSamCliInfo(): Promise<SamCliInfoResponse>
-}
+export type SamCliValidatorContext = ClassToInterfaceType<DefaultSamCliValidatorContext>
 
 export class DefaultSamCliValidator implements SamCliValidator {
     private cachedSamInfoResponse?: SamCliInfoResponse
@@ -90,7 +89,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
             this.cachedSamCliVersionId = samCliId
         }
 
-        const version: string = this.cachedSamInfoResponse!.version
+        const version = this.cachedSamInfoResponse!.version
 
         return {
             version,
@@ -118,11 +117,11 @@ export class DefaultSamCliValidator implements SamCliValidator {
             return SamCliVersionValidation.VersionNotParseable
         }
 
-        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+        if (semver.lt(version, minSamCliVersion)) {
             return SamCliVersionValidation.VersionTooLow
         }
 
-        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+        if (semver.gte(version, maxSamCliVersionExclusive)) {
             return SamCliVersionValidation.VersionTooHigh
         }
 
@@ -131,26 +130,31 @@ export class DefaultSamCliValidator implements SamCliValidator {
 }
 
 export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
-    public constructor(private readonly samCliConfiguration: SamCliConfiguration) {}
+    public constructor(private readonly config: SamCliSettings) {}
 
-    public async samCliLocation(): Promise<string> {
-        return (await this.samCliConfiguration.getOrDetectSamCli()).path
+    public async samCliLocation(): Promise<string | undefined> {
+        return (await this.config.getOrDetectSamCli()).path
     }
 
     public async getSamCliExecutableId(): Promise<string> {
         // Function should never get called if there is no SAM CLI
-        if (!(await this.samCliLocation())) {
+        const location = await this.samCliLocation()
+        if (!location) {
             throw new Error('SAM CLI does not exist')
         }
 
         // The modification timestamp of SAM CLI is used as the "distinct executable id"
-        const stats = await stat(await this.samCliLocation())
+        const stats = await stat(location)
 
         return stats.mtime.valueOf().toString()
     }
 
     public async getSamCliInfo(): Promise<SamCliInfoResponse> {
-        const samCliInfo = new SamCliInfoInvocation({ preloadedConfig: this.samCliConfiguration })
+        const samPath = await this.samCliLocation()
+        if (!samPath) {
+            throw new Error('Unable to get SAM CLI info without an executable path')
+        }
+        const samCliInfo = new SamCliInfoInvocation(samPath)
 
         return await samCliInfo.execute()
     }

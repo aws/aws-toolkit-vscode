@@ -4,79 +4,59 @@
  */
 
 import * as assert from 'assert'
-import { SSM } from 'aws-sdk'
-import * as sinon from 'sinon'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
-import globals from '../../../shared/extensionGlobals'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { stub } from '../../utilities/stubber'
 
 describe('RegistryItemNode', function () {
-    let sandbox: sinon.SinonSandbox
-
-    const fakeRegion = 'testRegion'
+    const regionCode = 'testRegion'
     const documentType = 'Automation'
     const registryNames = ['Owned by me', 'Owned by Amazon', 'Shared with me']
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
-
     it('handles error', async function () {
-        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, 'Owned by me', documentType)
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update child error')
-        })
+        const client = stub(DefaultSsmDocumentClient, { regionCode })
+        client.listDocuments.throws('error')
+
+        const testNode = new RegistryItemNode(regionCode, 'Owned by me', documentType, client)
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyHasErrorNode(childNodes)
     })
 
     it('puts documents into right registry', async function () {
-        registryNames.forEach(async registry => {
-            const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, registry, documentType)
-            let owner: string
-            if (registry === 'Owned by Amazon') {
-                owner = 'Amazon'
-            } else if (registry === 'Owned by me') {
-                owner = '123456789012'
-            } else {
-                owner = '987654321012'
-            }
+        return Promise.all(
+            registryNames.map(async registry => {
+                let owner: string
+                if (registry === 'Owned by Amazon') {
+                    owner = 'Amazon'
+                } else if (registry === 'Owned by me') {
+                    owner = '123456789012'
+                } else {
+                    owner = '987654321012'
+                }
 
-            initializeClientBuilders(owner, documentType)
-            const childNode = await testNode.getChildren()
-            const expectedNodeNames = [`${owner}doc`]
+                const client = stub(DefaultSsmDocumentClient, { regionCode })
+                client.listDocuments.callsFake(() => {
+                    return asyncGenerator([
+                        {
+                            Name: `${owner}doc`,
+                            Owner: `${owner}`,
+                            DocumentType: `${documentType}`,
+                        },
+                    ])
+                })
 
-            assert.strictEqual(childNode.length, expectedNodeNames.length)
-            childNode.forEach((node, index) => {
-                assert.strictEqual(node.label, expectedNodeNames[index])
+                const testNode: RegistryItemNode = new RegistryItemNode(regionCode, registry, documentType, client)
+                const childNode = await testNode.getChildren()
+                const expectedNodeNames = [`${owner}doc`]
+
+                assert.strictEqual(childNode.length, expectedNodeNames.length)
+                childNode.forEach((node, index) => {
+                    assert.strictEqual(node.label, expectedNodeNames[index])
+                })
             })
-        })
+        )
     })
-
-    function initializeClientBuilders(owner: string, documentType: string): void {
-        const ssmDocumentClient = {
-            listDocuments: sandbox.stub().callsFake(() => {
-                return asyncGenerator<SSM.DocumentIdentifier>([
-                    {
-                        Name: `${owner}doc`,
-                        Owner: `${owner}`,
-                        DocumentType: `${documentType}`,
-                    },
-                ])
-            }),
-        }
-
-        const clientBuilder = {
-            createSsmClient: sandbox.stub().returns(ssmDocumentClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

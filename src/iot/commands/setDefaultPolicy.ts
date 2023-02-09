@@ -37,7 +37,7 @@ export async function setDefaultPolicy(
             )
         )
     } catch (e) {
-        getLogger().error('Failed to set default policy version: %O', e)
+        getLogger().error('Failed to set default policy version: %s', e)
         showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'), window)
     }
 

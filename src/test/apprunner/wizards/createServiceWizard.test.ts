@@ -3,32 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
 import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
-import globals from '../../../shared/extensionGlobals'
+import { stub } from '../../utilities/stubber'
+import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
+import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>
-    let lastClientBuilder: typeof globals.toolkitClientBuilder
-
-    before(function () {
-        lastClientBuilder = globals.toolkitClientBuilder
-        globals.toolkitClientBuilder = {
-            createAppRunnerClient: () => ({} as any),
-            createEcrClient: () => ({} as any),
-            createIamClient: () => ({} as any),
-        } as any
-    })
 
     beforeEach(function () {
-        const wizard = new CreateAppRunnerServiceWizard('')
-        tester = createWizardTester(wizard)
-    })
+        const regionCode = 'us-east-1'
+        const wizard = new CreateAppRunnerServiceWizard(
+            regionCode,
+            {},
+            {},
+            {
+                iam: stub(DefaultIamClient, { regionCode }),
+                ecr: stub(DefaultEcrClient, { regionCode }),
+                apprunner: stub(DefaultAppRunnerClient, { regionCode }),
+            }
+        )
 
-    after(function () {
-        globals.toolkitClientBuilder = lastClientBuilder
+        tester = createWizardTester(wizard)
     })
 
     describe('CreateAppRunnerServiceWizard', function () {

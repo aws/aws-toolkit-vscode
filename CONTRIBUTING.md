@@ -1,7 +1,7 @@
 # Contributing to AWS Toolkit for VS Code
 
-Thanks for taking the time to help us. We greatly value feedback and
-contributions from our community!
+Thanks for taking the time to help improve the AWS Toolkit! We greatly value
+feedback and contributions from the community.
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -19,9 +19,7 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
--   [NodeJS and NPM](https://nodejs.org/)
-    -   NodeJS Version: 12.x
-    -   NPM version: 7.x or higher
+-   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
@@ -31,7 +29,6 @@ To develop this project, install these dependencies:
 
 Then clone the repository and install NPM packages:
 
-    cd ~/repos
     git clone git@github.com:aws/aws-toolkit-vscode.git
     cd aws-toolkit-vscode
     npm install
@@ -144,11 +141,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
+        TEST_FILE=src/test/foo.test npm run test
         ```
     -   Powershell:
         ```
-        $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        $Env:TEST_FILE = "src/test/foo.test"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
@@ -157,9 +154,18 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
-#### Coverage report
+### Coverage report
 
-You can find the coverage report at `./.coverage/index.html` after running the tests.
+You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
+
+-   Run the command `Tasks: Run Build Task` if not already active
+-   Instrument built code with `npm run instrument`
+-   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
+-   Generate a report with `npm run report`
+
+### CodeCatalyst Blueprints
+
+You can find documentation to create VSCode IDE settings for CodeCatalyst blueprints at [docs/vscode-config.md](./docs/vscode-config.md).
 
 ## Pull Requests
 
@@ -171,24 +177,22 @@ Before sending a pull request:
 
 To send a pull request:
 
-1. Fork the repository.
+1. [Fork the repository](https://help.github.com/articles/fork-a-repo/).
 2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
-3. Ensure local tests pass.
-4. Commit to your fork using clear commit messages.
-5. Once you are done with your change, run `npm run newChange`, follow the prompts, then commit the changelog item to your fork.
-6. Send us a pull request, answering any default questions in the pull request interface.
-7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
-
-GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
-[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+    - Read the [project guidelines](#guidelines), this is very important for non-trivial changes.
+3. Commit to your fork [using clear commit messages](#commit-messages).
+4. Update the changelog by running `npm run newChange`.
+    - Note: the main purpose of the `newChange` task is to avoid merge conflicts.
+5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
+6. Pay attention to any CI failures reported in the pull request.
 
 ### Commit messages
 
-Generally, your pull request description should be a copy-paste of your commit
-message(s). If your PR description provides insight not found in a commit
-message, ask why. Source control (Git) is our source-of-truth, not GitHub.
+Generally your PR description should be a copy-paste of your commit message(s).
+If your PR description provides insight and context, that also should exist in
+the commit message. Source control (Git) is our source-of-truth, not GitHub.
 
-Quick summary of commit message guidelines:
+Follow these [commit message guidelines](https://cbea.ms/git-commit/):
 
 -   Subject: single line up to 50-72 characters
     -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
@@ -206,18 +210,11 @@ has a short subject line and unlimited detail in the body.
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
-artifact that will live longer than any code in the codebase.
+artifact that will outlive most code.
 
-Consider prefixing the subject with a topic: this again helps humans (and
-scripts) scan and omit ranges of the history at a glance. For example if I'm
-looking for a code change, I can eliminate all of the `doc:` and `test:`
-commits when inspecting this commit log:
-
-    doc: update README.md
-    test: Deploy wizard
-    SAM debug: fix bug in foo
-    doc: explain SAM debug architecture
-    Lambda: add button to thing
+Prefix the subject with `type(topic):` ([conventional
+commits](https://www.conventionalcommits.org/) format): this again helps humans
+(and scripts) scan and omit ranges of the history at a glance.
 
 ### CI artifact
 
@@ -234,17 +231,35 @@ generating SDKs, etc.
 
 ### Toolkit developer settings (`aws.dev.*`)
 
-The [AwsDevSetting](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/shared/settingsConfiguration.ts#L19)
-type defines various developer-only settings that change the behavior of the
+The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
-your `settings.json`. At runtime if the Toolkit reads any of these settings,
-the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/credentials/awsCredentialsStatusBarItem.ts#L58).
+your `settings.json`. At runtime, if the Toolkit reads any of these settings,
+the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
 
-### Telemetry in prerelease builds
+### Service Endpoints
 
-Normally, a non-release VSIX of AWS Toolkit will not send telemetry. Sometimes
-you might want to override this, when sharing a build with a beta-tester
-audience. To enable telemetry to in a non-release build, set [forceTelemetry = true]().
+Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
+
+Example:
+
+```json
+"aws.dev.endpoints": {
+    "s3": "http://example.com"
+}
+```
+
+### Telemetry and Automation
+
+Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.
+This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATION` which is set by test entry points.
+If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
+such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
+
+### SAM/CFN ("goformation") JSON schema
+
+See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix
+and improve the JSON schema that provides auto-completion and syntax checking
+of SAM and CloudFormation `template.yaml` files.
 
 ### AWS SDK generator
 
@@ -255,10 +270,10 @@ requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
     ```diff
-     diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
+     diff --git a/src/scripts/build/generateServiceClient.ts b/src/scripts/build/generateServiceClient.ts
      index 8bb278972d29..6c6914ec8812 100644
-     --- a/build-scripts/generateServiceClient.ts
-     +++ b/build-scripts/generateServiceClient.ts
+     --- a/src/scripts/build/generateServiceClient.ts
+     +++ b/src/scripts/build/generateServiceClient.ts
      @@ -199,6 +199,10 @@ ${fileContents}
       ;(async () => {
           const serviceClientDefinitions: ServiceClientDefinition[] = [
@@ -272,7 +287,7 @@ requests just from the model/types.
     ```
 2. Run the script:
     ```
-    ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
+    npm run generateClients
     ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
@@ -304,12 +319,33 @@ requests just from the model/types.
     req.send(function (err, data) { ... });
     ```
 
+### Webview dev-server
+
+Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+
+### Font generation
+
+For extensions to contribute their own codicons, VS Code requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
+
+As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
+
+1. Place the icon in `resources/icons/aws/cloudwatch`. I'l name the icon `log-stream.svg`.
+1. Use `npm run generatePackage` to update `package.json`. Commit this change with the new icon.
+1. You can now use the icon in the Toolkit:
+
+    ```ts
+    getIcon('aws-cloudwatch-log-stream')
+    ```
+
+### Beta artifacts
+
+The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
+
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
-1. Use a separate location in this repo for every repo where images are
-   sourced from, in the form `third-party/resources/from-<BRIEF_REPO_NAME>`.
+1. Use a separate location in this repo for every repo/organization where images are sourced from. See `resources/icons/vscode` as an example.
 1. Copy the source repo's licence into this destination location's LICENSE.txt file
 1. Create a README.md in the destination location, and type in a copyright attribution:
 
@@ -321,8 +357,7 @@ If you are contribuing visual assets from other open source repos, the source re
     <PASTE_SOURCE_LICENSE_HERE>
     ```
 
-1. Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
-1. Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
+1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
 [PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
 

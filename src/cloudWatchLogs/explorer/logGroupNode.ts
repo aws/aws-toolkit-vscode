@@ -5,27 +5,24 @@
 
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
-import globals from '../../shared/extensionGlobals'
-import { Uri } from 'vscode'
-
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { getIcon } from '../../shared/icons'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
-export const CONTEXT_VALUE_CLOUDWATCH_LOG = 'awsCloudWatchLogNode'
+export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
 
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
-        public logGroup: CloudWatchLogs.LogGroup
-    ) {
+    public constructor(public readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {
         super('')
         this.update(logGroup)
-        this.iconPath = {
-            dark: Uri.file(globals.iconPaths.dark.cloudWatchLogGroup),
-            light: Uri.file(globals.iconPaths.light.cloudWatchLogGroup),
+        this.iconPath = getIcon('aws-cloudwatch-log-group')
+        this.contextValue = contextValueCloudwatchLog
+        this.command = {
+            command: 'aws.cloudWatchLogs.viewLogStream',
+            title: localize('AWS.command.cloudWatchLogs.viewLogStream', 'View Log Stream'),
+            arguments: [this],
         }
-        this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }
 
     public update(logGroup: CloudWatchLogs.LogGroup): void {

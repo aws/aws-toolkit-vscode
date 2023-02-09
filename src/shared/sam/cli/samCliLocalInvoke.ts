@@ -11,13 +11,13 @@ import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
-import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
+import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
-export const WAIT_FOR_DEBUGGER_MESSAGES = {
+export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
     PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
@@ -54,15 +54,12 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
     public constructor(
-        private readonly debuggerAttachCues: string[] = [
-            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
-        ]
+        private readonly debuggerAttachCues: string[] = [waitForDebuggerMessages.PYTHON, waitForDebuggerMessages.NODEJS]
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
         const childProcess = new ChildProcess(params.command, params.args, { spawnOptions: options })
-        getLogger('channel').info('AWS.running.command', 'Running: {0}', `${childProcess}`)
+        getLogger('channel').info('AWS.running.command', 'Command: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -208,19 +205,16 @@ export interface SamCliLocalInvokeInvocationArguments {
  * Yet another `sam` CLI wrapper.
  */
 export class SamCliLocalInvokeInvocation {
-    private readonly invokerContext: SamCliProcessInvokerContext
+    private readonly config = SamCliSettings.instance
 
     public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
         this.args.skipPullImage = !!this.args.skipPullImage
-
-        // Enterprise!
-        this.invokerContext = new DefaultSamCliProcessInvokerContext()
     }
 
-    public async execute(timeout?: Timeout): Promise<void> {
+    public async execute(timeout?: Timeout): Promise<ChildProcess> {
         await this.validate()
 
-        const sam = await this.invokerContext.cliConfig.getOrDetectSamCli()
+        const sam = await this.config.getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -254,7 +248,7 @@ export class SamCliLocalInvokeInvocation {
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
 
-        await this.args.invoker.invoke({
+        return await this.args.invoker.invoke({
             options: {
                 env: {
                     ...process.env,

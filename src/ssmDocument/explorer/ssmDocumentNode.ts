@@ -9,16 +9,19 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentTypeNode } from './documentTypeNode'
+import { DefaultSsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly documentTypeNodes: Map<string, DocumentTypeNode>
 
-    public constructor(public readonly regionCode: string) {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly client = new DefaultSsmDocumentClient(regionCode)
+    ) {
         super('Systems Manager', vscode.TreeItemCollapsibleState.Collapsed)
         this.documentTypeNodes = new Map<string, DocumentTypeNode>()
         this.contextValue = 'awsSsmDocumentNode'
@@ -31,7 +34,6 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
 
                 return [...this.documentTypeNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
@@ -48,7 +50,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
             this.documentTypeNodes,
             documentTypes,
             key => this.documentTypeNodes.get(key)!.update(key),
-            key => new DocumentTypeNode(this.regionCode, key)
+            key => new DocumentTypeNode(this.regionCode, key, this.client)
         )
     }
 }

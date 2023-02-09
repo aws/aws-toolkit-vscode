@@ -9,14 +9,7 @@ import * as path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-import {
-    readSavedBuckets,
-    writeSavedBucket,
-    SamDeployWizardResponse,
-    SavedBuckets,
-    CHOSEN_BUCKET_KEY,
-} from '../../../lambda/wizards/samDeployWizard'
-import { AwsContext } from '../../../shared/awsContext'
+import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils'
@@ -26,11 +19,13 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import { Settings } from '../../../shared/settings'
+import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 describe('deploySamApplication', async function () {
     // Bad Validator
@@ -60,6 +55,7 @@ describe('deploySamApplication', async function () {
     const goodValidatorResult: SamCliValidatorResult = {
         samCliFound: true,
         versionValidation: {
+            version: '',
             validation: SamCliVersionValidation.Valid,
         },
     }
@@ -67,7 +63,7 @@ describe('deploySamApplication', async function () {
     const goodValidator: SamCliValidator = {
         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
         getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
-            return { validation: SamCliVersionValidation.Valid }
+            return { validation: SamCliVersionValidation.Valid, version: '' }
         },
     }
 
@@ -116,22 +112,29 @@ describe('deploySamApplication', async function () {
     const placeholderCredentials = {} as any as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
     let profile: string = ''
-    const awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'> = {
-        getCredentials: async () => testCredentials,
-        getCredentialProfileName: () => profile,
-    }
-    let settings: SettingsConfiguration
-
+    let settings: Settings
+    let config: SamCliSettings
+    let templatePath: string
+    let tempToolkitFolder: string
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
         return samDeployWizardResponse
     }
 
-    let templatePath: string
+    const awsContext = new FakeAwsContext()
+    awsContext.getCredentials = async () => testCredentials
+    awsContext.getCredentialProfileName = () => profile
 
-    let tempToolkitFolder: string
+    // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
+    let didRefreshExplorer = false
+    function refreshFn() {
+        didRefreshExplorer = true
+    }
+
     beforeEach(async function () {
-        settings = new TestSettingsConfiguration()
+        didRefreshExplorer = false
+        settings = new TestSettings() as any
+        config = new SamCliSettings({ getLocation: async () => ({ path: '', version: '' }) }, settings)
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')
@@ -166,16 +169,18 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(readSavedBuckets(settings), {
+        assert.deepStrictEqual(config.getSavedBuckets(), {
             [profile]: { region: 'bucket' },
-        } as SavedBuckets)
+        })
+        assert.ok(didRefreshExplorer)
     })
 
     it('handles previously stored stringified buckets', async () => {
@@ -189,7 +194,7 @@ describe('deploySamApplication', async function () {
                 region3: 'mybucket4',
             },
         }
-        settings.writeSetting(CHOSEN_BUCKET_KEY, JSON.stringify(testSavedBuckets), vscode.ConfigurationTarget.Global)
+        await settings.update('aws.samcli.manuallySelectedBuckets', JSON.stringify(testSavedBuckets))
 
         await deploySamApplication(
             {
@@ -198,18 +203,20 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(readSavedBuckets(settings), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
+        assert.deepStrictEqual(config.getSavedBuckets(), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
+        assert.ok(didRefreshExplorer)
     })
 
     it('handles malformed stored buckets', async () => {
-        settings.writeSetting(CHOSEN_BUCKET_KEY, 'ilovebuckets', vscode.ConfigurationTarget.Global)
+        await settings.update('aws.samcli.manuallySelectedBuckets', 'ilovebuckets')
 
         await deploySamApplication(
             {
@@ -218,17 +225,19 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
-        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } })
+        assert.deepStrictEqual(config.getSavedBuckets(), { [profile]: { region: 'bucket' } })
+        assert.ok(didRefreshExplorer)
     })
 
     it('overwrites recently selected bucket', async () => {
-        writeSavedBucket(settings, profile, 'region', 'oldBucket')
+        await config.updateSavedBuckets(profile, 'region', 'oldBucket')
 
         await deploySamApplication(
             {
@@ -237,14 +246,16 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } } as SavedBuckets)
+        assert.deepStrictEqual(config.getSavedBuckets(), { [profile]: { region: 'bucket' } })
+        assert.ok(didRefreshExplorer)
     })
 
     it('saves one bucket max to multiple regions', async () => {
@@ -263,8 +274,9 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
@@ -283,8 +295,9 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
@@ -303,8 +316,9 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
@@ -323,20 +337,22 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 12, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(readSavedBuckets(settings), {
+        assert.deepStrictEqual(config.getSavedBuckets(), {
             [profile]: {
                 region0: 'bucket3',
                 region1: 'bucket1',
                 region2: 'bucket2',
             },
-        } as SavedBuckets)
+        })
+        assert.ok(didRefreshExplorer)
     })
 
     it('saves one bucket per region per profile', async () => {
@@ -356,8 +372,9 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
@@ -377,21 +394,22 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(readSavedBuckets(settings), {
+        assert.deepStrictEqual(config.getSavedBuckets(), {
             testAcct0: {
                 region0: 'bucket0',
             },
             testAcct1: {
                 region0: 'bucket1',
             },
-        } as SavedBuckets)
+        })
     })
 
     it('informs user of error when user is not logged in', async function () {
@@ -404,12 +422,15 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         assertGeneralErrorLogged()
+        // Deploy aborted, so this is false.
+        assert.ok(!didRefreshExplorer)
     })
 
     it('informs user of error when sam cli is invalid', async function () {
@@ -420,12 +441,15 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         assertGeneralErrorLogged()
+        // Deploy aborted, so this is false.
+        assert.ok(!didRefreshExplorer)
     })
 
     it('exits if the wizard is cancelled', async function () {
@@ -438,12 +462,15 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
+        // Deploy aborted, so this is false.
+        assert.ok(!didRefreshExplorer)
     })
 
     it('continues deploying with initial template if invoking sam build fails', async function () {
@@ -465,14 +492,16 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertErrorLogsSwallowed('broken build', false)
+        assert.ok(didRefreshExplorer)
     })
 
     it('informs user of error if invoking sam package fails', async function () {
@@ -494,14 +523,17 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
         assertLogsContain('broken package', false, 'error')
         assertGeneralErrorLogged()
+        // Deploy aborted, so this is false.
+        assert.ok(!didRefreshExplorer)
     })
 
     it('informs user of error if invoking sam deploy fails', async function () {
@@ -523,15 +555,16 @@ describe('deploySamApplication', async function () {
             },
             {
                 awsContext,
-                settings,
+                settings: config,
                 window,
+                refreshFn,
             }
         )
 
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertLogsContain('broken deploy', false, 'error')
         assertGeneralErrorLogged()
-        assert.strictEqual(readSavedBuckets(settings), undefined)
+        assert.strictEqual(config.getSavedBuckets(), undefined)
     })
 
     async function waitForDeployToComplete(): Promise<void> {

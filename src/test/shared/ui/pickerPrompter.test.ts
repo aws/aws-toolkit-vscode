@@ -12,13 +12,12 @@ import {
     FilterBoxQuickPickPrompter,
     DataQuickPick,
     DataQuickPickItem,
-    DEFAULT_QUICKPICK_OPTIONS,
+    defaultQuickpickOptions,
     QuickPickPrompter,
-    CUSTOM_USER_INPUT,
+    customUserInput,
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
-import { recentlyUsed } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -31,7 +30,7 @@ describe('createQuickPick', function () {
         const picker = prompter.quickPick
 
         Object.keys(picker).forEach(key => {
-            const defaultValue = (DEFAULT_QUICKPICK_OPTIONS as Record<string, any>)[key]
+            const defaultValue = (defaultQuickpickOptions as Record<string, any>)[key]
             if (defaultValue !== undefined) {
                 assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
             }
@@ -49,13 +48,11 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
 
         resolveItems(items)
         await itemsPromise
 
         assert.strictEqual(prompter.quickPick.busy, false)
-        assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
 
@@ -176,8 +173,6 @@ describe('QuickPickPrompter', function () {
     it('can set recent item', async function () {
         testPrompter.recentItem = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
-        // setRecentItem() puts the item at the top of the list. #2148
-        assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
     })
 
     it('tries to recover recent item from partial data', async function () {
@@ -188,13 +183,6 @@ describe('QuickPickPrompter', function () {
     it('shows first item if recent item does not exist', async function () {
         testPrompter.recentItem = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
-    })
-
-    it('adds a message to the description when an item has been previously selected', async function () {
-        testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
-        testPrompter.recentItem = { label: 'item1', data: 0 }
-        const description = ` (${recentlyUsed})`
-        assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
     it('shows a `noItemsFound` item if no items are loaded', async function () {
@@ -287,10 +275,18 @@ describe('QuickPickPrompter', function () {
         await new Promise(r => setImmediate(r))
         assert.strictEqual(picker.items.length, 1)
     })
+
+    it('loads `recentlyUsed` items at the top', async function () {
+        await testPrompter.loadItems([{ label: 'item4', data: 4, recentlyUsed: true }])
+        assert.strictEqual(picker.items[0].label, 'item4')
+        await testPrompter.loadItems([{ label: 'item5', data: 5 }])
+        assert.strictEqual(picker.items[0].label, 'item4')
+        assert.strictEqual(picker.items.length, 5)
+    })
 })
 
 describe('FilterBoxQuickPickPrompter', function () {
-    const TEST_TIMEOUT = 5000
+    const testTimeout = 5000
     const testItems = [
         { label: 'item1', data: 0 },
         { label: 'item2', data: 1 },
@@ -306,7 +302,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
-        setTimeout(picker.dispose.bind(picker), TEST_TIMEOUT)
+        setTimeout(picker.dispose.bind(picker), testTimeout)
     }
 
     function loadAndPrompt(): ReturnType<typeof testPrompter.prompt> {
@@ -314,9 +310,6 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
-        if (vscode.version.startsWith('1.44')) {
-            this.skip()
-        }
         picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
@@ -334,6 +327,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         testPrompter.onDidShow(() => {
             // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
             // TODO: check 1.44.2 or make a different test.
+            // TODO: our min is 1.50 now, does that change anything here?
             picker.value = input
             picker.fireOnDidChangeValue(input)
         })
@@ -375,7 +369,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 }
             })
 
-            testPrompter.recentItem = { data: CUSTOM_USER_INPUT, description: input } as any
+            testPrompter.recentItem = { data: customUserInput, description: input } as any
             picker.fireOnDidChangeValue(input)
         })
 

@@ -6,8 +6,6 @@
 import * as fs from 'fs'
 import * as http from 'http'
 import * as https from 'https'
-import * as vscode from 'vscode'
-import * as semver from 'semver'
 import * as stream from 'stream'
 import got, { Response, RequestError, CancelError } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'
@@ -16,6 +14,7 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
+import { isCloud9 } from '../extensionUtilities'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -27,9 +26,6 @@ const patchedGot = got.extend({
         return http.request({ ...options, ...urlToOptions(url) }, callback)
     },
 })
-// I can't track down the real version but this seems close enough
-// VSC 1.44.2 seems to work, but on C9 it does not?
-const MIN_VERSION_FOR_GOT = '1.47.0'
 
 /** Promise that resolves/rejects when all streams close. Can also access streams directly. */
 type FetcherResult = Promise<void> & {
@@ -69,12 +65,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
     public get(): Promise<string | undefined>
     public get(pipeLocation: string): FetcherResult
     public get(pipeLocation?: string): Promise<string | undefined> | FetcherResult {
-        this.logger.verbose(`Downloading ${this.logText()}`)
+        this.logger.verbose(`downloading: ${this.logText()}`)
 
         if (pipeLocation) {
             const result = this.pipeGetRequest(pipeLocation, this.params.timeout)
             result.fsStream.on('exit', () => {
-                this.logger.verbose(`Finished downloading ${this.logText()}`)
+                this.logger.verbose(`downloaded: ${this.logText()}`)
             })
 
             return result
@@ -91,13 +87,15 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 this.params.onSuccess(contents)
             }
 
-            this.logger.verbose(`Finished downloading ${this.logText()}`)
+            this.logger.verbose(`downloaded: ${this.logText()}`)
 
             return contents
         } catch (err) {
-            const error = err as CancelError | { message?: string; code?: number }
-            this.logger.verbose(`Error downloading ${this.logText()}: %s`, error.message ?? error.code)
-
+            const error = err as CancelError | RequestError
+            this.logger.verbose(
+                `Error downloading ${this.logText()}: %s`,
+                error.message ?? error.code ?? error.response?.statusMessage ?? error.response?.statusCode
+            )
             return undefined
         }
     }
@@ -112,7 +110,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     // TODO: make pipeLocation a vscode.Uri
     private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
-        const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
+        const requester = isCloud9() ? patchedGot : got
         const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
         const fsStream = fs.createWriteStream(pipeLocation)
 
@@ -136,7 +134,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     private async getResponseFromGetRequest(timeout?: Timeout): Promise<Response<string>> {
-        const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
+        const requester = isCloud9() ? patchedGot : got
         const promise = requester(this.url, {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         })
@@ -148,13 +146,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
         promise.finally(() => cancelListener?.dispose())
 
-        return promise.catch((err: RequestError | CancelError) => {
-            // Cancel error has no sensitive info
-            if (err instanceof CancelError) {
-                throw err
-            }
-            throw { code: err.code } // Swallow URL since it may contain sensitive data
-        })
+        return promise
     }
 }
 
@@ -179,7 +171,7 @@ export async function getPropertyFromJsonUrl(
                 return json[property]
             }
         } catch (err) {
-            getLogger().error(`JSON at ${url} not parsable: ${err}`)
+            getLogger().error(`JSON parsing failed for "${url}": ${(err as Error).message}`)
         }
     }
 }

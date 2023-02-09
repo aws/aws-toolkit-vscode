@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { runTestsInFolder } from './testRunner'
+import { runTests } from './testRunner'
 
 export function run(): Promise<void> {
-    return runTestsInFolder('test', ['test/globalSetup.test.js'])
+    return runTests('src/test', ['src/test/globalSetup.test.ts'])
 }
