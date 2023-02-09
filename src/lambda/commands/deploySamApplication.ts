@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
-import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
+import { AwsContext } from '../../shared/awsContext'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { awsHealthStatusUrl, stuckCfnDeploymentUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
