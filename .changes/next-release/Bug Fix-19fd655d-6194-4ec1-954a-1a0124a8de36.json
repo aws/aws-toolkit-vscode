@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Bump amazon-states-language-service dependency to ^1.8.0 to allow state machines to be created with the new intrinsic functions and Map state"
+}
