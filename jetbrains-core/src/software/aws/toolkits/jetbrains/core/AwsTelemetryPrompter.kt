@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -18,14 +18,16 @@ class AwsTelemetryPrompter : StartupActivity.Background {
             return
         }
 
-        val group = NotificationGroupManager.getInstance().getNotificationGroup("aws.toolkit_telemetry")
-        val notification = group.createNotification(
+        val notification = Notification(
+            "aws.toolkit_telemetry",
             message("aws.settings.telemetry.prompt.title"),
             message("aws.settings.telemetry.prompt.message"),
             NotificationType.INFORMATION
-        ) { notification, _ ->
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
-            notification.expire()
+        ).also {
+            it.setListener { notification, _ ->
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+                notification.expire()
+            }
         }
 
         notification.notify(project)
