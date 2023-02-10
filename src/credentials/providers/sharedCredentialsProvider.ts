@@ -22,6 +22,8 @@ import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
 import { toRecord } from '../../shared/utilities/collectionUtils'
+import { getTimer } from '../../shared/utilities/timeoutUtils'
+import { credentialsTimerKey } from '../auth'
 
 const sharedCredentialProperties = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -220,7 +222,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const loadedCreds = await this.patchSourceCredentials()
 
         const provider = chain(this.makeCredentialsProvider(loadedCreds))
-        return resolveProviderWithCancel(this.profileName, provider())
+        // login may be canceled in multiple places, this allows the timer to be cleaned up elsewhere if necessary
+        const credentialTimer = getTimer(credentialsTimerKey, 300000)
+
+        return resolveProviderWithCancel(this.profileName, provider(), credentialTimer)
     }
 
     /**

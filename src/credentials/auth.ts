@@ -16,7 +16,7 @@ import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError, Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
+import { CancellationError, getTimer, Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
@@ -43,6 +43,7 @@ export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const credentialsTimerKey = 'credentialsTimer'
 
 export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
     return {
@@ -315,12 +316,18 @@ export class Auth implements AuthService, ConnectionManager {
         this.pendingTimer = timeout
     }
 
-    public cancelLogin() {
+    public clearTimeout() {
         if (this.pendingTimer) {
-            this.pendingTimer.cancel()
             this.pendingTimer.dispose()
         }
         this.setPendingTimeout(undefined)
+    }
+
+    public cancelTimeout() {
+        if (this.pendingTimer) {
+            this.pendingTimer.cancel()
+        }
+        this.clearTimeout()
         if (this.activeConnection) {
             this.updateConnectionState(this.activeConnection.id, 'invalid')
         }
@@ -985,13 +992,15 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
 })
 
 const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
-    const timeout = new Timeout(600000)
+    const reauthTimer = new Timeout(600000)
 
-    auth.setPendingTimeout(timeout)
+    auth.setPendingTimeout(reauthTimer)
     try {
-        await waitTimeout(auth.reauthenticate(conn), timeout)
+        await waitTimeout(auth.reauthenticate(conn), reauthTimer)
     } catch (err) {
         throw ToolkitError.chain(err, 'Unable to authenticate connection')
+    } finally {
+        auth.clearTimeout()
     }
 })
 
@@ -1101,6 +1110,7 @@ export class AuthNode implements TreeNode<Auth> {
 }
 
 const cancelLogin = Commands.register('_aws.auth.cancelLogin', (auth: Auth) => {
-    auth.cancelLogin()
-    // globals.clock.clearTimeout())
+    const credentialTimer = getTimer(credentialsTimerKey)
+    credentialTimer.cancel()
+    auth.cancelTimeout()
 })
