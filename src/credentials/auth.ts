@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
-import { codicon, getIcon } from '../shared/icons'
+import { addColor, codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
@@ -37,6 +37,7 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
+import { Logging } from '../shared/logger/commands'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
@@ -305,6 +306,7 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
     public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
     public pendingTimer: Timeout | undefined = undefined
+    public loginError?: Error
 
     public constructor(
         private readonly store: ProfileStore,
@@ -331,6 +333,14 @@ export class Auth implements AuthService, ConnectionManager {
         if (this.activeConnection) {
             this.updateConnectionState(this.activeConnection.id, 'invalid')
         }
+    }
+
+    public setLoginError(err: Error) {
+        this.loginError = err
+    }
+
+    public clearLoginError() {
+        this.loginError = undefined
     }
 
     #activeConnection: Mutable<StatefulConnection> | undefined
@@ -373,9 +383,12 @@ export class Auth implements AuthService, ConnectionManager {
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+        this.clearLoginError()
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
-            throw new Error(`Connection does not exist: ${id}`)
+            const err = new Error(`Connection does not exist: ${id}`)
+            this.setLoginError(err)
+            throw err
         }
 
         const validated = await this.validateConnection(id, profile)
@@ -511,6 +524,9 @@ export class Auth implements AuthService, ConnectionManager {
             this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
         }
 
+        if (connectionState === 'valid') {
+            this.clearLoginError()
+        }
         return profile
     }
 
@@ -619,6 +635,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+        this.clearLoginError()
         await this.updateConnectionState(id, 'authenticating')
 
         try {
@@ -628,6 +645,7 @@ export class Auth implements AuthService, ConnectionManager {
             return result
         } catch (err) {
             await this.updateConnectionState(id, 'invalid')
+            this.setLoginError(err as Error)
             throw err
         } finally {
             vscode.commands.executeCommand('aws.explorer.focus')
@@ -832,6 +850,7 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
 })
 
 async function signout(auth: Auth) {
+    auth.clearLoginError()
     const conn = auth.activeConnection
 
     if (conn?.type === 'sso') {
@@ -1109,6 +1128,9 @@ export class AuthNode implements TreeNode<Auth> {
                 )
             }
         }
+        if (this.resource.loginError) {
+            children.push(createErrorItem(this.resource.loginError))
+        }
         return children
     }
 }
@@ -1118,3 +1140,15 @@ const cancelLogin = Commands.register('_aws.auth.cancelLogin', (auth: Auth) => {
     credentialTimer.cancel()
     auth.cancelTimeout()
 })
+
+function createErrorItem(error: Error, message?: string): TreeNode {
+    const command = Logging.declared.viewLogsAtMessage
+    const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
+
+    return command.build(logId).asTreeNode({
+        label: 'Failed to login (click for logs)',
+        tooltip: `${error.name}: ${error.message}`,
+        iconPath: addColor(getIcon('vscode-error'), 'testing.iconErrored'),
+        contextValue: 'awsErrorNode',
+    })
+}
