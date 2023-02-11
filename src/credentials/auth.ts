@@ -386,6 +386,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         this.#activeConnection = conn
         this.onDidChangeActiveConnectionEmitter.fire(conn)
+        vscode.commands.executeCommand('aws.explorer.focus')
         await this.store.setCurrentProfileId(id)
 
         return conn
@@ -628,6 +629,8 @@ export class Auth implements AuthService, ConnectionManager {
         } catch (err) {
             await this.updateConnectionState(id, 'invalid')
             throw err
+        } finally {
+            vscode.commands.executeCommand('aws.explorer.focus')
         }
     }
 
@@ -1016,6 +1019,7 @@ export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials'
 // Legacy commands
 export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
     const connections = await auth.listConnections()
+    vscode.commands.executeCommand('aws.explorer.focus')
     if (connections.length === 0) {
         return addConnection.execute()
     } else {
