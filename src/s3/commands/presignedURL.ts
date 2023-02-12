@@ -31,7 +31,7 @@ export async function presignedURLCommand(
         const response = await new PresignedUrlWizard(node).run()
         if (!response) {
             getLogger().debug('s3: PresignedUrlWizard returned undefined. User cancelled.')
-            return
+            throw new CancellationError('user')
         }
 
         const request = response.signedUrlParams
