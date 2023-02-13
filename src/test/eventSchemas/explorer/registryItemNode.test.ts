@@ -147,7 +147,7 @@ describe('DefaultRegistryNode', function () {
                 super(createSchemaClient())
             }
 
-            public async updateChildren(): Promise<void> {
+            public override async updateChildren(): Promise<void> {
                 throw new Error('Hello there!')
             }
         }

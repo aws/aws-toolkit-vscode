@@ -27,11 +27,11 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         }
     }
 
-    public getProviderType(): CredentialsProviderType | undefined {
+    public override getProviderType(): CredentialsProviderType | undefined {
         return SharedCredentialsProvider.getProviderType()
     }
 
-    protected resetProviders() {
+    protected override resetProviders() {
         this.loadedCredentialsModificationMillis = undefined
         this.loadedConfigModificationMillis = undefined
 

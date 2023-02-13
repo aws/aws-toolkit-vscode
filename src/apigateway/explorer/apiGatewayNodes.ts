@@ -24,14 +24,14 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
     public constructor(
         private readonly partitionId: string,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultApiGatewayClient(regionCode)
     ) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)
         this.apiNodes = new Map<string, RestApiNode>()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

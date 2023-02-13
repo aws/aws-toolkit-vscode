@@ -66,7 +66,7 @@ describe('prepareSyncParams', function () {
     it('uses region if given a tree node', async function () {
         const params = await prepareSyncParams(
             new (class extends AWSTreeNodeBase {
-                public readonly regionCode = 'foo'
+                public override readonly regionCode = 'foo'
             })('')
         )
 

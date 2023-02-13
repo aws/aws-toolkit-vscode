@@ -108,7 +108,7 @@ export class ToolkitError extends Error implements ErrorInformation {
      * A message that could potentially be shown to the user. This should not contain any
      * sensitive information and should be limited in technical detail.
      */
-    public readonly message: string
+    public override readonly message: string
     public readonly code = this.info.code
     public readonly details = this.info.details
 
@@ -135,7 +135,7 @@ export class ToolkitError extends Error implements ErrorInformation {
     /**
      * The name of the error. This is not necessarily the same as the class name.
      */
-    public get name(): string {
+    public override get name(): string {
         return this.#name
     }
 
@@ -194,10 +194,9 @@ export class ToolkitError extends Error implements ErrorInformation {
 
             // TypeScript does not allow the use of `this` types for generic prototype methods unfortunately
             // This implementation is equivalent to re-assignment i.e. an unbound method on the prototype
-            public static chain<T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError>(
-                this: T,
-                ...args: Parameters<NamedErrorConstructor['chain']>
-            ): InstanceType<T> {
+            public static override chain<
+                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError
+            >(this: T, ...args: Parameters<NamedErrorConstructor['chain']>): InstanceType<T> {
                 return ToolkitError.chain.call(this, ...args) as InstanceType<T>
             }
         }
@@ -237,7 +236,7 @@ function formatDetails(err: Error): string | undefined {
 }
 
 export class UnknownError extends Error {
-    public readonly name = 'UnknownError'
+    public override readonly name = 'UnknownError'
 
     public constructor(public readonly cause: unknown) {
         super(String(cause))

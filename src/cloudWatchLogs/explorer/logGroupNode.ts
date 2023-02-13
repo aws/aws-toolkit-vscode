@@ -13,7 +13,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
 
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(public readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {
+    public constructor(public override readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {
         super('')
         this.update(logGroup)
         this.iconPath = getIcon('aws-cloudwatch-log-group')
