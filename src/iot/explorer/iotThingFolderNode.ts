@@ -35,7 +35,7 @@ export class IotThingFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
         this.contextValue = 'awsIotThingsNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getNoChildrenPlaceholderNode: async () =>

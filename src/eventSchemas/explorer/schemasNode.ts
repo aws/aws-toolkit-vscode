@@ -18,7 +18,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 
 export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
-    public readonly regionCode = this.client.regionCode
+    public override readonly regionCode = this.client.regionCode
 
     public constructor(private readonly client: SchemaClient) {
         super('Schemas', vscode.TreeItemCollapsibleState.Collapsed)
@@ -26,7 +26,7 @@ export class SchemasNode extends AWSTreeNodeBase {
         this.contextValue = 'awsSchemasNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

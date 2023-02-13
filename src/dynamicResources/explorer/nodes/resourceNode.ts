@@ -15,7 +15,7 @@ export class ResourceNode extends AWSTreeNodeBase {
     public constructor(
         public readonly parent: ResourceTypeNode,
         public readonly identifier: string,
-        public contextValue?: string
+        public override contextValue?: string
     ) {
         super('')
         this.contextValue = contextValue ?? 'ResourceNode'

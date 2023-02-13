@@ -34,7 +34,7 @@ export class IotNode extends AWSTreeNodeBase {
         this.contextValue = 'awsIotNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const thingFolderNode = new IotThingFolderNode(this.iot, this)
