@@ -17,6 +17,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { getLogger } from '../../shared/logger'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function presignedURLCommand(
     node?: S3FileNode,
