@@ -15,7 +15,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
     public constructor(
         private documentItem: SSM.Types.DocumentIdentifier,
         public readonly client: SsmDocumentClient,
-        public readonly regionCode: string
+        public override readonly regionCode: string
     ) {
         super('')
         this.update(documentItem)

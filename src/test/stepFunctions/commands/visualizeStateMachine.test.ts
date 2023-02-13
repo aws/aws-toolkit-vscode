@@ -195,7 +195,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const yamlDoc = await getYamlDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
-            public getWebview(): vscode.Webview | undefined {
+            public override getWebview(): vscode.Webview | undefined {
                 return { postMessage } as unknown as vscode.Webview
             }
         }
@@ -219,7 +219,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const jsonDoc = await getJsonDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
-            public getWebview(): vscode.Webview | undefined {
+            public override getWebview(): vscode.Webview | undefined {
                 return { postMessage } as unknown as vscode.Webview
             }
         }

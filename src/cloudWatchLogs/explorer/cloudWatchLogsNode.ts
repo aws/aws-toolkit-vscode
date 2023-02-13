@@ -23,7 +23,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
     public constructor(
         label: string,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         protected readonly cloudwatchClient: DefaultCloudWatchLogsClient
     ) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed)
@@ -32,7 +32,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
     protected abstract getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>>
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

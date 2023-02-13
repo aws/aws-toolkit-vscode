@@ -31,7 +31,7 @@ export class WizardPrompter<T> extends Prompter<T> {
         this.stepOffset = total - 1
     }
 
-    public get totalSteps(): number {
+    public override get totalSteps(): number {
         return this.wizard.totalSteps - this.stepOffset
     }
 

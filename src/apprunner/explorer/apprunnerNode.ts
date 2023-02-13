@@ -21,12 +21,12 @@ export class AppRunnerNode extends AWSTreeNodeBase {
     private readonly pollingNodes: Set<string> = new Set()
     private pollTimer?: NodeJS.Timeout
 
-    public constructor(public readonly regionCode: string, public readonly client: AppRunnerClient) {
+    public constructor(public override readonly regionCode: string, public readonly client: AppRunnerClient) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsAppRunnerNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

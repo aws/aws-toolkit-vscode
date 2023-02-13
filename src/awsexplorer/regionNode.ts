@@ -85,7 +85,7 @@ const serviceCandidates = [
  */
 export class RegionNode extends AWSTreeNodeBase {
     private region: Region
-    public readonly regionCode: string
+    public override readonly regionCode: string
 
     public get regionName(): string {
         return this.region.name
@@ -99,7 +99,7 @@ export class RegionNode extends AWSTreeNodeBase {
         this.update(region)
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         //  Services that are candidates to add to the region explorer.
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
         //  If the service is available, we use the `createFn` to generate the node for the region.

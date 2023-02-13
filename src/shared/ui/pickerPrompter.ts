@@ -304,7 +304,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         super()
     }
 
-    public transform<R>(callback: Transform<T, R>): QuickPickPrompter<R> {
+    public override transform<R>(callback: Transform<T, R>): QuickPickPrompter<R> {
         return super.transform(callback) as QuickPickPrompter<R>
     }
 
@@ -573,7 +573,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
 
-    public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
+    public override set recentItem(response: T | DataQuickPickItem<T> | undefined) {
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
         } else {
@@ -592,7 +592,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         })
     }
 
-    public async loadItems(items: ItemLoadTypes<T>): Promise<void> {
+    public override async loadItems(items: ItemLoadTypes<T>): Promise<void> {
         if (this.onChangeValue) {
             this.onChangeValue.dispose()
         }
