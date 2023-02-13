@@ -20,7 +20,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
     private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         public documentType: string,
         private readonly client = new DefaultSsmDocumentClient(regionCode)
     ) {
@@ -40,7 +40,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
         this.setLabel()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

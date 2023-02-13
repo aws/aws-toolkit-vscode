@@ -13,7 +13,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         public configuration: Lambda.FunctionConfiguration
     ) {
         super('')

@@ -36,7 +36,7 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
         return undefined
     }
 
-    public async remove(path: vscode.Uri): Promise<void> {
+    public override async remove(path: vscode.Uri): Promise<void> {
         const uri = typeof path === 'string' ? vscode.Uri.parse(path, true) : path
         globals.schemaService.registerMapping({
             uri: uri,
