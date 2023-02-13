@@ -33,7 +33,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
         this.contextValue = 'resourcesRootNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

@@ -11,8 +11,8 @@ import { DocumentItemNode } from './documentItemNode'
 export class DocumentItemNodeWriteable extends DocumentItemNode {
     public constructor(
         documentItem: SSM.Types.DocumentIdentifier,
-        public readonly client: SsmDocumentClient,
-        public readonly regionCode: string,
+        public override readonly client: SsmDocumentClient,
+        public override readonly regionCode: string,
         public readonly parent: RegistryItemNode
     ) {
         super(documentItem, client, regionCode)
