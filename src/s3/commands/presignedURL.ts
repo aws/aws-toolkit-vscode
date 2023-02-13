@@ -64,6 +64,8 @@ export interface PresignedUrlWizardState {
 
 export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
     constructor(node?: S3FileNode) {
+        // If command is initiated from a S3FileNode, initialize state with region and bucket name
+        // Prompters by default are skipped when the data for their form field is present
         super({
             initState: {
                 region: node?.bucket.region,
