@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix network calls cant be made inside read/write action exception thrown from CodeWhisperer (#3423)"
+}

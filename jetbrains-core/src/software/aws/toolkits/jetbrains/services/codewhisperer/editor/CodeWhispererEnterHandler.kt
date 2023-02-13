@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.editor
 
 import com.intellij.codeInsight.editorActions.EnterHandler
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
@@ -24,6 +25,9 @@ class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler
         if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.AutoTrigger)) {
             return
         }
-        performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.Enter, latencyContext)
+
+        ApplicationManager.getApplication().executeOnPooledThread {
+            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.Enter, latencyContext)
+        }
     }
 }
