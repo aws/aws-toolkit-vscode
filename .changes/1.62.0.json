@@ -1,0 +1,34 @@
+{
+	"date": "2023-01-31",
+	"version": "1.62.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "iam: ignore permission check when denial comes from organization csp policy"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improve extension start-up performance, especially on devices with slower file systems"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Duplicate resource type definitions break the \"Resources\" node (#3132)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM template.yaml syntax support for FunctionResponseTypes #2924"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: run/debug now works for a larger variety of TypeScript projects"
+		},
+		{
+			"type": "Feature",
+			"description": "Upload Lambda wizard will skip prompts and auto select parent directory when invoked from a template file."
+		}
+	]
+}

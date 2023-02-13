@@ -8,6 +8,7 @@ import * as os from 'os'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { getIcon } from '../../shared/icons'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
 
@@ -17,6 +18,11 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.update(logGroup)
         this.iconPath = getIcon('aws-cloudwatch-log-group')
         this.contextValue = contextValueCloudwatchLog
+        this.command = {
+            command: 'aws.cloudWatchLogs.viewLogStream',
+            title: localize('AWS.command.cloudWatchLogs.viewLogStream', 'View Log Stream'),
+            arguments: [this],
+        }
     }
 
     public update(logGroup: CloudWatchLogs.LogGroup): void {

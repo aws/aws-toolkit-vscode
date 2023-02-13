@@ -11,8 +11,8 @@ env:
 phases:
     install:
         runtime-versions:
-            nodejs: 14
-            dotnet: 3.1
+            nodejs: 16
+            dotnet: 6.0
             java: latest
 
         commands:
@@ -22,13 +22,13 @@ phases:
             - '>/dev/null apt-get -qq install -y ca-certificates'
             - 'apt-get install --reinstall ca-certificates'
             - 'add-apt-repository -y ppa:deadsnakes/ppa'
-            # Install other needed dependencies
+            # Other dependencies.
             - 'apt-get -qq install -y jq python3.7 python3.8 python3-pip'
             # Fail early if any of these not found.
             - 'python3.7 --version'
             - 'python3.8 --version'
-            - 'python3.9 --version'
-            - '>/dev/null apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+            # Dependencies for running vscode.
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
             # Print info about sam (version, location, …).
             - 'pip3 show aws-sam-cli'

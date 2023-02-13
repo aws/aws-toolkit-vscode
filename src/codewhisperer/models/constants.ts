@@ -22,6 +22,8 @@ export const invocationKeyThreshold = 15
 
 export const idleTimerPollPeriod = 25 // milliseconds
 
+export const showRecommendationTimerPollPeriod = 25
+
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
@@ -152,6 +154,9 @@ export const defaultCheckPeriodMillis = 1000 * 60 * 5
 
 // suggestion show delay, in milliseconds
 export const suggestionShowDelay = 250
+
+// add 200ms more delay on top of inline default 30-50ms
+export const inlineSuggestionShowDelay = 200
 
 export const referenceLog = 'CodeWhisperer Reference Log'
 
