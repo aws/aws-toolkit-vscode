@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-
 import { DefaultS3Client, SignedUrlRequest } from '../../shared/clients/s3Client'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
@@ -45,7 +43,6 @@ export async function presignedURLCommand(
         })
 
         await copyToClipboard(url, 'URL', window, env)
-        vscode.window.showInformationMessage(`A presigned URL has been copied to your clipboard`)
     })
 }
 
@@ -80,24 +77,17 @@ export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
 
         if (node) {
             this.form.signedUrlParams.key.setDefault(node.file.key)
-            this.form.signedUrlParams.key.bindPrompter(
-                ({ region, signedUrlParams }) =>
-                    createS3FilePrompter(
-                        assertDefined(region, 'region'),
-                        assertDefined(signedUrlParams?.bucketName, 'bucketName'),
-                        assertDefined(signedUrlParams?.operation, 'operation')
-                    ),
-                { showWhen: state => state.signedUrlParams?.operation === 'putObject' }
-            )
-        } else {
-            this.form.signedUrlParams.key.bindPrompter(({ region, signedUrlParams }) =>
+        }
+
+        this.form.signedUrlParams.key.bindPrompter(
+            ({ region, signedUrlParams }) =>
                 createS3FilePrompter(
                     assertDefined(region, 'region'),
                     assertDefined(signedUrlParams?.bucketName, 'bucketName'),
                     assertDefined(signedUrlParams?.operation, 'operation')
-                )
-            )
-        }
+                ),
+            node ? { showWhen: state => state.signedUrlParams?.operation === 'putObject' } : undefined
+        )
 
         this.form.signedUrlParams.time.bindPrompter(() => createExpiryPrompter().transform(s => Number(s) * 60))
 
