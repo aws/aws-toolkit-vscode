@@ -19,7 +19,7 @@ import { getIcon } from '../../shared/icons'
 export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNode {
     name: string = this.repository.repositoryName
     arn: string = this.repository.repositoryArn
-    public readonly regionCode: string
+    public override readonly regionCode: string
 
     constructor(
         public readonly parent: EcrNode,
@@ -32,7 +32,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
         this.regionCode = ecr.regionCode
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const response = await toArrayAsync(this.ecr.describeTags(this.repository.repositoryName))

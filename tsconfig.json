@@ -15,6 +15,7 @@
         "resolveJsonModule": true,
         "strict": true,
         "noUnusedLocals": true,
+        "noImplicitOverride": true,
         "lib": ["dom", "es6", "esnext.asynciterable"],
         "skipLibCheck": true,
         "jsx": "preserve"
