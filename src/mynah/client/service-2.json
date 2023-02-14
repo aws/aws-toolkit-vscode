@@ -1,0 +1,270 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2022-01-18",
+        "endpointPrefix": "execute-api",
+        "jsonVersion": "1.1",
+        "protocol": "rest-json",
+        "serviceFullName": "AWS Mynah Search",
+        "serviceId": "MynahSearch",
+        "signatureVersion": "v4",
+        "signingName": "execute-api",
+        "uid": "mynahsearch-2022-01-18"
+    },
+    "operations": {
+        "Search": {
+            "name": "Search",
+            "http": {
+                "method": "POST",
+                "requestUri": "/search",
+                "responseCode": 200
+            },
+            "input": {
+                "shape": "SearchRequest"
+            },
+            "output": {
+                "shape": "SearchResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
+        }
+    },
+    "shapes": {
+        "Boolean": {
+            "type": "boolean",
+            "box": true
+        },
+        "CodeQuery": {
+            "type": "structure",
+            "members": {
+                "simpleNames": {
+                    "shape": "SimpleNames"
+                },
+                "usedFullyQualifiedNames": {
+                    "shape": "FullyQualifiedNames"
+                }
+            }
+        },
+        "Context": {
+            "type": "structure",
+            "members": {
+                "matchPolicy": {
+                    "shape": "MatchPolicy"
+                }
+            }
+        },
+        "ContextKey": {
+            "type": "string",
+            "max": 100,
+            "min": 0,
+            "pattern": "\\S+"
+        },
+        "ContextKeys": {
+            "type": "list",
+            "member": {
+                "shape": "ContextKey"
+            },
+            "max": 25,
+            "min": 0
+        },
+        "FullyQualifiedName": {
+            "type": "string",
+            "max": 512,
+            "min": 1
+        },
+        "FullyQualifiedNames": {
+            "type": "list",
+            "member": {
+                "shape": "FullyQualifiedName"
+            },
+            "max": 25,
+            "min": 0
+        },
+        "Integer": {
+            "type": "integer",
+            "box": true
+        },
+        "InternalServerException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "error": {
+                "httpStatusCode": 500
+            },
+            "exception": true,
+            "fault": true,
+            "retryable": {
+                "throttling": false
+            }
+        },
+        "MatchPolicy": {
+            "type": "structure",
+            "members": {
+                "should": {
+                    "shape": "ContextKeys"
+                },
+                "must": {
+                    "shape": "ContextKeys"
+                },
+                "mustNot": {
+                    "shape": "ContextKeys"
+                }
+            }
+        },
+        "MaxResults": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 1
+        },
+        "SearchRequest": {
+            "type": "structure",
+            "members": {
+                "input": {
+                    "shape": "Text"
+                },
+                "code": {
+                    "shape": "Text"
+                },
+                "context": {
+                    "shape": "Context"
+                },
+                "trigger": {
+                    "shape": "Trigger"
+                },
+                "maxResults": {
+                    "shape": "MaxResults"
+                },
+                "codeQuery": {
+                    "shape": "CodeQuery"
+                }
+            }
+        },
+        "SearchResponse": {
+            "type": "structure",
+            "members": {
+                "suggestions": {
+                    "shape": "Suggestions"
+                }
+            }
+        },
+        "SimpleName": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "SimpleNames": {
+            "type": "list",
+            "member": {
+                "shape": "SimpleName"
+            },
+            "max": 100,
+            "min": 0
+        },
+        "StackOverflowMetadata": {
+            "type": "structure",
+            "members": {
+                "answerCount": {
+                    "shape": "Integer"
+                },
+                "isAccepted": {
+                    "shape": "Boolean"
+                },
+                "lastActivityDate": {
+                    "shape": "Integer"
+                },
+                "score": {
+                    "shape": "Integer"
+                }
+            }
+        },
+        "String": {
+            "type": "string"
+        },
+        "Suggestion": {
+            "type": "structure",
+            "members": {
+                "url": {
+                    "shape": "String"
+                },
+                "title": {
+                    "shape": "String"
+                },
+                "body": {
+                    "shape": "String"
+                },
+                "context": {
+                    "shape": "ContextKeys"
+                },
+                "type": {
+                    "shape": "SuggestionType"
+                },
+                "metadata": {
+                    "shape": "SuggestionMetadata"
+                }
+            }
+        },
+        "SuggestionMetadata": {
+            "type": "structure",
+            "members": {
+                "StackOverflow": {
+                    "shape": "StackOverflowMetadata"
+                }
+            },
+            "union": true
+        },
+        "SuggestionType": {
+            "type": "string",
+            "enum": ["LexicalSuggestion", "NeuralSuggestion"]
+        },
+        "Suggestions": {
+            "type": "list",
+            "member": {
+                "shape": "Suggestion"
+            }
+        },
+        "Text": {
+            "type": "string",
+            "max": 1000,
+            "min": 0
+        },
+        "Timestamp": {
+            "type": "timestamp"
+        },
+        "Trigger": {
+            "type": "string",
+            "enum": [
+                "DebugError",
+                "TerminalLink",
+                "SearchBarInput",
+                "SearchBarRefinement",
+                "DiagnosticError",
+                "CodeSelection"
+            ]
+        },
+        "ValidationException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "error": {
+                "httpStatusCode": 400,
+                "senderFault": true
+            },
+            "exception": true
+        }
+    }
+}
