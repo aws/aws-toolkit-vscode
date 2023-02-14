@@ -111,12 +111,13 @@ export async function openSsoPortalLink(
         const options = { modal: true, detail } as vscode.MessageOptions
 
         while (true) {
-            const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
+            // TODO: add the 'Help' item back once we have a suitable URL
+            // const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
+            const resp = await vscode.window.showInformationMessage(title, options, copyCode)
             switch (resp) {
                 case copyCode:
                     return copyCodeAndOpenLink()
                 case localizedText.help:
-                    // TODO: this link is specific to browsers, can we get better documentation?
                     await tryOpenHelpUrl(ssoAuthHelpUrl)
                     continue
                 default:
