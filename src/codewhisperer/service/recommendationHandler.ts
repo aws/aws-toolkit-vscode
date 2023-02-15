@@ -266,7 +266,7 @@ export class RecommendationHandler {
                     codewhispererTriggerType: triggerType,
                     codewhispererAutomatedTriggerType: autoTriggerType,
                     codewhispererCompletionType:
-                        invocationResult == 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
+                        invocationResult === 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
                     result: invocationResult,
                     duration: latency ? latency : 0,
                     codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
@@ -278,7 +278,7 @@ export class RecommendationHandler {
                     credentialStartUrl: TelemetryHelper.instance.startUrl,
                 })
             }
-            if (invocationResult == 'Succeeded') {
+            if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
             }
         }
@@ -301,7 +301,7 @@ export class RecommendationHandler {
             this._onDidReceiveRecommendation.fire()
         }
         // send Empty userDecision event if user receives no recommendations in this session at all.
-        if (this.recommendations.length === 0 && nextToken === '') {
+        if (invocationResult === 'Succeeded' && this.recommendations.length === 0 && nextToken === '') {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
                 requestId,
                 sessionId,
