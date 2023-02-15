@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as pathutil from '../shared/utilities/pathUtils'
+import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
@@ -309,3 +310,5 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
         },
     }
 }
+
+export function stubWindow(sandbox = sinon) {}

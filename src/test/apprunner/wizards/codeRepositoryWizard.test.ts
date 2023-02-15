@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
@@ -18,6 +16,7 @@ import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
 import { stub } from '../../utilities/stubber'
+import { getOpenExternalStub } from '../../globalSetup.test'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -66,8 +65,6 @@ describe('AppRunnerCodeRepositoryWizard', function () {
 type ConnectionStatus = 'AVAILABLE' | 'PENDING_HANDSHAKE' | 'ERROR' | 'DELETED'
 
 describe('createConnectionPrompter', function () {
-    let openExternal: sinon.SinonSpy<Parameters<typeof vscode.env.openExternal>>
-
     const defaultConnections = [
         makeConnection('connection-name-1', 'connection-arn-1'),
         makeConnection('connection-name-2', 'connection-arn-2'),
@@ -87,14 +84,6 @@ describe('createConnectionPrompter', function () {
             Status: status,
         }
     }
-
-    beforeEach(function () {
-        openExternal = sinon.stub(vscode.env, 'openExternal')
-    })
-
-    afterEach(function () {
-        sinon.restore()
-    })
 
     it('lists connections', async function () {
         const tester = makeTester()
@@ -133,6 +122,6 @@ describe('createConnectionPrompter', function () {
         tester.acceptItem('No connections found')
         tester.hide()
         await tester.result(WIZARD_EXIT)
-        assert.strictEqual(openExternal.firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
+        assert.strictEqual(getOpenExternalStub().firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
     })
 })
