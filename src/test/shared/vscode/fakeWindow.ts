@@ -16,6 +16,9 @@ export interface FakeWindowOptions {
     dialog?: DialogOptions
 }
 
+/**
+ * @deprecated Unit tests should use `getTestWindow()` to inspect/manipulate UI.
+ */
 export class FakeWindow implements Window {
     private readonly _statusBar: DefaultFakeStatusBar
     private readonly _inputBox: DefaultFakeInputBox

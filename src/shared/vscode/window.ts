@@ -88,6 +88,9 @@ export interface Window {
     showSaveDialog(options: vscode.SaveDialogOptions): Thenable<vscode.Uri | undefined>
 }
 
+/**
+ * @deprecated use `vscode.window` directly. Unit tests should use `getTestWindow()` to inspect/manipulate UI.
+ */
 export namespace Window {
     export function vscode(): Window {
         return new DefaultWindow()
