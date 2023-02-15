@@ -23,6 +23,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 
+const downloadLimit = 20
 interface DownloadFileOptions {
     /**
      * Setting this field will show a progress notification for
@@ -166,63 +167,70 @@ async function promptForSaveLocation(
     })
 }
 
-class S3DownloadFilesManager {
-    private readonly client: S3Client
-    private fileList: S3File[]
-    private failedToDownload: S3File[] = []
-    public totalDownloaded = 0
-    private readonly folderName: string | undefined
+async function downloadBatchFiles(
+    fileList: S3File[],
+    saveLocation: vscode.Uri,
+    client: S3Client,
+    folderName?: string
+): Promise<{ succeeded: number; failedFiles: S3File[] }> {
+    let failed: S3File[] = []
 
-    public constructor(client: S3Client, fileList: S3File[], folderName: string | undefined = undefined) {
-        this.client = client
-        this.fileList = fileList
-        this.folderName = folderName
+    // create a folder with the folder name (e.g. 'Download Folder')
+    let savePath = saveLocation.fsPath
+    if (folderName) {
+        const dir = path.join(savePath, folderName)
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir)
+            savePath = dir
+        }
     }
 
-    // attempt to download all files
-    public async downloadAll() {
-        let saveLocation = await promptForSaveFolderLocation()
-        if (!saveLocation) {
-            throw new CancellationError('user')
+    fileList.forEach(async file => {
+        try {
+            await downloadFile(file, {
+                window: Window.vscode(),
+                saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
+                client,
+                progressLocation: vscode.ProgressLocation.Notification,
+            })
+        } catch (error) {
+            failed.push(file)
         }
-
-        // create a folder with the folder name (e.g. 'Download Folder')
-        let savePath = saveLocation.fsPath
-        if (this.folderName) {
-            const dir = path.join(savePath, this.folderName)
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir)
-                savePath = dir
-            }
-        }
-
-        this.fileList.forEach(async file => {
-            try {
-                await downloadFile(file, {
-                    window: Window.vscode(),
-                    saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
-                    client: this.client,
-                    progressLocation: vscode.ProgressLocation.Notification,
-                })
-            } catch (error) {
-                this.failedToDownload.push(file)
-            }
-        })
-    }
+    })
+    return { succeeded: fileList.length - failed.length, failedFiles: failed }
 }
 
-export async function downloadFolderCommand(folder: S3FolderNode) {
-    // get files to download
-    // get files from the folder and convert to S3File
-    const files = (
-        await folder.s3.listFiles({ bucketName: folder.bucket.name, folderPath: folder.folder.path })
-    ).files.map(file => {
-        return { bucket: folder.bucket, ...file }
-    })
+export async function downloadFolderCommand(node: S3FolderNode | S3FileNode, allNodes: S3FileNode[] = []) {
+    let files: S3File[]
+    let folderName: string | undefined = undefined
+    if (node instanceof S3FolderNode) {
+        // get files from the folder and convert to S3File
+        files = (await node.s3.listFiles({ bucketName: node.bucket.name, folderPath: node.folder.path })).files.map(
+            file => {
+                return { bucket: node.bucket, ...file }
+            }
+        )
+        folderName = node.folder.name
+    } else {
+        // since we cannot control which nodes are selected and passed here, filter only S3FileNodes
+        allNodes = allNodes.filter(node => node instanceof S3FileNode)
+        files = allNodes?.map(fileNode => {
+            return { bucket: fileNode.bucket, ...fileNode.file }
+        })
+    }
 
-    // create downloadFiles manager
-    const downloadManager = new S3DownloadFilesManager(folder.s3, files, folder.folder.name)
-    downloadManager.downloadAll()
+    if (files.length === 0) {
+        throw Error('No files to download')
+    } else if (files.length > downloadLimit) {
+        files.length = downloadLimit
+    }
+
+    let saveLocation = await promptForSaveFolderLocation()
+    if (!saveLocation) {
+        throw new CancellationError('user')
+    }
+
+    downloadBatchFiles(files, saveLocation, node.s3, folderName)
 }
 
 async function promptForSaveFolderLocation(window = Window.vscode()): Promise<vscode.Uri | undefined> {

@@ -47,8 +47,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.s3.presignedURL', async (node: S3FileNode) => {
             await presignedURLCommand(node)
         }),
-        Commands.register('aws.s3.downloadFileAs', async (node: S3FileNode) => {
-            await downloadFileAsCommand(node)
+        Commands.register('aws.s3.downloadFileAs', async (node: S3FileNode, allNodes?: S3FileNode[]) => {
+            if (allNodes) {
+                await downloadFolderCommand(node, allNodes)
+            } else {
+                await downloadFileAsCommand(node)
+            }
         }),
         Commands.register('aws.s3.downloadFolder', async (node: S3FolderNode) => {
             await downloadFolderCommand(node)
