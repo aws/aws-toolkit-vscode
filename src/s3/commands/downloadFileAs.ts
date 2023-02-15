@@ -5,6 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 
 import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
 import { Window } from '../../shared/vscode/window'
@@ -20,6 +21,7 @@ import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtili
 import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { S3FolderNode } from '../explorer/s3FolderNode'
 
 interface DownloadFileOptions {
     /**
@@ -162,4 +164,80 @@ async function promptForSaveLocation(
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
         filters: filters,
     })
+}
+
+class S3DownloadFilesManager {
+    private readonly client: S3Client
+    private fileList: S3File[]
+    private failedToDownload: S3File[] = []
+    public totalDownloaded = 0
+    private readonly folderName: string | undefined
+
+    public constructor(client: S3Client, fileList: S3File[], folderName: string | undefined = undefined) {
+        this.client = client
+        this.fileList = fileList
+        this.folderName = folderName
+    }
+
+    // attempt to download all files
+    public async downloadAll() {
+        let saveLocation = await promptForSaveFolderLocation()
+        if (!saveLocation) {
+            throw new CancellationError('user')
+        }
+
+        // create a folder with the folder name (e.g. 'Download Folder')
+        let savePath = saveLocation.fsPath
+        if (this.folderName) {
+            const dir = path.join(savePath, this.folderName)
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir)
+                savePath = dir
+            }
+        }
+
+        this.fileList.forEach(async file => {
+            try {
+                await downloadFile(file, {
+                    window: Window.vscode(),
+                    saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
+                    client: this.client,
+                    progressLocation: vscode.ProgressLocation.Notification,
+                })
+            } catch (error) {
+                this.failedToDownload.push(file)
+            }
+        })
+    }
+}
+
+export async function downloadFolderCommand(folder: S3FolderNode) {
+    // get files to download
+    // get files from the folder and convert to S3File
+    const files = (
+        await folder.s3.listFiles({ bucketName: folder.bucket.name, folderPath: folder.folder.path })
+    ).files.map(file => {
+        return { bucket: folder.bucket, ...file }
+    })
+
+    // create downloadFiles manager
+    const downloadManager = new S3DownloadFilesManager(folder.s3, files, folder.folder.name)
+    downloadManager.downloadAll()
+}
+
+async function promptForSaveFolderLocation(window = Window.vscode()): Promise<vscode.Uri | undefined> {
+    const saveLocation = getDefaultDownloadPath()
+    const folderLocation = await window.showOpenDialog({
+        defaultUri: vscode.Uri.file(saveLocation),
+        openLabel: localize('AWS.s3.downloadFolder.openButton', 'Download Folder Here'),
+        canSelectFolders: true,
+        canSelectFiles: false,
+        canSelectMany: false,
+    })
+
+    if (!folderLocation || folderLocation.length == 0) {
+        return undefined
+    }
+
+    return folderLocation[0]
 }
