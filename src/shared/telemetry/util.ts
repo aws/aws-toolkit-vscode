@@ -66,12 +66,15 @@ export const getClientId = shared(
  *
  * Omits the `ClientId` pair by default.
  */
-export async function getUserAgent(opt?: { includeClientId?: boolean }, context = globals.context): Promise<string> {
+export async function getUserAgent(
+    opt?: { includeClientId?: boolean },
+    globalState = globals.context.globalState
+): Promise<string> {
     const platformName = env.appName.replace(/\s/g, '-')
     const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`, `${platformName}/${version}`]
 
     if (opt?.includeClientId) {
-        const clientId = await getClientId(context.globalState)
+        const clientId = await getClientId(globalState)
         pairs.push(`ClientId/${clientId}`)
     }
 
