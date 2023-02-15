@@ -11,9 +11,9 @@ import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { CodeCatalystClient } from '../../shared/clients/codecatalystClient'
 import { anything, mock, reset, when } from 'ts-mockito'
-import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
 import { DevEnvironmentId } from '../../codecatalyst/model'
+import { getTestWindow } from '../globalSetup.test'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
@@ -38,12 +38,11 @@ function createConnectUri(env: DevEnvironmentId): vscode.Uri {
 
 describe('CodeCatalyst handlers', function () {
     let handler: UriHandler
-    let testWindow: TestWindow
     let commandStub: Stub<typeof vscode.commands.executeCommand>
     const client = mock<CodeCatalystClient>()
 
     beforeEach(function () {
-        handler = new UriHandler((testWindow = createTestWindow()))
+        handler = new UriHandler()
         register(handler, {
             openDevEnv: {
                 execute: async () => undefined,
@@ -89,9 +88,11 @@ describe('CodeCatalyst handlers', function () {
             // Unit tests are ran without other extensions activated, so this fails on the SSH extension check
             this.skip()
 
-            const errorMessage = testWindow.waitForMessage(/Failed to handle/).then(message => {
-                message.assertSeverity(SeverityLevel.Error)
-            })
+            const errorMessage = getTestWindow()
+                .waitForMessage(/Failed to handle/)
+                .then(message => {
+                    message.assertSeverity(SeverityLevel.Error)
+                })
 
             when(client.getDevEnvironment(anything())).thenReject(new Error('No development environment found'))
             await handler.handleUri(createConnectUri(devenvId))

@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
-import { createTestWindow } from '../../shared/vscode/window'
+import { getTestWindow } from '../../globalSetup.test'
 import { stub } from '../../utilities/stubber'
 
 describe('deleteLambda', async function () {
@@ -25,12 +25,11 @@ describe('deleteLambda', async function () {
 
     it('should delete lambda when confirmed', async function () {
         const client = createLambdaClient()
-        const testWindow = createTestWindow()
-        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('my-function'))
+        const confirmDialog = getTestWindow().waitForMessage(buildDeleteRegExp('my-function'))
 
         await Promise.all([
             confirmDialog.then(dialog => dialog.selectItem('Delete')),
-            deleteLambda({ FunctionName: 'my-function' }, client, testWindow),
+            deleteLambda({ FunctionName: 'my-function' }, client),
         ])
 
         assert.strictEqual(client.deleteFunction.callCount, 1)
@@ -41,12 +40,11 @@ describe('deleteLambda', async function () {
 
     it('should not delete lambda when cancelled', async function () {
         const client = createLambdaClient()
-        const testWindow = createTestWindow()
-        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('another-function'))
+        const confirmDialog = getTestWindow().waitForMessage(buildDeleteRegExp('another-function'))
 
         await Promise.all([
             confirmDialog.then(dialog => dialog.close()),
-            deleteLambda({ FunctionName: 'another-function' }, client, testWindow),
+            deleteLambda({ FunctionName: 'another-function' }, client),
         ])
 
         assert.strictEqual(client.deleteFunction.callCount, 0)
@@ -55,16 +53,15 @@ describe('deleteLambda', async function () {
 
     it('should handles errors gracefully', async function () {
         const client = createLambdaClient()
-        const testWindow = createTestWindow()
-        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('bad-name'))
-        const viewLogs = testWindow.waitForMessage(/There was an error/)
+        const confirmDialog = getTestWindow().waitForMessage(buildDeleteRegExp('bad-name'))
+        const viewLogs = getTestWindow().waitForMessage(/There was an error/)
 
         client.deleteFunction.rejects(new Error('Lambda function does not exist'))
 
         await Promise.all([
             viewLogs.then(dialog => dialog.close()),
             confirmDialog.then(dialog => dialog.selectItem('Delete')),
-            deleteLambda({ FunctionName: 'bad-name' }, client, testWindow),
+            deleteLambda({ FunctionName: 'bad-name' }, client),
         ])
 
         // assertTelemetry('lambda_delete', { result: 'Failed' })

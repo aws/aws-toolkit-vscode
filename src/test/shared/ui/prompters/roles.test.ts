@@ -12,6 +12,7 @@ import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { toCollection } from '../../../../shared/utilities/asyncCollection'
 import { stub } from '../../../utilities/stubber'
+import { getOpenExternalStub } from '../../../globalSetup.test'
 
 const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
@@ -74,9 +75,8 @@ describe('createRolePrompter', function () {
     })
 
     it('can open documentation', async function () {
-        const openStub = sinon.stub(vscode.env, 'openExternal')
         tester.pressButton('View Toolkit Documentation')
-        tester.addCallback(() => assert.ok(openStub.calledWith(helpUri)))
+        tester.addCallback(() => assert.ok(getOpenExternalStub().calledWith(helpUri)))
         tester.hide()
         await tester.result()
     })
