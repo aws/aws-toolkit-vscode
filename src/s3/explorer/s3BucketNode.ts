@@ -40,7 +40,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.contextValue = 'awsS3BucketNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getNoChildrenPlaceholderNode: async () =>
