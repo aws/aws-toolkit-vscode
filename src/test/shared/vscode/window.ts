@@ -9,6 +9,7 @@ import { SeverityLevel, ShownMessage, TestMessage } from './message'
 type Window = typeof vscode.window
 
 export interface TestWindow {
+    shownMessages: ShownMessage[]
     onDidShowMessage: vscode.Event<ShownMessage>
     waitForMessage(expected: string | RegExp, timeout?: number): Promise<ShownMessage>
 }
@@ -29,6 +30,9 @@ export function createTestWindow(): Window & TestWindow {
 
     return new Proxy(vscode.window, {
         get: (target, prop, recv) => {
+            if (prop === 'shownMessages') {
+                return shownMessages
+            }
             if (prop === 'onDidShowMessage') {
                 return onDidShowMessageEmitter.event
             }

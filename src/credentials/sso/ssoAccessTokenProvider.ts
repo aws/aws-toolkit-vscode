@@ -145,7 +145,7 @@ export class SsoAccessTokenProvider {
             clientSecret: registration.clientSecret,
         })
 
-        if (!(await openSsoPortalLink(authorization))) {
+        if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
             throw new CancellationError('user')
         }
 
