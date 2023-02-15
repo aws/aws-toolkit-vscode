@@ -20,7 +20,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
-import { SsoToken } from './sso/model'
+import { builderIdStartUrl, SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -38,7 +38,6 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 
-export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
@@ -581,7 +580,9 @@ export class Auth implements AuthService, ConnectionManager {
         const provider = this.getTokenProvider(id, profile)
         const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
         const label =
-            profile.startUrl === builderIdStartUrl ? 'AWS Builder ID' : `IAM Identity Center (${truncatedUrl})`
+            profile.startUrl === builderIdStartUrl
+                ? localizedText.builderId()
+                : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
 
         return {
             id,
@@ -832,23 +833,25 @@ export const createBuilderIdItem = () =>
     ({
         label: codicon`${getIcon('vscode-person')} ${localize(
             'aws.auth.builderIdItem.label',
-            'Use a personal email to sign up and sign in with AWS Builder ID'
+            'Use a personal email to sign up and sign in with {0}',
+            localizedText.builderId()
         )}`,
         data: 'builderId',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionBuilderID' }),
-        detail: 'AWS Builder ID is a new, personal profile for builders.', // TODO: need a "Learn more" button ?
+        detail: `${localizedText.builderId()} is a new, personal profile for builders.`, // TODO: need a "Learn more" button ?
     } as DataQuickPickItem<'builderId'>)
 
 export const createSsoItem = () =>
     ({
         label: codicon`${getIcon('vscode-organization')} ${localize(
             'aws.auth.ssoItem.label',
-            'Connect using {0} IAM Identity Center',
-            getIdeProperties().company
+            'Connect using {0} {1}',
+            getIdeProperties().company,
+            localizedText.iamIdentityCenter
         )}`,
         data: 'sso',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionSSO' }),
-        detail: "Sign in to your company's IAM Identity Center access portal login page.",
+        detail: `Sign in to your company's ${localizedText.iamIdentityCenter} access portal login page.`,
     } as DataQuickPickItem<'sso'>)
 
 export const createIamItem = () =>
@@ -889,7 +892,7 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
 
     return createInputBox({
         title: `${title}: Enter Start URL`,
-        placeholder: "Enter start URL for your organization's IAM Identity Center",
+        placeholder: `Enter start URL for your organization's IAM Identity Center`,
         buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
     })
