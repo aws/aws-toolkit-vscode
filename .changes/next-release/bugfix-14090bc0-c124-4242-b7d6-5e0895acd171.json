@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Authenticating through the browser now requires users to manually enter a user verification code for SSO/AWS Builder ID"
+}
