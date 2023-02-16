@@ -2363,7 +2363,13 @@
             {
                 "command": "aws.s3.downloadFolder",
                 "title": "%AWS.command.s3.downloadFolder%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "icon": "$(cloud-download)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.s3.openFile",

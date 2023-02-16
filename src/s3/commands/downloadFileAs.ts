@@ -187,7 +187,7 @@ async function downloadBatchFiles(
 
     fileList.forEach(async file => {
         try {
-            await downloadS3File(client, file, {
+            await downloadFile(file, {
                 window: Window.vscode(),
                 saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
                 client,
