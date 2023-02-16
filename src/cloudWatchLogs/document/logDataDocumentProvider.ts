@@ -4,16 +4,13 @@
  */
 import { telemetry } from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
-import {
-    CloudWatchLogsParameters,
-    getLogEventsFromUriComponents,
-    LogDataRegistry,
-    getInitialLogData,
-} from '../registry/logDataRegistry'
+import { CloudWatchLogsParameters, LogDataRegistry } from '../registry/logDataRegistry'
 import { getLogger } from '../../shared/logger'
-import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { parseCloudWatchLogsUri, createURIFromArgs, isCwlUri } from '../cloudWatchLogsUtils'
+import { generateTextFromLogEvents, StreamIdMap } from './textContent'
 
 export class LogDataDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
+    readonly uriToStreamIdMap: Map<string, StreamIdMap> = new Map()
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -29,12 +26,13 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
-        // get latest content and return
-        const content = this.registry.getLogContent(uri, { timestamps: true })
-        if (!content) {
-            getLogger().error(`No content found for URI: ${uri.path}`)
+        if (!isCwlUri(uri)) {
+            throw new Error(`Uri is not a CWL Uri, so no text can be provided: ${uri.toString()}`)
         }
-        return content ?? ''
+        const events = this.registry.fetchCachedLogEvents(uri)
+        const { text, streamIdMap } = generateTextFromLogEvents(events, { timestamps: true })
+        this.uriToStreamIdMap.set(uri.toString(), streamIdMap)
+        return text
     }
 
     async provideDefinition(
@@ -51,7 +49,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
         }
         const curLine = document.lineAt(position.line)
         try {
-            const streamIDMap = this.registry.getStreamIdMap(activeUri)
+            const streamIDMap = this.uriToStreamIdMap.get(activeUri.toString())
             if (!streamIDMap || streamIDMap.size === 0) {
                 throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri.path}`)
             }
@@ -66,11 +64,9 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
                 limit: this.registry.configuration.get('limit', 10000),
             }
             logGroupInfo.streamName = streamID
-            const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
-            const streamUri = createURIFromArgs(logGroupInfo, parameters)
 
-            // dont await so doc content is loaded asynchronously, prevents stuttering on hover
-            this.registry.registerLog(streamUri, initialStreamData)
+            const streamUri = createURIFromArgs(logGroupInfo, parameters)
+            this.registry.fetchNextLogEvents(streamUri)
 
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
@@ -111,7 +107,7 @@ export function getActiveDocumentUri(registry: LogDataRegistry) {
     }
 
     const activeUri = currentEditor.document.uri
-    if (!registry.hasLog(activeUri)) {
+    if (!registry.isRegistered(activeUri)) {
         throw new Error('cwl: Document open has unregistered uri.')
     }
 

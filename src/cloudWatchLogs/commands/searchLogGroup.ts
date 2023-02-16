@@ -68,15 +68,10 @@ export async function prepareDocument(
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
-        await registry.registerLog(uri, initialLogData)
-        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-        vscode.languages.setTextDocumentLanguage(doc, 'log')
-
-        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-        registry.setTextEditor(uri, textEditor)
-
-        // Initial highlighting of the document and then for any addLogEvent calls.
-        registry.highlightDocument(uri)
+        registry.fetchNextLogEvents(uri)
+        const textDocument = await vscode.workspace.openTextDocument(uri)
+        await vscode.window.showTextDocument(textDocument, { preview: false })
+        vscode.languages.setTextDocumentLanguage(textDocument, 'log')
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
