@@ -22,6 +22,7 @@ import { S3File } from '../fileViewerManager'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { S3FolderNode } from '../explorer/s3FolderNode'
+import { isNonNullable } from '../../shared/utilities/tsUtils'
 
 const downloadLimit = 20
 interface DownloadFileOptions {
@@ -173,8 +174,6 @@ async function downloadBatchFiles(
     client: S3Client,
     folderName?: string
 ): Promise<S3File[]> {
-    let failed: S3File[] = []
-
     // create a folder with the folder name (e.g. 'Download Folder')
     let savePath = saveLocation.fsPath
     if (folderName) {
@@ -185,19 +184,21 @@ async function downloadBatchFiles(
         }
     }
 
-    fileList.forEach(async file => {
-        try {
-            await downloadFile(file, {
-                window: Window.vscode(),
-                saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
-                client,
-                progressLocation: vscode.ProgressLocation.Notification,
-            })
-        } catch (error) {
-            failed.push(file)
-        }
-    })
-    return failed
+    const results = await Promise.all(
+        fileList.map(async file => {
+            try {
+                await downloadFile(file, {
+                    window: Window.vscode(),
+                    saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
+                    client,
+                    progressLocation: vscode.ProgressLocation.Notification,
+                })
+            } catch (error) {
+                return file
+            }
+        })
+    )
+    return results.filter(isNonNullable)
 }
 
 export async function downloadFolderCommand(
