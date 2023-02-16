@@ -172,7 +172,7 @@ async function downloadBatchFiles(
     saveLocation: vscode.Uri,
     client: S3Client,
     folderName?: string
-): Promise<{ succeeded: number; failedFiles: S3File[] }> {
+): Promise<S3File[]> {
     let failed: S3File[] = []
 
     // create a folder with the folder name (e.g. 'Download Folder')
@@ -187,7 +187,7 @@ async function downloadBatchFiles(
 
     fileList.forEach(async file => {
         try {
-            await downloadFile(file, {
+            await downloadS3File(client, file, {
                 window: Window.vscode(),
                 saveLocation: vscode.Uri.file(path.join(savePath, file.name)),
                 client,
@@ -197,10 +197,14 @@ async function downloadBatchFiles(
             failed.push(file)
         }
     })
-    return { succeeded: fileList.length - failed.length, failedFiles: failed }
+    return failed
 }
 
-export async function downloadFolderCommand(node: S3FolderNode | S3FileNode, allNodes: S3FileNode[] = []) {
+export async function downloadFolderCommand(
+    node: S3FolderNode | S3FileNode,
+    allNodes: S3FileNode[] = [],
+    outputChannel = globals.outputChannel
+) {
     let files: S3File[]
     let folderName: string | undefined = undefined
     if (node instanceof S3FolderNode) {
@@ -223,6 +227,7 @@ export async function downloadFolderCommand(node: S3FolderNode | S3FileNode, all
         throw Error('No files to download')
     } else if (files.length > downloadLimit) {
         files.length = downloadLimit
+        showOutputMessage(`Exceeded download file limit, only ${downloadLimit} ar allowed at once`, outputChannel)
     }
 
     let saveLocation = await promptForSaveFolderLocation()
@@ -230,7 +235,16 @@ export async function downloadFolderCommand(node: S3FolderNode | S3FileNode, all
         throw new CancellationError('user')
     }
 
-    downloadBatchFiles(files, saveLocation, node.s3, folderName)
+    const failed = await downloadBatchFiles(files, saveLocation, node.s3, folderName)
+    let cannotDownload = []
+    if (failed.length > 0) {
+        cannotDownload = await downloadBatchFiles(failed, saveLocation, node.s3)
+    }
+    const reportMessage =
+        cannotDownload.length === 0
+            ? `All ${files.length} files downloaded successfully`
+            : `Downloaded ${files.length - failed.length} files, but ${failed.length} failed to download`
+    showOutputMessage(reportMessage, outputChannel)
 }
 
 async function promptForSaveFolderLocation(window = Window.vscode()): Promise<vscode.Uri | undefined> {
