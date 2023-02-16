@@ -1,3 +1,9 @@
+## 1.63.0 2023-02-16
+
+- **Bug Fix** Bump amazon-states-language-service dependency to ^1.8.0 to allow state machines to be created with the new intrinsic functions and Map state
+- **Bug Fix** Authenticating through the browser now requires users to manually enter a user verification code. Previously this was done automatically.
+- **Feature** CloudWatch Logs: one click to list log streams for a log group
+
 ## 1.62.0 2023-01-31
 
 - **Bug Fix** SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867
