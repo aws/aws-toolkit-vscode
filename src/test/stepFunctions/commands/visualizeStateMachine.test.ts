@@ -16,6 +16,8 @@ import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslF
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { closeAllEditors } from '../../testUtil'
 import { getLogger } from '../../../shared/logger'
+import { previewStateMachineCommand } from '../../../stepFunctions/activation'
+import { getTestWindow } from '../../globalSetup.test'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
@@ -189,6 +191,16 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         panel.dispose()
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+    })
+
+    it('throws an error if no active text editor is open', async function () {
+        // Make sure nothing is open from previous tests.
+        await closeAllEditors()
+        assert.strictEqual(vscode.window.activeTextEditor, undefined)
+
+        const errorMessage = getTestWindow().waitForMessage(/no active text editor/i)
+
+        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {
