@@ -37,7 +37,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.contextValue = 'awsS3FolderNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getNoChildrenPlaceholderNode: async () =>

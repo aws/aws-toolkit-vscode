@@ -6,7 +6,8 @@
 import * as assert from 'assert'
 import { Memento, ConfigurationTarget } from 'vscode'
 import { Settings } from '../../../shared/settings'
-import { convertLegacy, getClientId, TelemetryConfig } from '../../../shared/telemetry/util'
+import { convertLegacy, getClientId, getUserAgent, TelemetryConfig } from '../../../shared/telemetry/util'
+import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 
 describe('TelemetryConfig', function () {
@@ -155,5 +156,24 @@ describe('getClientId', function () {
     it('should be 11111111-1111-1111-1111-111111111111 if telemetry is not enabled', async function () {
         const clientId = await getClientId(new FakeMemento(), false, false)
         assert.strictEqual(clientId, '11111111-1111-1111-1111-111111111111')
+    })
+})
+
+describe('getUserAgent', function () {
+    it('includes product name and version', async function () {
+        const userAgent = await getUserAgent()
+        const lastPair = userAgent.split(' ')[0]
+        assert.ok(lastPair?.startsWith(`AWS-Toolkit-For-VSCode/${extensionVersion}`))
+    })
+
+    it('omits `ClientId` by default', async function () {
+        const userAgent = await getUserAgent()
+        assert.ok(!userAgent.includes('ClientId'))
+    })
+
+    it('includes `ClientId` at the end if opted in', async function () {
+        const userAgent = await getUserAgent({ includeClientId: true })
+        const lastPair = userAgent.split(' ').pop()
+        assert.ok(lastPair?.startsWith('ClientId/'))
     })
 })

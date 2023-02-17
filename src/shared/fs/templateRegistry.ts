@@ -58,7 +58,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
     }
 
     // handles delete case
-    public async remove(uri: vscode.Uri): Promise<void> {
+    public override async remove(uri: vscode.Uri): Promise<void> {
         globals.schemaService.registerMapping({
             uri,
             type: 'yaml',

@@ -26,7 +26,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly documentNodes: Map<string, DocumentItemNode>
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         public registryName: string,
         readonly documentType: string,
         private readonly client = new DefaultSsmDocumentClient(regionCode)
@@ -48,7 +48,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.setLabel()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

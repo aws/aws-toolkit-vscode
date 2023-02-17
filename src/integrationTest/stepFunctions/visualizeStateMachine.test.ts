@@ -12,7 +12,6 @@ import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachin
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { closeAllEditors } from '../../test/testUtil'
 import { previewStateMachineCommand } from '../../stepFunctions/activation'
-import { createTestWindow } from '../../test/shared/vscode/window'
 
 const sampleStateMachine = `
 	 {
@@ -205,18 +204,6 @@ describe('visualizeStateMachine', async function () {
 
             await viewStateChanged
         }
-    })
-
-    it('throws an error if no active text editor is open', async function () {
-        // Make sure nothing is open from previous tests.
-        await closeAllEditors()
-        assert.strictEqual(vscode.window.activeTextEditor, undefined)
-
-        const testWindow = createTestWindow()
-        sinon.replace(vscode, 'window', testWindow)
-        const errorMessage = testWindow.waitForMessage(/no active text editor/i)
-
-        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async function () {

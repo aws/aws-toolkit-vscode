@@ -11,7 +11,6 @@ import { DefaultBucket, DefaultS3Client, File, toFile } from '../../../shared/cl
 import globals from '../../../shared/extensionGlobals'
 import { VirualFileSystem } from '../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
-import { createTestWindow, TestWindow } from '../../shared/vscode/window'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { assertTelemetry, assertTextEditorContains, closeAllEditors } from '../../testUtil'
@@ -19,6 +18,7 @@ import { PromptSettings } from '../../../shared/settings'
 import { stub } from '../../utilities/stubber'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
 import { ToolkitError } from '../../../shared/errors'
+import { getTestWindow } from '../../globalSetup.test'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -181,7 +181,6 @@ describe('FileViewerManager', function () {
     let s3: ReturnType<typeof createS3>
     let fs: VirualFileSystem
     let fileViewerManager: S3FileViewerManager
-    let testWindow: TestWindow
     let disposables: vscode.Disposable[]
 
     function findEditors(documentName: string, window = vscode.window) {
@@ -191,9 +190,8 @@ describe('FileViewerManager', function () {
     beforeEach(function () {
         s3 = createS3()
         fs = new VirualFileSystem()
-        const window = (testWindow = createTestWindow())
 
-        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, window, new PromptSettings(), {
+        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, getTestWindow(), new PromptSettings(), {
             read: readScheme,
             edit: editScheme,
         })
@@ -211,12 +209,16 @@ describe('FileViewerManager', function () {
 
     it('prompts if file size is greater than 4MB', async function () {
         fileViewerManager.openInReadMode({ ...bigImage, bucket })
-        await testWindow.waitForMessage(/File size is more than 4MB/).then(message => message.selectItem(/Continue/))
+        await getTestWindow()
+            .waitForMessage(/File size is more than 4MB/)
+            .then(message => message.selectItem(/Continue/))
     })
 
     it('throws if the user cancels a download', async function () {
         const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
-        await testWindow.waitForMessage(/File size is more than 4MB/).then(message => message.selectItem(/Cancel/))
+        await getTestWindow()
+            .waitForMessage(/File size is more than 4MB/)
+            .then(message => message.selectItem(/Cancel/))
         await assert.rejects(didOpen)
     })
 
@@ -253,11 +255,13 @@ describe('FileViewerManager', function () {
         })
 
         it('can open in edit mode, showing a warning with two options', async function () {
-            const shownMessage = testWindow.waitForMessage(/You are now editing an S3 file./).then(message => {
-                message.assertSeverity(SeverityLevel.Warning)
-                assert.strictEqual(message.items.length, 2)
-                return message
-            })
+            const shownMessage = getTestWindow()
+                .waitForMessage(/You are now editing an S3 file./)
+                .then(message => {
+                    message.assertSeverity(SeverityLevel.Warning)
+                    assert.strictEqual(message.items.length, 2)
+                    return message
+                })
 
             await fileViewerManager.openInEditMode({ ...textFile1, bucket })
 

@@ -16,6 +16,7 @@ export enum SeverityLevel {
 interface MessageOptions<T extends vscode.MessageItem> extends vscode.MessageOptions {
     readonly severity?: SeverityLevel
     readonly items?: T[]
+    readonly detail?: string
 }
 
 type Window = typeof vscode.window
@@ -42,6 +43,10 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
 
     public get visible() {
         return this._showing
+    }
+
+    public get detail() {
+        return this.options?.detail
     }
 
     public assertMessage(expected: string): void {
@@ -128,14 +133,15 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             ...rest: [string | T | vscode.MessageOptions, ...(string | T)[]]
         ) => {
             const firstRest = rest[0]
-            const stringMode = typeof firstRest === 'string'
-            const opt = !stringMode && !TestMessage.isMessageItem(firstRest) ? firstRest : {}
-            const items = (stringMode ? rest : rest.slice(1)) as (string | T)[]
+            const stringMode = typeof firstRest === 'string' || typeof rest[1] === 'string'
+            const opt = typeof firstRest !== 'string' && !TestMessage.isMessageItem(firstRest) ? firstRest : undefined
+            const items = (opt === undefined ? rest : rest.slice(1)) as (string | T)[]
             const mappedItems = items.map(i => (typeof i === 'string' ? { title: i } : i))
             const testMessage = new TestMessage(message, {
                 severity,
-                modal: opt.modal,
+                modal: opt?.modal,
                 items: mappedItems,
+                ...opt,
             })
 
             return new Promise<vscode.MessageItem | T | string | undefined>(resolve => {

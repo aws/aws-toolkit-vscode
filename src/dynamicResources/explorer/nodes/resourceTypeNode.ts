@@ -60,7 +60,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         this.childContextValue = supportedOperations.join('') + contextValueResource
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.metadata.available) {
             return []
         }

@@ -17,6 +17,8 @@ import { join } from 'path'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
+import { getTestWindow } from '../../globalSetup.test'
+import { SeverityLevel } from '../../shared/vscode/message'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -128,7 +130,6 @@ describe('startSecurityScan', function () {
     it('Should prompt warning message if language is not supported', async function () {
         const extensionContext = await FakeExtensionContext.create()
         const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        const spy = sinon.spy(vscode.window, 'showWarningMessage')
         const appRoot = join(workspaceFolder, 'go1-plain-sam-app')
         const appCodePath = join(appRoot, 'hello-world', 'main.go')
         const editor = await openTestFile(appCodePath)
@@ -139,7 +140,8 @@ describe('startSecurityScan', function () {
             stub(DefaultCodeWhispererClient),
             extensionContext
         )
-        assert.ok(spy.calledOnce)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 1)
     })
 
     it('Should render security scan result', async function () {
