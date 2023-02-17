@@ -4,6 +4,7 @@
  */
 
 import { DefaultS3Client, SignedUrlRequest } from '../../shared/clients/s3Client'
+import * as nls from 'vscode-nls'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -18,6 +19,9 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { getLogger } from '../../shared/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { s3PresigndUrlHelpUrl } from '../../shared/constants'
+
+const localize = nls.loadMessageBundle()
 
 export async function presignedURLCommand(
     node?: S3FileNode,
@@ -92,7 +96,9 @@ export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
             node ? { showWhen: state => state.signedUrlParams?.operation === 'putObject' } : undefined
         )
 
-        this.form.signedUrlParams.time.bindPrompter(() => createExpiryPrompter().transform(s => Number(s) * 60))
+        this.form.signedUrlParams.time.bindPrompter(({ signedUrlParams }) =>
+            createExpiryPrompter(assertDefined(signedUrlParams?.key, 'key')).transform(s => Number(s) * 60)
+        )
 
         function assertDefined<T>(val: T | undefined, key: string): T {
             if (val === undefined) {
@@ -109,16 +115,23 @@ function createOperationPrompter() {
         { label: 'Upload (PUT)', data: 'putObject' },
     ]
 
-    return createQuickPick(items, { title: 'Presigned URL: Choose an operation', buttons: createCommonButtons() })
+    return createQuickPick(items, {
+        title: 'Presigned URL: Choose an operation',
+        buttons: createCommonButtons(s3PresigndUrlHelpUrl),
+    })
 }
 
-function createExpiryPrompter() {
+function createExpiryPrompter(path: string) {
     return createInputBox({
         value: '15',
-        prompt: 'Specify the expiry time (minutes) for the URL',
+        prompt: localize(
+            'AWS.s3.presignedURL.epiryPrompt',
+            'Specify the time (minutes) until URL will expire for path: {0}',
+            path
+        ),
         placeholder: 'Defaults to 15 minutes',
         validateInput: validateTime,
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(s3PresigndUrlHelpUrl),
     })
 }
 
@@ -131,7 +144,7 @@ function createBucketPrompter(region: string) {
         },
     ])
 
-    return createQuickPick(items, { title: 'Select an S3 Bucket', buttons: createCommonButtons() })
+    return createQuickPick(items, { title: 'Select an S3 Bucket', buttons: createCommonButtons(s3PresigndUrlHelpUrl) })
 }
 
 function createS3FilePrompter(region: string, bucket: string, operation: string) {
@@ -139,12 +152,12 @@ function createS3FilePrompter(region: string, bucket: string, operation: string)
         const items = getS3Files(region, bucket)
         return createQuickPick(items, {
             title: 'Choose the file for the presigned URL',
-            buttons: createCommonButtons(),
+            buttons: createCommonButtons(s3PresigndUrlHelpUrl),
         })
     }
     return createInputBox({
-        title: 'Create a key',
-        buttons: createCommonButtons(),
+        title: 'Specify the key (S3 file path) where the upload will be saved',
+        buttons: createCommonButtons(s3PresigndUrlHelpUrl),
     })
 }
 
