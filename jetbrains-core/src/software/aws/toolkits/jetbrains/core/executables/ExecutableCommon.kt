@@ -8,12 +8,19 @@ import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.EnvironmentUtil
 import com.intellij.util.text.SemVer
 import com.intellij.util.text.nullize
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 import software.aws.toolkits.jetbrains.utils.FileInfoCache
 import software.aws.toolkits.resources.message
 import java.time.Duration
 
 object ExecutableCommon {
-    fun getCommandLine(path: String, executableName: String): GeneralCommandLine {
+    fun getCommandLine(
+        path: String,
+        executableName: String,
+        executableType: ExecutableType<*>? = null,
+        clientMetadata: ClientMetadata = ClientMetadata.DEFAULT_METADATA
+    ): GeneralCommandLine {
         val sanitizedPath = path.nullize(true)
             ?: throw RuntimeException(message("executableCommon.cli_not_configured", executableName))
 
@@ -36,6 +43,9 @@ object ExecutableCommon {
                 // on other platforms this could be C.UTF-8 or C.UTF8
                 this["LC_CTYPE"] = "UTF-8"
                 // we're not setting PYTHONIOENCODING because we might break SAM on py2.7
+            }
+            if (executableType is SamExecutable) {
+                this["SAM_CLI_TELEMETRY_FROM_IDE"] = "${clientMetadata.productName}/${clientMetadata.productVersion}"
             }
         }
 

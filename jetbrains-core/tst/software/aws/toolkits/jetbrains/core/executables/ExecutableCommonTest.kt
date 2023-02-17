@@ -4,12 +4,20 @@
 package software.aws.toolkits.jetbrains.core.executables
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.testFramework.ProjectRule
 import com.intellij.util.text.SemVer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 
 class ExecutableCommonTest {
+    @Rule
+    @JvmField
+    val projectRule = ProjectRule()
 
     @Test
     fun gettingCommandLineWhenExecutableIsFoundWorksAndModificationsAreApplied() {
@@ -17,10 +25,29 @@ class ExecutableCommonTest {
         val name = "Testing 1-2-3"
         val commandLine = ExecutableCommon.getCommandLine(path, name)
         assertThat(commandLine.exePath).isEqualTo(path)
-        assertThat(commandLine.environment.containsKey("AWS_ACCESS_KEY_ID")).isFalse()
-        assertThat(commandLine.environment.containsKey("AWS_SECRET_ACCESS_KEY")).isFalse()
-        assertThat(commandLine.environment.containsKey("AWS_SESSION_TOKEN")).isFalse()
+        assertThat(commandLine.environment.containsKey("AWS_ACCESS_KEY_ID")).isFalse
+        assertThat(commandLine.environment.containsKey("AWS_SECRET_ACCESS_KEY")).isFalse
+        assertThat(commandLine.environment.containsKey("AWS_SESSION_TOKEN")).isFalse
+        assertThat(commandLine.environment.containsKey("SAM_CLI_TELEMETRY_FROM_IDE")).isFalse
         assertThat(commandLine.parentEnvironmentType).isEqualTo(GeneralCommandLine.ParentEnvironmentType.NONE)
+    }
+
+    @Test
+    fun gettingCommandLineWhenExecutableIsSamExecutable() {
+        val path = "/foo/bar"
+        val name = "sam.cmd"
+        val clientMetadata = ClientMetadata(
+            productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+            productVersion = "1.0",
+            clientId = "foo",
+            parentProduct = "JetBrains",
+            parentProductVersion = "191",
+            os = "mac",
+            osVersion = "1.0"
+        )
+        val commandLine = ExecutableCommon.getCommandLine(path, name, SamExecutable(), clientMetadata)
+        assertThat(commandLine.exePath).isEqualTo(path)
+        assertThat(commandLine.environment.containsKey("SAM_CLI_TELEMETRY_FROM_IDE")).isTrue
     }
 
     @Test

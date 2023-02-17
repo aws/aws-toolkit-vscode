@@ -222,7 +222,7 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
     }
 
     private fun determineVersion(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance = try {
-        ExecutableInstance.Executable(path, type.version(path).toString(), autoResolved)
+        ExecutableInstance.Executable(path, type.version(path).toString(), autoResolved, type)
     } catch (e: Exception) {
         ExecutableInstance.InvalidExecutable(
             path,
@@ -259,11 +259,12 @@ sealed class ExecutableInstance {
     class Executable(
         override val executablePath: Path,
         override val version: String,
-        override val autoResolved: Boolean
+        override val autoResolved: Boolean,
+        private val executableType: ExecutableType<*>
     ) : ExecutableInstance(), ExecutableWithPath {
         // TODO get executable name as part of this
         fun getCommandLine(): GeneralCommandLine =
-            ExecutableCommon.getCommandLine(executablePath.toAbsolutePath().toString(), executablePath.fileName.toString())
+            ExecutableCommon.getCommandLine(executablePath.toAbsolutePath().toString(), executablePath.fileName.toString(), executableType)
     }
 
     class InvalidExecutable(

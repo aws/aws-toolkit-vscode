@@ -95,6 +95,7 @@ fun getSamCli(): GeneralCommandLine {
     val executable = runBlocking {
         ExecutableManager.getInstance().getExecutable<SamExecutable>().await()
     }
+
     val samExecutable = when (executable) {
         is ExecutableInstance.Executable -> executable
         else -> {
