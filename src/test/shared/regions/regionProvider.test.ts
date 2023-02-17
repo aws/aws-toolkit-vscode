@@ -186,7 +186,7 @@ describe('RegionProvider', async function () {
             regionProvider.setLastTouchedRegion('us-west-1')
 
             const node = new (class extends AWSTreeNodeBase {
-                public readonly regionCode = 'us-west-2'
+                public override readonly regionCode = 'us-west-2'
                 public constructor() {
                     super('')
                 }

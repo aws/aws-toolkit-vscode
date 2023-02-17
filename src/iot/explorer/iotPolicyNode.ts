@@ -60,10 +60,10 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
 
 export class IotPolicyCertNode extends IotPolicyNode {
     public constructor(
-        public readonly policy: IotPolicy,
-        public readonly parent: IotCertificateNode,
-        public readonly iot: IotClient,
-        protected readonly workspace = Workspace.vscode()
+        public override readonly policy: IotPolicy,
+        public override readonly parent: IotCertificateNode,
+        public override readonly iot: IotClient,
+        protected override readonly workspace = Workspace.vscode()
     ) {
         super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, workspace)
         this.contextValue = 'awsIotPolicyNode.Certificates'
@@ -74,18 +74,18 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
     private readonly versionNodes: Map<string, IotPolicyVersionNode>
 
     public constructor(
-        public readonly policy: IotPolicy,
-        public readonly parent: IotPolicyFolderNode,
-        public readonly iot: IotClient,
+        public override readonly policy: IotPolicy,
+        public override readonly parent: IotPolicyFolderNode,
+        public override readonly iot: IotClient,
         certs?: string[],
-        protected readonly workspace = Workspace.vscode()
+        protected override readonly workspace = Workspace.vscode()
     ) {
         super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, workspace)
         this.contextValue = 'awsIotPolicyNode.WithVersions'
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

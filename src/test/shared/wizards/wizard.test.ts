@@ -78,7 +78,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         }
     }
 
-    public get totalSteps(): number {
+    public override get totalSteps(): number {
         return this._totalSteps
     }
 
@@ -87,7 +87,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.responses = responses
     }
 
-    public async prompt(): Promise<PromptResult<T>> {
+    public override async prompt(): Promise<PromptResult<T>> {
         if (this.responses.length === this.promptCount) {
             this.fail('Ran out of responses')
         }

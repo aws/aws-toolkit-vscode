@@ -23,7 +23,7 @@ export class ConsoleLogTransport extends Transport {
         super(options)
     }
 
-    public log(info: LogEntry, next: () => void): void {
+    public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             this.emit('logged', info)
             console.log(info[MESSAGE])

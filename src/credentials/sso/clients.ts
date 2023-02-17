@@ -56,10 +56,10 @@ export class OidcClient {
 
     public async startDeviceAuthorization(request: StartDeviceAuthorizationRequest) {
         const response = await this.client.startDeviceAuthorization(request)
-        assertHasProps(response, 'expiresIn', 'deviceCode', 'verificationUriComplete')
+        assertHasProps(response, 'expiresIn', 'deviceCode', 'userCode', 'verificationUri')
 
         return {
-            ...selectFrom(response, 'deviceCode', 'verificationUriComplete'),
+            ...selectFrom(response, 'deviceCode', 'userCode', 'verificationUri'),
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
             interval: response.interval ? response.interval * 1000 : undefined,
         }
