@@ -8,7 +8,7 @@ import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam
 
 describe('SamCliInfoInvocation', async function () {
     class TestSamCliInfoCommand extends SamCliInfoInvocation {
-        public convertOutput(text: string): SamCliInfoResponse | undefined {
+        public override convertOutput(text: string): SamCliInfoResponse | undefined {
             return super.convertOutput(text)
         }
     }

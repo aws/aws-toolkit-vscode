@@ -34,7 +34,7 @@ export class OutputChannelTransport extends Transport {
         this.stripAnsi = options.stripAnsi
     }
 
-    public log(info: LogEntry, next: () => void): void {
+    public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             const msg: string = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
 

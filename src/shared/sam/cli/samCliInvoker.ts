@@ -6,6 +6,7 @@
 import * as logger from '../../logger'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import {
+    addTelemetryEnvVar,
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
@@ -47,7 +48,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const samCommand = sam.path ? sam.path : 'sam'
         this.childProcess = new ChildProcess(samCommand, invokeOptions.arguments, {
             logging: options?.logging ? 'yes' : 'no',
-            spawnOptions: invokeOptions.spawnOptions,
+            spawnOptions: await addTelemetryEnvVar(options?.spawnOptions),
         })
 
         getLogger('channel').info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
