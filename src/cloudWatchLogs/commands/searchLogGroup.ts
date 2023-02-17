@@ -68,7 +68,7 @@ export async function prepareDocument(
     registry: LogDataRegistry
 ): Promise<Result> {
     try {
-        registry.fetchNextLogEvents(uri)
+        await registry.fetchNextLogEvents(uri)
         const textDocument = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(textDocument, { preview: false })
         vscode.languages.setTextDocumentLanguage(textDocument, 'log')

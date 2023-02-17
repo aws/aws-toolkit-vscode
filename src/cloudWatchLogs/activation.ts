@@ -19,6 +19,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
+import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -26,10 +27,14 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     const documentProvider = new LogDataDocumentProvider(registry)
 
-    vscode.languages.registerDefinitionProvider(
-        // TODO: figure out how to only show "Jump to definition" for documents from searches
-        { language: 'log', scheme: CLOUDWATCH_LOGS_SCHEME },
-        documentProvider
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(
+            {
+                language: 'log',
+                scheme: CLOUDWATCH_LOGS_SCHEME,
+            },
+            new LogStreamCodeLensProvider(registry, documentProvider)
+        )
     )
 
     context.subscriptions.push(
@@ -54,6 +59,11 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         )
     )
 
+    context.subscriptions.push(
+        Commands.register('aws.loadLogStreamFile', async (uri: vscode.Uri, registry: LogDataRegistry) =>
+            loadAndOpenInitialLogStreamFile(uri, registry)
+        )
+    )
     context.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
     context.subscriptions.push(
         Commands.register(

@@ -5,19 +5,25 @@
 
 import * as moment from 'moment'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
-import { CloudWatchLogsEvent } from '../registry/logDataRegistry'
+import { CloudWatchLogsEvent, CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
 
-export type StreamIdMap = Map<number, string>
 export const timestampSpaceEquivalent = '                             '
+
+/**
+ * CWL output text can consist of Log Events from multiple different
+ * Log Streams. This map type is intended to map a specific line to
+ * its respective Log Stream
+ */
+export type LineToLogStreamMap = Map<number, NonNullable<CloudWatchLogsGroupInfo['streamName']>>
 
 export function generateTextFromLogEvents(
     events: CloudWatchLogsEvent[],
     formatting?: { timestamps?: boolean }
-): { text: string; streamIdMap: StreamIdMap } {
+): { text: string; streamIdMap: LineToLogStreamMap } {
     const inlineNewLineRegex = /((\r\n)|\n|\r)(?!$)/g
     // if no timestamp for some reason, entering a blank of equal length (29 characters long)
 
-    const streamIdMap: StreamIdMap = new Map()
+    const streamIdMap: LineToLogStreamMap = new Map()
     let text: string = ''
     let lineNumber = 0
     for (const event of events) {
