@@ -1,3 +1,8 @@
+# _1.61_ (2023-02-17)
+- **(Bug Fix)** Authenticating through the browser now requires users to manually enter a user verification code for SSO/AWS Builder ID
+- **(Bug Fix)** Fix NPE that may occur when installing the toolkit for the first time ([#3433](https://github.com/aws/aws-toolkit-jetbrains/issues/3433))
+- **(Bug Fix)** Fix network calls cant be made inside read/write action exception thrown from CodeWhisperer ([#3423](https://github.com/aws/aws-toolkit-jetbrains/issues/3423))
+
 # _1.60_ (2023-02-01)
 - **(Bug Fix)** Fix Small Dev Environment instance sizes not connecting to the thin clients
 

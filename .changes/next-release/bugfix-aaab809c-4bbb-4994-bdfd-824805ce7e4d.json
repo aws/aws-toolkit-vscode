@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix NPE that may occur when installing the toolkit for the first time (#3433)"
-}
