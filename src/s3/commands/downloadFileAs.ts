@@ -251,7 +251,7 @@ export async function downloadFolderCommand(
                 localize(
                     'AWS.s3.downloadFile.failedMany',
                     'Failed downloads:\n{0}\nSee logs for full list of failed items',
-                    failedKeys.toString().split(',').slice(0, 5).join('\n')
+                    failedKeys.slice(0, 5).join('\n')
                 ),
                 outputChannel
             )
