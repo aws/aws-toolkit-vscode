@@ -108,68 +108,6 @@ export async function downloadFile(file: S3File, options?: FileOptions | BufferO
     })
 }
 
-/**
- * Downloads a file represented by the given node.
- *
- * Prompts the user for the save location.
- * Shows the output channel with "download started" message.
- * Downloads the file (showing a progress bar).
- * Shows the output channel with "download completed" message.
- */
-export async function downloadFileAsCommand(
-    node: S3FileNode,
-    window = Window.vscode(),
-    outputChannel = globals.outputChannel
-): Promise<void> {
-    const { bucket, file } = node
-    const sourcePath = readablePath(node)
-
-    await telemetry.s3_downloadObject.run(async () => {
-        const downloadPath = getDefaultDownloadPath()
-
-        const saveLocation = await promptForSaveLocation(file.name, window, downloadPath)
-        if (!saveLocation) {
-            throw new CancellationError('user')
-        }
-        setDefaultDownloadPath(saveLocation.fsPath)
-
-        showOutputMessage(`Downloading "${sourcePath}" to: ${saveLocation}`, outputChannel)
-
-        await downloadFile(
-            { ...file, bucket },
-            {
-                window,
-                saveLocation,
-                client: node.s3,
-                progressLocation: vscode.ProgressLocation.Notification,
-            }
-        )
-
-        showOutputMessage(`Downloaded: ${saveLocation}`, outputChannel)
-    })
-}
-
-async function promptForSaveLocation(
-    fileName: string,
-    window: Window,
-    saveLocation: string
-): Promise<vscode.Uri | undefined> {
-    const extension = path.extname(fileName)
-
-    // Insertion order matters, as it determines the ordering in the filters dropdown
-    // First inserted item is at the top (this should be the extension, if present)
-    const filters: vscode.SaveDialogOptions['filters'] = extension
-        ? { [`*${extension}`]: [extension.slice(1)], 'All Files': ['*'] }
-        : { 'All Files': ['*'] }
-
-    const downloadPath = path.join(saveLocation, fileName)
-    return window.showSaveDialog({
-        defaultUri: vscode.Uri.file(downloadPath),
-        saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
-        filters: filters,
-    })
-}
-
 async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, client: S3Client): Promise<S3File[]> {
     const results = await Promise.all(
         fileList.map(async file => {
@@ -190,101 +128,105 @@ async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, 
 }
 
 /**
- * Downloads an S3 Folder or multiple selected S3 files
+ * Downloads an S3 Folder or any number of selected S3 files
  *
  * @param node S3FolderNode to download
  * @param allNodes Multi-selected explorer nodes
  * @param window
  * @param outputChannel
  */
-export async function downloadFolderCommand(
+export async function downloadFilesCommand(
     node: S3FolderNode | S3FileNode,
     allNodes: S3FileNode[] = [],
     window = Window.vscode(),
     outputChannel = globals.outputChannel
 ): Promise<void> {
     let files: S3File[]
-    let saveLocation = await promptForSaveFolderLocation()
-    if (!saveLocation) {
-        throw new CancellationError('user')
-    }
+    await telemetry.s3_downloadObject.run(async () => {
+        let saveLocation = await promptForSaveFolderLocation()
+        if (!saveLocation) {
+            throw new CancellationError('user')
+        }
+        if (!fs.statSync(saveLocation.fsPath).isDirectory()) {
+            throw new Error('Chosen save location is not a directory')
+        }
+        setDefaultDownloadPath(saveLocation.fsPath)
 
-    if (node instanceof S3FolderNode) {
-        // get files from the folder and convert to S3File
-        files = (await node.s3.listFiles({ bucketName: node.bucket.name, folderPath: node.folder.path })).files.map(
-            file => {
-                return { bucket: node.bucket, ...file }
+        if (node instanceof S3FolderNode) {
+            // get files from the folder and convert to S3File
+            files = (await node.s3.listFiles({ bucketName: node.bucket.name, folderPath: node.folder.path })).files.map(
+                file => {
+                    return { bucket: node.bucket, ...file }
+                }
+            )
+            // create a folder with the folder name
+            const dir = path.join(saveLocation.fsPath, node.folder.name)
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir)
+                saveLocation = vscode.Uri.file(dir)
             }
-        )
-        // create a folder with the folder name
-        const dir = path.join(saveLocation.fsPath, node.folder.name)
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir)
-            saveLocation = vscode.Uri.file(dir)
-        }
-    } else {
-        // since we cannot control which nodes are selected and passed here, filter only S3FileNodes
-        allNodes = allNodes.filter(node => node instanceof S3FileNode)
-        files = allNodes?.map(fileNode => {
-            return { bucket: fileNode.bucket, ...fileNode.file }
-        })
-    }
-
-    let failed = await downloadAllFiles(files, saveLocation, node.s3)
-
-    showOutputMessage(
-        localize(
-            'AWS.s3.downloadFile.complete',
-            'Downloaded {0}/{1} files',
-            files.length - failed.length,
-            files.length
-        ),
-        outputChannel
-    )
-
-    while (failed.length > 0) {
-        const failedKeys = failed.map(file => file.key)
-        getLogger().error(`List of requests failed to download:\n${failedKeys.toString().split(',').join('\n')}`)
-
-        if (failed.length > 5) {
-            showOutputMessage(
-                localize(
-                    'AWS.s3.downloadFile.failedMany',
-                    'Failed downloads:\n{0}\nSee logs for full list of failed items',
-                    failedKeys.slice(0, 5).join('\n')
-                ),
-                outputChannel
-            )
+        } else if (allNodes.length === 0 && node instanceof S3FileNode) {
+            files = [{ bucket: node.bucket, ...node.file }]
         } else {
-            showOutputMessage(
-                localize(
-                    'AWS.s3.download.failed',
-                    'Failed downloads:\n{0}',
-                    failedKeys.join('\n')
-                ),
-                outputChannel
-            )
+            // since we cannot control which nodes are selected and passed here, filter only S3FileNodes
+            allNodes = allNodes.filter(node => node instanceof S3FileNode)
+            files = allNodes?.map(fileNode => {
+                return { bucket: fileNode.bucket, ...fileNode.file }
+            })
         }
 
-        const response = await window.showErrorMessage(
-            localize('AWS.s3.downLoad.retryPrompt', 'S3 Download: {0}/{1} failed.', failed.length, files.length),
-            localizedText.retry,
-            localizedText.skip
+        let failed = await downloadAllFiles(files, saveLocation, node.s3)
+
+        showOutputMessage(
+            localize(
+                'AWS.s3.downloadFile.complete',
+                'Downloaded {0}/{1} files',
+                files.length - failed.length,
+                files.length
+            ),
+            outputChannel
         )
 
-        if (response === localizedText.retry) {
-            failed = await downloadAllFiles(failed, saveLocation, node.s3)
-        } else {
-            break
+        while (failed.length > 0) {
+            const failedKeys = failed.map(file => file.key)
+            getLogger().error(`List of requests failed to download:\n${failedKeys.toString().split(',').join('\n')}`)
+
+            if (failed.length > 5) {
+                showOutputMessage(
+                    localize(
+                        'AWS.s3.downloadFile.failedMany',
+                        'Failed downloads:\n{0}\nSee logs for full list of failed items',
+                        failedKeys.slice(0, 5).join('\n')
+                    ),
+                    outputChannel
+                )
+            } else {
+                showOutputMessage(
+                    localize('AWS.s3.download.failed', 'Failed downloads:\n{0}', failedKeys.join('\n')),
+                    outputChannel
+                )
+            }
+
+            const response = await window.showErrorMessage(
+                localize('AWS.s3.downLoad.retryPrompt', 'S3 Download: {0}/{1} failed.', failed.length, files.length),
+                localizedText.retry,
+                localizedText.skip
+            )
+
+            if (response === localizedText.retry) {
+                failed = await downloadAllFiles(failed, saveLocation, node.s3)
+            } else {
+                break
+            }
         }
-    }
+    })
 }
 
 async function promptForSaveFolderLocation(window = Window.vscode()): Promise<vscode.Uri | undefined> {
     const saveLocation = getDefaultDownloadPath()
     const folderLocation = await window.showOpenDialog({
         defaultUri: vscode.Uri.file(saveLocation),
-        openLabel: localize('AWS.s3.downloadFolder.openButton', 'Download Folder Here'),
+        openLabel: localize('AWS.s3.downloadFolder.openButton', 'Download Here'),
         canSelectFolders: true,
         canSelectFiles: false,
         canSelectMany: false,
