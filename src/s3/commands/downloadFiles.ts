@@ -10,7 +10,6 @@ import * as fs from 'fs'
 import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
@@ -26,7 +25,7 @@ import { isNonNullable } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import * as localizedText from '../../shared/localizedText'
 
-const downloadBatchSizeLimit = 20
+const downloadBatchSize = 20
 interface DownloadFileOptions {
     /**
      * Setting this field will show a progress notification for
@@ -138,7 +137,6 @@ async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, 
 export async function downloadFilesCommand(
     node: S3FolderNode | S3FileNode,
     allNodes: S3FileNode[] = [],
-    window = Window.vscode(),
     outputChannel = globals.outputChannel
 ): Promise<void> {
     let files: S3File[]
@@ -173,6 +171,11 @@ export async function downloadFilesCommand(
             files = allNodes?.map(fileNode => {
                 return { bucket: fileNode.bucket, ...fileNode.file }
             })
+            if (files.length !== allNodes.length) {
+                getLogger().error(
+                    'Downloading multi-selected files only accepts S3 files. Other selections will be ignored.'
+                )
+            }
         }
 
         let failed = await downloadAllFiles(files, saveLocation, node.s3)
@@ -207,7 +210,7 @@ export async function downloadFilesCommand(
                 )
             }
 
-            const response = await window.showErrorMessage(
+            const response = await globals.window.showErrorMessage(
                 localize('AWS.s3.downLoad.retryPrompt', 'S3 Download: {0}/{1} failed.', failed.length, files.length),
                 localizedText.retry,
                 localizedText.skip
@@ -253,7 +256,7 @@ async function downloadAllFiles(fileList: S3File[], saveLocation: vscode.Uri, cl
     let b = 0
     while (b < fileList.length) {
         a = b
-        b += downloadBatchSizeLimit
+        b += downloadBatchSize
         failed.push(...(await downloadBatchFiles(fileList.slice(a, b), saveLocation, client)))
     }
     return failed
