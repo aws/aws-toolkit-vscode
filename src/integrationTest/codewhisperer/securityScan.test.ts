@@ -81,13 +81,13 @@ describe('CodeWhisperer security scan', async function () {
         return DependencyGraphFactory.getDependencyGraph(languageId)
     }
 
-    /**
-     * securityJobSetup: combines steps 1 and 2 in startSecurityScan:
-     *
-     * Step 1: Generate context truncations
-     * Step 2: Get presigned Url, upload and clean up
-     *
-     * returns artifactMap and projectPath
+    /*
+        securityJobSetup: combines steps 1 and 2 in startSecurityScan:
+        
+            Step 1: Generate context truncations
+            Step 2: Get presigned Url, upload and clean up
+
+        returns artifactMap and projectPath
      */
     async function securityJobSetup(editor: vscode.TextEditor) {
         const dependencyGraph = getDependencyGraph(editor.document.languageId)
@@ -119,7 +119,7 @@ describe('CodeWhisperer security scan', async function () {
         }
     }
 
-    it('codescan request with valid input params and no security issues completes scan job and returns no recommendations', async function () {
+    it('codescan request with valid input params and no security issues completes scan and returns no recommendations', async function () {
         if (!validConnection) {
             this.skip()
         }
@@ -148,7 +148,7 @@ describe('CodeWhisperer security scan', async function () {
         assert.ok(securityRecommendationCollection.length === 0)
     })
 
-    it('codescan request with valid input params and security issues completes scan job and returns recommendations', async function () {
+    it('codescan request with valid input params and security issues completes scan and returns recommendations', async function () {
         if (!validConnection) {
             this.skip()
         }
@@ -172,6 +172,7 @@ describe('CodeWhisperer security scan', async function () {
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPath
         )
+
         assert.deepStrictEqual(jobStatus, 'Completed')
         assert.ok(securityRecommendationCollection.length === 1)
     })
@@ -200,7 +201,7 @@ describe('CodeWhisperer security scan', async function () {
         await assert.rejects(() => securityJobSetup(editor))
     })
 
-    it('codescan request for file in unsupported language fails to generate dependency graph and causes scan job setup to fail', async function () {
+    it('codescan request for file in unsupported language fails to generate dependency graph and causes scan setup to fail', async function () {
         if (!validConnection) {
             this.skip()
         }

@@ -11,16 +11,6 @@ import { RecommendationHandler } from '../../codewhisperer/service/recommendatio
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
 
-/*
-   In order to run codewhisperer integration tests user must:
-   
-    1) run using VSC launch config.
-    2) have a valid codewhisperer connection.
-
-   Test cases will skip if the above criteria are not met.
-   If user has an expired connection they must reauthenticate prior to running tests.
-*/
-
 const leftContext = `InAuto.GetContent(
     InAuto.servers.auto, "vendors.json",
     function (data) {
@@ -68,6 +58,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -81,12 +72,10 @@ describe('CodeWhisperer service invocation', async function () {
 
         await invokeRecommendation(mockEditor, client, configWithRefs)
 
-        console.log('recs', RecommendationHandler.instance.recommendations[0])
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
         const references = RecommendationHandler.instance.recommendations[0].references
-        console.log('references', references)
 
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
@@ -105,6 +94,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
+        
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -118,18 +108,13 @@ describe('CodeWhisperer service invocation', async function () {
 
         await invokeRecommendation(mockEditor, client, configWithNoRefs)
 
-        //verify valid requestId, sessionId, and recommendations after invokeRecommendation call
-        console.log('recs', RecommendationHandler.instance.recommendations)
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
-
-        /*
-        verify valid requestId and sessionId and no recs.
-        No recs returned because example request returns 1 rec with recommendation, so no recs returned when references off
-        */
+ 
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
+        //no recs returned because example request returns 1 rec with reference, so no recs returned when references off
         assert.ok(!validRecs)
     })
 })

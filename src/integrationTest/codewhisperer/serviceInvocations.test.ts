@@ -47,6 +47,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -54,10 +55,10 @@ describe('CodeWhisperer service invocation', async function () {
         const mockEditor = createMockTextEditor()
         await invokeRecommendation(mockEditor, client, config)
 
-        //verify valid requestId, sessionId, and recommendations after invokeRecommendation call
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
         assert.ok(validRecs)
@@ -72,6 +73,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -84,16 +86,15 @@ describe('CodeWhisperer service invocation', async function () {
             '\n'
         )
 
-        //call keystroke handler with mock editor, mock event, and real client
         await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, client, config)
 
         //wait for 5 seconds to allow time for response to be generated
         await sleep(5000)
 
-        //verify valid requestId, sessionId, and recommendations after processKeyStroke call
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
         assert.ok(validRecs)
@@ -114,6 +115,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
+
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -121,10 +123,10 @@ describe('CodeWhisperer service invocation', async function () {
         const mockEditor = createMockTextEditor(doc, filename, language, line, char)
         await invokeRecommendation(mockEditor, client, config)
 
-        //verify no recommendation generated after invokeRecommendation call
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
+        
         assert.ok(requestId.length === 0)
         assert.ok(sessionId.length === 0)
         assert.ok(!validRecs)
