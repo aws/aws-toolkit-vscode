@@ -196,7 +196,7 @@ async function showProgressWithTimeout(
 }
 
 /**
- * Presents the user with a notification to cancel a pending process.
+ * Shows a Progress message which allows the user to cancel a pending `timeout` task.
  *
  * @param message Message to display
  * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
@@ -208,7 +208,6 @@ export async function showMessageWithCancel(
     message: string,
     timeout: Timeout,
     showAfterMs: number = 0,
-    window: Window = globals.window
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, showAfterMs)
