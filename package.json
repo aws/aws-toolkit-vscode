@@ -3572,7 +3572,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.87",
+        "@aws-toolkits/telemetry": "^1.0.100",
         "@aws/fully-qualified-names": "^2.0",
         "@aws-sdk/types": "^3.13.1",
         "@cspotcode/source-map-support": "^0.8.1",
