@@ -48,7 +48,7 @@ export async function addLogEvents(
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.cwl.searchLogGroup.errorRetrievingLogs2',
-                    'Error retrieving logs for {0}: {1}',
+                    'Failed to get logs for {0}: {1}',
                     uri.path,
                     error.message
                 )

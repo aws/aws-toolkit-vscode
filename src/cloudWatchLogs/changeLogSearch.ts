@@ -7,7 +7,7 @@ import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logDataDocumentProvider'
-import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogDataRegistry } from './registry/logDataRegistry'
+import { CloudWatchLogsData, filterLogEventsFromUri, LogDataRegistry } from './registry/logDataRegistry'
 import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
 /**
@@ -58,7 +58,7 @@ export async function getNewData(
     let resourceType: CloudWatchResourceType = 'logGroup'
 
     if (newData.logGroupInfo.streamName) {
-        newData.retrieveLogsFunction = filterLogEventsFromUriComponents
+        newData.retrieveLogsFunction = filterLogEventsFromUri
         newData.parameters.streamNameOptions = [newData.logGroupInfo.streamName]
         newData.logGroupInfo.streamName = undefined
         resourceType = 'logStream'

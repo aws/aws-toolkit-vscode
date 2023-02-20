@@ -42,7 +42,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
             {
                 label: 'Switch region',
                 data: switchRegion,
-                detail: `Showing options for ${this.currentRegion}`,
+                description: `current region: ${this.currentRegion}`,
             },
             ...prompter.quickPick.items,
         ]

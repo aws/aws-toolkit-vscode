@@ -38,7 +38,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     private get recentTimeItems(): ItemLoadTypes<number> {
         const options: DataQuickPickItem<number>[] = []
         options.push({
-            label: 'View all events',
+            label: 'Any time',
             data: 0,
         })
         options.push({
