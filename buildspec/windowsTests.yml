@@ -41,6 +41,10 @@ phases:
                   codecov -t $Env:CODE_COV_TOKEN `
                     --flag unittest `
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
+                    -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
+                  codecov -t $Env:CODE_COV_TOKEN `
+                    --flag codewhisperer `
+                    -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
                 }
 reports:
