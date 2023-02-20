@@ -9,7 +9,8 @@ phases:
         commands:
             - |
                 if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
-                    choco install -y --no-progress codecov
+                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
+                    Invoke-WebRequest -Uri https://uploader.codecov.io/latest/windows/codecov.exe -Outfile codecov.exe
                 }
 
     pre_build:
@@ -42,7 +43,7 @@ phases:
                     --flag unittest `
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
-                  codecov -t $Env:CODE_COV_TOKEN `
+                  .\codecov.exe -t $Env:CODE_COV_TOKEN `
                     --flag codewhisperer `
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
