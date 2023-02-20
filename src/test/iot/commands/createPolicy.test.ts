@@ -7,11 +7,10 @@ import * as assert from 'assert'
 import { createPolicyCommand } from '../../../iot/commands/createPolicy'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { Window } from '../../../shared/vscode/window'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createPolicyCommand', function () {
     const policyName = 'test-policy'
@@ -20,7 +19,7 @@ describe('createPolicyCommand', function () {
     let policyDocument: string
     let node: IotPolicyFolderNode
     let returnUndefined: boolean = false
-    const getPolicy: (window: Window) => Promise<Buffer | undefined> = async window => {
+    const getPolicy: () => Promise<Buffer | undefined> = async () => {
         if (returnUndefined) {
             return undefined
         }
@@ -36,15 +35,17 @@ describe('createPolicyCommand', function () {
     })
 
     it('prompts for policy name, creates policy, and shows success', async function () {
-        const window = new FakeWindow({ inputBox: { input: policyName } })
+        getTestWindow().onDidShowInputBox(input => {
+            assert.strictEqual(input.prompt, 'Enter a new policy name')
+            assert.strictEqual(input.placeholder, 'Policy Name')
+            input.acceptValue(policyName)
+        })
         const commands = new FakeCommands()
         returnUndefined = false
-        await createPolicyCommand(node, getPolicy, window, commands)
-
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new policy name')
-        assert.strictEqual(window.inputBox.options?.placeHolder, 'Policy Name')
-
-        assert.strictEqual(window.message.information, 'Created Policy test-policy')
+        await createPolicyCommand(node, getPolicy, commands)
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created Policy test-policy/)
 
         verify(iot.createPolicy(deepEqual({ policyName, policyDocument }))).once()
 
@@ -53,48 +54,55 @@ describe('createPolicyCommand', function () {
     })
 
     it('does nothing when prompt is canceled', async function () {
-        await createPolicyCommand(node, getPolicy, new FakeWindow(), new FakeCommands())
+        getTestWindow().onDidShowInputBox(input => input.hide())
+        await createPolicyCommand(node, getPolicy, new FakeCommands())
 
         verify(iot.createPolicy(anything())).never()
     })
 
     it('warns when policy name has invalid length', async function () {
-        const window = new FakeWindow({ inputBox: { input: '' } })
+        getTestWindow().onDidShowInputBox(input => {
+            input.acceptValue('')
+            assert.strictEqual(input.validationMessage, 'Policy name must be between 1 and 128 characters long')
+            input.hide()
+        })
         const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, window, commands)
-
-        assert.strictEqual(window.inputBox.errorMessage, 'Policy name must be between 1 and 128 characters long')
+        await createPolicyCommand(node, getPolicy, commands)
     })
 
     it('warns when policy name has invalid characters', async function () {
-        const window = new FakeWindow({ inputBox: { input: 'illegal/characters' } })
+        getTestWindow().onDidShowInputBox(input => {
+            input.acceptValue('illegal/characters')
+            assert.strictEqual(
+                input.validationMessage,
+                'Policy name must contain only alphanumeric characters and/or the following: +=.,@-'
+            )
+            input.hide()
+        })
         const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, window, commands)
-
-        assert.strictEqual(
-            window.inputBox.errorMessage,
-            'Policy name must contain only alphanumeric characters and/or the following: +=.,@-'
-        )
+        await createPolicyCommand(node, getPolicy, commands)
     })
 
     it('does nothing when policy document is not read', async function () {
         returnUndefined = true
-        const window = new FakeWindow({ inputBox: { input: policyName } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
         const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, window, commands)
+        await createPolicyCommand(node, getPolicy, commands)
 
         verify(iot.createPolicy(anything())).never()
         assert.strictEqual(commands.command, undefined)
     })
 
     it('shows an error message when JSON is invalid', async function () {
-        const window = new FakeWindow({ inputBox: { input: policyName } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
         const commands = new FakeCommands()
         returnUndefined = false
         policyDocument = 'not a JSON'
-        await createPolicyCommand(node, getPolicy, window, commands)
+        await createPolicyCommand(node, getPolicy, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create policy test-policy'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create policy test-policy/)
 
         verify(iot.createPolicy(anything())).never()
 
@@ -105,11 +113,13 @@ describe('createPolicyCommand', function () {
         returnUndefined = false
         when(iot.createPolicy(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ inputBox: { input: policyName } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
         const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, window, commands)
+        await createPolicyCommand(node, getPolicy, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create policy test-policy'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create policy test-policy/)
 
         assert.strictEqual(commands.command, undefined)
     })

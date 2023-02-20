@@ -17,7 +17,7 @@ import { join } from 'path'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 
 const mockCreateCodeScanResponse = {

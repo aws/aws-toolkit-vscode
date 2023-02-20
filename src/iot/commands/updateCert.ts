@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { IotCertificateNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotThingNode } from '../explorer/iotThingNode'
@@ -27,25 +27,21 @@ const statusInactive = 'INACTIVE'
  */
 export async function deactivateCertificateCommand(
     node: IotCertificateNode,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('DeactivateCert called for %O', node)
 
     const certId = node.certificate.id
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.iot.deactivateCert.prompt',
-                'Are you sure you want to deactivate certificate {0}?',
-                certId
-            ),
-            confirm: localize('AWS.iot.deactivateCert.confirm', 'Deactivate'),
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize(
+            'AWS.iot.deactivateCert.prompt',
+            'Are you sure you want to deactivate certificate {0}?',
+            certId
+        ),
+        confirm: localize('AWS.iot.deactivateCert.confirm', 'Deactivate'),
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('DeactivateCert canceled')
         return
@@ -56,15 +52,12 @@ export async function deactivateCertificateCommand(
         await node.iot.updateCertificate({ certificateId: certId, newStatus: statusInactive })
 
         getLogger().info(`deactivated certificate: ${certId}`)
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize('AWS.iot.deactivateCert.success', 'Deactivated: {0}', node.certificate.id)
         )
     } catch (e) {
         getLogger().error(`Failed to deactivate certificate ${certId}: %s`, e)
-        showViewLogsMessage(
-            localize('AWS.iot.deactivateCert.error', 'Failed to deactivate: {0}', node.certificate.id),
-            window
-        )
+        showViewLogsMessage(localize('AWS.iot.deactivateCert.error', 'Failed to deactivate: {0}', node.certificate.id))
     }
 
     /* Refresh both things and certificates nodes so the status is updated in
@@ -83,25 +76,17 @@ export async function deactivateCertificateCommand(
  */
 export async function activateCertificateCommand(
     node: IotCertificateNode,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('ActivateCert called for %O', node)
 
     const certId = node.certificate.id
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.iot.activateCert.prompt',
-                'Are you sure you want to activate certificate {0}?',
-                certId
-            ),
-            confirm: localize('AWS.iot.activateCert.confirm', 'Activate'),
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize('AWS.iot.activateCert.prompt', 'Are you sure you want to activate certificate {0}?', certId),
+        confirm: localize('AWS.iot.activateCert.confirm', 'Activate'),
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('ActivateCert canceled')
         return
@@ -112,13 +97,12 @@ export async function activateCertificateCommand(
         await node.iot.updateCertificate({ certificateId: certId, newStatus: statusActive })
 
         getLogger().info(`activated certificate: ${certId}`)
-        window.showInformationMessage(localize('AWS.iot.activateCert.success', 'Activated: {0}', node.certificate.id))
+        vscode.window.showInformationMessage(
+            localize('AWS.iot.activateCert.success', 'Activated: {0}', node.certificate.id)
+        )
     } catch (e) {
         getLogger().error(`Failed to activate certificate ${certId}: %s`, e)
-        showViewLogsMessage(
-            localize('AWS.iot.activateCert.error', 'Failed to activate: {0}', node.certificate.id),
-            window
-        )
+        showViewLogsMessage(localize('AWS.iot.activateCert.error', 'Failed to activate: {0}', node.certificate.id))
     }
 
     /* Refresh both things and certificates nodes so the status is updated in
@@ -135,23 +119,16 @@ export async function activateCertificateCommand(
  * Revokes the certificate.
  * Refreshes the parent node.
  */
-export async function revokeCertificateCommand(
-    node: IotCertificateNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function revokeCertificateCommand(node: IotCertificateNode, commands = Commands.vscode()): Promise<void> {
     getLogger().debug('RevokeCert called for %O', node)
 
     const certId = node.certificate.id
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize('AWS.iot.revokeCert.prompt', 'Are you sure you want to revoke certificate {0}?', certId),
-            confirm: localize('AWS.iot.revokeCert.confirm', 'Revoke'),
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize('AWS.iot.revokeCert.prompt', 'Are you sure you want to revoke certificate {0}?', certId),
+        confirm: localize('AWS.iot.revokeCert.confirm', 'Revoke'),
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('RevokeCert canceled')
         return
@@ -162,10 +139,12 @@ export async function revokeCertificateCommand(
         await node.iot.updateCertificate({ certificateId: certId, newStatus: statusRevoked })
 
         getLogger().info(`revoked certificate: ${certId}`)
-        window.showInformationMessage(localize('AWS.iot.revokeCert.success', 'Revoked: {0}', node.certificate.id))
+        vscode.window.showInformationMessage(
+            localize('AWS.iot.revokeCert.success', 'Revoked: {0}', node.certificate.id)
+        )
     } catch (e) {
         getLogger().error(`Failed to revoke certificate ${certId}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.revokeCert.error', 'Failed to revoke: {0}', node.certificate.id), window)
+        showViewLogsMessage(localize('AWS.iot.revokeCert.error', 'Failed to revoke: {0}', node.certificate.id))
     }
 
     /* Refresh both things and certificates nodes so the status is updated in

@@ -52,7 +52,6 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
-import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -75,7 +74,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
-    initialize(context, extWindow.Window.vscode())
+    initialize(context)
     initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(

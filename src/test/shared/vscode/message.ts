@@ -8,9 +8,9 @@ import * as assert from 'assert'
 
 // this is roughly how VS Code models things internally
 export enum SeverityLevel {
-    Information,
-    Warning,
-    Error,
+    Information = 'Information',
+    Warning = 'Warning',
+    Error = 'Error',
 }
 
 interface MessageOptions<T extends vscode.MessageItem> extends vscode.MessageOptions {
@@ -20,6 +20,7 @@ interface MessageOptions<T extends vscode.MessageItem> extends vscode.MessageOpt
 }
 
 type Window = typeof vscode.window
+type ProgressReport = { message?: string; increment?: number }
 type ShowMessage = Window['showInformationMessage'] | Window['showWarningMessage'] | Window['showErrorMessage']
 export type ShownMessage = Omit<TestMessage, 'show'> & { items: ReturnType<TestMessage['show']> }
 
@@ -30,27 +31,53 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public readonly modal: boolean
     public readonly severity: SeverityLevel
     public readonly onDidSelectItem: vscode.Event<T | undefined>
-    private _showing: boolean = false
-    private _disposed: boolean = false
+    public readonly onDidUpdateProgress: vscode.Event<ProgressReport>
+    private _message: string
+    private _progress = 0
+    private _showing = false
+    private _disposed = false
     private _selected: T | undefined
+    private _progressMessage: string | undefined
     private _onDidSelectItem = new vscode.EventEmitter<T | undefined>()
+    private _onDidUpdateProgress = new vscode.EventEmitter<ProgressReport>()
+    private _progressReports: ProgressReport[] = []
 
-    public constructor(public readonly message: string, private readonly options?: MessageOptions<T>) {
+    public constructor(message: string, private readonly options?: MessageOptions<T>) {
+        this._message = message
         this.modal = !!options?.modal
         this.severity = options?.severity ?? SeverityLevel.Information
         this.onDidSelectItem = this._onDidSelectItem.event
+        this.onDidUpdateProgress = this._onDidUpdateProgress.event
+    }
+
+    public get message() {
+        const prefix = this._message ? `${this._message}: ` : ''
+
+        return this._progressMessage ? `${prefix}${this._progressMessage}` : this._message
     }
 
     public get visible() {
-        return this._showing
+        return this._showing && this.message
     }
 
     public get detail() {
         return this.options?.detail
     }
 
-    public assertMessage(expected: string): void {
-        assert.strictEqual(this.message, expected)
+    public get progress() {
+        return this._progress
+    }
+
+    public get progressReports(): Readonly<ProgressReport[]> {
+        return this._progressReports
+    }
+
+    public get cancellable() {
+        return !!this.options?.items?.find(i => i.title === 'Cancel')
+    }
+
+    public assertMessage(expected: string | RegExp): void {
+        this.compare(expected)
     }
 
     public assertSeverity(expected: SeverityLevel): void {
@@ -59,6 +86,41 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
 
     public assertSelected(expected: T): void {
         assert.deepStrictEqual(this._selected, expected)
+    }
+
+    public assertInfo(expected: string | RegExp) {
+        this.compare(expected, SeverityLevel.Information)
+    }
+
+    public assertWarn(expected: string | RegExp) {
+        this.compare(expected, SeverityLevel.Warning)
+    }
+
+    public assertError(expected: string | RegExp) {
+        this.compare(expected, SeverityLevel.Error)
+    }
+
+    private compare(expected: string | RegExp, severity = this.severity) {
+        if (this.severity !== severity) {
+            throw new assert.AssertionError({
+                message: 'Expected severity to match',
+                actual: this.printDebug(),
+                expected: this.printDebug(expected, severity),
+            })
+        }
+        if (typeof expected === 'string') {
+            assert.strictEqual(this.message, expected)
+        } else if (!expected.test(this.message)) {
+            throw new assert.AssertionError({
+                message: 'Message did not match pattern',
+                actual: this.message,
+                expected: expected.source,
+            })
+        }
+    }
+
+    public printDebug(message: string | RegExp = this.message, severity = this.severity) {
+        return `[${severity}]: ${typeof message === 'string' ? message : message.source}`
     }
 
     public assertShowing(): void {
@@ -72,6 +134,9 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public dispose(): void {
         this._disposed = true
         this._showing = false
+        this._onDidSelectItem.fire(this._selected)
+        this._onDidSelectItem.dispose()
+        this._onDidUpdateProgress.dispose()
     }
 
     public close(): void {
@@ -81,13 +146,15 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             this.selectItem(selected)
         } else {
             this.dispose()
-            this._onDidSelectItem.fire(undefined)
         }
     }
 
     public selectItem(item: string | RegExp | T): void {
         if (this._disposed) {
             throw new Error('Attempted to select from a disposed message')
+        }
+        if (!this.options?.items || this.options.items.length === 0) {
+            throw new Error(`Could not find the specified item: ${item}. Message has no items: ${this.message}`)
         }
 
         const selected =
@@ -96,12 +163,19 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
                 : this.options?.items?.find(i => i === item)
 
         if (!selected) {
-            throw new Error(`Could not find the specified item: ${item}`)
+            const items = this.options?.items?.map(i => i.title)?.join('\n')
+            throw new Error(`Could not find the specified item: ${item}. Current items:\n${items}`)
         }
 
-        this.dispose()
         this._selected = selected
-        this._onDidSelectItem.fire(this._selected)
+        this.dispose()
+    }
+
+    public updateProgress(value: { message?: string; increment?: number }) {
+        this._progress += value.increment ?? 0
+        this._progressMessage = value.message ?? this._progressMessage
+        this._progressReports.push(value)
+        this._onDidUpdateProgress.fire(value)
     }
 
     public show(): (T & { select(): void })[] {
@@ -145,9 +219,149 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             })
 
             return new Promise<vscode.MessageItem | T | string | undefined>(resolve => {
-                const d = testMessage.onDidSelectItem(i => (resolve(stringMode ? i?.title : i), d.dispose()))
+                testMessage.onDidSelectItem(i => resolve(stringMode ? i?.title : i))
                 const shownItems = testMessage.show()
                 callback?.(Object.assign(testMessage, { items: shownItems }))
+            })
+        }
+    }
+}
+
+interface OpenDialogOptions extends vscode.OpenDialogOptions {
+    readonly type: 'open'
+}
+
+interface SaveDialogOptions extends vscode.SaveDialogOptions {
+    readonly type: 'save'
+}
+
+type FileSystemDialogOptions = OpenDialogOptions | SaveDialogOptions
+
+interface FileSystemDialogItem {
+    readonly uri: vscode.Uri
+    readonly title: string
+    readonly type: Exclude<vscode.FileType, vscode.FileType.SymbolicLink | vscode.FileType.Unknown>
+}
+
+export class TestFileSystemDialog {
+    private _showing = false
+    private _disposed = false
+    private _selected: vscode.Uri | vscode.Uri[] | undefined
+    private _onDidAcceptItem = new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>()
+    public readonly onDidAcceptItem = this._onDidAcceptItem.event
+
+    public constructor(
+        private readonly items: FileSystemDialogItem[],
+        private readonly options: FileSystemDialogOptions
+    ) {
+        this._selected = options?.defaultUri
+    }
+
+    public get title() {
+        return this.options.title
+    }
+
+    public get visible() {
+        return this._showing
+    }
+
+    public get defaultUri() {
+        return this.options.defaultUri
+    }
+
+    public get filters() {
+        return this.options.filters
+    }
+
+    public get acceptButtonLabel() {
+        if (this.options.type === 'save') {
+            return this.options.saveLabel
+        } else {
+            return this.options.openLabel
+        }
+    }
+
+    public dispose(): void {
+        this._disposed = true
+        this._showing = false
+        this._onDidAcceptItem.dispose()
+    }
+
+    public close(): void {
+        this._selected = undefined
+        this._onDidAcceptItem.fire(this._selected)
+        this.dispose()
+    }
+
+    public accept() {
+        this._onDidAcceptItem.fire(this._selected)
+        this.dispose()
+    }
+
+    public selectItem(item: string | RegExp | FileSystemDialogItem | vscode.Uri): void {
+        if (this._disposed) {
+            throw new Error('Attempted to select from a disposed message')
+        }
+
+        if (item instanceof vscode.Uri) {
+            this._selected = item
+            this.accept()
+            return
+        }
+
+        const selected =
+            typeof item === 'string' || item instanceof RegExp
+                ? this.items.find(i => i.title.match(item))
+                : item instanceof vscode.Uri
+                ? this.items.find(i => i.uri === item)
+                : this.items.find(i => i === item)
+
+        if (!selected) {
+            const items = this.items.map(i => i.title)?.join('\n')
+            throw new Error(`Could not find the specified item: ${item}. Current items:\n${items}`)
+        }
+
+        this._selected = selected.uri
+        this.accept()
+    }
+
+    public show(): (FileSystemDialogItem & { select(): void })[] {
+        this._showing = true
+
+        return this.items.map(item => {
+            return {
+                ...item,
+                select: () => this.selectItem(item),
+            }
+        })
+    }
+
+    public static createOpen(
+        fs: vscode.FileSystem,
+        callback?: (dialog: TestFileSystemDialog) => void
+    ): Window['showOpenDialog'] {
+        return async (options?: vscode.OpenDialogOptions) => {
+            const dialog = new TestFileSystemDialog([], { type: 'open', ...options })
+
+            return new Promise<vscode.Uri[] | undefined>(resolve => {
+                dialog.onDidAcceptItem(item => resolve(item instanceof vscode.Uri ? [item] : item))
+                dialog.show()
+                callback?.(dialog)
+            })
+        }
+    }
+
+    public static createSave(
+        fs: vscode.FileSystem,
+        callback?: (dialog: TestFileSystemDialog) => void
+    ): Window['showSaveDialog'] {
+        return async (options?: vscode.SaveDialogOptions) => {
+            const dialog = new TestFileSystemDialog([], { type: 'save', ...options })
+
+            return new Promise<vscode.Uri | undefined>(resolve => {
+                dialog.onDidAcceptItem(item => resolve(Array.isArray(item) ? item[0] : item))
+                dialog.show()
+                callback?.(dialog)
             })
         }
     }

@@ -22,7 +22,7 @@ import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
-import { createTestWindow } from './shared/vscode/window'
+import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -30,7 +30,6 @@ const globalSandbox = sinon.createSandbox()
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
-let testWindow: ReturnType<typeof createTestWindow> | undefined
 let openExternalStub: sinon.SinonStub<Parameters<typeof vscode['env']['openExternal']>, Thenable<boolean>>
 
 before(async function () {
@@ -69,6 +68,22 @@ beforeEach(async function () {
         new Error('No return value has been set. Use `getOpenExternalStub().resolves` to set one.')
     )
 
+    // Wraps the test function to bubble up errors that occurred in events from `TestWindow`
+    if (this.currentTest?.fn) {
+        const testFn = this.currentTest.fn
+        this.currentTest.fn = async function (done) {
+            return Promise.race([
+                testFn.call(this, done),
+                new Promise<void>((resolve, reject) => {
+                    getTestWindow().onError(({ event, error }) => {
+                        event.dispose()
+                        reject(error)
+                    })
+                }),
+            ])
+        }
+    }
+
     // Enable telemetry features for tests. The metrics won't actually be posted.
     globals.telemetry.telemetryEnabled = true
     globals.telemetry.clearRecords()
@@ -82,7 +97,7 @@ afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
-    testWindow = undefined
+    resetTestWindow()
     globals.templateRegistry.dispose()
     globals.codelensRootRegistry.dispose()
     globalSandbox.restore()
@@ -141,10 +156,6 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
             ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
-}
-
-export function getTestWindow(): ReturnType<typeof createTestWindow> {
-    return (testWindow ??= createTestWindow())
 }
 
 export function getOpenExternalStub(): typeof openExternalStub {

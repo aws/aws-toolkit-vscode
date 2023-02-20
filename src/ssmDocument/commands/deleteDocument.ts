@@ -12,32 +12,24 @@ import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'
 import * as localizedText from '../../shared/localizedText'
-import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
-export async function deleteDocument(
-    node: DocumentItemNodeWriteable,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-) {
+export async function deleteDocument(node: DocumentItemNodeWriteable, commands = Commands.vscode()) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.ssmDocument.deleteDocument.prompt',
-                'Are you sure you want to delete document {0}?',
-                node.documentName
-            ),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize(
+            'AWS.ssmDocument.deleteDocument.prompt',
+            'Are you sure you want to delete document {0}?',
+            node.documentName
+        ),
+        confirm: localizedText.localizedDelete,
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         logger.info('DeleteDocument cancelled')
         telemetry.ssm_deleteDocument.emit({ result: 'Cancelled' })
@@ -75,8 +67,7 @@ export async function deleteDocument(
                 'AWS.message.error.ssmDocument.deleteDocument.could_not_delete',
                 'Could not delete document {0}.',
                 error.message
-            ),
-            vscode.window
+            )
         )
     } finally {
         telemetry.ssm_deleteDocument.emit({ result: result })

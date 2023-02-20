@@ -4,10 +4,11 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { configureResources, ResourcesSettings } from '../../../dynamicResources/commands/configure'
+import { memoizedGetResourceTypes } from '../../../dynamicResources/model/resources'
 import { Settings } from '../../../shared/settings'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('configureCommand', function () {
     let settings: ResourcesSettings
@@ -18,16 +19,11 @@ describe('configureCommand', function () {
         await settings.reset()
     })
 
-    afterEach(function () {
-        sinon.restore()
-    })
-
     it('maps selected services to configuration', async function () {
-        const testItems: vscode.QuickPickItem[] = [{ label: 'Foo' }, { label: 'Bar' }, { label: 'Baz' }]
-
-        sinon.stub(vscode.window, 'showQuickPick' as any).returns(Promise.resolve(testItems))
+        const testItems = Array.from(memoizedGetResourceTypes().keys())
+        getTestWindow().onDidShowQuickPick(picker => picker.acceptItems(...testItems))
         await configureResources(settings)
 
-        assert.deepStrictEqual(settings.get('enabledResources'), ['Foo', 'Bar', 'Baz'])
+        assert.deepStrictEqual(settings.get('enabledResources'), testItems)
     })
 })

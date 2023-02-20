@@ -7,9 +7,12 @@ import * as vscode from 'vscode'
 import { toTitleCase } from '../../../shared/utilities/textUtilities'
 import { Command, Commands } from '../../../shared/vscode/commands2'
 
-type EventEmitters<T> = {
+export type EventEmitters<T> = {
     [P in keyof T]: T[P] extends vscode.Event<any> ? P & string : never
 }[keyof T]
+export type EventEmitters2<T> = {
+    [P in EventEmitters<T>]: T[P] extends vscode.Event<infer U> ? vscode.EventEmitter<U> : never
+}
 
 type InterceptEmitters<T, K extends keyof T> = {
     [P in K as `fire${Capitalize<P & string>}`]: T[P] extends vscode.Event<infer R>

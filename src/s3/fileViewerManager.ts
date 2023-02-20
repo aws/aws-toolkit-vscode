@@ -124,7 +124,6 @@ export class S3FileViewerManager {
     public constructor(
         private readonly clientFactory: S3ClientFactory,
         private readonly fs: VirualFileSystem,
-        private readonly window: typeof vscode.window = vscode.window,
         private readonly settings = PromptSettings.instance,
         private readonly schemes = { read: s3ReadScheme, edit: s3EditScheme }
     ) {
@@ -164,13 +163,13 @@ export class S3FileViewerManager {
             const contentType = mime.contentType(path.extname(fsPath))
             if (!contentType || mime.charset(contentType) !== 'UTF-8') {
                 await vscode.commands.executeCommand('vscode.open', fileUri)
-                return this.window.visibleTextEditors.find(
+                return vscode.window.visibleTextEditors.find(
                     e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
                 )
             }
 
             const document = await vscode.workspace.openTextDocument(fileUri)
-            return await this.window.showTextDocument(document, options)
+            return await vscode.window.showTextDocument(document, options)
         } catch (err) {
             throw ToolkitError.chain(err, 'Failed to open document', { code: 'FailedToOpen' })
         }
@@ -178,7 +177,7 @@ export class S3FileViewerManager {
 
     private async closeEditor(editor: vscode.TextEditor | undefined): Promise<void> {
         if (editor && !editor.document.isClosed) {
-            await this.window.showTextDocument(editor.document, { preserveFocus: false })
+            await vscode.window.showTextDocument(editor.document, { preserveFocus: false })
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         }
     }
@@ -194,7 +193,7 @@ export class S3FileViewerManager {
                 continue
             } else if (activeTab.editor) {
                 getLogger().verbose(`S3FileViewer: Editor already opened, refocusing`)
-                await this.window.showTextDocument(activeTab.editor.document)
+                await vscode.window.showTextDocument(activeTab.editor.document)
             } else {
                 getLogger().verbose(`S3FileViewer: Reopening non-text document`)
                 await vscode.commands.executeCommand('vscode.open', uri)
@@ -326,7 +325,7 @@ export class S3FileViewerManager {
             cancel: localize('AWS.generic.cancel', 'Cancel'),
         }
 
-        if (!(await showConfirmationMessage(args, this.window))) {
+        if (!(await showConfirmationMessage(args))) {
             getLogger().debug(`FileViewer: User cancelled download`)
             return false
         }
@@ -347,7 +346,7 @@ export class S3FileViewerManager {
         const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show again")
         const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
-        await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
+        await vscode.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
             if (selection === dontShow) {
                 return this.settings.disablePrompt(promptOnEditKey)
             }
