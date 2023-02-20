@@ -7,13 +7,13 @@ import { isValidCodeWhispererConnection } from '../../codewhisperer/util/authUti
 import { Auth } from '../../credentials/auth'
 
 /*
-   In order to run codewhisperer integration tests user must:
+In order to run codewhisperer integration tests user must:
    
     1) run using VSC launch config.
     2) have a valid codewhisperer connection.
 
-   Test cases will skip if the above criteria are not met.
-   If user has an expired connection they must reauthenticate prior to running tests.
+Test cases will skip if the above criteria are not met.
+If user has an expired connection they must reauthenticate prior to running tests.
 */
 
 async function getValidConnection() {

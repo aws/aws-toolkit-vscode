@@ -82,13 +82,13 @@ describe('CodeWhisperer security scan', async function () {
     }
 
     /*
-        securityJobSetup: combines steps 1 and 2 in startSecurityScan:
-        
-            Step 1: Generate context truncations
-            Step 2: Get presigned Url, upload and clean up
+    securityJobSetup: combines steps 1 and 2 in startSecurityScan:
+    
+        Step 1: Generate context truncations
+        Step 2: Get presigned Url, upload and clean up
 
-        returns artifactMap and projectPath
-     */
+    returns artifactMap and projectPath
+    */
     async function securityJobSetup(editor: vscode.TextEditor) {
         const dependencyGraph = getDependencyGraph(editor.document.languageId)
         if (dependencyGraph === undefined) {

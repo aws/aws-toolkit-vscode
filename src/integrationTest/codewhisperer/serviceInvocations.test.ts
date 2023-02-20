@@ -87,7 +87,6 @@ describe('CodeWhisperer service invocation', async function () {
         )
 
         await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, client, config)
-
         //wait for 5 seconds to allow time for response to be generated
         await sleep(5000)
 
