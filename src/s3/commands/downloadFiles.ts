@@ -76,7 +76,7 @@ async function downloadS3File(
         ;(options.window ?? Window.vscode()).withProgress(
             {
                 location: options.progressLocation,
-                title: localize('AWS.s3.downloadFile.progressTitle', 'Downloading {0}...', file.name),
+                title: localize('AWS.s3.downloadFile.progressTitle', 'Downloading "{0}"...', file.name),
                 cancellable: !!options.timeout,
             },
             (progress, token) => {
@@ -137,11 +137,12 @@ async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, 
 export async function downloadFilesCommand(
     node: S3FolderNode | S3FileNode,
     allNodes: S3FileNode[] = [],
+    window = globals.window,
     outputChannel = globals.outputChannel
 ): Promise<void> {
     let files: S3File[]
     await telemetry.s3_downloadObject.run(async () => {
-        let saveLocation = await promptForSaveFolderLocation()
+        let saveLocation = await promptForSaveFolderLocation(window)
         if (!saveLocation) {
             throw new CancellationError('user')
         }
@@ -210,7 +211,7 @@ export async function downloadFilesCommand(
                 )
             }
 
-            const response = await globals.window.showErrorMessage(
+            const response = await window.showErrorMessage(
                 localize('AWS.s3.downLoad.retryPrompt', 'S3 Download: {0}/{1} failed.', failed.length, files.length),
                 localizedText.retry,
                 localizedText.skip
