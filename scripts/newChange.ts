@@ -4,8 +4,8 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
 import { join } from 'path'
+import * as fs from 'fs-extra'
 import * as readlineSync from 'readline-sync'
 import { v4 as uuid } from 'uuid'
 
