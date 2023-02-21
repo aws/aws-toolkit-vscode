@@ -20,18 +20,33 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { getLogger } from '../../shared/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { s3PresigndUrlHelpUrl } from '../../shared/constants'
+import { S3FolderNode } from '../explorer/s3FolderNode'
+import { S3BucketNode } from '../explorer/s3BucketNode'
 
 const localize = nls.loadMessageBundle()
 
 export async function presignedURLCommand(
-    node?: S3FileNode,
+    node?: S3FileNode | S3FolderNode | S3BucketNode,
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
     await telemetry.s3_copyUrl.run(async span => {
         span.record({ presigned: true })
+        let nodeInfo: PresignedUrlWizardOptions | undefined
+        if (node) {
+            nodeInfo = {
+                region: node.bucket.region,
+                bucketname: node.bucket.name,
+            }
+            if (node instanceof S3FileNode) {
+                nodeInfo.key = node.file.key
+            }
+            if (node instanceof S3FolderNode) {
+                nodeInfo.folderPrefix = node.folder.path
+            }
+        }
 
-        const response = await new PresignedUrlWizard(node).run()
+        const response = await new PresignedUrlWizard(nodeInfo).run()
         if (!response) {
             getLogger().debug('s3: PresignedUrlWizard returned undefined. User cancelled.')
             throw new CancellationError('user')
@@ -63,17 +78,28 @@ function validateTime(time: string): string | undefined {
 
 export interface PresignedUrlWizardState {
     region: string
+    folderPrefix?: string
     signedUrlParams: SignedUrlRequest
 }
 
+export interface PresignedUrlWizardOptions {
+    region: string
+    bucketname: string
+    key?: string
+    folderPrefix?: string
+}
+
 export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
-    constructor(node?: S3FileNode) {
+    constructor(nodeInfo?: PresignedUrlWizardOptions) {
         // If command is initiated from a S3FileNode, initialize state with region and bucket name
         // Prompters by default are skipped when the data for their form field is present
         super({
             initState: {
-                region: node?.bucket.region,
-                signedUrlParams: node ? ({ bucketName: node.bucket.name } as SignedUrlRequest) : undefined,
+                region: nodeInfo?.region,
+                folderPrefix: nodeInfo?.folderPrefix,
+                signedUrlParams: nodeInfo
+                    ? ({ bucketName: nodeInfo.bucketname, key: nodeInfo.key } as SignedUrlRequest)
+                    : undefined,
             },
         })
         this.form.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
@@ -82,18 +108,18 @@ export class PresignedUrlWizard extends Wizard<PresignedUrlWizardState> {
             createBucketPrompter(assertDefined(region, 'region'))
         )
 
-        if (node) {
-            this.form.signedUrlParams.key.setDefault(node.file.key)
-        }
-
-        this.form.signedUrlParams.key.bindPrompter(
-            ({ region, signedUrlParams }) =>
-                createS3FilePrompter(
-                    assertDefined(region, 'region'),
-                    assertDefined(signedUrlParams?.bucketName, 'bucketName'),
-                    assertDefined(signedUrlParams?.operation, 'operation')
-                ),
-            node ? { showWhen: state => state.signedUrlParams?.operation === 'putObject' } : undefined
+        this.form.signedUrlParams.key.bindPrompter(({ region, signedUrlParams }) =>
+            createS3FilePrompter(
+                assertDefined(region, 'region'),
+                assertDefined(signedUrlParams?.bucketName, 'bucketName'),
+                assertDefined(signedUrlParams?.operation, 'operation'),
+                nodeInfo?.folderPrefix
+            ).transform(key => {
+                if (nodeInfo?.folderPrefix) {
+                    return nodeInfo.folderPrefix + key
+                }
+                return key
+            })
         )
 
         this.form.signedUrlParams.time.bindPrompter(({ signedUrlParams }) =>
@@ -147,9 +173,9 @@ function createBucketPrompter(region: string) {
     return createQuickPick(items, { title: 'Select an S3 Bucket', buttons: createCommonButtons(s3PresigndUrlHelpUrl) })
 }
 
-function createS3FilePrompter(region: string, bucket: string, operation: string) {
+function createS3FilePrompter(region: string, bucket: string, operation: string, folderPath?: string) {
     if (operation === 'getObject') {
-        const items = getS3Files(region, bucket)
+        const items = getS3Files(region, bucket, folderPath)
         return createQuickPick(items, {
             title: 'Choose the file for the presigned URL',
             buttons: createCommonButtons(s3PresigndUrlHelpUrl),
@@ -161,9 +187,9 @@ function createS3FilePrompter(region: string, bucket: string, operation: string)
     })
 }
 
-async function getS3Files(region: string, bucket: string) {
+async function getS3Files(region: string, bucket: string, folderPath?: string) {
     const client = new DefaultS3Client(region)
-    const files = (await client.listFiles({ bucketName: bucket })).files
+    const files = (await client.listFiles({ bucketName: bucket, folderPath })).files
     const items: DataQuickPickItem<string>[] = files.map(f => {
         return {
             label: f.name,

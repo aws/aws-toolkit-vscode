@@ -287,6 +287,7 @@ export class DefaultS3Client {
             Key: request.key,
             Body: request.body,
             Expires: time,
+            ContentType: 'application/octet-stream',
         })
         return url
     }

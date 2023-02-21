@@ -1644,7 +1644,7 @@
                 },
                 {
                     "command": "aws.s3.presignedURL",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FileNode|awsS3FolderNode|awsS3BucketNode)$/",
                     "group": "2@4"
                 },
                 {
