@@ -11,6 +11,7 @@ import {
     getFilesToUpload,
     promptUserForBucket,
     uploadFileCommand,
+    BucketQuickPickItem,
 } from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
@@ -28,11 +29,12 @@ describe('uploadFileCommand', function () {
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
     const statFile: FileSizeBytes = _file => sizeBytes
+    const bucketResponse = { label: 'label', bucket: { Name: bucketName } }
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
-    let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | 'cancel' | 'back'>
+    let getBucket: (s3client: S3Client, window?: Window) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
     let mockedUpload: S3.ManagedUpload
@@ -136,7 +138,7 @@ describe('uploadFileCommand', function () {
 
             getBucket = s3Client => {
                 return new Promise((resolve, reject) => {
-                    resolve({ Name: bucketName })
+                    resolve(bucketResponse)
                 })
             }
         })
@@ -211,7 +213,7 @@ describe('uploadFileCommand', function () {
 
     getBucket = s3Client => {
         return new Promise((resolve, reject) => {
-            resolve({ Name: bucketName })
+            resolve(bucketResponse)
         })
     }
 
@@ -369,7 +371,7 @@ describe('promptUserForBucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
         const response = await promptUserForBucket(instance(s3), window, promptSelect)
-        assert.deepStrictEqual(response, buckets[0])
+        assert.deepStrictEqual(response, selection)
     })
 
     it('Returns "back" when selected', async function () {

@@ -398,7 +398,7 @@ async function uploadWithProgress(
     return (request.ongoingUpload = undefined)
 }
 
-interface BucketQuickPickItem extends vscode.QuickPickItem {
+export interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
     folder?: Folder | undefined
 }
