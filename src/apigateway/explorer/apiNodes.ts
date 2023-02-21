@@ -18,7 +18,7 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
     ) {
         super('')
         this.update(api)
-        this.contextValue = 'awsApiGatewayNode'
+        this.contextValue = 'awsApiGatewayNode-AN'
     }
 
     public update(api: RestApi): void {

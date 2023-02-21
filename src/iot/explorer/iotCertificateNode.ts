@@ -25,7 +25,7 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-const contextBase = 'awsIotCertificateNode'
+const contextBase = 'awsIotCertificateNode-AN'
 /**
  * Represents an IoT Certificate that may have either a Thing Node or the
  * Certificate Folder Node as a parent.

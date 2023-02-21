@@ -37,7 +37,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
         this.iconPath = getIcon('aws-s3-bucket')
-        this.contextValue = 'awsS3BucketNode'
+        this.contextValue = 'awsS3BucketNode-AN'
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

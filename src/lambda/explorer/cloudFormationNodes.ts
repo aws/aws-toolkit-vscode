@@ -21,7 +21,7 @@ import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { getIcon } from '../../shared/icons'
 
-export const contextValueCloudformationLambdaFunction = 'awsCloudFormationFunctionNode'
+export const contextValueCloudformationLambdaFunction = 'awsCloudFormationFunctionNode-AN'
 
 export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
@@ -73,7 +73,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
-        this.contextValue = 'awsCloudFormationNode'
+        this.contextValue = 'awsCloudFormationNode-AN'
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.iconPath = getIcon('aws-cloudformation-stack')
     }

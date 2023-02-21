@@ -42,7 +42,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
         this.iconPath = getIcon('aws-iot-policy')
-        this.contextValue = 'awsIotPolicyNode.Certificates'
+        this.contextValue = 'awsIotPolicyNode-AN.Certificates'
     }
 
     public get arn(): string {
@@ -66,7 +66,7 @@ export class IotPolicyCertNode extends IotPolicyNode {
         protected override readonly workspace = Workspace.vscode()
     ) {
         super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, workspace)
-        this.contextValue = 'awsIotPolicyNode.Certificates'
+        this.contextValue = 'awsIotPolicyNode-AN.Certificates'
     }
 }
 
@@ -81,7 +81,7 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         protected override readonly workspace = Workspace.vscode()
     ) {
         super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, workspace)
-        this.contextValue = 'awsIotPolicyNode.WithVersions'
+        this.contextValue = 'awsIotPolicyNode-AN.WithVersions'
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }
 

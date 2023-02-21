@@ -19,7 +19,7 @@ import { getIcon } from '../../shared/icons'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
-const contextBase = 'awsAppRunnerServiceNode'
+const contextBase = 'awsAppRunnerServiceNode-AN'
 
 const operationStatus = {
     START_DEPLOYMENT: localize('AWS.apprunner.operationStatus.deploy', 'Deploying...'), // eslint-disable-line @typescript-eslint/naming-convention
