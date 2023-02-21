@@ -17,7 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { S3Client } from '../../shared/clients/s3Client'
+import { Folder, S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -36,6 +36,7 @@ export interface FileSizeBytes {
 
 interface UploadRequest {
     bucketName: string
+    folderPath?: string
     key: string
     fileLocation: vscode.Uri
     fileSizeBytes: number
@@ -149,14 +150,17 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketName = bucketResponse.Name
+            const bucketName = bucketResponse.bucket!.Name
             if (!bucketName) {
                 throw Error(`bucketResponse is not a S3.Bucket`)
             }
 
             uploadRequests.push(
                 ...filesToUpload.map(file => {
-                    const key = path.basename(file.fsPath)
+                    const key =
+                        bucketResponse.folder !== undefined
+                            ? bucketResponse.folder.path + path.basename(file.fsPath)
+                            : path.basename(file.fsPath)
                     return fileToUploadRequest(bucketName, key, file)
                 })
             )
@@ -289,7 +293,6 @@ async function uploadBatchOfFiles(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel
                 )
-
                 let remainder = 0
                 let lastLoaded = 0
                 // TODO: don't use `withProgress`, it makes it hard to have control over the individual outputs
@@ -385,6 +388,7 @@ async function uploadWithProgress(
 
 interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
+    folder?: Folder | undefined
 }
 
 // TODO:: extract and reuse logic from sam deploy wizard (bucket selection)
@@ -401,7 +405,7 @@ export async function promptUserForBucket(
     window = Window.vscode(),
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
-): Promise<S3.Bucket | 'cancel' | 'back'> {
+): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
     let allBuckets: S3.Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
@@ -428,15 +432,29 @@ export async function promptUserForBucket(
         }
     })
 
+    const lastExpandedFolder = globals.context.globalState.get<S3FolderNode | undefined>('aws.lastTouchedS3Folder')
+    let lastFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastExpandedFolder) {
+        lastFolderItem = {
+            label: lastExpandedFolder.folder.name,
+            description: 'last opened S3 folder',
+            bucket: { Name: lastExpandedFolder.bucket.name },
+            folder: lastExpandedFolder.folder,
+        }
+    }
+    const items = [...bucketItems, createNewBucket]
+    if (lastFolderItem !== undefined) {
+        items.unshift(lastFolderItem)
+    }
     const picker = createQuickPick({
         options: {
             canPickMany: false,
             ignoreFocusOut: true,
-            title: localize('AWS.message.selectBucket', 'Select an S3 bucket to upload to'),
+            title: localize('AWS.message.selectBucket', 'Select an S3 bucket or folder to upload to'),
             step: 2,
             totalSteps: 2,
         },
-        items: [...bucketItems, createNewBucket],
+        items,
         buttons: [vscode.QuickInputButtons.Back],
     })
     const response = verifySinglePickerOutput(
@@ -469,7 +487,7 @@ export async function promptUserForBucket(
             return promptUserForBucket(s3client)
         }
     } else {
-        return response.bucket
+        return response
     }
     return 'cancel'
 }
