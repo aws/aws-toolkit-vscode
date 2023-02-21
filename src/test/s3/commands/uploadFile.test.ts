@@ -30,11 +30,20 @@ describe('uploadFileCommand', function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
     const statFile: FileSizeBytes = _file => sizeBytes
     const bucketResponse = { label: 'label', bucket: { Name: bucketName } }
+    const folderResponse = {
+        label: 'label',
+        bucket: { Name: bucketName },
+        folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
+    }
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
     let getBucket: (s3client: S3Client, window?: Window) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
+    let getBucketFolderResponse: (
+        s3client: S3Client,
+        window?: Window
+    ) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
     let mockedUpload: S3.ManagedUpload
@@ -217,6 +226,12 @@ describe('uploadFileCommand', function () {
         })
     }
 
+    getBucketFolderResponse = s3Client => {
+        return new Promise((resolve, reject) => {
+            resolve(folderResponse)
+        })
+    }
+
     it('successfully upload file', async function () {
         when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
         when(mockedUpload.promise()).thenResolve()
@@ -236,6 +251,29 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            `Uploaded 1/1 files`,
+        ])
+    })
+
+    it('successfully upload file to selected folder', async function () {
+        when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+        when(mockedUpload.promise()).thenResolve()
+
+        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+
+        await uploadFileCommand(
+            instance(s3),
+            fileLocation,
+            statFile,
+            getBucketFolderResponse,
+            getFile,
+            window,
+            outputChannel,
+            commands
+        )
+
+        assert.deepStrictEqual(outputChannel.lines, [
+            'Uploading file file.jpg to s3://bucket-name/folderA/file.jpg',
             `Uploaded 1/1 files`,
         ])
     })
