@@ -43,10 +43,10 @@ describe('PresignedUrlWizard', function () {
         tester = createWizardTester(new PresignedUrlWizard(folderNodeInfo))
         tester.region.assertDoesNotShow()
         tester.signedUrlParams.bucketName.assertDoesNotShow()
-        tester.signedUrlParams.key.assertShow()
 
         tester.signedUrlParams.operation.assertShowFirst()
-        tester.signedUrlParams.time.assertShowSecond()
+        tester.signedUrlParams.key.assertShowSecond()
+        tester.signedUrlParams.time.assertShowThird()
     })
 
     it('skips key input - PUT url, from file node', function () {
