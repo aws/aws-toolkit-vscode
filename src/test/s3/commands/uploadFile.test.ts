@@ -35,15 +35,19 @@ describe('uploadFileCommand', function () {
         bucket: { Name: bucketName },
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
+    const getBucketFolderResponse: (
+        s3client: S3Client,
+        window?: Window
+    ) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = s3Client => {
+        return new Promise((resolve, reject) => {
+            resolve(folderResponse)
+        })
+    }
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
     let getBucket: (s3client: S3Client, window?: Window) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
-    let getBucketFolderResponse: (
-        s3client: S3Client,
-        window?: Window
-    ) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
     let mockedUpload: S3.ManagedUpload
@@ -223,12 +227,6 @@ describe('uploadFileCommand', function () {
     getBucket = s3Client => {
         return new Promise((resolve, reject) => {
             resolve(bucketResponse)
-        })
-    }
-
-    getBucketFolderResponse = s3Client => {
-        return new Promise((resolve, reject) => {
-            resolve(folderResponse)
         })
     }
 
