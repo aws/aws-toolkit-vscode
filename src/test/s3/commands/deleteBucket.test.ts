@@ -36,9 +36,7 @@ describe('deleteBucketCommand', function () {
 
         verify(s3.deleteBucket(deepEqual({ bucketName }))).once()
 
-        getTestWindow().getFirstMessage().assertInfo('Deleting bucket-name...')
-        // assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        // assert.strictEqual(window.progress.options?.title, )
+        getTestWindow().getFirstMessage().assertProgress('Deleting bucket-name...')
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

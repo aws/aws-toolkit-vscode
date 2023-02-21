@@ -27,6 +27,7 @@ import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
 const globalSandbox = sinon.createSandbox()
+const maxTestDuration = 30_000
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
@@ -74,7 +75,7 @@ beforeEach(async function () {
         this.currentTest.fn = async function (done) {
             return Promise.race([
                 testFn.call(this, done),
-                new Promise<void>((resolve, reject) => {
+                new Promise<void>((_, reject) => {
                     getTestWindow().onError(({ event, error }) => {
                         event.dispose()
                         reject(error)
@@ -83,6 +84,9 @@ beforeEach(async function () {
             ])
         }
     }
+
+    // Set a hard time limit per-test so CI doesn't hang
+    this.currentTest?.timeout(maxTestDuration)
 
     // Enable telemetry features for tests. The metrics won't actually be posted.
     globals.telemetry.telemetryEnabled = true

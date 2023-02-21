@@ -73,3 +73,38 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Testing AWS SDK client functionality is cumbersome, verbose, and low-yield.
 -   Test code uses multiple “mocking” frameworks, which is confusing, error-prone, hard to onboard, and hard to use.
 -   Coverage not counted for integ tests (because of unresolved tooling issue).
+
+## Window
+
+Certain VS Code API calls are not easily controlled programtically. `vscode.window` is a major source of these functions as it is closely related to the UI. To facillitate some semblance of UI testing, all unit tests have access to a proxied `vscode.window` object via `getTestWindow()`.
+
+### Inspecting State
+
+The test window will capture relevant UI state that can be inspected at test time. For example, you can check to see if any messages were shown by looking at `getTestWindow().shownMessages` which is an array of message objects.
+
+Some VS Code API operations do not expose "native" UI elements that can be inspected. In these cases, in-memory test versions have been created. In every other case the native VS Code API is used directly and extended to make them more testable.
+
+### Event-Driven Interactions
+
+Checking the state works well if user interactions are not required by the code being tested. But many times the code will be waiting for the user's response.
+
+To handle this, test code can register event handler that listen for when a certain type of UI element is shown. For example, if we wanted to always accept the first item of a quick pick we can do this:
+
+```ts
+getTestWindow().onDidShowQuickPick(async picker => {
+    // Some pickers load items asychronously
+    // Wait until the picker is not busy before accepting an item
+    await picker.untilReady()
+    picker.acceptItem(picker.items[0])
+})
+```
+
+Utility functions related to events can be used to iterate over captured UI elements:
+
+```ts
+const pickers = captureEvent(getTestWindow().onDidShowQuickPick)
+const firstPicker = await pickers.next()
+const secondPicker = await pickers.next()
+```
+
+Exceptions thrown within one of these handlers will cause the current test to fail. This allows you to make assertions within the callback without worrying about causing the test to hang.

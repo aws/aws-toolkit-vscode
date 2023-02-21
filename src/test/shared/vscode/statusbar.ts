@@ -68,6 +68,11 @@ export class TestStatusBar implements Pick<typeof vscode.window, 'setStatusBarMe
         return [...this.#items]
     }
 
+    /**
+     * Returns the text of all _visible_ status bar items
+     *
+     * This is sorted in the order they would normally appear, i.e. left to right
+     */
     public get messages(): string[] {
         return this.#items.filter(i => i.visible).map(i => i.text)
     }

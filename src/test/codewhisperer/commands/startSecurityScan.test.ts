@@ -154,7 +154,6 @@ describe('startSecurityScan', function () {
         sinon.stub(got, 'default').resolves({ statusCode: 200 })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-        const warningSpy = sinon.spy(vscode.window, 'showWarningMessage')
 
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
@@ -164,6 +163,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        assert.ok(warningSpy.notCalled)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
     })
 })
