@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { isKeyOf } from '../../../shared/utilities/tsUtils'
 import { SeverityLevel, ShownMessage, TestFileSystemDialog, TestMessage } from './message'
 import { createTestInputBox, createTestQuickPick, TestInputBox, TestQuickPick } from './quickInput'
 import { TestStatusBar } from './statusbar'
@@ -17,16 +18,15 @@ export interface TestWindow {
     readonly shownDialogs: TestFileSystemDialog[]
     readonly shownQuickPicks: TestQuickPick[]
     readonly shownInputBoxes: TestInputBox[]
-    onDidShowDialog: vscode.Event<TestFileSystemDialog>
-    onDidShowMessage: vscode.Event<ShownMessage>
-    onDidShowQuickPick: vscode.Event<TestQuickPick>
-    onDidShowInputBox: vscode.Event<TestInputBox>
+    readonly onDidShowDialog: vscode.Event<TestFileSystemDialog>
+    readonly onDidShowMessage: vscode.Event<ShownMessage>
+    readonly onDidShowQuickPick: vscode.Event<TestQuickPick>
+    readonly onDidShowInputBox: vscode.Event<TestInputBox>
+    readonly onError: vscode.Event<{ event: vscode.Disposable; error: unknown }>
     waitForMessage(expected: string | RegExp, timeout?: number): Promise<ShownMessage>
     getFirstMessage(): ShownMessage
     getSecondMessage(): ShownMessage
     getThirdMessage(): ShownMessage
-    onError: vscode.Event<{ event: vscode.Disposable; error: unknown }>
-    // useFileSystem(fs: vscode.FileSystem): void
     dispose(): void
 }
 
@@ -85,7 +85,6 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
         return picker
     }
 
-    // TODO: handle string overload
     function showQuickPick(
         this: Window,
         ...args: Parameters<Window['showQuickPick']>
@@ -97,10 +96,22 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
             picker.onDidChangeSelection(items => items.forEach(onDidSelectItem))
         }
 
+        const stringItem = Symbol()
+        const setItems = (arg: string[] | vscode.QuickPickItem[]) => {
+            picker.items = arg.map(v =>
+                typeof v !== 'string'
+                    ? v
+                    : {
+                          label: v,
+                          [stringItem]: v,
+                      }
+            )
+        }
+
         if (Array.isArray(items)) {
-            picker.items = items
+            setItems(items)
         } else {
-            items.then(val => (picker.items = val))
+            items.then(setItems)
         }
 
         picker.canSelectMany = options?.canPickMany ?? false
@@ -113,11 +124,8 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
         return new Promise((resolve, reject) => {
             picker.onDidHide(() => resolve(undefined))
             picker.onDidAccept(() => {
-                if (picker.canSelectMany) {
-                    resolve(picker.selectedItems as any)
-                } else {
-                    resolve(picker.selectedItems[0])
-                }
+                const selected = picker.selectedItems.map(i => (isKeyOf(stringItem, i) ? (i[stringItem] as string) : i))
+                resolve(picker.canSelectMany ? (selected as any) : (selected[0] as any))
             })
 
             picker.show()
@@ -235,7 +243,8 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
 
         const message = shownMessages[index]
         if (message === undefined) {
-            throw new Error(`No message found at index ${index}. Current state:\n${renderMessages(shownMessages)}`)
+            const currentState = shownMessages.map(m => m.printDebug()).join('\n')
+            throw new Error(`No message found at index ${index}. Current state:\n${currentState}`)
         }
 
         return message
@@ -301,10 +310,6 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
             }
         },
     }) as Window & TestWindow
-}
-
-function renderMessages(messages: ShownMessage[]) {
-    return messages.map(m => m.printDebug()).join('\n')
 }
 
 let testWindow: ReturnType<typeof createTestWindow> | undefined
