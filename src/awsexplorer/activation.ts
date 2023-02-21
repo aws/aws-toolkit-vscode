@@ -50,7 +50,10 @@ export async function activate(args: {
     })
     view.onDidExpandElement(element => {
         if (element.element instanceof S3FolderNode) {
-            globals.context.globalState.update('aws.lastTouchedS3Folder', element.element)
+            globals.context.globalState.update('aws.lastTouchedS3Folder', {
+                bucket: element.element.bucket,
+                folder: element.element.folder,
+            })
         }
     })
     globals.context.subscriptions.push(view)

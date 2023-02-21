@@ -17,7 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { Folder, S3Client } from '../../shared/clients/s3Client'
+import { Bucket, Folder, S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -36,7 +36,6 @@ export interface FileSizeBytes {
 
 interface UploadRequest {
     bucketName: string
-    folderPath?: string
     key: string
     fileLocation: vscode.Uri
     fileSizeBytes: number
@@ -107,6 +106,12 @@ export async function uploadFileCommand(
                 return fileToUploadRequest(node!.bucket.name, key, file)
             })
         )
+        if (node instanceof S3FolderNode) {
+            globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                bucket: node.bucket,
+                folder: node.folder,
+            })
+        }
     } else {
         while (true) {
             const filesToUpload = await getFile(document, window)
@@ -164,6 +169,13 @@ export async function uploadFileCommand(
                     return fileToUploadRequest(bucketName, key, file)
                 })
             )
+
+            if (bucketResponse.folder) {
+                globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                    bucket: bucketResponse.bucket,
+                    folder: bucketResponse.folder,
+                })
+            }
 
             break
         }
@@ -391,6 +403,11 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
     folder?: Folder | undefined
 }
 
+interface SavedFolder {
+    bucket: Bucket
+    folder: Folder
+}
+
 // TODO:: extract and reuse logic from sam deploy wizard (bucket selection)
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
@@ -432,20 +449,41 @@ export async function promptUserForBucket(
         }
     })
 
-    const lastExpandedFolder = globals.context.globalState.get<S3FolderNode | undefined>('aws.lastTouchedS3Folder')
+    const lastTouchedFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastTouchedS3Folder')
     let lastFolderItem: BucketQuickPickItem | undefined = undefined
-    if (lastExpandedFolder) {
+    if (lastTouchedFolder) {
         lastFolderItem = {
-            label: lastExpandedFolder.folder.name,
-            description: 'last opened S3 folder',
-            bucket: { Name: lastExpandedFolder.bucket.name },
-            folder: lastExpandedFolder.folder,
+            label: `FOLDER: ${lastTouchedFolder.folder.name}`,
+            description: '(last opened S3 folder)',
+            bucket: { Name: lastTouchedFolder.bucket.name },
+            folder: lastTouchedFolder.folder,
         }
     }
-    const items = [...bucketItems, createNewBucket]
-    if (lastFolderItem !== undefined) {
-        items.unshift(lastFolderItem)
+
+    const lastUploadedToFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastUploadedToS3Folder')
+    let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastUploadedToFolder) {
+        lastUploadedFolderItem = {
+            label: `FOLDER: ${lastUploadedToFolder.folder.name}`,
+            description: '(last uploaded-to S3 folder)',
+            bucket: { Name: lastUploadedToFolder.bucket.name },
+            folder: lastUploadedToFolder.folder,
+        }
     }
+
+    const folderItems = []
+    if (lastUploadedFolderItem !== undefined) {
+        folderItems.push(lastUploadedFolderItem)
+    }
+    // de-dupe if folders are the same
+    if (
+        lastFolderItem !== undefined &&
+        (lastUploadedFolderItem === undefined || lastFolderItem.folder?.path !== lastUploadedFolderItem.folder?.path)
+    ) {
+        folderItems.push(lastFolderItem)
+    }
+
+    const items = [...folderItems, ...bucketItems, createNewBucket]
     const picker = createQuickPick({
         options: {
             canPickMany: false,
