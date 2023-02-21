@@ -309,3 +309,12 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
         },
     }
 }
+
+export function captureEventOnce<T>(event: vscode.Event<T>): Promise<T> {
+    return new Promise<T>(resolve => {
+        const sub = event(val => {
+            sub.dispose()
+            resolve(val)
+        })
+    })
+}

@@ -189,7 +189,7 @@ export function createTestWindow(fs = vscode.workspace.fs): Window & TestWindow 
                 },
             }
             const tokenSource = new vscode.CancellationTokenSource()
-            const cancelItem = 'Cancel'
+            const cancelItem: vscode.MessageItem = { title: 'Cancel' }
             const items = options.cancellable ? [cancelItem] : []
             const showMessage = TestMessage.create(SeverityLevel.Information, message => {
                 progress.notification = message

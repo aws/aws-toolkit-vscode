@@ -4,68 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { toTitleCase } from '../../../shared/utilities/textUtilities'
 import { Command, Commands } from '../../../shared/vscode/commands2'
 
-export type EventEmitters<T> = {
+type Events<T> = {
     [P in keyof T]: T[P] extends vscode.Event<any> ? P & string : never
 }[keyof T]
-export type EventEmitters2<T> = {
-    [P in EventEmitters<T>]: T[P] extends vscode.Event<infer U> ? vscode.EventEmitter<U> : never
-}
-
-type InterceptEmitters<T, K extends keyof T> = {
-    [P in K as `fire${Capitalize<P & string>}`]: T[P] extends vscode.Event<infer R>
-        ? vscode.EventEmitter<R>['fire']
-        : never
-} & T // prettier really wants to keep this T separate
-type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
-type NoNever<T> = Pick<T, FilteredKeys<T>>
-
-/**
- * Adds references to event emitters for all known public events as specified by the generic K type.
- * New methods are shown with 'fire' prepended to the capitalized event name.
- */
-export type ExposeEmitters<T, K extends EventEmitters<T>> = NoNever<InterceptEmitters<T, K>>
-
-/**
- * Exposes private event emitters of the object. This should exclusively be used for testing purposes since there
- * is no guarantee that the emitters are named 1:1 with their public counterparts. The majority of UI events in
- * VS code are triggered from user interaction, so firing these programmatically should be safe. It is highly
- * recommended to limit the amount of accumulated state when firing these events.
- *
- * @params obj Target object
- * @params keys Events to expose emitters for
- * @returns The extended object with {@link ExposeEmitters exposed methods}
- * @throws Throws an error listing any events that did not have matching emitters
- */
-export function exposeEmitters<T extends Record<string, any>, K extends EventEmitters<T>>(
-    obj: T,
-    keys: K[]
-): ExposeEmitters<T, K> {
-    Object.entries(obj).forEach(([key, value]) => {
-        if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
-            const targetEvent = key.slice(1).replace('Emitter', '')
-            keys = keys.filter(k => k !== targetEvent)
-            Object.assign(obj, { [`fire${toTitleCase(targetEvent)}`]: value.fire.bind(value) })
-        }
-    })
-
-    // Patch in emitters if they weren't found
-    // The patched `fire___` method won't work on listeners
-    // subscribed prior to `exposeEmitters` being called
-    for (const key of keys) {
-        const event = obj[key] as vscode.Event<any>
-        const emitter = new vscode.EventEmitter<T[K]>()
-        event(v => emitter.fire(v))
-
-        Object.assign(obj, {
-            [key]: emitter.event,
-            [`fire${toTitleCase(key)}`]: emitter.fire.bind(emitter),
-        })
-    }
-
-    return obj as any
+export type EventEmitters<T> = {
+    [P in Events<T>]: T[P] extends vscode.Event<infer U> ? vscode.EventEmitter<U> : never
 }
 
 /**

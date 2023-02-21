@@ -6,53 +6,43 @@
 import * as vscode from 'vscode'
 import { AssertionError } from 'assert'
 import { toRecord } from '../../../shared/utilities/collectionUtils'
-import { EventEmitters2 } from './testUtils'
+import { EventEmitters } from './testUtils'
 import { isKeyOf, isNonNullable, keys } from '../../../shared/utilities/tsUtils'
+import { captureEventOnce } from '../../testUtil'
 
+/**
+ * A list of events to be proxied on input boxes
+ */
 const inputEvents = ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'] as const
 
+/**
+ * A list of events to be proxied on quick picks
+ */
 const pickerEvents = [
     'onDidAccept',
-    // 'onDidChangeValue',
+    'onDidChangeValue',
     'onDidTriggerButton',
     // 'onDidChangeActive',
     // 'onDidChangeSelection',
     // 'onDidHide',
 ] as const
 
-/* Waits until the picker is both enabled and not busy. */
-function whenReady(
+function untilReady(
     quickInput: vscode.QuickInput,
     extraEmitters: ReturnType<typeof createExtraEmitters>
-): Promise<void[]> {
+): Promise<unknown[]> {
     return Promise.all([
-        new Promise<void>(r => {
-            if (quickInput.enabled) {
-                return r()
-            }
-
-            const d = extraEmitters.onDidChangeEnablement.event(e => e && d.dispose(), r())
-        }),
-        new Promise<void>(r => {
-            if (!quickInput.busy) {
-                return r()
-            }
-
-            const d = extraEmitters.onDidChangeBusy.event(e => !e && (d.dispose(), r()))
-        }),
+        quickInput.enabled ? Promise.resolve() : captureEventOnce(extraEmitters.onDidChangeEnablement.event),
+        !quickInput.busy ? Promise.resolve() : captureEventOnce(extraEmitters.onDidChangeBusy.event),
     ])
 }
 
 // 'activeItems' will change twice after applying a filter
 /* Waits until the filter has been applied to the picker */
 async function whenAppliedFilter(picker: vscode.QuickPick<vscode.QuickPickItem>): Promise<void> {
-    await new Promise<void>(r => {
-        const d = picker.onDidChangeActive(() => (d.dispose(), r()))
-    })
+    await captureEventOnce(picker.onDidChangeActive)
     await new Promise(r => setImmediate(r))
-    await new Promise<void>(r => {
-        const d = picker.onDidChangeActive(() => (d.dispose(), r()))
-    })
+    await captureEventOnce(picker.onDidChangeActive)
 }
 
 /* Simulates the filtering of items. We do not have access to the picker's internal representation */
@@ -131,12 +121,15 @@ export class PickerTester<T extends vscode.QuickPickItem> {
 
     public constructor(
         private readonly picker: vscode.QuickPick<T>,
-        private readonly triggers: Pick<EventEmitters2<vscode.QuickPick<T>>, typeof pickerEvents[number]>,
+        private readonly triggers: Pick<EventEmitters<vscode.QuickPick<T>>, typeof pickerEvents[number]>,
         private readonly extraEmitters: ReturnType<typeof createExtraEmitters>
     ) {}
 
+    /*
+     * Waits until the picker is both enabled and not busy
+     */
     public async untilReady(): Promise<void> {
-        await whenReady(this.picker, this.extraEmitters)
+        await untilReady(this.picker, this.extraEmitters)
     }
 
     /**
@@ -236,6 +229,12 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      */
     public async setFilter(value?: string | undefined): Promise<void> {
         this.picker.value = value ?? ''
+
+        // XXX: this event does not fire from the native VSC API on minver
+        if (vscode.version.startsWith('1.50')) {
+            this.triggers.onDidChangeValue.fire(this.picker.value)
+        }
+
         await whenAppliedFilter(this.picker)
     }
 }
@@ -254,12 +253,9 @@ export type TestQuickPick<T extends vscode.QuickPickItem = vscode.QuickPickItem>
     }
 
 export function createTestQuickPick<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>): TestQuickPick<T> {
-    // check if proxy?
     const emitters = toRecord(pickerEvents, () => new vscode.EventEmitter<any>())
     const triggers = toRecord(pickerEvents, k => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
-    // type PropOnly<T> = Pick<T, { [P in keyof T]: T[P] extends (...args: any[]) => any ? never : P }[keyof T]>
-    // const currentState: PropOnly<typeof picker> = { ...picker }
     keys(emitters).forEach(key => picker[key](triggers[key]))
 
     const state = { visible: false }
@@ -275,10 +271,6 @@ export function createTestQuickPick<T extends vscode.QuickPickItem>(picker: vsco
             if (isKeyOf(prop, state)) {
                 return state[prop]
             }
-            // const triggerKey = fireEventKeys.find(v => v[0] === prop)?.[1]
-            // if (triggerKey) {
-            //     return triggers[triggerKey]
-            // }
             if (prop === 'show') {
                 return function () {
                     const val = target.show()
@@ -325,12 +317,15 @@ class InputBoxTester {
 
     public constructor(
         private readonly inputBox: vscode.InputBox,
-        private readonly triggers: Pick<EventEmitters2<vscode.InputBox>, typeof inputEvents[number]>,
+        private readonly triggers: Pick<EventEmitters<vscode.InputBox>, typeof inputEvents[number]>,
         private readonly extraEmitters: ReturnType<typeof createExtraEmitters>
     ) {}
 
+    /*
+     * Waits until the input box is both enabled and not busy
+     */
     public async untilReady(): Promise<void> {
-        await whenReady(this.inputBox, this.extraEmitters)
+        await untilReady(this.inputBox, this.extraEmitters)
     }
 
     /**
@@ -343,6 +338,7 @@ class InputBoxTester {
     }
 
     /**
+     * Sets the current value _and_ attempts accept the input.
      */
     public acceptValue(value: string): void {
         this.inputBox.value = value
@@ -357,12 +353,9 @@ export type TestInputBox = vscode.InputBox &
     }
 
 export function createTestInputBox(inputBox: vscode.InputBox): TestInputBox {
-    // check if proxy?
     const emitters = toRecord(inputEvents, () => new vscode.EventEmitter<any>())
     const triggers = toRecord(inputEvents, k => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
-    // type PropOnly<T> = Pick<T, { [P in keyof T]: T[P] extends (...args: any[]) => any ? never : P }[keyof T]>
-    // const currentState: PropOnly<typeof picker> = { ...picker }
 
     keys(emitters).forEach(key => inputBox[key](triggers[key]))
 
@@ -379,10 +372,6 @@ export function createTestInputBox(inputBox: vscode.InputBox): TestInputBox {
             if (isKeyOf(prop, state)) {
                 return state[prop]
             }
-            // const triggerKey = fireEventKeys.find(v => v[0] === prop)?.[1]
-            // if (triggerKey) {
-            //     return triggers[triggerKey]
-            // }
             if (prop === 'show') {
                 return function () {
                     const val = target.show()
@@ -434,5 +423,5 @@ export function isTestInputBox(quickInput: TestInputBox | TestQuickPick | undefi
 }
 
 export function isTestQuickPick(quickInput: TestInputBox | TestQuickPick | undefined): quickInput is TestQuickPick {
-    return isNonNullable(quickInput) && 'onDidShow' in quickInput
+    return isNonNullable(quickInput) && 'onDidShow' in quickInput && 'items' in quickInput
 }
