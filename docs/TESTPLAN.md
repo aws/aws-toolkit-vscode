@@ -76,7 +76,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 
 ## Window
 
-Certain VS Code API calls are not easily controlled programtically. `vscode.window` is a major source of these functions as it is closely related to the UI. To facillitate some semblance of UI testing, all unit tests have access to a proxied `vscode.window` object via `getTestWindow()`.
+Certain VS Code API calls are not easily controlled programtically. `vscode.window` is a major source of these functions as it is closely related to the UI. To facilitate some semblance of UI testing, all unit tests have access to a proxied `vscode.window` object via `getTestWindow()`.
 
 ### Inspecting State
 
