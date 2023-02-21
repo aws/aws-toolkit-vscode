@@ -4,19 +4,21 @@
  */
 
 import { createWizardTester, WizardTester } from '../shared/wizards/wizardTestUtils'
-import { PresignedUrlWizard, PresignedUrlWizardState } from '../../s3/commands/presignedURL'
-import { S3FileNode } from '../../s3/explorer/s3FileNode'
+import { PresignedUrlWizard, PresignedUrlWizardOptions, PresignedUrlWizardState } from '../../s3/commands/presignedURL'
 
 describe('PresignedUrlWizard', function () {
     let tester: WizardTester<PresignedUrlWizardState>
-    beforeEach(function () {
-        tester = createWizardTester(
-            new PresignedUrlWizard({
-                bucket: { name: 'mr bucket', region: 'outer space' },
-                file: { key: 'key' },
-            } as S3FileNode)
-        )
-    })
+    const fileNodeInfo: PresignedUrlWizardOptions = {
+        bucketname: 'mr bucket',
+        region: 'outer space',
+        key: 'key',
+    }
+
+    const folderNodeInfo: PresignedUrlWizardOptions = {
+        bucketname: 'mr bucket',
+        region: 'outer space',
+        folderPrefix: 'main/folder',
+    }
 
     it('shows all prompts - from command palette', function () {
         tester = createWizardTester(new PresignedUrlWizard())
@@ -27,7 +29,8 @@ describe('PresignedUrlWizard', function () {
         tester.signedUrlParams.time.assertShow(5)
     })
 
-    it('show operation and time - GET url, from node ', function () {
+    it('show operation and time - GET url, from file node ', function () {
+        tester = createWizardTester(new PresignedUrlWizard(fileNodeInfo))
         tester.region.assertDoesNotShow()
         tester.signedUrlParams.bucketName.assertDoesNotShow()
         tester.signedUrlParams.key.assertDoesNotShow()
@@ -36,17 +39,23 @@ describe('PresignedUrlWizard', function () {
         tester.signedUrlParams.time.assertShowSecond()
     })
 
-    it('show key input - PUT url, from node', function () {
+    it('show operation, time, key - GET url, from folder/bucket node ', function () {
+        tester = createWizardTester(new PresignedUrlWizard(folderNodeInfo))
+        tester.region.assertDoesNotShow()
+        tester.signedUrlParams.bucketName.assertDoesNotShow()
+        tester.signedUrlParams.key.assertShow()
+
+        tester.signedUrlParams.operation.assertShowFirst()
+        tester.signedUrlParams.time.assertShowSecond()
+    })
+
+    it('skips key input - PUT url, from file node', function () {
+        tester = createWizardTester(new PresignedUrlWizard(fileNodeInfo))
         tester.region.assertDoesNotShow()
         tester.signedUrlParams.bucketName.assertDoesNotShow()
         tester.signedUrlParams.operation.applyInput('putObject')
 
-        tester.signedUrlParams.key.assertShow()
-        tester.signedUrlParams.time.assertShow()
-    })
-
-    it(`skips key prompt and uses node's file key if available`, function () {
         tester.signedUrlParams.key.assertDoesNotShow()
-        tester.signedUrlParams.key.assertValue('key')
+        tester.signedUrlParams.time.assertShow()
     })
 })

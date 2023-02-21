@@ -44,7 +44,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),
-        Commands.register('aws.s3.presignedURL', async (node: S3FileNode) => {
+        Commands.register('aws.s3.presignedURL', async (node: S3FileNode | S3FolderNode | S3BucketNode) => {
             await presignedURLCommand(node)
         }),
         Commands.register('aws.s3.downloadFileAs', async (node: S3FileNode) => {
