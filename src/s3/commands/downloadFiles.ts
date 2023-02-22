@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 
 import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
-import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -38,10 +37,6 @@ interface DownloadFileOptions {
      * If provided then the promise will not resolve into a Buffer.
      */
     readonly saveLocation?: vscode.Uri
-    /**
-     * Different window object to use for displaying progress
-     */
-    readonly window?: Window
     /**
      * Timeout associated with the download. If provided, it is assumed that
      * the download is also cancellable.
@@ -73,7 +68,7 @@ async function downloadS3File(
     options?.timeout?.token.onCancellationRequested(({ agent }) => downloadStream.destroy(new CancellationError(agent)))
 
     if (options?.progressLocation) {
-        ;(options.window ?? Window.vscode()).withProgress(
+        vscode.window.withProgress(
             {
                 location: options.progressLocation,
                 title: localize('AWS.s3.downloadFile.progressTitle', 'Downloading "{0}"...', file.name),
@@ -112,7 +107,6 @@ async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, 
         fileList.map(async file => {
             try {
                 await downloadFile(file, {
-                    window: Window.vscode(),
                     saveLocation: vscode.Uri.joinPath(saveLocation, file.name),
                     client,
                     progressLocation: vscode.ProgressLocation.Notification,
@@ -131,18 +125,16 @@ async function downloadBatchFiles(fileList: S3File[], saveLocation: vscode.Uri, 
  *
  * @param node S3FolderNode to download
  * @param allNodes Multi-selected explorer nodes
- * @param window
  * @param outputChannel
  */
 export async function downloadFilesCommand(
     node: S3FolderNode | S3FileNode,
     allNodes: S3FileNode[] = [],
-    window = globals.window,
     outputChannel = globals.outputChannel
 ): Promise<void> {
     let files: S3File[]
     await telemetry.s3_downloadObject.run(async () => {
-        let saveLocation = await promptForSaveFolderLocation(window)
+        let saveLocation = await promptForSaveFolderLocation()
         if (!saveLocation) {
             throw new CancellationError('user')
         }
@@ -211,7 +203,7 @@ export async function downloadFilesCommand(
                 )
             }
 
-            const response = await window.showErrorMessage(
+            const response = await vscode.window.showErrorMessage(
                 localize('AWS.s3.downLoad.retryPrompt', 'S3 Download: {0}/{1} failed.', failed.length, files.length),
                 localizedText.retry,
                 localizedText.skip
@@ -226,9 +218,9 @@ export async function downloadFilesCommand(
     })
 }
 
-async function promptForSaveFolderLocation(window = Window.vscode()): Promise<vscode.Uri | undefined> {
+async function promptForSaveFolderLocation(): Promise<vscode.Uri | undefined> {
     const saveLocation = getDefaultDownloadPath()
-    const folderLocation = await window.showOpenDialog({
+    const folderLocation = await vscode.window.showOpenDialog({
         defaultUri: vscode.Uri.file(saveLocation),
         openLabel: localize('AWS.s3.downloadFolder.openButton', 'Download Here'),
         canSelectFolders: true,

@@ -14,11 +14,11 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, Folder, S3Client } from '../../../shared/clients/s3Client'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, verify } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('downloadFilesCommand', function () {
     const bucketName = 'bucket-name'
@@ -33,7 +33,6 @@ describe('downloadFilesCommand', function () {
     let saveLocation: vscode.Uri
     let bucketNode: S3BucketNode
     let node: S3FileNode
-    let window: FakeWindow
     let outputChannel: MockOutputChannel
 
     before(async function () {
@@ -52,7 +51,6 @@ describe('downloadFilesCommand', function () {
             bucketNode,
             instance(s3)
         )
-        window = new FakeWindow({ dialog: { openSelections: [saveLocation] } })
         outputChannel = new MockOutputChannel()
     })
 
@@ -61,7 +59,7 @@ describe('downloadFilesCommand', function () {
 
         when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
 
-        await downloadFilesCommand(node, [], window, outputChannel)
+        await downloadFilesCommand(node, [], outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, ['Downloaded 1/1 files'])
         assert.strictEqual(outputChannel.isShown, true)
@@ -75,7 +73,7 @@ describe('downloadFilesCommand', function () {
         when(s3.listFiles(anything())).thenResolve({ files: [file1, file2], folders: [] })
         when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
 
-        await downloadFilesCommand(folderNode, [], window, outputChannel)
+        await downloadFilesCommand(folderNode, [], outputChannel)
         assert.strictEqual(
             fs.statSync(path.join(saveLocation.fsPath, 'folderName')).isDirectory(),
             true,
@@ -91,17 +89,19 @@ describe('downloadFilesCommand', function () {
 
         when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
 
-        await downloadFilesCommand(node, [node, node2], window, outputChannel)
+        await downloadFilesCommand(node, [node, node2], outputChannel)
         assert.deepStrictEqual(outputChannel.lines, ['Downloaded 2/2 files'])
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await assert.rejects(() => downloadFilesCommand(node, [], new FakeWindow(), outputChannel), /[\s\S]*/i)
+        getTestWindow().onDidShowDialog(d => d.close())
+        await assert.rejects(() => downloadFilesCommand(node, [], outputChannel), /[\s\S]*/i)
         verify(s3.downloadFileStream(anything(), anything())).never()
     })
 
     it('throws when download fails', async function () {
+        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
         when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
-        await assert.rejects(() => downloadFilesCommand(node, [], new FakeWindow(), outputChannel), /[\s\S]*/i)
+        await assert.rejects(() => downloadFilesCommand(node, [], outputChannel), /[\s\S]*/i)
     })
 })
