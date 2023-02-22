@@ -11,7 +11,7 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('setDefaultPolicy', function () {
@@ -20,7 +20,6 @@ describe('setDefaultPolicy', function () {
     let node: IotPolicyVersionNode
     let parentNode: IotPolicyWithVersionsNode
     let parentParentNode: IotPolicyFolderNode
-    let window: FakeWindow
     let commands: FakeCommands
 
     beforeEach(function () {
@@ -34,14 +33,15 @@ describe('setDefaultPolicy', function () {
             parentNode,
             instance(iot)
         )
-        window = new FakeWindow()
         commands = new FakeCommands()
     })
 
     it('sets default version and refreshes node', async function () {
-        await setDefaultPolicy(node, window, commands)
+        await setDefaultPolicy(node, commands)
 
-        assert.strictEqual(window.message.information, 'Set V1 as default version of test-policy')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Set V1 as default version of test-policy/)
         verify(iot.setDefaultPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
@@ -49,9 +49,11 @@ describe('setDefaultPolicy', function () {
 
     it('shows an error message and refreshes node when deletion fails', async function () {
         when(iot.setDefaultPolicyVersion(anything())).thenReject(new Error('Expected failure'))
-        await setDefaultPolicy(node, window, commands)
+        await setDefaultPolicy(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to set default policy version'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to set default policy version/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
     })

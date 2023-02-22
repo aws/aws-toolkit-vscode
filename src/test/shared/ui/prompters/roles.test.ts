@@ -8,17 +8,18 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { DefaultIamClient } from '../../../../shared/clients/iamClient'
-import { createQuickPickTester, QuickPickTester } from '../testUtils'
+import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { toCollection } from '../../../../shared/utilities/asyncCollection'
 import { stub } from '../../../utilities/stubber'
+import { getOpenExternalStub } from '../../../globalSetup.test'
 
 const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('createRolePrompter', function () {
     let roles: IAM.Role[]
     let newRole: IAM.Role
-    let tester: QuickPickTester<IAM.Role>
+    let tester: QuickPickPrompterTester<IAM.Role>
 
     beforeEach(function () {
         roles = [
@@ -45,7 +46,7 @@ describe('createRolePrompter', function () {
             helpUrl: helpUri,
         })
 
-        tester = createQuickPickTester(prompter)
+        tester = createQuickPickPrompterTester(prompter)
     })
 
     afterEach(function () {
@@ -74,9 +75,8 @@ describe('createRolePrompter', function () {
     })
 
     it('can open documentation', async function () {
-        const openStub = sinon.stub(vscode.env, 'openExternal')
         tester.pressButton('View Toolkit Documentation')
-        tester.addCallback(() => assert.ok(openStub.calledWith(helpUri)))
+        tester.addCallback(() => assert.ok(getOpenExternalStub().calledWith(helpUri)))
         tester.hide()
         await tester.result()
     })

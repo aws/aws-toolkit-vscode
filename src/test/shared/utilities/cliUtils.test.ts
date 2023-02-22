@@ -9,17 +9,11 @@ import * as path from 'path'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import globals from '../../../shared/extensionGlobals'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
-import { createTestWindow } from '../vscode/window'
 import { SeverityLevel } from '../vscode/message'
 import { assertTelemetryCurried } from '../../testUtil'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('cliUtils', async function () {
-    let testWindow: ReturnType<typeof createTestWindow>
-
-    beforeEach(function () {
-        testWindow = createTestWindow()
-    })
-
     afterEach(async function () {
         fs.remove(path.join(globals.context.globalStorageUri.fsPath, 'tools'))
     })
@@ -34,7 +28,7 @@ describe('cliUtils', async function () {
         const assertTelemetry = assertTelemetryCurried('aws_toolInstallation')
 
         it('downloads and installs the SSM CLI automatically', async function () {
-            const ssmCli = await installCli('session-manager-plugin', false, testWindow)
+            const ssmCli = await installCli('session-manager-plugin', false)
             assert.ok(await hasFunctionalCli(ssmCli))
             assertTelemetry({
                 result: 'Succeeded',
@@ -43,8 +37,8 @@ describe('cliUtils', async function () {
         })
 
         it('downloads and installs the SSM CLI if prompted and accepted', async function () {
-            const ssmCli = installCli('session-manager-plugin', true, testWindow)
-            const message = await testWindow.waitForMessage(/Install/)
+            const ssmCli = installCli('session-manager-plugin', true)
+            const message = await getTestWindow().waitForMessage(/Install/)
             message.assertSeverity(SeverityLevel.Information)
             message.selectItem('Install')
 
@@ -56,8 +50,8 @@ describe('cliUtils', async function () {
         })
 
         it('does not install a CLI if the user is prompted and opts out', async function () {
-            const ssmCli = installCli('session-manager-plugin', true, testWindow)
-            const message = await testWindow.waitForMessage(/Install/)
+            const ssmCli = installCli('session-manager-plugin', true)
+            const message = await getTestWindow().waitForMessage(/Install/)
             message.close()
 
             await assert.rejects(ssmCli, /cancelled/)

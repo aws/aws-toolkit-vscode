@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../shared/clients/lambdaClient'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import globals from '../../shared/extensionGlobals'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
@@ -24,8 +24,8 @@ export async function copyLambdaUrl(
     const configs = await client.getFunctionUrlConfigs(node.name)
 
     if (configs.length == 0) {
-        globals.window.showWarningMessage(noLambdaFuncMessage)
-        globals.window.setStatusBarMessage(addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000)
+        vscode.window.showWarningMessage(noLambdaFuncMessage)
+        vscode.window.setStatusBarMessage(addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000)
     } else {
         let url: string | undefined = undefined
         if (configs.length > 1) {

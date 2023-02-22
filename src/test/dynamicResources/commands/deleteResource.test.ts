@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { deleteResource } from '../../../dynamicResources/commands/deleteResource'
 import { DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteResource', function () {
     const fakeType = 'fakeType'
@@ -25,7 +24,7 @@ describe('deleteResource', function () {
     })
 
     it('confirms deletion, deletes resources, shows progress and confirmation', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const stub = sandbox
             .stub(cloudControl, 'deleteResource')
             .callsFake(async ({ TypeName: typeName, Identifier: identifier }) => {
@@ -33,31 +32,30 @@ describe('deleteResource', function () {
                 assert.strictEqual(identifier, fakeIdentifier)
             })
 
-        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier)
 
-        assert.strictEqual(window.message.warning, `Delete resource ${fakeIdentifier} (${fakeType})?`)
+        getTestWindow().getFirstMessage().assertWarn(`Delete resource ${fakeIdentifier} (${fakeType})?`)
 
         assert.strictEqual(stub.calledOnce, true)
 
-        assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        assert.strictEqual(window.progress.options?.cancellable, false)
-        assert.deepStrictEqual(window.progress.reported, [
+        const progressNotification = getTestWindow().getSecondMessage()
+        assert.strictEqual(progressNotification.items.length, 0)
+        assert.deepStrictEqual(progressNotification.progressReports, [
             { message: `Deleting resource ${fakeIdentifier} (${fakeType})...` },
         ])
 
-        assert.ok(window.message.information?.startsWith(`Deleted resource ${fakeIdentifier} (${fakeType})`))
+        getTestWindow().getThirdMessage().assertInfo(`Deleted resource ${fakeIdentifier} (${fakeType})`)
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         const spy = sandbox.spy(cloudControl, 'deleteResource')
 
-        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
+        await deleteResource(cloudControl, fakeType, fakeIdentifier)
 
+        assertNoErrorMessages()
         assert.strictEqual(spy.notCalled, true)
-
-        assert.strictEqual(window.statusBar.message, undefined)
-        assert.strictEqual(window.message.error, undefined)
+        assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
     })
 
     it('shows an error message when resource deletion fails', async function () {
@@ -65,11 +63,10 @@ describe('deleteResource', function () {
             throw new Error('fake exception')
         })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
 
-        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
-
-        assert.ok(window.message.error?.startsWith(`Failed to delete resource ${fakeIdentifier} (${fakeType})`))
+        await deleteResource(cloudControl, fakeType, fakeIdentifier)
+        getTestWindow().getThirdMessage().assertError(`Failed to delete resource ${fakeIdentifier} (${fakeType})`)
     })
 
     it('shows a warning if unsupported action', async function () {
@@ -78,11 +75,11 @@ describe('deleteResource', function () {
             error.name = 'UnsupportedActionException'
             throw error
         })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
-
-        await deleteResource(cloudControl, fakeType, fakeIdentifier, window)
-
-        assert.ok(window.message.warning?.startsWith(`Resource type ${fakeType} does not currently support delete`))
+        await deleteResource(cloudControl, fakeType, fakeIdentifier)
+        getTestWindow()
+            .getThirdMessage()
+            .assertWarn(new RegExp(`Resource type ${fakeType} does not currently support delete`))
     })
 })

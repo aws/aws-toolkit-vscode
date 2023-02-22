@@ -7,7 +7,7 @@ import { instance, when } from 'ts-mockito'
 import { createOrgPrompter } from '../../../codecatalyst/wizards/selectResource'
 import { CodeCatalystOrg, CodeCatalystClient } from '../../../shared/clients/codecatalystClient'
 import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
-import { createQuickPickTester } from '../../shared/ui/testUtils'
+import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
 
 // TODO: move to test utils
@@ -34,7 +34,7 @@ describe('Prompts', function () {
 
     it('can list spaces (organizations)', async function () {
         const prompt = createOrgPrompter(mockClient())
-        const tester = createQuickPickTester(prompt)
+        const tester = createQuickPickPrompterTester(prompt)
 
         tester.assertItems([{ label: 'MyOrg', detail: 'My Description', data: orgs[0] }])
         tester.acceptItem('MyOrg')
@@ -44,7 +44,7 @@ describe('Prompts', function () {
 
     it('can refresh spaces (organizations)', async function () {
         const prompt = createOrgPrompter(mockClient())
-        const tester = createQuickPickTester(prompt)
+        const tester = createQuickPickPrompterTester(prompt)
         const newOrg = { type: 'org', name: 'AnotherOrg', description: 'More Text', regionName: 'region' } as const
 
         tester.assertItems([{ label: 'MyOrg', detail: 'My Description', data: orgs[0] }])

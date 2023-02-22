@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import * as vscode from 'vscode'
 import { Auth, AuthNode, getSsoProfileKey, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
 import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
 import { SsoClient } from '../../credentials/sso/clients'
@@ -14,7 +13,7 @@ import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProv
 import { ToolkitError } from '../../shared/errors'
 import { FakeMemento } from '../fakeExtensionContext'
 import { assertTreeItem } from '../shared/treeview/testUtil'
-import { createTestWindow } from '../shared/vscode/window'
+import { getTestWindow } from '../shared/vscode/window'
 import { captureEvent } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
@@ -188,11 +187,8 @@ describe('Auth', function () {
 
     describe('SSO Connections', function () {
         async function runExpiredGetTokenFlow(conn: SsoConnection, selection: string | RegExp) {
-            const testWindow = createTestWindow()
-            sinon.replace(vscode, 'window', testWindow)
-
             const token = conn.getToken()
-            const message = await testWindow.waitForMessage(/connection is invalid or expired/i)
+            const message = await getTestWindow().waitForMessage(/connection is invalid or expired/i)
             message.selectItem(selection)
 
             return token

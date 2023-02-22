@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FileViewerManager } from '../fileViewerManager'
 import { downloadFilesCommand } from './downloadFiles'
@@ -35,14 +34,10 @@ export async function editFileCommand(uriOrNode: vscode.Uri | S3FileNode, manage
     return telemetry.s3_editObject.run(() => manager.openInEditMode(uriOrNode))
 }
 
-async function isFileSizeValid(
-    size: number | undefined,
-    fileNode: S3FileNode,
-    window = Window.vscode()
-): Promise<boolean> {
+async function isFileSizeValid(size: number | undefined, fileNode: S3FileNode): Promise<boolean> {
     if (size && size > sizeLimit) {
         const downloadAs = localize('AWS.s3.button.downloadAs', 'Download as..')
-        window
+        vscode.window
             .showErrorMessage(
                 localize(
                     'AWS.s3.fileViewer.error.invalidSize',

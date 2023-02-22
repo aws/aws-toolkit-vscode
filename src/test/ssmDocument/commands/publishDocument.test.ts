@@ -18,6 +18,8 @@ import {
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
+import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
 
 describe('publishDocument', async function () {
     let wizardResponse: PublishSSMDocumentWizardResponse
@@ -84,15 +86,12 @@ describe('publishDocument', async function () {
 
         it('createDocument API failed', async function () {
             const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
-            client.getDocument.rejects(new Error('Create Error'))
+            client.createDocument.rejects(new Error('Create Error'))
 
-            const createErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
             await publish.createDocument(wizardResponse, textDocument, client)
-            assert(createErrorSpy.calledOnce)
-            assert(
-                createErrorSpy.getCall(0).args[0],
-                "Failed to create Systems Manager Document 'test'. \nCreate Error"
-            )
+            const errorMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)[0]
+            assert.ok(errorMessage)
+            errorMessage.assertMessage("Failed to create Systems Manager Document 'test'. \nCreate Error")
         })
     })
 
@@ -112,14 +111,11 @@ describe('publishDocument', async function () {
             const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
             client.updateDocument.rejects(new Error('Update Error'))
 
-            const updateErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
             sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
-            assert(updateErrorSpy.calledOnce)
-            assert(
-                updateErrorSpy.getCall(0).args[0],
-                "Failed to update Systems Manager Document 'test'. \nUpdate Error"
-            )
+            const errorMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)[0]
+            assert.ok(errorMessage)
+            errorMessage.assertMessage("Failed to update Systems Manager Document 'test'. \nUpdate Error")
         })
     })
 })

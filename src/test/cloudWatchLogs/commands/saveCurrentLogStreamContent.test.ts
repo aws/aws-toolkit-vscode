@@ -12,7 +12,7 @@ import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/sa
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('saveCurrentLogStreamContent', async function () {
     const logContent = 'shutdown is imminent'
@@ -23,11 +23,11 @@ describe('saveCurrentLogStreamContent', async function () {
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         filename = path.join(tempDir, 'bobLoblawsLawB.log')
-        fakeRegistry = ({
+        fakeRegistry = {
             getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
                 return logContent
             },
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
     })
 
     afterEach(async function () {
@@ -35,30 +35,16 @@ describe('saveCurrentLogStreamContent', async function () {
     })
 
     it('saves log content to a file', async function () {
-        await saveCurrentLogStreamContent(
-            vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`),
-            fakeRegistry,
-            new FakeWindow({
-                dialog: {
-                    saveSelection: vscode.Uri.file(filename),
-                },
-            })
-        )
+        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        await saveCurrentLogStreamContent(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`), fakeRegistry)
 
         assert.ok(await fileExists(filename))
         assert.strictEqual(await readFileAsString(filename), logContent)
     })
 
     it('does not do anything if the URI is invalid', async function () {
-        await saveCurrentLogStreamContent(
-            vscode.Uri.parse(`notCloudWatch:hahahaha`),
-            fakeRegistry,
-            new FakeWindow({
-                dialog: {
-                    saveSelection: vscode.Uri.file(filename),
-                },
-            })
-        )
+        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        await saveCurrentLogStreamContent(vscode.Uri.parse(`notCloudWatch:hahahaha`), fakeRegistry)
         assert.strictEqual(await fileExists(filename), false)
     })
 
