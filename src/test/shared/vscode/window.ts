@@ -447,7 +447,7 @@ export function printPendingUiElements(window = getTestWindow()) {
         parts.push('Quick Inputs: ', `  ${window.activeQuickInput.title}`)
     }
 
-    return parts.length > 0 ? ['[Pending UI Elements]', ...parts].join('\n') : '[No Pending UI Elements Found]'
+    return parts.length > 0 ? ['Pending UI Elements:', ...parts].join('\n') : '[No Pending UI Elements Found]'
 }
 
 type TestEventEmitter<T> = vscode.EventEmitter<T> & {
