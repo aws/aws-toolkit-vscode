@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import { copyEndpointCommand } from '../../../iot/commands/copyEndpoint'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
+import { getTestWindow } from '../../shared/vscode/window'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { mock, instance, when } from '../../utilities/mockito'
 
 describe('copyEndpointCommand', function () {
@@ -23,9 +23,8 @@ describe('copyEndpointCommand', function () {
     it('copies endpoint to clipboard', async function () {
         when(iot.getEndpoint()).thenResolve('endpoint')
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
-        await copyEndpointCommand(node, window, env)
+        await copyEndpointCommand(node, env)
 
         assert.strictEqual(env.clipboard.text, 'endpoint')
     })
@@ -33,10 +32,9 @@ describe('copyEndpointCommand', function () {
     it('shows an error message when retrieval fails', async function () {
         when(iot.getEndpoint()).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
-        await copyEndpointCommand(node, window, env)
+        await copyEndpointCommand(node, env)
 
-        assert.strictEqual(window.message.error, 'Failed to retrieve endpoint')
+        getTestWindow().getFirstMessage().assertError('Failed to retrieve endpoint')
     })
 })

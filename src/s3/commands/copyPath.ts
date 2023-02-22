@@ -5,7 +5,6 @@
 
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -15,10 +14,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
  *
  * Note that the path does not contain the bucket name or a leading slash.
  */
-export async function copyPathCommand(
-    node: S3FolderNode | S3FileNode,
-    window = Window.vscode(),
-    env = Env.vscode()
-): Promise<void> {
-    await telemetry.s3_copyPath.run(() => copyToClipboard(node.path, 'path', window, env))
+export async function copyPathCommand(node: S3FolderNode | S3FileNode, env = Env.vscode()): Promise<void> {
+    await telemetry.s3_copyPath.run(() => copyToClipboard(node.path, 'path', env))
 }

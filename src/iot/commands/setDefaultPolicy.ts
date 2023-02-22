@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
-import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
@@ -16,11 +16,7 @@ import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
  *
  * Note that the path does not contain the bucket name or a leading slash.
  */
-export async function setDefaultPolicy(
-    node: IotPolicyVersionNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function setDefaultPolicy(node: IotPolicyVersionNode, commands = Commands.vscode()): Promise<void> {
     getLogger().debug('SetDefaultPolicy called for %O', node)
 
     try {
@@ -28,7 +24,7 @@ export async function setDefaultPolicy(
             policyName: node.policy.name,
             policyVersionId: node.version.versionId!,
         })
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize(
                 'AWS.iot.setDefaultPolicy.success',
                 'Set {0} as default version of {1}',
@@ -38,7 +34,7 @@ export async function setDefaultPolicy(
         )
     } catch (e) {
         getLogger().error('Failed to set default policy version: %s', e)
-        showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'), window)
+        showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'))
     }
 
     await refreshBase(node.parent, commands)
