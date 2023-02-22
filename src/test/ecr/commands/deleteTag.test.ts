@@ -7,10 +7,10 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { deleteTag } from '../../../ecr/commands/deleteTag'
+import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteTag', function () {
     const repositoryName = 'reponame'
@@ -30,36 +30,36 @@ describe('deleteTag', function () {
     })
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
         const stub = sandbox.stub(ecr, 'deleteTag').callsFake(async (name, tag) => {
             assert.strictEqual(name, repositoryName)
             assert.strictEqual(tag, tagName)
         })
 
-        await deleteTag(node, window, commands)
+        await deleteTag(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete tag tag from repository reponame')
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete tag tag from repository reponame')
 
         assert.strictEqual(stub.calledOnce, true)
 
-        assert.ok(window.message.information?.startsWith(`Deleted tag ${tagName} from repository ${repositoryName}`))
+        getTestWindow().getSecondMessage().assertInfo(`Deleted tag ${tagName} from repository ${repositoryName}`)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         const commands = new FakeCommands()
         const spy = sandbox.spy(ecr, 'deleteTag')
 
-        await deleteTag(node, window, commands)
+        await deleteTag(node, commands)
 
         assert.strictEqual(spy.notCalled, true)
 
-        assert.strictEqual(window.statusBar.message, undefined)
-        assert.strictEqual(window.message.error, undefined)
+        assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
+        assertNoErrorMessages()
         assert.strictEqual(commands.command, undefined)
     })
 
@@ -68,12 +68,14 @@ describe('deleteTag', function () {
             throw new Error('network broke')
         })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
 
-        await deleteTag(node, window, commands)
+        await deleteTag(node, commands)
 
-        assert.ok(window.message.error?.startsWith(`Failed to delete tag ${tagName}`))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(new RegExp(`^Failed to delete tag ${tagName}`))
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

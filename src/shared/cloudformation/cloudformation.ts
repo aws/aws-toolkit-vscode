@@ -13,7 +13,6 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
-import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
@@ -810,10 +809,10 @@ export namespace CloudFormation {
  * Creates a starter YAML template file.
  * @param isSam: Create a SAM template instead of a CFN template
  */
-export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
+export async function createStarterTemplateFile(isSam?: boolean): Promise<void> {
     const content = createStarterTemplateYaml(isSam)
     const wsFolder = vscode.workspace.workspaceFolders
-    const loc = await window.showSaveDialog({
+    const loc = await vscode.window.showSaveDialog({
         filters: { YAML: ['yaml'] },
         defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
     })

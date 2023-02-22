@@ -17,11 +17,10 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture } from '../../utilities/mockito'
 import { Commands } from '../../../shared/vscode/commands'
-import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -46,9 +45,8 @@ describe('uploadFileCommand', function () {
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
-    let window: FakeWindow
-    let getBucket: (s3client: S3Client, window?: Window) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
-    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
+    let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
+    let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
     let mockedUpload: S3.ManagedUpload
 
@@ -61,7 +59,6 @@ describe('uploadFileCommand', function () {
             new S3Node(instance(s3)),
             instance(s3)
         )
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         outputChannel = new MockOutputChannel()
     })
 
@@ -74,7 +71,6 @@ describe('uploadFileCommand', function () {
                 new S3Node(instance(s3)),
                 instance(s3)
             )
-            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
             outputChannel = new MockOutputChannel()
         })
 
@@ -82,24 +78,13 @@ describe('uploadFileCommand', function () {
             when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
             when(mockedUpload.promise()).thenResolve()
 
-            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
-
-            getFile = (document, window) => {
+            getFile = document => {
                 return new Promise((resolve, reject) => {
                     resolve([fileLocation])
                 })
             }
 
-            await uploadFileCommand(
-                instance(s3),
-                bucketNode,
-                statFile,
-                undefined,
-                getFile,
-                window,
-                outputChannel,
-                commands
-            )
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel, commands)
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
             const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -115,24 +100,13 @@ describe('uploadFileCommand', function () {
         })
 
         it('cancels and displays a message if a user does not select a file', async function () {
-            window = new FakeWindow({ dialog: { openSelections: undefined } })
-
-            getFile = (document, window) => {
+            getFile = document => {
                 return new Promise((resolve, reject) => {
                     resolve(undefined)
                 })
             }
 
-            await uploadFileCommand(
-                instance(s3),
-                bucketNode,
-                statFile,
-                undefined,
-                getFile,
-                window,
-                outputChannel,
-                commands
-            )
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
@@ -140,10 +114,9 @@ describe('uploadFileCommand', function () {
     describe('without node parameter', async function () {
         this.beforeEach(function () {
             s3 = mock()
-            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
             outputChannel = new MockOutputChannel()
             commands = new FakeCommands()
-            getFile = (document, window) => {
+            getFile = document => {
                 return new Promise((resolve, reject) => {
                     resolve([fileLocation])
                 })
@@ -160,16 +133,7 @@ describe('uploadFileCommand', function () {
             when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
             when(mockedUpload.promise()).thenResolve()
 
-            await uploadFileCommand(
-                instance(s3),
-                undefined,
-                statFile,
-                getBucket,
-                getFile,
-                window,
-                outputChannel,
-                commands
-            )
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -184,41 +148,23 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(
-                instance(s3),
-                undefined,
-                statFile,
-                getBucket,
-                getFile,
-                window,
-                outputChannel,
-                commands
-            )
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'])
         })
 
         it('cancels if user does not select file', async function () {
-            getFile = (document, window) => {
+            getFile = document => {
                 return new Promise((resolve, reject) => {
                     resolve(undefined)
                 })
             }
 
-            await uploadFileCommand(
-                instance(s3),
-                undefined,
-                statFile,
-                getBucket,
-                getFile,
-                window,
-                outputChannel,
-                commands
-            )
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
 
-    getFile = (document, window) => {
+    getFile = document => {
         return new Promise((resolve, reject) => {
             resolve([fileLocation])
         })
@@ -234,18 +180,9 @@ describe('uploadFileCommand', function () {
         when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
         when(mockedUpload.promise()).thenResolve()
 
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
-        await uploadFileCommand(
-            instance(s3),
-            fileLocation,
-            statFile,
-            getBucket,
-            getFile,
-            window,
-            outputChannel,
-            commands
-        )
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel, commands)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -277,20 +214,12 @@ describe('uploadFileCommand', function () {
     })
 
     it('errors when s3 call fails', async function () {
-        when(s3.uploadFile(anything())).thenThrow(new Error('Expected failure'))
+        when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        getTestWindow().onDidShowMessage(m => m.close())
 
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         outputChannel = new MockOutputChannel()
-        await uploadFileCommand(
-            instance(s3),
-            fileLocation,
-            statFile,
-            getBucket,
-            getFile,
-            window,
-            outputChannel,
-            commands
-        )
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel, commands)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -304,7 +233,6 @@ describe('uploadFileCommand', function () {
 
 describe('getFileToUpload', function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
-    let window: FakeWindow
 
     const selection: any = { label: 'Browse for more files...' }
     const prompt: <T extends vscode.QuickPickItem>(opts: {
@@ -320,19 +248,15 @@ describe('getFileToUpload', function () {
         })
     }
 
-    beforeEach(function () {
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
-    })
-
     it('directly asks user for file if no active editor', async function () {
-        const response = await getFilesToUpload(undefined, window, prompt)
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        const response = await getFilesToUpload(undefined, prompt)
         assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('Returns undefined if no file is selected on first prompt', async function () {
-        window = new FakeWindow({ dialog: { openSelections: undefined } })
-
-        const response = await getFilesToUpload(undefined, window, prompt)
+        getTestWindow().onDidShowDialog(d => d.close())
+        const response = await getFilesToUpload(undefined, prompt)
         assert.strictEqual(response, undefined)
     })
 
@@ -340,22 +264,23 @@ describe('getFileToUpload', function () {
         const alreadyOpenedUri = vscode.Uri.file('/alreadyOpened.txt')
         selection.label = alreadyOpenedUri.fsPath
 
-        const response = await getFilesToUpload(alreadyOpenedUri, window, prompt)
+        const response = await getFilesToUpload(alreadyOpenedUri, prompt)
         assert.deepStrictEqual(response, [alreadyOpenedUri])
     })
 
     it('opens the file prompt if a user selects to browse for more files', async function () {
         selection.label = 'Browse for more files...'
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
-        const response = await getFilesToUpload(fileLocation, window, prompt)
+        const response = await getFilesToUpload(fileLocation, prompt)
         assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('returns undefined if the user does not select a file through the file browser', async function () {
         selection.label = 'Browse for more files...'
-        window = new FakeWindow({ dialog: { openSelections: undefined } })
+        getTestWindow().onDidShowDialog(d => d.close())
 
-        const response = await getFilesToUpload(fileLocation, window, prompt)
+        const response = await getFilesToUpload(fileLocation, prompt)
 
         assert.strictEqual(response, undefined)
     })
@@ -366,7 +291,6 @@ describe('promptUserForBucket', async function () {
 
     let s3: S3Client
     let buckets: S3.Bucket[]
-    let window: FakeWindow
 
     const promptUndef: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>
@@ -400,13 +324,13 @@ describe('promptUserForBucket', async function () {
     beforeEach(function () {
         s3 = mock()
         buckets = [{ Name: 'bucket 1' }, { Name: 'bucket 2' }, { Name: 'bucket 3' }]
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
     })
 
     it('Returns selected bucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
-        const response = await promptUserForBucket(instance(s3), window, promptSelect)
+        const response = await promptUserForBucket(instance(s3), promptSelect)
         assert.deepStrictEqual(response, selection)
     })
 
@@ -416,7 +340,7 @@ describe('promptUserForBucket', async function () {
         selection.label = 'back'
         selection.bucket = undefined
 
-        const response = await promptUserForBucket(instance(s3), window, promptSelect)
+        const response = await promptUserForBucket(instance(s3), promptSelect)
         assert.strictEqual(response, 'back')
     })
 
@@ -426,34 +350,24 @@ describe('promptUserForBucket', async function () {
         selection.label = 'Create new bucket'
         selection.bucket = undefined
 
-        const createBucket: (node?: S3Node, window?: Window, commands?: Commands) => Promise<void> = () => {
-            window.showErrorMessage('Error expected')
+        const createBucket: (node?: S3Node, commands?: Commands) => Promise<void> = () => {
             throw new Error('Error expected')
         }
-        try {
-            await promptUserForBucket(instance(s3), window, promptSelect, createBucket)
-            assert.fail()
-        } catch (e) {
-            assert.ok(window.message.error?.includes('Error expected'))
-        }
+        await assert.rejects(() => promptUserForBucket(instance(s3), promptSelect, createBucket))
     })
 
     it('Returns "cancel" when user doesn\'t select a bucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
-        const response = await promptUserForBucket(instance(s3), window, promptUndef)
+        const response = await promptUserForBucket(instance(s3), promptUndef)
         assert.strictEqual(response, 'cancel')
     })
 
     it('Throws error when it is not possible to list buckets from client', async function () {
         when(s3.listAllBuckets()).thenReject(new Error('Expected failure'))
-
-        const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
-        try {
-            await promptUserForBucket(instance(s3), window)
-            assert.fail() // fails if promptUserForBucket does not throw
-        } catch (e) {
-            assert.ok(window.message.error?.includes('Failed to list buckets from client'))
-        }
+        await assert.rejects(() => promptUserForBucket(instance(s3)))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to list buckets from client/)
     })
 })

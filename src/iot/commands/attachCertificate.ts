@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -28,14 +27,13 @@ export type CertGen = typeof getCertList
 export async function attachCertificateCommand(
     node: IotThingNode,
     promptFun = promptForCert,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('AttachCertificate called for %O', node)
 
     const thingName = node.thing.name
 
-    const cert = await promptFun(node.iot, getCertList, window)
+    const cert = await promptFun(node.iot, getCertList)
     if (!isValidResponse(cert)) {
         getLogger().info('No certificate chosen')
         return undefined
@@ -46,8 +44,7 @@ export async function attachCertificateCommand(
     } catch (e) {
         getLogger().error(`Failed to attach certificate ${cert.certificateId}: %s`, e)
         showViewLogsMessage(
-            localize('AWS.iot.attachCert.error', 'Failed to attach certificate {0}', cert.certificateId),
-            window
+            localize('AWS.iot.attachCert.error', 'Failed to attach certificate {0}', cert.certificateId)
         )
         return undefined
     }
@@ -61,16 +58,12 @@ export async function attachCertificateCommand(
 /**
  * Prompts the user to pick a certificate to attach.
  */
-async function promptForCert(
-    iot: IotClient,
-    certFetch: CertGen,
-    window?: Window
-): Promise<PromptResult<Iot.Certificate>> {
+async function promptForCert(iot: IotClient, certFetch: CertGen): Promise<PromptResult<Iot.Certificate>> {
     const placeHolder: DataQuickPickItem<Iot.Certificate> = {
         label: 'No certificates found',
         data: undefined,
     }
-    const picker = createQuickPick(certFetch(iot, window), {
+    const picker = createQuickPick(certFetch(iot), {
         title: localize('AWS.iot.attachCert', 'Select a certificate'),
         noItemsFoundItem: placeHolder,
         buttons: [vscode.QuickInputButtons.Back],
@@ -81,7 +74,7 @@ async function promptForCert(
 /**
  * Async generator function to get the list of certificates when creating a quick pick.
  */
-async function* getCertList(iot: IotClient, window?: Window) {
+async function* getCertList(iot: IotClient) {
     let marker: string | undefined = undefined
     let filteredCerts: Iot.Certificate[]
     do {
@@ -97,7 +90,7 @@ async function* getCertList(iot: IotClient, window?: Window) {
                 ) ?? []
         } catch (e) {
             getLogger().error(`Failed to retrieve certificates: %s`, e)
-            showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'), window)
+            showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'))
             return
         }
         yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))

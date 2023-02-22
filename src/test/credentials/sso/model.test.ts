@@ -8,7 +8,8 @@ import * as vscode from 'vscode'
 import { openSsoPortalLink } from '../../../credentials/sso/model'
 import { assertTelemetry } from '../../testUtil'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { getOpenExternalStub, getTestWindow } from '../../globalSetup.test'
+import { getOpenExternalStub } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('openSsoPortalLink', function () {
     beforeEach(function () {

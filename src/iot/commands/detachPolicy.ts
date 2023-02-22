@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyCertNode } from '../explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
@@ -21,11 +21,7 @@ import { IotNode } from '../explorer/iotNodes'
  * Detaches the policy.
  * Refreshes the parent node.
  */
-export async function detachPolicyCommand(
-    node: IotPolicyCertNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function detachPolicyCommand(node: IotPolicyCertNode, commands = Commands.vscode()): Promise<void> {
     getLogger().debug('DetachPolicy called for %O', node)
 
     const policyName = node.policy.name
@@ -35,14 +31,11 @@ export async function detachPolicyCommand(
     const certId = node.parent.certificate.id
     const certArn = node.parent.certificate.arn
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize('AWS.iot.detachPolicy.prompt', 'Are you sure you want to detach policy {0}?', policyName),
-            confirm: localize('AWS.iot.detachCert.confirm', 'Detach'),
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize('AWS.iot.detachPolicy.prompt', 'Are you sure you want to detach policy {0}?', policyName),
+        confirm: localize('AWS.iot.detachCert.confirm', 'Detach'),
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('DetachCert canceled')
         return
@@ -53,10 +46,10 @@ export async function detachPolicyCommand(
         await node.iot.detachPolicy({ policyName, target: certArn })
 
         getLogger().info(`detached policy: ${policyName}`)
-        window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached: {0}', policyName))
+        vscode.window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached: {0}', policyName))
     } catch (e) {
         getLogger().error(`Failed to detach certificate: ${certId}: %s`, e)
-        showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach: {0}', policyName), window)
+        showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach: {0}', policyName))
     }
 
     /* Refresh both things and certificates nodes so the status is updated in
