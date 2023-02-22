@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { millisecondsSince, Result } from '../../shared/telemetry/telemetry'
@@ -71,10 +70,9 @@ export async function saveResource(
 export async function createResource(
     typeName: string,
     definition: string,
-    cloudControl: CloudControlClient,
-    window = Window.vscode()
+    cloudControl: CloudControlClient
 ): Promise<string | undefined> {
-    return await window.withProgress(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -93,7 +91,7 @@ export async function createResource(
                 })
                 const identifier = result.ProgressEvent!.Identifier!
                 getLogger().info(`Created resource type ${typeName} identifier ${identifier}`)
-                window.showInformationMessage(
+                vscode.window.showInformationMessage(
                     localize('aws.resources.createResource.success', 'Created resource {0} ({1})', identifier, typeName)
                 )
                 return identifier
@@ -104,7 +102,7 @@ export async function createResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support CREATE action in ${cloudControl.regionCode}`
                     )
-                    window.showWarningMessage(
+                    vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.createResource.unsupported',
                             '{0} does not currently support resource creation in {1}',
@@ -116,8 +114,7 @@ export async function createResource(
                     result = 'Failed'
                     getLogger().error(`Failed to create resource type ${typeName}: %O`, error.message)
                     showViewLogsMessage(
-                        localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName),
-                        window
+                        localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName)
                     )
                     throw e
                 }
@@ -138,10 +135,9 @@ export async function updateResource(
     identifier: string,
     definition: string,
     cloudControl: CloudControlClient,
-    window = Window.vscode(),
     diff?: Operation[]
 ): Promise<boolean> {
-    return await window.withProgress(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -162,7 +158,7 @@ export async function updateResource(
 
                 if (patch.length === 0) {
                     result = 'Cancelled'
-                    window.showWarningMessage(
+                    vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.updateResource.noDiff',
                             'Update cancelled - no diff between local and remote definitions',
@@ -180,7 +176,7 @@ export async function updateResource(
                 })
                 getLogger().info(`Updated resource type ${typeName} identifier ${identifier}`)
 
-                window.showInformationMessage(
+                vscode.window.showInformationMessage(
                     localize('aws.resources.updateResource.success', 'Updated resource {0} ({1})', identifier, typeName)
                 )
                 return true
@@ -191,7 +187,7 @@ export async function updateResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support UPDATE action in ${cloudControl.regionCode}`
                     )
-                    window.showWarningMessage(
+                    vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.createResource.unsupported',
                             '{0} does not currently support resource updating in {1}',
@@ -212,8 +208,7 @@ export async function updateResource(
                             'Failed to update resource {0} ({1})',
                             identifier,
                             typeName
-                        ),
-                        window
+                        )
                     )
                     throw e
                 }

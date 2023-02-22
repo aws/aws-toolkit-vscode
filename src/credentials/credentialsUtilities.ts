@@ -40,7 +40,6 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
 
     showViewLogsMessage(
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
-        vscode.window,
         'error',
         buttons
     ).then((selection: string | undefined) => {

@@ -16,7 +16,8 @@ import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
 import { OidcClient } from '../../../credentials/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { InternalServerException, InvalidClientException, UnauthorizedClientException } from '@aws-sdk/client-sso-oidc'
-import { getOpenExternalStub, getTestWindow } from '../../globalSetup.test'
+import { getOpenExternalStub } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 const hourInMs = 3600000
 

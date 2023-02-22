@@ -278,6 +278,7 @@ export interface EventCapturer<T = unknown> extends vscode.Disposable {
  */
 export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let disposed = false
+    let idx = 0
     const emits: T[] = []
     const listeners: vscode.Disposable[] = []
     listeners.push(event(data => emits.push(data)))
@@ -292,20 +293,29 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
                 throw new Error('Capturer has been disposed')
             }
 
-            return new Promise<T>((resolve, reject) => {
-                const stop = () => reject(new Error('Timed out waiting for event'))
-                const disposable = event(data => resolve(data))
+            if (idx < emits.length) {
+                return Promise.resolve(emits[idx++])
+            }
 
-                if (timeout !== undefined) {
-                    setTimeout(stop, timeout)
-                }
-
-                listeners.push({ dispose: () => (disposable.dispose(), stop()) })
-            })
+            return captureEventOnce(event, timeout)
         },
         dispose: () => {
             disposed = true
             vscode.Disposable.from(...listeners).dispose()
         },
     }
+}
+
+/**
+ * Captures the first value emitted by an event, optionally with a timeout
+ */
+export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const stop = () => reject(new Error('Timed out waiting for event'))
+        event(data => resolve(data))
+
+        if (timeout !== undefined) {
+            setTimeout(stop, timeout)
+        }
+    })
 }

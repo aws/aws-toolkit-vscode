@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
@@ -17,17 +17,16 @@ import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
 export async function createPolicyCommand(
     node: IotPolicyFolderNode,
     getPolicyDoc = getPolicyDocument,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('CreatePolicy called for %O', node)
 
-    const data = await getPolicyDoc(window)
+    const data = await getPolicyDoc()
     if (!data) {
         return
     }
 
-    const policyName = await window.showInputBox({
+    const policyName = await vscode.window.showInputBox({
         prompt: localize('AWS.iot.createPolicy.prompt', 'Enter a new policy name'),
         placeHolder: localize('AWS.iot.createPolicy.placeHolder', 'Policy Name'),
         validateInput: validatePolicyName,
@@ -42,10 +41,10 @@ export async function createPolicyCommand(
         //Parse to ensure this is a valid JSON
         const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicy({ policyName, policyDocument: JSON.stringify(policyJSON) })
-        window.showInformationMessage(localize('AWS.iot.createPolicy.success', 'Created Policy {0}', policyName))
+        vscode.window.showInformationMessage(localize('AWS.iot.createPolicy.success', 'Created Policy {0}', policyName))
     } catch (e) {
         getLogger().error('Failed to create policy document: %s', e)
-        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to create policy {0}', policyName), window)
+        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to create policy {0}', policyName))
         return
     }
 
@@ -53,8 +52,8 @@ export async function createPolicyCommand(
     await node.refreshNode(commands)
 }
 
-export async function getPolicyDocument(window: Window): Promise<Buffer | undefined> {
-    const fileLocation = await window.showOpenDialog({
+export async function getPolicyDocument(): Promise<Buffer | undefined> {
+    const fileLocation = await vscode.window.showOpenDialog({
         canSelectFolders: false,
         canSelectFiles: true,
         canSelectMany: false,
@@ -73,7 +72,7 @@ export async function getPolicyDocument(window: Window): Promise<Buffer | undefi
         data = await fs.readFile(policyLocation.fsPath)
     } catch (e) {
         getLogger().error('Failed to read policy document: %s', e)
-        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'), window)
+        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'))
         return undefined
     }
 

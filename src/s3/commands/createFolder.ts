@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { DEFAULT_DELIMITER } from '../../shared/clients/s3Client'
 import { getLogger } from '../../shared/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { readablePath } from '../util'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -28,13 +28,12 @@ import { ToolkitError } from '../../shared/errors'
  */
 export async function createFolderCommand(
     node: S3BucketNode | S3FolderNode,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('CreateFolder called for %O', node)
 
     await telemetry.s3_createFolder.run(async () => {
-        const folderName = await window.showInputBox({
+        const folderName = await vscode.window.showInputBox({
             prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', readablePath(node)),
             placeHolder: localize('AWS.s3.createFolder.placeHolder', 'Folder Name'),
             validateInput: validateFolderName,
@@ -60,7 +59,7 @@ export async function createFolderCommand(
             .finally(() => refreshNode(node, commands))
 
         getLogger().info('created folder: %O', folder)
-        window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName))
+        vscode.window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName))
     })
 }
 
