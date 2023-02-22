@@ -1,0 +1,18 @@
+{
+	"date": "2023-02-16",
+	"version": "1.63.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Bump amazon-states-language-service dependency to ^1.8.0 to allow state machines to be created with the new intrinsic functions and Map state"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Authenticating through the browser now requires users to manually enter a user verification code. Previously this was done automatically."
+		},
+		{
+			"type": "Feature",
+			"description": "CloudWatch Logs: one click to list log streams for a log group"
+		}
+	]
+}

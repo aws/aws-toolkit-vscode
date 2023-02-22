@@ -39,6 +39,7 @@ import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 
 export interface SyncParams {
     readonly region: string
@@ -348,10 +349,10 @@ export async function runSamSync(args: SyncParams) {
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
-        spawnOptions: {
+        spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
             env: await injectCredentials(args.connection),
-        },
+        }),
     })
 
     await runSyncInTerminal(sam)

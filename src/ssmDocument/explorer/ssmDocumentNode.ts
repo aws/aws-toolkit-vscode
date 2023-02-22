@@ -19,7 +19,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly documentTypeNodes: Map<string, DocumentTypeNode>
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultSsmDocumentClient(regionCode)
     ) {
         super('Systems Manager', vscode.TreeItemCollapsibleState.Collapsed)
@@ -27,7 +27,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
         this.contextValue = 'awsSsmDocumentNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()

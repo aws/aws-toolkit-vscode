@@ -24,7 +24,7 @@ export class EcrNode extends AWSTreeNodeBase {
         this.contextValue = 'awsEcrNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const response = await toArrayAsync(this.ecr.describeRepositories())

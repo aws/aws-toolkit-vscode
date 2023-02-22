@@ -20,6 +20,7 @@ The test suite has two categories of tests:
 -   Unit Tests: **fast** tests
     -   Live in `src/test/`
     -   The `vscode` API is available.
+        -   Use `getTestWindow()` to inspect or manipulate `vscode.window`
     -   The Toolkit code is invoked as a library, not as an extension activated in VSCode's typical lifecycle.
     -   Call functions and create objects directly.
     -   May mock state where needed, though this is discouraged in favor of "fake" data/objects/files.
@@ -65,7 +66,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Many failure modes (as opposed to the "happy path") are not tested.
 -   No performance/benchmark regression tests.
 -   No UI tests (to exercise webviews).
-    - https://github.com/redhat-developer/vscode-extension-tester
+    -   https://github.com/redhat-developer/vscode-extension-tester
 -   Missing acceptance tests:
     -   Connect to AWS
     -   Fixed credentials and fixed credentials with assume roles

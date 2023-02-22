@@ -12,7 +12,7 @@ describe('BaseCredentialsProviderFactory', async function () {
      * This class exposes abstract class functionality for the purpose of testing it.
      */
     class TestCredentialsProviderFactory extends BaseCredentialsProviderFactory<CredentialsProvider> {
-        public getProviderType(): CredentialsProviderType {
+        public override getProviderType(): CredentialsProviderType {
             return 'profile'
         }
 
@@ -22,15 +22,15 @@ describe('BaseCredentialsProviderFactory', async function () {
 
         public async refresh(): Promise<void> {}
 
-        public addProvider(provider: CredentialsProvider) {
+        public override addProvider(provider: CredentialsProvider) {
             super.addProvider(provider)
         }
 
-        public removeProvider(provider: CredentialsProvider) {
+        public override removeProvider(provider: CredentialsProvider) {
             super.removeProvider(provider)
         }
 
-        public resetProviders() {
+        public override resetProviders() {
             super.resetProviders()
         }
     }
