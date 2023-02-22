@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { setValidConnection } from './util'
+import { setValidConnection } from '../util/codewhispererUtil'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'

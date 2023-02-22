@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import { setValidConnection } from './util'
+import { setValidConnection } from '../util/codewhispererUtil'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
