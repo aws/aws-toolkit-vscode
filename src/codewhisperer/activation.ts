@@ -415,6 +415,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document === vscode.window.activeTextEditor?.document) {
                     disposeSecurityDiagnostic(e)
                 }
+
+                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+
                 /**
                  * Handle this keystroke event only when
                  * 1. It is in current non plaintext active editor
