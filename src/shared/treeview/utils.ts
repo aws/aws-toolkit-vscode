@@ -45,12 +45,12 @@ export async function makeChildrenNodes<T extends AWSTreeNodeBase, P extends AWS
     }
 }
 
-export function createErrorItem(error: Error, message?: string): TreeNode {
+export function createErrorItem(error: Error, message?: string, label?: string): TreeNode {
     const command = Logging.declared.viewLogsAtMessage
     const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
 
     return command.build(logId).asTreeNode({
-        label: localize('AWS.explorerNode.error.label', 'Failed to load resources (click for logs)'),
+        label: label ?? localize('AWS.explorerNode.error.label', 'Failed to load resources (click for logs)'),
         tooltip: `${error.name}: ${error.message}`,
         iconPath: addColor(getIcon('vscode-error'), 'testing.iconErrored'),
         contextValue: 'awsErrorNode',

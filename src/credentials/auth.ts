@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
-import { addColor, codicon, getIcon } from '../shared/icons'
+import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
@@ -26,7 +26,7 @@ import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsProvider, fromString } from './providers/credentials'
 import { once } from '../shared/utilities/functionUtils'
-import { getResourceFromTreeNode } from '../shared/treeview/utils'
+import { getResourceFromTreeNode, createErrorItem } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
@@ -37,7 +37,6 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
-import { Logging } from '../shared/logger/commands'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
@@ -647,8 +646,6 @@ export class Auth implements AuthService, ConnectionManager {
             await this.updateConnectionState(id, 'invalid')
             this.setLoginError(err as Error)
             throw err
-        } finally {
-            vscode.commands.executeCommand('aws.explorer.focus')
         }
     }
 
@@ -1023,6 +1020,7 @@ const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, 
         throw ToolkitError.chain(err, 'Unable to authenticate connection')
     } finally {
         auth.clearTimeout()
+        vscode.commands.executeCommand('aws.explorer.focus')
     }
 })
 
@@ -1129,7 +1127,7 @@ export class AuthNode implements TreeNode<Auth> {
             }
         }
         if (this.resource.loginError) {
-            children.push(createErrorItem(this.resource.loginError))
+            children.push(createErrorItem(this.resource.loginError, undefined, 'Failed to login (click for logs)'))
         }
         return children
     }
@@ -1140,15 +1138,3 @@ const cancelLogin = Commands.register('_aws.auth.cancelLogin', (auth: Auth) => {
     credentialTimer.cancel()
     auth.cancelTimeout()
 })
-
-function createErrorItem(error: Error, message?: string): TreeNode {
-    const command = Logging.declared.viewLogsAtMessage
-    const logId = message ? getLogger().error(`${message}: %s`, error) : getLogger().error(error)
-
-    return command.build(logId).asTreeNode({
-        label: 'Failed to login (click for logs)',
-        tooltip: `${error.name}: ${error.message}`,
-        iconPath: addColor(getIcon('vscode-error'), 'testing.iconErrored'),
-        contextValue: 'awsErrorNode',
-    })
-}
