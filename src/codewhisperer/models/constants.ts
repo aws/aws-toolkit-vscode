@@ -150,7 +150,7 @@ export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 /**
  * the interval of the background thread invocation, which is triggered by the timer
  */
-export const defaultCheckPeriodMillis = 1000 * 60 * 5
+export const defaultCheckPeriodMillis = 1000 * 60
 
 // suggestion show delay, in milliseconds
 export const suggestionShowDelay = 250

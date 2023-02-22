@@ -118,6 +118,7 @@ export class CodeWhispererCodeCoverageTracker {
             })
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
+        console.log(percentCount)
         const percentage = Math.round(parseInt(percentCount))
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
@@ -197,7 +198,7 @@ export class CodeWhispererCodeCoverageTracker {
         // only include contentChanges from user action
         if (
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
-            vsCodeState.isCodeWhispererEditing ||
+            // vsCodeState.isCodeWhispererEditing ||
             e.contentChanges.length !== 1
         ) {
             return
