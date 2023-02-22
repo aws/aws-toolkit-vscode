@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
@@ -17,14 +17,13 @@ import { getPolicyDocument } from './createPolicy'
 export async function createPolicyVersionCommand(
     node: IotPolicyWithVersionsNode,
     getPolicyDoc = getPolicyDocument,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('CreatePolicyVersion called for %O', node)
 
     const policyName = node.policy.name
 
-    const data = await getPolicyDoc(window)
+    const data = await getPolicyDoc()
     if (!data) {
         return
     }
@@ -37,14 +36,13 @@ export async function createPolicyVersionCommand(
             policyDocument: JSON.stringify(policyJSON),
             setAsDefault: true,
         })
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize('AWS.iot.createPolicy.success', 'Created new version of {0}', policyName)
         )
     } catch (e) {
         getLogger().error('Failed to create new policy version: %s', e)
         showViewLogsMessage(
-            localize('AWS.iot.createPolicyVersion.error', 'Failed to create new version of {0}', policyName),
-            window
+            localize('AWS.iot.createPolicyVersion.error', 'Failed to create new version of {0}', policyName)
         )
         return
     }

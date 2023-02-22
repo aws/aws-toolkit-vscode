@@ -9,9 +9,9 @@ import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
 import { mock } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
 import { SSM } from 'aws-sdk'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteDocument', async function () {
     let ssmClient: SsmDocumentClient
@@ -35,10 +35,10 @@ describe('deleteDocument', async function () {
     })
 
     it('confirms deletion, deletes file, and refreshes parent node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteDocument(node, window, commands)
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete document testDocument?')
+        await deleteDocument(node, commands)
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete document testDocument?')
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
     })

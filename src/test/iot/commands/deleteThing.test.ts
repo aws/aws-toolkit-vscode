@@ -10,8 +10,8 @@ import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteThingCommand', function () {
     const thingName = 'iot-thing'
@@ -28,11 +28,11 @@ describe('deleteThingCommand', function () {
     it('confirms deletion, deletes thing, and refreshes node', async function () {
         when(iot.listThingPrincipals(deepEqual({ thingName }))).thenResolve({ principals: [] })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteThingCommand(node, window, commands)
+        await deleteThingCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete Thing iot-thing?')
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Thing iot-thing?')
 
         verify(iot.deleteThing(deepEqual({ thingName }))).once()
 
@@ -43,18 +43,20 @@ describe('deleteThingCommand', function () {
     it('does nothing if thing principals are attached', async function () {
         when(iot.listThingPrincipals(deepEqual({ thingName }))).thenResolve({ principals: ['string'] })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteThingCommand(node, window, commands)
+        await deleteThingCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Cannot delete Thing iot-thing'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Cannot delete Thing iot-thing/)
 
         assert.strictEqual(commands.command, undefined)
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await deleteThingCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await deleteThingCommand(node, new FakeCommands())
 
         verify(iot.deleteThing(anything())).never()
     })
@@ -62,11 +64,13 @@ describe('deleteThingCommand', function () {
     it('shows an error message and refreshes node when thing deletion fails', async function () {
         when(iot.deleteThing(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteThingCommand(node, window, commands)
+        await deleteThingCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Thing: iot-thing'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete Thing: iot-thing/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
@@ -75,11 +79,13 @@ describe('deleteThingCommand', function () {
     it('shows an error message and refreshes node if principals are not fetched', async function () {
         when(iot.listThingPrincipals(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteThingCommand(node, window, commands)
+        await deleteThingCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Thing: iot-thing'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete Thing: iot-thing/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

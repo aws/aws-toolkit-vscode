@@ -9,7 +9,6 @@ import { copyNameCommand } from '../../../awsexplorer/commands/copyName'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { TreeShim } from '../../../shared/treeview/utils'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('copyNameCommand', function () {
     it('copies name to clipboard and shows status bar confirmation', async function () {
@@ -18,9 +17,8 @@ describe('copyNameCommand', function () {
             name: 'name',
         }
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
-        await copyNameCommand(node, window, env)
+        await copyNameCommand(node, env)
 
         assert.strictEqual(env.clipboard.text, 'name')
     })
@@ -32,9 +30,8 @@ describe('copyNameCommand', function () {
             getTreeItem: () => new TreeItem(''),
         })
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
-        await copyNameCommand(node, window, env)
+        await copyNameCommand(node, env)
         assert.strictEqual(env.clipboard.text, 'resource')
     })
 })

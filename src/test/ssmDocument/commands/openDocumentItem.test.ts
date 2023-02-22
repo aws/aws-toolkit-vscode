@@ -16,6 +16,7 @@ import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { stub } from '../../utilities/stubber'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('openDocumentItem', async function () {
     afterEach(function () {
@@ -58,7 +59,7 @@ describe('openDocumentItem', async function () {
     }
 
     it('create DocumentItemNode and openDocumentItem functionality', async function () {
-        sinon.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
+        getTestWindow().onDidShowDialog(dialog => dialog.selectItem(vscode.Uri.file('test')))
         sinon.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
         sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
 

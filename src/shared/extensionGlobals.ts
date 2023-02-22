@@ -15,7 +15,6 @@ import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
-import { Window } from './vscode/window'
 import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
@@ -37,10 +36,9 @@ export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-export function initialize(context: ExtensionContext, window: Window): ToolkitGlobals {
+export function initialize(context: ExtensionContext): ToolkitGlobals {
     Object.assign(globals, {
         context,
-        window,
         clock: copyClock(),
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
@@ -58,7 +56,6 @@ export default globals
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
-    readonly window: Window
     // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
     loginManager: LoginManager
