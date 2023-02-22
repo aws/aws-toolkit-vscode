@@ -38,11 +38,9 @@ interface MissingTool {
 
 export const hostNamePrefix = 'aws-devenv-'
 
-export async function ensureDependencies(
-    window = vscode.window
-): Promise<Result<DependencyPaths, CancellationError | Error>> {
+export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
     if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
-        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to Dev Environment', window)
+        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to Dev Environment')
 
         return Result.err(
             new ToolkitError('Remote SSH extension not installed', {

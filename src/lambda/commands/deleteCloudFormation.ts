@@ -14,7 +14,6 @@ import { getLogger, Logger } from '../../shared/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -35,18 +34,15 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             return
         }
 
-        const userResponse = await showConfirmationMessage(
-            {
-                prompt: localize(
-                    'AWS.message.prompt.deleteCloudFormation',
-                    'Are you sure you want to delete {0}?',
-                    stackName
-                ),
-                confirm: localizedText.localizedDelete,
-                cancel: localizedText.cancel,
-            },
-            Window.vscode()
-        )
+        const userResponse = await showConfirmationMessage({
+            prompt: localize(
+                'AWS.message.prompt.deleteCloudFormation',
+                'Are you sure you want to delete {0}?',
+                stackName
+            ),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
+        })
 
         if (userResponse) {
             const client = new DefaultCloudFormationClient(node.regionCode)

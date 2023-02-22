@@ -3,17 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
 import { detachPolicyCommand } from '../../../iot/commands/detachPolicy'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { IotPolicyCertNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import globals from '../../../shared/extensionGlobals'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('detachPolicyCommand', function () {
     const policyName = 'test-policy'
@@ -33,18 +32,18 @@ describe('detachPolicyCommand', function () {
     })
 
     it('confirms detach, detaches policy, and refreshes node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Detach' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         const commands = new FakeCommands()
-        await detachPolicyCommand(node, window, commands)
+        await detachPolicyCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to detach policy test-policy?')
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to detach policy test-policy?')
 
         verify(iot.detachPolicy(deepEqual({ policyName, target }))).once()
     })
 
     it('does nothing when cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await detachPolicyCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await detachPolicyCommand(node, new FakeCommands())
 
         verify(iot.detachPolicy(anything())).never()
     })
@@ -52,10 +51,12 @@ describe('detachPolicyCommand', function () {
     it('shows an error message and refreshes node when thing detachment fails', async function () {
         when(iot.detachPolicy(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Detach' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         const commands = new FakeCommands()
-        await detachPolicyCommand(node, window, commands)
+        await detachPolicyCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to detach: test-policy'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to detach: test-policy/)
     })
 })

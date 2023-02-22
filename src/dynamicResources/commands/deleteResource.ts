@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
@@ -17,24 +16,20 @@ const localize = nls.loadMessageBundle()
 export async function deleteResource(
     cloudControl: CloudControlClient,
     typeName: string,
-    identifier: string,
-    window = Window.vscode()
+    identifier: string
 ): Promise<boolean> {
     getLogger().info(`deleteResource called for type ${typeName} identifier ${identifier}`)
-    const ok = await showConfirmationMessage(
-        {
-            prompt: localize('aws.resources.deleteResource.prompt', 'Delete resource {0} ({1})?', identifier, typeName),
-            confirm: localize('AWS.generic.delete', 'Delete'),
-            cancel: localize('AWS.generic.cancel', 'Cancel'),
-        },
-        window
-    )
+    const ok = await showConfirmationMessage({
+        prompt: localize('aws.resources.deleteResource.prompt', 'Delete resource {0} ({1})?', identifier, typeName),
+        confirm: localize('AWS.generic.delete', 'Delete'),
+        cancel: localize('AWS.generic.cancel', 'Cancel'),
+    })
     if (!ok) {
         getLogger().info(`Cancelled delete resource type ${typeName} identifier ${identifier}`)
         return false
     }
 
-    return await window.withProgress(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -55,7 +50,7 @@ export async function deleteResource(
 
                 getLogger().info(`Deleted resource type ${typeName} identifier ${identifier}`)
 
-                window.showInformationMessage(
+                vscode.window.showInformationMessage(
                     localize('aws.resources.deleteResource.success', 'Deleted resource {0} ({1})', identifier, typeName)
                 )
                 return true
@@ -66,7 +61,7 @@ export async function deleteResource(
                     getLogger().warn(
                         `Resource type ${typeName} does not support DELETE action in ${cloudControl.regionCode}`
                     )
-                    window.showWarningMessage(
+                    vscode.window.showWarningMessage(
                         localize(
                             'aws.resources.deleteResource.unsupported',
                             'Resource type {0} does not currently support delete in {1}',
@@ -84,8 +79,7 @@ export async function deleteResource(
                         'Failed to delete resource {0} ({1})',
                         identifier,
                         typeName
-                    ),
-                    window
+                    )
                 )
                 return false
             } finally {

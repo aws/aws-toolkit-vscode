@@ -805,8 +805,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 telemetry.s3_createBucket.emit({ result: 'Succeeded' })
             } catch (e) {
                 showViewLogsMessage(
-                    localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
-                    vscode.window
+                    localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest)
                 )
                 telemetry.s3_createBucket.emit({ result: 'Failed' })
                 return WIZARD_RETRY

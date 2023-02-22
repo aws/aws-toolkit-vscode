@@ -7,7 +7,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { getDefaultDownloadPath, setDefaultDownloadPath } from '../../shared/filesystemUtilities'
-import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
@@ -33,10 +32,6 @@ interface DownloadFileOptions {
      * If provided then the promise will not resolve into a Buffer.
      */
     readonly saveLocation?: vscode.Uri
-    /**
-     * Different window object to use for displaying progress
-     */
-    readonly window?: Window
     /**
      * Timeout associated with the download. If provided, it is assumed that
      * the download is also cancellable.
@@ -68,7 +63,7 @@ async function downloadS3File(
     options?.timeout?.token.onCancellationRequested(({ agent }) => downloadStream.destroy(new CancellationError(agent)))
 
     if (options?.progressLocation) {
-        ;(options.window ?? Window.vscode()).withProgress(
+        vscode.window.withProgress(
             {
                 location: options.progressLocation,
                 title: localize('AWS.s3.downloadFile.progressTitle', 'Downloading {0}...', file.name),
@@ -110,18 +105,14 @@ export async function downloadFile(file: S3File, options?: FileOptions | BufferO
  * Downloads the file (showing a progress bar).
  * Shows the output channel with "download completed" message.
  */
-export async function downloadFileAsCommand(
-    node: S3FileNode,
-    window = Window.vscode(),
-    outputChannel = globals.outputChannel
-): Promise<void> {
+export async function downloadFileAsCommand(node: S3FileNode, outputChannel = globals.outputChannel): Promise<void> {
     const { bucket, file } = node
     const sourcePath = readablePath(node)
 
     await telemetry.s3_downloadObject.run(async () => {
         const downloadPath = getDefaultDownloadPath()
 
-        const saveLocation = await promptForSaveLocation(file.name, window, downloadPath)
+        const saveLocation = await promptForSaveLocation(file.name, downloadPath)
         if (!saveLocation) {
             throw new CancellationError('user')
         }
@@ -132,7 +123,6 @@ export async function downloadFileAsCommand(
         await downloadFile(
             { ...file, bucket },
             {
-                window,
                 saveLocation,
                 client: node.s3,
                 progressLocation: vscode.ProgressLocation.Notification,
@@ -143,11 +133,7 @@ export async function downloadFileAsCommand(
     })
 }
 
-async function promptForSaveLocation(
-    fileName: string,
-    window: Window,
-    saveLocation: string
-): Promise<vscode.Uri | undefined> {
+async function promptForSaveLocation(fileName: string, saveLocation: string): Promise<vscode.Uri | undefined> {
     const extension = path.extname(fileName)
 
     // Insertion order matters, as it determines the ordering in the filters dropdown
@@ -157,7 +143,7 @@ async function promptForSaveLocation(
         : { 'All Files': ['*'] }
 
     const downloadPath = path.join(saveLocation, fileName)
-    return window.showSaveDialog({
+    return vscode.window.showSaveDialog({
         defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
         filters: filters,

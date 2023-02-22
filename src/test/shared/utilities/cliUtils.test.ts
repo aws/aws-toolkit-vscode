@@ -11,7 +11,7 @@ import globals from '../../../shared/extensionGlobals'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { SeverityLevel } from '../vscode/message'
 import { assertTelemetryCurried } from '../../testUtil'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('cliUtils', async function () {
     afterEach(async function () {

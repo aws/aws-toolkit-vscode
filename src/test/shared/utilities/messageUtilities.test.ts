@@ -5,9 +5,8 @@
 
 import * as assert from 'assert'
 import { showConfirmationMessage, showViewLogsMessage, showOutputMessage } from '../../../shared/utilities/messages'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('messages', function () {
     describe('showConfirmationMessage', function () {
@@ -58,9 +57,9 @@ describe('messages', function () {
         const message = 'message'
 
         it('shows error message with a button to view logs', async function () {
-            const window = new FakeWindow({ message: { errorSelection: 'View Logs...' } })
-            await showViewLogsMessage(message, window)
-            assert.strictEqual(window.message.error, message)
+            getTestWindow().onDidShowMessage(m => m.selectItem('View Logs...'))
+            await showViewLogsMessage(message)
+            getTestWindow().getFirstMessage().assertError(message)
         })
     })
 })

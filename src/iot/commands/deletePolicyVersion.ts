@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 
@@ -20,7 +20,6 @@ import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
  */
 export async function deletePolicyVersionCommand(
     node: IotPolicyVersionNode,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('DeletePolicyVersion called for %O', node)
@@ -28,19 +27,16 @@ export async function deletePolicyVersionCommand(
     const policyName = node.policy.name
     const policyVersionId = node.version.versionId!
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.iot.deletePolicyVersion.prompt',
-                'Are you sure you want to delete Version {0} of Policy {1}?',
-                policyVersionId,
-                policyName
-            ),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize(
+            'AWS.iot.deletePolicyVersion.prompt',
+            'Are you sure you want to delete Version {0} of Policy {1}?',
+            policyVersionId,
+            policyName
+        ),
+        confirm: localizedText.localizedDelete,
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('DeletePolicyVersion canceled')
         return
@@ -51,7 +47,7 @@ export async function deletePolicyVersionCommand(
         await node.iot.deletePolicyVersion({ policyName, policyVersionId })
 
         getLogger().info(`deleted Policy Version: ${policyVersionId}`)
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize(
                 'AWS.iot.deletePolicyVersion.success',
                 'Deleted Version {0} of Policy {1}',
@@ -67,8 +63,7 @@ export async function deletePolicyVersionCommand(
                 'Failed to delete Version {0} of Policy {1}',
                 policyVersionId,
                 policyName
-            ),
-            window
+            )
         )
     }
 

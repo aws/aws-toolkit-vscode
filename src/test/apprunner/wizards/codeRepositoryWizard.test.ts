@@ -14,7 +14,7 @@ import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
-import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
+import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { stub } from '../../utilities/stubber'
 import { getOpenExternalStub } from '../../globalSetup.test'
 
@@ -70,11 +70,11 @@ describe('createConnectionPrompter', function () {
         makeConnection('connection-name-2', 'connection-arn-2'),
     ]
 
-    function makeTester(connections = defaultConnections): QuickPickTester<ConnectionSummary> {
+    function makeTester(connections = defaultConnections): QuickPickPrompterTester<ConnectionSummary> {
         const client = stub(DefaultAppRunnerClient, { regionCode: '' })
         client.listConnections.resolves({ ConnectionSummaryList: connections })
 
-        return createQuickPickTester(createConnectionPrompter(client))
+        return createQuickPickPrompterTester(createConnectionPrompter(client))
     }
 
     function makeConnection(name: string, arn: string, status: ConnectionStatus = 'AVAILABLE'): ConnectionSummary {

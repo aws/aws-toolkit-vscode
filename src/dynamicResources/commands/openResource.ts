@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
@@ -13,22 +12,19 @@ import { AwsResourceManager, TypeSchema } from '../awsResourceManager'
 import { telemetry } from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
-export async function openResource(
-    opts: {
-        source: ResourceNode | vscode.Uri
-        preview: boolean
-        resourceManager: AwsResourceManager
-        diagnostics: vscode.DiagnosticCollection
-    },
-    window = Window.vscode()
-): Promise<void> {
+export async function openResource(opts: {
+    source: ResourceNode | vscode.Uri
+    preview: boolean
+    resourceManager: AwsResourceManager
+    diagnostics: vscode.DiagnosticCollection
+}): Promise<void> {
     const resource = opts.source instanceof vscode.Uri ? opts.resourceManager.fromUri(opts.source) : opts.source
     if (!resource || !(resource instanceof ResourceNode)) {
         throw new Error('could not resolve resource')
     }
     getLogger().info(`openResource called for type ${resource.parent.typeName} identifier ${resource.identifier}`)
 
-    return await window.withProgress(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -64,7 +60,7 @@ export async function openResource(
                     resource.parent.typeName
                 )
 
-                window.showErrorMessage(errorMessage)
+                vscode.window.showErrorMessage(errorMessage)
                 getLogger().error('Error opening resource: %s', error)
                 result = 'Failed'
             } finally {

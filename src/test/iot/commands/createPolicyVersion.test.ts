@@ -3,16 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
 import { createPolicyVersionCommand } from '../../../iot/commands/createPolicyVersion'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { Window } from '../../../shared/vscode/window'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createPolicyVersionCommand', function () {
     const policyName = 'test-policy'
@@ -21,9 +19,8 @@ describe('createPolicyVersionCommand', function () {
     let policyDocument: string
     let node: IotPolicyWithVersionsNode
     let parentNode: IotPolicyFolderNode
-    let window: FakeWindow
     let returnUndefined: boolean = false
-    const getPolicy: (window: Window) => Promise<Buffer | undefined> = async window => {
+    const getPolicy: () => Promise<Buffer | undefined> = async () => {
         if (returnUndefined) {
             return undefined
         }
@@ -34,7 +31,6 @@ describe('createPolicyVersionCommand', function () {
         iot = mock()
         parentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
         node = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
-        window = new FakeWindow()
         policyObject = { Version: '2012-10-17', Statement: '' }
         policyDocument = JSON.stringify(policyObject)
         returnUndefined = false
@@ -43,9 +39,11 @@ describe('createPolicyVersionCommand', function () {
     it('creates new policy version and shows success', async function () {
         const commands = new FakeCommands()
         returnUndefined = false
-        await createPolicyVersionCommand(node, getPolicy, window, commands)
+        await createPolicyVersionCommand(node, getPolicy, commands)
 
-        assert.strictEqual(window.message.information, 'Created new version of test-policy')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created new version of test-policy/)
 
         verify(iot.createPolicyVersion(deepEqual({ policyName, policyDocument, setAsDefault: true }))).once()
     })
@@ -53,7 +51,7 @@ describe('createPolicyVersionCommand', function () {
     it('does nothing when policy document is not read', async function () {
         returnUndefined = true
         const commands = new FakeCommands()
-        await createPolicyVersionCommand(node, getPolicy, window, commands)
+        await createPolicyVersionCommand(node, getPolicy, commands)
 
         verify(iot.createPolicyVersion(anything())).never()
     })
@@ -62,9 +60,11 @@ describe('createPolicyVersionCommand', function () {
         const commands = new FakeCommands()
         returnUndefined = false
         policyDocument = 'not a JSON'
-        await createPolicyVersionCommand(node, getPolicy, window, commands)
+        await createPolicyVersionCommand(node, getPolicy, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create new version of test-policy'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create new version of test-policy/)
 
         verify(iot.createPolicyVersion(anything())).never()
     })
@@ -74,8 +74,10 @@ describe('createPolicyVersionCommand', function () {
         when(iot.createPolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
         const commands = new FakeCommands()
-        await createPolicyVersionCommand(node, getPolicy, window, commands)
+        await createPolicyVersionCommand(node, getPolicy, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create new version of test-policy'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create new version of test-policy/)
     })
 })

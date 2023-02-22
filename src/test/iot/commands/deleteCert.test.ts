@@ -10,9 +10,9 @@ import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import globals from '../../../shared/extensionGlobals'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteCertCommand', function () {
     const certificateId = 'test-cert'
@@ -35,11 +35,11 @@ describe('deleteCertCommand', function () {
         when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve([])
         when(iot.listPrincipalPolicies(deepEqual({ principal: 'arn' }))).thenResolve({ policies: [] })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete Certificate test-cert?')
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Certificate test-cert?')
 
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: false }))).once()
 
@@ -50,19 +50,21 @@ describe('deleteCertCommand', function () {
     it('does nothing if things are attached', async function () {
         when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve(['iot-thing'])
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Certificate has attached resources: iot-thing'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Certificate has attached resources: iot-thing/)
 
         assert.strictEqual(commands.command, undefined)
     })
 
     it('does nothing when deletion is cancelled', async function () {
         when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve([])
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await deleteCertCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await deleteCertCommand(node, new FakeCommands())
 
         verify(iot.deleteCertificate(anything())).never()
     })
@@ -73,8 +75,8 @@ describe('deleteCertCommand', function () {
             parentNode,
             instance(iot)
         )
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
-        await deleteCertCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
+        await deleteCertCommand(node, new FakeCommands())
 
         verify(iot.deleteCertificate(anything())).never()
     })
@@ -84,11 +86,13 @@ describe('deleteCertCommand', function () {
         when(iot.listPrincipalPolicies(deepEqual({ principal: 'arn' }))).thenResolve({ policies: [] })
         when(iot.deleteCertificate(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete certificate: test-cert'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete certificate: test-cert/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
@@ -97,13 +101,14 @@ describe('deleteCertCommand', function () {
     it('shows an error message if Things are not fetched', async function () {
         when(iot.listThingsForCert(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
         verify(iot.deleteCertificate(anything())).never()
 
-        assert.ok(window.message.error?.includes('Failed to retrieve Things attached to certificate'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to retrieve Things attached to certificate/)
 
         assert.strictEqual(commands.command, undefined)
     })
@@ -114,11 +119,11 @@ describe('deleteCertCommand', function () {
             policies: [{ policyName: 'policy' }],
         })
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Certificate has attached policies. Delete anyway?')
+        getTestWindow().getSecondMessage().assertWarn('Certificate has attached policies. Delete anyway?')
 
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: true }))).once()
 
@@ -130,11 +135,11 @@ describe('deleteCertCommand', function () {
         when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve([])
         when(iot.listPrincipalPolicies(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deleteCertCommand(node, window, commands)
+        await deleteCertCommand(node, commands)
 
-        assert.strictEqual(window.message.error, 'Failed to retrieve policies attached to certificate')
+        getTestWindow().getSecondMessage().assertError('Failed to retrieve policies attached to certificate')
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: false }))).once()
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')

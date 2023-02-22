@@ -18,7 +18,7 @@ import {
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 
 describe('publishDocument', async function () {

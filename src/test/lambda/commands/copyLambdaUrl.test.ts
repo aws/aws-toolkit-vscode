@@ -4,15 +4,15 @@
  */
 
 import * as assert from 'assert'
-import { createStubInstance, SinonStubbedInstance, stub, SinonStub, spy, SinonSpy } from 'sinon'
+import { createStubInstance, SinonStubbedInstance, stub, SinonStub } from 'sinon'
 import { copyLambdaUrl, createLambdaFuncUrlPrompter, noLambdaFuncMessage } from '../../../lambda/commands/copyLambdaUrl'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
-import globals from '../../../shared/extensionGlobals'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { env } from 'vscode'
 import { FunctionUrlConfig } from 'aws-sdk/clients/lambda'
-import { createQuickPickTester } from '../../shared/ui/testUtils'
+import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
+import { getTestWindow } from '../../shared/vscode/window'
 
 /**
  * Builds an instance of {@link FunctionUrlConfig} without the
@@ -66,18 +66,8 @@ describe('copy lambda function URL to clipboard', async () => {
     })
 
     describe("URL doesn't exist", async () => {
-        let spiedInformationMessage: SinonSpy
-        let spiedStatusBarMessage: SinonSpy
-
         before(async () => {
             await env.clipboard.writeText('') // clear clipboard
-            spiedInformationMessage = spy(globals.window, 'showWarningMessage')
-            spiedStatusBarMessage = spy(globals.window, 'setStatusBarMessage')
-        })
-
-        afterEach(async () => {
-            spiedInformationMessage.resetHistory()
-            spiedStatusBarMessage.resetHistory()
         })
 
         it(`URL doesn't exist`, async () => {
@@ -86,9 +76,9 @@ describe('copy lambda function URL to clipboard', async () => {
             await copyLambdaUrl(node, client)
 
             assert.strictEqual(await env.clipboard.readText(), '')
-            assert.deepStrictEqual(spiedInformationMessage.args, [[noLambdaFuncMessage]])
-            assert.deepStrictEqual(spiedStatusBarMessage.args, [
-                [addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000],
+            getTestWindow().getFirstMessage().assertWarn(noLambdaFuncMessage)
+            assert.deepStrictEqual(getTestWindow().statusBar.messages, [
+                addCodiconToString('circle-slash', 'No URL for Lambda function.'),
             ])
         })
     })
@@ -101,7 +91,7 @@ describe('lambda func url prompter', async () => {
             <FunctionUrlConfig>{ FunctionUrl: 'url2', FunctionArn: 'arn2' },
         ]
         const prompter = createLambdaFuncUrlPrompter(configList)
-        const tester = createQuickPickTester(prompter)
+        const tester = createQuickPickPrompterTester(prompter)
         tester.assertItems(
             configList.map(c => {
                 return { label: c.FunctionArn, data: c.FunctionUrl } // order matters

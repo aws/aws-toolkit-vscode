@@ -13,7 +13,7 @@ import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProv
 import { ToolkitError } from '../../shared/errors'
 import { FakeMemento } from '../fakeExtensionContext'
 import { assertChildren, assertTreeItem } from '../shared/treeview/testUtil'
-import { getTestWindow } from '../globalSetup.test'
+import { getTestWindow } from '../shared/vscode/window'
 import { captureEvent } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
