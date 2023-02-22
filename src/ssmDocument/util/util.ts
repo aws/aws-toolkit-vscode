@@ -8,7 +8,6 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
-import { Window } from '../../shared/vscode/window'
 
 export async function promptUserForDocumentFormat(
     formats: string[],
@@ -46,13 +45,18 @@ export async function promptUserForDocumentFormat(
     return formatSelection.label
 }
 
-export async function showConfirmationMessage(
-    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
-    window: Window
-): Promise<boolean> {
+export async function showConfirmationMessage({
+    prompt,
+    confirm,
+    cancel,
+}: {
+    prompt: string
+    confirm: string
+    cancel: string
+}): Promise<boolean> {
     const confirmItem: vscode.MessageItem = { title: confirm }
     const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }
 
-    const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
+    const selection = await vscode.window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
     return selection === confirmItem
 }

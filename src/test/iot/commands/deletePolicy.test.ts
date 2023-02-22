@@ -11,9 +11,9 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deletePolicyCommand', function () {
     const policyName = 'test-policy'
@@ -40,11 +40,11 @@ describe('deletePolicyCommand', function () {
             )
         )
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyCommand(node, window, commands)
+        await deletePolicyCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete Policy test-policy?')
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Policy test-policy?')
 
         verify(iot.deletePolicy(deepEqual({ policyName }))).once()
 
@@ -54,11 +54,13 @@ describe('deletePolicyCommand', function () {
 
     it('does nothing when certificates are attached', async function () {
         when(iot.listPolicyTargets(deepEqual({ policyName }))).thenResolve(['cert'])
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyCommand(node, window, commands)
+        await deletePolicyCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Policy has attached certificates: cert'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Policy has attached certificates: cert/)
 
         verify(iot.deletePolicy(anything())).never()
     })
@@ -75,16 +77,16 @@ describe('deletePolicyCommand', function () {
                 })
             )
         )
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyCommand(node, window, commands)
+        await deletePolicyCommand(node, commands)
 
         verify(iot.deletePolicy(anything())).never()
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await deletePolicyCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await deletePolicyCommand(node, new FakeCommands())
 
         verify(iot.deletePolicy(anything())).never()
     })
@@ -92,11 +94,13 @@ describe('deletePolicyCommand', function () {
     it('shows an error message and refreshes node when policy deletion fails', async function () {
         when(iot.deletePolicy(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyCommand(node, window, commands)
+        await deletePolicyCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Policy: test-policy'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete Policy: test-policy/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

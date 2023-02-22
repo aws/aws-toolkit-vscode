@@ -15,7 +15,6 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { PublishSSMDocumentWizard, PublishSSMDocumentWizardResponse } from '../wizards/publishDocumentWizard'
-import { Window } from '../../shared/vscode/window'
 import { showConfirmationMessage } from '../util/util'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, SsmOperation } from '../../shared/telemetry/telemetry'
@@ -99,8 +98,7 @@ export async function createDocument(
 export async function updateDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    client: SsmDocumentClient = new DefaultSsmDocumentClient(wizardResponse.region),
-    window = Window.vscode()
+    client: SsmDocumentClient = new DefaultSsmDocumentClient(wizardResponse.region)
 ) {
     let result: Result = 'Succeeded'
     const ssmOperation = wizardResponse.action as SsmOperation
@@ -121,18 +119,15 @@ export async function updateDocument(
         logger.info(`Updated Systems Manager Document: ${JSON.stringify(updateResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated Systems Manager Document: ${wizardResponse.name}`)
 
-        const isConfirmed = await showConfirmationMessage(
-            {
-                prompt: localize(
-                    'AWS.ssmDocument.publishDocument.updateVersion.prompt',
-                    'Would you like to make this the default version for {0}?',
-                    wizardResponse.name
-                ),
-                confirm: localizedText.yes,
-                cancel: localizedText.no,
-            },
-            window
-        )
+        const isConfirmed = await showConfirmationMessage({
+            prompt: localize(
+                'AWS.ssmDocument.publishDocument.updateVersion.prompt',
+                'Would you like to make this the default version for {0}?',
+                wizardResponse.name
+            ),
+            confirm: localizedText.yes,
+            cancel: localizedText.no,
+        })
 
         if (!isConfirmed) {
             logger.info('Declined update default version on update document success.')

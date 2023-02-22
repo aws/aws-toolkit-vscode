@@ -26,6 +26,7 @@ import {
     getIdeProperties,
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
+    isCloud9,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -52,7 +53,6 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
-import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -75,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
-    initialize(context, extWindow.Window.vscode())
+    initialize(context)
     initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
@@ -91,6 +91,10 @@ export async function activate(context: vscode.ExtensionContext) {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
         handleError(error, info.id, defaultMessage)
     })
+
+    if (isCloud9()) {
+        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+    }
 
     try {
         initializeCredentialsProviderManager()
@@ -314,6 +318,35 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
         telemetry.toolkit_init.emit({ duration })
     } catch (err) {
         logger?.error(err as Error)
+    }
+}
+
+/**
+ * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
+ *
+ * Cloud9 does not show a progress notification.
+ */
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): typeof vscode.window['withProgress'] {
+    const withProgress = vscode.window.withProgress.bind(vscode.window)
+
+    return (options, task) => {
+        if (options.title) {
+            channel.appendLine(options.title)
+        }
+
+        return withProgress(options, (progress, token) => {
+            const newProgress: typeof progress = {
+                ...progress,
+                report: value => {
+                    if (value.message) {
+                        channel.appendLine(value.message)
+                    }
+                    progress.report(value)
+                },
+            }
+
+            return task(newProgress, token)
+        })
     }
 }
 

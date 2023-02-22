@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 
@@ -19,18 +19,16 @@ import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
  * Deletes the policy.
  * Refreshes the parent node.
  */
-export async function deleteCertCommand(
-    node: IotCertWithPoliciesNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deleteCertCommand(node: IotCertWithPoliciesNode, commands = Commands.vscode()): Promise<void> {
     getLogger().debug('DeleteThing called for %O', node)
 
     const certArn = node.certificate.arn
 
     if (node.certificate.activeStatus === 'ACTIVE') {
         getLogger().error('Certificate is active')
-        window.showErrorMessage(localize('AWS.iot.deleteCert.activeError', 'Active certificates cannot be deleted'))
+        vscode.window.showErrorMessage(
+            localize('AWS.iot.deleteCert.activeError', 'Active certificates cannot be deleted')
+        )
         return
     }
 
@@ -38,7 +36,7 @@ export async function deleteCertCommand(
         const things = await node.iot.listThingsForCert({ principal: certArn })
         if (things.length > 0) {
             getLogger().error(`Certificate ${node.certificate.id} has attached Things`)
-            window.showErrorMessage(
+            vscode.window.showErrorMessage(
                 localize(
                     'AWS.iot.deleteCert.attachedError',
                     'Cannot delete certificate. Certificate has attached resources: {0}',
@@ -50,24 +48,20 @@ export async function deleteCertCommand(
     } catch (e) {
         getLogger().error(`Failed to retrieve Things attached to cert ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
-            localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'Things'),
-            window
+            localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'Things')
         )
         return
     }
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.iot.deleteCert.prompt',
-                'Are you sure you want to delete Certificate {0}?',
-                node.certificate.id
-            ),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize(
+            'AWS.iot.deleteCert.prompt',
+            'Are you sure you want to delete Certificate {0}?',
+            node.certificate.id
+        ),
+        confirm: localizedText.localizedDelete,
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('DeleteCert canceled')
         return
@@ -77,18 +71,15 @@ export async function deleteCertCommand(
     try {
         const policies = (await node.iot.listPrincipalPolicies({ principal: certArn })).policies
         if (policies?.length ?? 0 > 0) {
-            forceDelete = await showConfirmationMessage(
-                {
-                    prompt: localize(
-                        'AWS.iot.deleteCert.attachedError',
-                        'Certificate has attached {0}',
-                        'policies. Delete anyway?'
-                    ),
-                    confirm: localizedText.localizedDelete,
-                    cancel: localizedText.cancel,
-                },
-                window
-            )
+            forceDelete = await showConfirmationMessage({
+                prompt: localize(
+                    'AWS.iot.deleteCert.attachedError',
+                    'Certificate has attached {0}',
+                    'policies. Delete anyway?'
+                ),
+                confirm: localizedText.localizedDelete,
+                cancel: localizedText.cancel,
+            })
             if (!forceDelete) {
                 getLogger().info('DeleteCert canceled')
                 return
@@ -97,8 +88,7 @@ export async function deleteCertCommand(
     } catch (e) {
         getLogger().error(`Failed to retrieve Policies attached to cert ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
-            localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'policies'),
-            window
+            localize('AWS.iot.deleteCert.retrieveError', 'Failed to retrieve {0} attached to certificate', 'policies')
         )
     }
 
@@ -107,14 +97,13 @@ export async function deleteCertCommand(
         await node.iot.deleteCertificate({ certificateId: node.certificate.id, forceDelete: forceDelete })
 
         getLogger().info(`deleted certificate: ${node.certificate.id}`)
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize('AWS.iot.deleteCert.success', 'Deleted certificate: {0}', node.certificate.id)
         )
     } catch (e) {
         getLogger().error(`Failed to delete Certificate ${node.certificate.id}: %s`, e)
         showViewLogsMessage(
-            localize('AWS.iot.deleteCert.error', 'Failed to delete certificate: {0}', node.certificate.id),
-            window
+            localize('AWS.iot.deleteCert.error', 'Failed to delete certificate: {0}', node.certificate.id)
         )
     }
 

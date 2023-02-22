@@ -42,6 +42,14 @@ export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
     return obj !== undefined && obj !== null
 }
 
+export function isKeyOf<T>(key: PropertyKey, obj: T): key is keyof T {
+    return key in obj
+}
+
+export function hasKey<T, K extends PropertyKey>(obj: T, key: K): obj is T & { [P in K]: unknown } {
+    return isKeyOf(key, obj)
+}
+
 /**
  * Stricter form of {@link Object.keys} that gives slightly better types for object literals.
  */

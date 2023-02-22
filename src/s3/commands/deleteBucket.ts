@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -28,21 +27,17 @@ import { ToolkitError } from '../../shared/errors'
  * This is unfortunate, but it's still a valuable feature and partial failures
  * don't result in a state of too much confusion for the user.
  */
-export async function deleteBucketCommand(
-    node: S3BucketNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deleteBucketCommand(node: S3BucketNode, commands = Commands.vscode()): Promise<void> {
     getLogger().debug('DeleteBucket called for %O', node)
 
     await telemetry.s3_deleteBucket.run(async () => {
-        const isConfirmed = await showConfirmationDialog(node.bucket.name, window)
+        const isConfirmed = await showConfirmationDialog(node.bucket.name)
         if (!isConfirmed) {
             throw new CancellationError('user')
         }
 
         getLogger().info(`Deleting bucket: ${node.bucket.name}`)
-        await deleteWithProgress(node, window)
+        await deleteWithProgress(node)
             .catch(e => {
                 const message = localize(
                     'AWS.s3.deleteBucket.error.general',
@@ -56,9 +51,9 @@ export async function deleteBucketCommand(
     })
 }
 
-async function showConfirmationDialog(bucketName: string, window: Window): Promise<boolean> {
+async function showConfirmationDialog(bucketName: string): Promise<boolean> {
     const prompt = localize('AWS.s3.deleteBucket.prompt', 'Enter {0} to confirm deletion', bucketName)
-    const confirmationInput = await window.showInputBox({
+    const confirmationInput = await vscode.window.showInputBox({
         prompt,
         placeHolder: bucketName,
         validateInput: input => (input !== bucketName ? prompt : undefined),
@@ -67,8 +62,8 @@ async function showConfirmationDialog(bucketName: string, window: Window): Promi
     return confirmationInput === bucketName
 }
 
-async function deleteWithProgress(node: S3BucketNode, window: Window): Promise<void> {
-    return window.withProgress(
+async function deleteWithProgress(node: S3BucketNode): Promise<void> {
+    return vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             title: localize('AWS.s3.deleteBucket.progressTitle', 'Deleting {0}...', node.bucket.name),
