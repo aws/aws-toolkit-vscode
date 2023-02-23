@@ -571,6 +571,7 @@ export class ResultDisplay {
                     break
                 }
                 case 'resetStore': {
+                    panel.webviewPanel.title = ''
                     telemetry.mynah_clearSearch.emit({
                         mynahSearchId: searchId,
                         mynahViewId: panelId,
