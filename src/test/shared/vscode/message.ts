@@ -58,7 +58,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     }
 
     public get visible() {
-        return this._showing && this.message
+        return this._showing && !!this.message
     }
 
     public get detail() {
@@ -140,7 +140,11 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     }
 
     public printDebug(message: string | RegExp = this.message, severity = this.severity) {
-        return `[${severity}]: ${typeof message === 'string' ? message : message.source}`
+        return [
+            `severity: ${severity}`,
+            `message: ${message}`,
+            `items: ${this.options?.items?.map(i => i.title).join(', ') || '[no items]'}`,
+        ].join(', ')
     }
 
     public dispose(): void {
@@ -166,7 +170,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             throw new Error('Attempted to select from a disposed message')
         }
         if (!this.options?.items || this.options.items.length === 0) {
-            throw new Error(`Could not find the specified item: ${item}. Message has no items: ${this.message}`)
+            throw new Error(`Could not find the specified item "${item}". Message has no items: ${this.message}`)
         }
 
         const selected =
@@ -175,8 +179,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
                 : this.options?.items?.find(i => i === item)
 
         if (!selected) {
-            const items = this.options?.items?.map(i => i.title)?.join('\n')
-            throw new Error(`Could not find the specified item: ${item}. Current items:\n${items}`)
+            throw new Error(`Could not find the specified item "${item}" on message: ${this.printDebug()}`)
         }
 
         this._selected = selected
@@ -243,11 +246,11 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
 }
 
 interface OpenDialogOptions extends vscode.OpenDialogOptions {
-    readonly type: 'open'
+    readonly type: 'Open'
 }
 
 interface SaveDialogOptions extends vscode.SaveDialogOptions {
-    readonly type: 'save'
+    readonly type: 'Save'
 }
 
 type FileSystemDialogOptions = OpenDialogOptions | SaveDialogOptions
@@ -294,7 +297,7 @@ export class TestFileSystemDialog {
     }
 
     public get acceptButtonLabel() {
-        if (this.options.type === 'save') {
+        if (this.options.type === 'Save') {
             return this.options.saveLabel
         } else {
             return this.options.openLabel
@@ -343,12 +346,20 @@ export class TestFileSystemDialog {
         })
     }
 
+    public printDebug() {
+        return [
+            `type: ${this.options.type}`,
+            `title: ${this.title ?? '[no title]'}`,
+            `acceptButtonLabel: ${this.acceptButtonLabel ?? '[no label]'}`,
+        ].join(', ')
+    }
+
     public static createOpenSaveDialogFn(
         fs: vscode.FileSystem,
         callback?: (dialog: TestFileSystemDialog) => void
     ): Window['showOpenDialog'] {
         return async (options?: vscode.OpenDialogOptions) => {
-            const dialog = new TestFileSystemDialog([], { type: 'open', ...options })
+            const dialog = new TestFileSystemDialog([], { type: 'Open', ...options })
 
             return new Promise<vscode.Uri[] | undefined>(resolve => {
                 dialog.onDidAcceptItem(item => resolve(item instanceof vscode.Uri ? [item] : item))
@@ -363,7 +374,7 @@ export class TestFileSystemDialog {
         callback?: (dialog: TestFileSystemDialog) => void
     ): Window['showSaveDialog'] {
         return async (options?: vscode.SaveDialogOptions) => {
-            const dialog = new TestFileSystemDialog([], { type: 'save', ...options })
+            const dialog = new TestFileSystemDialog([], { type: 'Save', ...options })
 
             return new Promise<vscode.Uri | undefined>(resolve => {
                 dialog.onDidAcceptItem(item => resolve(Array.isArray(item) ? item[0] : item))

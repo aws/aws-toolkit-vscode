@@ -22,7 +22,7 @@ import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
-import { getTestWindow, resetTestWindow } from './shared/vscode/window'
+import { printPendingUiElements, getTestWindow, resetTestWindow } from './shared/vscode/window'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -80,13 +80,17 @@ beforeEach(async function () {
                         event.dispose()
                         reject(error)
                     })
+
+                    // Set a hard time limit per-test so CI doesn't hang
+                    // Mocha's `timeout` method isn't used because we want to emit a custom message
+                    setTimeout(() => {
+                        const message = `Test length exceeded max duration\n${printPendingUiElements()}`
+                        reject(new Error(message))
+                    }, maxTestDuration)
                 }),
             ])
         }
     }
-
-    // Set a hard time limit per-test so CI doesn't hang
-    this.currentTest?.timeout(maxTestDuration)
 
     // Enable telemetry features for tests. The metrics won't actually be posted.
     globals.telemetry.telemetryEnabled = true
