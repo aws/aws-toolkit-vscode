@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { Window } from '../../shared/vscode/window'
 import { invalidNumberWarning } from '../../shared/localizedText'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
@@ -21,15 +20,10 @@ import { getLogger } from '../../shared/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { s3PresigndUrlHelpUrl } from '../../shared/constants'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { S3BucketNode } from '../explorer/s3BucketNode'
 
 const localize = nls.loadMessageBundle()
 
-export async function presignedURLCommand(
-    node?: S3FileNode | S3FolderNode | S3BucketNode,
-    window = Window.vscode(),
-    env = Env.vscode()
-): Promise<void> {
+export async function presignedURLCommand(node: S3FileNode, env = Env.vscode()): Promise<void> {
     await telemetry.s3_copyUrl.run(async span => {
         span.record({ presigned: true })
         let nodeInfo: PresignedUrlWizardOptions | undefined
@@ -62,7 +56,7 @@ export async function presignedURLCommand(
             )
         })
 
-        await copyToClipboard(url, 'URL', window, env)
+        await copyToClipboard(url, 'URL', env)
     })
 }
 

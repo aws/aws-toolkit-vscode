@@ -364,3 +364,17 @@ export async function* toStream<T>(values: Iterable<Promise<T>>): AsyncGenerator
         yield Promise.race(unresolved.values())
     }
 }
+
+export function* partition<T>(iterable: Iterable<T>, size: number): Generator<T[]> {
+    let batch = []
+    for (const element of iterable) {
+        batch.push(element)
+        if (batch.length === size) {
+            yield batch
+            batch = []
+        }
+    }
+    if (batch.length > 0) {
+        yield batch
+    }
+}

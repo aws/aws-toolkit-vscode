@@ -68,8 +68,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                 'AWS.message.error.ssmDocument.updateDocumentVersion.could_not_update_version',
                 'Could not update default version for: {0}',
                 node.documentName
-            ),
-            vscode.window
+            )
         )
         logger.error('Error on updating document version: %0', error)
     } finally {

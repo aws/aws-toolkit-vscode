@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { Result } from '../../shared/telemetry/telemetry'
@@ -15,25 +14,21 @@ import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-async function confirmDeletion(functionName: string, window = vscode.window): Promise<boolean> {
-    return showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.command.deleteLambda.confirm',
-                "Are you sure you want to delete lambda function '{0}'?",
-                functionName
-            ),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+async function confirmDeletion(functionName: string): Promise<boolean> {
+    return showConfirmationMessage({
+        prompt: localize(
+            'AWS.command.deleteLambda.confirm',
+            "Are you sure you want to delete lambda function '{0}'?",
+            functionName
+        ),
+        confirm: localizedText.localizedDelete,
+        cancel: localizedText.cancel,
+    })
 }
 
 export async function deleteLambda(
     lambda: Pick<FunctionConfiguration, 'FunctionName'>,
-    client: Pick<DefaultLambdaClient, 'deleteFunction'>,
-    window = vscode.window
+    client: Pick<DefaultLambdaClient, 'deleteFunction'>
 ): Promise<void> {
     if (!lambda.FunctionName) {
         telemetry.lambda_delete.emit({ duration: 0, result: 'Failed' })
@@ -44,7 +39,7 @@ export async function deleteLambda(
     let deleteResult: Result = 'Succeeded'
 
     try {
-        if (await confirmDeletion(lambda.FunctionName, window)) {
+        if (await confirmDeletion(lambda.FunctionName)) {
             await client.deleteFunction(lambda.FunctionName)
         } else {
             deleteResult = 'Cancelled'
@@ -58,7 +53,7 @@ export async function deleteLambda(
             lambda.FunctionName
         )
 
-        showViewLogsMessage(message, window)
+        showViewLogsMessage(message)
     } finally {
         telemetry.lambda_delete.emit({
             result: deleteResult,

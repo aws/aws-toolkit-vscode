@@ -9,14 +9,12 @@ import { copyArnCommand } from '../../../awsexplorer/commands/copyArn'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { TreeShim } from '../../../shared/treeview/utils'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
 
 describe('copyArnCommand', function () {
-    let window: FakeWindow
     let env: FakeEnv
 
     beforeEach(function () {
-        window = new FakeWindow()
         env = new FakeEnv()
     })
 
@@ -26,18 +24,20 @@ describe('copyArnCommand', function () {
             name: 'name',
         }
 
-        await copyArnCommand(node, window, env)
+        await copyArnCommand(node, env)
 
         assert.strictEqual(env.clipboard.text, 'arn')
-        assert.strictEqual(window.message.error, undefined)
+        assertNoErrorMessages()
     })
 
     it('shows error message on failure', async function () {
-        await copyArnCommand(new NoArnNode(), window, env)
+        await copyArnCommand(new NoArnNode(), env)
 
         assert.strictEqual(env.clipboard.text, undefined)
-        assert.strictEqual(window.statusBar.message, undefined)
-        assert.ok(window.message.error?.includes('Could not find an ARN'))
+        assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Could not find an ARN/)
     })
 
     it('handles `TreeShim`', async function () {
@@ -47,7 +47,7 @@ describe('copyArnCommand', function () {
             getTreeItem: () => new TreeItem(''),
         })
 
-        await copyArnCommand(node, window, env)
+        await copyArnCommand(node, env)
         assert.strictEqual(env.clipboard.text, 'arn')
     })
 })
