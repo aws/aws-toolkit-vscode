@@ -20,10 +20,14 @@ import { getLogger } from '../../shared/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { s3PresigndUrlHelpUrl } from '../../shared/constants'
 import { S3FolderNode } from '../explorer/s3FolderNode'
+import { S3BucketNode } from '../explorer/s3BucketNode'
 
 const localize = nls.loadMessageBundle()
 
-export async function presignedURLCommand(node: S3FileNode, env = Env.vscode()): Promise<void> {
+export async function presignedURLCommand(
+    node: S3FileNode | S3FolderNode | S3BucketNode,
+    env = Env.vscode()
+): Promise<void> {
     await telemetry.s3_copyUrl.run(async span => {
         span.record({ presigned: true })
         let nodeInfo: PresignedUrlWizardOptions | undefined
