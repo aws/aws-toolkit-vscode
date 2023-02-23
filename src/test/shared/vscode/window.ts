@@ -432,6 +432,24 @@ export function assertNoErrorMessages() {
     }
 }
 
+export function printPendingUiElements(window = getTestWindow()) {
+    const parts: string[] = []
+    const messages = window.shownMessages.filter(m => m.visible)
+    const dialogs = window.shownDialogs.filter(d => d.visible)
+
+    if (messages.length > 0) {
+        parts.push('Messages:', ...messages.map(m => `  ${m.printDebug()}`))
+    }
+    if (dialogs.length > 0) {
+        parts.push('File System Dialogs:', ...dialogs.map(d => `  ${d.printDebug()}`))
+    }
+    if (window.activeQuickInput?.visible) {
+        parts.push('Quick Inputs: ', `  ${window.activeQuickInput.title}`)
+    }
+
+    return parts.length > 0 ? ['Pending UI Elements:', ...parts].join('\n') : '[No Pending UI Elements Found]'
+}
+
 type TestEventEmitter<T> = vscode.EventEmitter<T> & {
     readonly onError: vscode.Event<{ event: T; error: unknown }>
 }
