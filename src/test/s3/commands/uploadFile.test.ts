@@ -35,8 +35,7 @@ describe('uploadFileCommand', function () {
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
     const getBucketFolderResponse: (
-        s3client: S3Client,
-        window?: Window
+        s3client: S3Client
     ) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = s3Client => {
         return new Promise((resolve, reject) => {
             resolve(folderResponse)
