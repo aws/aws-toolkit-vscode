@@ -194,7 +194,7 @@ describe('uploadFileCommand', function () {
         when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
         when(mockedUpload.promise()).thenResolve()
 
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
         await uploadFileCommand(
             instance(s3),
@@ -202,7 +202,6 @@ describe('uploadFileCommand', function () {
             statFile,
             getBucketFolderResponse,
             getFile,
-            window,
             outputChannel,
             commands
         )
