@@ -56,6 +56,7 @@ describe('downloadFilesCommand', function () {
 
     it('prompts for save location, downloads file with progress, and shows output channel - single file', async function () {
         globals.context.globalState.update('aws.downloadPath', temp)
+        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
 
         when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
 
@@ -67,6 +68,7 @@ describe('downloadFilesCommand', function () {
     })
 
     it('downloads files from folder, creates folder', async function () {
+        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
         const file1 = { name: 'file1', key: 'file1', arn: 'arn' }
         const file2 = { name: 'file2', key: 'file2', arn: 'arn2' }
         const folderNode = new S3FolderNode(bucket, { name: 'folderName' } as Folder, instance(s3))
@@ -84,6 +86,7 @@ describe('downloadFilesCommand', function () {
     })
 
     it('downloads multi selected files', async function () {
+        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
         const file2 = { name: 'file2', key: 'file2', arn: 'arn2' }
         const node2 = new S3FileNode(bucket, file2, bucketNode, instance(s3))
 
