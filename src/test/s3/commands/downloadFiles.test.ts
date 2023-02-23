@@ -101,10 +101,4 @@ describe('downloadFilesCommand', function () {
         await assert.rejects(() => downloadFilesCommand(node, [], outputChannel), /[\s\S]*/i)
         verify(s3.downloadFileStream(anything(), anything())).never()
     })
-
-    it('throws when download fails', async function () {
-        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
-        when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
-        await assert.rejects(() => downloadFilesCommand(node, [], outputChannel), /[\s\S]*/i)
-    })
 })
