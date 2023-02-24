@@ -36,6 +36,10 @@ describe('CodeWhisperer service invocation', async function () {
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
+        if (!validConnection && this.currentTest) {
+            this.currentTest.title += ` (skipped - no valid connection)`
+            this.currentTest.skip()
+        }
     })
 
     it('manual trigger returns valid recommendation response', async function () {
