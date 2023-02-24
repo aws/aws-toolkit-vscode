@@ -10,7 +10,7 @@ import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as path from 'path'
 import * as testutil from '../../test/testUtil'
 import * as fs from 'fs-extra'
-import { setValidConnection } from '../util/codewhispererUtil'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
 import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { closeAllEditors } from '../../test/testUtil'
@@ -53,17 +53,19 @@ describe('CodeWhisperer security scan', async function () {
     const workspaceFolder = getTestWorkspaceFolder()
 
     before(async function () {
-        //valid connection required to run tests
         validConnection = await setValidConnection()
     })
 
-    beforeEach(async function () {
+    beforeEach(function () {
         resetCodeWhispererGlobalVariables()
-        tempFolder = await makeTemporaryToolkitFolder()
+        //valid connection required to run tests
+        skiptTestIfNoValidConn(validConnection, this)
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        if(tempFolder !== undefined){
+            await fs.remove(tempFolder)
+        }
     })
 
     after(function () {
@@ -120,10 +122,6 @@ describe('CodeWhisperer security scan', async function () {
     }
 
     it('codescan request with valid input params and no security issues completes scan and returns no recommendations', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
         //set up file and editor
         const appRoot = path.join(workspaceFolder, 'python3.7-plain-sam-app')
         const appCodePath = path.join(appRoot, 'hello_world', 'app.py')
@@ -149,11 +147,8 @@ describe('CodeWhisperer security scan', async function () {
     })
 
     it('codescan request with valid input params and security issues completes scan and returns recommendations', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
         //set up file and editor
+        tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test.py')
         testutil.toFile(filePromptWithSecurityIssues, tempFile)
         const editor = await openTestFile(tempFile)
@@ -178,10 +173,7 @@ describe('CodeWhisperer security scan', async function () {
     })
 
     it('codescan request on file that is too large causes scan job setup to fail', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
+        tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test2.py')
         testutil.toFile(largePrompt, tempFile)
         const editor = await openTestFile(tempFile)
@@ -190,10 +182,7 @@ describe('CodeWhisperer security scan', async function () {
     })
 
     it('codescan request on java file with no build causes scan job setup to fail', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
+        tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test.java')
         testutil.toFile(javaPromptNoBuild, tempFile)
         const editor = await openTestFile(tempFile)
@@ -202,10 +191,6 @@ describe('CodeWhisperer security scan', async function () {
     })
 
     it('codescan request for file in unsupported language fails to generate dependency graph and causes scan setup to fail', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
         const appRoot = path.join(workspaceFolder, 'go1-plain-sam-app')
         const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
         const editor = await openTestFile(appCodePath)

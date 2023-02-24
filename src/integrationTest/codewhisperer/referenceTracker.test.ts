@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import { setValidConnection } from '../util/codewhispererUtil'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
@@ -48,23 +48,20 @@ describe('CodeWhisperer service invocation', async function () {
     }
 
     before(async function () {
-        //valid connection required to run tests
         validConnection = await setValidConnection()
     })
 
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
+        //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
+        this.skip()
+        //valid connection required to run tests
+        skiptTestIfNoValidConn(validConnection, this)
+       
     })
 
     it('trigger known to return recs with references returns rec with reference', async function () {
-          //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
-          this.skip()
-        
-        if (!validConnection) {
-            this.skip()
-        }
-
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
@@ -98,13 +95,6 @@ describe('CodeWhisperer service invocation', async function () {
 
     //This test will fail if user is logged in with IAM identity center
     it('trigger known to return rec with references does not return rec with references when reference tracker setting is off', async function () {
-        //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
-        this.skip()
-        
-        if (!validConnection) {
-            this.skip()
-        }
-
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId

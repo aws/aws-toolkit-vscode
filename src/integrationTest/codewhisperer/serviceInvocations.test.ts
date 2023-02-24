@@ -5,7 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { setValidConnection } from '../util/codewhispererUtil'
+import * as path from 'path'
+import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
@@ -17,6 +18,7 @@ import {
 import { KeyStrokeHandler } from '../../codewhisperer/service/keyStrokeHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
+import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
@@ -29,24 +31,17 @@ describe('CodeWhisperer service invocation', async function () {
     }
 
     before(async function () {
-        //valid connection required to run tests
         validConnection = await setValidConnection()
     })
 
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
-        if (!validConnection && this.currentTest) {
-            this.currentTest.title += ` (skipped - no valid connection)`
-            this.currentTest.skip()
-        }
+        //valid connection required to run tests
+        skiptTestIfNoValidConn(validConnection, this)
     })
 
     it('manual trigger returns valid recommendation response', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
@@ -69,10 +64,6 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('auto trigger returns valid recommendation response', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
@@ -104,15 +95,9 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     it('invocation in unsupported language does not generate a request', async function () {
-        if (!validConnection) {
-            this.skip()
-        }
-
-        const doc = ''
-        const filename = 'test.rb'
-        const language = 'ruby'
-        const line = 0
-        const char = 0
+        const workspaceFolder = getTestWorkspaceFolder()
+        const appRoot = path.join(workspaceFolder, 'go1-plain-sam-app')
+        const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
 
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
@@ -123,8 +108,9 @@ describe('CodeWhisperer service invocation', async function () {
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
 
-        const mockEditor = createMockTextEditor(doc, filename, language, line, char)
-        await invokeRecommendation(mockEditor, client, config)
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
+        const editor = await vscode.window.showTextDocument(doc)
+        await invokeRecommendation(editor, client, config)
 
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
