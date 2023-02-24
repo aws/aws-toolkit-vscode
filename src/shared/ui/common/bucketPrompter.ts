@@ -8,7 +8,7 @@ import { S3 } from 'aws-sdk'
 import { DefaultS3Client, S3Client } from '../../clients/s3Client'
 import globals from '../../extensionGlobals'
 import { createCommonButtons, PrompterButtons } from '../buttons'
-import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
+import { createQuickPick } from '../pickerPrompter'
 import { getLogger } from '../../logger/logger'
 
 interface BucketPrompterOptions {
@@ -17,18 +17,19 @@ interface BucketPrompterOptions {
     readonly buttons?: PrompterButtons<string>
     readonly helpUrl?: string | vscode.Uri
 }
-export function createBucketPrompter(region: string, options: BucketPrompterOptions = {}) {
+export async function createBucketPrompter(region: string, options: BucketPrompterOptions = {}) {
     const lastBucketKey = 'lastSelectedBucket'
     const lastBucket = globals.context.globalState.get<S3.Bucket>(lastBucketKey)
     const client = options.s3Client ?? new DefaultS3Client(region)
 
-    const items = client.listBucketsIterable().map(b => [
-        {
-            label: b.Name,
-            data: b.Name,
-            recentlyUsed: b.Name === lastBucket,
-        },
-    ])
+    const response = await client.listBuckets()
+    const items = response.buckets.map(b => {
+        return {
+            label: b.name,
+            data: b.name,
+            recentlyUsed: b.name === lastBucket,
+        }
+    })
 
     const prompter = createQuickPick(items, {
         title: options.title ?? 'Select an S3 Bucket',
