@@ -251,13 +251,5 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             await assertChildren(node, { label: 'Login' })
         })
-
-        it('shows an error child node', async function () {
-            const node = new AuthNode(auth)
-            const conn = await setupInvalidSsoConnection(auth, ssoProfile)
-            await auth.useConnection(conn)
-            auth.setLoginError(new Error('fail'))
-            await assertChildren(node, 'Login', 'Failed to login (click for logs)')
-        })
     })
 })

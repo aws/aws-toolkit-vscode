@@ -333,7 +333,7 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public setLoginError(err: Error) {
+    private setLoginError(err: Error) {
         this.loginError = err
     }
 
