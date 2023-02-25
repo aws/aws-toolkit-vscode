@@ -18,7 +18,7 @@ import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
-import { getCache } from './sso/cache'
+import { getCache, getTokenCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
@@ -37,18 +37,21 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
+import { partition } from '../shared/utilities/mementos'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
 
-export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
+export function createBuilderIdProfile(
+    scopes = [...codecatalystScopes, ...codewhispererScopes]
+): SsoProfile & { readonly scopes: string[] } {
     return {
         type: 'sso',
         ssoRegion: 'us-east-1',
         startUrl: builderIdStartUrl,
-        scopes: [...codecatalystScopes, ...codewhispererScopes],
+        scopes,
     }
 }
 
@@ -674,13 +677,29 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         // Use the environment token if available
+        // This token only has CC permissions currently!
         if (getCodeCatalystDevEnvId() !== undefined) {
-            const profile = createBuilderIdProfile()
+            const getScopes = async () => {
+                const token = await getTokenCache()
+                    .load(this.getSsoSessionName())
+                    .catch(err => {
+                        getLogger().verbose(`auth: failed to get existing scopes: %s`, err)
+                    })
+
+                if (!token?.registration?.scopes) {
+                    getLogger().warn(`auth: no scopes found in token, defaulting to CodeCatalyst scopes`)
+                    return codecatalystScopes
+                }
+
+                return token.registration.scopes
+            }
+
+            const profile = createBuilderIdProfile(await getScopes())
             const key = getSsoProfileKey(profile)
             if (this.store.getProfile(key) === undefined) {
                 await this.store.addProfile(key, profile)
+                await this.store.setCurrentProfileId(key)
             }
-            await this.store.setCurrentProfileId(key)
         }
 
         const conn = await this.restorePreviousSession()
@@ -716,7 +735,11 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
+        const devEnvId = getCodeCatalystDevEnvId()
+        const memento =
+            devEnvId !== undefined ? partition(globals.context.globalState, devEnvId) : globals.context.globalState
+
+        return (this.#instance ??= new Auth(new ProfileStore(memento)))
     }
 }
 
