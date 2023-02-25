@@ -50,14 +50,16 @@ describe('UriHandler', function () {
         assert.throws(() => uriHandler.registerHandler(testPath, () => {}))
     })
 
-    it('catches errors thrown by the parser', function (done) {
-        const handler = () => done(new Error('this should not be called'))
+    it('catches errors thrown by the parser', async function () {
+        const handler = () => {
+            throw new Error('this should not be called')
+        }
         const parser = () => {
             throw new Error()
         }
 
         uriHandler.registerHandler(testPath, handler, parser)
-        assert.doesNotReject(uriHandler.handleUri(makeUri('key=value'))).then(done, done)
+        await assert.doesNotReject(uriHandler.handleUri(makeUri('key=value')))
     })
 
     it('catches errors thrown by the handler', async function () {

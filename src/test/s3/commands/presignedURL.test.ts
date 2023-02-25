@@ -11,9 +11,9 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
-import { Window } from '../../../shared/vscode/window'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { anything, instance, mock, when } from '../../utilities/mockito'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('presignedURLCommand', function () {
     const bucketName = 'bucket-name'
@@ -24,11 +24,9 @@ describe('presignedURLCommand', function () {
     let node: S3FileNode
     let s3: S3Client
     let bucketNode: S3BucketNode
-    let window: Window
 
     beforeEach(function () {
         s3 = mock()
-        window = mock()
         env = new FakeEnv()
 
         const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
@@ -37,16 +35,16 @@ describe('presignedURLCommand', function () {
     })
 
     it('calls S3 to get the URL', async function () {
-        when(window.showInputBox(anything())).thenReturn(Promise.resolve('20'))
+        getTestWindow().onDidShowInputBox(input => input.acceptValue('20'))
         when(s3.getSignedUrl(anything())).thenResolve(testUrl)
 
-        await presignedURLCommand(node, instance(window), env)
+        await presignedURLCommand(node, env)
 
         assert.deepStrictEqual(env.clipboard.text, testUrl)
     })
 
     it('copies a given URL to the clipboard', async function () {
-        await copyToClipboard(testUrl, 'URL', undefined, env)
+        await copyToClipboard(testUrl, 'URL', env)
         assert.deepStrictEqual(env.clipboard.text, testUrl)
     })
 })

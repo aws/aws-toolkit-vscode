@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { S3Node } from '../explorer/s3Nodes'
 import { validateBucketName } from '../util'
 import { ToolkitError } from '../../shared/errors'
@@ -20,13 +20,9 @@ import { telemetry } from '../../shared/telemetry/telemetry'
  * Creates the bucket.
  * Refreshes the node.
  */
-export async function createBucketCommand(
-    node: S3Node,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function createBucketCommand(node: S3Node, commands = Commands.vscode()): Promise<void> {
     await telemetry.s3_createBucket.run(async () => {
-        const bucketName = await window.showInputBox({
+        const bucketName = await vscode.window.showInputBox({
             prompt: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
             placeHolder: localize('AWS.s3.createBucket.placeHolder', 'Bucket Name'),
             validateInput: validateBucketName,
@@ -50,7 +46,7 @@ export async function createBucketCommand(
             .finally(() => refreshNode(node, commands))
 
         getLogger().info('Created bucket: %O', bucket)
-        window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
+        vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
     })
 }
 

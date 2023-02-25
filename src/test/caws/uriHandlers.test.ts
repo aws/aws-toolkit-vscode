@@ -13,7 +13,7 @@ import { CodeCatalystClient } from '../../shared/clients/codecatalystClient'
 import { anything, mock, reset, when } from 'ts-mockito'
 import { SeverityLevel } from '../shared/vscode/message'
 import { DevEnvironmentId } from '../../codecatalyst/model'
-import { getTestWindow } from '../globalSetup.test'
+import { getTestWindow } from '../shared/vscode/window'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
