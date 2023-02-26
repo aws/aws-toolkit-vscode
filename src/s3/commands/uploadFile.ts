@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { statSync } from 'fs'
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
@@ -443,7 +444,7 @@ export async function promptUserForBucket(
     let lastFolderItem: BucketQuickPickItem | undefined = undefined
     if (lastTouchedFolder) {
         lastFolderItem = {
-            label: `FOLDER: ${lastTouchedFolder.folder.name}`,
+            label: lastTouchedFolder.folder.name,
             description: '(last opened S3 folder)',
             bucket: { Name: lastTouchedFolder.bucket.name },
             folder: lastTouchedFolder.folder,
@@ -454,7 +455,7 @@ export async function promptUserForBucket(
     let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
     if (lastUploadedToFolder) {
         lastUploadedFolderItem = {
-            label: `FOLDER: ${lastUploadedToFolder.folder.name}`,
+            label: lastUploadedToFolder.folder.name,
             description: '(last uploaded-to S3 folder)',
             bucket: { Name: lastUploadedToFolder.bucket.name },
             folder: lastUploadedToFolder.folder,
@@ -473,7 +474,34 @@ export async function promptUserForBucket(
         folderItems.push(lastFolderItem)
     }
 
-    const items = [...folderItems, ...bucketItems, createNewBucket]
+    // Remove this stub after we bump minimum to vscode 1.64
+    const QuickPickItemKind = semver.gte(vscode.version, '1.64.0') ? (vscode as any).QuickPickItemKind : undefined
+    const items: BucketQuickPickItem[] = [
+        // vscode 1.64 supports QuickPickItemKind.Separator.
+        // https://github.com/microsoft/vscode/commit/eb416b4f9ebfda1c798aa7c8b2f4e81c6ce1984f
+        ...(QuickPickItemKind && folderItems.length > 0
+            ? [
+                  {
+                      label: localize('AWS.s3.uploadFile.folderSeparator', 'Folders'),
+                      kind: QuickPickItemKind.Separator,
+                      bucket: undefined,
+                  } as BucketQuickPickItem,
+              ]
+            : []),
+        ...folderItems,
+        ...(!QuickPickItemKind
+            ? []
+            : [
+                  {
+                      label: localize('AWS.s3.uploadFile.bucketSeparator', 'Buckets'),
+                      kind: QuickPickItemKind.Separator,
+                      bucket: undefined,
+                  } as BucketQuickPickItem,
+              ]),
+        ...bucketItems,
+        createNewBucket,
+    ]
+
     const picker = createQuickPick({
         options: {
             canPickMany: false,
