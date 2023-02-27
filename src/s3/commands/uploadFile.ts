@@ -455,7 +455,7 @@ export async function promptUserForBucket(
     let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
     if (lastUploadedToFolder) {
         lastUploadedFolderItem = {
-            label: lastUploadedToFolder.folder.name,
+            label: `Folder: ${lastUploadedToFolder.folder.name}`,
             description: '(last uploaded-to S3 folder)',
             bucket: { Name: lastUploadedToFolder.bucket.name },
             folder: lastUploadedToFolder.folder,
