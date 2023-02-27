@@ -109,6 +109,9 @@ export class AwsContextCommands {
         return true
     }
 
+    public getAllRegion(){
+        return this._regionProvider.getRegions()
+    }
     /**
      * @description Ask user for credentials information, store
      * it in new credentials file.

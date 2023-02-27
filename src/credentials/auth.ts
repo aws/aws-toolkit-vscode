@@ -37,6 +37,7 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
+import {defaultSsoRegion} from '../codewhisperer/util/constants'
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const ssoScope = 'sso:account:access'
@@ -47,7 +48,7 @@ export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:
 export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
     return {
         type: 'sso',
-        ssoRegion: 'us-east-1',
+        ssoRegion: defaultSsoRegion,
         startUrl: builderIdStartUrl,
         scopes: [...codecatalystScopes, ...codewhispererScopes],
     }
@@ -886,12 +887,34 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
             return `URL is malformed: ${UnknownError.cast(err).message}`
         }
     }
-
+ 
     return createInputBox({
         title: `${title}: Enter Start URL`,
         placeholder: "Enter start URL for your organization's IAM Identity Center",
         buttons: [createHelpButton(), createExitButton()],
         validateInput: validateSsoUrl,
+    })
+}
+
+export async function createQuickPickRegionPrompter(title: string, ignoreScopes = true) {
+    const allRegion = globals.awsContextCommands.getAllRegion()
+    const regions: DataQuickPickItem<string>[]  = [] 
+    regions.push({
+        label: defaultSsoRegion,
+        data: defaultSsoRegion,
+    })
+    for(const region of allRegion){
+        if(region.id != defaultSsoRegion){
+            regions.push({
+                label: region.id,
+                data: region.id,
+            })    
+        }
+    }
+    return showQuickPick<string>(regions, {
+        title: `${title}: Select Region`,
+        placeholder: "Select region for your organization's IAM Identity Center",
+        buttons: createCommonButtons() as vscode.QuickInputButton[],        
     })
 }
 
@@ -956,10 +979,11 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
             }
-
             telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
+            const region = await createQuickPickRegionPrompter('IAM Identity Center', false) as string
+            telemetry.ui_click.emit({ elementId: 'connection_region' })
+        
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region))
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {

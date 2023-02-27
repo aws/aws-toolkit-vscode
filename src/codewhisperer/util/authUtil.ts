@@ -95,14 +95,14 @@ export class AuthUtil {
         await this.secondaryAuth.useNewConnection(conn)
     }
 
-    public async connectToEnterpriseSso(startUrl: string) {
+    public async connectToEnterpriseSso(startUrl: string, region:string) {
         const existingConn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl,region))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
