@@ -20,7 +20,10 @@ interface RegionPrompterOptions {
     readonly buttons?: PrompterButtons<Region>
     readonly serviceFilter?: string
     readonly helpUrl?: string | vscode.Uri
+    readonly fromAppJson?: string[]
 }
+
+const fromAppJsonDescription = 'from application.json'
 
 export function createRegionPrompter(
     regions = globals.regionProvider.getRegions(),
@@ -38,7 +41,7 @@ export function createRegionPrompter(
         detail: region.id,
         data: region,
         skipEstimate: true,
-        description: '',
+        description: options.fromAppJson?.includes(region.id) ? fromAppJsonDescription : '',
         recentlyUsed: region.id === lastRegion?.id,
     }))
 
@@ -53,7 +56,11 @@ export function createRegionPrompter(
         buttons: options.buttons ?? createCommonButtons(options.helpUrl),
         matchOnDetail: true,
         compare: (a, b) => {
-            return a.detail === defaultRegion ? -1 : b.detail === defaultRegion ? 1 : 0
+            return a.detail === defaultRegion || b.description === fromAppJsonDescription
+                ? -1
+                : b.detail === defaultRegion || b.description === fromAppJsonDescription
+                ? 1
+                : 0
         },
     })
 
