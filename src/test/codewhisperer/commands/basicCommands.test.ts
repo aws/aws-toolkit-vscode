@@ -116,7 +116,6 @@ describe('CodeWhisperer-basicCommands', function () {
             targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt').resolves()
-            // console.log("AuthUtil.instance.isConnectionExpired()", AuthUtil.instance.isConnectionExpired())
 
             await targetCommand.execute()
             
@@ -158,63 +157,6 @@ describe('CodeWhisperer-basicCommands', function () {
             await targetCommand.execute()
             
             assert.strictEqual(getTestWindow().shownMessages[0].message, "Open a valid file to scan.")
-        })
-
-
-
-
-        // it('if codeScanState is not running and there is no active text editor, should show information message', async function () {
-        //     const extensionContext = await FakeExtensionContext.create()
-        //     const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        //     sinon.stub(AuthUtil.instance, 'isConnectionExpired').resolves(false)
-        //     const workspaceFolder = getTestWorkspaceFolder()
-        //     const appRoot = join(workspaceFolder, 'go1-plain-sam-app')
-        //     const appCodePath = join(appRoot, 'hello-world', 'main.go')
-             
-        //     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
-        //     const editor = await vscode.window.showTextDocument(doc) 
-        //     // console.log("editor in test ", editor)
-        //     const mockClient = stub(DefaultCodeWhispererClient) 
-        //     const extContext = await FakeExtensionContext.getFakeExtContext()
-        //     targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
-        //     sinon.stub(vscode.window, 'activeTextEditor').resolves()
-        //     // const authUtil = stub(AuthUtil)
-        //     // authUtil.isConnectionExpired.resolves(true)
-           
-        //     // const spy = sinon.stub(AuthUtil.instance, 'isConnectionExpired').resolves(true)
-        //     // sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt').resolves(true)
-        //     // const spy = sinon.stub(startSecurityScanWithProgress)
-        //     await targetCommand.execute()
-        //     assert.ok(true)
-        //     // assert.ok(spy.called)
-        // })
-
-        // it('if codeScanState is not running and there is an active text editor, should show information message', async function () {
-        //     const extensionContext = await FakeExtensionContext.create()
-        //     const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-           
-        //     const workspaceFolder = getTestWorkspaceFolder()
-        //     const appRoot = join(workspaceFolder, 'go1-plain-sam-app')
-        //     const appCodePath = join(appRoot, 'hello-world', 'main.go')
-             
-        //     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
-        //     const editor = await vscode.window.showTextDocument(doc) 
-        //     console.log(editor)
-        //     const mockClient = stub(DefaultCodeWhispererClient) 
-        //     const extContext = await FakeExtensionContext.getFakeExtContext()
-        //     targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
-        //     sinon.stub(vscode.window, 'activeTextEditor').resolves()
-        //     // const authUtil = stub(AuthUtil)
-        //     // authUtil.isConnectionExpired.resolves(true)
-        //     sinon.stub(AuthUtil.instance, 'isConnectionExpired').resolves(false)
-        //     // const spy = sinon.stub(AuthUtil.instance, 'isConnectionExpired').resolves(true)
-        //     // sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt').resolves(true)
-        //     // const spy = sinon.stub(startSecurityScanWithProgress)
-        //     await targetCommand.execute()
-        //     assert.ok(true)
-        //     // assert.ok(spy.called)
-        // })
-
-        
+        })    
     })
 })
