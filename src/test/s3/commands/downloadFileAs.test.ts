@@ -13,11 +13,10 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, verify } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import globals from '../../../shared/extensionGlobals'
-import { assertEqualPaths } from '../../testUtil'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('downloadFileAsCommand', function () {
     const bucketName = 'bucket-name'
@@ -52,19 +51,17 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('prompts for save location, downloads file with progress, and shows output channel', async function () {
-        const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
+        getTestWindow().onDidShowDialog(dialog => {
+            assert.deepStrictEqual(dialog.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
+            assert.strictEqual(dialog.acceptButtonLabel, 'Download')
+            dialog.accept()
+        })
         const outputChannel = new MockOutputChannel()
         globals.context.globalState.update('aws.downloadPath', temp)
 
         when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
 
-        await downloadFileAsCommand(node, window, outputChannel)
-
-        assert.ok(window.dialog.saveOptions?.defaultUri?.fsPath)
-        assertEqualPaths(window.dialog.saveOptions.defaultUri.fsPath, path.join(temp, 'file.jpg'))
-
-        assert.strictEqual(window.dialog.saveOptions?.saveLabel, 'Download')
-        assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
+        await downloadFileAsCommand(node, outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, [
             `Downloading "s3://bucket-name/path/to/file.jpg" to: ${saveLocation}`,
@@ -75,15 +72,16 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await assert.rejects(() => downloadFileAsCommand(node, new FakeWindow()), /cancelled/i)
+        getTestWindow().onDidShowDialog(d => d.close())
+        await assert.rejects(() => downloadFileAsCommand(node), /cancelled/i)
 
         verify(s3.downloadFileStream(anything(), anything())).never()
     })
 
     it('throws when download fails', async function () {
+        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
         when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
-        await assert.rejects(() => downloadFileAsCommand(node, window, new MockOutputChannel()), /Failed to download/)
+        await assert.rejects(() => downloadFileAsCommand(node, new MockOutputChannel()), /Failed to download/)
     })
 })

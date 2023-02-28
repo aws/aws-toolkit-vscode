@@ -6,11 +6,10 @@
 import { EcrTagNode } from '../explorer/ecrTagNode'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-export async function copyTagUri(node: EcrTagNode, window = Window.vscode(), env = Env.vscode()): Promise<void> {
+export async function copyTagUri(node: EcrTagNode, env = Env.vscode()): Promise<void> {
     const uri = `${node.repository.repositoryUri}:${node.tag}`
-    copyToClipboard(uri, 'URI', window, env)
+    await copyToClipboard(uri, 'URI', env)
     telemetry.ecr_copyTagUri.emit()
 }

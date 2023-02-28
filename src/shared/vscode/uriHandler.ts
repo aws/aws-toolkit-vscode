@@ -8,7 +8,6 @@ import { getLogger } from '../logger/logger'
 
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
-import globals from '../extensionGlobals'
 import { URL, URLSearchParams } from 'url'
 
 const localize = nls.loadMessageBundle()
@@ -24,7 +23,7 @@ interface HandlerWithParser<T> {
 }
 
 export class UriHandler implements vscode.UriHandler {
-    public constructor(private readonly window = vscode.window) {}
+    public constructor() {}
 
     private handlers: Map<string, HandlerWithParser<any>> = new Map()
 
@@ -34,7 +33,7 @@ export class UriHandler implements vscode.UriHandler {
         const uriNoQuery = uri.with({ query: '' }).toString()
 
         if (!this.handlers.has(uri.path)) {
-            globals.window.showErrorMessage(
+            vscode.window.showErrorMessage(
                 localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uriNoQuery)
             )
             getLogger().verbose(`UriHandler: no valid handler found for "${uri.path}"`)
@@ -55,7 +54,7 @@ export class UriHandler implements vscode.UriHandler {
                 'Failed to parse URI query: {0}',
                 uriNoQuery
             )
-            showViewLogsMessage(failedParsedMessage, this.window)
+            showViewLogsMessage(failedParsedMessage)
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
             return
         }
@@ -69,7 +68,7 @@ export class UriHandler implements vscode.UriHandler {
                 'Failed to handle URI: {0}',
                 uriNoQuery
             )
-            showViewLogsMessage(failedResolvedMessage, this.window)
+            showViewLogsMessage(failedResolvedMessage)
             getLogger().error(`UriHandler: unexpected exception when handling "${uri.path}": %O`, err)
         }
     }

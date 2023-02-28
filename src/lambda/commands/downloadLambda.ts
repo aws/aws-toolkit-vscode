@@ -20,7 +20,6 @@ import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDeb
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
@@ -37,12 +36,12 @@ export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     })
 }
 
-async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<Result> {
+async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Result> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
     if (workspaceFolders.length === 0) {
-        window.showErrorMessage(
+        vscode.window.showErrorMessage(
             localize('AWS.lambda.download.noWorkspaceFolders', 'Open a workspace before downloading a Lambda function.')
         )
         return 'Cancelled'
@@ -56,19 +55,16 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Wind
     const downloadLocationName = vscode.workspace.asRelativePath(downloadLocation, true)
 
     if (await fs.pathExists(downloadLocation)) {
-        const isConfirmed = await showConfirmationMessage(
-            {
-                prompt: localize(
-                    'AWS.lambda.download.prompt',
-                    'Downloading {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with download?',
-                    functionName,
-                    downloadLocationName
-                ),
-                confirm: localize('AWS.lambda.download.download', 'Download'),
-                cancel: localizedText.cancel,
-            },
-            window
-        )
+        const isConfirmed = await showConfirmationMessage({
+            prompt: localize(
+                'AWS.lambda.download.prompt',
+                'Downloading {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with download?',
+                functionName,
+                downloadLocationName
+            ),
+            confirm: localize('AWS.lambda.download.download', 'Download'),
+            cancel: localizedText.cancel,
+        })
 
         if (!isConfirmed) {
             getLogger().info('DownloadLambda cancelled')
@@ -76,7 +72,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Wind
         }
     }
 
-    return await window.withProgress<Result>(
+    return await vscode.window.withProgress<Result>(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -98,7 +94,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Wind
                 // show error and return a failure
                 const err = e as Error
                 getLogger().error(err)
-                window.showErrorMessage(
+                vscode.window.showErrorMessage(
                     localize(
                         'AWS.lambda.download.downloadError',
                         'Error downloading Lambda function {0}: {1}',
@@ -140,7 +136,6 @@ async function downloadAndUnzipLambda(
     }>,
     functionNode: LambdaFunctionNode,
     extractLocation: string,
-    window = Window.vscode(),
     lambda = new DefaultLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
@@ -178,7 +173,7 @@ async function downloadAndUnzipLambda(
     }
 }
 
-export async function openLambdaFile(lambdaLocation: string, window = Window.vscode()): Promise<void> {
+export async function openLambdaFile(lambdaLocation: string): Promise<void> {
     if (!(await fileExists(lambdaLocation))) {
         const warning = localize(
             'AWS.lambda.download.fileNotFound',
@@ -186,10 +181,9 @@ export async function openLambdaFile(lambdaLocation: string, window = Window.vsc
             lambdaLocation
         )
         getLogger().warn(warning)
-        window.showWarningMessage(warning)
+        vscode.window.showWarningMessage(warning)
         throw new Error()
     }
-    // TODO: move this into Window.vscode()?
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(lambdaLocation))
     await vscode.window.showTextDocument(doc)
 }

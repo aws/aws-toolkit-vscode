@@ -10,7 +10,7 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('deletePolicyVersionCommand', function () {
@@ -36,11 +36,13 @@ describe('deletePolicyVersionCommand', function () {
     })
 
     it('confirms deletion, deletes policy, and refreshes node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyVersionCommand(node, window, commands)
+        await deletePolicyVersionCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete Version V1 of Policy test-policy?')
+        getTestWindow()
+            .getFirstMessage()
+            .assertWarn('Are you sure you want to delete Version V1 of Policy test-policy?')
 
         verify(iot.deletePolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
@@ -48,8 +50,8 @@ describe('deletePolicyVersionCommand', function () {
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await deletePolicyVersionCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await deletePolicyVersionCommand(node, new FakeCommands())
 
         verify(iot.deletePolicyVersion(anything())).never()
     })
@@ -57,11 +59,13 @@ describe('deletePolicyVersionCommand', function () {
     it('shows an error message and refreshes node when deletion fails', async function () {
         when(iot.deletePolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         const commands = new FakeCommands()
-        await deletePolicyVersionCommand(node, window, commands)
+        await deletePolicyVersionCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Version V1 of Policy test-policy'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete Version V1 of Policy test-policy/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
     })

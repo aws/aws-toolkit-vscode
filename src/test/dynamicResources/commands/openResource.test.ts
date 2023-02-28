@@ -5,13 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { AwsResourceManager, TypeSchema } from '../../../dynamicResources/awsResourceManager'
 import { instance, mock } from 'ts-mockito'
 import { when, verify } from '../../utilities/mockito'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { getDiagnostics, openResource } from '../../../dynamicResources/commands/openResource'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('openResource', function () {
     const fakeType = 'fakeType'
@@ -26,84 +26,64 @@ describe('openResource', function () {
     })
 
     it('shows progress', async function () {
-        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
-        await openResource(
-            {
-                source: fakeResourceNode,
-                preview: false,
-                resourceManager: instance(mockResourceManager),
-                diagnostics: mockDiagnosticCollection,
-            },
-            window
-        )
-        assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        assert.strictEqual(window.progress.options?.cancellable, false)
-        assert.deepStrictEqual(window.progress.reported, [
+        await openResource({
+            source: fakeResourceNode,
+            preview: false,
+            resourceManager: instance(mockResourceManager),
+            diagnostics: mockDiagnosticCollection,
+        })
+        const progress = getTestWindow().getFirstMessage()
+        assert.ok(!progress.cancellable)
+        assert.deepStrictEqual(progress.progressReports, [
             { message: `Opening resource ${fakeIdentifier} (${fakeType})...` },
         ])
     })
 
     it('shows an error message when opening resource fails', async function () {
-        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, false)).thenThrow(new Error())
-        await openResource(
-            {
-                source: fakeResourceNode,
-                preview: false,
-                resourceManager: instance(mockResourceManager),
-                diagnostics: mockDiagnosticCollection,
-            },
-            window
-        )
-        assert.ok(window.message.error?.startsWith(`Failed to open resource ${fakeIdentifier} (${fakeType})`))
+        await openResource({
+            source: fakeResourceNode,
+            preview: false,
+            resourceManager: instance(mockResourceManager),
+            diagnostics: mockDiagnosticCollection,
+        })
+        getTestWindow().getSecondMessage().assertError(`Failed to open resource ${fakeIdentifier} (${fakeType})`)
     })
 
     it('handles opening ResourceNodes', async function () {
-        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
-        await openResource(
-            {
-                source: fakeResourceNode,
-                preview: false,
-                resourceManager: instance(mockResourceManager),
-                diagnostics: mockDiagnosticCollection,
-            },
-            window
-        )
+        await openResource({
+            source: fakeResourceNode,
+            preview: false,
+            resourceManager: instance(mockResourceManager),
+            diagnostics: mockDiagnosticCollection,
+        })
         verify(mockResourceManager.open(fakeResourceNode, false)).once()
     })
 
     it('handles opening uris', async function () {
-        const window = new FakeWindow()
         const fakeUri = vscode.Uri.parse('foo')
         when(mockResourceManager.fromUri(fakeUri)).thenReturn(fakeResourceNode)
         when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
-        await openResource(
-            {
-                source: fakeUri,
-                preview: false,
-                resourceManager: instance(mockResourceManager),
-                diagnostics: mockDiagnosticCollection,
-            },
-            window
-        )
+        await openResource({
+            source: fakeUri,
+            preview: false,
+            resourceManager: instance(mockResourceManager),
+            diagnostics: mockDiagnosticCollection,
+        })
         verify(mockResourceManager.fromUri(fakeUri)).once()
         verify(mockResourceManager.open(fakeResourceNode, false)).once()
     })
 
     it('can open in preview mode', async function () {
-        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, true)).thenResolve()
-        await openResource(
-            {
-                source: fakeResourceNode,
-                preview: true,
-                resourceManager: instance(mockResourceManager),
-                diagnostics: mockDiagnosticCollection,
-            },
-            window
-        )
+        await openResource({
+            source: fakeResourceNode,
+            preview: true,
+            resourceManager: instance(mockResourceManager),
+            diagnostics: mockDiagnosticCollection,
+        })
         verify(mockResourceManager.open(fakeResourceNode, true)).once()
     })
 
