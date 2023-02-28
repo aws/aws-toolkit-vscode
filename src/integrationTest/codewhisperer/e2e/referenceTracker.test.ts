@@ -4,12 +4,12 @@
  */
 
 import * as assert from 'assert'
-import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
-import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
-import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
+import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
+import { ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhispererUtil'
+import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../../test/codewhisperer/testUtil'
+import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 
 /*
 New model deployment may impact references returned. 
