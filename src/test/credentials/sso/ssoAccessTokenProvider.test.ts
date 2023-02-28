@@ -15,9 +15,16 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/fil
 import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
 import { OidcClient } from '../../../credentials/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { InternalServerException, InvalidClientException, UnauthorizedClientException } from '@aws-sdk/client-sso-oidc'
+import {
+    AuthorizationPendingException,
+    InternalServerException,
+    InvalidClientException,
+    UnauthorizedClientException,
+} from '@aws-sdk/client-sso-oidc'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
+import { ToolkitError } from '../../../shared/errors'
 
 const hourInMs = 3600000
 
@@ -172,7 +179,11 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('createToken', function () {
         beforeEach(function () {
-            getTestWindow().onDidShowMessage(m => m.items[0].select())
+            getTestWindow().onDidShowMessage(m => {
+                if (m.items[0]?.title.match(/copy code/i)) {
+                    m.items[0].select()
+                }
+            })
         })
 
         function stubOpen(userClicked = true) {
@@ -186,7 +197,7 @@ describe('SsoAccessTokenProvider', function () {
 
             when(oidcClient.registerClient(anything())).thenResolve(registration)
             when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
-            when(oidcClient.pollForToken(anything(), anything(), anything())).thenResolve(token)
+            when(oidcClient.createToken(anything())).thenResolve(token)
 
             return { token, registration, authorization }
         }
@@ -214,6 +225,23 @@ describe('SsoAccessTokenProvider', function () {
             assert.notDeepStrictEqual(await sut.getToken(), cachedToken)
         })
 
+        it('respects the device authorization expiration time', async function () {
+            setupFlow()
+            stubOpen()
+            const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
+            const authorization = createAuthorization(1000)
+            when(oidcClient.createToken(anything())).thenReject(exception)
+            when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+
+            const resp = sut.createToken()
+            const progress = await getTestWindow().waitForMessage(/waiting for a login/i)
+            await clock.tickAsync(750)
+            assert.ok(progress.visible)
+            await clock.tickAsync(750)
+            assert.ok(!progress.visible)
+            await assert.rejects(resp, ToolkitError)
+        })
+
         describe('Exceptions', function () {
             it('removes the client registration cache on client faults', async function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })
@@ -232,7 +260,7 @@ describe('SsoAccessTokenProvider', function () {
 
                 when(oidcClient.registerClient(anything())).thenResolve(registration)
                 when(oidcClient.startDeviceAuthorization(anything())).thenResolve(createAuthorization(hourInMs))
-                when(oidcClient.pollForToken(anything(), anything(), anything())).thenReject(exception)
+                when(oidcClient.createToken(anything())).thenReject(exception)
 
                 stubOpen()
 
@@ -254,20 +282,34 @@ describe('SsoAccessTokenProvider', function () {
 
         describe('Cancellation', function () {
             beforeEach(function () {
-                stubOpen(false)
                 setupFlow()
+                const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
+                when(oidcClient.createToken(anything())).thenReject(exception)
             })
 
             it('stops the flow if user does not click the link', async function () {
+                stubOpen(false)
                 await assert.rejects(sut.createToken(), CancellationError)
             })
 
             it('saves the client registration even when cancelled', async function () {
+                stubOpen(false)
                 const registration = createRegistration(hourInMs)
                 await cache.registration.save({ region }, registration)
                 await assert.rejects(sut.createToken(), CancellationError)
                 const cached = await cache.registration.load({ region })
                 assert.deepStrictEqual(cached, registration)
+            })
+
+            it('stops the flow if cancelled from the progress notification', async function () {
+                stubOpen()
+                getTestWindow().onDidShowMessage(m => {
+                    if (m.severity === SeverityLevel.Progress) {
+                        m.selectItem('Cancel')
+                    }
+                })
+                await assert.rejects(sut.createToken(), CancellationError)
+                assert.strictEqual(getTestWindow().shownMessages.length, 2)
             })
         })
     })

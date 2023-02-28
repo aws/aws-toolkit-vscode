@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "auth: verification codes for browser logins are now shown in a notification after opening the login URL"
+}
