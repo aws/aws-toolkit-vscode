@@ -234,7 +234,7 @@ describe('SsoAccessTokenProvider', function () {
             when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
 
             const resp = sut.createToken()
-            const progress = await getTestWindow().waitForMessage(/waiting for a login/i)
+            const progress = await getTestWindow().waitForMessage(/login page opened/i)
             await clock.tickAsync(750)
             assert.ok(progress.visible)
             await clock.tickAsync(750)
