@@ -134,10 +134,10 @@ describe('InputBoxPrompter', function () {
             const result = testPrompter.prompt()
 
             // NOT final input.
-            inputBox.fireOnDidChangeValue('hello')
+            inputBox.value = 'hello'
             assert.strictEqual(inputBox.validationMessage, 'user is typing')
             // Final input (user confirmed / hit Enter).
-            accept('hello')
+            inputBox.acceptValue('hello')
             assert.strictEqual(inputBox.validationMessage, undefined)
             assert.strictEqual(await result, 'hello')
         })

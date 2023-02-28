@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
-import { createQuickPickTester } from '../testUtils'
+import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'
 
 describe('regionSubmenu', function () {
     let submenuPrompter: RegionSubmenu<string>
@@ -41,19 +41,19 @@ describe('regionSubmenu', function () {
 
         const resp = submenuPrompter.prompt()
         assert.ok(submenuPrompter.activePrompter)
-        const logGroupTester = createQuickPickTester(
+        const logGroupTester = createQuickPickPrompterTester(
             submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         logGroupTester.acceptItem('Switch region')
         await logGroupTester.result()
 
-        const regionTester = createQuickPickTester(
+        const regionTester = createQuickPickPrompterTester(
             submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         regionTester.acceptItem('US West (Oregon)')
         await regionTester.result()
 
-        const logGroupTester2 = createQuickPickTester(
+        const logGroupTester2 = createQuickPickPrompterTester(
             submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         logGroupTester2.acceptItem('group2c')
