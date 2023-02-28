@@ -8,12 +8,7 @@ import * as assert from 'assert'
 import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-// import { showConnectionPrompt, awsIdSignIn} from "../../../codewhisperer/util/showSsoPrompt";
 import { awsIdSignIn} from "../../../codewhisperer/util/showSsoPrompt"
-// import { stub } from '../../utilities/stubber'
-// import { showQuickPick } from '../../../shared/ui/pickerPrompter';
-// import { createQuickPickPrompterTester } from "../../shared/ui/testUtils";
-// import { getTestWindow } from '../../shared/vscode/window'
 import { getTestLogger } from '../../globalSetup.test'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
