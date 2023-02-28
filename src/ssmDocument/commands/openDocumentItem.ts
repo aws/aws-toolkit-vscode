@@ -50,8 +50,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
                 'Could not fetch document: {0}',
                 node.documentName
-            ),
-            vscode.window
+            )
         )
     } finally {
         telemetry.ssm_openDocument.emit({ result: result })

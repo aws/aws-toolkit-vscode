@@ -17,7 +17,7 @@ import { join } from 'path'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 
 const mockCreateCodeScanResponse = {
@@ -154,7 +154,6 @@ describe('startSecurityScan', function () {
         sinon.stub(got, 'default').resolves({ statusCode: 200 })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-        const warningSpy = sinon.spy(vscode.window, 'showWarningMessage')
 
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
@@ -164,6 +163,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        assert.ok(warningSpy.notCalled)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
     })
 })

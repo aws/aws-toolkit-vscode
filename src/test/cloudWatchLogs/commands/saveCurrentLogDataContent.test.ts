@@ -12,7 +12,7 @@ import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../cloudWatchLogs/commands/saveCurrentLogDataContent'
 import { CloudWatchLogsEvent, LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('saveCurrentLogDataContent', async function () {
     let filename: string
@@ -48,30 +48,16 @@ describe('saveCurrentLogDataContent', async function () {
         }
         const uri = createURIFromArgs(logGroupInfo, {})
 
-        await saveCurrentLogDataContent(
-            uri,
-            fakeRegistry,
-            new FakeWindow({
-                dialog: {
-                    saveSelection: vscode.Uri.file(filename),
-                },
-            })
-        )
+        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        await saveCurrentLogDataContent(uri, fakeRegistry)
 
         assert.ok(await fileExists(filename))
         assert.strictEqual(await readFileAsString(filename), expectedText)
     })
 
     it('does not do anything if the URI is invalid', async function () {
-        await saveCurrentLogDataContent(
-            vscode.Uri.parse(`notCloudWatch:hahahaha`),
-            fakeRegistry,
-            new FakeWindow({
-                dialog: {
-                    saveSelection: vscode.Uri.file(filename),
-                },
-            })
-        )
+        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        await saveCurrentLogDataContent(vscode.Uri.parse(`notCloudWatch:hahahaha`), fakeRegistry)
         assert.strictEqual(await fileExists(filename), false)
     })
 

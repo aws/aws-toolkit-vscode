@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 
@@ -21,21 +21,17 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
  */
 export async function deletePolicyCommand(
     node: IotPolicyWithVersionsNode,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('DeletePolicy called for %O', node)
 
     const policyName = node.policy.name
 
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize('AWS.iot.deletePolicy.prompt', 'Are you sure you want to delete Policy {0}?', policyName),
-            confirm: localizedText.localizedDelete,
-            cancel: localizedText.cancel,
-        },
-        window
-    )
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize('AWS.iot.deletePolicy.prompt', 'Are you sure you want to delete Policy {0}?', policyName),
+        confirm: localizedText.localizedDelete,
+        cancel: localizedText.cancel,
+    })
     if (!isConfirmed) {
         getLogger().info('DeletePolicy canceled')
         return
@@ -46,7 +42,7 @@ export async function deletePolicyCommand(
         const certs = await node.iot.listPolicyTargets({ policyName })
         if (certs.length > 0) {
             getLogger().error(`Policy ${policyName} has attached Certificates`)
-            window.showErrorMessage(
+            vscode.window.showErrorMessage(
                 localize(
                     'AWS.iot.deletePolicy.attachedError',
                     'Cannot delete {0}. Policy has attached certificates: {1}',
@@ -63,7 +59,7 @@ export async function deletePolicyCommand(
         }
         if (numVersions != 1) {
             getLogger().error(`Policy ${policyName} has non-default versions`)
-            window.showErrorMessage(
+            vscode.window.showErrorMessage(
                 localize('AWS.iot.deletePolicy.versionError', 'Policy {0} has non-default versions', policyName)
             )
             return
@@ -71,13 +67,12 @@ export async function deletePolicyCommand(
         await node.iot.deletePolicy({ policyName })
 
         getLogger().info(`deleted Policy: ${policyName}`)
-        window.showInformationMessage(localize('AWS.iot.deletePolicy.success', 'Deleted Policy: {0}', node.policy.name))
+        vscode.window.showInformationMessage(
+            localize('AWS.iot.deletePolicy.success', 'Deleted Policy: {0}', node.policy.name)
+        )
     } catch (e) {
         getLogger().error(`Failed to delete Policy: ${policyName}: %s`, e)
-        showViewLogsMessage(
-            localize('AWS.iot.deletePolicy.error', 'Failed to delete Policy: {0}', node.policy.name),
-            window
-        )
+        showViewLogsMessage(localize('AWS.iot.deletePolicy.error', 'Failed to delete Policy: {0}', node.policy.name))
     }
 
     //Refresh the Policy Folder node

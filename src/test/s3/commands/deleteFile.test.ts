@@ -10,7 +10,7 @@ import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('deleteFileCommand', function () {
@@ -30,11 +30,13 @@ describe('deleteFileCommand', function () {
     })
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
         const commands = new FakeCommands()
-        await deleteFileCommand(node, window, commands)
+        await deleteFileCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to delete file s3://bucket-name/foo/bar.jpg?')
+        getTestWindow()
+            .getFirstMessage()
+            .assertWarn('Are you sure you want to delete file s3://bucket-name/foo/bar.jpg?')
 
         verify(s3.deleteObject(deepEqual({ bucketName, key }))).once()
 
@@ -43,22 +45,22 @@ describe('deleteFileCommand', function () {
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
         const commands = new FakeCommands()
-        await assert.rejects(() => deleteFileCommand(node, window, commands), /cancelled/i)
+        await assert.rejects(() => deleteFileCommand(node, commands), /cancelled/i)
 
         verify(s3.deleteObject(anything())).never()
-        assert.strictEqual(window.statusBar.message, undefined)
-        assert.strictEqual(window.message.error, undefined)
+        assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
+        assertNoErrorMessages()
         assert.strictEqual(commands.command, undefined)
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
         when(s3.deleteObject(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
         const commands = new FakeCommands()
-        await assert.rejects(() => deleteFileCommand(node, window, commands), /failed to delete file bar.jpg/i)
+        await assert.rejects(() => deleteFileCommand(node, commands), /failed to delete file bar.jpg/i)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

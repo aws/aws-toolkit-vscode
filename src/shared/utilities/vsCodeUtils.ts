@@ -5,11 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import globals from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
-import { Window } from '../vscode/window'
 import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
@@ -64,8 +62,7 @@ export function isExtensionInstalled(extId: string): boolean {
 export function showInstallExtensionMsg(
     extId: string,
     extName: string,
-    feat = `${getIdeProperties().company} Toolkit`,
-    window: Window = globals.window
+    feat = `${getIdeProperties().company} Toolkit`
 ): boolean {
     if (vscode.extensions.getExtension(extId)) {
         return true
@@ -82,7 +79,7 @@ export function showInstallExtensionMsg(
     const installBtn = localize('AWS.missingExtension.install', 'Install...')
     const items = [installBtn]
 
-    const p = window.showErrorMessage(msg, ...items)
+    const p = vscode.window.showErrorMessage(msg, ...items)
     p.then<string | undefined>(selection => {
         if (selection === installBtn) {
             vscode.commands.executeCommand('extension.open', extId)
