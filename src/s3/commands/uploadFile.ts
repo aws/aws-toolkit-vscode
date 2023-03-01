@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { statSync } from 'fs'
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
@@ -16,7 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { S3Client } from '../../shared/clients/s3Client'
+import { Bucket, Folder, S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -102,6 +103,12 @@ export async function uploadFileCommand(
                 return fileToUploadRequest(node!.bucket.name, key, file)
             })
         )
+        if (node instanceof S3FolderNode) {
+            globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                bucket: node.bucket,
+                folder: node.folder,
+            })
+        }
     } else {
         while (true) {
             const filesToUpload = await getFile(document)
@@ -145,17 +152,27 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketName = bucketResponse.Name
+            const bucketName = bucketResponse.bucket!.Name
             if (!bucketName) {
                 throw Error(`bucketResponse is not a S3.Bucket`)
             }
 
             uploadRequests.push(
                 ...filesToUpload.map(file => {
-                    const key = path.basename(file.fsPath)
+                    const key =
+                        bucketResponse.folder !== undefined
+                            ? bucketResponse.folder.path + path.basename(file.fsPath)
+                            : path.basename(file.fsPath)
                     return fileToUploadRequest(bucketName, key, file)
                 })
             )
+
+            if (bucketResponse.folder) {
+                globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                    bucket: bucketResponse.bucket,
+                    folder: bucketResponse.folder,
+                })
+            }
 
             break
         }
@@ -280,7 +297,6 @@ async function uploadBatchOfFiles(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel
                 )
-
                 let remainder = 0
                 let lastLoaded = 0
                 // TODO: don't use `withProgress`, it makes it hard to have control over the individual outputs
@@ -374,8 +390,14 @@ async function uploadWithProgress(
     return (request.ongoingUpload = undefined)
 }
 
-interface BucketQuickPickItem extends vscode.QuickPickItem {
+export interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
+    folder?: Folder | undefined
+}
+
+interface SavedFolder {
+    bucket: Bucket
+    folder: Folder
 }
 
 // TODO:: extract and reuse logic from sam deploy wizard (bucket selection)
@@ -391,7 +413,7 @@ export async function promptUserForBucket(
     s3client: S3Client,
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
-): Promise<S3.Bucket | 'cancel' | 'back'> {
+): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
     let allBuckets: S3.Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
@@ -418,15 +440,77 @@ export async function promptUserForBucket(
         }
     })
 
+    const lastTouchedFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastTouchedS3Folder')
+    let lastFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastTouchedFolder) {
+        lastFolderItem = {
+            label: lastTouchedFolder.folder.name,
+            description: '(last opened S3 folder)',
+            bucket: { Name: lastTouchedFolder.bucket.name },
+            folder: lastTouchedFolder.folder,
+        }
+    }
+
+    const lastUploadedToFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastUploadedToS3Folder')
+    let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastUploadedToFolder) {
+        lastUploadedFolderItem = {
+            label: lastUploadedToFolder.folder.name,
+            description: '(last uploaded-to S3 folder)',
+            bucket: { Name: lastUploadedToFolder.bucket.name },
+            folder: lastUploadedToFolder.folder,
+        }
+    }
+
+    const folderItems = []
+    if (lastUploadedFolderItem !== undefined) {
+        folderItems.push(lastUploadedFolderItem)
+    }
+    // de-dupe if folders are the same
+    if (
+        lastFolderItem !== undefined &&
+        (lastUploadedFolderItem === undefined || lastFolderItem.folder?.path !== lastUploadedFolderItem.folder?.path)
+    ) {
+        folderItems.push(lastFolderItem)
+    }
+
+    // Remove this stub after we bump minimum to vscode 1.64
+    const QuickPickItemKind = semver.gte(vscode.version, '1.64.0') ? (vscode as any).QuickPickItemKind : undefined
+    const items: BucketQuickPickItem[] = [
+        // vscode 1.64 supports QuickPickItemKind.Separator.
+        // https://github.com/microsoft/vscode/commit/eb416b4f9ebfda1c798aa7c8b2f4e81c6ce1984f
+        ...(QuickPickItemKind && folderItems.length > 0
+            ? [
+                  {
+                      label: localize('AWS.s3.uploadFile.folderSeparator', 'Folders'),
+                      kind: QuickPickItemKind.Separator,
+                      bucket: undefined,
+                  } as BucketQuickPickItem,
+              ]
+            : []),
+        ...folderItems,
+        ...(!QuickPickItemKind
+            ? []
+            : [
+                  {
+                      label: localize('AWS.s3.uploadFile.bucketSeparator', 'Buckets'),
+                      kind: QuickPickItemKind.Separator,
+                      bucket: undefined,
+                  } as BucketQuickPickItem,
+              ]),
+        ...bucketItems,
+        createNewBucket,
+    ]
+
     const picker = createQuickPick({
         options: {
             canPickMany: false,
             ignoreFocusOut: true,
-            title: localize('AWS.message.selectBucket', 'Select an S3 bucket to upload to'),
+            title: localize('AWS.message.selectBucket', 'Select an S3 bucket or folder to upload to'),
             step: 2,
             totalSteps: 2,
         },
-        items: [...bucketItems, createNewBucket],
+        items,
         buttons: [vscode.QuickInputButtons.Back],
     })
     const response = verifySinglePickerOutput(
@@ -459,7 +543,7 @@ export async function promptUserForBucket(
             return promptUserForBucket(s3client)
         }
     } else {
-        return response.bucket
+        return response
     }
     return 'cancel'
 }
