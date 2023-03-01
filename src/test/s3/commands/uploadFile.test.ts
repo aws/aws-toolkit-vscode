@@ -34,9 +34,7 @@ describe('uploadFileCommand', function () {
         bucket: { Name: bucketName },
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
-    const getBucketFolderResponse: (
-        s3client: S3Client
-    ) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = s3Client => {
+    const getFolder: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = s3Client => {
         return new Promise((resolve, reject) => {
             resolve(folderResponse)
         })
@@ -175,37 +173,19 @@ describe('uploadFileCommand', function () {
         })
     }
 
-    it('successfully upload file', async function () {
+    it('successfully upload file or folder', async function () {
         when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
         when(mockedUpload.promise()).thenResolve()
-
         getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
+        // Upload to bucket.
         await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel, commands)
+        // Upload to folder.
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getFolder, getFile, outputChannel, commands)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             `Uploaded 1/1 files`,
-        ])
-    })
-
-    it('successfully upload file to selected folder', async function () {
-        when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
-        when(mockedUpload.promise()).thenResolve()
-
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
-
-        await uploadFileCommand(
-            instance(s3),
-            fileLocation,
-            statFile,
-            getBucketFolderResponse,
-            getFile,
-            outputChannel,
-            commands
-        )
-
-        assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/folderA/file.jpg',
             `Uploaded 1/1 files`,
         ])
