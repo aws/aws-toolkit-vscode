@@ -8,7 +8,7 @@ import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { createRegionPrompter } from '../../../shared/ui/common/region'
 import { FakeMemento } from '../../fakeExtensionContext'
-import { createQuickPickTester } from '../ui/testUtils'
+import { createQuickPickPrompterTester } from '../ui/testUtils'
 
 const regionCode = 'someRegion'
 const serviceId = 'someService'
@@ -155,7 +155,7 @@ describe('RegionProvider', async function () {
             ]
 
             const p = createRegionPrompter(regions, { defaultRegion: 'foo-bar-1' })
-            const tester = createQuickPickTester(p)
+            const tester = createQuickPickPrompterTester(p)
             const selection = regions[2]
             tester.acceptItem(selection.name)
             await tester.result(selection)

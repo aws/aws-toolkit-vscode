@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { showLogOutputChannel } from '../../shared/logger'
 const localize = nls.loadMessageBundle()
@@ -10,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { TreeShim } from '../../shared/treeview/utils'
@@ -20,17 +20,16 @@ import { TreeShim } from '../../shared/treeview/utils'
  */
 export async function copyArnCommand(
     node: AWSResourceNode | TreeShim<AWSResourceNode>,
-    window = Window.vscode(),
     env = Env.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     node = node instanceof TreeShim ? node.node.resource : node
 
     try {
-        copyToClipboard(node.arn, 'ARN', window, env)
+        copyToClipboard(node.arn, 'ARN', env)
     } catch (e) {
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-        window
+        vscode.window
             .showErrorMessage(
                 localize(
                     'AWS.explorerNode.noArnFound',

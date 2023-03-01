@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "S3: Choose last-touched and last-uploaded-to S3 folders in the Upload Files wizard."
+}

@@ -23,7 +23,6 @@ import {
 import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
-import * as window from '../../shared/vscode/window'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
 import { launchConfigDocUrl } from '../constants'
 
@@ -118,9 +117,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
         } catch (e) {
             const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
-            showViewLogsMessage(makeFailedWriteMessage('launch.json'), window.Window.vscode(), 'error', [
-                helpText,
-            ]).then(async buttonText => {
+            showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(async buttonText => {
                 if (buttonText === helpText) {
                     vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
                 }

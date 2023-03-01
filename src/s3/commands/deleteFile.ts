@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -28,23 +28,16 @@ const deleteFileDisplayTimeoutMs = 2000
  * Shows status bar message.
  * Refreshes the parent node.
  */
-export async function deleteFileCommand(
-    node: S3FileNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deleteFileCommand(node: S3FileNode, commands = Commands.vscode()): Promise<void> {
     const filePath = readablePath(node)
     getLogger().debug('DeleteFile called for %O', node)
 
     await telemetry.s3_deleteObject.run(async () => {
-        const isConfirmed = await showConfirmationMessage(
-            {
-                prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
-                confirm: localizedText.localizedDelete,
-                cancel: localizedText.cancel,
-            },
-            window
-        )
+        const isConfirmed = await showConfirmationMessage({
+            prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
+        })
         if (!isConfirmed) {
             throw new CancellationError('user')
         }
@@ -60,7 +53,7 @@ export async function deleteFileCommand(
             .finally(() => refreshNode(node.parent, commands))
 
         getLogger().info(`deleted file: ${filePath}`)
-        window.setStatusBarMessage(
+        vscode.window.setStatusBarMessage(
             addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted: {0}', node.file.name)),
             deleteFileDisplayTimeoutMs
         )

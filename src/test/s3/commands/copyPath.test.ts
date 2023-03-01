@@ -8,15 +8,13 @@ import { copyPathCommand } from '../../../s3/commands/copyPath'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('copyPathCommand', function () {
     it('copies path to clipboard and shows status bar confirmation', async function () {
         const node = createS3FolderNode()
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
-        await copyPathCommand(node, window, env)
+        await copyPathCommand(node, env)
 
         assert.strictEqual(env.clipboard.text, 'path')
     })

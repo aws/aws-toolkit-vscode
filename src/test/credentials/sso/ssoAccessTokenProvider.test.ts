@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { installFakeClock } from '../../testUtil'
 import { getCache } from '../../../credentials/sso/cache'
-import * as vscode from 'vscode'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
@@ -17,6 +16,8 @@ import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
 import { OidcClient } from '../../../credentials/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { InternalServerException, InvalidClientException, UnauthorizedClientException } from '@aws-sdk/client-sso-oidc'
+import { getOpenExternalStub } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 const hourInMs = 3600000
 
@@ -52,7 +53,8 @@ describe('SsoAccessTokenProvider', function () {
         return {
             interval: 1,
             deviceCode: 'dummyCode',
-            verificationUriComplete: 'dummyLink',
+            userCode: 'dummyUserCode',
+            verificationUri: 'dummyLink',
             expiresAt: new clock.Date(clock.Date.now() + timeDelta),
         }
     }
@@ -169,8 +171,12 @@ describe('SsoAccessTokenProvider', function () {
     })
 
     describe('createToken', function () {
+        beforeEach(function () {
+            getTestWindow().onDidShowMessage(m => m.items[0].select())
+        })
+
         function stubOpen(userClicked = true) {
-            sinon.stub(vscode.env, 'openExternal').callsFake(async () => userClicked)
+            getOpenExternalStub().resolves(userClicked)
         }
 
         function setupFlow() {

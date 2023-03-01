@@ -39,6 +39,8 @@ import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
+import { samSyncUrl } from '../constants'
 
 export interface SyncParams {
     readonly region: string
@@ -67,7 +69,7 @@ function createBucketPrompter(client: DefaultS3Client) {
     return createQuickPick(items, {
         title: 'Select an S3 Bucket',
         placeholder: 'Filter or enter a new bucket name',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl),
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
@@ -99,7 +101,7 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
             label: 'Create a New Stack',
             transform: v => v,
         },
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl),
     })
 }
 
@@ -117,7 +119,7 @@ function createEcrPrompter(client: DefaultEcrClient) {
     return createQuickPick(items, {
         title: 'Select an ECR Repository',
         placeholder: 'Filter or enter an existing repository URI',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl),
         filterBoxInputSettings: {
             label: 'Existing repository URI',
             transform: v => v,
@@ -136,7 +138,7 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
 
     return createQuickPick(items, {
         title: 'Select an Environment to Use',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl),
     })
 }
 
@@ -165,7 +167,7 @@ function createTemplatePrompter() {
     const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
         title: 'Select a CloudFormation Template',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl),
     })
 }
 
@@ -348,10 +350,10 @@ export async function runSamSync(args: SyncParams) {
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
-        spawnOptions: {
+        spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
             env: await injectCredentials(args.connection),
-        },
+        }),
     })
 
     await runSyncInTerminal(sam)

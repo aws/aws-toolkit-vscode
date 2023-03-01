@@ -51,7 +51,7 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isValidResponse()
             )
         }
-        if (isCloud9()) {
+        if (isCloud9('any')) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                 return
             }
@@ -60,14 +60,28 @@ export async function invokeRecommendation(
             try {
                 RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                 RecommendationHandler.instance.clearRecommendations()
-                await RecommendationHandler.instance.getRecommendations(
-                    client,
-                    editor,
-                    'OnDemand',
-                    config,
-                    undefined,
-                    false
-                )
+                if (isCloud9('classic') || !AuthUtil.instance.isConnected()) {
+                    await RecommendationHandler.instance.getRecommendations(
+                        client,
+                        editor,
+                        'OnDemand',
+                        config,
+                        undefined,
+                        false
+                    )
+                } else {
+                    if (AuthUtil.instance.isConnectionExpired()) {
+                        await AuthUtil.instance.showReauthenticatePrompt()
+                    }
+                    await RecommendationHandler.instance.getRecommendations(
+                        client,
+                        editor,
+                        'OnDemand',
+                        config,
+                        undefined,
+                        true
+                    )
+                }
                 if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true)) {
                     await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                         vsCodeState.isIntelliSenseActive = true

@@ -11,7 +11,6 @@ import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-import * as vscode from 'vscode'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import {
     getPageHeader,
@@ -23,6 +22,8 @@ import {
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { stub } from '../../utilities/stubber'
+import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
@@ -113,21 +114,20 @@ describe('Search Schemas', function () {
 
         it('should display an error message when search api call fails', async function () {
             const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
-            const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = `Unable to search registry ${failRegistry}`
 
             //make an api call with non existent registryName - should return empty results
             const results = await getSearchListForSingleRegistry(client, failRegistry, 'randomText')
 
             assert.strictEqual(results.length, 0, 'should return 0 summaries')
-            assert.strictEqual(vscodeSpy.callCount, 1, ' error message should be shown exactly once')
-            assert.strictEqual(vscodeSpy.firstCall.lastArg, displayMessage, 'should display correct error message')
+            const errorMessages = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)
+            assert.strictEqual(errorMessages.length, 1, 'error message should be shown exactly once')
+            assert.strictEqual(errorMessages[0].message, displayMessage, 'should display correct error message')
         })
     })
 
     describe('getSearchResults', function () {
         it('should display error message for failed registries and return summaries for successful ones', async function () {
-            const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = `Unable to search registry ${failRegistry}`
             const displayMessage2 = `Unable to search registry ${failRegistry2}`
 
@@ -166,9 +166,10 @@ describe('Search Schemas', function () {
             assert.strictEqual(results[2].VersionList.length, 1, 'third summary has 1 version')
 
             //failed registries
-            assert.strictEqual(vscodeSpy.callCount, 2, 'should display 2 error message, 1 per each failed registry')
-            assert.strictEqual(vscodeSpy.firstCall.lastArg, displayMessage, 'should display correct error message')
-            assert.strictEqual(vscodeSpy.secondCall.lastArg, displayMessage2, 'should display correct error message')
+            const errorMessages = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)
+            assert.strictEqual(errorMessages.length, 2, 'should display 2 error message, 1 per each failed registry')
+            errorMessages[0].assertMessage(displayMessage)
+            errorMessages[1].assertMessage(displayMessage2)
         })
     })
 
@@ -271,17 +272,15 @@ describe('Search Schemas', function () {
         })
 
         it('should return an empty list and display error message if schemas service not available in the region', async function () {
-            const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
-            const displayMessage = 'Error loading Schemas resources'
-
             const schemasNode = new SchemasNode(schemaClient)
             sandbox.stub(schemaClient, 'listRegistries')
 
             const results = await getRegistryNames(schemasNode, schemaClient)
 
             assert.ok(results.length === 0, 'Should return an empty array')
-            assert.strictEqual(vscodeSpy.callCount, 1, ' error message should be shown exactly once')
-            assert.strictEqual(vscodeSpy.firstCall.lastArg, displayMessage, 'should display correct error message')
+            const errorMessages = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)
+            assert.strictEqual(errorMessages.length, 1, 'should display 1 error message')
+            errorMessages[0].assertMessage('Error loading Schemas resources')
         })
     })
 })

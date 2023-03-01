@@ -6,14 +6,13 @@
 import globals from '../../../shared/extensionGlobals'
 
 import * as sinon from 'sinon'
-import * as vscode from 'vscode'
 import * as env from '../../../shared/vscode/env'
 import * as assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands } from '../../../shared/vscode/commands2'
 import { assertTelemetry } from '../../testUtil'
-import { createTestWindow } from './window'
+import { getTestWindow } from '../../shared/vscode/window'
 
 async function throwMe(error?: unknown): Promise<void | never> {
     if (error) {
@@ -52,10 +51,7 @@ describe('runCommand', function () {
     })
 
     it('emits a telemetry metric after the command terminates (failure)', async function () {
-        const testWindow = createTestWindow()
-        sinon.replace(vscode, 'window', testWindow)
-
-        const viewLogsDialog = testWindow.waitForMessage(/Something failed/)
+        const viewLogsDialog = getTestWindow().waitForMessage(/Something failed/)
 
         await Promise.all([
             viewLogsDialog.then(dialog => dialog.close()),

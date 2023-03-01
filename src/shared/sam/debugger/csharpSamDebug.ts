@@ -22,8 +22,7 @@ import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 import { getLogger } from '../../logger'
-import { Window } from '../../vscode/window'
-
+import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { minSamCliVersionForDotnet31Support } from '../cli/samCliValidator'
@@ -67,11 +66,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * Linux, then mount it with the SAM app on run. User's C# workspace dir will
  * have a `.vsdbg` dir after the first run.
  */
-export async function invokeCsharpLambda(
-    ctx: ExtContext,
-    config: SamLaunchRequestArgs,
-    window: Window = Window.vscode()
-): Promise<SamLaunchRequestArgs> {
+export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
@@ -80,7 +75,7 @@ export async function invokeCsharpLambda(
         const samCliVersion = await getSamCliVersion(ctx.samCliContext())
         // TODO: Remove this when min sam version is >= 1.4.0
         if (semver.lt(samCliVersion, minSamCliVersionForDotnet31Support)) {
-            window.showWarningMessage(
+            vscode.window.showWarningMessage(
                 localize(
                     'AWS.output.sam.local.no.net.3.1.debug',
                     'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
@@ -88,7 +83,7 @@ export async function invokeCsharpLambda(
             )
             config.noDebug = true
         } else if (config.architecture === 'arm64') {
-            window.showWarningMessage(
+            vscode.window.showWarningMessage(
                 localize(
                     'AWS.output.sam.local.no.arm.net.3.1.debug',
                     'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'

@@ -6,10 +6,10 @@
 import * as assert from 'assert'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { copyTagUri } from '../../../ecr/commands/copyTagUri'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('copyTagUriCommand', function () {
     it('Copies URI to clipboard and shows in the status bar', async function () {
@@ -21,13 +21,11 @@ describe('copyTagUriCommand', function () {
             'tag'
         )
 
-        const window = new FakeWindow()
         const env = new FakeEnv()
 
-        await copyTagUri(node, window, env)
+        await copyTagUri(node, env)
 
         assert.strictEqual(env.clipboard.text, 'www.amazon.com:tag')
-
-        assert.strictEqual(window.statusBar.message, '$(clippy) Copied URI to clipboard')
+        assert.deepStrictEqual(getTestWindow().statusBar.messages, ['$(clippy) Copied URI to clipboard'])
     })
 })

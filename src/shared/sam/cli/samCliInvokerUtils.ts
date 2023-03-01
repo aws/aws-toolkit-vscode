@@ -5,6 +5,7 @@
 
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
+import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
 
 export interface SamCliProcessInvokeOptions {
@@ -98,4 +99,14 @@ function startsWithEscapeSequence(text: string, sequences = acceptedSequences): 
 
 function startsWithError(text: string): boolean {
     return text.startsWith('Error:')
+}
+
+export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Promise<SpawnOptions> {
+    return {
+        ...options,
+        env: {
+            SAM_CLI_TELEMETRY_FROM_IDE: await getUserAgent({ includeClientId: false }),
+            ...options?.env,
+        },
+    }
 }

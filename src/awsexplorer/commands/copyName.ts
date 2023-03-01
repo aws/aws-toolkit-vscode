@@ -5,7 +5,6 @@
 
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { TreeShim } from '../../shared/treeview/utils'
 
@@ -14,10 +13,9 @@ import { TreeShim } from '../../shared/treeview/utils'
  */
 export async function copyNameCommand(
     node: AWSResourceNode | TreeShim<AWSResourceNode>,
-    window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
     node = node instanceof TreeShim ? node.node.resource : node
 
-    await copyToClipboard(node.name, 'name', window, env)
+    await copyToClipboard(node.name, 'name', env)
 }

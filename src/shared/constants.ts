@@ -28,6 +28,7 @@ export const documentationUrl: string = isCloud9()
  * - alternative?: codecatalyst/latest/userguide/sign-up-create-resources.html
  */
 export const authHelpUrl = 'https://docs.aws.amazon.com/general/latest/gr/differences-aws_builder_id.html'
+export const ssoAuthHelpUrl = 'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosignin.html'
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 export const ssoCredentialsHelpUrl: string =
@@ -48,6 +49,9 @@ export const samDeployDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
 export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
+// URLs for "sam sync" wizard.
+export const samSyncUrl: string =
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
