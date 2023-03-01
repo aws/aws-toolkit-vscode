@@ -12,6 +12,9 @@ import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenc
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
+import { join } from 'path'
+import { assertTelemetryCurried } from '../../testUtil'
 
 describe('inlineCompletionService', function () {
     beforeEach(function () {
@@ -93,6 +96,8 @@ describe('inlineCompletionService', function () {
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '' },
             ]
+
+            assert.ok(RecommendationHandler.instance.recommendations.length > 0)
             await InlineCompletionService.instance.clearInlineCompletionStates(createMockTextEditor())
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
             assert.strictEqual(RecommendationHandler.instance.recommendations.length, 0)
@@ -139,6 +144,108 @@ describe('inlineCompletionService', function () {
                 kind: vscode.TextEditorSelectionChangeKind.Mouse,
             })
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
+        })
+    })
+
+    describe('tryShowRecommendation', function () {
+        let editor: vscode.TextEditor
+        
+        const config: ConfigurationEntry = {
+            isShowMethodsEnabled: true,
+            isManualTriggerEnabled: true,
+            isAutomatedTriggerEnabled: true,
+            isSuggestionsWithCodeReferencesEnabled: true,
+        }
+
+        let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
+
+        beforeEach(async function () {
+            mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
+            resetCodeWhispererGlobalVariables()
+            const workspaceFolder = getTestWorkspaceFolder()
+            const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+            const appCodePath = join(appRoot, 'hello_world', 'app.py')
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
+            editor = await vscode.window.showTextDocument(doc) 
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should cancel paginated req, report user decision and clear recs if active selection pos is before RecommendationHandler start pos', async function () {
+            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
+            const cancelPaginatedReqSpy = sinon.stub(RecommendationHandler.instance, 'cancelPaginatedRequest').resolves()
+            const reportUserDecSpy = sinon.stub(RecommendationHandler.instance, 'reportUserDecisionOfRecommendation').resolves()
+            const clearRecsSpy = sinon.stub(RecommendationHandler.instance, 'clearRecommendations').resolves()
+
+            RecommendationHandler.instance.startPos = new vscode.Position(1, 1)
+            //call getPaginatedRecommendation in order to set documentUri to editor path
+            await InlineCompletionService.instance.getPaginatedRecommendation(
+                mockClient,
+                editor,
+                'OnDemand',
+                config
+            )
+            RecommendationHandler.instance.recommendations = [
+                { content: "\n\t\tprint('Hello world!')\n\t}" },
+                { content: '' },
+            ]
+
+            await InlineCompletionService.instance.tryShowRecommendation()
+       
+            assert.ok(cancelPaginatedReqSpy.called)
+            assert.ok(reportUserDecSpy.called)
+            assert.ok(clearRecsSpy.called)
+        })
+
+        it('should call moveStartPositionToSkipSpaces when there is a new recommendation to show', async function () {
+            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
+            const moveStartPosSpy = sinon.stub(RecommendationHandler.instance, 'moveStartPositionToSkipSpaces').resolves()
+            
+            //call getPaginatedRecommendation in order to set documentUri to editor path
+            await InlineCompletionService.instance.getPaginatedRecommendation(
+                mockClient,
+                editor,
+                'OnDemand',
+                config
+            )
+            RecommendationHandler.instance.recommendations = [
+                { content: "\n\t\tprint('Hello world!')\n\t}" },
+                { content: '' },
+            ]
+            await InlineCompletionService.instance.tryShowRecommendation()
+
+            assert.ok(moveStartPosSpy.called)
+        }) 
+    })
+
+    describe('showRecommendation', function () {
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should trigger inlineSuggest command if isFirstRecommendation', async function () {
+            const commandSpy = sinon.stub(vscode.commands, 'executeCommand')
+            await InlineCompletionService.instance.showRecommendation(0, true)
+            assert.ok(commandSpy.calledWith('editor.action.inlineSuggest.trigger'))
+        })
+        
+        it('should emit perceived latency telemetry', async function () {
+            const workspaceFolder = getTestWorkspaceFolder()
+            const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+            const appCodePath = join(appRoot, 'hello_world', 'app.py')
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
+            const editor = await vscode.window.showTextDocument(doc)
+            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor) 
+            
+            await InlineCompletionService.instance.showRecommendation(0, true)
+  
+            assertTelemetryCurried('codewhisperer_perceivedLatency')
         })
     })
 })
