@@ -129,6 +129,12 @@ export interface DeleteBucketRequest {
     readonly bucketName: string
 }
 
+export interface CopyObjectRequest {
+    readonly bucket: string
+    readonly copySource: string
+    readonly key: string
+}
+
 export class DefaultS3Client {
     public constructor(
         public readonly regionCode: string,
@@ -625,6 +631,19 @@ export class DefaultS3Client {
                 throw e
             }
         }
+    }
+    /**
+     * Copies an object to a desired bucket.
+     *
+     */
+    public async copyObject(request: CopyObjectRequest) {
+        getLogger().debug('CopyObject called with request: %O', request)
+        const s3 = await this.createS3()
+
+        const response = await s3
+            .copyObject({ Bucket: request.bucket, CopySource: request.copySource, Key: request.key })
+            .promise()
+        getLogger().debug('CopyObject returned response: %O', response)
     }
 }
 

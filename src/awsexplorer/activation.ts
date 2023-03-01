@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as semver from 'semver'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
@@ -31,6 +32,7 @@ import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
+import { AwsDragAndDropController } from './commands/dragAndDropController'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -42,11 +44,13 @@ export async function activate(args: {
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
-
-    const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
+    const awsDragDropController = semver.gte(vscode.version, '1.66.0') ? new AwsDragAndDropController() : undefined
+    const treeViewOptions = {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
-    })
+        dragAndDropController: awsDragDropController,
+    }
+    const view = vscode.window.createTreeView(awsExplorer.viewProviderId, treeViewOptions)
     globals.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
