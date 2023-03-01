@@ -448,7 +448,6 @@ class CodeWhispererService {
     }
 
     private fun checkRecommendationsValidity(states: InvocationContext, showHint: Boolean): Boolean {
-        val userInput = states.recommendationContext.userInputSinceInvocation
         val details = states.recommendationContext.details
 
         // set to true when at least one is not discarded or empty

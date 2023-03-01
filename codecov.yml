@@ -4,6 +4,7 @@
 codecov:
   notify:
     require_ci_to_pass: no
+  max_report_age: off
 
 coverage:
   precision: 2
@@ -20,6 +21,12 @@ coverage:
         only_pulls: true
         flags:
           - "unittest"
+      codewhisperer:
+        target: 75%
+        paths:
+          - "**/src/software/aws/toolkits/jetbrains/services/codewhisperer/*"
+        flags:
+          - "codewhisperer"
     patch:
       default:
         threshold: 1
@@ -41,3 +48,8 @@ ignore:
   - "sdk-codegen/**/*"
   - "jetbrains-rider/**/*.Generated.kt"
   - "**/TelemetryDefinitions.kt"
+
+flags:
+  codewhisperer:
+    paths:
+      - "**/src/software/aws/toolkits/jetbrains/services/codewhisperer/"
