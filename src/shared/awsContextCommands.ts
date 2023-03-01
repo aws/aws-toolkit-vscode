@@ -109,7 +109,7 @@ export class AwsContextCommands {
         return true
     }
 
-    public getAllRegion(){
+    public getAllRegion() {
         return this._regionProvider.getRegions()
     }
     /**
