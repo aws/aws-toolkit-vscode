@@ -102,6 +102,7 @@
     "AWS.command.downloadLambda": "Download...",
     "AWS.command.uploadLambda": "Upload Lambda...",
     "AWS.command.uploadToAws": "Upload to AWS...",
+    "AWS.command.uploadToAws.cn": "Upload to AWS...",
     "AWS.command.invokeLambda": "Invoke on AWS",
     "AWS.command.invokeLambda.cn": "Invoke on Amazon",
     "AWS.command.refreshAwsExplorer": "Refresh Explorer",

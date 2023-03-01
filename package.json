@@ -2414,6 +2414,7 @@
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
+                        "title": "%AWS.command.uploadToAws.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }

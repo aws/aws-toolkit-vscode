@@ -15,7 +15,7 @@ import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
-import { uploadToAwsCommand } from './commands/uploadToAwsCommand'
+import { uploadToAwsCommand } from '../shared/uploadToAwsCommand'
 
 /**
  * Activates Lambda components.
