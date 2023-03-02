@@ -5,8 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import * as path from 'path'
-import { AWSError, LexRuntime, S3 } from 'aws-sdk'
+import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
