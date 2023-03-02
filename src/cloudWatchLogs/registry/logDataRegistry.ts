@@ -233,7 +233,7 @@ export async function filterLogEventsFromUri(
     }
 
     const msgId = uriToKey(createURIFromArgs(logGroupInfo, parameters))
-    const msgTimeout = await Messages.putMessage(msgId, `${logGroupInfo.groupName}`, {
+    const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logGroupInfo.groupName}'`, {
         message: logGroupInfo.streamName ?? '',
     })
 
