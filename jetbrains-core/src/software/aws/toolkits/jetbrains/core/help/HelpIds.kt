@@ -27,7 +27,7 @@ enum class HelpIds(shortId: String, val url: String) {
     ),
     EXPLORER_CREDS_HELP(
         "explorerCredsHelp",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/working-with-aws.html"
+        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html"
     ),
 
     // Lambda
