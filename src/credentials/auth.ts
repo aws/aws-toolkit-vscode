@@ -334,6 +334,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    public async reauthenticate({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
+    public async reauthenticate({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     public async reauthenticate({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
@@ -350,7 +352,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
-    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
+    public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
@@ -572,7 +574,7 @@ export class Auth implements AuthService, ConnectionManager {
             type: 'iam',
             state: profile.metadata.connectionState,
             label: profile.metadata.label ?? id,
-            getCredentials: () => this.debouncedGetCredentials(id, provider),
+            getCredentials: () => this.getCredentials(id, provider),
         }
     }
 
@@ -594,11 +596,12 @@ export class Auth implements AuthService, ConnectionManager {
             startUrl: profile.startUrl,
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? label,
-            getToken: () => this.debouncedGetToken(id, provider),
+            getToken: () => this.getToken(id, provider),
         }
     }
 
-    private async authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+    private readonly authenticate = keyedDebounce(this._authenticate.bind(this))
+    private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
         await this.updateConnectionState(id, 'authenticating')
 
         try {
@@ -628,15 +631,15 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    private readonly debouncedGetToken = keyedDebounce(Auth.prototype.getToken.bind(this))
-    private async getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
+    private readonly getToken = keyedDebounce(this._getToken.bind(this))
+    private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken()
 
         return token ?? this.handleInvalidCredentials(id, () => provider.createToken())
     }
 
-    private readonly debouncedGetCredentials = keyedDebounce(Auth.prototype.getCredentials.bind(this))
-    private async getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
+    private readonly getCredentials = keyedDebounce(this._getCredentials.bind(this))
+    private async _getCredentials(id: Connection['id'], provider: CredentialsProvider): Promise<Credentials> {
         const credentials = await this.getCachedCredentials(provider)
         if (credentials !== undefined) {
             return credentials
