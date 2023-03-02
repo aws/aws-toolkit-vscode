@@ -30,16 +30,8 @@ export class JavaDependencyGraph extends DependencyGraph {
     private _buildFileRelativePaths: Set<string> = new Set<string>()
     private _packageStrs: Set<string> = new Set<string>()
 
-    getReadableSizeLimit(): string {
-        return `${CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes / Math.pow(2, 20)}MB`
-    }
-
-    willReachSizeLimit(current: number, adding: number): boolean {
-        return current + adding > CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
-    }
-
-    reachSizeLimit(size: number): boolean {
-        return size > CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
+    getPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
     }
 
     private extractStatement(content: string): JavaStatement {
@@ -413,11 +405,13 @@ export class JavaDependencyGraph extends DependencyGraph {
                     dir: truncSourceDirPath,
                     zip: zipSourcePath,
                     size: this._totalSize,
+                    scannedFiles: new Set(this._pickedSourceFiles),
                     zipSize: zipSourceSize,
                 },
                 build: {
                     dir: truncBuildDirPath,
                     zip: zipBuildPath,
+                    scannedFiles: new Set(),
                     size: totalBuildSize,
                     zipSize: zipBuildSize,
                 },
