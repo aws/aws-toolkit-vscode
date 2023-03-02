@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import { AWSError, S3 } from 'aws-sdk'
+import * as path from 'path'
+import { AWSError, LexRuntime, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
@@ -132,7 +133,8 @@ export interface DeleteBucketRequest {
 export interface CopyObjectRequest {
     readonly bucket: string
     readonly copySource: string
-    readonly key: string
+    readonly name: string
+    readonly folderPath?: string
 }
 
 export class DefaultS3Client {
@@ -634,16 +636,58 @@ export class DefaultS3Client {
     }
     /**
      * Copies an object to a desired bucket.
-     *
      */
-    public async copyObject(request: CopyObjectRequest) {
+    public async copyObject(request: CopyObjectRequest): Promise<void> {
         getLogger().debug('CopyObject called with request: %O', request)
         const s3 = await this.createS3()
 
         const response = await s3
-            .copyObject({ Bucket: request.bucket, CopySource: request.copySource, Key: request.key })
+            .copyObject({
+                Bucket: request.bucket,
+                CopySource: request.copySource,
+                Key: request.folderPath ? `${request.folderPath}${request.name}` : request.name,
+            })
             .promise()
         getLogger().debug('CopyObject returned response: %O', response)
+    }
+
+    /**
+     * Recursively copy all files and folders to the target bucket or folder
+     * @param source
+     * @param target
+     */
+    public async copyFolder(
+        source: { folder: { name: string; path: string }; bucket: Bucket },
+        target: { bucketName: string; folderPath: string | undefined }
+    ): Promise<void> {
+        let response = await this.listFiles({ bucketName: source.bucket.name, folderPath: source.folder.path })
+        const files: File[] = response.files
+        const folders: Folder[] = response.folders
+
+        while (response.continuationToken) {
+            response = await this.listFiles({
+                bucketName: source.bucket.name,
+                folderPath: source.folder.path,
+                continuationToken: response.continuationToken,
+            })
+            files.push(...response.files)
+            folders.push(...response.folders)
+        }
+
+        files.forEach(async file => {
+            await this.copyObject({
+                bucket: target.bucketName,
+                copySource: `${source.bucket.name}/${file.key}`,
+                name: `${target.folderPath ? target.folderPath : ''}${source.folder.name}/${file.name}`,
+            })
+        })
+        // recursively copy all nested files and folders, adding the folder name to the previous name to preserve nesting structure
+        folders.forEach(async folder => {
+            await this.copyFolder(
+                { folder: { name: `${source.folder.name}/${folder.name}`, path: folder.path }, bucket: source.bucket },
+                { bucketName: target.bucketName, folderPath: target.folderPath }
+            )
+        })
     }
 }
 
