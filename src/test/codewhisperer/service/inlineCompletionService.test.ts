@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { InlineCompletionService, CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionService'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
@@ -15,6 +15,7 @@ import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
 import { assertTelemetryCurried } from '../../testUtil'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 
 describe('inlineCompletionService', function () {
     beforeEach(function () {
@@ -234,18 +235,90 @@ describe('inlineCompletionService', function () {
             await InlineCompletionService.instance.showRecommendation(0, true)
             assert.ok(commandSpy.calledWith('editor.action.inlineSuggest.trigger'))
         })
-        
+
         it('should emit perceived latency telemetry', async function () {
             const workspaceFolder = getTestWorkspaceFolder()
             const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
             const appCodePath = join(appRoot, 'hello_world', 'app.py')
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
             const editor = await vscode.window.showTextDocument(doc)
-            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor) 
+            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
+            RecommendationHandler.instance.requestId = 'testRequestId'
+            RecommendationHandler.instance.sessionId = 'testSessionId'
             
             await InlineCompletionService.instance.showRecommendation(0, true)
   
-            assertTelemetryCurried('codewhisperer_perceivedLatency')
+            const assertTelemetry = assertTelemetryCurried('codewhisperer_perceivedLatency')
+            assertTelemetry({
+                codewhispererRequestId: 'testRequestId',
+                codewhispererSessionId: 'testSessionId',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererCompletionType: "Line",
+                codewhispererLanguage: 'python',
+                passive: true,
+            })
+        })
+    })
+})
+
+
+describe('CWInlineCompletioProvider', function () {
+    beforeEach(function () {
+        resetCodeWhispererGlobalVariables()
+    })
+
+    describe('provideInlineCompletionItems', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should return undefined if position is before RecommendationHandler start pos', async function () {
+            RecommendationHandler.instance.startPos = new vscode.Position(1, 1)
+            console.log("RecommendationHandler.instance.startPos",RecommendationHandler.instance.startPos)
+            const position = new vscode.Position(0, 0)
+            const document = createMockDocument()
+            const fakeContext = {triggerKind: 0, selectedCompletionInfo: undefined}
+            const token = new vscode.CancellationTokenSource().token
+            const provider = new CWInlineCompletionItemProvider(0, 0)
+            const result = await provider.provideInlineCompletionItems(
+                document,
+                position,
+                fakeContext,
+                token
+            )
+          
+            assert.ok(result === undefined)
+        })
+
+        it('should set suggestion state, set inline reference and record telemetry if there is a new recommendation to show', async function () {
+            RecommendationHandler.instance.startPos = new vscode.Position(0, 0)
+            const position = new vscode.Position(0, 0)
+            const document = createMockDocument()
+            const fakeContext = {triggerKind: 0, selectedCompletionInfo: undefined}
+            const token = new vscode.CancellationTokenSource().token
+            const provider = new CWInlineCompletionItemProvider(0, 0)
+            const setSuggestionStateSpy = sinon.stub(RecommendationHandler.instance, 'setSuggestionState')
+            const refInlineProviderSpy = sinon.stub(ReferenceInlineProvider.instance, 'setInlineReference')
+            const telemetrySpy1 = sinon.stub(TelemetryHelper.instance, 'setFirstSuggestionShowTime')
+            const telemetrySpy2 = sinon.stub(TelemetryHelper.instance, 'tryRecordClientComponentLatency')
+
+            const result = await provider.provideInlineCompletionItems(
+                document,
+                position,
+                fakeContext,
+                token
+            )
+ 
+            assert.ok(setSuggestionStateSpy.called)
+            assert.ok(refInlineProviderSpy.called)
+            assert.ok(telemetrySpy1.called)
+            assert.ok(telemetrySpy2.called)
+            //TODO: add more specific test for result
+            assert.ok(result !== undefined)
         })
     })
 })
