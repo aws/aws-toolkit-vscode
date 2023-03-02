@@ -22,6 +22,7 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
+import { ImportAdderProvider } from './importAdderProvider'
 
 class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -151,6 +152,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(RecommendationHandler.instance.startPos)) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             this.activeItemIndex = undefined
             return
         }
@@ -174,6 +176,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
                 r.content,
                 r.references
             )
+            ImportAdderProvider.instance.onShowRecommendation(document, RecommendationHandler.instance.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
             TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
@@ -184,6 +187,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
             return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
         this.activeItemIndex = undefined
         return []
     }
@@ -296,16 +300,19 @@ export class InlineCompletionService {
     async onEditorChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
     }
 
     async onFocusChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
         }
     }
 
@@ -313,6 +320,7 @@ export class InlineCompletionService {
         try {
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             RecommendationHandler.instance.cancelPaginatedRequest()
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
