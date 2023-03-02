@@ -1100,6 +1100,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.uploadToAws",
+                    "when": "false"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -1272,8 +1276,8 @@
                     "group": "z_aws@2"
                 },
                 {
-                    "command": "aws.uploadLambda",
-                    "when": "explorerResourceIsFolder || isFileSystemResource && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "command": "aws.uploadToAws",
+                    "when": "explorerResourceIsFolder || isFileSystemResource",
                     "group": "z_aws@3"
                 }
             ],
@@ -2400,6 +2404,17 @@
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.uploadToAws",
+                "title": "%AWS.command.uploadToAws%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.uploadToAws.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }

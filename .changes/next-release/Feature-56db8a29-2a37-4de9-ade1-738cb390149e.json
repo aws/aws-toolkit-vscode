@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "File explorer: Add menu item and wizard to upload to S3 or Lambda."
+}
