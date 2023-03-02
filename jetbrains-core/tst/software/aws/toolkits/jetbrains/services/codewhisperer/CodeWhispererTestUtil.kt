@@ -24,6 +24,7 @@ object CodeWhispererTestUtil {
     const val testRequestId = "test_aws_request_id"
     const val testRequestIdForCodeWhispererException = "test_request_id_for_codewhispererException"
     const val codeWhispererRecommendationActionId = "CodeWhispererRecommendationAction"
+    const val codeWhispererCodeScanActionId = "codewhisperer.toolbar.security.scan"
     const val testValidAccessToken = "test_valid_access_token"
     const val testNextToken = "test_next_token"
     private val testReferenceInfoPair = listOf(
@@ -119,7 +120,10 @@ object CodeWhispererTestUtil {
 
     const val pythonFileName = "test.py"
     const val javaFileName = "test.java"
+    const val cppFileName = "test.cpp"
+    const val jsFileName = "test.js"
     const val pythonTestLeftContext = "def addTwoNumbers"
+    const val cppTestLeftContext = "int addTwoNumbers"
     const val javaTestContext = "public class Test {\n    public static void main\n}"
 
     internal fun generateMockRecommendationDetail(content: String): Recommendation {

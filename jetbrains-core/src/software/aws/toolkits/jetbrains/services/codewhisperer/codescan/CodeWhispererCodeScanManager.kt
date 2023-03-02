@@ -66,7 +66,7 @@ import javax.swing.Icon
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
-internal class CodeWhispererCodeScanManager(val project: Project) {
+class CodeWhispererCodeScanManager(val project: Project) {
     private val codeScanResultsPanel by lazy {
         CodeWhispererCodeScanResultsView(project)
     }
@@ -167,7 +167,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         }
     }
 
-    private fun handleException(e: Exception): String {
+    fun handleException(e: Exception): String {
         val errorMessage = when (e) {
             is CodeWhispererException -> e.awsErrorDetails().errorMessage() ?: message("codewhisperer.codescan.service_error")
             is CodeWhispererCodeScanException -> e.message
@@ -356,7 +356,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         return codeScanTreeNodeRoot
     }
 
-    private suspend fun renderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>) {
+    suspend fun renderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>) {
         withContext(getCoroutineUiContext()) {
             val root = createCodeScanIssuesTree(issues)
             val codeScanTreeModel = CodeWhispererCodeScanTreeModel(root)
@@ -387,7 +387,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
  * @param description is shown in the tooltip of the scan node and also shown when the mouse
  * is hovered over the highlighted text in the editor.
  */
-internal data class CodeWhispererCodeScanIssue(
+data class CodeWhispererCodeScanIssue(
     val project: Project,
     val file: VirtualFile,
     val startLine: Int,

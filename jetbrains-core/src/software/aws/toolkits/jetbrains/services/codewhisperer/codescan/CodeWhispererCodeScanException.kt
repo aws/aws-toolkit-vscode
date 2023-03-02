@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
 import software.aws.toolkits.resources.message
 
-internal open class CodeWhispererCodeScanException(override val message: String?) : RuntimeException()
+open class CodeWhispererCodeScanException(override val message: String?) : RuntimeException()
 
 internal fun noFileOpenError(): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.no_file_open"))

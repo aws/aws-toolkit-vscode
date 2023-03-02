@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow
 
 import com.intellij.ide.BrowserUtil
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -69,7 +68,7 @@ class CodeWhispererCodeReferenceComponents(private val project: Project) {
         repaint(project)
 
         // set the reference panel text different for SSO users vs AWS Builder ID / Accless users
-        ApplicationManager.getApplication().messageBus.connect().subscribe(
+        project.messageBus.connect().subscribe(
             ToolkitConnectionManagerListener.TOPIC,
             object : ToolkitConnectionManagerListener {
                 override fun activeConnectionChanged(newConnection: ToolkitConnection?) {

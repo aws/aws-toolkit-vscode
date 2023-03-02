@@ -28,7 +28,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
-internal sealed class CodeScanSessionConfig(
+sealed class CodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project
 ) {

@@ -27,7 +27,7 @@ import java.time.LocalDateTime
 
 // TODO: refactor this class, now it's managing action and state
 @State(name = "codewhispererStates", storages = [Storage("aws.xml")])
-internal class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispererExploreActionState> {
+class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispererExploreActionState> {
     private val actionState = CodeWhispererExploreActionState()
     private val suspendedConnections = mutableSetOf<String>()
 
@@ -171,7 +171,7 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
     }
 }
 
-internal class CodeWhispererExploreActionState : BaseState() {
+class CodeWhispererExploreActionState : BaseState() {
     @get:Property
     val value by map<CodeWhispererExploreStateType, Boolean>()
 
@@ -187,7 +187,7 @@ internal class CodeWhispererExploreActionState : BaseState() {
 }
 
 // TODO: Don't remove IsManualEnabled
-internal enum class CodeWhispererExploreStateType {
+enum class CodeWhispererExploreStateType {
     IsAutoEnabled,
     IsManualEnabled,
     HasAcceptedTermsOfServices,

@@ -492,7 +492,7 @@ class CodeWhispererService {
         return RequestContext(project, editor, triggerTypeInfo, caretPosition, fileContextInfo, connection, latencyContext)
     }
 
-    private fun validateResponse(response: ListRecommendationsResponse): ListRecommendationsResponse {
+    fun validateResponse(response: ListRecommendationsResponse): ListRecommendationsResponse {
         // If contentSpans in reference are not consistent with content(recommendations),
         // remove the incorrect references.
         val validatedRecommendations = response.recommendations().map {

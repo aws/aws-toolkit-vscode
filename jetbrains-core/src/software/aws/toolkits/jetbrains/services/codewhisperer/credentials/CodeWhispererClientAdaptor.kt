@@ -26,6 +26,8 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
+import kotlin.reflect.KProperty0
+import kotlin.reflect.jvm.isAccessible
 
 // TODO: move this file to package "/client"
 // As the connection is project-level, we need to make this project-level too
@@ -67,6 +69,13 @@ interface CodeWhispererClientAdaptor : Disposable {
 
 class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeWhispererClientAdaptor {
     private val mySigv4Client by lazy { createUnmanagedSigv4Client() }
+
+    // Will purge once sigV4 client for CW is no longer needed
+    private val KProperty0<*>.isLazyInitialized: Boolean
+        get() {
+            isAccessible = true
+            return (getDelegate() as Lazy<*>).isInitialized()
+        }
 
     private val myBearerClient: CodeWhispererRuntimeClient
         get() = getBearerClient(project)
@@ -113,7 +122,9 @@ class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeWhispe
         }
 
     override fun dispose() {
-        mySigv4Client.close()
+        if (this::mySigv4Client.isLazyInitialized) {
+            mySigv4Client.close()
+        }
     }
 
     companion object {

@@ -10,6 +10,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.TimeoutUtil.sleep
 import com.intellij.util.io.HttpRequests
@@ -51,7 +52,7 @@ import java.time.Instant
 import java.util.Base64
 import java.util.UUID
 
-internal class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
+class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     private val clientToken: UUID = UUID.randomUUID()
     private val urlResponse = mutableMapOf<ArtifactType, CreateUploadUrlResponse>()
 
@@ -278,9 +279,13 @@ internal class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionC
         LOG.debug { "Total code scan issues returned from service: ${scanRecommendations.size}" }
         return scanRecommendations.mapNotNull {
             val file = try {
-                LocalFileSystem.getInstance().findFileByIoFile(
-                    Path.of(it.filePath).toFile()
-                )
+                val path =
+                    if (SystemInfo.isWindows) {
+                        Path.of(it.filePath)
+                    } else {
+                        Path.of(File.separator, it.filePath)
+                    }
+                LocalFileSystem.getInstance().findFileByIoFile(path.toFile())
             } catch (e: Exception) {
                 LOG.debug { "Cannot find file at location ${it.filePath}" }
                 null
@@ -327,7 +332,7 @@ internal class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionC
     }
 }
 
-internal sealed class CodeScanResponse {
+sealed class CodeScanResponse {
     abstract val issues: List<CodeWhispererCodeScanIssue>
     abstract val responseContext: CodeScanResponseContext
 
@@ -351,9 +356,9 @@ internal data class CodeScanRecommendation(
     val description: Description
 )
 
-internal data class Description(val text: String, val markdown: String)
+data class Description(val text: String, val markdown: String)
 
-internal data class CodeScanSessionContext(
+data class CodeScanSessionContext(
     val project: Project,
     val sessionConfig: CodeScanSessionConfig
 )
