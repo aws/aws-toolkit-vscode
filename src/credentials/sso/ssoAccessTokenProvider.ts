@@ -3,16 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
-import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
+import globals from '../../shared/extensionGlobals'
+import * as vscode from 'vscode'
+import { AuthorizationPendingException, SlowDownException, SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
 import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
 import { getCache } from './cache'
-import { hasProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
-import { isClientFault } from '../../shared/errors'
+import { isClientFault, ToolkitError } from '../../shared/errors'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -156,12 +159,7 @@ export class SsoAccessTokenProvider {
             grantType: deviceGrantType,
         }
 
-        const token = await this.oidc.pollForToken(
-            tokenRequest,
-            registration.expiresAt.getTime(),
-            authorization.interval
-        )
-
+        const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         return this.formatToken(token, registration)
     }
 
@@ -176,4 +174,57 @@ export class SsoAccessTokenProvider {
     public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
         return new this(profile)
     }
+}
+
+const backoffDelayMs = 5000
+async function pollForTokenWithProgress<T>(
+    fn: () => Promise<T>,
+    authorization: Awaited<ReturnType<OidcClient['startDeviceAuthorization']>>,
+    interval = authorization.interval ?? backoffDelayMs
+) {
+    async function poll(token: vscode.CancellationToken) {
+        while (
+            authorization.expiresAt.getTime() - globals.clock.Date.now() > interval &&
+            !token.isCancellationRequested
+        ) {
+            try {
+                return await fn()
+            } catch (err) {
+                if (!hasStringProps(err, 'name')) {
+                    throw err
+                }
+
+                if (err instanceof SlowDownException) {
+                    interval += backoffDelayMs
+                } else if (!(err instanceof AuthorizationPendingException)) {
+                    throw err
+                }
+            }
+
+            await sleep(interval)
+        }
+
+        throw new ToolkitError('Timed-out waiting for browser login flow to complete', {
+            code: 'TimedOut',
+        })
+    }
+
+    return vscode.window.withProgress(
+        {
+            title: localize(
+                'AWS.auth.loginWithBrowser.messageDetail',
+                'Login page opened in browser. When prompted, provide this code: {0}',
+                authorization.userCode
+            ),
+            cancellable: true,
+            location: vscode.ProgressLocation.Notification,
+        },
+        (_, token) =>
+            Promise.race([
+                poll(token),
+                new Promise<never>((_, reject) =>
+                    token.onCancellationRequested(() => reject(new CancellationError('user')))
+                ),
+            ])
+    )
 }
