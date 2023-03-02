@@ -31,6 +31,7 @@ import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
+import { uploadToAwsCommand } from '../shared/uploadToAwsCommand'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -147,6 +148,7 @@ async function registerAwsExplorerCommands(
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),
+        Commands.register('aws.uploadToAws', async (arg: vscode.Uri) => await uploadToAwsCommand(arg)),
         loadMoreChildrenCommand.register(awsExplorer)
     )
 }

@@ -10,7 +10,6 @@ import { Wizard } from './wizards/wizard'
 
 export interface UploadToAwsWizardState {
     readonly resource: 's3' | 'lambda'
-    readonly region?: string
 }
 
 function createChooseResourcePrompter() {
