@@ -199,12 +199,13 @@ export class LogDataRegistry {
 }
 
 /**
- * @see getLogEventsFromUriComponents
+ * @param completeTimeout True to close the vscode cancel window when request is completed.
  */
 export async function filterLogEventsFromUri(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    nextToken?: string
+    nextToken?: string,
+    completeTimeout = false
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
@@ -245,7 +246,7 @@ export async function filterLogEventsFromUri(
     })
 
     const responsePromise = client.filterLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false })
+    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false, completeTimeout })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
