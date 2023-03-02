@@ -12,7 +12,7 @@ import { SsoToken } from '../../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { ToolkitError } from '../../shared/errors'
 import { FakeMemento } from '../fakeExtensionContext'
-import { assertTreeItem } from '../shared/treeview/testUtil'
+import { assertChildren, assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
 import { captureEvent } from '../testUtil'
 import { stub } from '../utilities/stubber'
@@ -243,6 +243,13 @@ describe('Auth', function () {
             tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
             await auth.useConnection(conn)
             await assertTreeItem(node, { description: 'expired or invalid, click to authenticate' })
+        })
+
+        it('shows a login child node', async function () {
+            const node = new AuthNode(auth)
+            const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+            await auth.useConnection(conn)
+            await assertChildren(node, { label: 'Login' })
         })
     })
 })

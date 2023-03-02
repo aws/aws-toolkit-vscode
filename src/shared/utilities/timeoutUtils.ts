@@ -279,3 +279,20 @@ export function sleep(duration: number = 0): Promise<void> {
     const schedule = globals?.clock?.setTimeout ?? setTimeout
     return new Promise(r => schedule(r, Math.max(duration, 0)))
 }
+
+// a map of Timeouts that may be retrieved globally
+const timers = new Map<string, Timeout>()
+
+/**
+ * Creates and stores a new Timeout that may be retrieved globally, or returns a non-completed Timeout created earlier.
+ *
+ * @param key identifier for a Timeout
+ * @param time ms until expires
+ * @returns A previously created non-completed Timeout or a new Timeout
+ */
+export function getTimer(key: string, time: number = 600000): Timeout {
+    const fromTimers = timers.get(key)
+    const timer = fromTimers !== undefined && !fromTimers.completed ? fromTimers : new Timeout(time)
+    timers.set(key, timer)
+    return timer
+}

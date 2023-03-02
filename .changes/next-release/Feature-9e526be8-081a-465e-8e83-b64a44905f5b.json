@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "UI: `Login` and `Cancel` buttons visible in the AWS Explorer when not connected"
+}

@@ -16,7 +16,7 @@ import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { CancellationError, getTimer, Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
@@ -26,7 +26,7 @@ import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsProvider, fromString } from './providers/credentials'
 import { once } from '../shared/utilities/functionUtils'
-import { getResourceFromTreeNode } from '../shared/treeview/utils'
+import { getResourceFromTreeNode, createErrorItem } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
@@ -42,6 +42,7 @@ export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const credentialsTimerKey = 'credentialsTimer'
 
 export function createBuilderIdProfile(): SsoProfile & { readonly scopes: string[] } {
     return {
@@ -302,12 +303,43 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly ssoCache = getCache()
     private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
     public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    public pendingTimer: Timeout | undefined = undefined
+    public loginError?: Error
 
     public constructor(
         private readonly store: ProfileStore,
         private readonly createTokenProvider = createFactoryFunction(SsoAccessTokenProvider),
         private readonly iamProfileProvider = CredentialsProviderManager.getInstance()
     ) {}
+
+    public setPendingTimeout(timeout: Timeout | undefined) {
+        this.pendingTimer = timeout
+    }
+
+    public clearTimeout() {
+        if (this.pendingTimer) {
+            this.pendingTimer.dispose()
+        }
+        this.setPendingTimeout(undefined)
+    }
+
+    public cancelTimeout() {
+        if (this.pendingTimer) {
+            this.pendingTimer.cancel()
+        }
+        this.clearTimeout()
+        if (this.activeConnection) {
+            this.updateConnectionState(this.activeConnection.id, 'invalid')
+        }
+    }
+
+    private setLoginError(err: Error) {
+        this.loginError = err
+    }
+
+    public clearLoginError() {
+        this.loginError = undefined
+    }
 
     #activeConnection: Mutable<StatefulConnection> | undefined
     public get activeConnection(): StatefulConnection | undefined {
@@ -349,9 +381,12 @@ export class Auth implements AuthService, ConnectionManager {
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection>
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+        this.clearLoginError()
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
-            throw new Error(`Connection does not exist: ${id}`)
+            const err = new Error(`Connection does not exist: ${id}`)
+            this.setLoginError(err)
+            throw err
         }
 
         const validated = await this.validateConnection(id, profile)
@@ -362,6 +397,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         this.#activeConnection = conn
         this.onDidChangeActiveConnectionEmitter.fire(conn)
+        vscode.commands.executeCommand('aws.explorer.focus')
         await this.store.setCurrentProfileId(id)
 
         return conn
@@ -486,6 +522,9 @@ export class Auth implements AuthService, ConnectionManager {
             this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
         }
 
+        if (connectionState === 'valid') {
+            this.clearLoginError()
+        }
         return profile
     }
 
@@ -596,6 +635,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+        this.clearLoginError()
         await this.updateConnectionState(id, 'authenticating')
 
         try {
@@ -605,6 +645,7 @@ export class Auth implements AuthService, ConnectionManager {
             return result
         } catch (err) {
             await this.updateConnectionState(id, 'invalid')
+            this.setLoginError(err as Error)
             throw err
         }
     }
@@ -807,6 +848,7 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
 })
 
 async function signout(auth: Auth) {
+    auth.clearLoginError()
     const conn = auth.activeConnection
 
     if (conn?.type === 'sso') {
@@ -972,10 +1014,16 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
 })
 
 const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
+    const reauthTimer = new Timeout(600000)
+
+    auth.setPendingTimeout(reauthTimer)
     try {
-        await auth.reauthenticate(conn)
+        await waitTimeout(auth.reauthenticate(conn), reauthTimer)
     } catch (err) {
         throw ToolkitError.chain(err, 'Unable to authenticate connection')
+    } finally {
+        auth.clearTimeout()
+        vscode.commands.executeCommand('aws.explorer.focus')
     }
 })
 
@@ -991,6 +1039,7 @@ export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials'
 // Legacy commands
 export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
     const connections = await auth.listConnections()
+    vscode.commands.executeCommand('aws.explorer.focus')
     if (connections.length === 0) {
         return addConnection.execute()
     } else {
@@ -1017,7 +1066,7 @@ function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): 
 export class AuthNode implements TreeNode<Auth> {
     public readonly id = 'auth'
     public readonly onDidChangeTreeItem = mapEventType(this.resource.onDidChangeActiveConnection)
-
+    public readonly onDidChangeChildren = mapEventType(this.resource.onDidChangeActiveConnection)
     public constructor(public readonly resource: Auth) {}
 
     public getTreeItem() {
@@ -1039,6 +1088,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         const item = new vscode.TreeItem(itemLabel)
         item.contextValue = 'awsAuthNode'
+        item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded
 
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
@@ -1063,4 +1113,31 @@ export class AuthNode implements TreeNode<Auth> {
             item.description = text
         }
     }
+
+    public getChildren() {
+        const conn = this.resource.activeConnection
+        const children = []
+        if (conn !== undefined) {
+            if (conn.state !== 'valid') {
+                children.push(reauth.build(this.resource, conn).asTreeNode({ label: 'Login' }))
+            }
+            if (conn.state === 'authenticating') {
+                children.push(
+                    cancelLogin
+                        .build(this.resource)
+                        .asTreeNode({ label: 'Cancel', iconPath: getIcon('vscode-loading~spin') })
+                )
+            }
+        }
+        if (this.resource.loginError) {
+            children.push(createErrorItem(this.resource.loginError, undefined, 'Failed to login (click for logs)'))
+        }
+        return children
+    }
 }
+
+const cancelLogin = Commands.register('_aws.auth.cancelLogin', (auth: Auth) => {
+    const credentialTimer = getTimer(credentialsTimerKey)
+    credentialTimer.cancel()
+    auth.cancelTimeout()
+})
