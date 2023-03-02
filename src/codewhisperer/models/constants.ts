@@ -94,7 +94,7 @@ export type SupportedLanguage = typeof supportedLanguages[number]
  */
 export const pendingResponse = 'Waiting for CodeWhisperer...'
 
-export const runningSecurityScan = 'Running security scan...'
+export const runningSecurityScan = 'Scanning active file and its dependencies...'
 
 export const noSuggestions = 'No suggestions from CodeWhisperer'
 
@@ -263,3 +263,9 @@ export const accessTokenExpiredDoNotShowLastShown =
     'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN_LAST_SHOWN_TIME'
 
 export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`
+
+export const codeScanLogsOutputChannelId = 'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#2-CodeWhisperer Security Scan Logs'
+
+export const stopScanMessage = 'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
+
+export const showScannedFilesMessage = 'Show Scanned Files'

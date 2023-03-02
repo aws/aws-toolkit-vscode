@@ -16,6 +16,7 @@ import { getLogger } from '../../../shared/logger'
 export interface Truncation {
     dir: string
     zip: string
+    scannedFiles: Set<string>
     size: number
     zipSize: number
 }
@@ -63,6 +64,8 @@ export abstract class DependencyGraph {
     protected _truncDir: string = ''
     protected _totalLines: number = 0
 
+    private _isProjectTruncated = false
+
     constructor(languageId: string) {
         this._languageId = languageId
     }
@@ -86,6 +89,30 @@ export abstract class DependencyGraph {
 
     protected getBaseDirPath(uri: vscode.Uri) {
         return path.dirname(uri.fsPath)
+    }
+
+    public getReadableSizeLimit(): string {
+        const totalBytesInMB = Math.pow(2, 20)
+        const totalBytesInKB = Math.pow(2, 10)
+        if (this.getPayloadSizeLimitInBytes() >= totalBytesInMB) {
+            return `${this.getPayloadSizeLimitInBytes() / totalBytesInMB}MB`
+        } else {
+            return `${this.getPayloadSizeLimitInBytes() / totalBytesInKB}KB`
+        }
+    }
+
+    public willReachSizeLimit(current: number, adding: number): boolean {
+        const willReachLimit = current + adding > this.getPayloadSizeLimitInBytes()
+        this._isProjectTruncated = this._isProjectTruncated || willReachLimit
+        return willReachLimit
+    }
+
+    public reachSizeLimit(size: number): boolean {
+        return size > this.getPayloadSizeLimitInBytes()
+    }
+
+    public isProjectTruncated(): boolean {
+        return this._isProjectTruncated
     }
 
     protected getDirPaths(uri: vscode.Uri): string[] {
@@ -182,9 +209,5 @@ export abstract class DependencyGraph {
 
     abstract getDependencies(uri: vscode.Uri, imports: string[]): void
 
-    abstract reachSizeLimit(size: number): boolean
-
-    abstract willReachSizeLimit(current: number, adding: number): boolean
-
-    abstract getReadableSizeLimit(): string
+    abstract getPayloadSizeLimitInBytes(): number
 }

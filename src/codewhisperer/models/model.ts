@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import { ToolkitError } from '../../shared/errors'
+import { getIcon } from '../../shared/icons'
 import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
@@ -76,13 +78,70 @@ export interface InlineCompletionItem {
 /**
  * Security Scan Interfaces
  */
-
-export interface CodeScanState {
-    running: boolean
+enum CodeScanStatus {
+    NotStarted,
+    Running,
+    Cancelling
 }
 
-export const codeScanState: CodeScanState = {
-    running: false,
+export class CodeScanState {
+    // Define a constructor for this class
+    private codeScanState: CodeScanStatus = CodeScanStatus.NotStarted
+
+    public isNotStarted() {
+        return this.codeScanState === CodeScanStatus.NotStarted
+    }
+
+    public isRunning() {
+        return this.codeScanState === CodeScanStatus.Running
+    }
+
+    public isCancelling() {
+        return this.codeScanState === CodeScanStatus.Cancelling
+    }
+
+    public setToNotStarted() {
+        this.codeScanState = CodeScanStatus.NotStarted
+    }
+
+    public setToCancelling() {
+        this.codeScanState = CodeScanStatus.Cancelling
+    }
+
+    public setToRunning() {
+        this.codeScanState = CodeScanStatus.Running
+    }
+
+    public getPrefixTextForButton() {
+        switch (this.codeScanState) {
+            case CodeScanStatus.NotStarted:
+                return 'Run'
+            case CodeScanStatus.Running:
+                return 'Stop'
+            case CodeScanStatus.Cancelling:
+                return 'Stopping'
+        }
+    }
+
+    public getIconForButton() {
+        switch (this.codeScanState) {
+            case CodeScanStatus.NotStarted:
+                return getIcon('vscode-debug-alt-small')
+            case CodeScanStatus.Running:
+                return getIcon('vscode-stop-circle')
+            case CodeScanStatus.Cancelling:
+                return getIcon('vscode-icons:loading~spin')
+        }
+    }
+}
+
+
+export const codeScanState: CodeScanState = new CodeScanState()
+
+export class CodeScanStoppedError extends ToolkitError {
+    constructor() {
+        super('Security scan stopped by user.', { cancelled: true })
+    }
 }
 
 export interface CodeScanTelemetryEntry {
