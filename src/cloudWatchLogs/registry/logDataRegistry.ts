@@ -80,7 +80,7 @@ export class LogDataRegistry {
         if (isHead && logData.previous?.token === undefined) {
             const msgId = uriToKey(uri)
             // show something so the user doesn't think nothing happened.
-            await Messages.putMessage(msgId, `Loading Log Group: '${logData.logGroupInfo.groupName}'`, undefined, 500)
+            await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`, undefined, 500)
             return []
         }
 
@@ -109,7 +109,7 @@ export class LogDataRegistry {
         }
 
         const msgId = uriToKey(uri)
-        const msgTimeout = await Messages.putMessage(msgId, `Loading Log Group: '${logData.logGroupInfo.groupName}'`)
+        const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`)
         const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
             msgTimeout.dispose()
         })
