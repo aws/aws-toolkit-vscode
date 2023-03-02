@@ -5,6 +5,8 @@ See the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welc
 
 Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
 
+[Click here](command:aws.showRegion)
+
 See [Setup](#additional-setup-steps) for prerequisites. If you run into a problem, try [support](#get-help).
 
 # <a id="features"></a>Features
