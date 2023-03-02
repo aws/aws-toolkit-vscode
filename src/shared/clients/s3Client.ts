@@ -136,6 +136,16 @@ export interface CopyObjectRequest {
     readonly folderPath?: string
 }
 
+export interface CopyFolderSource {
+    folder: { name: string; path: string }
+    bucket: Bucket
+}
+
+export interface CopyFolderTarget {
+    bucketName: string
+    folderPath: string | undefined
+}
+
 export class DefaultS3Client {
     public constructor(
         public readonly regionCode: string,
@@ -655,10 +665,7 @@ export class DefaultS3Client {
      * @param source
      * @param target
      */
-    public async copyFolder(
-        source: { folder: { name: string; path: string }; bucket: Bucket },
-        target: { bucketName: string; folderPath: string | undefined }
-    ): Promise<void> {
+    public async copyFolder(source: CopyFolderSource, target: CopyFolderTarget): Promise<void> {
         getLogger().debug('CopyFolder called with arguments: source: %O, target: %O', source, target)
 
         let response = await this.listFiles({ bucketName: source.bucket.name, folderPath: source.folder.path })

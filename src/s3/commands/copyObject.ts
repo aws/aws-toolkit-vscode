@@ -9,7 +9,7 @@ import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ToolkitError } from '../../shared/errors'
 
-export async function copyObjectCommand(client: S3Client, request: CopyObjectRequest): Promise<void> {
+export async function copyObject(client: S3Client, request: CopyObjectRequest): Promise<void> {
     getLogger().info(
         `Copying object "${request.name}" to "${
             request.folderPath ? request.bucket + '/' + request.folderPath : request.bucket

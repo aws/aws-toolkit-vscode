@@ -7,7 +7,8 @@ import { S3FileNode } from '../../s3/explorer/s3FileNode'
 import { S3BucketNode } from '../../s3/explorer/s3BucketNode'
 import { S3FolderNode } from '../../s3/explorer/s3FolderNode'
 import { Folder, Bucket } from '../../shared/clients/s3Client'
-import { copyObjectCommand } from '../../s3/commands/copyObject'
+import { copyObject } from '../../s3/commands/copyObject'
+import { copyFolder } from '../../s3/commands/copyFolder'
 
 interface S3FileDataTransfer {
     bucketname: string
@@ -56,7 +57,7 @@ export class AwsDragAndDropController {
 
             // if dataTransfer is from an S3FileNode
             if (data?.value.bucketname && data?.value.key) {
-                copyObjectCommand(s3, {
+                copyObject(s3, {
                     bucket: target.bucket.name,
                     copySource: `${data.value.bucketname}/${data.value.key}`,
                     name: data.value.name,
@@ -65,12 +66,11 @@ export class AwsDragAndDropController {
             }
             // if dataTransfer is from an S3FolderNode
             if (data?.value.bucket && data?.value.folder) {
-                s3.copyFolder(data.value, {
+                copyFolder(s3, data.value, {
                     bucketName: target.bucket.name,
                     folderPath: target instanceof S3FolderNode ? target.folder.path : undefined,
                 })
             }
-            vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         }
     }
 }
