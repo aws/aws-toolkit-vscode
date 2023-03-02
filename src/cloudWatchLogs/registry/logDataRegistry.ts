@@ -8,7 +8,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../shared/utilities/timeoutUtils'
-import { Message } from '../../shared/utilities/messages'
+import { Messages } from '../../shared/utilities/messages'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
@@ -80,12 +80,7 @@ export class LogDataRegistry {
         if (isHead && logData.previous?.token === undefined) {
             const msgId = uriToKey(uri)
             // show something so the user doesn't think nothing happened.
-            await Message.putMessage(
-                msgId,
-                `Loading data from log group: '${logData.logGroupInfo.groupName}'`,
-                undefined,
-                500
-            )
+            await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`, undefined, 500)
             return []
         }
 
@@ -114,10 +109,7 @@ export class LogDataRegistry {
         }
 
         const msgId = uriToKey(uri)
-        const msgTimeout = await Message.putMessage(
-            msgId,
-            `Loading data from log group: '${logData.logGroupInfo.groupName}'`
-        )
+        const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`)
         const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
             msgTimeout.dispose()
         })
@@ -241,7 +233,7 @@ export async function filterLogEventsFromUri(
     }
 
     const msgId = uriToKey(createURIFromArgs(logGroupInfo, parameters))
-    const msgTimeout = await Message.putMessage(msgId, `${logGroupInfo.groupName}`, {
+    const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logGroupInfo.groupName}'`, {
         message: logGroupInfo.streamName ?? '',
     })
 

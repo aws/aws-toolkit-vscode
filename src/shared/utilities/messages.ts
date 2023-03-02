@@ -155,7 +155,7 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
 async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
     timeout: Timeout,
-    showAfterMs: number,
+    showAfterMs: number
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     if (showAfterMs < 0) {
         throw Error('invalid "showAfterMs" value')
@@ -208,7 +208,7 @@ async function showProgressWithTimeout(
 export async function showMessageWithCancel(
     message: string,
     timeout: Timeout,
-    showAfterMs: number = 0,
+    showAfterMs: number = 0
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, showAfterMs)
@@ -225,7 +225,7 @@ type MessageItems = { timeout: Timeout; progress: vscode.Progress<ProgressEntry>
  * identical message is completed before it attempts to create
  * a new one.
  */
-export class Message {
+export class Messages {
     static readonly timeoutMillis = 60000
     private static messageMap: {
         [msgId: string]: MessageItems
