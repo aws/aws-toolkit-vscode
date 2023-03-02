@@ -176,6 +176,9 @@ export class LogDataRegistry {
     }
 }
 
+/**
+ * @see getLogEventsFromUriComponents
+ */
 export async function filterLogEventsFromUri(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
@@ -211,7 +214,7 @@ export async function filterLogEventsFromUri(
     }
 
     const timeout = new Timeout(300000)
-    showMessageWithCancel(`Searching log group: ${logGroupInfo.groupName}`, timeout)
+    showMessageWithCancel(`Searching log group: ${logGroupInfo.groupName}`, timeout, 1200)
     const responsePromise = client.filterLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
@@ -229,6 +232,9 @@ export async function filterLogEventsFromUri(
     }
 }
 
+/**
+ * @see filterLogEventsFromUri
+ */
 export async function getLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
@@ -249,7 +255,7 @@ export async function getLogEventsFromUriComponents(
     }
 
     const timeout = new Timeout(300000)
-    showMessageWithCancel(`Fetching logs: ${logGroupInfo.streamName}`, timeout)
+    showMessageWithCancel(`Fetching logs: ${logGroupInfo.streamName}`, timeout, 1200)
     const responsePromise = client.getLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
