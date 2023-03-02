@@ -34,10 +34,11 @@ describe('Auth', function () {
 
     function createTestTokenProvider() {
         let token: SsoToken | undefined
+        let counter = 0
         const provider = stub(SsoAccessTokenProvider)
         provider.getToken.callsFake(async () => token)
         provider.createToken.callsFake(
-            async () => (token = { accessToken: '123', expiresAt: new Date(Date.now() + 1000000) })
+            async () => (token = { accessToken: String(++counter), expiresAt: new Date(Date.now() + 1000000) })
         )
         provider.invalidate.callsFake(async () => (token = undefined))
 
@@ -183,6 +184,15 @@ describe('Auth', function () {
         await store.setCurrentProfileId(conn.id)
         await auth.restorePreviousSession()
         assert.strictEqual(auth.activeConnection?.state, 'invalid')
+    })
+
+    it('prevents concurrent `reauthenticate` operations on the same connection', async function () {
+        const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+        await Promise.all([auth.reauthenticate(conn), auth.reauthenticate(conn)])
+        const t1 = await conn.getToken()
+        assert.strictEqual(t1.accessToken, '2', 'Only two tokens should have been created')
+        const t3 = await auth.reauthenticate(conn).then(c => c.getToken())
+        assert.notStrictEqual(t1.accessToken, t3.accessToken, 'Access tokens should change after `reauthenticate`')
     })
 
     describe('SSO Connections', function () {
