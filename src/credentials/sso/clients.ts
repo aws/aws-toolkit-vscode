@@ -16,29 +16,19 @@ import {
     SSOServiceException,
 } from '@aws-sdk/client-sso'
 import {
-    AuthorizationPendingException,
     CreateTokenRequest,
     RegisterClientRequest,
-    SlowDownException,
     SSOOIDC,
     StartDeviceAuthorizationRequest,
 } from '@aws-sdk/client-sso-oidc'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import {
-    assertHasProps,
-    hasStringProps,
-    isNonNullable,
-    RequiredProps,
-    selectFrom,
-} from '../../shared/utilities/tsUtils'
+import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
-import { sleep } from '../../shared/utilities/timeoutUtils'
 import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 
-const backoffDelayMs = 5000
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
@@ -73,28 +63,6 @@ export class OidcClient {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
         }
-    }
-
-    public async pollForToken(request: CreateTokenRequest, timeout: number, interval = backoffDelayMs) {
-        while (this.clock.Date.now() + interval <= timeout) {
-            try {
-                return await this.createToken(request)
-            } catch (err) {
-                if (!hasStringProps(err, 'name')) {
-                    throw err
-                }
-
-                if (err instanceof SlowDownException) {
-                    interval += backoffDelayMs
-                } else if (!(err instanceof AuthorizationPendingException)) {
-                    throw err
-                }
-            }
-
-            await sleep(interval)
-        }
-
-        throw new Error('Timed-out waiting for authentication token')
     }
 
     public static create(region: string) {
