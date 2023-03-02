@@ -48,10 +48,10 @@ export const createOpenReferenceLogNode = () =>
     })
 
 export const createSecurityScanNode = () => {
-    const prefix = codeScanState.running ? 'Running' : 'Run'
+    const prefix = codeScanState.getPrefixTextForButton()
     return showSecurityScan.build().asTreeNode({
         label: `${prefix} Security Scan`,
-        iconPath: codeScanState.running ? getIcon('vscode-loading~spin') : getIcon('vscode-debug-alt-small'),
+        iconPath: codeScanState.getIconForButton(),
         tooltip: `${prefix} Security Scan`,
         contextValue: `awsCodeWhisperer${prefix}SecurityScanNode`,
     })

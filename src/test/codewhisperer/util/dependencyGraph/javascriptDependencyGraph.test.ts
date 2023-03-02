@@ -65,6 +65,7 @@ describe('javascriptDependencyGraph', function () {
             assert.ok(truncation.src.zip.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.lines > 0)
             assert.ok(truncation.src.size > 0)
+            assert.ok(truncation.src.scannedFiles.size > 0)
         })
     })
 })

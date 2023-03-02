@@ -15,16 +15,8 @@ export const importRegex =
     /^(?:from[ ]+(\S+)[ ]+)?import[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*([,]*[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*)*$/gm
 
 export class PythonDependencyGraph extends DependencyGraph {
-    getReadableSizeLimit(): string {
-        return `${CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes / Math.pow(2, 10)}KB`
-    }
-
-    willReachSizeLimit(current: number, adding: number): boolean {
-        return current + adding > CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
-    }
-
-    reachSizeLimit(size: number): boolean {
-        return size > CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
+    getPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
     }
 
     private async readImports(uri: vscode.Uri) {
@@ -207,12 +199,14 @@ export class PythonDependencyGraph extends DependencyGraph {
                 src: {
                     dir: truncDirPath,
                     zip: zipFilePath,
+                    scannedFiles: new Set(this._pickedSourceFiles),
                     size: this._totalSize,
                     zipSize: zipFileSize,
                 },
                 build: {
                     dir: '',
                     zip: '',
+                    scannedFiles: new Set(),
                     size: 0,
                     zipSize: 0,
                 },

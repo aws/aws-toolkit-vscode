@@ -18,16 +18,8 @@ export const moduleRegex = /["'][^"'\r\n]+["']/gm
 export class JavascriptDependencyGraph extends DependencyGraph {
     private _generatedDirs: Set<string> = new Set(['node_modules', 'dist', 'build', 'cdk.out'])
 
-    getReadableSizeLimit(): string {
-        return `${CodeWhispererConstants.codeScanJavascriptPayloadSizeLimitBytes / Math.pow(2, 10)}KB`
-    }
-
-    willReachSizeLimit(current: number, adding: number): boolean {
-        return current + adding > CodeWhispererConstants.codeScanJavascriptPayloadSizeLimitBytes
-    }
-
-    reachSizeLimit(size: number): boolean {
-        return size > CodeWhispererConstants.codeScanJavascriptPayloadSizeLimitBytes
+    getPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.codeScanJavascriptPayloadSizeLimitBytes
     }
 
     getModulePath(modulePathStr: string) {
@@ -198,12 +190,14 @@ export class JavascriptDependencyGraph extends DependencyGraph {
                 src: {
                     dir: truncDirPath,
                     zip: zipFilePath,
+                    scannedFiles: new Set(this._pickedSourceFiles),
                     size: this._totalSize,
                     zipSize: zipFileSize,
                 },
                 build: {
                     dir: '',
                     zip: '',
+                    scannedFiles: new Set(),
                     size: 0,
                     zipSize: 0,
                 },

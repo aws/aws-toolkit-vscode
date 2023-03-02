@@ -5,7 +5,7 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue } from '../models/model'
+import { AggregatedCodeScanIssue, codeScanState, CodeScanStoppedError } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
@@ -92,6 +92,7 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
+        throwIfCancelled()
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -103,6 +104,7 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
             getLogger().verbose(`Complete Polling scan job status.`)
             break
         }
+        throwIfCancelled()
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
         if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
@@ -173,6 +175,12 @@ function getMd5(fileName: string) {
     const hasher = crypto.createHash('md5')
     hasher.update(readFileSync(fileName))
     return hasher.digest('base64')
+}
+
+export function throwIfCancelled() {
+    if (codeScanState.isCancelling()) {
+        throw new CodeScanStoppedError()
+    }
 }
 
 export async function uploadArtifactToS3(presignedUrl: string, fileName: string) {
