@@ -23,7 +23,7 @@ import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 
-class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
+export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
 
