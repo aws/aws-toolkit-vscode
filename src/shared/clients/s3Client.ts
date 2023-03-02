@@ -634,7 +634,7 @@ export class DefaultS3Client {
         }
     }
     /**
-     * Copies an object to a desired bucket.
+     * Copies an object to a desired bucket or folder.
      */
     public async copyObject(request: CopyObjectRequest): Promise<void> {
         getLogger().debug('CopyObject called with request: %O', request)
@@ -659,6 +659,8 @@ export class DefaultS3Client {
         source: { folder: { name: string; path: string }; bucket: Bucket },
         target: { bucketName: string; folderPath: string | undefined }
     ): Promise<void> {
+        getLogger().debug('CopyFolder called with arguments: source: %O, target: %O', source, target)
+
         let response = await this.listFiles({ bucketName: source.bucket.name, folderPath: source.folder.path })
         const files: File[] = response.files
         const folders: Folder[] = response.folders
@@ -680,7 +682,7 @@ export class DefaultS3Client {
                 name: `${target.folderPath ? target.folderPath : ''}${source.folder.name}/${file.name}`,
             })
         })
-        // recursively copy all nested files and folders, adding the folder name to the previous name to preserve nesting structure
+        // recursively copy all nested files and folders, adding the folder name to the previous name preserves nesting structure
         folders.forEach(async folder => {
             await this.copyFolder(
                 { folder: { name: `${source.folder.name}/${folder.name}`, path: folder.path }, bucket: source.bucket },
