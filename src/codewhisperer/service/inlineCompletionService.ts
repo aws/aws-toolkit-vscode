@@ -354,7 +354,7 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
-        if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning) {
+        if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
         }
         await this.clearInlineCompletionStates(editor)
