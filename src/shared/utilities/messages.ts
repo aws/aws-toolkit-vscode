@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
+import { ProgressEntry } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
@@ -211,6 +212,70 @@ export async function showMessageWithCancel(
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, showAfterMs)
+}
+
+type MessageItems = { timeout: Timeout; progress: vscode.Progress<ProgressEntry> }
+
+/**
+ * Start or Update VSCode message windows with a 'Cancel' button.
+ *
+ * ---
+ *
+ * This class helps in the scenario of ensuring that a previous
+ * identical message is completed before it attempts to create
+ * a new one.
+ */
+export class Message {
+    static readonly timeoutMillis = 60000
+    private static messageMap: {
+        [msgId: string]: MessageItems
+    } = {}
+
+    /**
+     * Starts a message if it does not exist, then applies the update with the given
+     * progress data.
+     * @param msgId A unique identifier for a message
+     * @returns The timeout associated with the message, returns an existing timeout
+     *          if the message already exists.
+     */
+    static async putMessage(
+        msgId: string,
+        messageText: string,
+        progressEntry?: ProgressEntry,
+        timeoutMillis?: number
+    ): Promise<Timeout> {
+        let message: MessageItems | undefined = this.messageMap[msgId]
+
+        //  If message already exists but is completed, we want to start a new message
+        if (message?.timeout !== undefined && message.timeout.completed) {
+            message = undefined
+        }
+
+        // Start a new message
+        if (message === undefined) {
+            await this.startMessage(msgId, messageText, timeoutMillis)
+            message = this.messageMap[msgId]
+        }
+
+        // Add an update to the message if it was provided
+        if (progressEntry !== undefined) {
+            message.progress.report(progressEntry)
+        }
+
+        return message.timeout
+    }
+
+    /**
+     * @param timeoutMillis The amount of milliseconds till the message cancels itself.
+     */
+    private static async startMessage(
+        msgId: string,
+        messageText: string,
+        timeoutMillis: number = this.timeoutMillis
+    ): Promise<void> {
+        const timeout = new Timeout(timeoutMillis)
+        this.messageMap[msgId] = { timeout, progress: await showMessageWithCancel(messageText, timeout) }
+    }
 }
 
 /**

@@ -197,11 +197,16 @@ export class SearchPatternPrompter extends InputBoxPrompter {
         }
         getLogger().debug('cwl: validateSearchPattern: %O', searchPattern)
         try {
-            await filterLogEventsFromUri(this.logGroup, {
-                ...this.logParams,
-                filterPattern: searchPattern,
-                limit: 1,
-            })
+            await filterLogEventsFromUri(
+                this.logGroup,
+                {
+                    ...this.logParams,
+                    filterPattern: searchPattern,
+                    limit: 1,
+                },
+                undefined,
+                true
+            )
         } catch (e) {
             return (e as Error).message
         }

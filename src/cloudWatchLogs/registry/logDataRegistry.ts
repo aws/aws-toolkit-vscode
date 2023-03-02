@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
-import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { Message } from '../../shared/utilities/messages'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 // TODO: Add debug logging statements
 
@@ -74,6 +74,21 @@ export class LogDataRegistry {
         }
 
         const isHead = headOrTail === 'head'
+
+        // We are at the earliest data and trying to go back in time, there is nothing to see.
+        // If we don't return now, redundant data will be retrieved.
+        if (isHead && logData.previous?.token === undefined) {
+            const msgId = uriToKey(uri)
+            // show something so the user doesn't think nothing happened.
+            await Message.putMessage(
+                msgId,
+                `Loading data from log group: '${logData.logGroupInfo.groupName}'`,
+                undefined,
+                500
+            )
+            return []
+        }
+
         const stream = pageableToCollection(
             (r: typeof request) =>
                 logData.retrieveLogsFunction(
@@ -98,7 +113,14 @@ export class LogDataRegistry {
             return last
         }
 
-        const responseData = await firstOrLast(stream, resp => resp.events.length > 0)
+        const msgId = uriToKey(uri)
+        const msgTimeout = await Message.putMessage(
+            msgId,
+            `Loading data from log group: '${logData.logGroupInfo.groupName}'`
+        )
+        const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
+            msgTimeout.dispose()
+        })
 
         if (!responseData) {
             return []
@@ -177,12 +199,13 @@ export class LogDataRegistry {
 }
 
 /**
- * @see getLogEventsFromUriComponents
+ * @param completeTimeout True to close the vscode cancel window when request is completed.
  */
 export async function filterLogEventsFromUri(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    nextToken?: string
+    nextToken?: string,
+    completeTimeout = false
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
@@ -191,6 +214,10 @@ export async function filterLogEventsFromUri(
         filterPattern: parameters.filterPattern,
         nextToken,
         limit: parameters.limit,
+    }
+
+    if (logGroupInfo.streamName !== undefined) {
+        cwlParameters.logStreamNames = [logGroupInfo.streamName]
     }
 
     if (parameters.startTime && parameters.endTime) {
@@ -213,10 +240,13 @@ export async function filterLogEventsFromUri(
         delete cwlParameters.logStreamNames
     }
 
-    const timeout = new Timeout(300000)
-    showMessageWithCancel(`Searching log group: ${logGroupInfo.groupName}`, timeout, 1200)
+    const msgId = uriToKey(createURIFromArgs(logGroupInfo, parameters))
+    const msgTimeout = await Message.putMessage(msgId, `${logGroupInfo.groupName}`, {
+        message: logGroupInfo.streamName ?? '',
+    })
+
     const responsePromise = client.filterLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false, completeTimeout })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
@@ -229,44 +259,6 @@ export async function filterLogEventsFromUri(
         }
     } else {
         throw new Error('cwl: filterLogEvents returned null')
-    }
-}
-
-/**
- * @see filterLogEventsFromUri
- */
-export async function getLogEventsFromUriComponents(
-    logGroupInfo: CloudWatchLogsGroupInfo,
-    parameters: CloudWatchLogsParameters,
-    nextToken?: string
-): Promise<CloudWatchLogsResponse> {
-    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
-
-    if (!logGroupInfo.streamName) {
-        throw new Error(
-            `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
-        )
-    }
-    const cwlParameters = {
-        logGroupName: logGroupInfo.groupName,
-        logStreamName: logGroupInfo.streamName,
-        nextToken,
-        limit: parameters.limit,
-    }
-
-    const timeout = new Timeout(300000)
-    showMessageWithCancel(`Fetching logs: ${logGroupInfo.streamName}`, timeout, 1200)
-    const responsePromise = client.getLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
-
-    if (!response) {
-        throw new Error('cwl:`getLogEvents` did not return anything.')
-    }
-
-    return {
-        events: response.events ? response.events : [],
-        nextForwardToken: response.nextForwardToken,
-        nextBackwardToken: response.nextBackwardToken,
     }
 }
 

@@ -20,8 +20,8 @@ import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     LogDataRegistry,
-    getLogEventsFromUriComponents as getLogEventsFromUri,
     initLogData as initLogData,
+    filterLogEventsFromUri,
 } from '../registry/logDataRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument } from './searchLogGroup'
@@ -57,7 +57,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
 
     const uri = createURIFromArgs(logGroupInfo, parameters)
 
-    const logData = initLogData(logGroupInfo, parameters, getLogEventsFromUri)
+    const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
 
     result = await prepareDocument(uri, logData, registry)
     telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logStream', source: 'Explorer' })
