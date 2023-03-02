@@ -24,15 +24,13 @@ import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
-// No connections are valid within C9
+// No connections are valid within C9 classic
 const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
-    !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
+    !isCloud9('classic') && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
 
 export class AuthUtil {
-    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
     static #instance: AuthUtil
 
     private usingEnterpriseSSO: boolean = false
@@ -44,8 +42,8 @@ export class AuthUtil {
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        // codewhisperer uses sigv4 creds on C9
-        if (isCloud9() || !this.isAvailable) {
+        // codewhisperer uses sigv4 creds on C9 classic
+        if (isCloud9('classic')) {
             return
         }
 
@@ -72,7 +70,7 @@ export class AuthUtil {
 
     // current active cwspr connection
     public get conn() {
-        return this.isAvailable ? this.secondaryAuth.activeConnection : undefined
+        return this.secondaryAuth.activeConnection
     }
 
     public get isUsingSavedConnection() {
@@ -131,7 +129,11 @@ export class AuthUtil {
     }
 
     public isConnectionExpired(): boolean {
-        return this.secondaryAuth.isConnectionExpired
+        return (
+            this.secondaryAuth.isConnectionExpired &&
+            this.conn !== undefined &&
+            isValidCodeWhispererConnection(this.conn)
+        )
     }
 
     public async reauthenticate() {
