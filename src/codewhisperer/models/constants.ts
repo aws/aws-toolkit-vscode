@@ -85,6 +85,16 @@ export const supportedLanguages = [
     'typescript',
     'typescriptreact',
     'csharp',
+    'c',
+    'cpp',
+    'go',
+    'kotlin',
+    'php',
+    'ruby',
+    'rust',
+    'scala',
+    'shellscript',
+    'sql',
 ] as const
 
 export type SupportedLanguage = typeof supportedLanguages[number]
