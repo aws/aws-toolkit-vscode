@@ -35,7 +35,7 @@ import {
     updateReferenceLog,
     showIntroduction,
     showAccessTokenErrorLearnMore,
-    showReconnect,
+    reconnect,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -169,7 +169,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt
-        showReconnect.register(),
+        reconnect.register(),
         // learn more about CodeWhisperer
         showLearnMore.register(),
         // learn more about CodeWhisperer access token migration

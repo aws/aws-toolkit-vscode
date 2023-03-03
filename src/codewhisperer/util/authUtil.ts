@@ -25,6 +25,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { PromptSettings } from '../../shared/settings'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
@@ -151,9 +152,9 @@ export class AuthUtil {
     }
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
-        const doNotShowAgain =
-            globals.context.globalState.get<boolean>(CodeWhispererConstants.connectionExpiredDoNotShowAgainKey) || false
-        if (doNotShowAgain || (isAutoTrigger && this.reauthenticatePromptShown)) {
+        const settings = PromptSettings.instance
+        const doNotShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
+        if (doNotShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
             return
         }
         await vscode.window
@@ -166,10 +167,7 @@ export class AuthUtil {
                 if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
                     await this.reauthenticate()
                 } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    await globals.context.globalState.update(
-                        CodeWhispererConstants.connectionExpiredDoNotShowAgainKey,
-                        true
-                    )
+                    settings.disablePrompt('codeWhispererConnectionExpired')
                 }
             })
         if (isAutoTrigger) {

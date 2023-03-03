@@ -246,8 +246,6 @@ export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identi
 
 export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
-export const connectionExpiredDoNotShowAgainKey = 'CODEWHISPERER_CONNECTION_EXIPRED_DO_NOT_SHOW_AGAIN'
-
 export const accessTokenMigrationLearnMore = `Learn More`
 
 export const DoNotShowAgain = `Don\'t Show Again`

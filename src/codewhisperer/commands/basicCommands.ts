@@ -91,7 +91,7 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
     await showConnectionPrompt()
 })
 
-export const showReconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
+export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
     await AuthUtil.instance.reauthenticate()
 })
 
