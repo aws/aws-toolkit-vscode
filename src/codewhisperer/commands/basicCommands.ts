@@ -57,7 +57,7 @@ export const showSecurityScan = Commands.declare(
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
             if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.showReauthenticatePrompt()
+                await AuthUtil.instance.notifyReauthenticate()
             }
             const editor = vscode.window.activeTextEditor
             if (editor) {
@@ -89,6 +89,10 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
 
     await showConnectionPrompt()
+})
+
+export const showReconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
+    await AuthUtil.instance.reauthenticate()
 })
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {

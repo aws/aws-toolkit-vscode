@@ -18,10 +18,11 @@ import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
-import { getPrefixSuffixOverlap } from '../util/commonUtil'
+import { getPrefixSuffixOverlap, isInlineCompletionEnabled } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
+import { InlineCompletion } from './inlineCompletion'
 
 class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -357,6 +358,11 @@ export class InlineCompletionService {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
         }
+        const isAutoTrigger = triggerType === 'AutoTrigger'
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
+            return
+        }
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -373,6 +379,7 @@ export class InlineCompletionService {
                     true,
                     page
                 )
+                this.setCodeWhispererStatusBarOk()
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
@@ -388,6 +395,7 @@ export class InlineCompletionService {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
         this.setCodeWhispererStatusBarOk()
+
         if (triggerType === 'OnDemand' && RecommendationHandler.instance.recommendations.length === 0) {
             if (RecommendationHandler.instance.errorMessagePrompt !== '') {
                 showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
@@ -435,12 +443,20 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
+        ;(this.statusBar as any).backgroundColor = undefined
+        this.statusBar.show()
+    }
+
+    setCodeWhispererStatusBarDisconnected() {
+        this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
 
@@ -481,9 +497,13 @@ export class InlineCompletionService {
 }
 
 export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (!AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.hideCodeWhispererStatusBar()
+    if (AuthUtil.instance.isConnectionValid()) {
+        isInlineCompletionEnabled()
+            ? InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+            : InlineCompletion.instance.setCodeWhispererStatusBarOk()
     } else {
-        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+        isInlineCompletionEnabled()
+            ? InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
+            : InlineCompletion.instance.setCodeWhispererStatusBarDisconnected()
     }
 })

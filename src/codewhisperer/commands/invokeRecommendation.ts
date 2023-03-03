@@ -12,7 +12,6 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
-import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
@@ -77,9 +76,6 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.showReauthenticatePrompt()
-            }
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {

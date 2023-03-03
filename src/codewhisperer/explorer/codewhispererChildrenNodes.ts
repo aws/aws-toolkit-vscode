@@ -13,6 +13,7 @@ import {
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,
+    showReconnect,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
 
@@ -60,6 +61,12 @@ export const createSecurityScanNode = () => {
 export const createSsoSignIn = () =>
     showSsoSignIn.build().asTreeNode({
         label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
+        iconPath: getIcon('vscode-debug-start'),
+    })
+
+export const createReconnectNode = () =>
+    showReconnect.build().asTreeNode({
+        label: localize('AWS.explorerNode.reconnectNode.label', 'Reconnect'),
         iconPath: getIcon('vscode-debug-start'),
     })
 

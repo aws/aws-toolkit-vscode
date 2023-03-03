@@ -246,11 +246,11 @@ export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identi
 
 export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
 
+export const connectionExpiredDoNotShowAgainKey = 'CODEWHISPERER_CONNECTION_EXIPRED_DO_NOT_SHOW_AGAIN'
+
 export const accessTokenMigrationLearnMore = `Learn More`
 
-export const accessTokenMigrationDoNotShowAgain = `Don\'t Show Again`
-
-export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
+export const DoNotShowAgain = `Don\'t Show Again`
 
 export const accessTokenExpiredDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN'
 
