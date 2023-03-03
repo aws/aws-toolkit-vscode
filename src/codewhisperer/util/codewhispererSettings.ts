@@ -6,11 +6,15 @@ import { fromExtensionManifest } from '../../shared/settings'
 
 const description = {
     includeSuggestionsWithCodeReferences: Boolean,
+    importRecommendation: Boolean,
     shareCodeWhispererContentWithAWS: Boolean,
 }
 export class CodeWhispererSettings extends fromExtensionManifest('aws.codeWhisperer', description) {
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
         return this.get(`includeSuggestionsWithCodeReferences`, false)
+    }
+    public isImportRecommendationEnabled(): boolean {
+        return this.get(`importRecommendation`, false)
     }
 
     public isOptoutEnabled(): boolean {
