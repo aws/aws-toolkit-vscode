@@ -469,7 +469,7 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "(python|javascript|java|csharp|typescript)"
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
