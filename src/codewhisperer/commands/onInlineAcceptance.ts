@@ -28,6 +28,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import { ImportAdderProvider } from '../service/importAdderProvider'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -105,6 +106,13 @@ export async function onInlineAcceptance(
         } catch (error) {
             getLogger().error(`${error} in handling right contexts`)
         }
+
+        await ImportAdderProvider.instance.onAcceptRecommendation(
+            acceptanceEntry.editor,
+            RecommendationHandler.instance.recommendations[acceptanceEntry.acceptIndex],
+            start.line
+        )
+
         try {
             if (languageId === CodeWhispererConstants.python) {
                 await vscode.commands.executeCommand('editor.action.format')
