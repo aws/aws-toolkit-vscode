@@ -19,7 +19,6 @@ import {
     CodewhispererAutomatedTriggerType,
     CodewhispererTriggerType,
 } from '../../shared/telemetry/telemetry'
-import { AuthUtil } from '../util/authUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -331,10 +330,6 @@ export class InlineCompletion {
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
         const isManualTrigger = triggerType === 'OnDemand'
-        if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.notifyReauthenticate(!isManualTrigger)
-            return
-        }
         RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()
         this.setCodeWhispererStatusBarLoading()
@@ -498,19 +493,11 @@ export class InlineCompletion {
 
     setCodeWhispererStatusBarLoading() {
         this.codewhispererStatusBar.text = ` $(loading~spin)CodeWhisperer`
-        ;(this.codewhispererStatusBar as any).backgroundColor = undefined
         this.codewhispererStatusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
         this.codewhispererStatusBar.text = ` $(check)CodeWhisperer`
-        ;(this.codewhispererStatusBar as any).backgroundColor = undefined
-        this.codewhispererStatusBar.show()
-    }
-
-    setCodeWhispererStatusBarDisconnected() {
-        this.codewhispererStatusBar.text = ` $(debug-disconnect)CodeWhisperer`
-        ;(this.codewhispererStatusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.codewhispererStatusBar.show()
     }
 

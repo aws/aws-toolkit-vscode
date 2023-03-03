@@ -18,11 +18,10 @@ import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
-import { getPrefixSuffixOverlap, isInlineCompletionEnabled } from '../util/commonUtil'
+import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
-import { InlineCompletion } from './inlineCompletion'
 
 class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -498,12 +497,8 @@ export class InlineCompletionService {
 
 export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
     if (AuthUtil.instance.isConnectionValid()) {
-        isInlineCompletionEnabled()
-            ? InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-            : InlineCompletion.instance.setCodeWhispererStatusBarOk()
+        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
     } else {
-        isInlineCompletionEnabled()
-            ? InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
-            : InlineCompletion.instance.setCodeWhispererStatusBarDisconnected()
+        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
     }
 })
