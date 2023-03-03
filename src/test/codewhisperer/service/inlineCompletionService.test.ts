@@ -202,7 +202,7 @@ describe('inlineCompletionService', function () {
 
         it('should call moveStartPositionToSkipSpaces when there is a new recommendation to show', async function () {
             sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
-            const moveStartPosSpy = sinon.stub(RecommendationHandler.instance, 'moveStartPositionToSkipSpaces').resolves()
+            const moveStartPosSpy = sinon.stub(RecommendationHandler.instance, 'moveStartPositionToSkipSpaces')
             
             //call getPaginatedRecommendation in order to set documentUri to editor path
             await InlineCompletionService.instance.getPaginatedRecommendation(

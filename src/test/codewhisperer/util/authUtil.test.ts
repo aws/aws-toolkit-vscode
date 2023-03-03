@@ -15,6 +15,7 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil, isUpgradeableConnection } from '../../../codewhisperer/util/authUtil'
 import { Commands } from '../../../shared/vscode/commands2'
 import { builderIdStartUrl } from '../../../credentials/sso/model'
+import { getTestWindow } from '../../shared/vscode/window'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -122,14 +123,16 @@ describe('AuthUtil', async function () {
     //add start url to params of create SSO profile
     //figure out where to declare all the vars
     //TODO add more intermittent asserts
-
     it('if there is no valid AwsBuilderID conn, it will create one and use it', async function () {
         mockConnListNoBuilder = [ssoConn]
         sinon.stub(Auth.instance, 'listConnections').resolves(mockConnListNoBuilder)
-
-        //assert conn == undefined
         sinon.stub(Auth.instance, 'createConnection').resolves(builderIdConn)
         const authSpy = sinon.stub(Auth.instance, 'useConnection')
+
+        getTestWindow().onDidShowQuickPick(async picker => {
+            await picker.untilReady()
+            picker.acceptItem(picker.items[1])
+        })
 
         await AuthUtil.instance.connectToAwsBuilderId()
     
@@ -143,6 +146,11 @@ describe('AuthUtil', async function () {
         sinon.stub(Auth.instance, 'createConnection').resolves(entSsoConn)
         const authSpy = sinon.stub(Auth.instance, 'useConnection')
 
+        getTestWindow().onDidShowQuickPick(async picker => {
+            await picker.untilReady()
+            picker.acceptItem(picker.items[1])
+        })
+        
         await AuthUtil.instance.connectToEnterpriseSso(enterpriseSsoStartUrl)
 
         assert.ok(authSpy.called)
