@@ -18,6 +18,11 @@ export type SearchResponse = MynahClient.SearchResponse
 export type Suggestions = MynahClient.Suggestions
 export type Suggestion = MynahClient.Suggestion
 
+export type ApiDocsSearchRequest = Readonly<MynahClient.ApiDocsSearchRequest>
+export type ApiDocsSearchResponse = Readonly<MynahClient.ApiDocsSearchResponse>
+export type ApiDocsSuggestions = MynahClient.ApiDocsSuggestions
+export type ApiDocsSuggestion = MynahClient.ApiDocsSuggestion
+
 export class DefaultMynahSearchClient {
     private async createSdkClient(): Promise<MynahClient> {
         return (await globals.sdkClientBuilder.createAwsService(
@@ -35,5 +40,8 @@ export class DefaultMynahSearchClient {
 
     public async search(request: MynahClient.SearchRequest): Promise<MynahClient.SearchResponse> {
         return (await this.createSdkClient()).search(request).promise()
+    }
+    public async apiDocsSearch(request: MynahClient.ApiDocsSearchRequest): Promise<MynahClient.ApiDocsSearchResponse> {
+        return (await this.createSdkClient()).apiDocsSearch(request).promise()
     }
 }

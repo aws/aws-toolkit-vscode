@@ -131,7 +131,8 @@ export class ManualInputSearch extends SearchInput {
         code?: string,
         queryId?: string,
         codeQuery?: CodeQuery,
-        codeSelection?: SearchPayloadCodeSelection
+        codeSelection?: SearchPayloadCodeSelection,
+        selectedTab?: string
     ): Promise<void> {
         this.queryEmitter.fire({
             input: newInput,
@@ -141,6 +142,7 @@ export class ManualInputSearch extends SearchInput {
             trigger: 'SearchBarRefinement' as Trigger,
             codeQuery,
             codeSelection,
+            selectedTab: selectedTab,
         })
     }
 

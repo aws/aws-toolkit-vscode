@@ -113,6 +113,7 @@ export class Connector {
     ): void => {
         this.postMessageHandler({
             command: 'search',
+            selectedTab: searchPayload.selectedTab,
             text: searchPayload.query,
             context: searchPayload.matchPolicy,
             code: searchPayload.code,

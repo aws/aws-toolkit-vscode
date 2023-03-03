@@ -39,6 +39,7 @@ export interface SearchMetadata {
     codeQuery?: CodeQuery
     implicit?: boolean
     fromAutocomplete?: boolean
+    selectedTab?: string
 }
 export interface QueryContext {
     should?: string[]

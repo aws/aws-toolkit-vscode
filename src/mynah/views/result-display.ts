@@ -290,6 +290,7 @@ export class ResultDisplay {
             sourceId,
             codeQuery: query.codeQuery,
             implicit: query.implicit ?? false,
+            selectedTab: query.selectedTab,
         }
         telemetry.mynah_search.emit({
             mynahContext: JSON.stringify({
@@ -334,11 +335,12 @@ export class ResultDisplay {
                     const searchMetadata: SearchMetadata = {
                         query: msg.text,
                         queryContext: msg.context,
-                        trigger: trigger,
+                        trigger,
                         code: code,
                         codeQuery: msg.codeQuery,
                         implicit: msg.implicit ?? false,
                         fromAutocomplete,
+                        selectedTab: msg.selectedTab,
                     }
                     telemetry.mynah_search.emit({
                         mynahContext: JSON.stringify({
@@ -347,7 +349,8 @@ export class ResultDisplay {
                         mynahSearchId: panel.searchId,
                         mynahViewId: panelId,
                     })
-                    // Since the search performs when the extension's search-input changes, we don't want to trigger a real search for history items.
+                    // Since the search performs when the extension's search-input changes,
+                    // we don't want to trigger a real search for history items.
                     if (trigger !== SearchTrigger.SEARCH_HISTORY) {
                         void this.searchInput.searchText(
                             msg.text,
@@ -356,7 +359,7 @@ export class ResultDisplay {
                             panelId,
                             msg.codeQuery,
                             msg.codeSelection,
-                            msg.headerInfo
+                            msg.selectedTab
                         )
                     }
                     break
@@ -648,7 +651,7 @@ export class ResultDisplay {
             logoUri,
             input,
             queryContext,
-            input !== undefined,
+            input !== undefined && input.trim() !== '',
             live,
             codeSelection,
             codeQuery,
@@ -758,7 +761,7 @@ export class ResultDisplay {
         const startTime = Date.now()
         output.suggestions
             .then(async suggestions => {
-                emitter.fire(suggestions)
+                emitter.fire(suggestions as SearchSuggestion[])
                 const suggestionsList = await Promise.all(
                     Object.entries(suggestions).map(([_, suggestion]) => ({ ...suggestion }))
                 )
@@ -770,7 +773,7 @@ export class ResultDisplay {
                 const resultMetadata: ResultMetadata = {
                     latency,
                     resultCount: suggestions.length,
-                    suggestions: suggestions.map(suggestion => suggestion.url),
+                    suggestions: (suggestions as SearchSuggestion[]).map(suggestion => suggestion.url),
                 }
                 telemetry.mynah_showResults.emit({
                     mynahContext: JSON.stringify({
