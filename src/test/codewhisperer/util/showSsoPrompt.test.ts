@@ -8,22 +8,39 @@ import * as assert from 'assert'
 import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { awsIdSignIn} from "../../../codewhisperer/util/showSsoPrompt"
+import { awsIdSignIn, showConnectionPrompt} from "../../../codewhisperer/util/showSsoPrompt"
 import { getTestLogger } from '../../globalSetup.test'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { Auth } from '../../../credentials/auth'
+import { getTestWindow } from '../../shared/vscode/window'
+import { assertTelemetryCurried } from '../../testUtil'
 
-describe('awsIdSignIn', function () {
-
+describe('showConnectionPrompt', function () {
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
-
     })
 
     afterEach(function () {
         sinon.restore()
     })
 
-    it('logs that AWS ID sign in was selected', async function () {
+    it('can select connect to AwsBuilderId', async function () {
+        const utilSpy = sinon.stub(AuthUtil.instance, 'connectToAwsBuilderId')
+        sinon.stub(Auth.instance, 'activeConnection').resolves(undefined)
+
+        getTestWindow().onDidShowQuickPick(async picker => {
+            await picker.untilReady()
+            picker.acceptItem(picker.items[0])
+        })
+        
+        await showConnectionPrompt()
+
+        assert.ok(utilSpy.called)
+        const assertTelemetry = assertTelemetryCurried('ui_click')
+        assertTelemetry({elementId: 'connection_optionBuilderID'})
+    })
+
+    it('connectToAwsBuilderId logs that AWS ID sign in was selected', async function () {
         sinon.stub(AuthUtil.instance, 'connectToAwsBuilderId').resolves()
         sinon.stub(vscode.commands, 'executeCommand')
         await awsIdSignIn()
