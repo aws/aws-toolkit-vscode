@@ -153,8 +153,8 @@ export class AuthUtil {
 
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
         const settings = PromptSettings.instance
-        const doNotShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
-        if (doNotShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
+        const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
+        if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
             return
         }
         await vscode.window
