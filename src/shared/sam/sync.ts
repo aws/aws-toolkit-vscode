@@ -7,6 +7,7 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
@@ -40,7 +41,9 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl } from '../constants'
+import { samSyncUrl, samInitDocUrl } from '../constants'
+
+const localize = nls.loadMessageBundle()
 
 export interface SyncParams {
     readonly region: string
@@ -166,8 +169,14 @@ function createTemplatePrompter() {
 
     const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
-        title: 'Select a CloudFormation Template',
+        title: 'Select a SAM CloudFormation Template',
+        placeholder: 'Select a SAM template.yaml file',
         buttons: createCommonButtons(samSyncUrl),
+        noItemsFoundItem: {
+            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
+            data: undefined,
+            onClick: () => vscode.env.openExternal(samInitDocUrl),
+        },
     })
 }
 
