@@ -119,11 +119,18 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     private mapError(level: LogLevel, err: Error): Error | string {
+        // Use ToolkitError.trace even if we have source mapping (see below), because:
+        // 1. it is what users will see, we want visibility into that when debugging
+        // 2. it is often more useful than the stacktrace anyway
+        if (err instanceof ToolkitError) {
+            return err.trace
+        }
+
         if (isSourceMappingAvailable() && level === 'error') {
             return err
         }
 
-        return err instanceof ToolkitError ? err.trace : formatError(UnknownError.cast(err))
+        return formatError(UnknownError.cast(err))
     }
 
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
