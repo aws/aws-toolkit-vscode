@@ -42,6 +42,7 @@ import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncUrl, samInitDocUrl } from '../constants'
+import { getAwsConsoleUrl } from '../awsConsole'
 
 const localize = nls.loadMessageBundle()
 
@@ -71,12 +72,21 @@ function createBucketPrompter(client: DefaultS3Client) {
 
     return createQuickPick(items, {
         title: 'Select an S3 Bucket',
-        placeholder: 'Filter or enter a new bucket name',
+        placeholder: 'Select a bucket (or enter a name to create one)',
         buttons: createCommonButtons(samSyncUrl),
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
             transform: v => prefixNewBucketName(v),
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No S3 buckets for region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -87,6 +97,7 @@ const canShowStack = (s: StackSummary) =>
 
 function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
+    const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map(stacks =>
         stacks.filter(canShowStack).map(s => ({
             label: s.StackName,
@@ -99,17 +110,27 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
 
     return createQuickPick(items, {
         title: 'Select a CloudFormation Stack',
-        placeholder: 'Filter or enter a new stack name',
+        placeholder: 'Select a stack (or enter a name to create one)',
         filterBoxInputSettings: {
             label: 'Create a New Stack',
             transform: v => v,
         },
-        buttons: createCommonButtons(samSyncUrl),
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No stacks in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
+        },
     })
 }
 
 function createEcrPrompter(client: DefaultEcrClient) {
     const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
+    const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
     const items = client.listAllRepositories().map(list =>
         list.map(repo => ({
             label: repo.repositoryName,
@@ -121,11 +142,20 @@ function createEcrPrompter(client: DefaultEcrClient) {
 
     return createQuickPick(items, {
         title: 'Select an ECR Repository',
-        placeholder: 'Filter or enter an existing repository URI',
-        buttons: createCommonButtons(samSyncUrl),
+        placeholder: 'Select a repository (or enter repository URI)',
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
         filterBoxInputSettings: {
             label: 'Existing repository URI',
             transform: v => v,
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.ecr.noRepos',
+                'No ECR repositories in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -141,6 +171,7 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
 
     return createQuickPick(items, {
         title: 'Select an Environment to Use',
+        placeholder: 'Select an environment',
         buttons: createCommonButtons(samSyncUrl),
     })
 }
