@@ -32,8 +32,8 @@
         "AWS",
         "CodeCatalyst",
         "CodeWhisperer",
-        "Lambda",
-        "Serverless"
+        "Code",
+        "Whisperer"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
