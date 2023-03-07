@@ -38,6 +38,7 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 import { partition } from '../shared/utilities/mementos'
+import { createRegionPrompter } from '../shared/ui/common/region'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -922,28 +923,6 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
     })
 }
 
-export async function createQuickPickRegionPrompter(title: string, ignoreScopes = true) {
-    const allRegion = globals.awsContextCommands.getAllRegion()
-    const regions: DataQuickPickItem<string>[] = []
-    regions.push({
-        label: defaultSsoRegion,
-        data: defaultSsoRegion,
-    })
-    for (const region of allRegion) {
-        if (region.id != defaultSsoRegion) {
-            regions.push({
-                label: region.id,
-                data: region.id,
-            })
-        }
-    }
-    return showQuickPick<string>(regions, {
-        title: `${title}: Select Region`,
-        placeholder: "Select region for your organization's IAM Identity Center",
-        buttons: createCommonButtons() as vscode.QuickInputButton[],
-    })
-}
-
 export async function createBuilderIdConnection(auth: Auth) {
     const newProfile = createBuilderIdProfile()
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
@@ -952,6 +931,25 @@ export async function createBuilderIdConnection(auth: Auth) {
     }
 
     return existingConn ?? (await auth.createConnection(newProfile))
+}
+
+export async function showRegionPrompter(
+    title: string = `IAM Identity Center: Select Region`,
+    placeholder: string = `Select region for your organization's IAM Identity Center`
+) {
+    const region = await createRegionPrompter(undefined, {
+        defaultRegion: defaultSsoRegion,
+        buttons: createCommonButtons(),
+        title: title,
+        placeholder: placeholder,
+    }).prompt()
+
+    if (!isValidResponse(region)) {
+        throw new CancellationError('user')
+    }
+    telemetry.ui_click.emit({ elementId: 'connection_region' })
+
+    return region
 }
 
 Commands.register('aws.auth.help', async () => {
@@ -1006,10 +1004,10 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
                 throw new CancellationError('user')
             }
             telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-            const region = (await createQuickPickRegionPrompter('IAM Identity Center', false)) as string
-            telemetry.ui_click.emit({ elementId: 'connection_region' })
 
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region))
+            const region = await showRegionPrompter()
+
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
