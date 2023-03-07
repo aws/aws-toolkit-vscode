@@ -74,7 +74,7 @@ export class CodeWhispererNode implements RootNode {
         if (accessToken) {
             return 'Access Token'
         }
-        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
+        if (AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'
                 : 'AWS Builder ID Connected'

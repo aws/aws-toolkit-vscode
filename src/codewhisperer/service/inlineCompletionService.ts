@@ -442,6 +442,7 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
@@ -449,12 +450,14 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
+        this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarDisconnected() {
         this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        this.statusBar.command = 'aws.codeWhisperer.reconnect'
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
