@@ -296,6 +296,9 @@ describe('FilterBoxQuickPickPrompter', function () {
         transform: (resp: string) => Number.parseInt(resp),
         validator: (resp: string) => (Number.isNaN(Number.parseInt(resp)) ? 'NaN' : undefined),
     }
+    const options = {
+        filterBoxInputSettings: filterBoxInputSettings,
+    }
 
     let picker: TestQuickPick<DataQuickPickItem<number>>
     let testPrompter: FilterBoxQuickPickPrompter<number>
@@ -306,7 +309,7 @@ describe('FilterBoxQuickPickPrompter', function () {
 
     beforeEach(function () {
         picker = getTestWindow().createQuickPick() as typeof picker
-        testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
+        testPrompter = new FilterBoxQuickPickPrompter(picker, options)
     })
 
     it('adds a new item based off the filter box', async function () {
