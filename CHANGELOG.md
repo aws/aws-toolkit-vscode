@@ -1,3 +1,10 @@
+## 1.64.0 2023-03-07
+
+- **Bug Fix** auth: "Copy Code" modal is shown twice when refreshing expired IAM Identity Center connections
+- **Feature** auth: verification codes for browser logins are now shown in a notification after opening the login URL
+- **Feature** S3: Choose last-touched and last-uploaded-to S3 folders in the Upload Files wizard.
+- **Feature** "Sync SAM Application" command provides Create and Help actions at each step (SAM template, S3 bucket, ECR repo, CloudFormation stack)
+
 ## 1.63.0 2023-02-16
 
 - **Bug Fix** Bump amazon-states-language-service dependency to ^1.8.0 to allow state machines to be created with the new intrinsic functions and Map state
