@@ -4,38 +4,94 @@
  */
 
 import { Connector } from './connector'
-import { LiveSearchState, MynahUI, MynahUIDataModel, NotificationType, SearchPayload } from '@aws/mynah-ui'
+import {
+    LiveSearchState,
+    MynahUI,
+    MynahUIDataModel,
+    NotificationType,
+    PayloadTransformRule,
+    SearchPayload,
+    transformPayloadData,
+    validateRulesOnPayloadData,
+} from '@aws/mynah-ui'
 import './styles/variables.scss'
 import './styles/dark.scss'
 import './styles/icons.scss'
 import './styles/source-thumbs.scss'
 import './styles/frequent-apis.scss'
+import { ToggleOption } from '@aws/mynah-ui/dist/components/toggle'
+
+export const NavigationTabs = {
+    top: {
+        value: 'top',
+        label: 'Top Picks',
+    },
+    docs: {
+        value: 'docs',
+        label: 'AWS Docs',
+    },
+    apiDocs: {
+        value: 'api-docs',
+        label: 'API Docs',
+        disabled: true,
+    },
+    blog: {
+        value: 'blog',
+        label: 'Blog Post',
+    },
+    code: {
+        value: 'code',
+        label: 'Code',
+    },
+    qA: {
+        value: 'q&a',
+        label: 'Q&A',
+    },
+}
+
+const contextItemsUsedAsTabs = ['code', 'q&a', 'docs']
+const baseRules: Record<string, PayloadTransformRule> = {
+    removeAllFromMust: { targetRoute: ['matchPolicy', 'must'], method: 'remove', values: contextItemsUsedAsTabs },
+    removeAllFromMustNot: { targetRoute: ['matchPolicy', 'mustNot'], method: 'remove', values: contextItemsUsedAsTabs },
+    addAllToMustNot: { targetRoute: ['matchPolicy', 'mustNot'], method: 'add', values: contextItemsUsedAsTabs },
+}
 
 // @ts-ignore
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
-    // Just the ones we use as context keys
-    const contextKeyBasedNavigationTabs = [
-        {
-            value: 'docs',
-            label: 'AWS Docs',
-        },
-        {
-            value: 'code',
-            label: 'Code',
-        },
-        {
-            value: 'q&a',
-            label: 'Q&A',
-        },
+    const defaultNavigationTabs = [
+        NavigationTabs.top,
+        NavigationTabs.docs,
+        NavigationTabs.apiDocs,
+        NavigationTabs.blog,
+        NavigationTabs.code,
+        NavigationTabs.qA,
     ]
 
-    // Flat list of context keys used for navigation tabs
-    const navigationTabContextKeys = contextKeyBasedNavigationTabs.map(navTab => navTab.value)
-
-    const mainNavigationTab = {
-        value: 'top-results',
-        label: 'Top Results',
+    // Rules based on tab option value
+    const navigationTabRules: Record<string, PayloadTransformRule[]> = {
+        top: [baseRules.removeAllFromMustNot, baseRules.removeAllFromMust],
+        'api-docs': [baseRules.removeAllFromMustNot, baseRules.removeAllFromMust],
+        docs: [
+            baseRules.removeAllFromMustNot,
+            baseRules.removeAllFromMust,
+            // Add docs to must
+            { targetRoute: ['matchPolicy', 'must'], method: 'add', value: 'docs' },
+        ],
+        code: [
+            baseRules.removeAllFromMustNot,
+            baseRules.removeAllFromMust,
+            // Add code to must
+            { targetRoute: ['matchPolicy', 'must'], method: 'add', value: 'code' },
+        ],
+        'q&a': [
+            baseRules.removeAllFromMustNot,
+            baseRules.removeAllFromMust,
+            // Add q&a to must
+            { targetRoute: ['matchPolicy', 'must'], method: 'add', value: 'q&a' },
+        ],
+        blog: [baseRules.removeAllFromMust, baseRules.addAllToMustNot],
     }
+
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
@@ -57,28 +113,30 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
     mynahUI = new MynahUI({
         storeData: {
             ...initialData,
-            invisibleContextItems: navigationTabContextKeys,
-            navigationTabs: {
-                selected: mainNavigationTab.value,
-                tabs: [
-                    // This one is not part of the context key tabs
-                    mainNavigationTab,
-                    ...contextKeyBasedNavigationTabs,
-                ],
-            },
+            invisibleContextItems: contextItemsUsedAsTabs,
+            selectedNavigationTab: NavigationTabs.top.value,
+            navigationTabs: [
+                NavigationTabs.top,
+                NavigationTabs.docs,
+                {
+                    ...NavigationTabs.apiDocs,
+                    disabled: (initialData?.codeQuery?.usedFullyQualifiedNames ?? []).length === 0,
+                },
+                NavigationTabs.blog,
+                NavigationTabs.code,
+                NavigationTabs.qA,
+            ],
         },
         onReady: connector.uiReady,
         onSearch: (payload: SearchPayload, isFromHistory, isFromAutocomplete) => {
             connector.requestSuggestions(payload, isFromHistory, isFromAutocomplete)
 
             if (isFromHistory) {
-                // If the search is an historical one, try to find a matching one inside the mustHave policy group
-                // with one of the context key based navigation tab items
-                // In case there is more than one, the last one is enough for us (for backwards compatibility)
-                const potentiallySelectedTab = navigationTabContextKeys.reduce(
-                    (res: string | undefined, navTabContextKey: string) => {
-                        if (payload.matchPolicy.must.includes(navTabContextKey)) {
-                            return navTabContextKey
+                // If the search is a historical one, try to find a matching tab with the validation of the rules
+                const potentiallySelectedTab = defaultNavigationTabs.reduce(
+                    (res: string | undefined, navTab: ToggleOption) => {
+                        if (validateRulesOnPayloadData(navigationTabRules[navTab.value], payload)) {
+                            return navTab.value
                         }
                         return res
                     },
@@ -87,30 +145,22 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
                 mynahUI.updateStore({
                     liveSearchState: LiveSearchState.STOP,
-                    navigationTabs: {
-                        // If there is an item we can count it as the selected tab, if not switch to default
-                        selected: potentiallySelectedTab ?? mainNavigationTab.value,
-                        tabs: [mainNavigationTab, ...contextKeyBasedNavigationTabs],
-                    },
+                    // If there is an item we can count it as the selected tab, if not switch to default
+                    selectedNavigationTab: potentiallySelectedTab ?? NavigationTabs.top.value,
                 })
             } else {
                 mynahUI.updateStore({ loading: true })
             }
         },
         onNavigationTabChange: (selectedTab: string) => {
-            // grab the current search payload from UI
-            const payload = Object.assign({}, mynahUI.getSearchPayload())
+            connector.tabChanged(selectedTab)
 
-            // update the must have match policy with selected navigation tab
-            // (remove all of the navigation bar context keys)
-            payload.matchPolicy.must = payload.matchPolicy.must.filter(
-                (contextKey: string) => !navigationTabContextKeys.includes(contextKey)
+            // Grab the current search payload from UI
+            // Apply rules to transform the payload according to the tab selecton
+            const payload = transformPayloadData(
+                navigationTabRules[selectedTab],
+                Object.assign({}, mynahUI.getSearchPayload())
             )
-
-            // Just add the selected one if it is in the context key navigation tab items)
-            if (navigationTabContextKeys.includes(selectedTab)) {
-                payload.matchPolicy.must.push(selectedTab)
-            }
 
             // If search is possible
             if (payload.codeSelection.selectedCode.trim() !== '' || payload.query.trim() !== '') {
@@ -118,15 +168,17 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 mynahUI.updateStore({ loading: true, liveSearchState: LiveSearchState.STOP })
 
                 // perform a new search
-                connector.requestSuggestions(payload)
+                connector.requestSuggestions(payload, undefined, undefined, true)
             } else {
-                // otherwise just update the match policy
+                // otherwise just update payload attributes in store with the transformed one
                 mynahUI.updateStore({
-                    matchPolicy: { ...payload.matchPolicy },
+                    query: payload.query,
+                    code: payload.code,
+                    codeQuery: payload.codeQuery,
+                    matchPolicy: payload.matchPolicy,
                 })
             }
         },
-        onClickAutocompleteItem: connector.clickAutocompleteSuggestionItem,
         onChangeLiveSearchState: connector.toggleLiveSearch,
         onChangeContext: connector.recordContextChange,
         onClickCodeDetails: connector.clickCodeDetails,
@@ -135,17 +187,15 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onSendFeedback: connector.sendFeedback,
         onSuggestionClipboardInteraction: connector.triggerSuggestionClipboardInteraction,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
-        onSuggestionInteraction: connector.triggerSuggestionEvent,
-        onResetStore: () => {
-            mynahUI.updateStore({
-                navigationTabs: {
-                    selected: mainNavigationTab.value,
-                    tabs: [mainNavigationTab, ...contextKeyBasedNavigationTabs],
-                },
-            })
-            connector.resetStore()
+        onSuggestionInteraction: (eventName, suggestion) => {
+            connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab)
         },
+        onResetStore: connector.resetStore,
     })
 
-    mynahUI.setStoreDefaults({ invisibleContextItems: navigationTabContextKeys })
+    mynahUI.setStoreDefaults({
+        invisibleContextItems: contextItemsUsedAsTabs,
+        selectedNavigationTab: NavigationTabs.top.value,
+        navigationTabs: defaultNavigationTabs,
+    })
 }

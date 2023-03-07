@@ -106,20 +106,35 @@ export class Connector {
         }
     }
 
+    tabChanged = (selectedTab: string) => {
+        this.postMessageHandler({
+            command: 'tabChange',
+            selectedTab,
+        })
+    }
+
     requestSuggestions = (
         searchPayload: SearchPayload,
         isFromHistory?: boolean,
-        isFromAutocomplete?: boolean
+        isFromAutocomplete?: boolean,
+        isFromTabChange?: boolean
     ): void => {
+        let trigger = {}
+        if (isFromHistory) {
+            trigger = { trigger: SearchTrigger.SEARCH_HISTORY }
+        } else if (isFromTabChange) {
+            trigger = { trigger: SearchTrigger.CHANGE_TAB }
+        }
         this.postMessageHandler({
             command: 'search',
+            selectedTab: searchPayload.selectedTab,
             text: searchPayload.query,
             context: searchPayload.matchPolicy,
             code: searchPayload.code,
             ...(searchPayload.codeSelection?.selectedCode !== '' ? { codeSelection: searchPayload.codeSelection } : {}),
             codeQuery: searchPayload.codeQuery,
             isFromAutocomplete,
-            ...(isFromHistory === true ? { trigger: SearchTrigger.SEARCH_HISTORY } : {}),
+            ...trigger,
         })
     }
 
@@ -194,12 +209,13 @@ export class Connector {
         })
     }
 
-    triggerSuggestionEvent = (eventName: SuggestionEventName, suggestion: Suggestion): void => {
+    triggerSuggestionEvent = (eventName: SuggestionEventName, suggestion: Suggestion, selectedTab?: string): void => {
         this.postMessageHandler({
             command: eventName,
             suggestionId: suggestion.url,
             suggestionRank: parseInt(suggestion.id),
             suggestionType: suggestion.type,
+            selectedTab,
         })
     }
 

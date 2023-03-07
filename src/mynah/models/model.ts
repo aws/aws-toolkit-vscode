@@ -5,6 +5,7 @@
 
 import { NotificationType } from '@aws/mynah-ui'
 import { Range } from 'vscode-languageserver-protocol'
+import { ApiDocsSuggestion } from '../client/mynahclient'
 
 export const MynahInstallationStoreKey = 'mynah-installed'
 
@@ -16,13 +17,13 @@ export abstract class SearchInput {
         queryId?: string,
         codeQuery?: CodeQuery,
         codeSelection?: CodeSelection,
-        headerInfo?: HeaderInfo
+        selectedTab?: string
     ): Promise<void>
 }
 
 export interface SearchOutput {
     readonly query: Query
-    readonly suggestions: Promise<SearchSuggestion[]>
+    readonly suggestions: Promise<SearchSuggestion[] | ApiDocsSuggestion[]>
 }
 
 export interface SearchSuggestion {
@@ -79,6 +80,16 @@ export interface Query {
     readonly codeQuery?: CodeQuery
     readonly codeSelection?: CodeSelection
     readonly headerInfo?: HeaderInfo
+    readonly selectedTab?: string
+}
+
+export enum NavigationTabItems {
+    top = 'top',
+    docs = 'docs',
+    apiDocs = 'api-docs',
+    blog = 'blog',
+    code = 'code',
+    qA = 'q&a',
 }
 
 export type Trigger =

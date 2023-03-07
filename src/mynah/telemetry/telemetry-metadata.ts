@@ -39,7 +39,12 @@ export interface SearchMetadata {
     codeQuery?: CodeQuery
     implicit?: boolean
     fromAutocomplete?: boolean
+    selectedTab?: string
 }
+export interface TabMetadata {
+    selectedTab: string
+}
+
 export interface QueryContext {
     should?: string[]
     must?: string[]
@@ -54,6 +59,7 @@ export enum SearchTrigger {
     TERMINAL = 'TERMINAL',
     SEARCH_HISTORY = 'SEARCH_HISTORY',
     CODE_SELECTION = 'CODE_SELECTION',
+    CHANGE_TAB = 'CHANGE_TAB',
 }
 
 export enum TriggerInteractionType {
@@ -83,6 +89,7 @@ export interface SuggestionMetadata {
     hoverDuration?: number
     suggestionType?: string
     interactionType: InteractionType
+    selectedTab?: string
 }
 
 export enum InteractionType {
