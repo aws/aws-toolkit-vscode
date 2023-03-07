@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+
 import { isCloud9 } from './extensionUtilities'
 
 export const extensionSettingsPrefix = 'aws'
@@ -38,9 +40,11 @@ export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 export const createUrlForLambdaFunctionUrl = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for samInitWizard
-export const samInitDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
+export const samInitDocUrl = vscode.Uri.parse(
+    isCloud9()
+        ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
+        : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
+)
 export const launchConfigDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/sam-debug-config-ref.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
@@ -50,8 +54,9 @@ export const samDeployDocUrl: string = isCloud9()
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
 export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for "sam sync" wizard.
-export const samSyncUrl: string =
+export const samSyncUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
+)
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`

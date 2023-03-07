@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "\"Sync SAM Application\" command provides Create and Help actions at each step (SAM template, S3 bucket, ECR repo, CloudFormation stack)"
+}
