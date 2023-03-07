@@ -16,6 +16,7 @@ import { AuthUtil, isUpgradeableConnection } from '../../../codewhisperer/util/a
 import { Commands } from '../../../shared/vscode/commands2'
 import { builderIdStartUrl } from '../../../credentials/sso/model'
 import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -141,7 +142,7 @@ describe('AuthUtil', async function () {
     })
 
     it('if there is no valid enterprise SSO conn, will create and use one', async function () {
-        mockConnListNoEntSso = [ssoConn]
+        mockConnListNoEntSso = []
         sinon.stub(Auth.instance, 'listConnections').resolves(mockConnListNoEntSso)
         sinon.stub(Auth.instance, 'createConnection').resolves(entSsoConn)
         const authSpy = sinon.stub(Auth.instance, 'useConnection')
@@ -157,10 +158,23 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authSpy.args[0][0], entSsoConn)
     })
 
-    it('can correctly identify upgradeable and non-upgradable SSO connections', async function () {
+    it('can correctly identify upgradeable and non-upgradable SSO connections', function () {
         assert.ok(isUpgradeableConnection(ssoConn))
         assert.ok(!isUpgradeableConnection(builderIdConn))
         assert.ok(!isUpgradeableConnection(entSsoConn))
     })
-})
 
+    it('should show reauthenticate prompt', async function () {
+        getTestWindow().onDidShowMessage(m => {
+            if (m.severity === SeverityLevel.Warning) {
+                m.selectItem('Cancel')
+            }
+        })
+        await AuthUtil.instance.showReauthenticatePrompt()
+
+        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Warning)
+        assert.strictEqual(warningMessage.length, 1)
+        assert.strictEqual(warningMessage[0].message, 'AWS Toolkit: Connection expired. Reauthenticate to continue.')
+    })
+
+})
