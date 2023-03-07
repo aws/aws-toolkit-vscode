@@ -140,7 +140,7 @@ export function createQuickPick<T>(
 
     const prompter =
         mergedOptions.filterBoxInputSettings !== undefined
-            ? new FilterBoxQuickPickPrompter<T>(picker, mergedOptions.filterBoxInputSettings)
+            ? new FilterBoxQuickPickPrompter<T>(picker, mergedOptions)
             : new QuickPickPrompter<T>(picker, mergedOptions)
 
     prompter.loadItems(items)
@@ -581,12 +581,12 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         }
     }
 
-    constructor(quickPick: DataQuickPick<T>, private readonly settings: FilterBoxInputSettings<T>) {
+    constructor(quickPick: DataQuickPick<T>, protected override options: ExtendedQuickPickOptions<T>) {
         super(quickPick)
 
         this.transform(selection => {
             if ((selection as T | typeof customUserInput) === customUserInput) {
-                return settings.transform(quickPick.value) ?? selection
+                return options?.filterBoxInputSettings?.transform(quickPick.value) ?? selection
             }
             return selection
         })
@@ -603,10 +603,13 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
 
     private addFilterBoxInput(): void {
         const picker = this.quickPick as DataQuickPick<T | symbol>
-        const validator = (input: string) =>
-            this.settings.validator !== undefined ? this.settings.validator(input) : undefined
+        const settings = this.options?.filterBoxInputSettings
+        if (!settings) {
+            throw Error()
+        }
+        const validator = (input: string) => (settings.validator !== undefined ? settings.validator(input) : undefined)
         const items = picker.items.filter(item => item.data !== customUserInput)
-        const { label } = this.settings
+        const { label } = settings
 
         function update(value: string = '') {
             if (value !== '') {
