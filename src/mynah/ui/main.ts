@@ -153,6 +153,8 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
         },
         onNavigationTabChange: (selectedTab: string) => {
+            connector.tabChanged(selectedTab)
+
             // Grab the current search payload from UI
             // Apply rules to transform the payload according to the tab selecton
             const payload = transformPayloadData(
@@ -166,7 +168,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 mynahUI.updateStore({ loading: true, liveSearchState: LiveSearchState.STOP })
 
                 // perform a new search
-                connector.requestSuggestions(payload)
+                connector.requestSuggestions(payload, undefined, undefined, true)
             } else {
                 // otherwise just update payload attributes in store with the transformed one
                 mynahUI.updateStore({
@@ -185,7 +187,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onSendFeedback: connector.sendFeedback,
         onSuggestionClipboardInteraction: connector.triggerSuggestionClipboardInteraction,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
-        onSuggestionInteraction: connector.triggerSuggestionEvent,
+        onSuggestionInteraction: (eventName, suggestion) => {
+            connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab)
+        },
         onResetStore: connector.resetStore,
     })
 

@@ -477,6 +477,18 @@
                     "type": "mynahViewId"
                 }
             ]
+        },
+        {
+            "name": "mynah_changeTab",
+            "description": "When user changes the tab",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
         }
     ]
 }

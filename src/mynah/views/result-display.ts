@@ -17,6 +17,7 @@ import {
     CodeQuery,
     CodeSelection,
     HeaderInfo,
+    NavigationTabItems,
     Query,
     QueryContext,
     SearchInput,
@@ -44,6 +45,7 @@ import {
     SearchMetadata,
     SearchTrigger,
     SuggestionMetadata,
+    TabMetadata,
     TriggerInteractionType,
 } from '../telemetry/telemetry-metadata'
 
@@ -362,6 +364,18 @@ export class ResultDisplay {
                             msg.selectedTab
                         )
                     }
+                    break
+                }
+                case 'tabChange': {
+                    const tabMetadata: TabMetadata = {
+                        selectedTab: msg.selectedTab ?? NavigationTabItems.top,
+                    }
+                    telemetry.mynah_changeTab.emit({
+                        mynahContext: JSON.stringify({
+                            tabMetadata,
+                        }),
+                        mynahViewId: panelId,
+                    })
                     break
                 }
                 case 'upvote': {
