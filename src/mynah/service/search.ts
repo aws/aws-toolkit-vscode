@@ -174,12 +174,9 @@ export const getSearchSuggestions = async (
                             resolve(suggestionList as ApiDocsSuggestion[])
                         })
                     } catch (err: any) {
-                        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-                        reject(err)
                         throw new Error(`Search request failed: ${err}`)
                     }
                 } else {
-                    reject(new Error(NoQueryErrorMessage))
                     throw new Error(`Not possible to search API Docs without used fully qualified names.`)
                 }
             } else {
@@ -208,8 +205,6 @@ export const getSearchSuggestions = async (
                         resolve(suggestionList as SearchSuggestion[])
                     })
                 } catch (err: any) {
-                    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-                    reject()
                     throw new Error(`Search request failed: ${err}`)
                 }
             }
