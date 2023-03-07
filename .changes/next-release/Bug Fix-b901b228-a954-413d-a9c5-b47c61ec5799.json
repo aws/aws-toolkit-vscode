@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "auth: \"Copy Code\" modal is shown twice when refreshing expired IAM Identity Center connections"
-}
