@@ -16,7 +16,7 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string =
     'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html'
-export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
+export const samAboutInstallUrl = vscode.Uri.parse('https://aws.amazon.com/serverless/sam/')
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
@@ -30,7 +30,9 @@ export const documentationUrl: string = isCloud9()
  * - alternative?: codecatalyst/latest/userguide/sign-up-create-resources.html
  */
 export const authHelpUrl = 'https://docs.aws.amazon.com/general/latest/gr/differences-aws_builder_id.html'
-export const ssoAuthHelpUrl = 'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosignin.html'
+export const ssoAuthHelpUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosignin.html'
+)
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 export const ssoCredentialsHelpUrl: string =
