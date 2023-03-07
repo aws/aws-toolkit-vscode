@@ -43,6 +43,7 @@ import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
 import { samSyncUrl, samInitDocUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
+import { openUrl } from '../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -206,7 +207,7 @@ function createTemplatePrompter() {
         noItemsFoundItem: {
             label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
             data: undefined,
-            onClick: () => vscode.env.openExternal(samInitDocUrl),
+            onClick: () => openUrl(samInitDocUrl),
         },
     })
 }

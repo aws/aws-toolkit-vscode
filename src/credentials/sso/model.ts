@@ -14,6 +14,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ssoAuthHelpUrl } from '../../shared/constants'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export interface SsoToken {
     /**
@@ -76,16 +77,8 @@ export interface SsoProfile {
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 
-const tryOpenHelpUrl = (url: string) =>
-    telemetry.aws_openUrl
-        .run(async span => {
-            span.record({ url })
-            const didOpen = await vscode.env.openExternal(vscode.Uri.parse(url))
-            if (!didOpen) {
-                throw new CancellationError('user')
-            }
-        })
-        .catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
+const tryOpenHelpUrl = (url: vscode.Uri) =>
+    openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
 
 export async function openSsoPortalLink(
     startUrl: string,
