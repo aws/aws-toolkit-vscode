@@ -9,6 +9,7 @@ import { documentationUrl } from '../constants'
 import { getIcon } from '../icons'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 import { getIdeProperties } from '../extensionUtilities'
+import { openUrl } from '../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 const helpTooltip = localize('AWS.command.help', 'View Toolkit Documentation')
@@ -29,7 +30,6 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  *
  * @param uri Opens the URI upon clicking
  * @param tooltip Optional tooltip for button
- * @param url Optional URL to open when button is clicked
  */
 export function createHelpButton(
     uri: string | vscode.Uri = documentationUrl,
@@ -52,7 +52,7 @@ export class QuickInputLinkButton implements QuickInputButton<void> {
     }
 
     public onClick(): void {
-        vscode.env.openExternal(this.uri)
+        openUrl(this.uri)
     }
 }
 
