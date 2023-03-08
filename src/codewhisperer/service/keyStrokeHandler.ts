@@ -16,6 +16,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -160,7 +161,7 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         if (editor) {
-            if (isCloud9()) {
+            if (isCloud9('any')) {
                 if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                     return
                 }
@@ -169,14 +170,28 @@ export class KeyStrokeHandler {
                 try {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
-                    await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType,
-                        false
-                    )
+                    if (isCloud9('classic') || !AuthUtil.instance.isConnected()) {
+                        await RecommendationHandler.instance.getRecommendations(
+                            client,
+                            editor,
+                            'AutoTrigger',
+                            config,
+                            autoTriggerType,
+                            false
+                        )
+                    } else {
+                        if (AuthUtil.instance.isConnectionExpired()) {
+                            await AuthUtil.instance.showReauthenticatePrompt()
+                        }
+                        await RecommendationHandler.instance.getRecommendations(
+                            client,
+                            editor,
+                            'AutoTrigger',
+                            config,
+                            autoTriggerType,
+                            true
+                        )
+                    }
                     if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false)) {
                         await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                             vsCodeState.isIntelliSenseActive = true
