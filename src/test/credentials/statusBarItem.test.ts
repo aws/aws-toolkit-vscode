@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { updateCredentialsStatusBarItem } from '../../credentials/awsCredentialsStatusBarItem'
+import { updateCredentialsStatusBarItem } from '../../credentials/statusBarItem'
 import { installFakeClock, tickPromise } from '../testUtil'
 
 describe('updateCredentialsStatusBarItem', async function () {
