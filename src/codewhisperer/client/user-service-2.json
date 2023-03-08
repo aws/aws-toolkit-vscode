@@ -38,6 +38,7 @@
                     "shape": "AccessDeniedException"
                 }
             ],
+            "documentation": "<p>Creates a pre-signed, S3 write URL for uploading a repository zip archive.</p>",
             "idempotent": true
         },
         "GenerateCompletions": {
@@ -65,7 +66,8 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ]
+            ],
+            "documentation": "<p>Generate completions based on the provided file context in a paginated response.</p>"
         },
         "GetCodeAnalysis": {
             "name": "GetCodeAnalysis",
@@ -95,7 +97,8 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ]
+            ],
+            "documentation": "<p>Gets the metadata of a code analysis job.</p>"
         },
         "ListCodeAnalysisFindings": {
             "name": "ListCodeAnalysisFindings",
@@ -125,7 +128,8 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ]
+            ],
+            "documentation": "<p>Lists the findings from a particular code analysis job.</p>"
         },
         "StartCodeAnalysis": {
             "name": "StartCodeAnalysis",
@@ -159,6 +163,7 @@
                     "shape": "AccessDeniedException"
                 }
             ],
+            "documentation": "<p>Starts a code analysis job</p>",
             "idempotent": true
         }
     },
@@ -171,6 +176,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when the user does not have sufficient access to perform this action.</p>",
             "exception": true
         },
         "ArtifactMap": {
@@ -205,6 +211,9 @@
                 },
                 "references": {
                     "shape": "References"
+                },
+                "mostRelevantMissingImports": {
+                    "shape": "Imports"
                 }
             }
         },
@@ -230,6 +239,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.</p>",
             "exception": true
         },
         "CreateUploadUrlRequest": {
@@ -258,6 +268,9 @@
                 },
                 "uploadUrl": {
                     "shape": "PreSignedUrl"
+                },
+                "kmsArn": {
+                    "shape": "ResourceArn"
                 }
             }
         },
@@ -363,6 +376,28 @@
                 }
             }
         },
+        "Import": {
+            "type": "structure",
+            "members": {
+                "statement": {
+                    "shape": "ImportStatementString"
+                }
+            }
+        },
+        "ImportStatementString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "Imports": {
+            "type": "list",
+            "member": {
+                "shape": "Import"
+            },
+            "max": 10,
+            "min": 0
+        },
         "InternalServerException": {
             "type": "structure",
             "required": ["message"],
@@ -371,6 +406,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when an unexpected error occurred during the processing of a request.</p>",
             "exception": true,
             "fault": true,
             "retryable": {
@@ -433,7 +469,7 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "(python|javascript|java|csharp|typescript)"
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
@@ -488,6 +524,11 @@
             "max": 10,
             "min": 0
         },
+        "ResourceArn": {
+            "type": "string",
+            "max": 1224,
+            "min": 0
+        },
         "ResourceNotFoundException": {
             "type": "structure",
             "required": ["message"],
@@ -496,6 +537,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when describing a resource that does not exist.</p>",
             "exception": true
         },
         "Span": {
@@ -571,6 +613,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when request was denied due to request throttling.</p>",
             "exception": true,
             "retryable": {
                 "throttling": false
@@ -589,6 +632,7 @@
                     "shape": "String"
                 }
             },
+            "documentation": "<p>This exception is thrown when the input fails to satisfy the constraints specified by the service.</p>",
             "exception": true
         }
     }
