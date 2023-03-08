@@ -145,11 +145,18 @@ export function getMetrics<K extends MetricName>(
     return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
 
-/*
- * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
- * match the expected values.
+/**
+ * Finds the emitted telemetry metric with the given name, then checks if the metadata fields
+ * match the expected values. Defaults to checking against the first occurrence, but this
+ * can be overidden.
+ *
+ * @param eventNum The nth occurrence of the event you want to test against, defaults to the first.
  */
-export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[K],
+    eventNum: number = 0
+): void | never {
     const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
     const passive = expectedCopy?.passive
     const query = { metricName: name, excludeKeys: ['awsAccount', 'duration'] }
@@ -164,7 +171,7 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: MetricS
 
     const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    assert.deepStrictEqual(metadata[0], expectedCopy)
+    assert.deepStrictEqual(metadata[eventNum], expectedCopy)
 
     if (passive !== undefined) {
         const metric = globals.telemetry.logger.queryFull(query)
