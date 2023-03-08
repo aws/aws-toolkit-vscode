@@ -209,6 +209,11 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     )
 
+    if (!isCloud9() && !auth.isConnectionValid()) {
+        // this is to proactively check and reflect the state if user's connection is expired
+        await auth.getBearerToken()
+    }
+
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(
             vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)

@@ -55,18 +55,18 @@ export class AuthUtil {
             if (conn?.type === 'sso') {
                 if (this.auth.getConnectionState(conn) === 'valid') {
                     await this.clearAccessToken()
+                    await Promise.all([
+                        vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
+                        vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+                        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+                        vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
+                    ])
                 }
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
             } else {
                 this.usingEnterpriseSSO = false
             }
             TelemetryHelper.instance.startUrl = this.conn?.startUrl
-            await Promise.all([
-                vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-                vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-                vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
-                vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
-            ])
         })
 
         Commands.register('aws.codeWhisperer.removeConnection', () => this.secondaryAuth.removeConnection())
@@ -123,9 +123,13 @@ export class AuthUtil {
         if (this.conn === undefined) {
             throw new ToolkitError('No connection found', { code: 'NoConnection' })
         }
-
-        const bearerToken = await this.conn.getToken()
-        return bearerToken.accessToken
+        try {
+            const bearerToken = await this.conn.getToken()
+            return bearerToken.accessToken
+        } catch {
+            await this.refreshCodeWhisperer()
+            return ''
+        }
     }
 
     public isConnectionValid(): boolean {
@@ -140,10 +144,14 @@ export class AuthUtil {
         if (this.isConnectionExpired()) {
             try {
                 await this.auth.reauthenticate(this.conn!)
+                this.refreshCodeWhisperer()
             } catch (err) {
                 throw ToolkitError.chain(err, 'Unable to authenticate connection')
             }
         }
+    }
+
+    public async refreshCodeWhisperer() {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -176,11 +184,7 @@ export class AuthUtil {
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
-        await Promise.all([
-            vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
-        ])
+        await this.refreshCodeWhisperer()
         this.showReauthenticatePrompt(isAutoTrigger)
     }
 
