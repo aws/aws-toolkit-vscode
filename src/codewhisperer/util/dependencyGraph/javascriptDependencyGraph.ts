@@ -4,7 +4,7 @@
  */
 import { existsSync, statSync, readdirSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
+import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
 import { getLogger } from '../../../shared/logger'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
@@ -171,7 +171,7 @@ export class JavascriptDependencyGraph extends DependencyGraph {
         })
     }
 
-    async generateTruncation(uri: vscode.Uri): Promise<TruncPaths> {
+    async generateTruncation(uri: vscode.Uri): Promise<Truncation> {
         try {
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
             if (workspaceFolder === undefined) {
@@ -183,24 +183,15 @@ export class JavascriptDependencyGraph extends DependencyGraph {
             await sleep(1000)
             const truncDirPath = this.getTruncDirPath(uri)
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
-            const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
+            const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
             return {
-                root: truncDirPath,
-                src: {
-                    dir: truncDirPath,
-                    zip: zipFilePath,
-                    scannedFiles: new Set(this._pickedSourceFiles),
-                    size: this._totalSize,
-                    zipSize: zipFileSize,
-                },
-                build: {
-                    dir: '',
-                    zip: '',
-                    scannedFiles: new Set(),
-                    size: 0,
-                    zipSize: 0,
-                },
+                rootDir: truncDirPath,
+                zipFilePath: zipFilePath,
+                scannedFiles: new Set(this._pickedSourceFiles),
+                srcPayloadSizeInBytes: this._totalSize,
+                zipFileSizeInBytes: zipFileSize,
+                buildPayloadSizeInBytes: 0,
                 lines: this._totalLines,
             }
         } catch (error) {

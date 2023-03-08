@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultCodeWhispererClient } from '../client/codewhisperer'
+import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
@@ -109,20 +109,22 @@ export async function startSecurityScan(
         )
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
         getLogger().verbose(`Complete project context processing.`)
-        codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.src.size
-        codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = truncation.build.size
-        codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = truncation.src.zipSize
-        codeScanTelemetryEntry.codewhispererCodeScanBuildZipFileBytes = truncation.build.zipSize
+        codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.srcPayloadSizeInBytes
+        codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = truncation.buildPayloadSizeInBytes
+        codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = truncation.zipFileSizeInBytes
         codeScanTelemetryEntry.codewhispererCodeScanLines = truncation.lines
 
         /**
          * Step 2: Get presigned Url, upload and clean up
          */
         throwIfCancelled()
-        let artifactMap
+        let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
             artifactMap = await getPresignedUrlAndUpload(client, truncation)
+        } catch(error) {
+            getLogger().error('Failed to upload code artifacts', error)
+            throw error
         } finally {
             dependencyGraph.removeTmpFiles(truncation)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
@@ -165,19 +167,15 @@ export async function startSecurityScan(
         }, 0)
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
         getLogger().verbose(`Security scan totally found ${total} issues.`)
-        if (total > 0) {
-            if (isCloud9()) {
-                securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
-                vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
-            } else {
-                initSecurityScanRender(securityRecommendationCollection, context)
-                vscode.commands.executeCommand('workbench.action.problems.focus')
-            }
-            populateCodeScanLogStream(truncation.src.scannedFiles)
-            showScanCompletedNotification(total, truncation.src.scannedFiles, dependencyGraph.isProjectTruncated())
+        if (isCloud9()) {
+            securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
+            vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-security-panel')
         } else {
-            vscode.window.showInformationMessage(`Security scan completed and no issues were found.`)
+            initSecurityScanRender(securityRecommendationCollection, context)
+            vscode.commands.executeCommand('workbench.action.problems.focus')
         }
+        populateCodeScanLogStream(truncation.scannedFiles)
+        showScanCompletedNotification(total, truncation.scannedFiles, dependencyGraph.isProjectTruncated())
         getLogger().verbose(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed.', error)
@@ -274,7 +272,7 @@ export function showScanCompletedNotification(total: number, scannedFiles: Set<s
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
             } else if (value === learnMore) {
-                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
             }
         }
     )

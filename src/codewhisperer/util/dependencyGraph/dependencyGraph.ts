@@ -14,17 +14,12 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
 
 export interface Truncation {
-    dir: string
-    zip: string
+    rootDir: string
+    zipFilePath: string
     scannedFiles: Set<string>
-    size: number
-    zipSize: number
-}
-
-export interface TruncPaths {
-    root: string
-    src: Truncation
-    build: Truncation
+    srcPayloadSizeInBytes: number
+    buildPayloadSizeInBytes: number
+    zipFileSizeInBytes: number
     lines: number
 }
 
@@ -135,11 +130,11 @@ export abstract class DependencyGraph {
         }
     }
 
-    protected zipDir(dir: string, out: string, extension: string): string {
+    protected zipDir(dir: string, extension: string): string {
         const zip = new admZip()
         zip.addLocalFolder(dir)
-        zip.writeZip(out + extension)
-        return out + extension
+        zip.writeZip(dir + extension)
+        return dir + extension
     }
 
     protected removeDir(dir: string) {
@@ -164,14 +159,6 @@ export abstract class DependencyGraph {
         return this._truncDir
     }
 
-    protected getTruncSourceDirPath(uri: vscode.Uri) {
-        return path.join(this.getTruncDirPath(uri), 'src')
-    }
-
-    protected getTruncBuildDirPath(uri: vscode.Uri) {
-        return path.join(this.getTruncDirPath(uri), 'build')
-    }
-
     protected getFilesTotalSize(files: string[]) {
         return files.map(file => statSync(file)).reduce((accumulator, { size }) => accumulator + size, 0)
     }
@@ -182,13 +169,10 @@ export abstract class DependencyGraph {
         })
     }
 
-    public removeTmpFiles(truncation: TruncPaths) {
+    public removeTmpFiles(truncation: Truncation) {
         getLogger().verbose(`Cleaning up temporary files...`)
-        this.removeZip(truncation.src.zip)
-        this.removeZip(truncation.build.zip)
-        this.removeDir(truncation.src.dir)
-        this.removeDir(truncation.build.dir)
-        this.removeDir(truncation.root)
+        this.removeZip(truncation.zipFilePath)
+        this.removeDir(truncation.rootDir)
         getLogger().verbose(`Complete cleaning up temporary files.`)
     }
 
@@ -197,7 +181,7 @@ export abstract class DependencyGraph {
         return await asyncCallWithTimeout(this.generateTruncation(uri), 'Context truncation timeout.', seconds * 1000)
     }
 
-    abstract generateTruncation(uri: vscode.Uri): Promise<TruncPaths>
+    abstract generateTruncation(uri: vscode.Uri): Promise<Truncation>
 
     abstract searchDependency(uri: vscode.Uri): Promise<Set<string>>
 

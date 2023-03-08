@@ -38,7 +38,34 @@
                     "shape": "AccessDeniedException"
                 }
             ],
-            "documentation": "<p>Creates a pre-signed, S3 write URL for uploading a repository zip archive.</p>",
+            "idempotent": true
+        },
+        "CreateUploadUrl": {
+            "name": "CreateUploadUrl",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "CreateUploadUrlRequest"
+            },
+            "output": {
+                "shape": "CreateUploadUrlResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ],
             "idempotent": true
         },
         "GenerateCompletions": {
@@ -66,8 +93,7 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ],
-            "documentation": "<p>Generate completions based on the provided file context in a paginated response.</p>"
+            ]
         },
         "GetCodeAnalysis": {
             "name": "GetCodeAnalysis",
@@ -97,8 +123,7 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ],
-            "documentation": "<p>Gets the metadata of a code analysis job.</p>"
+            ]
         },
         "ListCodeAnalysisFindings": {
             "name": "ListCodeAnalysisFindings",
@@ -128,8 +153,7 @@
                 {
                     "shape": "AccessDeniedException"
                 }
-            ],
-            "documentation": "<p>Lists the findings from a particular code analysis job.</p>"
+            ]
         },
         "StartCodeAnalysis": {
             "name": "StartCodeAnalysis",
@@ -163,20 +187,20 @@
                     "shape": "AccessDeniedException"
                 }
             ],
-            "documentation": "<p>Starts a code analysis job</p>",
             "idempotent": true
         }
     },
     "shapes": {
         "AccessDeniedException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when the user does not have sufficient access to perform this action.</p>",
             "exception": true
         },
         "ArtifactMap": {
@@ -192,19 +216,30 @@
         },
         "ArtifactType": {
             "type": "string",
-            "enum": ["SourceCode", "BuiltJars"]
+            "enum": [
+                "SourceCode",
+                "BuiltJars"
+            ]
         },
         "CodeAnalysisFindingsSchema": {
             "type": "string",
-            "enum": ["codeanalysis/findings/1.0"]
+            "enum": [
+                "codeanalysis/findings/1.0"
+            ]
         },
         "CodeAnalysisStatus": {
             "type": "string",
-            "enum": ["Completed", "Pending", "Failed"]
+            "enum": [
+                "Completed",
+                "Pending",
+                "Failed"
+            ]
         },
         "Completion": {
             "type": "structure",
-            "required": ["content"],
+            "required": [
+                "content"
+            ],
             "members": {
                 "content": {
                     "shape": "CompletionContentString"
@@ -233,18 +268,21 @@
         },
         "ConflictException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.</p>",
             "exception": true
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": ["contentMd5", "artifactType"],
+            "required": [
+                "contentMd5"
+            ],
             "members": {
                 "contentMd5": {
                     "shape": "CreateUploadUrlRequestContentMd5String"
@@ -261,7 +299,10 @@
         },
         "CreateUploadUrlResponse": {
             "type": "structure",
-            "required": ["uploadId", "uploadUrl"],
+            "required": [
+                "uploadId",
+                "uploadUrl"
+            ],
             "members": {
                 "uploadId": {
                     "shape": "UploadId"
@@ -269,14 +310,19 @@
                 "uploadUrl": {
                     "shape": "PreSignedUrl"
                 },
-                "kmsArn": {
+                "kmsKeyArn": {
                     "shape": "ResourceArn"
                 }
             }
         },
         "FileContext": {
             "type": "structure",
-            "required": ["leftFileContent", "rightFileContent", "filename", "programmingLanguage"],
+            "required": [
+                "leftFileContent",
+                "rightFileContent",
+                "filename",
+                "programmingLanguage"
+            ],
             "members": {
                 "leftFileContent": {
                     "shape": "FileContextLeftFileContentString"
@@ -311,7 +357,9 @@
         },
         "GenerateCompletionsRequest": {
             "type": "structure",
-            "required": ["fileContext"],
+            "required": [
+                "fileContext"
+            ],
             "members": {
                 "fileContext": {
                     "shape": "FileContext"
@@ -352,7 +400,9 @@
         },
         "GetCodeAnalysisRequest": {
             "type": "structure",
-            "required": ["jobId"],
+            "required": [
+                "jobId"
+            ],
             "members": {
                 "jobId": {
                     "shape": "GetCodeAnalysisRequestJobIdString"
@@ -366,7 +416,9 @@
         },
         "GetCodeAnalysisResponse": {
             "type": "structure",
-            "required": ["status"],
+            "required": [
+                "status"
+            ],
             "members": {
                 "status": {
                     "shape": "CodeAnalysisStatus"
@@ -400,13 +452,14 @@
         },
         "InternalServerException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when an unexpected error occurred during the processing of a request.</p>",
             "exception": true,
             "fault": true,
             "retryable": {
@@ -415,7 +468,10 @@
         },
         "ListCodeAnalysisFindingsRequest": {
             "type": "structure",
-            "required": ["jobId", "codeAnalysisFindingsSchema"],
+            "required": [
+                "jobId",
+                "codeAnalysisFindingsSchema"
+            ],
             "members": {
                 "jobId": {
                     "shape": "ListCodeAnalysisFindingsRequestJobIdString"
@@ -435,7 +491,9 @@
         },
         "ListCodeAnalysisFindingsResponse": {
             "type": "structure",
-            "required": ["codeAnalysisFindings"],
+            "required": [
+                "codeAnalysisFindings"
+            ],
             "members": {
                 "nextToken": {
                     "shape": "PaginationToken"
@@ -458,7 +516,9 @@
         },
         "ProgrammingLanguage": {
             "type": "structure",
-            "required": ["languageName"],
+            "required": [
+                "languageName"
+            ],
             "members": {
                 "languageName": {
                     "shape": "ProgrammingLanguageLanguageNameString"
@@ -473,7 +533,10 @@
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
-            "enum": ["BLOCK", "ALLOW"]
+            "enum": [
+                "BLOCK",
+                "ALLOW"
+            ]
         },
         "Reference": {
             "type": "structure",
@@ -504,7 +567,9 @@
         },
         "ReferenceTrackerConfiguration": {
             "type": "structure",
-            "required": ["recommendationsWithReferences"],
+            "required": [
+                "recommendationsWithReferences"
+            ],
             "members": {
                 "recommendationsWithReferences": {
                     "shape": "RecommendationsWithReferencesPreference"
@@ -531,13 +596,14 @@
         },
         "ResourceNotFoundException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when describing a resource that does not exist.</p>",
             "exception": true
         },
         "Span": {
@@ -563,7 +629,10 @@
         },
         "StartCodeAnalysisRequest": {
             "type": "structure",
-            "required": ["artifacts", "programmingLanguage"],
+            "required": [
+                "artifacts",
+                "programmingLanguage"
+            ],
             "members": {
                 "artifacts": {
                     "shape": "ArtifactMap"
@@ -584,7 +653,10 @@
         },
         "StartCodeAnalysisResponse": {
             "type": "structure",
-            "required": ["jobId", "status"],
+            "required": [
+                "jobId",
+                "status"
+            ],
             "members": {
                 "jobId": {
                     "shape": "StartCodeAnalysisResponseJobIdString"
@@ -607,13 +679,14 @@
         },
         "ThrottlingException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when request was denied due to request throttling.</p>",
             "exception": true,
             "retryable": {
                 "throttling": false
@@ -626,13 +699,14 @@
         },
         "ValidationException": {
             "type": "structure",
-            "required": ["message"],
+            "required": [
+                "message"
+            ],
             "members": {
                 "message": {
                     "shape": "String"
                 }
             },
-            "documentation": "<p>This exception is thrown when the input fails to satisfy the constraints specified by the service.</p>",
             "exception": true
         }
     }

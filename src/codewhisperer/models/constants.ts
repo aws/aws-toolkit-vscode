@@ -152,6 +152,8 @@ export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
 
+export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html'
+
 export const accessTokenMigrationLearnMoreUri =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer-auth.html'
 
@@ -212,8 +214,6 @@ export const projectSizeCalculateTimeoutSeconds = 10
 export const codeScanJobPollingIntervalSeconds = 5
 
 export const artifactTypeSource = 'SourceCode'
-
-export const artifactTypeBuild = 'BuiltJars'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 

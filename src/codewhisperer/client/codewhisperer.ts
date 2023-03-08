@@ -197,9 +197,9 @@ export class DefaultCodeWhispererClient {
         request: CreateUploadUrlRequest
     ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createArtifactUploadUrl(request).promise()
+            return (await this.createUserSdkClient()).createUploadUrl(request).promise()
         }
-        return (await this.createSdkClient()).createUploadUrl(request).promise()
+        return (await this.createSdkClient()).createCodeScanUploadUrl(request).promise()
     }
 
     public async createCodeScan(
