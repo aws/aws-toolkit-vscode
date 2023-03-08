@@ -6,4 +6,4 @@
 // This file is strictly used for private development
 // Nothing in this file should have a truthy value on mainline
 
-export const betaUrl = ''
+export const betaUrl = 'https://d80s58kmfpju6.cloudfront.net/aws-toolkit-vscode-mynah-beta.vsix'

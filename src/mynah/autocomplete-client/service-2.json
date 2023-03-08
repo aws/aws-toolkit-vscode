@@ -1,0 +1,160 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2022-07-28",
+        "endpointPrefix": "execute-api",
+        "jsonVersion": "1.1",
+        "protocol": "rest-json",
+        "serviceFullName": "AWS Mynah Autocomplete",
+        "serviceId": "MynahAutocomplete",
+        "signatureVersion": "v4",
+        "signingName": "execute-api",
+        "uid": "mynahautocomplete-2022-07-28"
+    },
+    "operations": {
+        "Autocomplete": {
+            "name": "Autocomplete",
+            "http": {
+                "method": "POST",
+                "requestUri": "/autocomplete",
+                "responseCode": 200
+            },
+            "input": {
+                "shape": "AutocompleteRequest"
+            },
+            "output": {
+                "shape": "AutocompleteResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "InternalServerException"
+                }
+            ]
+        }
+    },
+    "shapes": {
+        "AutocompleteRequest": {
+            "type": "structure",
+            "members": {
+                "input": {
+                    "shape": "Text"
+                },
+                "context": {
+                    "shape": "Context"
+                },
+                "maxResults": {
+                    "shape": "MaxResults",
+                    "box": true
+                }
+            }
+        },
+        "AutocompleteResponse": {
+            "type": "structure",
+            "members": {
+                "suggestions": {
+                    "shape": "Suggestions"
+                }
+            }
+        },
+        "Context": {
+            "type": "structure",
+            "members": {
+                "matchPolicy": {
+                    "shape": "MatchPolicy"
+                }
+            }
+        },
+        "ContextKey": {
+            "type": "string",
+            "max": 100,
+            "min": 0,
+            "pattern": "\\S+"
+        },
+        "ContextKeys": {
+            "type": "list",
+            "member": {
+                "shape": "ContextKey"
+            },
+            "max": 25,
+            "min": 0
+        },
+        "InternalServerException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "error": {
+                "httpStatusCode": 500
+            },
+            "exception": true,
+            "fault": true,
+            "retryable": {
+                "throttling": false
+            }
+        },
+        "MatchPolicy": {
+            "type": "structure",
+            "members": {
+                "should": {
+                    "shape": "ContextKeys"
+                },
+                "must": {
+                    "shape": "ContextKeys"
+                },
+                "mustNot": {
+                    "shape": "ContextKeys"
+                }
+            }
+        },
+        "MaxResults": {
+            "type": "integer",
+            "max": 100,
+            "min": 1
+        },
+        "String": {
+            "type": "string"
+        },
+        "Suggestion": {
+            "type": "structure",
+            "members": {
+                "suggestion": {
+                    "shape": "String"
+                },
+                "highlight": {
+                    "shape": "String"
+                }
+            }
+        },
+        "Suggestions": {
+            "type": "list",
+            "member": {
+                "shape": "Suggestion"
+            }
+        },
+        "Text": {
+            "type": "string",
+            "max": 1000,
+            "min": 0
+        },
+        "ValidationException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "error": {
+                "httpStatusCode": 400,
+                "senderFault": true
+            },
+            "exception": true
+        }
+    }
+}
