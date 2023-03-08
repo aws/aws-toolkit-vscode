@@ -22,7 +22,7 @@ import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
-import { CreateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -111,10 +111,15 @@ export type DevEnvironmentSettings = Pick<
     'alias' | 'instanceType' | 'inactivityTimeoutMinutes' | 'persistentStorage'
 >
 
+export type UpdateDevEnvironmentSettings = Pick<
+    UpdateDevEnvironmentRequest,
+    'alias' | 'instanceType' | 'inactivityTimeoutMinutes'
+>
+
 export async function updateDevEnv(
     client: CodeCatalystClient,
     devenv: DevEnvironmentId,
-    settings: DevEnvironmentSettings
+    settings: UpdateDevEnvironmentSettings
 ) {
     return client.updateDevEnvironment({
         ...settings,
