@@ -21,7 +21,7 @@ describe('SyncWizard', function () {
     const createTester = (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }))
 
-    it('prompts for region -> template -> stackName -> bucketName', function () {
+    it('shows steps in correct order', function () {
         const tester = createTester()
         tester.region.assertShowFirst()
         tester.template.assertShowSecond()

@@ -8,7 +8,8 @@ import * as nls from 'vscode-nls'
 import { getIdeProperties } from '../extensionUtilities'
 import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
-import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { CancellationError, Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { telemetry } from '../telemetry/telemetry'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -160,5 +161,21 @@ export function reloadWindowPrompt(message: string): void {
         if (selected === reload) {
             vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
+    })
+}
+
+/**
+ * Opens a URL in the system web browser. Throws `CancellationError`
+ * if user dismisses the vscode confirmation prompt.
+ */
+export async function openUrl(url: vscode.Uri): Promise<boolean> {
+    return telemetry.aws_openUrl.run(async span => {
+        span.record({ url: url.toString() })
+        const didOpen = await vscode.env.openExternal(url)
+        if (!didOpen) {
+            throw new CancellationError('user')
+            // getLogger().verbose('failed to open URL: %s', e)
+        }
+        return didOpen
     })
 }
