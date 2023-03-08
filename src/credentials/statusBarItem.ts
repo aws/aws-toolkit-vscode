@@ -54,7 +54,7 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
 
 function updateItem(statusBarItem: vscode.StatusBarItem): void {
     const company = getIdeProperties().company
-    const connections = getAllConnectionsInUse()
+    const connections = getAllConnectionsInUse(Auth.instance)
     const connectedTooltip = localize(
         'AWS.credentials.statusbar.connected',
         'Connected to {0} with "{1}" (click to change)',

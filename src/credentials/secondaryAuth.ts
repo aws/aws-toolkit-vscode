@@ -60,8 +60,8 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
 
 let oldConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
-const registerAuthListener = once(() => {
-    Auth.instance.onDidChangeActiveConnection(async conn => {
+const registerAuthListener = (auth: Auth) => {
+    auth.onDidChangeActiveConnection(async conn => {
         const potentialConn = oldConn
         if (conn !== undefined && potentialConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
@@ -78,20 +78,24 @@ const registerAuthListener = once(() => {
 
         oldConn = conn
     })
-})
+}
 
 export function getSecondaryAuth<T extends Connection>(
+    auth: Auth,
     toolId: string,
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
-    const auth = new SecondaryAuth(toolId, toolLabel, isValid)
-    auths.set(toolId, auth)
-    registerAuthListener()
+    if (auths.has(toolId)) {
+        return auths.get(toolId) as SecondaryAuth<T>
+    }
 
-    auth.onDidChangeActiveConnection(() => onDidChangeConnectionsEmitter.fire())
+    const secondary = new SecondaryAuth(toolId, toolLabel, isValid, auth)
+    auths.set(toolId, secondary)
+    registerAuthListener(auth)
+    secondary.onDidChangeActiveConnection(() => onDidChangeConnectionsEmitter.fire())
 
-    return auth
+    return secondary
 }
 
 /**
@@ -103,7 +107,7 @@ export function getDependentAuths(conn: Connection): SecondaryAuth[] {
     )
 }
 
-export function getAllConnectionsInUse(auth = Auth.instance): StatefulConnection[] {
+export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
     const connMap = new Map<Connection['id'], StatefulConnection>()
     const toolConns = Array.from(auths.values())
         .filter(a => a.isUsingSavedConnection)
@@ -139,7 +143,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         public readonly toolId: string,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
-        private readonly auth = Auth.instance,
+        private readonly auth: Auth,
         private readonly memento = globals.context.globalState
     ) {
         this.auth.onDidChangeActiveConnection(async conn => {
