@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.64.0-SNAPSHOT",
+    "version": "1.65.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -29,11 +29,11 @@
         "Other"
     ],
     "keywords": [
-        "AWS",
+        "Lambda",
         "CodeCatalyst",
         "CodeWhisperer",
-        "Lambda",
-        "Serverless"
+        "Code",
+        "Whisperer"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",

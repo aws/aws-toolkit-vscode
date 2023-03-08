@@ -1,0 +1,22 @@
+{
+	"date": "2023-03-07",
+	"version": "1.64.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "auth: \"Copy Code\" modal is shown twice when refreshing expired IAM Identity Center connections"
+		},
+		{
+			"type": "Feature",
+			"description": "auth: verification codes for browser logins are now shown in a notification after opening the login URL"
+		},
+		{
+			"type": "Feature",
+			"description": "S3: Choose last-touched and last-uploaded-to S3 folders in the Upload Files wizard."
+		},
+		{
+			"type": "Feature",
+			"description": "\"Sync SAM Application\" command provides Create and Help actions at each step (SAM template, S3 bucket, ECR repo, CloudFormation stack)"
+		}
+	]
+}
