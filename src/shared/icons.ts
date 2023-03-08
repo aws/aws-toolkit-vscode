@@ -69,14 +69,6 @@ export class Icon extends ThemeIcon {
     }
 }
 
-// Used for VSC/C9 compat regarding codicons
-// Delete this when the 'override' logic in `resolveIconId` is no longer needed
-class IconOverride extends Icon {
-    public constructor(id: string, public readonly light: Uri, public readonly dark: Uri) {
-        super(id)
-    }
-}
-
 /**
  * Adds a new {@link ThemeColor} to an existing icon.
  *
@@ -104,7 +96,7 @@ function resolveIconId(
     const override = cloud9Override ?? resolvePathsSync(path.join(iconsPath, namespace), name)
     if (override) {
         getLogger().verbose(`icons: using override for "${id}"`)
-        return new IconOverride(namespace === 'vscode' ? name : id, override.light, override.dark)
+        return override
     }
 
     // TODO: remove when they support codicons + the contribution point
