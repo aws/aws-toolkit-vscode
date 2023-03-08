@@ -38,18 +38,20 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 import { partition } from '../shared/utilities/mementos'
+import { createRegionPrompter } from '../shared/ui/common/region'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const defaultSsoRegion = 'us-east-1'
 
 export function createBuilderIdProfile(
     scopes = [...codecatalystScopes, ...codewhispererScopes]
 ): SsoProfile & { readonly scopes: string[] } {
     return {
         type: 'sso',
-        ssoRegion: 'us-east-1',
+        ssoRegion: defaultSsoRegion,
         startUrl: builderIdStartUrl,
         scopes,
     }
@@ -934,6 +936,25 @@ export async function createBuilderIdConnection(auth: Auth) {
     return existingConn ?? (await auth.createConnection(newProfile))
 }
 
+export async function showRegionPrompter(
+    title: string = `IAM Identity Center: Select Region`,
+    placeholder: string = `Select region for your organization's IAM Identity Center`
+) {
+    const region = await createRegionPrompter(undefined, {
+        defaultRegion: defaultSsoRegion,
+        buttons: createCommonButtons(),
+        title: title,
+        placeholder: placeholder,
+    }).prompt()
+
+    if (!isValidResponse(region)) {
+        throw new CancellationError('user')
+    }
+    telemetry.ui_click.emit({ elementId: 'connection_region' })
+
+    return region
+}
+
 Commands.register('aws.auth.help', async () => {
     vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
@@ -985,10 +1006,11 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
             }
-
             telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
 
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
+            const region = await showRegionPrompter()
+
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {

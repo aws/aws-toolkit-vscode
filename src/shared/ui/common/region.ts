@@ -20,6 +20,7 @@ interface RegionPrompterOptions {
     readonly buttons?: PrompterButtons<Region>
     readonly serviceFilter?: string
     readonly helpUrl?: string | vscode.Uri
+    readonly placeholder?: string
 }
 
 export function createRegionPrompter(
