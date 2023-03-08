@@ -19,7 +19,8 @@ import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
 
-export const samAndCfnSchemaUrl = `https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json`
+// Note: this file is currently 12+ MB. When requesting it, specify compression/gzip. 
+export const samAndCfnSchemaUrl = 'https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json'
 const devfileManifestUrl = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
 
