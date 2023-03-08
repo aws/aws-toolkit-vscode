@@ -27,7 +27,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9 classic
-const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
+export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
     !isCloud9('classic') && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
 
 export class AuthUtil {
