@@ -92,6 +92,15 @@ export function getSecondaryAuth<T extends Connection>(
 }
 
 /**
+ * Gets all {@link SecondaryAuth} instances that have saved the connection
+ */
+export function getDependentAuths(conn: Connection): SecondaryAuth[] {
+    return Array.from(auths.values()).filter(
+        auth => auth.isUsingSavedConnection && auth.activeConnection?.id === conn.id
+    )
+}
+
+/**
  * Enables a tool to bind to a connection independently from the global {@link Auth} service.
  *
  * Not all connections are usable by every tool, so callers of this class must provide a function
@@ -183,8 +192,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     private async loadSavedConnection() {
         const id = cast(this.memento.get(this.key), Optional(String))
-        const conn = id !== undefined ? await this.auth.getConnection({ id }) : undefined
+        if (id === undefined) {
+            return
+        }
 
+        const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
             await this.memento.update(this.key, undefined)

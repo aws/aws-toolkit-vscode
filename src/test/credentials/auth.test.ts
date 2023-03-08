@@ -5,7 +5,15 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { Auth, AuthNode, getSsoProfileKey, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
+import {
+    Auth,
+    AuthNode,
+    getSsoProfileKey,
+    ProfileStore,
+    promptForConnection,
+    SsoConnection,
+    SsoProfile,
+} from '../../credentials/auth'
 import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
 import { SsoClient } from '../../credentials/sso/clients'
 import { SsoToken } from '../../credentials/sso/model'
@@ -14,7 +22,7 @@ import { ToolkitError } from '../../shared/errors'
 import { FakeMemento } from '../fakeExtensionContext'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { captureEvent } from '../testUtil'
+import { assertTelemetry, captureEvent, captureEventOnce } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
 function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
@@ -253,6 +261,58 @@ describe('Auth', function () {
             tokenProviders.get(getSsoProfileKey(ssoProfile))?.getToken.resolves(undefined)
             await auth.useConnection(conn)
             await assertTreeItem(node, { description: 'expired or invalid, click to authenticate' })
+        })
+    })
+
+    describe('promptForConnection', function () {
+        it('shows a list of connections', async function () {
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                const connItem = picker.findItemOrThrow(/IAM Identity Center/)
+                picker.acceptItem(connItem)
+            })
+
+            const conn = await auth.createConnection(ssoProfile)
+            assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
+        })
+
+        it('refreshes when clicking the refresh button', async function () {
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                await auth.reauthenticate(conn)
+                picker.pressButton('Refresh')
+                await picker.untilReady()
+                picker.acceptItem(/IAM Identity Center/)
+            })
+
+            const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+            await auth.useConnection(conn)
+            assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
+        })
+
+        it('reauthenticates a connection if the user selects an expired one', async function () {
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                const connItem = picker.findItemOrThrow(/IAM Identity Center/)
+                assert.match(connItem.description ?? '', /expired/i)
+                picker.acceptItem(connItem)
+                await captureEventOnce(picker.onDidChangeSelection)
+                const refreshedConnItem = picker.findItemOrThrow(/IAM Identity Center/)
+                assert.doesNotMatch(refreshedConnItem.description ?? '', /expired/i)
+                picker.acceptItem(refreshedConnItem)
+            })
+
+            const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+            await auth.useConnection(conn)
+            assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
+            assert.strictEqual(getTestWindow().shownQuickPicks.length, 1, 'Two pickers should not be shown')
+
+            assertTelemetry('vscode_executeCommand', {
+                result: 'Succeeded',
+                command: '_aws.auth.reauthenticate',
+                debounceCount: 0,
+                source: 'QuickPick',
+            })
         })
     })
 })

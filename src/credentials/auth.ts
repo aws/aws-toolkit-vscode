@@ -37,6 +37,7 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
+import { createConnectionPrompter, getConnectionIcon } from './wizards/connections'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -723,56 +724,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 }
 
-const getConnectionIcon = (conn: Connection) =>
-    conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
-
-function toPickerItem(conn: Connection) {
-    const label = codicon`${getConnectionIcon(conn)} ${conn.label}`
-    const descPrefix = conn.type === 'iam' ? 'IAM Credential' : undefined
-    const descSuffix = conn.id.startsWith('profile:')
-        ? 'configured locally (~/.aws/config)'
-        : 'sourced from the environment'
-
-    return {
-        label,
-        data: conn,
-        description: descPrefix !== undefined ? `${descPrefix}, ${descSuffix}` : undefined,
-    }
-}
-
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
-    const addNewConnection = {
-        label: codicon`${getIcon('vscode-plus')} Add New Connection`,
-        data: 'addNewConnection' as const,
-    }
-
-    const editCredentials = {
-        label: codicon`${getIcon('vscode-pencil')} Edit Credentials`,
-        data: 'editCredentials' as const,
-    }
-
-    const items = (async function () {
-        // TODO: list linked connections
-        const connections = await auth.listConnections()
-        connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
-        const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
-        const items = [...filtered.map(toPickerItem), addNewConnection]
-        const canShowEdit = connections.filter(isIamConnection).filter(c => c.label.startsWith('profile')).length > 0
-
-        return canShowEdit ? [...items, editCredentials] : items
-    })()
-
-    const placeholder =
-        type === 'iam'
-            ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
-            : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
-
-    const resp = await showQuickPick<Connection | 'addNewConnection' | 'editCredentials'>(items, {
-        placeholder,
-        title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
-        buttons: createCommonButtons(),
-    })
-
+    const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
@@ -974,7 +927,7 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
     }
 })
 
-const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
+export const reauthCommand = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
     try {
         await auth.reauthenticate(conn)
     } catch (err) {
@@ -1049,7 +1002,7 @@ export class AuthNode implements TreeNode<Auth> {
                 this.setDescription(item, 'authenticating...')
             } else {
                 this.setDescription(item, 'expired or invalid, click to authenticate')
-                item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+                item.command = reauthCommand.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
             }
         } else {
             item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })
