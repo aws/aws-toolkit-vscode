@@ -11,6 +11,9 @@ import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { DevSettings } from '../shared/settings'
 import { Auth, login } from './auth'
+import { getAllConnectionsInUse, onDidChangeConnections } from './secondaryAuth'
+import { codicon, getIcon } from '../shared/icons'
+import { shared } from '../shared/utilities/functionUtils'
 
 const statusbarPriority = 1
 
@@ -18,22 +21,22 @@ export async function initializeAwsCredentialsStatusBarItem(
     awsContext: AwsContext,
     context: vscode.ExtensionContext
 ): Promise<void> {
+    const devSettings = DevSettings.instance
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, statusbarPriority)
     statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
-    updateCredentialsStatusBarItem(statusBarItem)
 
-    context.subscriptions.push(statusBarItem)
+    const update = shared(async () => {
+        updateItem(statusBarItem)
+        handleDevSettings(devSettings, statusBarItem)
+    })
 
-    const devSettings = DevSettings.instance
-    handleDevSettings(devSettings, statusBarItem)
-
+    update()
     context.subscriptions.push(
-        Auth.instance.onDidChangeActiveConnection(conn => {
-            const color = conn?.state === 'invalid' ? new vscode.ThemeColor('statusBarItem.errorBackground') : undefined
-            updateCredentialsStatusBarItem(statusBarItem, conn?.label, color)
-            handleDevSettings(devSettings, statusBarItem)
-        }),
+        statusBarItem,
+        onDidChangeConnections(() => update()),
+        Auth.instance.onDidChangeActiveConnection(() => update()),
+        Auth.instance.onDidChangeConnectionState(() => update()),
         devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
     )
 }
@@ -49,26 +52,40 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
     }
 }
 
-// Resolves when the status bar reaches its final state
-export async function updateCredentialsStatusBarItem(
-    statusBarItem: vscode.StatusBarItem,
-    credentialsId?: string,
-    color?: vscode.ThemeColor
-): Promise<void> {
-    const connectedMsg = localize(
+function updateItem(statusBarItem: vscode.StatusBarItem): void {
+    const company = getIdeProperties().company
+    const connections = getAllConnectionsInUse()
+    const connectedTooltip = localize(
         'AWS.credentials.statusbar.connected',
         'Connected to {0} with "{1}" (click to change)',
         getIdeProperties().company,
-        credentialsId
+        connections[0]?.label
     )
-    const disconnectedMsg = localize(
+    const disconnectedTooltip = localize(
         'AWS.credentials.statusbar.disconnected',
         'Click to connect to {0}',
         getIdeProperties().company
     )
 
-    const company = getIdeProperties().company
-    statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
-    statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company
+    const icon = connections.some(c => c.state !== 'valid') ? getIcon('vscode-error') : getIcon('vscode-check')
+    const getText = (text: string) => codicon`${icon} ${company}: ${text}`
+    if (connections.length === 0) {
+        statusBarItem.text = company
+        statusBarItem.tooltip = disconnectedTooltip
+    } else if (connections.length === 1) {
+        statusBarItem.text = getText(connections[0].label)
+        statusBarItem.tooltip = connectedTooltip
+    } else {
+        const expired = connections.filter(c => c.state !== 'valid')
+        if (expired.length !== 0) {
+            statusBarItem.text = getText(`${expired.length} of ${connections.length} Connections Expired`)
+        } else {
+            statusBarItem.text = getText(`${connections.length} Connections`)
+        }
+    }
+
+    const color = connections.some(c => c.state !== 'valid')
+        ? new vscode.ThemeColor('statusBarItem.errorBackground')
+        : undefined
     ;(statusBarItem as any).backgroundColor = color
 }

@@ -46,7 +46,7 @@ export const getIcon = memoize(resolveIconId)
  */
 export function codicon(parts: TemplateStringsArray, ...components: (string | IconPath)[]): string {
     const canUse = (sub: string | IconPath) => typeof sub === 'string' || (!isCloud9() && sub instanceof Icon)
-    const resolved = components.filter(canUse).map(String)
+    const resolved = components.map(i => (canUse(i) ? i : '')).map(String)
 
     return parts
         .map((v, i) => `${v}${i < resolved.length ? resolved[i] : ''}`)
@@ -66,6 +66,14 @@ export class Icon extends ThemeIcon {
 
     public override toString() {
         return `$(${this.id})`
+    }
+}
+
+// Used for VSC/C9 compat regarding codicons
+// Delete this when the 'override' logic in `resolveIconId` is no longer needed
+class IconOverride extends Icon {
+    public constructor(id: string, public readonly light: Uri, public readonly dark: Uri) {
+        super(id)
     }
 }
 
@@ -96,7 +104,7 @@ function resolveIconId(
     const override = cloud9Override ?? resolvePathsSync(path.join(iconsPath, namespace), name)
     if (override) {
         getLogger().verbose(`icons: using override for "${id}"`)
-        return override
+        return new IconOverride(namespace === 'vscode' ? name : id, override.light, override.dark)
     }
 
     // TODO: remove when they support codicons + the contribution point

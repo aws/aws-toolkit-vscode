@@ -297,12 +297,19 @@ function sortProfilesByScope(profiles: StoredProfile<Profile>[]): StoredProfile<
 
 // The true connection state can only be known after trying to use the connection
 // So it is not exposed on the `Connection` interface
-type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+export type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+
+interface ConnectionStateChangeEvent {
+    readonly id: Connection['id']
+    readonly state: ProfileMetadata['connectionState']
+}
 
 export class Auth implements AuthService, ConnectionManager {
     private readonly ssoCache = getCache()
-    private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
-    public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
+    readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
+    public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
+    public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
 
     public constructor(
         private readonly store: ProfileStore,
@@ -364,7 +371,7 @@ export class Auth implements AuthService, ConnectionManager {
                 : this.getIamConnection(id, await this.getCredentialsProvider(id))
 
         this.#activeConnection = conn
-        this.onDidChangeActiveConnectionEmitter.fire(conn)
+        this.#onDidChangeActiveConnection.fire(conn)
         await this.store.setCurrentProfileId(id)
 
         return conn
@@ -378,7 +385,7 @@ export class Auth implements AuthService, ConnectionManager {
         await this.store.setCurrentProfileId(undefined)
         await this.invalidateConnection(this.activeConnection.id)
         this.#activeConnection = undefined
-        this.onDidChangeActiveConnectionEmitter.fire(undefined)
+        this.#onDidChangeActiveConnection.fire(undefined)
     }
 
     public async listConnections(): Promise<Connection[]> {
@@ -486,8 +493,9 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = await this.store.updateProfile(id, { connectionState })
         if (this.#activeConnection?.id === id) {
             this.#activeConnection.state = connectionState
-            this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
+            this.#onDidChangeActiveConnection.fire(this.#activeConnection)
         }
+        this.#onDidChangeConnectionState.fire({ id, state: connectionState })
 
         return profile
     }
