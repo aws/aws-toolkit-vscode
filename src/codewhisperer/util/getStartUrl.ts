@@ -9,7 +9,7 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { createStartUrlPrompter, createQuickPickRegionPrompter, showRegionPrompter } from '../../credentials/auth'
+import { createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {
