@@ -294,11 +294,11 @@ describe('Auth', function () {
             getTestWindow().onDidShowQuickPick(async picker => {
                 await picker.untilReady()
                 const connItem = picker.findItemOrThrow(/IAM Identity Center/)
-                assert.match(connItem.description ?? '', /expired/i)
+                assert.ok(connItem.description?.match(/expired/i))
                 picker.acceptItem(connItem)
                 await captureEventOnce(picker.onDidChangeSelection)
                 const refreshedConnItem = picker.findItemOrThrow(/IAM Identity Center/)
-                assert.doesNotMatch(refreshedConnItem.description ?? '', /expired/i)
+                assert.ok(!connItem.description?.match(/expired/i))
                 picker.acceptItem(refreshedConnItem)
             })
 
