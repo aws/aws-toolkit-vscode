@@ -223,6 +223,16 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * Clears attributes within the current context.
+     */
+    public clearAttributes(): void {
+        const ctx = this.#context.getStore()
+        if (ctx !== undefined) {
+            ;(ctx as Mutable<typeof ctx>).attributes = {}
+        }
+    }
+
+    /**
      * Executes the provided callback function with a named span.
      *
      * Spans that already exist in the current context are re-used and brought

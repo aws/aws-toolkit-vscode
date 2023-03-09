@@ -298,7 +298,7 @@ describe('Auth', function () {
                 picker.acceptItem(connItem)
                 await captureEventOnce(picker.onDidChangeSelection)
                 const refreshedConnItem = picker.findItemOrThrow(/IAM Identity Center/)
-                assert.ok(!connItem.description?.match(/expired/i))
+                assert.ok(!refreshedConnItem.description?.match(/expired/i))
                 picker.acceptItem(refreshedConnItem)
             })
 

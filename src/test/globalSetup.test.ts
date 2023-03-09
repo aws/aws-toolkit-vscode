@@ -23,6 +23,7 @@ import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { printPendingUiElements, getTestWindow, resetTestWindow } from './shared/vscode/window'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -109,6 +110,7 @@ afterEach(function () {
     globals.templateRegistry.dispose()
     globals.codelensRootRegistry.dispose()
     globalSandbox.restore()
+    telemetry.clearAttributes()
 })
 
 /**
