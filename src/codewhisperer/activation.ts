@@ -206,7 +206,7 @@ export async function activate(context: ExtContext): Promise<void> {
             ReferenceInlineProvider.instance
         ),
         vscode.languages.registerCodeLensProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.supportedLanguages, { scheme: 'untitled' }],
             ImportAdderProvider.instance
         )
     )
