@@ -55,18 +55,18 @@ export class AuthUtil {
             if (conn?.type === 'sso') {
                 if (this.auth.getConnectionState(conn) === 'valid') {
                     await this.clearAccessToken()
-                    await Promise.all([
-                        vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
-                        vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-                        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
-                        vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
-                    ])
                 }
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
             } else {
                 this.usingEnterpriseSSO = false
             }
             TelemetryHelper.instance.startUrl = this.conn?.startUrl
+            await Promise.all([
+                vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
+                vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+                vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+                vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
+            ])
         })
 
         Commands.register('aws.codeWhisperer.removeConnection', () => this.secondaryAuth.removeConnection())
@@ -123,13 +123,8 @@ export class AuthUtil {
         if (this.conn === undefined) {
             throw new ToolkitError('No connection found', { code: 'NoConnection' })
         }
-        try {
-            const bearerToken = await this.conn.getToken()
-            return bearerToken.accessToken
-        } catch {
-            await this.refreshCodeWhisperer()
-            return ''
-        }
+        const bearerToken = await this.conn.getToken()
+        return bearerToken.accessToken
     }
 
     public isConnectionValid(): boolean {
