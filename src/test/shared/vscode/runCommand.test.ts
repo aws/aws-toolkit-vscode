@@ -12,7 +12,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands } from '../../../shared/vscode/commands2'
 import { assertTelemetry } from '../../testUtil'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 async function throwMe(error?: unknown): Promise<void | never> {
     if (error) {

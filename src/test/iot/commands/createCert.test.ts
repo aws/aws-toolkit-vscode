@@ -8,12 +8,11 @@ import * as vscode from 'vscode'
 import { createCertificateCommand } from '../../../iot/commands/createCert'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { Window } from '../../../shared/vscode/window'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { Iot } from 'aws-sdk'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createCertificateCommand', function () {
     const certificateId = 'new-certificate'
@@ -25,17 +24,16 @@ describe('createCertificateCommand', function () {
     let node: IotCertsFolderNode
     let saveLocation: vscode.Uri | undefined = vscode.Uri.file('/certificate.txt')
     let saveSuccess: boolean
-    const promptFolder: (window: Window) => Promise<vscode.Uri | undefined> = async window => {
+    const promptFolder: () => Promise<vscode.Uri | undefined> = async () => {
         return saveLocation
     }
     const saveFiles: (
-        window: Window,
         basePath: vscode.Uri,
         certId: string,
         certPem: string,
         privateKey: string,
         publicKey: string
-    ) => Promise<boolean> = async (window, basePath, certId, certPem, privateKey, publicKey) => {
+    ) => Promise<boolean> = async (basePath, certId, certPem, privateKey, publicKey) => {
         return saveSuccess
     }
 
@@ -49,11 +47,12 @@ describe('createCertificateCommand', function () {
     it('prompts for save location, creates certificate, and saves to filesystem', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
 
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
-        assert.strictEqual(window.message.information, 'Created certificate new-certificate')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created certificate new-certificate/)
 
         verify(iot.deleteCertificate(anything())).never()
 
@@ -63,9 +62,8 @@ describe('createCertificateCommand', function () {
 
     it('does nothing when no save folder is selected', async function () {
         saveLocation = undefined
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
         verify(iot.createCertificateAndKeys(anything())).never()
         assert.strictEqual(commands.command, undefined)
@@ -74,11 +72,12 @@ describe('createCertificateCommand', function () {
     it('shows an error message if creating certificate fails', async function () {
         when(iot.createCertificateAndKeys(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create certificate'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create certificate/)
 
         assert.strictEqual(commands.command, undefined)
     })
@@ -86,11 +85,12 @@ describe('createCertificateCommand', function () {
     it('shows an error message if created certificate is invalid', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve({})
 
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create certificate'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create certificate/)
 
         assert.strictEqual(commands.command, undefined)
     })
@@ -99,11 +99,12 @@ describe('createCertificateCommand', function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
         saveSuccess = false
 
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
-        assert.strictEqual(window.message.information, 'Created certificate new-certificate')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created certificate new-certificate/)
 
         verify(iot.deleteCertificate(deepEqual({ certificateId }))).once()
     })
@@ -113,11 +114,14 @@ describe('createCertificateCommand', function () {
         when(iot.deleteCertificate(anything())).thenReject(new Error('Expected failure'))
         saveSuccess = false
 
-        const window = new FakeWindow()
         const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles, commands)
 
-        assert.strictEqual(window.message.information, 'Created certificate new-certificate')
-        assert.ok(window.message.error?.includes('Failed to delete Certificate new-certificate'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created certificate new-certificate/)
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to delete Certificate new-certificate/)
     })
 })

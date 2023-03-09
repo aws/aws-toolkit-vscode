@@ -7,21 +7,17 @@ import { SignedUrlRequest } from '../../shared/clients/s3Client'
 import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { Window } from '../../shared/vscode/window'
+import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { invalidNumberWarning } from '../../shared/localizedText'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 
-export async function presignedURLCommand(
-    node: S3FileNode,
-    window = Window.vscode(),
-    env = Env.vscode()
-): Promise<void> {
+export async function presignedURLCommand(node: S3FileNode, env = Env.vscode()): Promise<void> {
     await telemetry.s3_copyUrl.run(async span => {
         span.record({ presigned: true })
 
-        const validTime = await promptTime(node.file.key, window)
+        const validTime = await promptTime(node.file.key)
         const s3Client = node.s3
         const request: SignedUrlRequest = {
             bucketName: node.bucket.name,
@@ -37,12 +33,12 @@ export async function presignedURLCommand(
             )
         })
 
-        await copyToClipboard(url, 'URL', window, env)
+        await copyToClipboard(url, 'URL', env)
     })
 }
 
-export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
-    const timeStr = await window.showInputBox({
+export async function promptTime(fileName: string): Promise<number> {
+    const timeStr = await vscode.window.showInputBox({
         value: '15',
         prompt: localize(
             'AWS.s3.promptTime.prompt',

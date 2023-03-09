@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+
 import { isCloud9 } from './extensionUtilities'
 
 export const extensionSettingsPrefix = 'aws'
@@ -14,7 +16,7 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string =
     'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html'
-export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
+export const samAboutInstallUrl = vscode.Uri.parse('https://aws.amazon.com/serverless/sam/')
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
@@ -28,7 +30,9 @@ export const documentationUrl: string = isCloud9()
  * - alternative?: codecatalyst/latest/userguide/sign-up-create-resources.html
  */
 export const authHelpUrl = 'https://docs.aws.amazon.com/general/latest/gr/differences-aws_builder_id.html'
-export const ssoAuthHelpUrl = 'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosignin.html'
+export const ssoAuthHelpUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosignin.html'
+)
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 export const ssoCredentialsHelpUrl: string =
@@ -38,9 +42,11 @@ export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 export const createUrlForLambdaFunctionUrl = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for samInitWizard
-export const samInitDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
+export const samInitDocUrl = vscode.Uri.parse(
+    isCloud9()
+        ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
+        : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
+)
 export const launchConfigDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/sam-debug-config-ref.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
@@ -49,6 +55,10 @@ export const samDeployDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
 export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
+// URLs for "sam sync" wizard.
+export const samSyncUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
+)
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`

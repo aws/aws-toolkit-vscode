@@ -22,7 +22,7 @@ import {
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { stub } from '../../utilities/stubber'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 
 describe('Search Schemas', function () {

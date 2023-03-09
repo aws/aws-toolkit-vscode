@@ -36,7 +36,7 @@ export class CodeCatalystAuthStorage {
     }
 }
 
-const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
+export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
 
 export class CodeCatalystAuthenticationProvider {

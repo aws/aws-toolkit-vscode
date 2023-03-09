@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import {
+    addTelemetryEnvVar,
     collectAcceptedErrorMessages,
     logAndThrowIfUnexpectedExitCode,
     makeUnexpectedExitCodeError,
@@ -79,5 +80,22 @@ describe('collectAcceptedErrorMessages()', async () => {
     })
     it('ignores non-accepted escape sequence prefixes', async () => {
         assert(!result.includes(prependEscapeCode('[100m This is not an accepted escape sequence')))
+    })
+})
+
+describe('addTelemetryEnvVar', async function () {
+    it('adds a new variable, preserving the existing contents', async function () {
+        const result = await addTelemetryEnvVar({
+            cwd: '/foo',
+            env: { AWS_REGION: 'us-east-1' },
+        })
+
+        assert.deepStrictEqual(result, {
+            cwd: '/foo',
+            env: {
+                SAM_CLI_TELEMETRY_FROM_IDE: result.env?.['SAM_CLI_TELEMETRY_FROM_IDE'],
+                AWS_REGION: 'us-east-1',
+            },
+        })
     })
 })

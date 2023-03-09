@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
@@ -27,7 +26,7 @@ export async function pauseService(node: AppRunnerServiceNode): Promise<void> {
         )
         const confirmationOptions = { prompt: notifyPrompt, confirm: localizedText.ok, cancel: localizedText.cancel }
 
-        if (shouldNotify && !(await showConfirmationMessage(confirmationOptions, vscode.window))) {
+        if (shouldNotify && !(await showConfirmationMessage(confirmationOptions))) {
             telemetryResult = 'Cancelled'
             return
         }
