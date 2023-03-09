@@ -33,7 +33,7 @@ const sanitizeOptions = {
             {
                 name: 'class',
                 multiple: false,
-                values: ['amzn-mynah-search-result-highlight'],
+                values: ['amzn-mynah-search-result-highlight', 'amzn-mynah-search-result-ellipsis'],
             },
         ],
         // TODO Should be removed after the new api for docs provided
