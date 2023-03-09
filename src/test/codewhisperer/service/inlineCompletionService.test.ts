@@ -201,7 +201,7 @@ describe('inlineCompletionService', function () {
         })
 
         it('should call moveStartPositionToSkipSpaces when there is a new recommendation to show', async function () {
-            //TODO: fails macOS nodejs minium tests
+            //TODO: fails macOS nodejs minimum tests
             this.skip()
             sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
             const moveStartPosSpy = sinon.stub(RecommendationHandler.instance, 'moveStartPositionToSkipSpaces')
@@ -233,7 +233,7 @@ describe('inlineCompletionService', function () {
         })
 
         it('should trigger inlineSuggest command if isFirstRecommendation', async function () {
-            //TODO: fails macOS nodejs minium tests
+            //TODO: fails macOS nodejs minimum tests
             this.skip()
             const commandSpy = sinon.stub(vscode.commands, 'executeCommand')
             await InlineCompletionService.instance.showRecommendation(0, true)
@@ -241,7 +241,7 @@ describe('inlineCompletionService', function () {
         })
 
         it('should emit perceived latency telemetry', async function () {
-            //TODO: fails macOS nodejs minium tests
+            //TODO: fails macOS nodejs minimum tests
             this.skip()
             const workspaceFolder = getTestWorkspaceFolder()
             const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
@@ -267,7 +267,6 @@ describe('inlineCompletionService', function () {
     })
 })
 
-
 describe('CWInlineCompletionProvider', function () {
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
@@ -284,7 +283,6 @@ describe('CWInlineCompletionProvider', function () {
 
         it('should return undefined if position is before RecommendationHandler start pos', async function () {
             RecommendationHandler.instance.startPos = new vscode.Position(1, 1)
-            console.log("RecommendationHandler.instance.startPos",RecommendationHandler.instance.startPos)
             const position = new vscode.Position(0, 0)
             const document = createMockDocument()
             const fakeContext = {triggerKind: 0, selectedCompletionInfo: undefined}
@@ -301,7 +299,7 @@ describe('CWInlineCompletionProvider', function () {
         })
 
         it('should set suggestion state, set inline reference and record telemetry if there is a new recommendation to show', async function () {
-            //TODO: fails macOS nodejs minium tests
+            //TODO: fails macOS nodejs minimum tests
             this.skip()
             RecommendationHandler.instance.startPos = new vscode.Position(0, 0)
             const position = new vscode.Position(0, 0)
@@ -325,7 +323,6 @@ describe('CWInlineCompletionProvider', function () {
             assert.ok(refInlineProviderSpy.called)
             assert.ok(telemetrySpy1.called)
             assert.ok(telemetrySpy2.called)
-            //TODO: add more specific test for result
             assert.ok(result !== undefined)
         })
     })

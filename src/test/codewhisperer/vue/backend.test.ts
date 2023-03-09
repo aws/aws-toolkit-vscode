@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
 import { CodeWhispererWebview } from '../../../codewhisperer/vue/backend'
 import { assertTelemetryCurried } from '../../testUtil' 
@@ -27,18 +26,20 @@ describe('CodeWhispererWebview', function () {
 
     it('controlTrigger() emits telemetry and calls accept terms of service command', function () {
         view.controlTrigger()
-        assertTelemetryCurried('ui_click')
+        const assertTelemetry = assertTelemetryCurried('ui_click')
+        assertTelemetry({ elementId: 'cwToS_accept' })
         assert.ok(commandSpy.calledWith('aws.codeWhisperer.acceptTermsOfService'))
     })
 
     it('cancelCodeSuggestion() emits telemetry calls cancel terms of service command', function () {
         view.cancelCodeSuggestion()
-        assertTelemetryCurried('ui_click')
+        const assertTelemetry = assertTelemetryCurried('ui_click')
+        assertTelemetry({ elementId: 'cwToS_cancel' })
         assert.ok(commandSpy.calledWith('aws.codeWhisperer.cancelTermsOfService'))
     })
 
     it('isCloud() returns boolean', function (){
         const isCloud9Result = view.isCloud9()
-        assert.ok(typeof isCloud9Result == 'boolean')
+        assert.ok(typeof isCloud9Result === 'boolean')
     })
 })

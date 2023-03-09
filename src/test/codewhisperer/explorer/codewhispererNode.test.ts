@@ -60,9 +60,7 @@ describe('codewhispererNode', function () {
             const children = node.getChildren()
             const ssoSignInNode = children.find(c => c.resource.id == 'aws.codeWhisperer.sso')
             const learnMorenNode = children.find(c => c.resource.id == 'aws.codeWhisperer.learnMore')    
-            console.log('node', node)
-            console.log('children', children)
-            console.log('ssoSignInNode?.resource', ssoSignInNode?.resource)
+
             assert.strictEqual(children.length, 2)
             assert.ok(ssoSignInNode)
             assert.ok(learnMorenNode)

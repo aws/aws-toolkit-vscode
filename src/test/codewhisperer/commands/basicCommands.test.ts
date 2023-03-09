@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetryCurried, closeAllEditors } from '../../testUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { toggleCodeSuggestions, get, set, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
@@ -21,9 +21,7 @@ import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewh
 import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
-// import { Auth } from '../../../credentials/auth'
-// import { SecondaryAuth } from '../../../credentials/secondaryAuth'
-// import { startSecurityScanWithProgress } from '../../../codewhisperer/commands/startSecurityScan'
+import { ExtContext } from '../../../shared/extensions'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -98,64 +96,59 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('showSecurityScan', function () {
-        beforeEach(function () {
+        let mockExtensionContext: vscode.ExtensionContext
+        let mockSecurityPanelViewProvider: SecurityPanelViewProvider
+        let mockClient: DefaultCodeWhispererClient
+        let mockExtContext: ExtContext
+        
+        beforeEach(async function () {
             resetCodeWhispererGlobalVariables()
-
+            mockExtensionContext = await FakeExtensionContext.create()
+            mockSecurityPanelViewProvider = new SecurityPanelViewProvider(mockExtensionContext)
+            mockClient = stub(DefaultCodeWhispererClient)
+            mockExtContext = await FakeExtensionContext.getFakeExtContext()
         })
 
         afterEach(function () {
+            closeAllEditors()
             targetCommand?.dispose()
             sinon.restore()
         })
 
-        it('prompts user to reauthenticate if connection is expired', async function () {
-            const extensionContext = await FakeExtensionContext.create()
-            const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-            const mockClient = stub(DefaultCodeWhispererClient) 
-            const extContext = await FakeExtensionContext.getFakeExtContext()
-            targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
+        it('prompts user to reauthenticate if connection is expired', async function () {            
+            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+            
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
-            const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt').resolves()
+            const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
             await targetCommand.execute()
-            
             assert.ok(spy.called)
         })
 
         it('starts security scan if user is connected and has an active editor', async function () {
-            const extensionContext = await FakeExtensionContext.create()
-            const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-            const mockClient = stub(DefaultCodeWhispererClient) 
-            const extContext = await FakeExtensionContext.getFakeExtContext()
             const workspaceFolder = getTestWorkspaceFolder()
             const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
             const appCodePath = join(appRoot, 'hello_world', 'app.py')
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
             const editor = await vscode.window.showTextDocument(doc) 
             
-            targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
+            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
             
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
-           
+            
+            assert.ok(vscode.window.activeTextEditor !== undefined)
             await targetCommand.execute()
-     
             assert.strictEqual(getTestWindow().shownMessages[0].message, "Running security scan...")
         })
 
-        it('shows information message if there is no active text editor', async function () {
-            const extensionContext = await FakeExtensionContext.create()
-            const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-            const mockClient = stub(DefaultCodeWhispererClient) 
-            const extContext = await FakeExtensionContext.getFakeExtContext()
-            
-            targetCommand = testCommand(showSecurityScan, extContext, mockSecurityPanelViewProvider, mockClient)
+        it('shows information message if there is no active text editor', async function () {            
+            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
             
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-            assert.ok(vscode.window.activeTextEditor === undefined)
-
-            await targetCommand.execute()
             
+            assert.ok(vscode.window.activeTextEditor === undefined)
+            await targetCommand.execute()
             assert.strictEqual(getTestWindow().shownMessages[0].message, "Open a valid file to scan.")
         })    
     })
