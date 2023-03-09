@@ -665,7 +665,7 @@ export class Auth implements AuthService, ConnectionManager {
                 code: 'InvalidConnection',
             })
         }
-
+        // TODO: cancellable notification?
         if (previousState === 'valid') {
             const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
             const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
@@ -967,7 +967,24 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
         // TODO: list linked connections
         const connections = await auth.listConnections()
-        connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
+
+        // Sort 'sso' connections first, then valid connections, then by label
+        const sortByState = (a: Connection, b: Connection) => {
+            const stateA = auth.getConnectionState(a)
+            const stateB = auth.getConnectionState(b)
+
+            return stateA === stateB
+                ? a.label.localeCompare(b.label)
+                : stateA === 'valid'
+                ? -1
+                : stateB === 'valid'
+                ? 1
+                : 0
+        }
+        connections.sort((a, b) =>
+            a.type === b.type ? sortByState(a, b) : a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : 0
+        )
+
         const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
         const items = [...filtered.map(toPickerItem), addNewConnection]
         const canShowEdit = connections.filter(isIamConnection).filter(c => c.label.startsWith('profile')).length > 0
