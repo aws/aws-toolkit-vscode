@@ -22,7 +22,7 @@ import { ToolkitError } from '../../shared/errors'
 import { FakeMemento } from '../fakeExtensionContext'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { assertTelemetry, captureEvent, captureEventOnce } from '../testUtil'
+import { captureEvent, captureEventOnce } from '../testUtil'
 import { stub } from '../utilities/stubber'
 
 function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
@@ -306,13 +306,6 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
             assert.strictEqual(getTestWindow().shownQuickPicks.length, 1, 'Two pickers should not be shown')
-
-            assertTelemetry('vscode_executeCommand', {
-                result: 'Succeeded',
-                command: '_aws.auth.reauthenticate',
-                debounceCount: 0,
-                source: 'QuickPick',
-            })
         })
     })
 })

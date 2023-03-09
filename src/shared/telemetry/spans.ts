@@ -16,7 +16,6 @@ import {
     TelemetryBase,
 } from './telemetry.gen'
 import { getTelemetryReason, getTelemetryResult } from '../errors'
-import { Mutable } from '../utilities/tsUtils'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -163,7 +162,6 @@ export class TelemetrySpan {
 interface TelemetryContext {
     readonly spans: TelemetrySpan[]
     readonly activeSpan?: TelemetrySpan
-    readonly attributes?: Partial<MetricShapes[MetricName]>
 }
 
 // This class is called 'Telemetry' but really it can be used for any kind of tracing
@@ -189,13 +187,6 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
-     * All attributes set in the current execution context.
-     */
-    public get attributes(): NonNullable<TelemetryContext['attributes']> {
-        return this.#context.getStore()?.attributes ?? {}
-    }
-
-    /**
      * Records information on all _current_ spans in the current execution context.
      *
      * This is merged in with the current state present in each span, **overwriting**
@@ -204,31 +195,6 @@ export class TelemetryTracer extends TelemetryBase {
     public record(data: Partial<MetricShapes[MetricName]>): void {
         for (const span of this.spans) {
             span.record(data)
-        }
-    }
-
-    /**
-     * Records information on all _future_ spans for the remainder of the execution context.
-     *
-     * This is merged with any existing attributes. Exiting a context will restore
-     * `attributes` to its previous value.
-     */
-    public updateAttributes(data: TelemetryContext['attributes']): void {
-        const ctx = this.#context.getStore()
-        if (ctx === undefined) {
-            this.#context.enterWith({ spans: [], attributes: data })
-        } else {
-            ;(ctx as Mutable<typeof ctx>).attributes = { ...ctx.attributes, ...data }
-        }
-    }
-
-    /**
-     * Clears attributes within the current context.
-     */
-    public clearAttributes(): void {
-        const ctx = this.#context.getStore()
-        if (ctx !== undefined) {
-            ;(ctx as Mutable<typeof ctx>).attributes = {}
         }
     }
 
@@ -243,7 +209,7 @@ export class TelemetryTracer extends TelemetryBase {
      * spans within the execution are not preserved.
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
-        const span = this.getClonedSpan(name).record(this.attributes).start()
+        const span = this.getClonedSpan(name).start()
         const frame = this.switchContext(span)
 
         try {
@@ -281,7 +247,7 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     protected getMetric(name: string): Metric {
-        const getSpan = () => {
+        const enterWithSpan = () => {
             const span = this.getSpan(name)
             if (!this.spans.includes(span)) {
                 this.#context.enterWith({ ...this.#context.getStore(), spans: [span, ...this.spans] })
@@ -293,13 +259,13 @@ export class TelemetryTracer extends TelemetryBase {
         return {
             name,
             emit: data => this.getSpan(name).emit(data),
-            record: data => void getSpan().record(data),
+            record: data => void enterWithSpan().record(data),
             run: fn => this.run(name as MetricName, fn),
         }
     }
 
     private getSpan(name: string): TelemetrySpan {
-        return this.spans.find(s => s.name === name) ?? new TelemetrySpan(name).record(this.attributes)
+        return this.spans.find(s => s.name === name) ?? new TelemetrySpan(name)
     }
 
     private getClonedSpan(name: string): TelemetrySpan {

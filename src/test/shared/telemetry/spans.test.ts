@@ -70,7 +70,6 @@ describe('TelemetrySpan', function () {
 describe('TelemetryTracer', function () {
     let tracer: TelemetryTracer
     const metricName = 'test_metric' as MetricName
-    const metricName2 = 'test_metric2' as MetricName
 
     beforeEach(function () {
         tracer = new TelemetryTracer()
@@ -230,58 +229,6 @@ describe('TelemetryTracer', function () {
 
                 assert.strictEqual(tracer.spans.length, 0)
             })
-        })
-    })
-
-    describe('attributes', function () {
-        it('can record attributes', function () {
-            tracer.updateAttributes({ source: 'bar' })
-            assert.deepStrictEqual(tracer.attributes, { source: 'bar' })
-        })
-
-        it('merges with existing attributes', function () {
-            tracer.updateAttributes({ source: 'bar' })
-            tracer.updateAttributes({ component: 'editor' })
-            assert.deepStrictEqual(tracer.attributes, { source: 'bar', component: 'editor' })
-        })
-
-        it('applies attributes to new spans', function () {
-            tracer.updateAttributes({ source: 'bar' })
-            tracer.run(metricName, () => {})
-            assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-        })
-
-        it('adds attributes to a span on creation, not when it is emitted', function () {
-            tracer.updateAttributes({ source: 'bar' })
-            tracer.run(metricName, () => tracer.updateAttributes({}))
-            assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-        })
-
-        it('works with `emit` on an individual event', function () {
-            const commandData = { command: 'foo', debounceCount: 1 }
-            tracer.updateAttributes({ source: 'bar' })
-            tracer.vscode_executeCommand.emit(commandData)
-            assertTelemetry('vscode_executeCommand', { source: 'bar', ...commandData })
-        })
-
-        it('only persists mutations for the current execution', function () {
-            tracer.run(metricName, () => {
-                tracer.updateAttributes({ source: metricName })
-                assert.deepStrictEqual(tracer.attributes, { source: metricName })
-            })
-
-            assert.deepStrictEqual(tracer.attributes, {})
-        })
-
-        it('overrides attributes for the current execution, restoring the original values after', function () {
-            tracer.updateAttributes({ source: 'bar' })
-            tracer.run(metricName, () => {
-                tracer.updateAttributes({ source: metricName })
-                tracer.run(metricName2, () => {})
-            })
-
-            assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-            assertTelemetry(metricName2, { result: 'Succeeded', source: metricName })
         })
     })
 })

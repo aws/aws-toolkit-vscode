@@ -992,7 +992,6 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
                 onClick:
                     state !== 'authenticating'
                         ? async () => {
-                              telemetry.updateAttributes({ source: 'QuickPick' })
                               await reauthCommand.execute(auth, conn)
                               await prompter.clearAndLoadItems(loadItems())
                           }
