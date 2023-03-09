@@ -197,6 +197,8 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                 return@startUnderModalProgressAsync JLabel()
                             }
 
+                            val start = System.currentTimeMillis()
+                            var attemptCount = 0
                             val fsTestTime = measureTimeMillis {
                                 val attempts = 15
                                 run repeatBlock@{
@@ -208,6 +210,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                         )
 
                                         LOG.debug { "$testFs" }
+                                        attemptCount = it + 1
                                         when (testFs.resultFromStdOut()) {
                                             StdOutResult.SUCCESS -> {
                                                 LOG.info { "Filesystem writablity test succeeded for $pluginPath on attempt $it" }
@@ -226,11 +229,27 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                         }
 
                                         if (it == attempts - 1) {
+                                            CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                                project = null,
+                                                userId = userId,
+                                                result = TelemetryResult.Failed,
+                                                duration = (System.currentTimeMillis() - start).toDouble(),
+                                                codecatalystDevEnvironmentWorkflowStep = "fileSystemCheck",
+                                                value = attemptCount.toDouble()
+                                            )
                                             error("Dev Environment did not have a writable filesystem after $attempts attempts")
                                         }
                                     }
                                 }
                             }
+                            CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                project = null,
+                                userId = userId,
+                                result = TelemetryResult.Succeeded,
+                                duration = fsTestTime.toDouble(),
+                                codecatalystDevEnvironmentWorkflowStep = "fileSystemCheck",
+                                value = attemptCount.toDouble()
+                            )
                             LOG.info { "FS test took ${fsTestTime}ms" }
 
                             runBackendWorkflow(
