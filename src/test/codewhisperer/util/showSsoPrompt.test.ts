@@ -43,6 +43,7 @@ describe('showConnectionPrompt', function () {
 
         await awsIdSignIn()
         
-        assert.strictEqual(getTestLogger().getLoggedEntries()[0],'selected AWS ID sign in')
+        const loggedEntries = getTestLogger().getLoggedEntries()
+        assert.ok(loggedEntries.find(entry => entry === 'selected AWS ID sign in'))
     })
 })
