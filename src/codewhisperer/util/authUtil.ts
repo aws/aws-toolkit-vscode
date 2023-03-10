@@ -28,7 +28,7 @@ import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
 // No connections are valid within C9
-const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
+export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
     !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
 
 export class AuthUtil {

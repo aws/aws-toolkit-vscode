@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
+import { FakeExtensionContext } from '../../test/fakeExtensionContext'
 import {
     getCITestSchemas,
     JSONObject,
@@ -12,6 +14,7 @@ import {
     assertRef,
     assertDefinition,
 } from '../../test/shared/schema/testUtils'
+import { assertTelemetry } from '../../test/testUtil'
 
 describe('Sam Schema Regression', function () {
     let samSchema: JSONObject
@@ -59,5 +62,50 @@ describe('Sam Schema Regression', function () {
 
     it('has Property AddDefaultAuthorizerToCorsPreflight in AWS::Serverless::Api.Auth', function () {
         assertDefinitionProperty(samSchema, 'AWS::Serverless::Api.Auth', 'AddDefaultAuthorizerToCorsPreflight')
+    })
+})
+
+describe('getDefaultSchemas()', () => {
+    let extensionContext: FakeExtensionContext
+
+    beforeEach(async () => {
+        extensionContext = await FakeExtensionContext.create()
+    })
+
+    it('uses cache on subsequent request for CFN/SAM schema', async () => {
+        await getDefaultSchemas(extensionContext)
+
+        // IMPORTANT: Since CFN and SAM use the same schema, the order their schema is retrieved is irrelevant
+
+        // Schema is downloaded on initial retrieval
+        assertTelemetry(
+            'toolkit_getExternalResource',
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Succeeded' },
+            0
+        )
+        // Schema is retrieved from cache on subsequent retrieval
+        assertTelemetry(
+            'toolkit_getExternalResource',
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
+            1
+        )
+    })
+
+    it('uses cache for all requests on second function call', async () => {
+        await getDefaultSchemas(extensionContext)
+        // Call a second time
+        await getDefaultSchemas(extensionContext)
+
+        // Only cache is used
+        assertTelemetry(
+            'toolkit_getExternalResource',
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
+            2
+        )
+        assertTelemetry(
+            'toolkit_getExternalResource',
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
+            3
+        )
     })
 })

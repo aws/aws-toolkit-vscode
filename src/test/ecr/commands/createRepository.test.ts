@@ -5,11 +5,11 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { createRepository } from '../../../ecr/commands/createRepository'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')
@@ -32,24 +32,25 @@ describe('createRepositoryCommand', function () {
             assert.strictEqual(name, repoName)
         })
 
-        const window = new FakeWindow({ inputBox: { input: repoName } })
+        getTestWindow().onDidShowInputBox(input => {
+            assert.strictEqual(input.prompt, 'Enter a new repository name')
+            assert.strictEqual(input.placeholder, 'Repository Name')
+            input.acceptValue(repoName)
+        })
         const commands = new FakeCommands()
-        await createRepository(node, window, commands)
+        await createRepository(node, commands)
 
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new repository name')
-        assert.strictEqual(window.inputBox.options?.placeHolder, 'Repository Name')
-
-        assert.strictEqual(window.message.information, `Created repository: ${repoName}`)
         assert.ok(stub.calledOnce)
-
+        getTestWindow().getFirstMessage().assertInfo(`Created repository: ${repoName}`)
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
     })
 
     it('does nothing when prompt is cancelled', async function () {
+        getTestWindow().onDidShowInputBox(input => input.hide())
         const spy = sandbox.spy(ecr, 'createRepository')
 
-        await createRepository(node, new FakeWindow(), new FakeCommands())
+        await createRepository(node, new FakeCommands())
 
         assert.ok(spy.notCalled)
     })
@@ -59,21 +60,25 @@ describe('createRepositoryCommand', function () {
             throw Error('Network busted')
         })
 
-        const window = new FakeWindow({ inputBox: { input: 'input' } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue('input'))
         const commands = new FakeCommands()
-        await createRepository(node, window, commands)
+        await createRepository(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to create repository'))
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create repository/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
     })
 
     it('Warns when repository name is invalid', async function () {
-        const window = new FakeWindow({ inputBox: { input: '404' } })
+        getTestWindow().onDidShowInputBox(input => {
+            input.acceptValue('404')
+            assert.strictEqual(input.validationMessage, 'Repository name must start with a lowercase letter')
+            input.hide()
+        })
 
-        await createRepository(node, window, new FakeCommands())
-
-        assert.strictEqual(window.inputBox.errorMessage, 'Repository name must start with a lowercase letter')
+        await createRepository(node, new FakeCommands())
     })
 })

@@ -18,7 +18,7 @@ import { PromptSettings } from '../../../shared/settings'
 import { stub } from '../../utilities/stubber'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
 import { ToolkitError } from '../../../shared/errors'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -191,7 +191,7 @@ describe('FileViewerManager', function () {
         s3 = createS3()
         fs = new VirualFileSystem()
 
-        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, getTestWindow(), new PromptSettings(), {
+        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, new PromptSettings(), {
             read: readScheme,
             edit: editScheme,
         })

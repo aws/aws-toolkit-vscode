@@ -15,6 +15,7 @@ import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 import { isCloud9 } from '../extensionUtilities'
+import { Headers } from 'got/dist/source/core'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -34,6 +35,8 @@ type FetcherResult = Promise<void> & {
     /** Stream writing to the file system. */
     fsStream: fs.WriteStream
 }
+
+type RequestHeaders = { eTag?: string; gZip?: boolean }
 
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
@@ -79,6 +82,40 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return this.downloadRequest()
     }
 
+    /**
+     * Requests for new content but additionally uses the given E-Tag.
+     * If no E-Tag is given it behaves as a normal request.
+     *
+     * @param eTag
+     * @returns object with optional content. If content is undefined it implies the provided
+     *          E-Tag matched the server's, so no content was in response. E-Tag is the E-Tag
+     *          of the latest content
+     */
+    public async getNewETagContent(eTag?: string): Promise<{ content?: string; eTag: string }> {
+        const response = await this.getResponseFromGetRequest(this.params.timeout, { eTag, gZip: true })
+
+        const eTagResponse = response.headers.etag
+        if (!eTagResponse) {
+            throw new Error(`This URL does not support E-Tags. Cannot use this function for: ${this.url.toString()}`)
+        }
+
+        // NOTE: Even with use of `gzip` encoding header, the response content is uncompressed.
+        // Most likely due to the http request library uncompressing it for us.
+        let contents: string | undefined = response.body.toString()
+        if (response.statusCode === 304) {
+            // Explanation: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+            contents = undefined
+            this.logger.verbose(`E-Tag, ${eTagResponse}, matched. No content downloaded from: ${this.url}`)
+        } else {
+            this.logger.verbose(`No E-Tag match. Downloaded content from: ${this.logText()}`)
+            if (this.params.onSuccess) {
+                this.params.onSuccess(contents)
+            }
+        }
+
+        return { content: contents, eTag: eTagResponse }
+    }
+
     private async downloadRequest(): Promise<string | undefined> {
         try {
             // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
@@ -111,7 +148,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     // TODO: make pipeLocation a vscode.Uri
     private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
         const requester = isCloud9() ? patchedGot : got
-        const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
+        const requestStream = requester.stream(this.url, { headers: this.buildRequestHeaders() })
         const fsStream = fs.createWriteStream(pipeLocation)
 
         const done = new Promise<void>((resolve, reject) => {
@@ -133,10 +170,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return Object.assign(done, { requestStream, fsStream })
     }
 
-    private async getResponseFromGetRequest(timeout?: Timeout): Promise<Response<string>> {
+    private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response<string>> {
         const requester = isCloud9() ? patchedGot : got
         const promise = requester(this.url, {
-            headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
+            headers: this.buildRequestHeaders(headers),
         })
 
         const cancelListener = timeout?.token.onCancellationRequested(event => {
@@ -147,6 +184,22 @@ export class HttpResourceFetcher implements ResourceFetcher {
         promise.finally(() => cancelListener?.dispose())
 
         return promise
+    }
+
+    private buildRequestHeaders(requestHeaders?: RequestHeaders): Headers {
+        const headers: Headers = {}
+
+        headers['User-Agent'] = VSCODE_EXTENSION_ID.awstoolkit
+
+        if (requestHeaders?.eTag !== undefined) {
+            headers['If-None-Match'] = requestHeaders.eTag
+        }
+
+        if (requestHeaders?.gZip) {
+            headers['Accept-Encoding'] = 'gzip'
+        }
+
+        return headers
     }
 }
 

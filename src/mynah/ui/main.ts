@@ -12,7 +12,6 @@ import {
     PayloadTransformRule,
     SearchPayload,
     transformPayloadData,
-    validateRulesOnPayloadData,
 } from '@aws/mynah-ui'
 import './styles/variables.scss'
 import './styles/dark.scss'
@@ -49,6 +48,24 @@ export const NavigationTabs = {
     },
 }
 
+const getTabs = (selectedTab?: string, disabledTabs?: string[]): ToggleOption[] => {
+    const selected = selectedTab ?? NavigationTabs.top.value
+    const disabled = disabledTabs ?? [NavigationTabs.apiDocs.value]
+    const defaults = [
+        NavigationTabs.top,
+        NavigationTabs.docs,
+        NavigationTabs.apiDocs,
+        NavigationTabs.blog,
+        NavigationTabs.code,
+        NavigationTabs.qA,
+    ]
+    return defaults.map(tabItem => ({
+        ...tabItem,
+        selected: selected === tabItem.value,
+        disabled: disabled.includes(tabItem.value),
+    }))
+}
+
 const contextItemsUsedAsTabs = ['code', 'q&a', 'docs']
 const baseRules: Record<string, PayloadTransformRule> = {
     removeAllFromMust: { targetRoute: ['matchPolicy', 'must'], method: 'remove', values: contextItemsUsedAsTabs },
@@ -58,15 +75,6 @@ const baseRules: Record<string, PayloadTransformRule> = {
 
 // @ts-ignore
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
-    const defaultNavigationTabs = [
-        NavigationTabs.top,
-        NavigationTabs.docs,
-        NavigationTabs.apiDocs,
-        NavigationTabs.blog,
-        NavigationTabs.code,
-        NavigationTabs.qA,
-    ]
-
     // Rules based on tab option value
     const navigationTabRules: Record<string, PayloadTransformRule[]> = {
         top: [baseRules.removeAllFromMustNot, baseRules.removeAllFromMust],
@@ -114,42 +122,31 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         storeData: {
             ...initialData,
             invisibleContextItems: contextItemsUsedAsTabs,
-            selectedNavigationTab: NavigationTabs.top.value,
-            navigationTabs: [
-                NavigationTabs.top,
-                NavigationTabs.docs,
-                {
-                    ...NavigationTabs.apiDocs,
-                    disabled: (initialData?.codeQuery?.usedFullyQualifiedNames ?? []).length === 0,
-                },
-                NavigationTabs.blog,
-                NavigationTabs.code,
-                NavigationTabs.qA,
-            ],
+            navigationTabs: getTabs(
+                NavigationTabs.top.value,
+                (initialData?.codeQuery?.usedFullyQualifiedNames ?? []).length > 0 ? [] : [NavigationTabs.apiDocs.value]
+            ),
         },
         onReady: connector.uiReady,
-        onSearch: (payload: SearchPayload, isFromHistory, isFromAutocomplete) => {
+        onSearch: (payload: SearchPayload, isFromHistory, isFromAutocomplete): void | MynahUIDataModel => {
             connector.requestSuggestions(payload, isFromHistory, isFromAutocomplete)
 
             if (isFromHistory) {
-                // If the search is a historical one, try to find a matching tab with the validation of the rules
-                const potentiallySelectedTab = defaultNavigationTabs.reduce(
-                    (res: string | undefined, navTab: ToggleOption) => {
-                        if (validateRulesOnPayloadData(navigationTabRules[navTab.value], payload)) {
-                            return navTab.value
-                        }
-                        return res
-                    },
-                    undefined
-                )
-
-                mynahUI.updateStore({
+                const selectedTab = payload.selectedTab ?? NavigationTabs.top.value
+                const disabledTabs =
+                    selectedTab === NavigationTabs.apiDocs.value ||
+                    (payload.codeQuery?.usedFullyQualifiedNames ?? []).length > 0
+                        ? []
+                        : [NavigationTabs.apiDocs.value]
+                return {
                     liveSearchState: LiveSearchState.STOP,
-                    // If there is an item we can count it as the selected tab, if not switch to default
-                    selectedNavigationTab: potentiallySelectedTab ?? NavigationTabs.top.value,
-                })
+                    navigationTabs: getTabs(selectedTab, disabledTabs),
+                    loading: false,
+                }
             } else {
-                mynahUI.updateStore({ loading: true })
+                return {
+                    loading: true,
+                }
             }
         },
         onNavigationTabChange: (selectedTab: string) => {
@@ -195,7 +192,6 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
     mynahUI.setStoreDefaults({
         invisibleContextItems: contextItemsUsedAsTabs,
-        selectedNavigationTab: NavigationTabs.top.value,
-        navigationTabs: defaultNavigationTabs,
+        navigationTabs: getTabs(),
     })
 }

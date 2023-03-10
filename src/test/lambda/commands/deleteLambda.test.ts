@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
-import { getTestWindow } from '../../globalSetup.test'
+import { getTestWindow } from '../../shared/vscode/window'
 import { stub } from '../../utilities/stubber'
 
 describe('deleteLambda', async function () {

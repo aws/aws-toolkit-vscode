@@ -15,6 +15,12 @@ coverage:
             default:
                 threshold: 1
                 informational: true
+            codewhisperer:
+                target: 75%
+                paths:
+                    - src/codewhisperer/*
+                flags:
+                    - 'codewhisperer'
         patch: no
         changes: no
 
@@ -22,3 +28,8 @@ comment: off
 
 github_checks:
     annotations: false
+
+flags:
+    codewhisperer:
+        paths:
+            - src/codewhisperer/

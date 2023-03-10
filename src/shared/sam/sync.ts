@@ -7,6 +7,7 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
@@ -39,6 +40,12 @@ import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
+import { samSyncUrl, samInitDocUrl } from '../constants'
+import { getAwsConsoleUrl } from '../awsConsole'
+import { openUrl } from '../utilities/vsCodeUtils'
+
+const localize = nls.loadMessageBundle()
 
 export interface SyncParams {
     readonly region: string
@@ -66,12 +73,21 @@ function createBucketPrompter(client: DefaultS3Client) {
 
     return createQuickPick(items, {
         title: 'Select an S3 Bucket',
-        placeholder: 'Filter or enter a new bucket name',
-        buttons: createCommonButtons(),
+        placeholder: 'Select a bucket (or enter a name to create one)',
+        buttons: createCommonButtons(samSyncUrl),
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
             transform: v => prefixNewBucketName(v),
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No S3 buckets for region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -82,6 +98,7 @@ const canShowStack = (s: StackSummary) =>
 
 function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
+    const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map(stacks =>
         stacks.filter(canShowStack).map(s => ({
             label: s.StackName,
@@ -94,17 +111,27 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
 
     return createQuickPick(items, {
         title: 'Select a CloudFormation Stack',
-        placeholder: 'Filter or enter a new stack name',
+        placeholder: 'Select a stack (or enter a name to create one)',
         filterBoxInputSettings: {
             label: 'Create a New Stack',
             transform: v => v,
         },
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No stacks in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
+        },
     })
 }
 
 function createEcrPrompter(client: DefaultEcrClient) {
     const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
+    const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
     const items = client.listAllRepositories().map(list =>
         list.map(repo => ({
             label: repo.repositoryName,
@@ -116,11 +143,20 @@ function createEcrPrompter(client: DefaultEcrClient) {
 
     return createQuickPick(items, {
         title: 'Select an ECR Repository',
-        placeholder: 'Filter or enter an existing repository URI',
-        buttons: createCommonButtons(),
+        placeholder: 'Select a repository (or enter repository URI)',
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
         filterBoxInputSettings: {
             label: 'Existing repository URI',
             transform: v => v,
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.ecr.noRepos',
+                'No ECR repositories in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -136,7 +172,8 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
 
     return createQuickPick(items, {
         title: 'Select an Environment to Use',
-        buttons: createCommonButtons(),
+        placeholder: 'Select an environment',
+        buttons: createCommonButtons(samSyncUrl),
     })
 }
 
@@ -164,8 +201,14 @@ function createTemplatePrompter() {
 
     const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
-        title: 'Select a CloudFormation Template',
-        buttons: createCommonButtons(),
+        title: 'Select a SAM CloudFormation Template',
+        placeholder: 'Select a SAM template.yaml file',
+        buttons: createCommonButtons(samSyncUrl),
+        noItemsFoundItem: {
+            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
+            data: undefined,
+            onClick: () => openUrl(samInitDocUrl),
+        },
     })
 }
 
@@ -348,10 +391,10 @@ export async function runSamSync(args: SyncParams) {
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
-        spawnOptions: {
+        spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
             env: await injectCredentials(args.connection),
-        },
+        }),
     })
 
     await runSyncInTerminal(sam)

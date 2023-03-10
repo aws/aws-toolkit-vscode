@@ -82,6 +82,7 @@ export class ResultDisplay {
     private readonly liveSearchDisplay: LiveSearchDisplay
     private liveSearchStatusBarControl!: StatusBar | undefined
     private uiReady: Record<string, boolean> = {}
+    private selectedTab: Record<string, string> = {}
 
     constructor(private readonly context: ExtensionContext, props: ResultDisplayProps) {
         registerHttpsFileSystem(context)
@@ -329,8 +330,10 @@ export class ResultDisplay {
             switch (msg.command) {
                 case 'uiReady':
                     this.uiReady[panelId] = true
+                    this.selectedTab[panelId] = NavigationTabItems.top
                     break
                 case 'search': {
+                    this.selectedTab[panelId] = msg.selectedTab ?? NavigationTabItems.top
                     panel.webviewPanel.title = this.getPanelTitle(msg.text, fileName, selectionRangeStart)
                     //Update the search Id as we are performing a new search
                     panel.searchId = uuid()
@@ -684,7 +687,8 @@ export class ResultDisplay {
         codeSelection?: CodeSelection,
         code?: string,
         errorMessage?: string,
-        headerInfo?: HeaderInfo
+        headerInfo?: HeaderInfo,
+        selectedTab?: string
     ): void {
         const panel = this.panelStore.getPanel(panelId)
 
@@ -724,7 +728,8 @@ export class ResultDisplay {
                     codeSelection,
                     code,
                     errorMessage,
-                    headerInfo
+                    headerInfo,
+                    selectedTab
                 )
             }, 50)
             return
@@ -744,6 +749,7 @@ export class ResultDisplay {
                 codeQuery,
                 codeSelection,
                 headerInfo,
+                selectedTab,
             },
             suggestions,
             recordDate: new Date().getTime(),
@@ -807,7 +813,8 @@ export class ResultDisplay {
                     query.codeSelection,
                     query.code,
                     undefined,
-                    query.headerInfo
+                    query.headerInfo,
+                    this.selectedTab[panelId]
                 )
             })
             .catch((error: Error) => {
@@ -822,7 +829,8 @@ export class ResultDisplay {
                         query.codeSelection,
                         query.code,
                         'An error occurred while getting suggestions.',
-                        query.headerInfo
+                        query.headerInfo,
+                        this.selectedTab[panelId]
                     )
                 }
             })

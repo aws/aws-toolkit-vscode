@@ -31,6 +31,7 @@ import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
+import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { MynahTreeNode } from '../mynah/triggers/tree-node'
 
 /**
@@ -47,6 +48,14 @@ export async function activate(args: {
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
+    })
+    view.onDidExpandElement(element => {
+        if (element.element instanceof S3FolderNode) {
+            globals.context.globalState.update('aws.lastTouchedS3Folder', {
+                bucket: element.element.bucket,
+                folder: element.element.folder,
+            })
+        }
     })
     globals.context.subscriptions.push(view)
 

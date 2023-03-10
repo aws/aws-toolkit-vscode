@@ -5,12 +5,11 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import globals from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
-import { Window } from '../vscode/window'
-import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { CancellationError, Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { telemetry } from '../telemetry/telemetry'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -64,8 +63,7 @@ export function isExtensionInstalled(extId: string): boolean {
 export function showInstallExtensionMsg(
     extId: string,
     extName: string,
-    feat = `${getIdeProperties().company} Toolkit`,
-    window: Window = globals.window
+    feat = `${getIdeProperties().company} Toolkit`
 ): boolean {
     if (vscode.extensions.getExtension(extId)) {
         return true
@@ -82,7 +80,7 @@ export function showInstallExtensionMsg(
     const installBtn = localize('AWS.missingExtension.install', 'Install...')
     const items = [installBtn]
 
-    const p = window.showErrorMessage(msg, ...items)
+    const p = vscode.window.showErrorMessage(msg, ...items)
     p.then<string | undefined>(selection => {
         if (selection === installBtn) {
             vscode.commands.executeCommand('extension.open', extId)
@@ -163,5 +161,21 @@ export function reloadWindowPrompt(message: string): void {
         if (selected === reload) {
             vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
+    })
+}
+
+/**
+ * Opens a URL in the system web browser. Throws `CancellationError`
+ * if user dismisses the vscode confirmation prompt.
+ */
+export async function openUrl(url: vscode.Uri): Promise<boolean> {
+    return telemetry.aws_openUrl.run(async span => {
+        span.record({ url: url.toString() })
+        const didOpen = await vscode.env.openExternal(url)
+        if (!didOpen) {
+            throw new CancellationError('user')
+            // getLogger().verbose('failed to open URL: %s', e)
+        }
+        return didOpen
     })
 }

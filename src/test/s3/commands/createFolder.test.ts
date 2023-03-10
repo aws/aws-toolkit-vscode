@@ -9,7 +9,7 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 
 describe('createFolderCommand', function () {
@@ -39,29 +39,33 @@ describe('createFolderCommand', function () {
             folder: { name: folderName, path: folderPath, arn: 'arn' },
         })
 
-        const window = new FakeWindow({ inputBox: { input: folderName } })
+        getTestWindow().onDidShowInputBox(input => {
+            assert.strictEqual(input.prompt, 'Enter a folder to create in s3://bucket-name')
+            assert.strictEqual(input.placeholder, 'Folder Name')
+            input.acceptValue(folderName)
+        })
         const commands = new FakeCommands()
-        await createFolderCommand(node, window, commands)
+        await createFolderCommand(node, commands)
 
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a folder to create in s3://bucket-name')
-        assert.strictEqual(window.inputBox.options?.placeHolder, 'Folder Name')
-
-        assert.strictEqual(window.message.information, 'Created folder: foo')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created folder: foo/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await assert.rejects(() => createFolderCommand(node, new FakeWindow(), new FakeCommands()), /cancelled/i)
+        getTestWindow().onDidShowInputBox(input => input.hide())
+        await assert.rejects(() => createFolderCommand(node, new FakeCommands()), /cancelled/i)
     })
 
     it('shows an error message and refreshes node when folder creation fails', async function () {
         when(s3.createFolder(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ inputBox: { input: folderName } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue(folderName))
         const commands = new FakeCommands()
-        await assert.rejects(() => createFolderCommand(node, window, commands), /failed to create folder/i)
+        await assert.rejects(() => createFolderCommand(node, commands), /failed to create folder/i)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
@@ -69,11 +73,13 @@ describe('createFolderCommand', function () {
 
     invalidFolderNames.forEach(invalid => {
         it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async () => {
-            const window = new FakeWindow({ inputBox: { input: invalid.folderName } })
+            getTestWindow().onDidShowInputBox(input => {
+                input.acceptValue(invalid.folderName)
+                assert.strictEqual(input.validationMessage, invalid.error)
+                input.hide()
+            })
             const commands = new FakeCommands()
-            await assert.rejects(() => createFolderCommand(node, window, commands))
-
-            assert.strictEqual(window.inputBox.errorMessage, invalid.error)
+            await assert.rejects(() => createFolderCommand(node, commands))
         })
     })
 })

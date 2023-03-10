@@ -220,7 +220,13 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const loadedCreds = await this.patchSourceCredentials()
 
         const provider = chain(this.makeCredentialsProvider(loadedCreds))
-        return resolveProviderWithCancel(this.profileName, provider())
+
+        // SSO profiles already show a notification, no need to show another
+        if (isSsoProfile(this.profile)) {
+            return provider()
+        } else {
+            return resolveProviderWithCancel(this.profileName, provider())
+        }
     }
 
     /**
