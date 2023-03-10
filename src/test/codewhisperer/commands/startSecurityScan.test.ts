@@ -141,8 +141,7 @@ describe('startSecurityScan', function () {
             extensionContext
         )
         const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        //changed from assert.strictEqual(warnings.length, 1) due to test failure in macOS nodejs (16.x, minimum) tests
-        assert.ok(warnings.length > 0)
+        assert.strictEqual(warnings.length, 1)
     })
 
     it('Should render security scan result', async function () {
@@ -164,8 +163,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        //TODO: below assertion fails when running full test suite succeeds when running test on individual file
-        // const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        // assert.strictEqual(warnings.length, 0)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
     })
 })

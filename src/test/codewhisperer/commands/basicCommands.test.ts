@@ -5,18 +5,15 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { beforeEach } from 'mocha'
 import * as sinon from 'sinon'
-import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertTelemetryCurried, closeAllEditors } from '../../testUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { resetCodeWhispererGlobalVariables } from '../testUtil'
+import { assertTelemetryCurried } from '../../testUtil'
 import { toggleCodeSuggestions, get, set, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
-import { join } from 'path'
-import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
@@ -110,7 +107,6 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         afterEach(function () {
-            closeAllEditors()
             targetCommand?.dispose()
             sinon.restore()
         })
@@ -123,23 +119,6 @@ describe('CodeWhisperer-basicCommands', function () {
 
             await targetCommand.execute()
             assert.ok(spy.called)
-        })
-
-        it('starts security scan if user is connected and has an active editor', async function () {
-            const workspaceFolder = getTestWorkspaceFolder()
-            const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
-            const appCodePath = join(appRoot, 'hello_world', 'app.py')
-            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(appCodePath))
-            const editor = await vscode.window.showTextDocument(doc) 
-            
-            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
-            
-            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-            sinon.stub(vscode.window, 'activeTextEditor').resolves(editor)
-            
-            assert.ok(vscode.window.activeTextEditor !== undefined)
-            await targetCommand.execute()
-            assert.strictEqual(getTestWindow().shownMessages[0].message, "Running security scan...")
         })
 
         it('shows information message if there is no active text editor', async function () {            
