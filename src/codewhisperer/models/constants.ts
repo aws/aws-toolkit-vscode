@@ -254,13 +254,11 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
+export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
 export const accessTokenMigrationLearnMore = `Learn More`
 
-export const accessTokenMigrationDoNotShowAgain = `Don\'t Show Again`
-
-export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
+export const DoNotShowAgain = `Don\'t Show Again`
 
 export const accessTokenExpiredDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN'
 
@@ -274,8 +272,10 @@ export const accessTokenExpiredDoNotShowLastShown =
 
 export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`
 
-export const codeScanLogsOutputChannelId = 'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#2-CodeWhisperer Security Scan Logs'
+export const codeScanLogsOutputChannelId =
+    'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#2-CodeWhisperer Security Scan Logs'
 
-export const stopScanMessage = 'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
+export const stopScanMessage =
+    'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
 
 export const showScannedFilesMessage = 'Show Scanned Files'

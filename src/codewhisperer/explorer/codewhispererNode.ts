@@ -14,6 +14,7 @@ import {
     createLearnMore,
     createSsoSignIn,
     createFreeTierLimitMetNode,
+    createReconnectNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
@@ -61,10 +62,12 @@ export class CodeWhispererNode implements RootNode {
         if (accessToken) {
             return 'Access Token'
         }
-        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
+        if (AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'
                 : 'AWS Builder ID Connected'
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            return 'Expired Connection'
         }
         return ''
     }
@@ -81,9 +84,12 @@ export class CodeWhispererNode implements RootNode {
                 return [createLearnMore(), createEnableCodeSuggestionsNode()]
             }
         } else {
-            const accessToken = this.getDescription()
-            if (accessToken || AuthUtil.instance.isConnected()) {
+            const isAccessToken = this.getDescription() === 'Access Token'
+            if (isAccessToken || AuthUtil.instance.isConnected()) {
                 if (termsAccepted) {
+                    if (AuthUtil.instance.isConnectionExpired()) {
+                        return [createReconnectNode(), createLearnMore()]
+                    }
                     if (this._showFreeTierLimitReachedNode) {
                         return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
                     } else {

@@ -365,6 +365,11 @@ export class InlineCompletionService {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
         }
+        const isAutoTrigger = triggerType === 'AutoTrigger'
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
+            return
+        }
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -443,12 +448,23 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
+        this.statusBar.show()
+    }
+
+    setCodeWhispererStatusBarDisconnected() {
+        this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        this.statusBar.command = 'aws.codeWhisperer.reconnect'
+        ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
 
@@ -489,9 +505,9 @@ export class InlineCompletionService {
 }
 
 export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (!AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.hideCodeWhispererStatusBar()
-    } else {
+    if (AuthUtil.instance.isConnectionValid()) {
         InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+    } else {
+        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
     }
 })

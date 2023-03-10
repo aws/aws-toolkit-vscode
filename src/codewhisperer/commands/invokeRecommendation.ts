@@ -91,9 +91,6 @@ export async function invokeRecommendation(
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.showReauthenticatePrompt()
-            }
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {

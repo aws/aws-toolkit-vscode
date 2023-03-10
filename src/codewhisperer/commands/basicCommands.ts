@@ -57,7 +57,7 @@ export const showSecurityScan = Commands.declare(
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
             if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.showReauthenticatePrompt()
+                await AuthUtil.instance.notifyReauthenticate()
             }
             const editor = vscode.window.activeTextEditor
             if (editor) {
@@ -76,6 +76,10 @@ export const showSecurityScan = Commands.declare(
             }
         }
 )
+
+export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
+    await AuthUtil.instance.reauthenticate()
+})
 
 export function get(key: string, context: vscode.Memento): any {
     return context.get(key)
