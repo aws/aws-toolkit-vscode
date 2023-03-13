@@ -23,7 +23,7 @@ import { ToggleOption } from '@aws/mynah-ui/dist/components/toggle'
 export const NavigationTabs = {
     top: {
         value: 'top',
-        label: 'All Sources',
+        label: 'Top Results',
     },
     docs: {
         value: 'docs',
