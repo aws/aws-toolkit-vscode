@@ -23,7 +23,7 @@ import { ToggleOption } from '@aws/mynah-ui/dist/components/toggle'
 export const NavigationTabs = {
     top: {
         value: 'top',
-        label: 'Top Picks',
+        label: 'All Sources',
     },
     docs: {
         value: 'docs',
@@ -33,10 +33,11 @@ export const NavigationTabs = {
         value: 'api-docs',
         label: 'API Docs',
         disabled: true,
+        disabledTooltip: 'To see API document suggestions, open Mynah after selecting a code block from editor.',
     },
     blog: {
         value: 'blog',
-        label: 'Blog Post',
+        label: 'Blog Posts',
     },
     code: {
         value: 'code',
