@@ -141,6 +141,7 @@ input[type='checkbox'] ~ label .collapse-button {
     color: var(--vscode-foreground);
     transition: transform 0.5s;
     transform: rotate(180deg);
+    text-align: right;
 }
 
 input[type='checkbox']:checked ~ label .collapse-button {
