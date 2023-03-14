@@ -334,6 +334,7 @@ export class InlineCompletionService {
             return
         }
         if (this.isSuggestionVisible()) {
+            // to force refresh the visual cue so that the total recommendation count can be updated
             const index = this.inlineCompletionProvider?.getActiveItemIndex
             await this.showRecommendation(index ? index : 0, true)
             return
