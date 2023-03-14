@@ -9,10 +9,11 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth, Connection } from './auth'
+import { Auth, Connection, StatefulConnection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
+import { isNonNullable } from '../shared/utilities/tsUtils'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
@@ -59,8 +60,8 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
 
 let oldConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
-const registerAuthListener = once(() => {
-    Auth.instance.onDidChangeActiveConnection(async conn => {
+const registerAuthListener = (auth: Auth) => {
+    auth.onDidChangeActiveConnection(async conn => {
         const potentialConn = oldConn
         if (conn !== undefined && potentialConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
@@ -77,19 +78,50 @@ const registerAuthListener = once(() => {
 
         oldConn = conn
     })
-})
+}
 
 export function getSecondaryAuth<T extends Connection>(
+    auth: Auth,
     toolId: string,
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
-    const auth = new SecondaryAuth(toolId, toolLabel, isValid)
-    auths.set(toolId, auth)
-    registerAuthListener()
+    if (auths.has(toolId)) {
+        return auths.get(toolId) as SecondaryAuth<T>
+    }
 
-    return auth
+    const secondary = new SecondaryAuth(toolId, toolLabel, isValid, auth)
+    auths.set(toolId, secondary)
+    registerAuthListener(auth)
+    secondary.onDidChangeActiveConnection(() => onDidChangeConnectionsEmitter.fire())
+
+    return secondary
 }
+
+/**
+ * Gets all {@link SecondaryAuth} instances that have saved the connection
+ */
+export function getDependentAuths(conn: Connection): SecondaryAuth[] {
+    return Array.from(auths.values()).filter(
+        auth => auth.isUsingSavedConnection && auth.activeConnection?.id === conn.id
+    )
+}
+
+export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
+    const connMap = new Map<Connection['id'], StatefulConnection>()
+    const toolConns = Array.from(auths.values())
+        .filter(a => a.isUsingSavedConnection)
+        .map(a => a.activeConnection)
+
+    for (const conn of [auth.activeConnection, ...toolConns].filter(isNonNullable)) {
+        connMap.set(conn.id, { ...conn, state: auth.getConnectionState(conn) ?? 'invalid' })
+    }
+
+    return Array.from(connMap.values())
+}
+
+const onDidChangeConnectionsEmitter = new vscode.EventEmitter<void>()
+export const onDidChangeConnections = onDidChangeConnectionsEmitter.event
 
 /**
  * Enables a tool to bind to a connection independently from the global {@link Auth} service.
@@ -111,7 +143,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         public readonly toolId: string,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
-        private readonly auth = Auth.instance,
+        private readonly auth: Auth,
         private readonly memento = globals.context.globalState
     ) {
         this.auth.onDidChangeActiveConnection(async conn => {
@@ -183,8 +215,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     private async loadSavedConnection() {
         const id = cast(this.memento.get(this.key), Optional(String))
-        const conn = id !== undefined ? await this.auth.getConnection({ id }) : undefined
+        if (id === undefined) {
+            return
+        }
 
+        const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
             await this.memento.update(this.key, undefined)

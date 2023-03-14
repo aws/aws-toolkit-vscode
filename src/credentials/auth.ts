@@ -14,7 +14,7 @@ import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
-import { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
+import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError, UnknownError } from '../shared/errors'
@@ -32,11 +32,12 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialsSettings } from './credentialsUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { createCommonButtons, createExitButton, createHelpButton } from '../shared/ui/buttons'
+import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
+import { getDependentAuths } from './secondaryAuth'
 import { partition } from '../shared/utilities/mementos'
 import { createRegionPrompter } from '../shared/ui/common/region'
 
@@ -301,12 +302,19 @@ function sortProfilesByScope(profiles: StoredProfile<Profile>[]): StoredProfile<
 
 // The true connection state can only be known after trying to use the connection
 // So it is not exposed on the `Connection` interface
-type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+export type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+
+interface ConnectionStateChangeEvent {
+    readonly id: Connection['id']
+    readonly state: ProfileMetadata['connectionState']
+}
 
 export class Auth implements AuthService, ConnectionManager {
     private readonly ssoCache = getCache()
-    private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<StatefulConnection | undefined>()
-    public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
+    readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
+    public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
+    public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
 
     public constructor(
         private readonly store: ProfileStore,
@@ -368,7 +376,7 @@ export class Auth implements AuthService, ConnectionManager {
                 : this.getIamConnection(id, await this.getCredentialsProvider(id))
 
         this.#activeConnection = conn
-        this.onDidChangeActiveConnectionEmitter.fire(conn)
+        this.#onDidChangeActiveConnection.fire(conn)
         await this.store.setCurrentProfileId(id)
 
         return conn
@@ -382,7 +390,7 @@ export class Auth implements AuthService, ConnectionManager {
         await this.store.setCurrentProfileId(undefined)
         await this.invalidateConnection(this.activeConnection.id)
         this.#activeConnection = undefined
-        this.onDidChangeActiveConnectionEmitter.fire(undefined)
+        this.#onDidChangeActiveConnection.fire(undefined)
     }
 
     public async listConnections(): Promise<Connection[]> {
@@ -490,8 +498,9 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = await this.store.updateProfile(id, { connectionState })
         if (this.#activeConnection?.id === id) {
             this.#activeConnection.state = connectionState
-            this.onDidChangeActiveConnectionEmitter.fire(this.#activeConnection)
+            this.#onDidChangeActiveConnection.fire(this.#activeConnection)
         }
+        this.#onDidChangeConnectionState.fire({ id, state: connectionState })
 
         return profile
     }
@@ -661,7 +670,7 @@ export class Auth implements AuthService, ConnectionManager {
                 code: 'InvalidConnection',
             })
         }
-
+        // TODO: cancellable notification?
         if (previousState === 'valid') {
             const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
             const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
@@ -748,56 +757,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 }
 
-const getConnectionIcon = (conn: Connection) =>
-    conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
-
-function toPickerItem(conn: Connection) {
-    const label = codicon`${getConnectionIcon(conn)} ${conn.label}`
-    const descPrefix = conn.type === 'iam' ? 'IAM Credential' : undefined
-    const descSuffix = conn.id.startsWith('profile:')
-        ? 'configured locally (~/.aws/config)'
-        : 'sourced from the environment'
-
-    return {
-        label,
-        data: conn,
-        description: descPrefix !== undefined ? `${descPrefix}, ${descSuffix}` : undefined,
-    }
-}
-
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
-    const addNewConnection = {
-        label: codicon`${getIcon('vscode-plus')} Add New Connection`,
-        data: 'addNewConnection' as const,
-    }
-
-    const editCredentials = {
-        label: codicon`${getIcon('vscode-pencil')} Edit Credentials`,
-        data: 'editCredentials' as const,
-    }
-
-    const items = (async function () {
-        // TODO: list linked connections
-        const connections = await auth.listConnections()
-        connections.sort((a, b) => (a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : a.label.localeCompare(b.label)))
-        const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
-        const items = [...filtered.map(toPickerItem), addNewConnection]
-        const canShowEdit = connections.filter(isIamConnection).filter(c => c.label.startsWith('profile')).length > 0
-
-        return canShowEdit ? [...items, editCredentials] : items
-    })()
-
-    const placeholder =
-        type === 'iam'
-            ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
-            : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
-
-    const resp = await showQuickPick<Connection | 'addNewConnection' | 'editCredentials'>(items, {
-        placeholder,
-        title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
-        buttons: createCommonButtons(),
-    })
-
+    const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
@@ -1019,9 +980,132 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
     }
 })
 
-const reauth = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
+const getConnectionIcon = (conn: Connection) =>
+    conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
+
+export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
+    const placeholder =
+        type === 'iam'
+            ? localize('aws.auth.promptConnection.iam.placeholder', 'Select an IAM credential')
+            : localize('aws.auth.promptConnection.all.placeholder', 'Select a connection')
+
+    const refreshButton = createRefreshButton()
+    refreshButton.onClick = () => void prompter.clearAndLoadItems(loadItems())
+
+    const prompter = createQuickPick(loadItems(), {
+        placeholder,
+        title: localize('aws.auth.promptConnection.title', 'Switch Connection'),
+        buttons: [refreshButton, createExitButton()],
+    })
+
+    return prompter
+
+    async function loadItems(): Promise<DataQuickPickItem<Connection | 'addNewConnection' | 'editCredentials'>[]> {
+        const addNewConnection = {
+            label: codicon`${getIcon('vscode-plus')} Add New Connection`,
+            data: 'addNewConnection' as const,
+        }
+        const editCredentials = {
+            label: codicon`${getIcon('vscode-pencil')} Edit Credentials`,
+            data: 'editCredentials' as const,
+        }
+
+        // TODO: list linked connections
+        const connections = await auth.listConnections()
+
+        // Sort 'sso' connections first, then valid connections, then by label
+        const sortByState = (a: Connection, b: Connection) => {
+            const stateA = auth.getConnectionState(a)
+            const stateB = auth.getConnectionState(b)
+
+            return stateA === stateB
+                ? a.label.localeCompare(b.label)
+                : stateA === 'valid'
+                ? -1
+                : stateB === 'valid'
+                ? 1
+                : 0
+        }
+        connections.sort((a, b) =>
+            a.type === b.type ? sortByState(a, b) : a.type === 'sso' ? -1 : b.type === 'sso' ? 1 : 0
+        )
+
+        const filtered = type !== undefined ? connections.filter(c => c.type === type) : connections
+        const items = [...filtered.map(toPickerItem), addNewConnection]
+        const canShowEdit = connections.filter(isIamConnection).filter(c => c.label.startsWith('profile')).length > 0
+
+        return canShowEdit ? [...items, editCredentials] : items
+    }
+
+    function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
+        const state = auth.getConnectionState(conn)
+        if (state !== 'valid') {
+            return {
+                data: conn,
+                invalidSelection: true,
+                label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+                description:
+                    state === 'authenticating'
+                        ? 'authenticating...'
+                        : localize(
+                              'aws.auth.promptConnection.expired.description',
+                              'Expired or Invalid, select to authenticate'
+                          ),
+                onClick:
+                    state !== 'authenticating'
+                        ? async () => {
+                              // XXX: this is hack because only 1 picker can be shown at a time
+                              // Some legacy auth providers will show a picker, hiding this one
+                              // If we detect this then we'll jump straight into using the connection
+                              let hidden = false
+                              const sub = prompter.quickPick.onDidHide(() => {
+                                  hidden = true
+                                  sub.dispose()
+                              })
+                              const newConn = await reauthCommand.execute(auth, conn)
+                              if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
+                                  await auth.useConnection(newConn)
+                              } else {
+                                  await prompter.clearAndLoadItems(loadItems())
+                                  prompter.selectItems(
+                                      ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
+                                  )
+                              }
+                          }
+                        : undefined,
+            }
+        }
+
+        return {
+            data: conn,
+            label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
+            description: getConnectionDescription(conn),
+        }
+    }
+
+    function getConnectionDescription(conn: Connection) {
+        if (conn.type === 'iam') {
+            const descSuffix = conn.id.startsWith('profile:')
+                ? 'configured locally (~/.aws/config)'
+                : 'sourced from the environment'
+
+            return `IAM Credential, ${descSuffix}`
+        }
+
+        const toolAuths = getDependentAuths(conn)
+        if (toolAuths.length === 0) {
+            return undefined
+        } else if (toolAuths.length === 1) {
+            return `Connected to ${toolAuths[0].toolLabel}`
+        } else {
+            return `Connected to Dev Tools`
+        }
+    }
+}
+
+export const reauthCommand = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
     try {
-        await auth.reauthenticate(conn)
+        return await auth.reauthenticate(conn)
     } catch (err) {
         throw ToolkitError.chain(err, 'Unable to authenticate connection')
     }
@@ -1094,7 +1178,7 @@ export class AuthNode implements TreeNode<Auth> {
                 this.setDescription(item, 'authenticating...')
             } else {
                 this.setDescription(item, 'expired or invalid, click to authenticate')
-                item.command = reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+                item.command = reauthCommand.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
             }
         } else {
             item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })

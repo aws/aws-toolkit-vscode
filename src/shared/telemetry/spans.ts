@@ -170,14 +170,14 @@ export class TelemetryTracer extends TelemetryBase {
     readonly #context = new AsyncLocalStorage<TelemetryContext>()
 
     /**
-     * Returns all spans present in the current execution context.
+     * All spans present in the current execution context.
      */
     public get spans(): readonly TelemetrySpan[] {
         return this.#context.getStore()?.spans ?? []
     }
 
     /**
-     * Returns the most recently used span in the current execution context.
+     * The most recently used span in the current execution context.
      *
      * Note that only {@link run} will change the active span. Recording information
      * on existing spans has no effect on the active span.
@@ -187,7 +187,7 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
-     * Records information on all spans in the current execution context.
+     * Records information on all _current_ spans in the current execution context.
      *
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key.
@@ -247,7 +247,7 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     protected getMetric(name: string): Metric {
-        const getSpan = () => {
+        const enterWithSpan = () => {
             const span = this.getSpan(name)
             if (!this.spans.includes(span)) {
                 this.#context.enterWith({ ...this.#context.getStore(), spans: [span, ...this.spans] })
@@ -259,7 +259,7 @@ export class TelemetryTracer extends TelemetryBase {
         return {
             name,
             emit: data => this.getSpan(name).emit(data),
-            record: data => void getSpan().record(data),
+            record: data => void enterWithSpan().record(data),
             run: fn => this.run(name as MetricName, fn),
         }
     }
