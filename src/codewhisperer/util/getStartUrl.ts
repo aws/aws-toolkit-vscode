@@ -9,7 +9,7 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { createStartUrlPrompter } from '../../credentials/auth'
+import { createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {
@@ -20,9 +20,10 @@ export const getStartUrl = async () => {
         throw new CancellationError('user')
     }
     telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
+    const region = await showRegionPrompter()
+    telemetry.ui_click.emit({ elementId: 'connection_region' })
     try {
-        await AuthUtil.instance.connectToEnterpriseSso(userInput)
+        await AuthUtil.instance.connectToEnterpriseSso(userInput, region.id)
     } catch (e) {
         throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectIamIdentityCenter, {
             code: 'FailedToConnect',

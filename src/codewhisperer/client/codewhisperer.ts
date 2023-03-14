@@ -2,7 +2,6 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { AWSError, CognitoIdentityCredentials, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
@@ -41,6 +40,7 @@ export type ListRecommendationsResponse =
     | CodeWhispererUserClient.GenerateCompletionsResponse
 export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
 export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
+export type Completion = CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
 export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
 export type CreateUploadUrlRequest = Readonly<
@@ -66,7 +66,8 @@ export type CreateUploadUrlResponse =
 export type CreateCodeScanResponse =
     | CodeWhispererClient.CreateCodeScanResponse
     | CodeWhispererUserClient.StartCodeAnalysisResponse
-
+export type Import = CodeWhispererUserClient.Import
+export type Imports = CodeWhispererUserClient.Imports
 export class DefaultCodeWhispererClient {
     private credentials?: CognitoIdentityCredentials
 
@@ -196,9 +197,9 @@ export class DefaultCodeWhispererClient {
         request: CreateUploadUrlRequest
     ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createArtifactUploadUrl(request).promise()
+            return (await this.createUserSdkClient()).createUploadUrl(request).promise()
         }
-        return (await this.createSdkClient()).createUploadUrl(request).promise()
+        return (await this.createSdkClient()).createCodeScanUploadUrl(request).promise()
     }
 
     public async createCodeScan(

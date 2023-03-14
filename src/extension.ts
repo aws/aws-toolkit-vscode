@@ -61,7 +61,7 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
-import { getCodeCatalystDevEnvId, isReleaseVersion } from './shared/vscode/env'
+import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { isUserCancelledError, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
@@ -218,9 +218,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        if (getCodeCatalystDevEnvId() === undefined) {
-            await activateCodeWhisperer(extContext)
-        }
+        await activateCodeWhisperer(extContext)
 
         await activateEcr(context)
 
