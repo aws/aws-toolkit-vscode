@@ -155,6 +155,16 @@ export function getMetrics<K extends MetricName>(
 export function assertTelemetry<K extends MetricName>(
     name: K,
     expected: MetricShapes[K],
+    eventNum?: number
+): void | never
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[MetricName],
+    eventNum?: number
+): void | never
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[K],
     eventNum: number = 0
 ): void | never {
     const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }

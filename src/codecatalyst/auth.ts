@@ -46,7 +46,12 @@ export class CodeCatalystAuthenticationProvider {
         protected readonly storage: CodeCatalystAuthStorage,
         protected readonly memento: vscode.Memento,
         public readonly auth = Auth.instance,
-        public readonly secondaryAuth = getSecondaryAuth('codecatalyst', 'CodeCatalyst', isValidCodeCatalystConnection)
+        public readonly secondaryAuth = getSecondaryAuth(
+            auth,
+            'codecatalyst',
+            'CodeCatalyst',
+            isValidCodeCatalystConnection
+        )
     ) {}
 
     public get activeConnection() {
