@@ -457,7 +457,8 @@ class AsyncIterableCollection<T, U = undefined> {
  * can be in any order.
  */
 export async function* join<T, U>(left: AsyncIterable<T>, right: AsyncIterable<U>): AsyncGenerator<T | U, void> {
-    const iterables = (new AsyncIterableCollection() < T) | (U > iterables.add(left))
+    const iterables = new AsyncIterableCollection<T | U>()
+    iterables.add(left)
     iterables.add(right)
 
     do {
