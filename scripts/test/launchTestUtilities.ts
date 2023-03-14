@@ -6,11 +6,19 @@
 import * as child_process from 'child_process'
 import * as manifest from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
+import { join, resolve } from 'path'
+import { runTests } from '@vscode/test-electron'
+import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
 const stable = 'stable'
 const minimum = 'minimum'
+
+const disableWorkspaceTrust = '--disable-workspace-trust'
+
+export const integrationSuite = 'integration'
+export const e2eSuite = 'e2e'
 
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
@@ -106,4 +114,58 @@ export function getMinVsCodeVersion(): string {
     const sanitizedVersion = vsCodeVersion.replace('^', '')
     console.log(`Using minimum VSCode version specified in package.json: ${sanitizedVersion}`)
     return sanitizedVersion
+}
+
+async function setupVSCode(): Promise<string> {
+    console.log('Setting up VS Code Test instance...')
+    const vsCodeExecutablePath = await setupVSCodeTestInstance()
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
+    console.log('VS Code Test instance has been set up')
+    return vsCodeExecutablePath
+}
+
+export async function runToolkitTests(suiteName: string, relativeEntryPoint: string) {
+    try {
+        console.log(`Running ${suiteName} test suite...`)
+        const vsCodeExecutablePath = await setupVSCode()
+        const cwd = process.cwd()
+        const testEntrypoint = resolve(cwd, relativeEntryPoint)
+        const workspacePath = join(cwd, 'dist', 'src', 'testFixtures', 'workspaceFolder')
+        console.log(`Starting tests: ${testEntrypoint}`)
+
+        const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
+            except: [
+                VSCODE_EXTENSION_ID.python,
+                VSCODE_EXTENSION_ID.yaml,
+                VSCODE_EXTENSION_ID.jupyter,
+                VSCODE_EXTENSION_ID.go,
+                VSCODE_EXTENSION_ID.java,
+                VSCODE_EXTENSION_ID.javadebug,
+                VSCODE_EXTENSION_ID.git,
+            ],
+        })
+        const args = {
+            vscodeExecutablePath: vsCodeExecutablePath,
+            extensionDevelopmentPath: cwd,
+            extensionTestsPath: testEntrypoint,
+            launchArgs: [...disableExtensions, workspacePath, disableWorkspaceTrust],
+            extensionTestsEnv: {
+                ['DEVELOPMENT_PATH']: cwd,
+                ['AWS_TOOLKIT_AUTOMATION']: suiteName,
+            },
+        }
+        console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
+        const result = await runTests(args)
+
+        console.log(`Finished running ${suiteName} test suite with result code: ${result}`)
+        process.exit(result)
+    } catch (err) {
+        console.error(err)
+        console.error('Failed to run tests')
+        process.exit(1)
+    }
 }
