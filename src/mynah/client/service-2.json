@@ -19,9 +19,20 @@
                 "requestUri": "/apidocs/searchsuggestions",
                 "responseCode": 200
             },
-            "input": { "shape": "ApiDocsSearchRequest" },
-            "output": { "shape": "ApiDocsSearchResponse" },
-            "errors": [{ "shape": "InternalServerException" }, { "shape": "ValidationException" }]
+            "input": {
+                "shape": "ApiDocsSearchRequest"
+            },
+            "output": {
+                "shape": "ApiDocsSearchResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
         },
         "Search": {
             "name": "Search",
@@ -30,42 +41,69 @@
                 "requestUri": "/search",
                 "responseCode": 200
             },
-            "input": { "shape": "SearchRequest" },
-            "output": { "shape": "SearchResponse" },
-            "errors": [{ "shape": "InternalServerException" }, { "shape": "ValidationException" }]
+            "input": {
+                "shape": "SearchRequest"
+            },
+            "output": {
+                "shape": "SearchResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
         }
     },
     "shapes": {
         "ApiDocsSearchRequest": {
             "type": "structure",
             "members": {
-                "code": { "shape": "Code" }
+                "code": {
+                    "shape": "Code"
+                }
             }
         },
         "ApiDocsSearchResponse": {
             "type": "structure",
             "members": {
-                "apiDocsSuggestions": { "shape": "ApiDocsSuggestions" }
+                "apiDocsSuggestions": {
+                    "shape": "ApiDocsSuggestions"
+                }
             }
         },
         "ApiDocsSuggestion": {
             "type": "structure",
             "members": {
-                "url": { "shape": "String" },
-                "title": { "shape": "String" },
-                "body": { "shape": "String" },
-                "metadata": { "shape": "ApiDocsSuggestionMetadata" }
+                "url": {
+                    "shape": "String"
+                },
+                "title": {
+                    "shape": "String"
+                },
+                "body": {
+                    "shape": "String"
+                },
+                "metadata": {
+                    "shape": "ApiDocsSuggestionMetadata"
+                }
             }
         },
         "ApiDocsSuggestionMetadata": {
             "type": "structure",
             "members": {
-                "canonicalExample": { "shape": "CodeExample" }
+                "canonicalExample": {
+                    "shape": "CodeExample"
+                }
             }
         },
         "ApiDocsSuggestions": {
             "type": "list",
-            "member": { "shape": "ApiDocsSuggestion" },
+            "member": {
+                "shape": "ApiDocsSuggestion"
+            },
             "max": 20,
             "min": 1
         },
@@ -76,28 +114,42 @@
         "Code": {
             "type": "structure",
             "members": {
-                "usedFullyQualifiedNames": { "shape": "FullyQualifiedNames" },
-                "language": { "shape": "ProgrammingLanguage" }
+                "usedFullyQualifiedNames": {
+                    "shape": "FullyQualifiedNames"
+                },
+                "language": {
+                    "shape": "ProgrammingLanguage"
+                }
             }
         },
         "CodeExample": {
             "type": "structure",
             "members": {
-                "url": { "shape": "String" },
-                "body": { "shape": "String" }
+                "url": {
+                    "shape": "String"
+                },
+                "body": {
+                    "shape": "String"
+                }
             }
         },
         "CodeQuery": {
             "type": "structure",
             "members": {
-                "simpleNames": { "shape": "SimpleNames" },
-                "usedFullyQualifiedNames": { "shape": "FullyQualifiedSymbolDeclarationPaths" }
+                "simpleNames": {
+                    "shape": "SimpleNames"
+                },
+                "usedFullyQualifiedNames": {
+                    "shape": "FullyQualifiedSymbolDeclarationPaths"
+                }
             }
         },
         "Context": {
             "type": "structure",
             "members": {
-                "matchPolicy": { "shape": "MatchPolicy" }
+                "matchPolicy": {
+                    "shape": "MatchPolicy"
+                }
             }
         },
         "ContextKey": {
@@ -108,20 +160,28 @@
         },
         "ContextKeys": {
             "type": "list",
-            "member": { "shape": "ContextKey" },
+            "member": {
+                "shape": "ContextKey"
+            },
             "max": 25,
             "min": 0
         },
         "FullyQualifiedName": {
             "type": "structure",
             "members": {
-                "sources": { "shape": "Identifier" },
-                "symbols": { "shape": "Identifier" }
+                "sources": {
+                    "shape": "SourceIdentifier"
+                },
+                "symbols": {
+                    "shape": "SymbolIdentifier"
+                }
             }
         },
         "FullyQualifiedNames": {
             "type": "list",
-            "member": { "shape": "FullyQualifiedName" },
+            "member": {
+                "shape": "FullyQualifiedName"
+            },
             "max": 25,
             "min": 1
         },
@@ -132,15 +192,11 @@
         },
         "FullyQualifiedSymbolDeclarationPaths": {
             "type": "list",
-            "member": { "shape": "FullyQualifiedSymbolDeclarationPath" },
+            "member": {
+                "shape": "FullyQualifiedSymbolDeclarationPath"
+            },
             "max": 25,
             "min": 0
-        },
-        "Identifier": {
-            "type": "list",
-            "member": { "shape": "Name" },
-            "max": 10,
-            "min": 1
         },
         "Integer": {
             "type": "integer",
@@ -150,19 +206,31 @@
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": {
+                    "shape": "String"
+                }
             },
-            "error": { "httpStatusCode": 500 },
+            "error": {
+                "httpStatusCode": 500
+            },
             "exception": true,
             "fault": true,
-            "retryable": { "throttling": false }
+            "retryable": {
+                "throttling": false
+            }
         },
         "MatchPolicy": {
             "type": "structure",
             "members": {
-                "should": { "shape": "ContextKeys" },
-                "must": { "shape": "ContextKeys" },
-                "mustNot": { "shape": "ContextKeys" }
+                "should": {
+                    "shape": "ContextKeys"
+                },
+                "must": {
+                    "shape": "ContextKeys"
+                },
+                "mustNot": {
+                    "shape": "ContextKeys"
+                }
             }
         },
         "MaxResults": {
@@ -183,18 +251,32 @@
         "SearchRequest": {
             "type": "structure",
             "members": {
-                "input": { "shape": "Text" },
-                "code": { "shape": "Text" },
-                "context": { "shape": "Context" },
-                "trigger": { "shape": "Trigger" },
-                "maxResults": { "shape": "MaxResults" },
-                "codeQuery": { "shape": "CodeQuery" }
+                "input": {
+                    "shape": "Text"
+                },
+                "code": {
+                    "shape": "Text"
+                },
+                "context": {
+                    "shape": "Context"
+                },
+                "trigger": {
+                    "shape": "Trigger"
+                },
+                "maxResults": {
+                    "shape": "MaxResults"
+                },
+                "codeQuery": {
+                    "shape": "CodeQuery"
+                }
             }
         },
         "SearchResponse": {
             "type": "structure",
             "members": {
-                "suggestions": { "shape": "Suggestions" }
+                "suggestions": {
+                    "shape": "Suggestions"
+                }
             }
         },
         "SimpleName": {
@@ -204,35 +286,69 @@
         },
         "SimpleNames": {
             "type": "list",
-            "member": { "shape": "SimpleName" },
+            "member": {
+                "shape": "SimpleName"
+            },
             "max": 100,
             "min": 0
+        },
+        "SourceIdentifier": {
+            "type": "list",
+            "member": {
+                "shape": "Name"
+            },
+            "max": 10,
+            "min": 1
         },
         "StackOverflowMetadata": {
             "type": "structure",
             "members": {
-                "answerCount": { "shape": "Integer" },
-                "isAccepted": { "shape": "Boolean" },
-                "score": { "shape": "Integer" },
-                "lastActivityDate": { "shape": "Timestamp" }
+                "answerCount": {
+                    "shape": "Integer"
+                },
+                "isAccepted": {
+                    "shape": "Boolean"
+                },
+                "score": {
+                    "shape": "Integer"
+                },
+                "lastActivityDate": {
+                    "shape": "Timestamp"
+                }
             }
         },
-        "String": { "type": "string" },
+        "String": {
+            "type": "string"
+        },
         "Suggestion": {
             "type": "structure",
             "members": {
-                "url": { "shape": "String" },
-                "title": { "shape": "String" },
-                "body": { "shape": "String" },
-                "context": { "shape": "ContextKeys" },
-                "type": { "shape": "SuggestionType" },
-                "metadata": { "shape": "SuggestionMetadata" }
+                "url": {
+                    "shape": "String"
+                },
+                "title": {
+                    "shape": "String"
+                },
+                "body": {
+                    "shape": "String"
+                },
+                "context": {
+                    "shape": "ContextKeys"
+                },
+                "type": {
+                    "shape": "SuggestionType"
+                },
+                "metadata": {
+                    "shape": "SuggestionMetadata"
+                }
             }
         },
         "SuggestionMetadata": {
             "type": "structure",
             "members": {
-                "StackOverflow": { "shape": "StackOverflowMetadata" }
+                "StackOverflow": {
+                    "shape": "StackOverflowMetadata"
+                }
             },
             "union": true
         },
@@ -242,14 +358,26 @@
         },
         "Suggestions": {
             "type": "list",
-            "member": { "shape": "Suggestion" }
+            "member": {
+                "shape": "Suggestion"
+            }
+        },
+        "SymbolIdentifier": {
+            "type": "list",
+            "member": {
+                "shape": "Name"
+            },
+            "max": 10,
+            "min": 0
         },
         "Text": {
             "type": "string",
             "max": 1000,
             "min": 0
         },
-        "Timestamp": { "type": "timestamp" },
+        "Timestamp": {
+            "type": "timestamp"
+        },
         "Trigger": {
             "type": "string",
             "enum": [
@@ -265,7 +393,9 @@
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": {
+                    "shape": "String"
+                }
             },
             "error": {
                 "httpStatusCode": 400,
