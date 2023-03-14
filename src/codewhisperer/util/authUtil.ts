@@ -40,7 +40,12 @@ export class AuthUtil {
     private readonly clearAccessToken = once(() =>
         globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
     )
-    private readonly secondaryAuth = getSecondaryAuth('codewhisperer', 'CodeWhisperer', isValidCodeWhispererConnection)
+    private readonly secondaryAuth = getSecondaryAuth(
+        this.auth,
+        'codewhisperer',
+        'CodeWhisperer',
+        isValidCodeWhispererConnection
+    )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
