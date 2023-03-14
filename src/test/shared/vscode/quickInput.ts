@@ -60,15 +60,25 @@ function filterItems<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>
     return picker.items.filter(filter)
 }
 
+type ItemMatcher<T extends vscode.QuickPickItem = vscode.QuickPickItem> = string | RegExp | T
+function matchItem<T extends vscode.QuickPickItem>(item: T, expected: ItemMatcher<T>): boolean {
+    if (expected instanceof RegExp) {
+        return expected.test(item.label)
+    } else if (typeof expected === 'string') {
+        return item.label === expected
+    } else {
+        return JSON.stringify(item) === JSON.stringify(expected)
+    }
+}
+
 /* Returns all items from source that are in target. Strings are matched based off label. Items are only matched once. */
-function matchItems<T extends vscode.QuickPickItem>(source: T[], target: (string | T)[]): T[] {
+function matchItems<T extends vscode.QuickPickItem>(source: T[], ...expected: ItemMatcher<T>[]): T[] {
     return source.filter(item => {
-        const index = target.findIndex(t =>
-            typeof t === 'string' ? item.label === t : JSON.stringify(item) === JSON.stringify(t)
-        )
+        const index = expected.findIndex(t => matchItem(item, t))
         if (index !== -1) {
-            return (target = target.slice(0, index).concat(target.slice(index + 1)))
+            expected.splice(index, 1)
         }
+        return index !== -1
     })
 }
 
@@ -76,25 +86,19 @@ const throwError = (message: string, actual?: any, expected?: any) => {
     throw new AssertionError({ message, actual, expected })
 }
 
-function assertItems<T extends vscode.QuickPickItem>(actual: T[], expected: (string | T)[]): void {
+function assertItems<T extends vscode.QuickPickItem>(actual: T[], expected: ItemMatcher<T>[]): void {
     if (actual.length !== expected.length) {
         return throwError('Picker had different number of items', actual, expected)
     }
 
     actual.forEach((actualItem, index) => {
-        const expectedItem = expected[index]
-        const type = typeof expectedItem === 'string' ? 'label' : 'item'
-        if (
-            (type === 'label' && actualItem.label !== expectedItem) ||
-            (type === 'item' && JSON.stringify(actualItem) !== JSON.stringify(expectedItem))
-        ) {
-            const actual = type === 'item' ? actualItem : actualItem.label
-            throwError(`Unexpected ${type} found at index ${index}`, actual, expectedItem)
+        if (!matchItem(actualItem, expected[index])) {
+            throwError(`Unexpected item found at index ${index}`, actual, expected[index])
         }
     })
 }
 
-function findButton(
+function findButtonOrThrow(
     input: vscode.QuickPick<vscode.QuickPickItem> | vscode.InputBox,
     button: string | vscode.QuickInputButton
 ) {
@@ -106,11 +110,18 @@ function findButton(
     return target
 }
 
-function findItem<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: string | T) {
+const printMatcher = (matcher: ItemMatcher) =>
+    matcher instanceof RegExp
+        ? matcher.source
+        : typeof matcher === 'string'
+        ? matcher
+        : JSON.stringify(matcher, undefined, 4)
+
+function findItemOrThrow<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: ItemMatcher<T>) {
     const filteredItems = filterItems(picker)
-    const match = matchItems(filteredItems, [item])[0]
+    const match = matchItems(filteredItems, item)[0]
     if (match === undefined) {
-        throwError(`Unable to find item: ${JSON.stringify(item)}`) // TODO: add ways to format
+        throwError(`Unable to find item: ${printMatcher(item)}`)
     }
 
     return match
@@ -139,7 +150,7 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      * The tooltip string must be an exact match.
      */
     public pressButton(button: string | vscode.QuickInputButton): void {
-        this.triggers.onDidTriggerButton.fire(findButton(this.picker, button))
+        this.triggers.onDidTriggerButton.fire(findButtonOrThrow(this.picker, button))
     }
 
     /**
@@ -148,8 +159,8 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      * If a string is given, then the item will be matched based off label. Otherwise a deep compare will be performed.
      * Only exact matches will be accepted.
      */
-    public acceptItem(item: string | T): void {
-        this.picker.selectedItems = [findItem(this.picker, item)]
+    public acceptItem(item: ItemMatcher<T>): void {
+        this.picker.selectedItems = [findItemOrThrow(this.picker, item)]
         this.triggers.onDidAccept.fire()
     }
 
@@ -158,8 +169,8 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      *
      * See {@link acceptItem}.
      */
-    public acceptItems(...items: (string | T)[]): void {
-        this.picker.selectedItems = items.map(i => findItem(this.picker, i))
+    public acceptItems(...items: ItemMatcher<T>[]): void {
+        this.picker.selectedItems = items.map(i => findItemOrThrow(this.picker, i))
         this.triggers.onDidAccept.fire()
     }
 
@@ -168,7 +179,7 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      *
      * Must include all visible items. Filtered items will not be considered.
      */
-    public assertItems(items: string[] | T[]): void {
+    public assertItems(items: ItemMatcher<T>[]): void {
         const filteredItems = filterItems(this.picker)
         assertItems(filteredItems, items)
     }
@@ -178,9 +189,9 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      *
      * This can be a subset of the currently visible items.
      */
-    public assertContainsItems(...items: (string | T)[]): void {
+    public assertContainsItems(...items: ItemMatcher<T>[]): void {
         const filteredItems = filterItems(this.picker)
-        const match = matchItems(filteredItems, items)
+        const match = matchItems(filteredItems, ...items)
         // Check length here first for better error output
         if (match.length !== items.length) {
             return throwError(`Did not find all items`, match, items)
@@ -194,12 +205,12 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      * Not applicable to single-item pickers. Order does not matter, but it must be
      * the same items. Filtering is not applied.
      */
-    public assertSelectedItems(...items: (string | T)[]): void {
+    public assertSelectedItems(...items: ItemMatcher<T>[]): void {
         // Filtered items can still be selected for multi-item pickers
         const sortedSelected = [...this.picker.selectedItems].sort((a, b) => a.label.localeCompare(b.label))
         const sortedExpected = [...items].sort((a, b) => {
-            const labelA = typeof a === 'string' ? a : a.label
-            const labelB = typeof b === 'string' ? b : b.label
+            const labelA = typeof a === 'string' ? a : a instanceof RegExp ? a.source : a.label
+            const labelB = typeof b === 'string' ? b : b instanceof RegExp ? b.source : b.label
             return labelA.localeCompare(labelB)
         })
         assertItems(sortedSelected, sortedExpected)
@@ -210,15 +221,19 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      *
      * Order does not matter, but it must be the same items.
      */
-    public assertActiveItems(...items: (string | T)[]): void {
+    public assertActiveItems(...items: ItemMatcher<T>[]): void {
         const filteredActive = filterItems(this.picker).filter(i => this.picker.activeItems.includes(i))
         const sortedActive = [...filteredActive].sort((a, b) => a.label.localeCompare(b.label))
         const sortedExpected = [...items].sort((a, b) => {
-            const labelA = typeof a === 'string' ? a : a.label
-            const labelB = typeof b === 'string' ? b : b.label
+            const labelA = typeof a === 'string' ? a : a instanceof RegExp ? a.source : a.label
+            const labelB = typeof b === 'string' ? b : b instanceof RegExp ? b.source : b.label
             return labelA.localeCompare(labelB)
         })
         assertItems(sortedActive, sortedExpected)
+    }
+
+    public findItemOrThrow(item: ItemMatcher<T>): T {
+        return findItemOrThrow(this.picker, item)
     }
 
     /**
@@ -334,7 +349,7 @@ class InputBoxTester {
      * The tooltip string must be an exact match.
      */
     public pressButton(button: string | vscode.QuickInputButton): void {
-        this.triggers.onDidTriggerButton.fire(findButton(this.inputBox, button))
+        this.triggers.onDidTriggerButton.fire(findButtonOrThrow(this.inputBox, button))
     }
 
     /**

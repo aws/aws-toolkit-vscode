@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "auth: Expired connections are now easier to recognize and re-authenticate from the \"Switch Connections\" quick pick menu"
+}
