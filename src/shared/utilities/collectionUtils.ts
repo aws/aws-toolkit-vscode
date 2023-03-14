@@ -4,7 +4,7 @@
  */
 
 import { AsyncCollection, toCollection } from './asyncCollection'
-import { SharedProp, AccumulableKeys, Coalesce } from './tsUtils'
+import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -350,18 +350,24 @@ export function pageableToCollection<
  *
  * The resulting stream will throw if any of the promises are rejected.
  */
-export async function* toStream<T>(values: Iterable<Promise<T>>): AsyncGenerator<T, void> {
-    const unresolved = new Map<number, Promise<T>>()
-    for (const promise of values) {
-        const index = unresolved.size
-        unresolved.set(
-            index,
-            promise.then(val => (unresolved.delete(index), val))
-        )
+export async function* toStream<T>(values: Iterable<T | Promise<T>>): AsyncGenerator<T, void> {
+    const unresolved = new Map<number, Promise<{ index: number; data: T }>>()
+    for (const val of values) {
+        if (val instanceof Promise) {
+            const index = unresolved.size
+            unresolved.set(
+                index,
+                val.then(data => ({ index, data }))
+            )
+        } else {
+            yield val
+        }
     }
 
     while (unresolved.size > 0) {
-        yield Promise.race(unresolved.values())
+        const { index, data } = await Promise.race(unresolved.values())
+        unresolved.delete(index)
+        yield data
     }
 }
 
@@ -377,4 +383,107 @@ export function* partition<T>(iterable: Iterable<T>, size: number): Generator<T[
     if (batch.length > 0) {
         yield batch
     }
+}
+
+interface IndexedResult<T, U> {
+    readonly index: number
+    readonly result: IteratorResult<T, U>
+}
+
+interface IterableState<T, U> {
+    readonly iterator: AsyncIterator<T, U>
+    pending?: Promise<IndexedResult<T, U>>
+    completed?: boolean
+}
+
+class AsyncIterableCollection<T, U = undefined> {
+    readonly #iterables: IterableState<T, U>[] = []
+
+    public get completed(): boolean {
+        return this.#iterables.every(s => s.completed)
+    }
+
+    /**
+     * Adds an iterable, returning the associated index
+     */
+    public add(iterable: AsyncIterable<T>): number {
+        const iterator = iterable[Symbol.asyncIterator]()
+
+        return this.#iterables.push({ iterator }) - 1
+    }
+
+    /**
+     * Gets the next result from all iterables.
+     *
+     * The index associated with the iterable is returned alongside the result.
+     * Throws if no value is available. Check {@link completed} prior to calling this method.
+     */
+    public async next(): Promise<IndexedResult<T, U>> {
+        const promises = this.#iterables.map((s, i) => this.getPending(s, i)).filter(isNonNullable)
+        if (promises.length === 0) {
+            throw new Error('Cannot get next element when all iterators have been consumed')
+        }
+
+        const val = await Promise.race(promises)
+        this.#iterables[val.index].pending = undefined
+
+        if (val.result.done) {
+            this.#iterables[val.index].completed = true
+        }
+
+        return val
+    }
+
+    private getPending(state: IterableState<T, U>, index: number) {
+        if (state.completed) {
+            return
+        } else if (state.pending) {
+            return state.pending
+        } else {
+            const pending = state.iterator.next().then(result => ({ index, result }))
+            state.pending = pending
+
+            return pending
+        }
+    }
+}
+
+/**
+ * Joins two async iterables into a single generator.
+ *
+ * Values from each iterable are yielded as soon as they resolve. The order of values is preserved with respect
+ * to the source iterable but not necessarily other iterables. This can be imagined as popping off all elements
+ * of two stacks randomly: elements from the same stack will be in order while elements from different stacks
+ * can be in any order.
+ */
+export async function* join<T, U>(left: AsyncIterable<T>, right: AsyncIterable<U>): AsyncGenerator<T | U, void> {
+    const iterables = (new AsyncIterableCollection() < T) | (U > iterables.add(left))
+    iterables.add(right)
+
+    do {
+        const next = await iterables.next()
+        if (!next.result.done) {
+            yield next.result.value
+        }
+    } while (!iterables.completed)
+}
+
+/**
+ * Similar to {@link join} but can handle an async iterable of async iterables.
+ */
+export async function* joinAll<T>(iterable: AsyncIterable<AsyncIterable<T>>): AsyncGenerator<T, void> {
+    const iterables = new AsyncIterableCollection<T | AsyncIterable<T>>()
+    const mainIndex = iterables.add(iterable)
+
+    do {
+        const next = await iterables.next()
+        if (next.result.done) {
+            continue
+        }
+        if (next.index === mainIndex && isAsyncIterable(next.result.value)) {
+            iterables.add(next.result.value)
+        } else {
+            yield next.result.value as T
+        }
+    } while (!iterables.completed)
 }
