@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { anything, deepEqual, instance, mock, verify } from '../utilities/mockito'
-import { ExtensionContext } from 'vscode'
 import { YamlExtension } from '../../shared/extensions/yaml'
 import {
     JsonSchemaHandler,
@@ -16,23 +15,20 @@ import {
     SchemaType,
     YamlSchemaHandler,
 } from '../../shared/schemas'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { Settings } from '../../shared/settings'
 
 describe('SchemaService', function () {
     let service: SchemaService
-    let fakeExtensionContext: ExtensionContext
     let config: Settings
     let fakeYamlExtension: YamlExtension
     const cfnSchema = vscode.Uri.file('cfn')
     const samSchema = vscode.Uri.file('sam')
 
     beforeEach(async function () {
-        fakeExtensionContext = await FakeExtensionContext.create()
         fakeYamlExtension = mock()
         config = new Settings(vscode.ConfigurationTarget.Workspace)
 
-        service = new SchemaService(fakeExtensionContext, {
+        service = new SchemaService({
             schemas: {
                 cfn: cfnSchema,
                 sam: samSchema,
@@ -105,7 +101,7 @@ describe('SchemaService', function () {
 
     it('processes no updates if schemas are unavailable', async function () {
         fakeYamlExtension = mock()
-        service = new SchemaService(fakeExtensionContext, {
+        service = new SchemaService({
             handlers: new Map<SchemaType, SchemaHandler>([
                 ['json', new JsonSchemaHandler()],
                 ['yaml', new YamlSchemaHandler(instance(fakeYamlExtension))],
@@ -123,7 +119,7 @@ describe('SchemaService', function () {
 
     it('processes no updates if yaml extension unavailable', async function () {
         fakeYamlExtension = mock()
-        service = new SchemaService(fakeExtensionContext)
+        service = new SchemaService()
 
         service.registerMapping({
             uri: vscode.Uri.parse('/foo'),
