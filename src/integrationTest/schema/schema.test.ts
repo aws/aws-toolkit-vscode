@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../../shared/extensionGlobals'
 import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
 import { FakeExtensionContext } from '../../test/fakeExtensionContext'
 import {
@@ -68,12 +69,10 @@ describe('Sam Schema Regression', function () {
 describe('getDefaultSchemas()', () => {
     let extensionContext: FakeExtensionContext
 
-    beforeEach(async () => {
-        extensionContext = await FakeExtensionContext.create()
-    })
+    beforeEach(async () => {})
 
     it('uses cache on subsequent request for CFN/SAM schema', async () => {
-        await getDefaultSchemas(extensionContext)
+        await getDefaultSchemas()
 
         // IMPORTANT: Since CFN and SAM use the same schema, the order their schema is retrieved is irrelevant
 
@@ -92,20 +91,24 @@ describe('getDefaultSchemas()', () => {
     })
 
     it('uses cache for all requests on second function call', async () => {
-        await getDefaultSchemas(extensionContext)
+        globals.telemetry.telemetryEnabled = true
+        globals.telemetry.clearRecords()
+        globals.telemetry.logger.clear()
+
+        await getDefaultSchemas()
         // Call a second time
-        await getDefaultSchemas(extensionContext)
+        await getDefaultSchemas()
 
         // Only cache is used
         assertTelemetry(
             'toolkit_getExternalResource',
             { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
-            2
+            0
         )
         assertTelemetry(
             'toolkit_getExternalResource',
             { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
-            3
+            1
         )
     })
 })
