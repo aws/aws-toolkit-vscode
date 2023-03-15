@@ -46,7 +46,8 @@ phases:
       - chmod +x gradlew
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin --console plain --info
 
-      - ffmpeg -loglevel quiet -nostdin -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
+      # remove screen recording temporarily due to build issues in ffmpeg
+      #- ffmpeg -loglevel quiet -nostdin -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME uiTestCore coverageReport --console plain --info
 
   post_build:
@@ -54,13 +55,13 @@ phases:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
 
-      - pkill -SIGINT ffmpeg && sleep 5
+      #- pkill -SIGINT ffmpeg && sleep 5
 
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
 
-      - mv /tmp/screen_recording.mp4 $TEST_ARTIFACTS/
+      #- mv /tmp/screen_recording.mp4 $TEST_ARTIFACTS/
 
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
