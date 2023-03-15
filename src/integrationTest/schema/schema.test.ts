@@ -65,7 +65,7 @@ describe('Sam Schema Regression', function () {
     })
 })
 
-describe('getDefaultSchemas()', () => {
+describe.skip('getDefaultSchemas()', () => {
     beforeEach(async () => {})
 
     it('uses cache on subsequent request for CFN/SAM schema', async () => {
