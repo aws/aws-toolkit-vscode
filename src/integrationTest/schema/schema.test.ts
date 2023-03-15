@@ -67,8 +67,6 @@ describe('Sam Schema Regression', function () {
 })
 
 describe('getDefaultSchemas()', () => {
-    let extensionContext: FakeExtensionContext
-
     beforeEach(async () => {})
 
     it('uses cache on subsequent request for CFN/SAM schema', async () => {
