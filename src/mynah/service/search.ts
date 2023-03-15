@@ -150,13 +150,15 @@ export const getSearchSuggestions = async (
                 // If there is codeQuery and usedFullyQualifiedNames, convert them to symbol source type
                 const apiDocsSearchRequest: mynahClient.ApiDocsSearchRequest = {
                     code: {
-                        usedFullyQualifiedNames: query.codeQuery?.usedFullyQualifiedNames.map(fqn => {
-                            const fqnExpanded: string[] = fqn.split('.')
-                            return {
-                                sources: fqnExpanded.slice(0, fqnExpanded.length - 1),
-                                symbols: fqnExpanded.slice(fqnExpanded.length - 1, fqnExpanded.length),
-                            } as FullyQualifiedName
-                        }),
+                        usedFullyQualifiedNames: query.codeQuery?.usedFullyQualifiedNames
+                            .map(fqn => {
+                                const fqnExpanded: string[] = fqn.split('.')
+                                return {
+                                    sources: fqnExpanded.slice(0, fqnExpanded.length - 1),
+                                    symbols: fqnExpanded.slice(fqnExpanded.length - 1, fqnExpanded.length),
+                                } as FullyQualifiedName
+                            })
+                            .filter(elem => elem.sources !== undefined && elem.sources?.length > 0),
                         language:
                             guessLanguageFromContextKeys([...query.queryContext.should, ...query.queryContext.must]) ??
                             vs.window.activeTextEditor?.document.languageId,
