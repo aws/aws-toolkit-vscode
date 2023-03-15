@@ -65,7 +65,7 @@ class SsoAccessTokenProvider(
         val registerResponse = client.registerClient {
             it.clientType(CLIENT_REGISTRATION_TYPE)
             it.scopes(scopes)
-            it.clientName("aws-toolkit-jetbrains-${Instant.now(clock)}")
+            it.clientName("AWS Toolkit for JetBrains")
         }
 
         val registeredClient = ClientRegistration(

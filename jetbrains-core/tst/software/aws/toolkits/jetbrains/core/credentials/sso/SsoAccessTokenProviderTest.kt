@@ -121,7 +121,7 @@ class SsoAccessTokenProviderTest {
                 ssoOidcClient.registerClient(
                     RegisterClientRequest.builder()
                         .clientType("public")
-                        .clientName("aws-toolkit-jetbrains-${Instant.now(clock)}")
+                        .clientName("AWS Toolkit for JetBrains")
                         .scopes(emptyList())
                         .build()
                 )
