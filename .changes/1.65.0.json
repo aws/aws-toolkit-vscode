@@ -1,0 +1,14 @@
+{
+	"date": "2023-03-15",
+	"version": "1.65.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "auth: The status bar shows more information about which connections are in-use and which of those are expired or invalid."
+		},
+		{
+			"type": "Feature",
+			"description": "auth: Expired connections are now easier to recognize and re-authenticate from the \"Switch Connections\" quick pick menu"
+		}
+	]
+}
