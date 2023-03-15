@@ -1,7 +1,7 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
+    "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
     "version": "1.65.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
