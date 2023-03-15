@@ -19,8 +19,9 @@ import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
 
-// Note: this file is currently 12+ MB. When requesting it, specify compression/gzip. 
-export const samAndCfnSchemaUrl = 'https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json'
+// Note: this file is currently 12+ MB. When requesting it, specify compression/gzip.
+export const samAndCfnSchemaUrl =
+    'https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json'
 const devfileManifestUrl = 'https://api.github.com/repos/devfile/api/releases/latest'
 const schemaPrefix = `${AWS_SCHEME}://`
 
@@ -53,15 +54,12 @@ export class SchemaService {
     private schemas?: Schemas
     private handlers: Map<SchemaType, SchemaHandler>
 
-    public constructor(
-        private readonly extensionContext: vscode.ExtensionContext,
-        opts?: {
-            /** Assigned in start(). */
-            schemas?: Schemas
-            updatePeriod?: number
-            handlers?: Map<SchemaType, SchemaHandler>
-        }
-    ) {
+    public constructor(opts?: {
+        /** Assigned in start(). */
+        schemas?: Schemas
+        updatePeriod?: number
+        handlers?: Map<SchemaType, SchemaHandler>
+    }) {
         this.updatePeriod = opts?.updatePeriod ?? SchemaService.defaultUpdatePeriodMillis
         this.schemas = opts?.schemas
         this.handlers =
@@ -82,7 +80,7 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        getDefaultSchemas().then(schemas => (this.schemas = schemas))
         await this.startTimer()
     }
 
@@ -139,14 +137,13 @@ export class SchemaService {
  * Checks manifest and downloads new schemas if the manifest version has been bumped.
  * Uses local, predownloaded version if up-to-date or network call fails
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
- * @param extensionContext VSCode extension context
  */
-export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
-    const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
+export async function getDefaultSchemas(): Promise<Schemas | undefined> {
+    const devfileSchemaUri = vscode.Uri.joinPath(globals.context.globalStorageUri, 'devfile.schema.json')
     const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
     // Sam schema is a superset of Cfn schema, so we can use it for both
-    const samAndCfnSchemaDestinationUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
+    const samAndCfnSchemaDestinationUri = vscode.Uri.joinPath(globals.context.globalStorageUri, 'sam.schema.json')
     const samAndCfnCacheKey = 'samAndCfnSchemaVersion'
 
     const schemas: Schemas = {}
@@ -157,7 +154,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             eTag: undefined,
             url: samAndCfnSchemaUrl,
             cacheKey: samAndCfnCacheKey,
-            extensionContext,
+            extensionContext: globals.context,
             title: schemaPrefix + 'cloudformation.schema.json',
         })
         schemas['cfn'] = samAndCfnSchemaDestinationUri
@@ -171,7 +168,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             eTag: undefined,
             url: samAndCfnSchemaUrl,
             cacheKey: samAndCfnCacheKey,
-            extensionContext,
+            extensionContext: globals.context,
             title: schemaPrefix + 'sam.schema.json',
         })
         schemas['sam'] = samAndCfnSchemaDestinationUri
@@ -185,7 +182,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             version: devfileSchemaVersion,
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
-            extensionContext,
+            extensionContext: globals.context,
             title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
