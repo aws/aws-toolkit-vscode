@@ -1,3 +1,8 @@
+## 1.65.0 2023-03-15
+
+- **Feature** auth: The status bar shows more information about which connections are in-use and which of those are expired or invalid.
+- **Feature** auth: Expired connections are now easier to recognize and re-authenticate from the "Switch Connections" quick pick menu
+
 ## 1.64.0 2023-03-07
 
 - **Bug Fix** auth: "Copy Code" modal is shown twice when refreshing expired IAM Identity Center connections
