@@ -5,7 +5,6 @@
 
 import globals from '../../shared/extensionGlobals'
 import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
-import { FakeExtensionContext } from '../../test/fakeExtensionContext'
 import {
     getCITestSchemas,
     JSONObject,
