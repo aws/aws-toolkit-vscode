@@ -163,7 +163,11 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // If search is possible
             if (payload.codeSelection.selectedCode.trim() !== '' || payload.query.trim() !== '') {
                 // set loading state
-                mynahUI.updateStore({ loading: true, liveSearchState: LiveSearchState.STOP })
+                mynahUI.updateStore({
+                    loading: true,
+                    liveSearchState: LiveSearchState.STOP,
+                    matchPolicy: payload.matchPolicy,
+                })
 
                 // perform a new search
                 connector.requestSuggestions(payload, undefined, undefined, true)
