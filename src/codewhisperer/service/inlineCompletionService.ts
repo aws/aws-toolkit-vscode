@@ -90,7 +90,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
 
     truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
         let rightContextRange: vscode.Range | undefined = undefined
-        const pos = RecommendationHandler.instance.startPos
+        const pos = vscode.window.activeTextEditor?.selection.active || RecommendationHandler.instance.startPos
         if (suggestion.split(/\r?\n/).length > 1) {
             rightContextRange = new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + suggestion.length))
         } else {
