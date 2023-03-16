@@ -14,6 +14,7 @@ import {
     CodewhispererSuggestionState,
     CodewhispererTriggerType,
 } from '../../shared/telemetry/telemetry'
+import { getImportCount } from './importAdderUtil'
 
 export class TelemetryHelper {
     /**
@@ -121,6 +122,7 @@ export class TelemetryHelper {
                 codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, recommendationSuggestionState),
                 codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
+                codewhispererSuggestionImportCount: getImportCount(_elem),
                 codewhispererCompletionType: this.completionType,
                 codewhispererLanguage: languageContext.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
@@ -162,8 +164,8 @@ export class TelemetryHelper {
 
     /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
-         this.resetClientComponentLatencyTime()
-         this.invokeSuggestionStartTime = performance.now()
+        this.resetClientComponentLatencyTime()
+        this.invokeSuggestionStartTime = performance.now()
     }
 
     public setFetchCredentialStartTime() {
