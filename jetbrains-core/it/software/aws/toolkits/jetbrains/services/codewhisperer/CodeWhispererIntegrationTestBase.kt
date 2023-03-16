@@ -15,6 +15,7 @@ import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.mockito.kotlin.any
@@ -81,6 +82,7 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
     @Suppress("UnreachableCode")
     @Before
     open fun setUp() {
+        assumeTrue("CI doesn't have Builder ID credentials", System.getenv("CI").isNullOrBlank())
         MockClientManager.useRealImplementations(disposableRule.disposable)
 
         loginSso(projectRule.project, SONO_URL)
@@ -138,9 +140,17 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
     @After
     open fun tearDown() {
         runInEdtAndWait {
-            stateManager.loadState(originalExplorerActionState)
-            settingsManager.loadState(originalSettings)
-            popupManager.reset()
+            if (::stateManager.isInitialized) {
+                stateManager.loadState(originalExplorerActionState)
+            }
+
+            if (::settingsManager.isInitialized) {
+                settingsManager.loadState(originalSettings)
+            }
+
+            if (::popupManager.isInitialized) {
+                popupManager.reset()
+            }
         }
     }
 
