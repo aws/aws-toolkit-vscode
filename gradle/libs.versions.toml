@@ -10,7 +10,7 @@ jackson = "2.13.3"
 jacoco = "0.8.8"
 jgit = "5.11.0.202103091610-r"
 junit4 = "4.13.2"
-junit5 = "5.8.2"
+junit5 = "5.9.2"
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#adding-kotlin-support
 # https://kotlinlang.org/docs/releases.html#release-details
 kotlin = "1.7.20"
