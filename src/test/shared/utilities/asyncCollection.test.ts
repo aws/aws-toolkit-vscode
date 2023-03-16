@@ -93,6 +93,17 @@ describe('AsyncCollection', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it('can flatten generators that yield async iterables', async function () {
+        const collection = toCollection(async function* () {
+            yield toCollection(gen).filter(i => i > 1)
+            yield toCollection(gen).map(i => i + 1)
+        })
+
+        const flat = collection.flatten().map(i => i * 2)
+        const actual = (await flat.promise()).reduce((a, b) => a + b, 0)
+        assert.deepStrictEqual(actual, 4 + (2 + 4 + 6))
+    })
+
     it('can filter', async function () {
         const filtered = toCollection(genPage)
             .filter(o => o.includes(5))
@@ -104,6 +115,11 @@ describe('AsyncCollection', function () {
     it('can limit', async function () {
         const limited = toCollection(gen).limit(2)
         assert.deepStrictEqual(await limited.promise(), [0, 1])
+    })
+
+    it('can find a matching element', async function () {
+        assert.deepStrictEqual(await toCollection(gen).find(x => x > 0), 1)
+        assert.deepStrictEqual(await toCollection(gen).find(x => x > 2), undefined)
     })
 
     it('returns nothing if using non-positive limit count', async function () {
@@ -139,22 +155,50 @@ describe('AsyncCollection', function () {
         assert.deepStrictEqual(await mapped.promise(), ['2!', '6!', '10!'])
     })
 
-    it('does not iterate over the generator when applying transformations', async function () {
-        let callCount = 0
-        async function* count() {
-            while (callCount < 1000) {
-                yield callCount++
-            }
-        }
+    function defineProperty<T, U, K extends PropertyKey>(
+        obj: T,
+        key: K,
+        desc: TypedPropertyDescriptor<U>
+    ): T & { [P in K]: U } {
+        return Object.defineProperty(obj, key, desc) as T & { [P in K]: U }
+    }
 
-        const x = toCollection(count)
+    function createCounter(maxCalls = 1000) {
+        let callCount = 0
+
+        return defineProperty(
+            async function* () {
+                while (callCount < maxCalls) {
+                    yield callCount++
+                }
+            },
+            'callCount',
+            { get: () => callCount }
+        )
+    }
+
+    it('does not iterate over the generator when applying transformations', async function () {
+        const counter = createCounter()
+        const x = toCollection(counter)
             .filter(o => o > 1)
             .map(o => [o, o * o])
             .flatten()
+
         await new Promise(r => setImmediate(r))
-        assert.strictEqual(callCount, 0)
+        assert.strictEqual(counter.callCount, 0)
         assert.deepStrictEqual(await x.limit(6).promise(), [2, 4, 3, 9, 4, 16])
-        assert.strictEqual(callCount, 6)
+        assert.strictEqual(counter.callCount, 6)
+    })
+
+    it('does not iterate over the generator after finding a match', async function () {
+        const counter = createCounter()
+        const x = await toCollection(counter)
+            .filter(o => o > 1)
+            .map(o => [o, o * o])
+            .find(o => o[1] > 25)
+
+        assert.deepStrictEqual(x, [6, 36])
+        assert.strictEqual(counter.callCount, 7)
     })
 
     describe('errors', function () {
