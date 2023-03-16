@@ -54,6 +54,10 @@ export class AuthUtil {
             return
         }
 
+        this.auth.onDidChangeConnectionState(() => {
+            this.refreshCodeWhisperer()
+        })
+
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
                 if (this.auth.getConnectionState(conn) === 'valid') {
