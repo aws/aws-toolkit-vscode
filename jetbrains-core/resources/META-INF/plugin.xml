@@ -412,7 +412,6 @@ with what features/services are supported.
         <action id="aws.toolkit.toolwindow.credentials.rightGroup.more" class="software.aws.toolkits.jetbrains.core.credentials.actions.MoreConnectionActionsAction"/>
         <group id="aws.toolkit.toolwindow.credentials.rightGroup.more.group">
             <action id="aws.toolkit.toolwindow.newConnection" class="software.aws.toolkits.jetbrains.core.credentials.actions.NewConnectionAction"/>
-            <action id="aws.toolkit.toolwindow.sso.signout" class="software.aws.toolkits.jetbrains.core.credentials.actions.SsoSignoutAction"/>
         </group>
         <action id="aws.toolkit.toolwindow.credentials.rightGroup.help" class="software.aws.toolkits.jetbrains.core.credentials.actions.CredentialsHelpAction"/>
 

@@ -242,14 +242,12 @@ class ConnectionSettingsMenuBuilderTest {
             .withRecentChoices(projectRule.project)
             .build()
 
-        val titleAction = group.getChildren().filterIsInstance<Separator>().filter { it.text == message("settings.regions.recent") }
         val recentActions = group.getChildren().filterIsInstance<SwitchRegionAction>()
         val allRegions = group.getChildren().filterIsInstance<ActionGroup>()
             .first { it.templatePresentation.text == message("settings.regions.region_sub_menu") }
             .getChildren()
             .filterIsInstance<SwitchRegionAction>()
 
-        assertThat(titleAction).singleElement()
         assertThat(recentActions).hasSize(settingsManager.recentlyUsedRegions().size)
         assertThat(allRegions).hasSize(AwsRegionProvider.getInstance().allRegions().size)
     }
@@ -289,7 +287,7 @@ class ConnectionSettingsMenuBuilderTest {
             .withRecentChoices(projectRule.project)
             .build()
 
-        val titleAction = group.getChildren().filterIsInstance<Separator>().filter { it.text == message("settings.credentials.recent") }
+        val titleAction = group.getChildren().filterIsInstance<Separator>().filter { it.text == message("settings.credentials.iam") }
         val recentActions = group.getChildren().filterIsInstance<SwitchCredentialsAction>()
         val allCredentials = group.getChildren().filterIsInstance<ActionGroup>()
             .first { it.templatePresentation.text == message("settings.credentials.profile_sub_menu") }

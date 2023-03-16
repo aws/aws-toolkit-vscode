@@ -182,7 +182,29 @@ fun logoutFromSsoConnection(project: Project?, connection: AwsBearerTokenConnect
     }
 }
 
-private fun reauthProviderIfNeeded(connection: ToolkitConnection): BearerTokenProvider {
+fun lazyGetUnauthedBearerConnections() =
+    ToolkitAuthManager.getInstance().listConnections().filterIsInstance<AwsBearerTokenConnection>().filter {
+        it.lazyIsUnauthedBearerConnection()
+    }
+
+fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
+    val provider = (getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider)
+
+    if (provider != null) {
+        if (provider.currentToken() == null) {
+            // provider is unauthed if no token
+            return true
+        }
+
+        // or state is not authorized
+        return provider.state() != BearerTokenAuthState.AUTHORIZED
+    }
+
+    // not a bearer token provider
+    return false
+}
+
+fun reauthProviderIfNeeded(connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
     val state = tokenProvider.state()
     runUnderProgressIfNeeded(null, message("settings.states.validating.short"), false) {

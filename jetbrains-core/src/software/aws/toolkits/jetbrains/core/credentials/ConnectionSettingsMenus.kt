@@ -10,10 +10,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Presentation
-import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.DumbAwareToggleAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
@@ -22,6 +20,7 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.BOTH
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.CREDENTIALS
+import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.NONE
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.REGIONS
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsMenuBuilder.Companion.connectionSettingsMenuBuilder
 import software.aws.toolkits.jetbrains.ui.ActionPopupComboLogic
@@ -34,6 +33,7 @@ import javax.swing.event.ChangeListener
  * Determine what settings the settings selector is capable of changing
  */
 enum class ChangeSettingsMode(val showRegions: Boolean, val showCredentials: Boolean) {
+    NONE(false, false),
     CREDENTIALS(false, true),
     REGIONS(true, false),
     BOTH(true, true)
@@ -54,12 +54,13 @@ abstract class SettingsSelectorLogicBase(private val menuMode: ChangeSettingsMod
         CREDENTIALS -> credentialsDisplay()
         REGIONS -> regionDisplay()
         BOTH -> "${credentialsDisplay()}@${regionDisplay()}"
+        NONE -> ""
     }
 
     override fun tooltip(): String? = when (menuMode) {
         CREDENTIALS -> credentialsTooltip()
         REGIONS -> regionTooltip()
-        BOTH -> null
+        NONE, BOTH -> null
     }
 
     private fun regionDisplay() = currentRegion()?.id ?: message("settings.regions.none_selected")
@@ -163,6 +164,7 @@ open class ProjectLevelSettingSelector(private val project: Project, settingsMod
 
     override fun customizeSelectionMenu(builder: ConnectionSettingsMenuBuilder) {
         builder.withRecentChoices(project)
+        builder.withIndividualIdentityActions(project)
     }
 }
 
@@ -182,35 +184,14 @@ class ToolkitConnectionComboBoxAction(private val project: Project) : ComboBoxAc
             val connectionManager = ToolkitConnectionManager.getInstance(project)
             connectionManager.switchConnection(AwsConnectionManagerConnection(project))
         }
+
+        override fun customizeSelectionMenu(builder: ConnectionSettingsMenuBuilder) {
+            super.customizeSelectionMenu(builder)
+            builder.withIndividualIdentitySettings(project)
+        }
     }
 
-    override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
-        val connectionManager = ToolkitConnectionManager.getInstance(project)
-        val group = DefaultActionGroup()
-        group.add(Separator.create(message("settings.credentials.individual_identity_sub_menu")))
-        group.addAll(
-            ToolkitAuthManager.getInstance().listConnections().map {
-                object : DumbAwareToggleAction(it.label) {
-                    val connection = it
-                    override fun isSelected(e: AnActionEvent): Boolean {
-                        return connectionManager.activeConnection() == connection
-                    }
-
-                    override fun setSelected(e: AnActionEvent, state: Boolean) {
-                        if (state) {
-                            connectionManager.switchConnection(connection)
-                        }
-                    }
-                }
-            }
-        )
-
-        group.addAll(
-            logic.selectionMenuActions()
-        )
-
-        return group
-    }
+    override fun createPopupActionGroup(button: JComponent?) = logic.selectionMenuActions()
 
     override fun update(e: AnActionEvent) {
         val active = ToolkitConnectionManager.getInstance(project).activeConnection()

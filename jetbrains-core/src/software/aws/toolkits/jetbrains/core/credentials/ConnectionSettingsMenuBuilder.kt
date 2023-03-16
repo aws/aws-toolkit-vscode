@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -10,6 +11,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
@@ -19,10 +21,18 @@ import software.aws.toolkits.resources.message
 
 class ConnectionSettingsMenuBuilder private constructor() {
     private data class RegionSelectionSettings(val currentSelection: AwsRegion?, val onChange: (AwsRegion) -> Unit)
-    private data class CredentialsSelectionSettings(val currentSelection: CredentialIdentifier?, val onChange: (CredentialIdentifier) -> Unit)
+    private data class ProfileSelectionSettings(val currentSelection: CredentialIdentifier?, val onChange: (CredentialIdentifier) -> Unit)
+
+    private sealed interface IdentitySelectionSettings
+    private data class SelectableIdentitySelectionSettings(
+        val currentSelection: AwsBearerTokenConnection?,
+        val onChange: (AwsBearerTokenConnection) -> Unit
+    ) : IdentitySelectionSettings
+    private data class ActionsIdentitySelectionSettings(val project: Project?) : IdentitySelectionSettings
 
     private var regionSelectionSettings: RegionSelectionSettings? = null
-    private var credentialsSelectionSettings: CredentialsSelectionSettings? = null
+    private var profileSelectionSettings: ProfileSelectionSettings? = null
+    private var identitySelectionSettings: IdentitySelectionSettings? = null
     private var accountSettingsManager: AwsConnectionManager? = null
 
     fun withRegions(currentSelection: AwsRegion?, onChange: (AwsRegion) -> Unit): ConnectionSettingsMenuBuilder = apply {
@@ -30,21 +40,80 @@ class ConnectionSettingsMenuBuilder private constructor() {
     }
 
     fun withCredentials(currentSelection: CredentialIdentifier?, onChange: (CredentialIdentifier) -> Unit): ConnectionSettingsMenuBuilder = apply {
-        credentialsSelectionSettings = CredentialsSelectionSettings(currentSelection, onChange)
+        profileSelectionSettings = ProfileSelectionSettings(currentSelection, onChange)
     }
 
     fun withRecentChoices(project: Project): ConnectionSettingsMenuBuilder = apply {
         accountSettingsManager = AwsConnectionManager.getInstance(project)
     }
 
+    fun withIndividualIdentitySettings(project: Project) {
+        identitySelectionSettings = SelectableIdentitySelectionSettings(
+            currentSelection = ToolkitConnectionManager.getInstance(project).activeConnection() as? AwsBearerTokenConnection,
+            onChange = ToolkitConnectionManager.getInstance(project)::switchConnection
+        )
+    }
+
+    fun withIndividualIdentityActions(project: Project?) {
+        identitySelectionSettings = ActionsIdentitySelectionSettings(project)
+    }
+
     fun build(): DefaultActionGroup {
         val topLevelGroup = DefaultActionGroup()
 
+        identitySelectionSettings?.let { settings ->
+            val connections = ToolkitAuthManager.getInstance().listConnections().filterIsInstance<AwsBearerTokenConnection>()
+            if (connections.isEmpty()) {
+                return@let
+            }
+
+            topLevelGroup.add(Separator.create(message("settings.credentials.individual_identity_sub_menu")))
+            val actions = when (settings) {
+                is SelectableIdentitySelectionSettings -> {
+                    connections.map {
+                        object : DumbAwareToggleAction<AwsBearerTokenConnection>(
+                            title = it.label,
+                            value = it,
+                            selected = it == settings.currentSelection,
+                            onSelect = settings.onChange
+                        ) {
+                            override fun update(e: AnActionEvent) {
+                                super.update(e)
+                                if (value.lazyIsUnauthedBearerConnection()) {
+                                    e.presentation.icon = AllIcons.General.Warning
+                                }
+                            }
+                        }
+                    }
+                }
+
+                is ActionsIdentitySelectionSettings -> {
+                    connections.map {
+                        IndividualIdentityActionGroup(it)
+                    }
+                }
+            }
+
+            topLevelGroup.addAll(actions)
+
+            topLevelGroup.add(Separator.create())
+        }
+
+        val profileActions = createProfileActions()
         val regionActions = createRegionActions()
+
+        // no header if only regions
+        if (profileActions.isNotEmpty() && regionActions.isNotEmpty()) {
+            // both profiles & regions
+            topLevelGroup.add(Separator.create(message("settings.credentials.iam_and_regions")))
+        } else if (profileActions.isNotEmpty() && regionActions.isEmpty()) {
+            // only profiles
+            topLevelGroup.add(Separator.create(message("settings.credentials.iam")))
+        }
+
         val regionSettings = regionSelectionSettings
         val recentRegions = accountSettingsManager?.recentlyUsedRegions()
         if (recentRegions?.isNotEmpty() == true && regionSettings != null) {
-            topLevelGroup.add(Separator.create(message("settings.regions.recent")))
             recentRegions.forEach {
                 topLevelGroup.add(SwitchRegionAction(it, it == regionSettings.currentSelection, regionSettings.onChange))
             }
@@ -56,11 +125,11 @@ class ConnectionSettingsMenuBuilder private constructor() {
             topLevelGroup.addAll(regionActions)
         }
 
-        val profileActions = createProfileActions()
-        val credentialsSettings = credentialsSelectionSettings
+        topLevelGroup.add(Separator.create())
+
+        val credentialsSettings = profileSelectionSettings
         val recentCredentials = accountSettingsManager?.recentlyUsedCredentials()
         if (recentCredentials?.isNotEmpty() == true && credentialsSettings != null) {
-            topLevelGroup.add(Separator.create(message("settings.credentials.recent")))
             recentCredentials.forEach {
                 topLevelGroup.add(SwitchCredentialsAction(it, it == credentialsSettings.currentSelection, credentialsSettings.onChange))
             }
@@ -111,7 +180,7 @@ class ConnectionSettingsMenuBuilder private constructor() {
     }
 
     private fun createProfileActions(): List<AnAction> = buildList {
-        val (currentSelection, onChange) = credentialsSelectionSettings ?: return@buildList
+        val (currentSelection, onChange) = profileSelectionSettings ?: return@buildList
 
         add(Separator.create(message("settings.credentials")))
 
@@ -152,6 +221,39 @@ class ConnectionSettingsMenuBuilder private constructor() {
         selected: Boolean,
         onSelect: (CredentialIdentifier) -> Unit
     ) : DumbAwareToggleAction<CredentialIdentifier>(value.displayName, value, selected, onSelect)
+
+    inner class IndividualIdentityActionGroup(private val value: AwsBearerTokenConnection) :
+        DefaultActionGroup(
+            {
+                val suffix = if (value.lazyIsUnauthedBearerConnection()) {
+                    message("credentials.individual_identity.expired")
+                } else {
+                    message("credentials.individual_identity.connected")
+                }
+
+                "${value.label} $suffix"
+            },
+            true
+        ) {
+        init {
+            templatePresentation.icon = if (value.lazyIsUnauthedBearerConnection()) AllIcons.General.Warning else null
+
+            addAll(
+                object : DumbAwareAction(message("credentials.individual_identity.reconnect")) {
+                    override fun actionPerformed(e: AnActionEvent) {
+                        reauthProviderIfNeeded(value)
+                    }
+                },
+
+                object : DumbAwareAction(message("credentials.individual_identity.signout")) {
+                    override fun actionPerformed(e: AnActionEvent) {
+                        val settings = identitySelectionSettings as? ActionsIdentitySelectionSettings
+                        logoutFromSsoConnection(settings?.project, value)
+                    }
+                }
+            )
+        }
+    }
 
     companion object {
         fun connectionSettingsMenuBuilder(): ConnectionSettingsMenuBuilder = ConnectionSettingsMenuBuilder()

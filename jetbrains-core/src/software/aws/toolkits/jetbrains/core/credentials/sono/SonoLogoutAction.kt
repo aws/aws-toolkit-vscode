@@ -10,7 +10,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenPr
 
 class SonoLogoutAction : DumbAwareAction() {
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = provider(e)?.supportsLogout() ?: false
+        e.presentation.isEnabledAndVisible = provider(e)?.supportsLogout() ?: false
     }
 
     override fun actionPerformed(e: AnActionEvent) {
