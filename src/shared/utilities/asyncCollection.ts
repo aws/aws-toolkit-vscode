@@ -68,19 +68,7 @@ const asyncCollection = Symbol('asyncCollection')
  * function. That is, any 'final' operation uses its own contextually bound generator function separate from
  * any predecessor collections.
  */
-export function toCollection<T>(iterable: AsyncIterable<T>): AsyncCollection<T>
-export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined | void>): AsyncCollection<T>
-export function toCollection<T>(
-    generatorOrIterable: (() => AsyncGenerator<T, T | undefined | void>) | AsyncIterable<T>
-): AsyncCollection<T> {
-    const generator = isAsyncIterable(generatorOrIterable)
-        ? async function* () {
-              for await (const val of generatorOrIterable) {
-                  yield val
-              }
-          }
-        : generatorOrIterable
-
+export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined | void>): AsyncCollection<T> {
     async function* unboxIter() {
         const last = yield* generator()
         if (last !== undefined) {
