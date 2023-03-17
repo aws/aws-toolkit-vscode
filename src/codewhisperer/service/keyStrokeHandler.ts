@@ -153,7 +153,15 @@ export class KeyStrokeHandler {
                 }
             }
 
-            if (['python', 'java'].includes(editor.document.languageId)) {
+            if (
+                ['python', 'java'].includes(editor.document.languageId) &&
+                [
+                    DocumentChangedSource.EnterKey,
+                    DocumentChangedSource.SpecialCharsKey,
+                    DocumentChangedSource.IntelliSense,
+                    DocumentChangedSource.RegularKey,
+                ].includes(changedSource)
+            ) {
                 triggerType = this.checkFromClassifier(event, editor, triggerType) ? 'Classifier' : triggerType
             }
 
