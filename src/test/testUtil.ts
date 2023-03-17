@@ -169,7 +169,7 @@ export function assertTelemetry<K extends MetricName>(
     let metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
 
-    for (let i = 0; i <= expectedList.length; i++) {
+    for (let i = 0; i < expectedList.length; i++) {
         const metric = expectedList[i]
         const expectedCopy = { ...metric } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
         const passive = expectedCopy?.passive
