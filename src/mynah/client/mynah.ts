@@ -11,6 +11,7 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 
 const SearchEndpoint = 'https://zip88rz00d.execute-api.us-east-1.amazonaws.com/prod'
 const SearchRegion = 'us-east-1'
+const MynahAwsServiceTimeout = 3000
 
 export type Context = Readonly<MynahClient.Context>
 export type SearchRequest = Readonly<MynahClient.SearchRequest>
@@ -32,6 +33,9 @@ export class DefaultMynahSearchClient {
                 region: SearchRegion,
                 credentials: { accessKeyId: '123', secretAccessKey: '456' },
                 endpoint: SearchEndpoint,
+                httpOptions: {
+                    timeout: MynahAwsServiceTimeout,
+                },
             } as ServiceOptions,
             undefined,
             false

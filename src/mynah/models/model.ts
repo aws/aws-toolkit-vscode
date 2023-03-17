@@ -17,7 +17,8 @@ export abstract class SearchInput {
         queryId?: string,
         codeQuery?: CodeQuery,
         codeSelection?: CodeSelection,
-        selectedTab?: string
+        selectedTab?: string,
+        uiRequestId?: string
     ): Promise<void>
 }
 
@@ -81,6 +82,7 @@ export interface Query {
     readonly codeSelection?: CodeSelection
     readonly headerInfo?: HeaderInfo
     readonly selectedTab?: string
+    readonly uiRequestId?: string
 }
 
 export enum NavigationTabItems {

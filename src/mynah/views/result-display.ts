@@ -364,7 +364,8 @@ export class ResultDisplay {
                             panelId,
                             msg.codeQuery,
                             msg.codeSelection,
-                            msg.selectedTab
+                            msg.selectedTab,
+                            msg.uiRequestId
                         )
                     }
                     break
@@ -688,7 +689,8 @@ export class ResultDisplay {
         code?: string,
         errorMessage?: string,
         headerInfo?: HeaderInfo,
-        selectedTab?: string
+        selectedTab?: string,
+        uiRequestId?: string
     ): void {
         const panel = this.panelStore.getPanel(panelId)
 
@@ -714,6 +716,7 @@ export class ResultDisplay {
                     codeQuery,
                     codeSelection,
                     headerInfo,
+                    uiRequestId,
                 })
             )
         } else {
@@ -729,7 +732,8 @@ export class ResultDisplay {
                     code,
                     errorMessage,
                     headerInfo,
-                    selectedTab
+                    selectedTab,
+                    uiRequestId
                 )
             }, 50)
             return
@@ -814,7 +818,8 @@ export class ResultDisplay {
                     query.code,
                     undefined,
                     query.headerInfo,
-                    this.selectedTab[panelId]
+                    this.selectedTab[panelId],
+                    query.uiRequestId
                 )
             })
             .catch((error: Error) => {

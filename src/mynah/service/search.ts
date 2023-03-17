@@ -169,15 +169,13 @@ export const getSearchSuggestions = async (
                     apiDocsSearchRequest.code?.usedFullyQualifiedNames &&
                     apiDocsSearchRequest.code?.usedFullyQualifiedNames.length > 0
                 ) {
-                    try {
-                        const output = client.apiDocsSearch(apiDocsSearchRequest)
-                        output.then((value: ApiDocsSearchResponse) => {
+                    const output = client.apiDocsSearch(apiDocsSearchRequest)
+                    output
+                        .then((value: ApiDocsSearchResponse) => {
                             const suggestionList = processApiDocsSuggestions(value)
                             resolve(suggestionList as ApiDocsSuggestion[])
                         })
-                    } catch (err: any) {
-                        throw new Error(`Search request failed: ${err}`)
-                    }
+                        .catch(err => reject(err))
                 } else {
                     throw new Error(`Not possible to search API Docs without used fully qualified names.`)
                 }
@@ -200,15 +198,13 @@ export const getSearchSuggestions = async (
                             : query.codeQuery,
                 }
 
-                try {
-                    const output = client.search(searchRequest)
-                    output.then((value: SearchResponse) => {
+                const output = client.search(searchRequest)
+                output
+                    .then((value: SearchResponse) => {
                         const suggestionList = processSuggestions(value)
                         resolve(suggestionList as SearchSuggestion[])
                     })
-                } catch (err: any) {
-                    throw new Error(`Search request failed: ${err}`)
-                }
+                    .catch(err => reject(err))
             }
         }
     })

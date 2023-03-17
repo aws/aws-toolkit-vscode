@@ -116,6 +116,13 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 content: error.message,
                 type: NotificationType.ERROR,
             })
+            // Clearing the loader lock from UI if there is an error
+            mynahUI.updateStore({
+                loading: false,
+                suggestions: [],
+            })
+            // Last request is failed, we're clearing it
+            connector.clearLastUISearchRequestID()
         },
     })
 

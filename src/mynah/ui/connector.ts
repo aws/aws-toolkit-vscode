@@ -27,6 +27,7 @@ export class Connector {
     private readonly postMessageHandler
     private readonly onMessageReceived
     private readonly onError
+    private uiRequestId?: string
     constructor(props: ConnectorProps) {
         this.postMessageHandler = props.postMessageHandler
         this.onMessageReceived = props.onMessageReceived
@@ -56,38 +57,44 @@ export class Connector {
                 this.onError(messageData.error)
             } else {
                 const mappedReceivedMessage: MynahUIDataModel = {}
-                if (messageData.autocompleteList !== undefined) {
-                    mappedReceivedMessage.autoCompleteSuggestions = messageData.autocompleteList
-                }
-                if (messageData.suggestions !== undefined) {
-                    mappedReceivedMessage.suggestions = messageData.suggestions
+                // Extension layer can still set any part of the store necessary (for example live search),
+                // But requests sent from UI should match the id with the returning one.
+                // If messageData contains a ui request id but doesn't match with the one with the last one,
+                // It means that request somehow cancelled by the user (clear all clicked or a new search performed)
+                if (messageData.uiRequestId === undefined || messageData.uiRequestId === this.uiRequestId) {
+                    if (messageData.autocompleteList !== undefined) {
+                        mappedReceivedMessage.autoCompleteSuggestions = messageData.autocompleteList
+                    }
+                    if (messageData.suggestions !== undefined) {
+                        mappedReceivedMessage.suggestions = messageData.suggestions
+                        mappedReceivedMessage.loading = false
+                    }
+                    if (messageData.searchHistoryRecords !== undefined) {
+                        mappedReceivedMessage.searchHistory = messageData.searchHistoryRecords
+                    }
+                    if (messageData.queryText !== undefined || messageData.query !== undefined) {
+                        mappedReceivedMessage.query = messageData.queryText ?? messageData.query
+                    }
+                    if (messageData.queryContext !== undefined) {
+                        mappedReceivedMessage.matchPolicy = messageData.queryContext
+                    }
+                    if (messageData.codeQuery !== undefined) {
+                        mappedReceivedMessage.codeQuery = messageData.codeQuery
+                    }
+                    if (messageData.code !== undefined) {
+                        mappedReceivedMessage.code = messageData.code
+                    }
+                    if (messageData.codeSelection !== undefined) {
+                        mappedReceivedMessage.codeSelection = messageData.codeSelection
+                    }
+                    if (messageData.headerInfo !== undefined) {
+                        mappedReceivedMessage.headerInfo = messageData.headerInfo
+                    }
+                    if (messageData.liveSearchAction !== undefined) {
+                        mappedReceivedMessage.liveSearchState = messageData.liveSearchAction
+                    }
+                } else {
                     mappedReceivedMessage.loading = false
-                }
-                if (messageData.searchHistoryRecords !== undefined) {
-                    mappedReceivedMessage.searchHistory = messageData.searchHistoryRecords
-                }
-                if (messageData.queryText !== undefined || messageData.query !== undefined) {
-                    mappedReceivedMessage.query = messageData.queryText ?? messageData.query
-                }
-                if (messageData.queryContext !== undefined) {
-                    mappedReceivedMessage.matchPolicy = messageData.queryContext
-                }
-                if (messageData.codeQuery !== undefined) {
-                    mappedReceivedMessage.codeQuery = messageData.codeQuery
-                }
-                if (messageData.code !== undefined) {
-                    mappedReceivedMessage.code = messageData.code
-                }
-                if (messageData.codeSelection !== undefined) {
-                    mappedReceivedMessage.codeSelection = messageData.codeSelection
-                }
-
-                if (messageData.headerInfo !== undefined) {
-                    mappedReceivedMessage.headerInfo = messageData.headerInfo
-                }
-
-                if (messageData.liveSearchAction !== undefined) {
-                    mappedReceivedMessage.liveSearchState = messageData.liveSearchAction
                 }
 
                 if (this.onMessageReceived !== undefined) {
@@ -106,6 +113,10 @@ export class Connector {
         }
     }
 
+    clearLastUISearchRequestID = () => {
+        this.uiRequestId = undefined
+    }
+
     tabChanged = (selectedTab: string) => {
         this.postMessageHandler({
             command: 'tabChange',
@@ -119,11 +130,15 @@ export class Connector {
         isFromAutocomplete?: boolean,
         isFromTabChange?: boolean
     ): void => {
-        let trigger = {}
+        let payloadExtend: any = {}
         if (isFromHistory) {
-            trigger = { trigger: SearchTrigger.SEARCH_HISTORY }
-        } else if (isFromTabChange) {
-            trigger = { trigger: SearchTrigger.CHANGE_TAB }
+            payloadExtend = { trigger: SearchTrigger.SEARCH_HISTORY }
+        } else {
+            if (isFromTabChange) {
+                payloadExtend = { trigger: SearchTrigger.CHANGE_TAB }
+            }
+            this.uiRequestId = new Date().getTime().toString()
+            payloadExtend.uiRequestId = this.uiRequestId
         }
         this.postMessageHandler({
             command: 'search',
@@ -134,7 +149,7 @@ export class Connector {
             ...(searchPayload.codeSelection?.selectedCode !== '' ? { codeSelection: searchPayload.codeSelection } : {}),
             codeQuery: searchPayload.codeQuery,
             isFromAutocomplete,
-            ...trigger,
+            ...payloadExtend,
         })
     }
 
@@ -259,6 +274,7 @@ export class Connector {
     }
 
     resetStore = (): void => {
+        this.clearLastUISearchRequestID()
         this.postMessageHandler({
             command: 'resetStore',
         })
