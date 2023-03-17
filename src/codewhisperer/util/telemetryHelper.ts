@@ -7,7 +7,7 @@ import globals from '../../shared/extensionGlobals'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodewhispererUserDecision, telemetry } from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
@@ -35,6 +35,8 @@ export class TelemetryHelper {
     public cursorOffset: number
 
     public startUrl: string | undefined
+
+    public decisionQueue: UserDecisionQueue = new UserDecisionQueue(5)
 
     // variables for client component latency
     private invokeSuggestionStartTime = 0
@@ -113,7 +115,7 @@ export class TelemetryHelper {
             if (_elem.content.length === 0) {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
-            telemetry.codewhisperer_userDecision.emit({
+            const event = {
                 codewhispererRequestId: requestId,
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
@@ -126,7 +128,15 @@ export class TelemetryHelper {
                 codewhispererCompletionType: this.completionType,
                 codewhispererLanguage: languageContext.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
-            })
+            }
+            telemetry.codewhisperer_userDecision.emit(event)
+            if (
+                this.decisionQueue.lastDecisionTime &&
+                Date.now() - this.decisionQueue.lastDecisionTime > 2 * 60 * 1000
+            ) {
+                this.decisionQueue.clear()
+            }
+            this.decisionQueue.push(event, i === recommendations.length - 1)
         })
     }
 
@@ -229,5 +239,85 @@ export class TelemetryHelper {
             credentialStartUrl: this.startUrl,
         })
         this.resetClientComponentLatencyTime()
+    }
+}
+
+class UserDecisionQueue {
+    public readonly size: number
+
+    private buffer: Map<string, CodewhispererSuggestionState[]> = new Map()
+    private previousN: CodewhispererSuggestionState[] = []
+    public lastDecisionTime?: number
+
+    constructor(size: number) {
+        this.size = size
+    }
+
+    push(event: CodewhispererUserDecision, isLast: boolean = false) {
+        const sessionId = event.codewhispererSessionId
+        const decision = event.codewhispererSuggestionState
+        if (!sessionId) {
+            return
+        }
+
+        if (this.buffer.has(sessionId)) {
+            this.buffer.get(sessionId)?.push(decision)
+        } else {
+            this.buffer.set(sessionId, [decision])
+        }
+        this.lastDecisionTime = Date.now()
+        if (isLast) {
+            this.flush()
+        }
+    }
+
+    clear() {
+        this.buffer = new Map()
+        this.previousN = []
+    }
+
+    flush() {
+        // assert size is strict equal to 1
+        if (this.buffer.size !== 1) {
+            console.error('size is not correct')
+            return
+        }
+        let prevSessionId
+
+        for (const [sessionId, decisions] of this.buffer) {
+            prevSessionId = sessionId
+            this.previousN.push(this.aggregate(decisions))
+            if (this.previousN.length > this.size) {
+                this.previousN = this.previousN.splice(1)
+            }
+        }
+        if (prevSessionId) {
+            this.buffer.delete(prevSessionId)
+        }
+    }
+
+    mostRecentDecision(): CodewhispererSuggestionState | undefined {
+        return this.previousN[this.previousN.length - 1]
+    }
+
+    topNDecision(): CodewhispererSuggestionState[] {
+        return this.previousN
+    }
+
+    // aggregate recommendation level suggestion state to trigger level suggestion state
+    private aggregate(decisions: CodewhispererSuggestionState[]): CodewhispererSuggestionState {
+        let isEmpty = true
+        for (let i = 0; i < decisions.length; i++) {
+            const decision = decisions[i]
+            if (decision === 'Accept') {
+                return 'Accept'
+            } else if (decision === 'Reject') {
+                return 'Reject'
+            } else if (decision !== 'Empty') {
+                isEmpty = false
+            }
+        }
+
+        return isEmpty ? 'Empty' : 'Discard'
     }
 }
