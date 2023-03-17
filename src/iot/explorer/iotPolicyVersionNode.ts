@@ -55,7 +55,7 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
             version.versionId,
             version.isDefaultVersion ? '*' : ''
         )
-        this.contextValue = 'awsIotPolicyVersionNode.' + (this.isDefault ? 'DEFAULT' : 'NONDEFAULT')
+        this.contextValue = 'awsIotPolicyVersionNode-AN.' + (this.isDefault ? 'DEFAULT' : 'NONDEFAULT')
     }
 
     public get arn(): string {

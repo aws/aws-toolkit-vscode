@@ -37,7 +37,7 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(thing.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = thing.name
         this.iconPath = getIcon('aws-iot-thing')
-        this.contextValue = 'awsIotThingNode'
+        this.contextValue = 'awsIotThingNode-AN'
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

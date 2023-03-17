@@ -52,7 +52,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             this.description = `${readableSize}, ${getRelativeDate(file.lastModified, now)}`
         }
         this.iconPath = getIcon('vscode-file')
-        this.contextValue = 'awsS3FileNode'
+        this.contextValue = 'awsS3FileNode-AN'
         this.command = !isCloud9()
             ? {
                   command: 'aws.s3.openFile',

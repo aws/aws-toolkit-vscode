@@ -20,7 +20,7 @@ import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-export const contextValueStateMachine = 'awsStateMachineNode'
+export const contextValueStateMachine = 'awsStateMachineNode-AN'
 
 const sfnNodeMap = new Map<string, StepFunctionsNode>()
 

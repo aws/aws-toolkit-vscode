@@ -34,7 +34,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = folder.path
         this.iconPath = getIcon('vscode-folder')
-        this.contextValue = 'awsS3FolderNode'
+        this.contextValue = 'awsS3FolderNode-AN'
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

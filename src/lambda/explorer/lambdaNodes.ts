@@ -18,8 +18,8 @@ import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
-export const contextValueLambdaFunction = 'awsRegionFunctionNode'
-export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable'
+export const contextValueLambdaFunction = 'awsRegionFunctionNode-AN'
+export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable-AN'
 
 /**
  * An AWS Explorer node representing the Lambda Service.

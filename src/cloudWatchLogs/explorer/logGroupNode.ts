@@ -10,7 +10,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
-export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
+export const contextValueCloudwatchLog = 'awsCloudWatchLogNode-A'
 
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(public override readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {

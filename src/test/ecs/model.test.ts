@@ -54,7 +54,7 @@ describe('Service', function () {
 
         await assertTreeItem(service, {
             label: serviceData.serviceName,
-            contextValue: 'awsEcsServiceNode.DISABLED',
+            contextValue: 'awsEcsServiceNode-A.DISABLED',
         })
     })
 

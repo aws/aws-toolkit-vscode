@@ -106,8 +106,8 @@ export class Service {
         item.iconPath = getIcon('aws-ecs-service')
         item.tooltip = `${this.description.serviceArn}\nTask Definition: ${this.description.taskDefinition}`
         item.contextValue = this.description.enableExecuteCommand
-            ? 'awsEcsServiceNode.ENABLED'
-            : 'awsEcsServiceNode.DISABLED'
+            ? 'awsEcsServiceNode-A.ENABLED'
+            : 'awsEcsServiceNode-A.DISABLED'
 
         return item
     }
