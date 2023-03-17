@@ -455,7 +455,7 @@ class CodeCatalystClientInternal {
             collection: AsyncCollection<T[]>,
             fn: (element: T) => AsyncCollection<U[]>
         ): AsyncCollection<U[]> {
-            return toCollection(joinAll(collection.flatten().map(fn)))
+            return toCollection(() => joinAll(collection.flatten().map(fn)))
         }
 
         switch (resourceType) {
