@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as util from 'util'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
@@ -185,15 +186,7 @@ export function assertTelemetry<K extends MetricName>(
         if (expectedList.length == 1) {
             assert.deepStrictEqual(metadata[0], expectedCopy)
         } else {
-            const found = metadata.findIndex(val => {
-                // Hacky way to "deep compare".
-                try {
-                    assert.deepStrictEqual(val, expectedCopy)
-                } catch (e) {
-                    return false
-                }
-                return true
-            })
+            const found = metadata.findIndex(val => util.isDeepStrictEqual(val, expectedCopy))
             assert.ok(
                 found >= 0,
                 `telemetry item ${i + 1} (of ${
