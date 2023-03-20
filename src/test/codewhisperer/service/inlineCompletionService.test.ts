@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { InlineCompletionService, CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionService'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
@@ -93,6 +93,8 @@ describe('inlineCompletionService', function () {
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '' },
             ]
+
+            assert.ok(RecommendationHandler.instance.recommendations.length > 0)
             await InlineCompletionService.instance.clearInlineCompletionStates(createMockTextEditor())
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
             assert.strictEqual(RecommendationHandler.instance.recommendations.length, 0)
@@ -139,6 +141,39 @@ describe('inlineCompletionService', function () {
                 kind: vscode.TextEditorSelectionChangeKind.Mouse,
             })
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
+        })
+    })
+})
+
+describe('CWInlineCompletionProvider', function () {
+    beforeEach(function () {
+        resetCodeWhispererGlobalVariables()
+    })
+
+    describe('provideInlineCompletionItems', function () {
+        beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should return undefined if position is before RecommendationHandler start pos', async function () {
+            RecommendationHandler.instance.startPos = new vscode.Position(1, 1)
+            const position = new vscode.Position(0, 0)
+            const document = createMockDocument()
+            const fakeContext = {triggerKind: 0, selectedCompletionInfo: undefined}
+            const token = new vscode.CancellationTokenSource().token
+            const provider = new CWInlineCompletionItemProvider(0, 0)
+            const result = await provider.provideInlineCompletionItems(
+                document,
+                position,
+                fakeContext,
+                token
+            )
+          
+            assert.ok(result === undefined)
         })
     })
 })
