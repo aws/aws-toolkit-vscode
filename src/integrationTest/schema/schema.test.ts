@@ -83,7 +83,7 @@ describe('getDefaultSchemas()', () => {
             async () => {
                 return fs.existsSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
             },
-            { truthy: false, interval: 200, timeout: 5000 }
+            { truthy: true, interval: 200, timeout: 5000 }
         )
         assertTelemetry('toolkit_getExternalResource', [
             // Initial retrieval.

@@ -87,10 +87,6 @@ export class TelemetryLogger {
      * Queries telemetry for metrics, returning the entire structure.
      */
     public queryFull(query: MetricQuery): MetricDatum[] {
-        // const found: MetricDatum[] = []
-        // for (const q of quer) {
-        //     const foo = this._metrics.findIndex
-        // }
         return this._metrics.filter(m => m.MetricName === query.metricName)
     }
 }
