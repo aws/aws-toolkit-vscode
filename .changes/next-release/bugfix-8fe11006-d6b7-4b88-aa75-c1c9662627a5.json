@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Show friendlier application name when signing in using SSO"
+}
