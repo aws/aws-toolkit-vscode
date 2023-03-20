@@ -107,7 +107,7 @@ fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_SON
         val logger = getLogger<ToolkitAuthManager>()
         // requested Builder ID, but one already exists
         // TBD: do we do this for regular SSO too?
-        if (connection.isSono()) {
+        if (connection.isSono() && connection is BearerSsoConnection && scopes.all { it in connection.scopes }) {
             val signOut = computeOnEdt {
                 MessageDialogBuilder.yesNo(
                     message("toolkit.login.aws_builder_id.already_connected.title"),

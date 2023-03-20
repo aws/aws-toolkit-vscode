@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix confusing experience when attempting to sign in to multiple Builder IDs"
+}
