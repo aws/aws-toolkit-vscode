@@ -10,7 +10,7 @@ import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
-import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
+import { initializeAwsCredentialsStatusBarItem } from './credentials/statusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
@@ -119,7 +119,7 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.loginManager = loginManager
         globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        globals.schemaService = new SchemaService(context)
+        globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
 
         const settings = Settings.instance

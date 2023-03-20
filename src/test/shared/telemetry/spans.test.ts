@@ -68,11 +68,15 @@ describe('TelemetrySpan', function () {
 })
 
 describe('TelemetryTracer', function () {
+    let tracer: TelemetryTracer
     const metricName = 'test_metric' as MetricName
+
+    beforeEach(function () {
+        tracer = new TelemetryTracer()
+    })
 
     describe('record', function () {
         it('writes data to all spans in the current context', function () {
-            const tracer = new TelemetryTracer()
             tracer.apigateway_copyUrl.record({})
             tracer.run(metricName, () => tracer.record({ source: 'bar' }))
             tracer.spans[0]?.emit()
@@ -92,7 +96,6 @@ describe('TelemetryTracer', function () {
         }
 
         it('can instrument a function', async function () {
-            const tracer = new TelemetryTracer()
             const fn = tracer.instrument(metricName, assertPositive)
 
             assert.strictEqual(await fn(1), 1)
@@ -100,7 +103,6 @@ describe('TelemetryTracer', function () {
         })
 
         it('can instrument a function that fails', async function () {
-            const tracer = new TelemetryTracer()
             const fn = tracer.instrument(metricName, assertPositive)
 
             await assert.rejects(() => fn(-1))
@@ -110,14 +112,12 @@ describe('TelemetryTracer', function () {
 
     describe('metrics', function () {
         it('adds the span to the current context', function () {
-            const tracer = new TelemetryTracer()
             tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
 
             assert.strictEqual(tracer.spans[0].name, 'vscode_executeCommand')
         })
 
         it('does not change the context when emitting', function () {
-            const tracer = new TelemetryTracer()
             tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
 
             assert.strictEqual(tracer.activeSpan, undefined)
@@ -125,7 +125,6 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not change the active span when using a different span', function () {
-            const tracer = new TelemetryTracer()
             tracer.run(metricName, span => {
                 tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
@@ -136,7 +135,6 @@ describe('TelemetryTracer', function () {
         })
 
         it('re-uses existing spans if available', function () {
-            const tracer = new TelemetryTracer()
             tracer.vscode_executeCommand.record({ command: 'foo' })
             tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
 
@@ -148,7 +146,6 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not persist changes made to the span when switching contexts', function () {
-            const tracer = new TelemetryTracer()
             tracer.vscode_executeCommand.record({ command: 'foo' })
             tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
             tracer.spans[0]?.emit()
@@ -161,21 +158,18 @@ describe('TelemetryTracer', function () {
 
     describe('run', function () {
         it('returns the result of the function', function () {
-            const tracer = new TelemetryTracer()
             const result = tracer.run(metricName, () => 'foo')
 
             assert.strictEqual(result, 'foo')
         })
 
         it('sets the active span', function () {
-            const tracer = new TelemetryTracer()
             const checkSpan = () => tracer.run(metricName, span => assert.strictEqual(tracer.activeSpan, span))
 
             assert.doesNotThrow(checkSpan)
         })
 
         it('uses a span over a telemetry metric', function () {
-            const tracer = new TelemetryTracer()
             tracer.run(metricName, span => span.record({ source: 'bar' }))
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
@@ -185,8 +179,6 @@ describe('TelemetryTracer', function () {
             const nestedName = 'nested_metric' as MetricName
 
             it('can record metadata in nested spans', function () {
-                const tracer = new TelemetryTracer()
-
                 tracer.run(metricName, span1 => {
                     span1.record({ source: 'bar' })
 
@@ -201,8 +193,6 @@ describe('TelemetryTracer', function () {
             })
 
             it('removes spans when exiting an execution context', function () {
-                const tracer = new TelemetryTracer()
-
                 tracer.run(metricName, () => {
                     tracer.run(nestedName, () => {
                         assert.strictEqual(tracer.spans.length, 2)
@@ -213,8 +203,6 @@ describe('TelemetryTracer', function () {
             })
 
             it('adds spans during a nested execution', function () {
-                const tracer = new TelemetryTracer()
-
                 tracer.run(metricName, () => {
                     tracer.run(nestedName, () => {
                         assert.strictEqual(tracer.spans.length, 2)
@@ -227,8 +215,6 @@ describe('TelemetryTracer', function () {
             })
 
             it('closes spans after exiting nested executions', function () {
-                const tracer = new TelemetryTracer()
-
                 tracer.run(metricName, () => {
                     tracer.apigateway_copyUrl.record({})
 

@@ -165,7 +165,7 @@ export class SsoAccessTokenProvider {
 
     private async registerClient(): Promise<ClientRegistration> {
         return this.oidc.registerClient({
-            clientName: `aws-toolkit-vscode-${globals.clock.Date.now()}`,
+            clientName: `AWS Toolkit for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })

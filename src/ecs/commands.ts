@@ -63,7 +63,7 @@ export async function toggleExecuteCommandFlag(
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
-    const isNotEnabled = service.description.enableExecuteCommand ?? false
+    const isNotEnabled = !service.description.enableExecuteCommand ?? false
     const prompt = isNotEnabled ? EcsRunCommandPrompt.Enable : EcsRunCommandPrompt.Disable
 
     const warningMessage = isNotEnabled

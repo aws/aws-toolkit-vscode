@@ -33,6 +33,9 @@ The test suite has two categories of tests:
     -   Global state is shared across tests, thus there is a risk that later tests are polluted by earlier tests.
     -   Trigger VSCode commands and UI elements to test codepaths as from an actual user session, instead of invoking functions directly.
     -   Do not use mocks.
+-   E2E Tests: **slow** tests
+    -   Live in `src/testE2E`
+    -   These tests are heavier than Integration tests.
 
 ## Test files
 

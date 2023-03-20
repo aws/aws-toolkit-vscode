@@ -133,6 +133,11 @@ export class CodeCatalystCreateWebview extends VueWebview {
     }
 
     public async submit(settings: DevEnvironmentSettings, source: SourceResponse) {
+        const devenv = await this.createDevEnvOfType(settings, source)
+        this.commands.openDevEnv.execute(devenv)
+    }
+
+    public async createDevEnvOfType(settings: DevEnvironmentSettings, source: SourceResponse) {
         const devenv: DevEnvironment = await (() => {
             switch (source.type) {
                 case 'none':
@@ -146,7 +151,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
 
         this.onComplete(devenv)
-        this.commands.openDevEnv.execute(devenv)
+        return devenv
     }
 
     private async createEmptyDevEnv(settings: DevEnvironmentSettings, source: EmptyResponse) {
