@@ -84,7 +84,7 @@ phases:
           $env:CI_BUILD_URL=[uri]::EscapeUriString($Env:CODEBUILD_BUILD_URL);
           $env:CI_BUILD_ID=$Env:CODEBUILD_BUILD_ID;
           .\codecov.exe -t $Env:CODE_COV_TOKEN `
-            --flag unittest `
+            --flags unittest `
             -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
             -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
         }
