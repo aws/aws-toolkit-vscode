@@ -1,0 +1,11 @@
+{
+  "date" : "2023-03-20",
+  "version" : "1.62",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Show friendlier application name when signing in using SSO"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix confusing experience when attempting to sign in to multiple Builder IDs"
+  } ]
+}

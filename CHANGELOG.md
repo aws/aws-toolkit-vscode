@@ -1,3 +1,7 @@
+# _1.62_ (2023-03-20)
+- **(Bug Fix)** Show friendlier application name when signing in using SSO
+- **(Bug Fix)** Fix confusing experience when attempting to sign in to multiple Builder IDs
+
 # _1.61_ (2023-02-17)
 - **(Bug Fix)** Authenticating through the browser now requires users to manually enter a user verification code for SSO/AWS Builder ID
 - **(Bug Fix)** Fix NPE that may occur when installing the toolkit for the first time ([#3433](https://github.com/aws/aws-toolkit-jetbrains/issues/3433))
