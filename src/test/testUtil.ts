@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as util from 'util'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
@@ -146,46 +147,61 @@ export function getMetrics<K extends MetricName>(
 }
 
 /**
- * Finds the emitted telemetry metric with the given name, then checks if the metadata fields
- * match the expected values. Defaults to checking against the first occurrence, but this
- * can be overidden.
+ * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
+ * match the expected values, in the (non-continguous) order specified by `expected`.
  *
- * @param eventNum The nth occurrence of the event you want to test against, defaults to the first.
+ * @param name Metric name
+ * @param expected Metric(s) shape(s) which are compared _in order_ (non-continguous) to metrics matching `name`.
  */
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K],
-    eventNum?: number
+    expected: MetricShapes[K] | MetricShapes[K][]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[MetricName],
-    eventNum?: number
+    expected: MetricShapes[MetricName] | MetricShapes[MetricName][]
 ): void | never
 export function assertTelemetry<K extends MetricName>(
     name: K,
-    expected: MetricShapes[K],
-    eventNum: number = 0
+    expected: MetricShapes[K] | MetricShapes[K][]
 ): void | never {
-    const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
-    const passive = expectedCopy?.passive
+    const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name, excludeKeys: ['awsAccount', 'duration'] }
-    delete expectedCopy['passive']
+    let metadata = globals.telemetry.logger.query(query)
+    assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
 
-    Object.keys(expectedCopy).forEach(
-        k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
-    )
+    for (let i = 0; i < expectedList.length; i++) {
+        const metric = expectedList[i]
+        const expectedCopy = { ...metric } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
+        const passive = expectedCopy?.passive
+        delete expectedCopy['passive']
 
-    // Telemetry client should add awsRegion to all metrics.
-    ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
+        Object.keys(expectedCopy).forEach(
+            k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+        )
 
-    const metadata = globals.telemetry.logger.query(query)
-    assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    assert.deepStrictEqual(metadata[eventNum], expectedCopy)
+        // Telemetry client adds awsRegion to all metrics.
+        ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
 
-    if (passive !== undefined) {
-        const metric = globals.telemetry.logger.queryFull(query)
-        assert.strictEqual(metric[0].Passive, passive)
+        if (expectedList.length == 1) {
+            assert.deepStrictEqual(metadata[0], expectedCopy)
+        } else {
+            const found = metadata.findIndex(val => util.isDeepStrictEqual(val, expectedCopy))
+            assert.ok(
+                found >= 0,
+                `telemetry item ${i + 1} (of ${
+                    expectedList.length
+                }) not found (in the expected order) for metric name: "${name}" `
+            )
+            // Remove all items up to the found item, to ensure we are checking the expected _order_.
+            metadata = metadata.splice(found, metadata.length - 1)
+        }
+
+        // Check this explicitly because we deleted it above.
+        if (passive !== undefined) {
+            const metric = globals.telemetry.logger.queryFull(query)
+            assert.strictEqual(metric[0].Passive, passive)
+        }
     }
 }
 
