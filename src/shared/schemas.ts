@@ -11,6 +11,7 @@ import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
+import { GlobalStorage } from './globalStorage'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
@@ -139,11 +140,11 @@ export class SchemaService {
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
  */
 export async function getDefaultSchemas(): Promise<Schemas | undefined> {
-    const devfileSchemaUri = vscode.Uri.joinPath(globals.context.globalStorageUri, 'devfile.schema.json')
+    const devfileSchemaUri = GlobalStorage.devfileSchemaUri()
     const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
     // Sam schema is a superset of Cfn schema, so we can use it for both
-    const samAndCfnSchemaDestinationUri = vscode.Uri.joinPath(globals.context.globalStorageUri, 'sam.schema.json')
+    const samAndCfnSchemaDestinationUri = GlobalStorage.samAndCfnSchemaDestinationUri()
     const samAndCfnCacheKey = 'samAndCfnSchemaVersion'
 
     const schemas: Schemas = {}
@@ -296,10 +297,7 @@ export async function updateSchemaFromRemoteETag(params: {
         await doCacheContent(content, { ...params, version: latestETag })
     } catch (err) {
         if (cachedContent) {
-            getLogger().warn(
-                `schemas: Using cached schema instead since failed to fetch the latest version for "${params.title}": %s`,
-                err
-            )
+            getLogger().warn(`schemas: Using cached schema, failed to fetch latest "${params.title}": %s`, err)
         } else {
             throw err
         }
