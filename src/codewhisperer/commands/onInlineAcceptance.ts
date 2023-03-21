@@ -85,8 +85,6 @@ export async function onInlineAcceptance(
             acceptanceEntry.editor,
             acceptanceEntry.acceptIndex
         )
-        // codewhisperer will be doing editing while formatting.
-        // formatting should not trigger auto trigger
         vsCodeState.isCodeWhispererEditing = true
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
