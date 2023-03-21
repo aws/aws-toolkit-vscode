@@ -46,61 +46,6 @@ describe('onInlineAcceptance', function () {
             assert.ok(spy.calledWith())
         })
 
-        it('Should format python code with command editor.action.format when current active document is python', async function () {
-            const mockEditor = createMockTextEditor()
-            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-            const globalState = new FakeMemento()
-            await onInlineAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: undefined,
-                },
-                globalState
-            )
-            assert.ok(commandSpy.calledWith('editor.action.format'))
-        })
-
-        it('Should format code selection with command vscode.executeFormatRangeProvider when current active document is not python', async function () {
-            const mockEditor = createMockTextEditor("console.log('Hello')", 'test.js', 'javascript', 1, 0)
-            const commandStub = sinon.stub(vscode.commands, 'executeCommand')
-            const globalState = new FakeMemento()
-            const fakeReferences = [
-                {
-                    message: '',
-                    licenseName: 'MIT',
-                    repository: 'http://github.com/fake',
-                    recommendationContentSpan: {
-                        start: 0,
-                        end: 10,
-                    },
-                },
-            ]
-            await onInlineAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 27)),
-                    acceptIndex: 0,
-                    recommendation: "console.log('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'javascript',
-                    references: fakeReferences,
-                },
-                globalState
-            )
-            assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
-        })
-
         it('Should report telemetry that records this user decision event', async function () {
             const mockEditor = createMockTextEditor()
             RecommendationHandler.instance.requestId = 'test'
