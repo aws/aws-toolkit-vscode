@@ -199,10 +199,6 @@ export class ProfileStore {
     public async addProfile(id: string, profile: SsoProfile): Promise<StoredProfile<SsoProfile>>
     public async addProfile(id: string, profile: IamProfile): Promise<StoredProfile<IamProfile>>
     public async addProfile(id: string, profile: Profile): Promise<StoredProfile> {
-        if (this.getProfile(id) !== undefined) {
-            throw new Error(`Profile already exists: ${id}`)
-        }
-
         return this.putProfile(id, this.initMetadata(profile))
     }
 
