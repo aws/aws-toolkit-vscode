@@ -32,6 +32,8 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { recordSource } from '../../utils'
+import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import { createProjectPrompter } from '../../wizards/selectResource'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -48,6 +50,8 @@ interface EmptyResponse {
 export type SourceResponse = LinkedResponse | EmptyResponse
 
 export class CodeCatalystCreateWebview extends VueWebview {
+    private projectPrompter?: QuickPickPrompter<CodeCatalystProject>
+
     public readonly id = 'createCodeCatalyst'
     public readonly source = 'src/codecatalyst/vue/create/index.js'
 
@@ -57,6 +61,14 @@ export class CodeCatalystCreateWebview extends VueWebview {
         private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
         super()
+
+        // When webview first loads, an instance of this class
+        // is created.
+        // We build the prompter here since it immeditely starts
+        // fetching the Projects upon creation.
+        // When a user triggers the prompt to select a Project the **first** time,
+        // the fetching of Projects will already be in progress.
+        this.projectPrompter = createProjectPrompter(this.client)
     }
 
     public close() {
@@ -64,8 +76,28 @@ export class CodeCatalystCreateWebview extends VueWebview {
         this.onComplete()
     }
 
-    public async getProjects() {
-        return this.client.listResources('project').flatten().promise()
+    /**
+     * Opens a quick pick that lists all Projects from all Spaces.
+     *
+     * @param spaceName Only show Projects from this Space in the quick pick. If undefined,
+     *                  shows Projects from all Spaces.
+     * @returns Project if it was selected, otherwise undefined due to user cancellation.
+     */
+    public async quickPickProject(spaceName?: CodeCatalystOrg['name']): Promise<CodeCatalystProject | undefined> {
+        // We use an existing prompter since it would have already started
+        // fetching Projects (improved UX).
+        if (this.projectPrompter === undefined) {
+            this.projectPrompter = createProjectPrompter(this.client, spaceName)
+        }
+
+        const selectedProject = await this.projectPrompter.prompt()
+        this.projectPrompter = undefined
+
+        if (!isValidResponse(selectedProject)) {
+            return
+        }
+
+        return selectedProject
     }
 
     public async getBranches(project: CodeCatalystProject) {
