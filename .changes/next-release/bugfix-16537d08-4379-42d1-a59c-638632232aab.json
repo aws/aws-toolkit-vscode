@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where multiple Builder ID entries show up in connection list"
+}

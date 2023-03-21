@@ -141,7 +141,7 @@ fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_SON
 
         // For the case when the existing connection is in invalid state, we need to re-auth
         if (connection is AwsBearerTokenConnection) {
-            reauthConnection(project, connection)
+            return reauthConnection(project, connection)
         }
 
         null
@@ -207,7 +207,7 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
 fun reauthProviderIfNeeded(connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
     val state = tokenProvider.state()
-    runUnderProgressIfNeeded(null, message("settings.states.validating.short"), false) {
+    runUnderProgressIfNeeded(null, message("settings.states.validating.short"), true) {
         if (state == BearerTokenAuthState.NEEDS_REFRESH) {
             try {
                 tokenProvider.resolveToken()

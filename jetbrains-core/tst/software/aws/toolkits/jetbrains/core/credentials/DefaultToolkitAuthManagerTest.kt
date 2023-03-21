@@ -116,6 +116,33 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
+    fun `loadState dedupes profiles`() {
+        val profile = ManagedSsoProfile(
+            "us-east-1",
+            aString(),
+            listOf(aString())
+        )
+
+        sut.loadState(
+            ToolkitAuthManagerState(
+                ssoProfiles = listOf(
+                    profile,
+                    profile,
+                    profile
+                )
+            )
+        )
+
+        assertThat(sut.listConnections()).singleElement().satisfies {
+            assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.region).isEqualTo(profile.ssoRegion)
+                assertThat(connection.startUrl).isEqualTo(profile.startUrl)
+                assertThat(connection.scopes).isEqualTo(profile.scopes)
+            }
+        }
+    }
+
+    @Test
     fun `loginSso with an working existing connection`() {
         val connectionManager: ToolkitConnectionManager = mock()
         regionProvider.addRegion(Region.US_EAST_1)

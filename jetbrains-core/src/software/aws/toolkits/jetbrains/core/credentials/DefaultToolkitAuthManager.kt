@@ -11,12 +11,13 @@ import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.core.utils.warn
 
 // TODO: unify with CredentialManager
 @State(name = "authManager", storages = [Storage("aws.xml")])
 class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<ToolkitAuthManagerState>, Disposable {
     private var state = ToolkitAuthManagerState()
-    private val connections = mutableListOf<ToolkitConnection>()
+    private val connections = linkedSetOf<ToolkitConnection>()
     private val transientConnections = let {
         val factoryConnections = mutableListOf<ToolkitConnection>()
         ToolkitStartupAuthFactory.EP_NAME.forEachExtensionSafe { factory ->
@@ -34,8 +35,16 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
     override fun createConnection(profile: AuthProfile): ToolkitConnection {
         val connection = connectionFromProfile(profile)
-        connections.add(connection)
+        connections.firstOrNull { it.id == connection.id }?.let {
+            LOG.warn { "$it already exists in connection list" }
+            if (connection is Disposable) {
+                Disposer.dispose(connection)
+            }
 
+            return it
+        }
+
+        connections.add(connection)
         return connection
     }
 
@@ -84,8 +93,12 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
     override fun loadState(state: ToolkitAuthManagerState) {
         this.state = state
-        val newConnections = state.ssoProfiles.filterNotNull().map {
+        val newConnections = linkedSetOf(*state.ssoProfiles.toTypedArray()).filterNotNull().map {
             connectionFromProfile(it)
+        }
+
+        if (newConnections.size != state.ssoProfiles.size) {
+            LOG.warn { "Persisted state had duplicate profiles" }
         }
 
         connections.clear()
