@@ -12,15 +12,23 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'linked'">
-        <span style="width: 100%">
-            <label class="option-label soft">Project</label>
-            <select class="picker" v-model="model.selectedProject" @input="update">
-                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.name" :value="project">
-                    {{ `${project.org.name} / ${project.name}` }}
-                </option>
-            </select>
-        </span>
+        <div class="modes flex-sizing mt-16">
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Space</label>
+                <button class="project-button" @click="quickPickProject()">
+                    {{ selectedSpaceName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Project</label>
+                <button class="project-button" @click="quickPickProject(model.selectedProject?.org.name)">
+                    {{ selectedProjectName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+        </div>
 
         <div class="modes flex-sizing mt-16">
             <!-- Existing branch -->
@@ -73,7 +81,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { CodeCatalystBranch, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
+import { CodeCatalystBranch, CodeCatalystOrg, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { createClass, createType } from '../../../webviews/util'
 import { CodeCatalystCreateWebview, SourceResponse } from './backend'
@@ -112,7 +120,6 @@ export default defineComponent({
     },
     async created() {
         this.loadingProjects = true
-        this.projects = await client.getProjects().finally(() => (this.loadingProjects = false))
     },
     watch: {
         async 'model.selectedProject'(project?: CodeCatalystProject) {
@@ -162,6 +169,21 @@ export default defineComponent({
                 return 'Branch already exists'
             }
         },
+        isProjectSelected() {
+            return !!this.model.selectedProject
+        },
+        selectedSpaceName() {
+            if (this.model.selectedProject === undefined) {
+                return 'Not Selected'
+            }
+            return this.model.selectedProject.org.name
+        },
+        selectedProjectName() {
+            if (this.model.selectedProject === undefined) {
+                return 'Not Selected'
+            }
+            return this.model.selectedProject.name
+        },
     },
     methods: {
         update() {
@@ -180,6 +202,13 @@ export default defineComponent({
                 selectedBranch: this.availableBranches?.[0],
             })
             this.update()
+        },
+        async quickPickProject(spaceToGetProjects: CodeCatalystOrg['name'] | undefined = undefined) {
+            const res = await client.quickPickProject(spaceToGetProjects)
+            if (res === undefined) {
+                return
+            }
+            this.$emit('update:modelValue', { ...this.modelValue, selectedProject: res })
         },
     },
     emits: {
@@ -241,5 +270,17 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 
 #branch-input {
     min-width: 300px;
+}
+
+.project-button {
+    background-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    font-weight: bold;
+}
+
+.edit-icon {
+    margin-left: 10px;
+    color: #0078d7;
 }
 </style>

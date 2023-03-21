@@ -111,10 +111,10 @@ export function createOrgPrompter(
 
 export function createProjectPrompter(
     client: codecatalyst.CodeCatalystClient,
-    org?: codecatalyst.CodeCatalystOrg
+    spaceName?: codecatalyst.CodeCatalystOrg['name']
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
     const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
-    const projects = org ? client.listProjects({ spaceName: org.name }) : client.listResources('project')
+    const projects = spaceName ? client.listProjects({ spaceName }) : client.listResources('project')
 
     return createResourcePrompter(projects, helpUri, {
         title: 'Select a CodeCatalyst Project',
