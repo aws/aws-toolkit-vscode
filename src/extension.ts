@@ -120,7 +120,7 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.loginManager = loginManager
         globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        globals.schemaService = new SchemaService(context)
+        globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
 
         const settings = Settings.instance

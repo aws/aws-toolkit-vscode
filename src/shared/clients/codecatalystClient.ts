@@ -15,7 +15,7 @@ import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
-import { pageableToCollection } from '../utilities/collectionUtils'
+import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
@@ -451,20 +451,11 @@ class CodeCatalystClientInternal {
     public listResources(resourceType: 'repo'): AsyncCollection<CodeCatalystRepo[]>
     public listResources(resourceType: 'devEnvironment'): AsyncCollection<DevEnvironment[]>
     public listResources(resourceType: CodeCatalystResource['type']): AsyncCollection<CodeCatalystResource[]> {
-        // Don't really want to expose this apart of the `AsyncCollection` API yet
-        // The semantics of concatenating async iterables is rather ambiguous
-        // For example, an array of async iterables can be joined either in-order or out-of-order.
-        // In-order concatenations only makes sense for finite iterables, though I'm unaware of any
-        // convention to declare an iterable to be finite.
         function mapInner<T, U>(
             collection: AsyncCollection<T[]>,
             fn: (element: T) => AsyncCollection<U[]>
         ): AsyncCollection<U[]> {
-            return toCollection(async function* () {
-                for await (const element of await collection.promise()) {
-                    yield* await Promise.all(element.map(e => fn(e).flatten().promise()))
-                }
-            })
+            return toCollection(() => joinAll(collection.flatten().map(fn)))
         }
 
         switch (resourceType) {

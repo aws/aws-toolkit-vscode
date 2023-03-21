@@ -23,7 +23,7 @@ import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 
-class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
+export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
 
@@ -89,7 +89,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
 
     truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
         let rightContextRange: vscode.Range | undefined = undefined
-        const pos = RecommendationHandler.instance.startPos
+        const pos = vscode.window.activeTextEditor?.selection.active || RecommendationHandler.instance.startPos
         if (suggestion.split(/\r?\n/).length > 1) {
             rightContextRange = new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + suggestion.length))
         } else {
@@ -159,7 +159,7 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
         const matchedCount = RecommendationHandler.instance.recommendations.filter(
-            r => r.content.length > 0 && r.content.startsWith(prefix)
+            r => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
             const r = RecommendationHandler.instance.recommendations[i]
@@ -179,7 +179,11 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
             TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
             this._onDidShow.fire()
             if (matchedCount >= 2 || RecommendationHandler.instance.hasNextToken()) {
-                return [item, { insertText: 'x' }]
+                const result = [item]
+                for (let j = 0; j < matchedCount - 1; j++) {
+                    result.push({ insertText: `${item.insertText}${j}`, range: item.range })
+                }
+                return result
             }
             return [item]
         }
@@ -326,7 +330,13 @@ export class InlineCompletionService {
 
     async tryShowRecommendation() {
         const editor = vscode.window.activeTextEditor
-        if (this.isSuggestionVisible() || editor === undefined) {
+        if (editor === undefined) {
+            return
+        }
+        if (this.isSuggestionVisible()) {
+            // to force refresh the visual cue so that the total recommendation count can be updated
+            const index = this.inlineCompletionProvider?.getActiveItemIndex
+            await this.showRecommendation(index ? index : 0, true)
             return
         }
         if (

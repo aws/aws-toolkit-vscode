@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../../shared/extensionGlobals'
+import { GlobalStorage } from '../../shared/globalStorage'
+import * as fs from 'fs-extra'
 import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
-import { FakeExtensionContext } from '../../test/fakeExtensionContext'
 import {
     getCITestSchemas,
     JSONObject,
@@ -15,6 +17,7 @@ import {
     assertDefinition,
 } from '../../test/shared/schema/testUtils'
 import { assertTelemetry } from '../../test/testUtil'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 describe('Sam Schema Regression', function () {
     let samSchema: JSONObject
@@ -66,46 +69,29 @@ describe('Sam Schema Regression', function () {
 })
 
 describe('getDefaultSchemas()', () => {
-    let extensionContext: FakeExtensionContext
+    beforeEach(async () => {})
 
-    beforeEach(async () => {
-        extensionContext = await FakeExtensionContext.create()
-    })
-
-    it('uses cache on subsequent request for CFN/SAM schema', async () => {
-        await getDefaultSchemas(extensionContext)
-
-        // IMPORTANT: Since CFN and SAM use the same schema, the order their schema is retrieved is irrelevant
-
-        // Schema is downloaded on initial retrieval
-        assertTelemetry(
-            'toolkit_getExternalResource',
+    it('uses cache after initial fetch for CFN/SAM schema', async () => {
+        fs.removeSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+        globals.telemetry.telemetryEnabled = true
+        globals.telemetry.clearRecords()
+        globals.telemetry.logger.clear()
+        await getDefaultSchemas()
+        await getDefaultSchemas()
+        await getDefaultSchemas()
+        await waitUntil(
+            async () => {
+                return fs.existsSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+            },
+            { truthy: true, interval: 200, timeout: 5000 }
+        )
+        assertTelemetry('toolkit_getExternalResource', [
+            // Initial retrieval.
+            // (Technically, this is done on activation, not any of the getDefaultSchemas() calls above.)
             { url: samAndCfnSchemaUrl, passive: true, result: 'Succeeded' },
-            0
-        )
-        // Schema is retrieved from cache on subsequent retrieval
-        assertTelemetry(
-            'toolkit_getExternalResource',
+            // Use cache after initial fetch.
             { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
-            1
-        )
-    })
-
-    it('uses cache for all requests on second function call', async () => {
-        await getDefaultSchemas(extensionContext)
-        // Call a second time
-        await getDefaultSchemas(extensionContext)
-
-        // Only cache is used
-        assertTelemetry(
-            'toolkit_getExternalResource',
             { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
-            2
-        )
-        assertTelemetry(
-            'toolkit_getExternalResource',
-            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
-            3
-        )
+        ])
     })
 })

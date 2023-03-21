@@ -26,6 +26,9 @@ import {
     IteratorTransformer,
     stripUndefined,
     pageableToCollection,
+    join,
+    toStream,
+    joinAll,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -535,6 +538,129 @@ describe('CollectionUtils', async function () {
                 const collection = pageableToCollection(requester, {}, 'next', 'data')
                 const mapped = collection.map(i => i[0] ?? -1)
                 assert.strictEqual(await last(mapped), -1)
+            })
+        })
+    })
+
+    const promise = <T>(val: T) => new Promise<T>(resolve => setImmediate(() => resolve(val)))
+    const cons = <T, U>(arr: Promise<T>[], next: U) => {
+        if (arr.length === 0) {
+            return [promise(next)]
+        } else {
+            return [...arr, arr[arr.length - 1].then(() => promise(next))]
+        }
+    }
+    const toPromiseChain = <T>(arr: T[]) => arr.reduce(cons, [] as Promise<T>[])
+
+    async function iterateAll<T>(iterable: AsyncIterable<T>) {
+        const result = [] as (T | Error)[]
+        try {
+            for await (const val of iterable) {
+                result.push(val)
+            }
+        } catch (err) {
+            assert.ok(err instanceof Error)
+            result.push(err)
+        }
+
+        return result
+    }
+
+    describe('toStream', function () {
+        it('yields values that resolve first regardless of order', async function () {
+            const values = toPromiseChain([0, 1, 2, 3])
+            const stream = toStream(values.reverse())
+
+            assert.deepStrictEqual(await iterateAll(stream), [0, 1, 2, 3])
+        })
+
+        it('immediately yields values that are not promises', async function () {
+            const stream = toStream([0, promise(1), 2, promise(3)])
+
+            assert.deepStrictEqual(await iterateAll(stream), [0, 2, 1, 3])
+        })
+
+        it('throws on any error', async function () {
+            const values = toPromiseChain([0, 1, 2, 3])
+            const err = new Error()
+            const rejected = values[0].then(() => Promise.reject(err))
+            const stream = toStream([...values, rejected])
+
+            assert.deepStrictEqual(await iterateAll(stream), [0, err])
+        })
+    })
+
+    describe('join', function () {
+        async function* toAsyncIterable<T>(iterable: Iterable<T | Promise<T>>, returnValue?: T) {
+            for await (const val of iterable) {
+                yield val
+            }
+
+            return returnValue
+        }
+
+        interface TestCase<T> {
+            readonly data: T[]
+            readonly left: number[]
+            readonly right: number[]
+            readonly expected?: T[]
+        }
+
+        async function run<T>(testCase: TestCase<T>) {
+            const expected = testCase.expected ?? testCase.data
+            const arr = toPromiseChain(testCase.data)
+            const left = toAsyncIterable(testCase.left.map(i => arr[i]))
+            const right = toAsyncIterable(testCase.right.map(i => arr[i]))
+
+            assert.deepStrictEqual(await iterateAll(join(left, right)), expected)
+        }
+
+        const cases: Record<string, TestCase<number>> = {
+            'empty left': { data: [0], left: [0], right: [] },
+            'empty right': { data: [0], left: [], right: [0] },
+            'even split': { data: [0, 1], left: [0], right: [1] },
+            'even split reversed': { data: [0, 1], left: [1], right: [0] },
+            'empty left 2': { data: [0, 1], left: [0, 1], right: [] },
+            'empty right 2': { data: [0, 1], left: [], right: [0, 1] },
+            'uneven split': { data: [0, 1, 2], left: [0], right: [1, 2] },
+            'uneven split 2': { data: [0, 1, 2], left: [1], right: [0, 2] },
+            'uneven split 3': { data: [0, 1, 2], left: [2], right: [0, 1] },
+            'out-of-order': { data: [0, 1, 2], left: [1], right: [2, 0], expected: [1, 2, 0] },
+            'out-of-order 2': { data: [0, 1, 2], left: [2], right: [1, 0], expected: [1, 0, 2] },
+        }
+
+        describe('resolves two async iterables simultaneously', function () {
+            for (const [name, testCase] of Object.entries(cases)) {
+                it(name, () => run(testCase))
+            }
+        })
+
+        it('throws if an iterable fails', async function () {
+            const err = new Error()
+            const arr = toPromiseChain([0, 1, 2, 3])
+            const rejected = arr[2].then(() => Promise.reject(err))
+            const left = toAsyncIterable([arr[0], arr[2]])
+            const right = toAsyncIterable([arr[1], rejected, arr[3]])
+
+            assert.deepStrictEqual(await iterateAll(join(left, right)), [0, 1, 2, err])
+        })
+
+        it('returns values returned by the iterables', async function () {
+            const expected = [0, 1, 2, 3]
+            const arr = toPromiseChain(expected)
+            const left = toAsyncIterable([arr[1]], 4)
+            const right = toAsyncIterable([arr[0], arr[2], arr[3]], 5)
+
+            assert.deepStrictEqual(await iterateAll(join(left, right)), expected)
+        })
+
+        describe('joinAll', function () {
+            it('resolves an async iterable of async iterables', async function () {
+                const data = [[0, 1], [2], [3, 4, 5]]
+                const expected = [0, 2, 3, 1, 4, 5]
+                const iterables = data.map(toPromiseChain).map(arr => toAsyncIterable(arr))
+                const iterable = joinAll(toAsyncIterable(iterables))
+                assert.deepStrictEqual(await iterateAll(iterable), expected)
             })
         })
     })

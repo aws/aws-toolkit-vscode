@@ -4,8 +4,8 @@
  */
 
 import { instance, when } from 'ts-mockito'
-import { createOrgPrompter } from '../../../codecatalyst/wizards/selectResource'
-import { CodeCatalystOrg, CodeCatalystClient } from '../../../shared/clients/codecatalystClient'
+import { createOrgPrompter, createProjectPrompter } from '../../../codecatalyst/wizards/selectResource'
+import { CodeCatalystOrg, CodeCatalystClient, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
 import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
@@ -19,15 +19,22 @@ function intoCollection<T>(arr: T[]): AsyncCollection<T> {
 
 describe('Prompts', function () {
     let orgs: CodeCatalystOrg[]
+    let projects: CodeCatalystProject[]
 
     beforeEach(function () {
         orgs = [{ type: 'org', name: 'MyOrg', description: 'My Description', regionName: 'region' }]
+        projects = orgs.map(org => ({
+            name: 'MyProject',
+            type: 'project',
+            org,
+        }))
     })
 
     function mockClient(): CodeCatalystClient {
         const client = mock<CodeCatalystClient>()
 
         when(client.listSpaces()).thenReturn(intoCollection([orgs]))
+        when(client.listResources('project')).thenReturn(intoCollection([projects]))
 
         return instance(client)
     }
@@ -54,5 +61,19 @@ describe('Prompts', function () {
         tester.acceptItem('AnotherOrg')
 
         await tester.result(newOrg)
+    })
+
+    it('can refresh projects', async function () {
+        const prompt = createProjectPrompter(mockClient())
+        const tester = createQuickPickPrompterTester(prompt)
+        const newProj = { type: 'project', name: 'AnotherProject', org: orgs[0] } as const
+
+        tester.assertItems(['MyOrg / MyProject'])
+        tester.addCallback(() => projects.push(newProj))
+        tester.pressButton('Refresh')
+        tester.assertItems(['MyOrg / MyProject', 'MyOrg / AnotherProject'])
+        tester.acceptItem('MyOrg / AnotherProject')
+
+        await tester.result(newProj)
     })
 })
