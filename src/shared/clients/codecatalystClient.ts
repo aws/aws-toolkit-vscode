@@ -561,62 +561,105 @@ class CodeCatalystClientInternal {
         status: string,
         timeout: Timeout = new Timeout(180000)
     ): Promise<DevEnvironment> {
-        let lastStatus: undefined | string
+        // Track the status changes chronologically so that we can
+        // 1. reason about hysterisis (weird flip-flops)
+        // 2. have visibility in the logs
+        const lastStatus = new Array<{ status: string; start: number }>()
+        let alias: string | undefined
+
         try {
             const devenv = await this.getDevEnvironment(args)
-            lastStatus = devenv.status
-            if (status === 'RUNNING' && lastStatus === 'RUNNING') {
+            alias = devenv.alias
+            lastStatus.push({ status: devenv.status, start: Date.now() })
+            if (status === 'RUNNING' && devenv.status === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
                 return devenv
             }
         } catch {
-            lastStatus = undefined
+            lastStatus.length = 0
+        }
+
+        function statusesToString() {
+            let s = ''
+            for (let i = 0; i < lastStatus.length; i++) {
+                const item = lastStatus[i]
+                const nextItem = i < lastStatus.length - 1 ? lastStatus[i + 1] : undefined
+                const nextTime = nextItem ? nextItem.start : Date.now()
+                const elapsed = nextTime - item.start
+                s += `${s ? ' ' : ''}${item.status}/${elapsed}ms`
+            }
+            return `[${s}]`
+        }
+
+        const doLog = (kind: 'debug' | 'info', msg: string) => {
+            const name = (alias ? alias : args.id).substring(0, 19)
+            const fmt = `${msg} (time: %d s): %s %s`
+            if (kind === 'debug') {
+                this.log.debug(fmt, timeout.elapsedTime / 1000, name, statusesToString())
+            } else {
+                this.log.info(fmt, timeout.elapsedTime / 1000, name, statusesToString())
+            }
         }
 
         const progress = await showMessageWithCancel(
-            localize('AWS.CodeCatalyst.startMde.message', 'CodeCatalyst'),
+            localize('AWS.CodeCatalyst.devenv.message', 'CodeCatalyst'),
             timeout
         )
-        progress.report({ message: localize('AWS.CodeCatalyst.startMde.checking', 'checking status...') })
+        progress.report({ message: localize('AWS.CodeCatalyst.devenv.checking', 'checking status...') })
 
         const pollDevEnv = waitUntil(
             async () => {
-                this.log.debug(
-                    'devenv not started, waiting (time: %d seconds): %s',
-                    timeout.elapsedTime / 1000,
-                    args.id
-                )
+                doLog('debug', 'devenv not started, waiting')
                 // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
                     return
                 }
 
                 const resp = await this.getDevEnvironment(args)
-                if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
+                const startingStates = lastStatus.filter(o => o.status === 'STARTING').length
+                if (
+                    startingStates > 1 &&
+                    lastStatus[0].status === 'STARTING' &&
+                    (resp.status === 'STOPPED' || resp.status === 'STOPPING')
+                ) {
                     throw new ToolkitError('Dev Environment failed to start', { code: 'BadDevEnvState' })
                 }
 
                 if (resp.status === 'STOPPED') {
                     progress.report({
-                        message: localize('AWS.CodeCatalyst.startMde.stopStart', 'Resuming Dev Environment...'),
+                        message: localize('AWS.CodeCatalyst.devenv.stopStart', 'Resuming Dev Environment...'),
                     })
-                    await this.startDevEnvironment(args)
+                    try {
+                        await this.startDevEnvironment(args)
+                    } catch (e) {
+                        const err = e as AWS.AWSError
+                        // May happen after "Update Dev Environment":
+                        //      ConflictException: "Cannot start Dev Environment because update process is still going on"
+                        // Continue retrying in that case.
+                        if (err.code === 'ConflictException') {
+                            doLog('debug', 'devenv not started (ConflictException), waiting')
+                        } else {
+                            throw new ToolkitError('Dev Environment failed to start', {
+                                code: 'BadDevEnvState',
+                                cause: err,
+                            })
+                        }
+                    }
                 } else if (resp.status === 'STOPPING') {
                     progress.report({
-                        message: localize(
-                            'AWS.CodeCatalyst.startMde.resuming',
-                            'Waiting for Dev Environment to stop...'
-                        ),
+                        message: localize('AWS.CodeCatalyst.devenv.resuming', 'Waiting for Dev Environment to stop...'),
                     })
                 } else if (resp.status === 'FAILED') {
                     throw new ToolkitError('Dev Environment failed to start', { code: 'FailedDevEnv' })
                 } else {
                     progress.report({
-                        message: localize('AWS.CodeCatalyst.startMde.starting', 'Opening Dev Environment...'),
+                        message: localize('AWS.CodeCatalyst.devenv.starting', 'Opening Dev Environment...'),
                     })
                 }
 
-                lastStatus = resp.status
+                if (lastStatus[lastStatus.length - 1].status !== resp.status) {
+                    lastStatus.push({ status: resp.status, start: Date.now() })
+                }
                 return resp.status === 'RUNNING' ? resp : undefined
             },
             // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
@@ -625,9 +668,10 @@ class CodeCatalystClientInternal {
 
         const devenv = await waitTimeout(pollDevEnv, timeout)
         if (!devenv) {
+            doLog('info', 'devenv failed to start')
             throw new ToolkitError('Dev Environment failed to start', { code: 'Timeout' })
         }
-        this.log.info('devenv started after %d seconds: %s', timeout.elapsedTime / 1000, args.id)
+        doLog('info', 'devenv started')
 
         return devenv
     }
