@@ -3560,7 +3560,7 @@
         "typescript": "^4.8.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
-        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver": "^8.1.0",
         "vscode-languageserver-textdocument": "^1.0.3",
         "vscode-nls": "^5.2.0",
         "vue": "^3.2.31",
