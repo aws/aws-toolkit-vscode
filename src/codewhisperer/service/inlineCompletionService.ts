@@ -95,7 +95,11 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
         const rightContext = document.getText(rightContextRange)
         const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
         if (overlap.length) {
-            return trimmedSuggestion.slice(0, trimmedSuggestion.length - overlap.length)
+            const overlapIndex = suggestion.indexOf(overlap)
+            if (overlapIndex >= 0) {
+                const truncated = suggestion.slice(0, overlapIndex) + suggestion.slice(overlapIndex + overlap.length)
+                return truncated.trim().length ? truncated : ''
+            }
         } else {
             return suggestion
         }
