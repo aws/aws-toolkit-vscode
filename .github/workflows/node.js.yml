@@ -7,7 +7,7 @@ on:
     push:
         branches: [master]
     pull_request:
-        branches: [master, feature/*]
+        branches: [master, feature/*, mynah-dev]
 
 jobs:
     macos:
@@ -27,7 +27,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
               with:
@@ -70,7 +69,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
             - name: Code coverage
