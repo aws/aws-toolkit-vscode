@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails"
+}
