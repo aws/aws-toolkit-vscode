@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Disable new branch option when creating new dev env for linked repo"
+}

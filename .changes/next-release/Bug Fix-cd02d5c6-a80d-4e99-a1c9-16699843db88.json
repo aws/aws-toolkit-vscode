@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Show only internal CodeCatalyst repos when trying to clone"
+}
