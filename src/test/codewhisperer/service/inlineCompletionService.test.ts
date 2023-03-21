@@ -6,7 +6,10 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
+import {
+    CWInlineCompletionItemProvider,
+    InlineCompletionService,
+} from '../../../codewhisperer/service/inlineCompletionService'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
@@ -96,6 +99,62 @@ describe('inlineCompletionService', function () {
             await InlineCompletionService.instance.clearInlineCompletionStates(createMockTextEditor())
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
             assert.strictEqual(RecommendationHandler.instance.recommendations.length, 0)
+        })
+    })
+
+    describe('truncateOverlapWithRightContext', function () {
+        const fileName = 'test.py'
+        const language = 'python'
+        let rightContext = 'return target\n'
+        const doc = `import math\ndef two_sum(nums, target):\n`
+        const provider = new CWInlineCompletionItemProvider(0, 0)
+
+        it('removes overlap with right context from suggestion', async function () {
+            const mockSuggestion = 'return target\n'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, '')
+        })
+
+        it('only removes the overlap part from suggestion', async function () {
+            const mockSuggestion = 'print(nums)\nreturn target\n'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, 'print(nums)\n')
+        })
+
+        it('only removes the last overlap pattern from suggestion', async function () {
+            const mockSuggestion = 'return target\nprint(nums)\nreturn target\n'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, 'return target\nprint(nums)\n')
+        })
+
+        it('returns empty string if the remaining suggestion only contains white space', async function () {
+            const mockSuggestion = 'return target\n     '
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, '')
+        })
+
+        it('returns the original suggestion if no match found', async function () {
+            const mockSuggestion = 'import numpy\n'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, 'import numpy\n')
+        })
+        it('ignores the space at the end of recommendation', async function () {
+            const mockSuggestion = 'return target\n\n\n\n\n'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, '')
+        })
+        it('ignores the space at the start of right context', async function () {
+            rightContext = '\n\n\n\nreturn target'
+            const mockEditor = createMockTextEditor(`${doc}${rightContext}`, fileName, language)
+            const mockSuggestion = 'return target\n'
+            const result = provider.truncateOverlapWithRightContext(mockEditor.document, mockSuggestion)
+            assert.strictEqual(result, '')
         })
     })
 

@@ -23,7 +23,7 @@ import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 
-class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
+export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
 
@@ -93,8 +93,9 @@ class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvi
         // limit of 5000 for right context matching
         const rightContext = document.getText(new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + 5000)))
         const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
-        if (overlap.length) {
-            const truncated = suggestion.slice(0, suggestion.length - overlap.length)
+        const overlapIndex = suggestion.lastIndexOf(overlap)
+        if (overlapIndex >= 0) {
+            const truncated = suggestion.slice(0, overlapIndex)
             return truncated.trim().length ? truncated : ''
         } else {
             return suggestion
