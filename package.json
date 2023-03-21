@@ -3562,7 +3562,7 @@
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.3",
-        "vscode-nls": "^5.0.0",
+        "vscode-nls": "^5.2.0",
         "vue": "^3.2.31",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
