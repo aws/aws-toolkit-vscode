@@ -57,7 +57,7 @@ export const showConnectionPrompt = async () => {
     }
 }
 
-async function awsIdSignIn() {
+export async function awsIdSignIn() {
     getLogger().info('selected AWS ID sign in')
     try {
         await AuthUtil.instance.connectToAwsBuilderId()
