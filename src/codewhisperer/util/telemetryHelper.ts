@@ -54,7 +54,7 @@ export class TelemetryHelper {
     // variables for user trigger decision
     private sessionDecisions: CodewhispererUserTriggerDecision[] = []
     public sessionInvocations: CodewhispererServiceInvocation[] = []
-    public triggerChar = ''
+    public triggerChar?: string = undefined
     private prevTriggerDecision?: CodewhispererPreviousSuggestionState
     public isRequestCancelled = false
     public lastRequestId = ''
@@ -151,11 +151,13 @@ export class TelemetryHelper {
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
         })
-
+        // aggregate user decision events at requestId level
         const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
         if (aggregatedEvent) {
             this.sessionDecisions.push(aggregatedEvent)
         }
+
+        // after we have all request level user decisions, aggregate them at session level and send
         if (
             this.isRequestCancelled ||
             (this.lastRequestId && this.lastRequestId === requestId) ||
@@ -166,6 +168,8 @@ export class TelemetryHelper {
     }
 
     private aggregateUserDecisionByRequest(events: CodewhispererUserDecision[], requestId: string, sessionId: string) {
+        // the request level user decision will contain information from both the service_invocation event
+        // and the user_decision events for recommendations within that request
         const serviceInvocation = this.sessionInvocations.find(e => e.codewhispererRequestId === requestId)
         if (!serviceInvocation) {
             return
@@ -191,6 +195,9 @@ export class TelemetryHelper {
     }
 
     private sendUserTriggerDecisionTelemetry(sessionId: string) {
+        // the user trigger decision will aggregate information from request level user decisions within one session
+        // and add additional session level insights
+
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const aggregated: CodewhispererUserTriggerDecision = {
@@ -243,12 +250,17 @@ export class TelemetryHelper {
     }
 
     private getAggregatedCompletionType(
+        // if there is any Block completion within the session, mark the session as Block completion
         events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
     ): CodewhispererCompletionType {
         return events.some(e => e.codewhispererCompletionType === 'Block') ? 'Block' : 'Line'
     }
 
     private getAggregatedUserDecision(
+        // if there is any Accept within the session, mark the session as Accept
+        // if there is any Reject within the session, mark the session as Reject
+        // if all recommendations within the session are empty, mark the session as Empty
+        // otherwise mark the session as Discard
         events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
     ): CodewhispererPreviousSuggestionState {
         let isEmpty = true
