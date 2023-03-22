@@ -5,7 +5,14 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { Auth, getSsoProfileKey, ProfileStore, SsoProfile, codewhispererScopes, SsoConnection } from '../../../credentials/auth'
+import {
+    Auth,
+    getSsoProfileKey,
+    ProfileStore,
+    SsoProfile,
+    codewhispererScopes,
+    SsoConnection,
+} from '../../../credentials/auth'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 import { SsoToken } from '../../../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
@@ -18,8 +25,10 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
-const awsBuilderIdProfileId = 'https://view.awsapps.com/start?scopes=codecatalyst:read_write,codewhisperer:analysis,codewhisperer:completions'
-const enterpriseSsoProfileId = 'https://enterprise.awsapps.com/start?scopes=codewhisperer:analysis,codewhisperer:completions'
+const awsBuilderIdProfileId =
+    'https://view.awsapps.com/start?scopes=codecatalyst:read_write,codewhisperer:analysis,codewhisperer:completions'
+const enterpriseSsoProfileId =
+    'https://enterprise.awsapps.com/start?scopes=codewhisperer:analysis,codewhisperer:completions'
 
 function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
@@ -81,7 +90,7 @@ describe('AuthUtil', async function () {
 
     beforeEach(async function () {
         //stub allows creation of new AuthUtil (will get command already declared err otherwise).
-        sinon.stub(Commands, 'register') 
+        sinon.stub(Commands, 'register')
         store = new ProfileStore(new FakeMemento())
         auth = new Auth(store, getTestTokenProvider, new CredentialsProviderManager())
     })
@@ -94,7 +103,7 @@ describe('AuthUtil', async function () {
     it('if there is no valid AwsBuilderID conn, it will create one and use it', async function () {
         //TODO: remove stub and verify with auth.activeConnection after fix in PR#3220 is merged.
         const authSpy = sinon.stub(Auth.instance, 'useConnection')
-    
+
         getTestWindow().onDidShowQuickPick(async picker => {
             await picker.untilReady()
             picker.acceptItem(picker.items[1])
@@ -118,10 +127,10 @@ describe('AuthUtil', async function () {
             await picker.untilReady()
             picker.acceptItem(picker.items[1])
         })
-        
+
         const authUtil = new AuthUtil(auth)
-        await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl)
-    
+        await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
+
         const conn = authSpy.args[0][0] as SsoConnection
         assert.ok(authSpy.called)
         assert.strictEqual(conn.type, 'sso')
@@ -133,11 +142,11 @@ describe('AuthUtil', async function () {
         const ssoProfile = createSsoProfile()
         const awsBuilderIdProfile = createAwsBuilderIdProfile({ scopes: codewhispererScopes })
         const enterpriseSsoProfile = createEntSsoProfile({ scopes: codewhispererScopes })
-        
+
         const builderIdConn = await auth.createConnection(awsBuilderIdProfile)
         const ssoConn = await auth.createConnection(ssoProfile)
         const entSsoConn = await auth.createConnection(enterpriseSsoProfile)
-        
+
         assert.ok(isUpgradeableConnection(ssoConn))
         assert.ok(!isUpgradeableConnection(builderIdConn))
         assert.ok(!isUpgradeableConnection(entSsoConn))
