@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CodeWhisperer will no longer automatically format code after accepting code suggestions"
+}
