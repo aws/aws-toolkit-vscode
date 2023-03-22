@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: `Clone CodeCatalyst Repository` command now only lists non-linked repos"
+}
