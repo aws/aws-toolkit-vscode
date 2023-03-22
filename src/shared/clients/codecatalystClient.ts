@@ -559,7 +559,7 @@ class CodeCatalystClientInternal {
     public async startDevEnvironmentWithProgress(
         args: CodeCatalyst.StartDevEnvironmentRequest,
         status: string,
-        timeout: Timeout = new Timeout(180000)
+        timeout: Timeout = new Timeout(1000 * 60 * 60)
     ): Promise<DevEnvironment> {
         // Track the status changes chronologically so that we can
         // 1. reason about hysterisis (weird flip-flops)
