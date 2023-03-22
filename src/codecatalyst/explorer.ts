@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
+import { Connection, isBuilderIdConnection } from '../credentials/auth'
 import { createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
 import { UnknownError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -20,10 +20,7 @@ import * as codecatalyst from './model'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const conn = await createBuilderIdConnection(authProvider.auth)
-        await authProvider.secondaryAuth.useNewConnection(conn)
-    }
+    (authProvider: CodeCatalystAuthenticationProvider) => authProvider.promptNotConnected()
 )
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {

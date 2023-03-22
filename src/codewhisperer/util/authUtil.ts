@@ -15,6 +15,8 @@ import {
     createSsoProfile,
     isSsoConnection,
     hasScopes,
+    ssoAccountAccessScopes,
+    createBuilderIdConnection,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
@@ -23,10 +25,10 @@ import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
-export const awsBuilderIdSsoProfile = createBuilderIdProfile()
+const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
+export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)
 // No connections are valid within C9
 export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
     !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
@@ -40,7 +42,7 @@ export class AuthUtil {
     private readonly clearAccessToken = once(() =>
         globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
     )
-    private readonly secondaryAuth = getSecondaryAuth(
+    public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
         'codewhisperer',
         'CodeWhisperer',
@@ -71,8 +73,6 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
         })
-
-        Commands.register('aws.codeWhisperer.removeConnection', () => this.secondaryAuth.removeConnection())
     }
 
     // current active cwspr connection
@@ -92,11 +92,16 @@ export class AuthUtil {
         return this.conn !== undefined && this.usingEnterpriseSSO
     }
 
+    public async tryUpgradeActiveConnection() {
+        if (isUpgradeableConnection(this.auth.activeConnection)) {
+            return this.promptUpgrade(this.auth.activeConnection, 'current')
+        } else {
+            return false
+        }
+    }
+
     public async connectToAwsBuilderId() {
-        const existingConn = (await this.auth.listConnections()).find(
-            (conn): conn is SsoConnection => isValidCodeWhispererConnection(conn) && isBuilderIdConnection(conn)
-        )
-        const conn = existingConn ?? (await this.auth.createConnection(awsBuilderIdSsoProfile))
+        const conn = await createBuilderIdConnection(this.auth, defaultScopes)
         await this.secondaryAuth.useNewConnection(conn)
     }
 
@@ -107,7 +112,7 @@ export class AuthUtil {
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, 'us-east-1', defaultScopes))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
@@ -117,7 +122,14 @@ export class AuthUtil {
     }
 
     public static get instance() {
-        return (this.#instance ??= new this())
+        if (this.#instance !== undefined) {
+            return this.#instance
+        }
+
+        const self = (this.#instance = new this())
+        Commands.register('aws.codeWhisperer.removeConnection', () => self.secondaryAuth.removeConnection())
+
+        return self
     }
 
     public async getBearerToken(): Promise<string> {
@@ -164,41 +176,36 @@ export class AuthUtil {
     #hasSeenUpgradeNotification = false
     public async promptUpgrade(existingConn: SsoConnection, upgradeType: 'current' | 'startUrl' | 'passive') {
         const modal = upgradeType === 'current' || upgradeType === 'startUrl'
-        if (upgradeType !== 'startUrl' && this.#hasSeenUpgradeNotification) {
+        if (upgradeType === 'passive' && this.#hasSeenUpgradeNotification) {
             return false
         }
-        this.#hasSeenUpgradeNotification = upgradeType === 'startUrl' ? this.#hasSeenUpgradeNotification : true
+        this.#hasSeenUpgradeNotification = upgradeType === 'passive' ? true : this.#hasSeenUpgradeNotification
 
         const message =
             upgradeType === 'startUrl'
                 ? 'The provided start URL is associated with a connection that lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
                 : 'The current connection lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
 
-        const resp = await vscode.window.showWarningMessage(
+        const resp = await vscode.window.showInformationMessage(
             message,
             { modal },
             { title: 'Yes' },
             { title: 'No', isCloseAffordance: true }
         )
         if (resp?.title !== 'Yes') {
-            throw new CancellationError('user')
+            return false
         }
 
-        const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
-        try {
-            if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
-                await this.auth.useConnection(upgradedConn)
-            } else {
-                await this.secondaryAuth.useNewConnection(upgradedConn)
-            }
-        } catch (err) {
-            // Don't allow duplicates to exist on errors
-            await this.auth.deleteConnection(upgradedConn)
-            throw err
-        }
+        const upgradedConn = await this.auth.updateConnection(
+            existingConn,
+            createSsoProfile(
+                existingConn.startUrl,
+                existingConn.ssoRegion,
+                Array.from(new Set([...(existingConn.scopes ?? []), ...codewhispererScopes]))
+            )
+        )
 
-        // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
-        await this.auth.deleteConnection(existingConn)
+        await this.auth.reauthenticate(upgradedConn)
 
         return true
     }

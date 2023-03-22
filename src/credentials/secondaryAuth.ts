@@ -39,7 +39,7 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     }
 
     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-        title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
+        title: `Some tools you've been using don't work with ${oldConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
         placeholder: 'Confirm choice',
         buttons: [helpButton, createExitButton()],
     })
@@ -60,8 +60,9 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
 
 let oldConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
+const multiConnectionListeners = new WeakMap<Auth, vscode.Disposable>()
 const registerAuthListener = (auth: Auth) => {
-    auth.onDidChangeActiveConnection(async conn => {
+    return auth.onDidChangeActiveConnection(async conn => {
         const potentialConn = oldConn
         if (conn !== undefined && potentialConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
@@ -86,14 +87,13 @@ export function getSecondaryAuth<T extends Connection>(
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
-    if (auths.has(toolId)) {
-        return auths.get(toolId) as SecondaryAuth<T>
-    }
-
     const secondary = new SecondaryAuth(toolId, toolLabel, isValid, auth)
     auths.set(toolId, secondary)
-    registerAuthListener(auth)
     secondary.onDidChangeActiveConnection(() => onDidChangeConnectionsEmitter.fire())
+
+    if (!multiConnectionListeners.has(auth)) {
+        multiConnectionListeners.set(auth, registerAuthListener(auth))
+    }
 
     return secondary
 }
@@ -136,8 +136,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
     #savedConnection: T | undefined
 
     private readonly key = `${this.toolId}.savedConnectionId`
-    private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<T | undefined>()
-    public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
+    public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
 
     public constructor(
         public readonly toolId: string,
@@ -155,7 +155,14 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 await this.removeConnection()
             } else {
                 this.#activeConnection = conn
-                this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+            }
+        })
+
+        this.auth.onDidUpdateConnection(conn => {
+            if (this.#savedConnection?.id === conn.id) {
+                this.#savedConnection = conn as unknown as T
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         })
     }
@@ -178,13 +185,13 @@ export class SecondaryAuth<T extends Connection = Connection> {
     public async saveConnection(conn: T) {
         await this.memento.update(this.key, conn.id)
         this.#savedConnection = conn
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+        this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
     public async removeConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+        this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
     public async useNewConnection(conn: T) {
@@ -205,7 +212,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         try {
             await this.auth.tryAutoConnect()
             this.#savedConnection = await this.loadSavedConnection()
-            this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+            this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
             return this.#savedConnection
         } catch (err) {
