@@ -24,6 +24,8 @@ import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
