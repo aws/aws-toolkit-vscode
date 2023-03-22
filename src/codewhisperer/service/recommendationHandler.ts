@@ -203,7 +203,9 @@ export class RecommendationHandler {
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
                 TelemetryHelper.instance.setSessionId(sessionId)
+                TelemetryHelper.instance.firstRecommendationTime = performance.now()
                 if (nextToken === '') {
+                    TelemetryHelper.instance.lastRequestId = requestId
                     TelemetryHelper.instance.setAllPaginationEndTime()
                 }
             } else {
@@ -260,7 +262,7 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                telemetry.codewhisperer_serviceInvocation.emit({
+                const event = {
                     codewhispererRequestId: requestId ? requestId : undefined,
                     codewhispererSessionId: sessionId ? sessionId : undefined,
                     codewhispererLastSuggestionIndex: this.recommendations.length - 1,
@@ -279,7 +281,9 @@ export class RecommendationHandler {
                     credentialStartUrl: TelemetryHelper.instance.startUrl,
                     codewhispererImportRecommendationEnabled:
                         CodeWhispererSettings.instance.isImportRecommendationEnabled(),
-                })
+                }
+                telemetry.codewhisperer_serviceInvocation.emit(event)
+                TelemetryHelper.instance.sessionInvocations.push(event)
             }
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
@@ -289,6 +293,7 @@ export class RecommendationHandler {
             const typedPrefix = editor.document
                 .getText(new vscode.Range(this.startPos, editor.selection.active))
                 .replace('\r\n', '\n')
+            TelemetryHelper.instance.typeAheadLength = typedPrefix.length
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
@@ -312,10 +317,12 @@ export class RecommendationHandler {
                 editor.document.languageId
             )
         }
-        this.requestId = requestId
-        this.sessionId = sessionId
-        this.nextToken = nextToken
-        this.errorCode = errorCode
+        if (!RecommendationHandler.instance.checkAndResetCancellationTokens()) {
+            this.requestId = requestId
+            this.sessionId = sessionId
+            this.nextToken = nextToken
+            this.errorCode = errorCode
+        }
     }
 
     cancelPaginatedRequest() {

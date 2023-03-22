@@ -7,7 +7,13 @@ import globals from '../../shared/extensionGlobals'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import {
+    CodewhispererPreviousSuggestionState,
+    CodewhispererServiceInvocation,
+    CodewhispererUserDecision,
+    CodewhispererUserTriggerDecision,
+    telemetry,
+} from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
@@ -45,6 +51,20 @@ export class TelemetryHelper {
     private allPaginationEndTime = 0
     private firstResponseRequestId = ''
     private sessionId = ''
+    // variables for user trigger decision
+    private sessionDecisions: CodewhispererUserTriggerDecision[] = []
+    public sessionInvocations: CodewhispererServiceInvocation[] = []
+    public triggerChar = ''
+    private prevTriggerDecision?: CodewhispererPreviousSuggestionState
+    public isRequestCancelled = false
+    public lastRequestId = ''
+    public numberOfRequests = 0
+    public typeAheadLength = 0
+    public timeSinceLastModification = 0
+    public lastTriggerDecisionTime = 0
+    public invocationTime = 0
+    public firstRecommendationTime = 0
+    public recommendationShownTime = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -103,6 +123,7 @@ export class TelemetryHelper {
         recommendationSuggestionState?: Map<number, string>
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+        const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
         recommendations.forEach((_elem, i) => {
             let uniqueSuggestionReferences: string | undefined = undefined
@@ -113,7 +134,7 @@ export class TelemetryHelper {
             if (_elem.content.length === 0) {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
-            telemetry.codewhisperer_userDecision.emit({
+            const event: CodewhispererUserDecision = {
                 codewhispererRequestId: requestId,
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
@@ -126,8 +147,121 @@ export class TelemetryHelper {
                 codewhispererCompletionType: this.completionType,
                 codewhispererLanguage: languageContext.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
-            })
+            }
+            telemetry.codewhisperer_userDecision.emit(event)
+            events.push(event)
         })
+
+        const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
+        if (aggregatedEvent) {
+            this.sessionDecisions.push(aggregatedEvent)
+        }
+        if (
+            this.isRequestCancelled ||
+            (this.lastRequestId && this.lastRequestId === requestId) ||
+            (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
+        ) {
+            this.sendUserTriggerDecisionTelemetry(sessionId)
+        }
+    }
+
+    private aggregateUserDecisionByRequest(events: CodewhispererUserDecision[], requestId: string, sessionId: string) {
+        const serviceInvocation = this.sessionInvocations.find(e => e.codewhispererRequestId === requestId)
+        if (!serviceInvocation) {
+            return
+        }
+        const aggregated: CodewhispererUserTriggerDecision = {
+            codewhispererSessionId: sessionId,
+            codewhispererFirstRequestId: this.sessionInvocations[0].codewhispererRequestId ?? requestId,
+            credentialStartUrl: events[0].credentialStartUrl,
+            codewhispererCompletionType: this.getAggregatedCompletionType(events),
+            codewhispererLanguage: events[0].codewhispererLanguage,
+            codewhispererTriggerType: events[0].codewhispererTriggerType,
+            codewhispererSuggestionCount: events.length,
+            codewhispererAutomatedTriggerType: serviceInvocation.codewhispererAutomatedTriggerType,
+            codewhispererLineNumber: serviceInvocation.codewhispererLineNumber,
+            codewhispererCursorOffset: serviceInvocation.codewhispererCursorOffset,
+            codewhispererSuggestionState: this.getAggregatedUserDecision(events),
+            codewhispererSuggestionImportCount: events
+                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .reduce((a, b) => a + b, 0),
+            codewhispererTypeaheadLength: 0,
+        }
+        return aggregated
+    }
+
+    private sendUserTriggerDecisionTelemetry(sessionId: string) {
+        // TODO: add partial acceptance related metrics
+        const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
+        const aggregated: CodewhispererUserTriggerDecision = {
+            codewhispererSessionId: sessionId,
+            codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
+            credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
+            codewhispererCompletionType: this.getAggregatedCompletionType(this.sessionDecisions),
+            codewhispererLanguage: this.sessionDecisions[0].codewhispererLanguage,
+            codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
+            codewhispererSuggestionCount: this.sessionDecisions
+                .map(e => e.codewhispererSuggestionCount)
+                .reduce((a, b) => a + b, 0),
+            codewhispererAutomatedTriggerType: autoTriggerType,
+            codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
+            codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
+            codewhispererSuggestionImportCount: this.sessionDecisions
+                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .reduce((a, b) => a + b, 0),
+            codewhispererTypeaheadLength: this.typeAheadLength,
+            codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
+                ? this.timeSinceLastModification
+                : undefined,
+            codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
+                ? performance.now() - this.lastTriggerDecisionTime
+                : undefined,
+            codewhispererTimeToFirstRecommendation: this.firstRecommendationTime - this.invocationTime,
+            codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
+            codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
+            codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+        }
+        telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
+        this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
+        this.lastTriggerDecisionTime = performance.now()
+        this.resetUserTriggerDecisionTelemetry()
+    }
+
+    private resetUserTriggerDecisionTelemetry() {
+        this.sessionDecisions = []
+        this.isRequestCancelled = false
+        this.sessionInvocations = []
+        this.triggerChar = ''
+        this.lastRequestId = ''
+        this.numberOfRequests = 0
+        this.typeAheadLength = 0
+        this.timeSinceLastModification = 0
+        this.lastTriggerDecisionTime = 0
+        this.invocationTime = 0
+        this.firstRecommendationTime = 0
+        this.recommendationShownTime = 0
+    }
+
+    private getAggregatedCompletionType(
+        events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
+    ): CodewhispererCompletionType {
+        return events.some(e => e.codewhispererCompletionType === 'Block') ? 'Block' : 'Line'
+    }
+
+    private getAggregatedUserDecision(
+        events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
+    ): CodewhispererPreviousSuggestionState {
+        let isEmpty = true
+        for (const event of events) {
+            if (event.codewhispererSuggestionState === 'Accept') {
+                return 'Accept'
+            } else if (event.codewhispererSuggestionState === 'Reject') {
+                return 'Reject'
+            } else if (event.codewhispererSuggestionState !== 'Empty') {
+                isEmpty = false
+            }
+        }
+        return isEmpty ? 'Empty' : 'Discard'
     }
 
     public getSuggestionState(
