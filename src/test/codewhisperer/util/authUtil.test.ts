@@ -154,15 +154,18 @@ describe('AuthUtil', async function () {
 
     it('should show reauthenticate prompt', async function () {
         getTestWindow().onDidShowMessage(m => {
-            if (m.severity === SeverityLevel.Warning) {
-                m.selectItem('Cancel')
+            if (m.severity === SeverityLevel.Information) {
+                m.close()
             }
         })
 
         await AuthUtil.instance.showReauthenticatePrompt()
 
-        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Warning)
+        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
-        assert.strictEqual(warningMessage[0].message, 'AWS Toolkit: Connection expired. Reauthenticate to continue.')
+        assert.strictEqual(
+            warningMessage[0].message,
+            'Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
+        )
     })
 })
