@@ -37,8 +37,6 @@ interface TypedCancellationToken extends CancellationToken {
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
  * cannot be used after 'complete' has been called or if the Timeout expired.
- *
- * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
     private _startTime: number
@@ -51,6 +49,9 @@ export class Timeout {
     private readonly _onCompletionEmitter = new EventEmitter<void>()
     public readonly onCompletion = this._onCompletionEmitter.event
 
+    /**
+     * @param timeoutLength Timeout duration (in ms)
+     */
     public constructor(timeoutLength: number) {
         this._startTime = globals.clock.Date.now()
         this._endTime = this._startTime + timeoutLength

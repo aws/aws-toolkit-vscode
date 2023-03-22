@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CodeCatalyst: wait up to 1 hour (instead of 3 minutes) for Dev Environment to start"
+}
