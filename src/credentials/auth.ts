@@ -199,10 +199,6 @@ export class ProfileStore {
     public async addProfile(id: string, profile: SsoProfile): Promise<StoredProfile<SsoProfile>>
     public async addProfile(id: string, profile: IamProfile): Promise<StoredProfile<IamProfile>>
     public async addProfile(id: string, profile: Profile): Promise<StoredProfile> {
-        if (this.getProfile(id) !== undefined) {
-            throw new Error(`Profile already exists: ${id}`)
-        }
-
         return this.putProfile(id, this.initMetadata(profile))
     }
 
@@ -770,9 +766,7 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
     }
 })
 
-async function signout(auth: Auth) {
-    const conn = auth.activeConnection
-
+async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
     if (conn?.type === 'sso') {
         // TODO: does deleting the connection make sense UX-wise?
         // this makes it disappear from the list of available connections
@@ -865,38 +859,53 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
 export async function createBuilderIdConnection(auth: Auth) {
     const newProfile = createBuilderIdProfile()
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
-    if (existingConn && !hasScopes(existingConn, newProfile.scopes)) {
-        return migrateBuilderId(auth, existingConn, newProfile)
+    if (!existingConn) {
+        return auth.createConnection(newProfile)
     }
 
-    return existingConn ?? (await auth.createConnection(newProfile))
+    const userResponse = await promptLogoutExistingBuilderIdConnection()
+    if (userResponse !== 'signout') {
+        throw new CancellationError('user')
+    }
+
+    await signout(auth, existingConn)
+
+    return auth.createConnection(newProfile)
+}
+
+/**
+ * Prompts the user to log out of an existing Builder ID connection.
+ *
+ * @returns The name of the action performed by the user
+ */
+async function promptLogoutExistingBuilderIdConnection(): Promise<'signout' | 'cancel'> {
+    const items: DataQuickPickItem<'signout' | 'cancel'>[] = [
+        {
+            data: 'signout',
+            label: `Currently signed in with ${getIdeProperties().company} Builder ID. Sign out to add another?`,
+            detail: `This will sign out of your current ${
+                getIdeProperties().company
+            } Builder ID and open the sign-in page in browser.`,
+        },
+        { data: 'cancel', label: 'Cancel' },
+    ]
+    const resp = await showQuickPick(items, {
+        title: `Sign in to different ${getIdeProperties().company} Builder ID`,
+        buttons: createCommonButtons() as vscode.QuickInputButton[],
+    })
+
+    return resp === undefined ? 'cancel' : resp
 }
 
 Commands.register('aws.auth.help', async () => {
     vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
 })
+
 Commands.register('aws.auth.signout', () => {
     telemetry.ui_click.emit({ elementId: 'devtools_signout' })
-
     return signout(Auth.instance)
 })
-
-// XXX: right now users can only have 1 builder id connection, so de-dupe
-// This logic can be removed or re-purposed once we have access to identities
-async function migrateBuilderId(auth: Auth, existingConn: SsoConnection, newProfile: SsoProfile) {
-    const newConn = await auth.createConnection(newProfile)
-    const shouldUseConnection = auth.activeConnection?.id === existingConn.id
-    await auth.deleteConnection(existingConn).catch(err => {
-        getLogger().warn(`auth: failed to remove old connection "${existingConn.id}": %s`, err)
-    })
-
-    if (shouldUseConnection) {
-        return auth.useConnection(newConn)
-    }
-
-    return newConn
-}
 
 const addConnection = Commands.register('aws.auth.addConnection', async () => {
     const c9IamItem = createIamItem()
