@@ -21,6 +21,12 @@ import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { SsoConnection } from '../../credentials/auth'
 import { TokenProvider } from '../../credentials/sdkV2Compat'
+import { Uri } from 'vscode'
+import {
+    GetSourceRepositoryCloneUrlsRequest,
+    ListSourceRepositoriesItem,
+    ListSourceRepositoriesItems,
+} from 'aws-sdk/clients/codecatalyst'
 
 // REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
@@ -411,12 +417,33 @@ class CodeCatalystClientInternal {
 
     /**
      * Gets a flat list of all repos for the given CodeCatalyst user.
+     * @param thirdParty If you want to include 3P (eg github) results in
+     *                   your output.
      */
     public listSourceRepositories(
-        request: CodeCatalyst.ListSourceRepositoriesRequest
+        request: CodeCatalyst.ListSourceRepositoriesRequest,
+        thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) =>
-            this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
+            const allRepositories = this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+            let finalRepositories = allRepositories
+
+            // Filter out 3P repos
+            if (!thirdParty) {
+                finalRepositories = allRepositories.then(async repos => {
+                    repos.items = await excludeThirdPartyRepos(
+                        this,
+                        request.spaceName,
+                        request.projectName,
+                        repos.items
+                    )
+                    return repos
+                })
+            }
+
+            return finalRepositories
+        }
+
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
             summaries =>
@@ -445,12 +472,17 @@ class CodeCatalystClientInternal {
 
     /**
      * Lists ALL of the given resource in the current account
+     *
+     * @param thirdParty If you want 3P repos in the result.
      */
     public listResources(resourceType: 'org'): AsyncCollection<CodeCatalystOrg[]>
     public listResources(resourceType: 'project'): AsyncCollection<CodeCatalystProject[]>
-    public listResources(resourceType: 'repo'): AsyncCollection<CodeCatalystRepo[]>
+    public listResources(resourceType: 'repo', thirdParty?: boolean): AsyncCollection<CodeCatalystRepo[]>
     public listResources(resourceType: 'devEnvironment'): AsyncCollection<DevEnvironment[]>
-    public listResources(resourceType: CodeCatalystResource['type']): AsyncCollection<CodeCatalystResource[]> {
+    public listResources(
+        resourceType: CodeCatalystResource['type'],
+        ...args: any[]
+    ): AsyncCollection<CodeCatalystResource[]> {
         function mapInner<T, U>(
             collection: AsyncCollection<T[]>,
             fn: (element: T) => AsyncCollection<U[]>
@@ -465,7 +497,7 @@ class CodeCatalystClientInternal {
                 return mapInner(this.listResources('org'), o => this.listProjects({ spaceName: o.name }))
             case 'repo':
                 return mapInner(this.listResources('project'), p =>
-                    this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name })
+                    this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name }, ...args)
                 )
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
@@ -481,13 +513,14 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets the git source host URL for the given CodeCatalyst repo.
+     * Gets the git source host URL for the given CodeCatalyst or third-party repo.
      */
     public async getRepoCloneUrl(args: CodeCatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
         const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
 
         // The git extension skips over credential providers if the username is included in the authority
-        return `https://${r.https.replace(/.*@/, '')}`
+        const uri = Uri.parse(r.https)
+        return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString()
     }
 
     public async createDevEnvironment(args: CodeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
@@ -675,4 +708,49 @@ class CodeCatalystClientInternal {
 
         return devenv
     }
+}
+
+/**
+ * Returns only the first-party repos from the given
+ * list of repository items.
+ */
+export async function excludeThirdPartyRepos(
+    client: CodeCatalystClient,
+    spaceName: CodeCatalystOrg['name'],
+    projectName: CodeCatalystProject['name'],
+    items?: Pick<ListSourceRepositoriesItem, 'name'>[]
+): Promise<ListSourceRepositoriesItems | undefined> {
+    if (items === undefined) {
+        return items
+    }
+
+    // Filter out 3P repos.
+    return (
+        await Promise.all(
+            items.map(async item => {
+                return (await isThirdPartyRepo(client, {
+                    spaceName,
+                    projectName,
+                    sourceRepositoryName: item.name,
+                }))
+                    ? undefined
+                    : item
+            })
+        )
+    ).filter(item => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+}
+
+/**
+ * Determines if a repo is third party (3P) compared to first party (1P).
+ *
+ * 1P is CodeCatalyst, 3P is something like Github.
+ */
+async function isThirdPartyRepo(
+    client: CodeCatalystClient,
+    codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest
+): Promise<boolean> {
+    const url = await client.getRepoCloneUrl(codeCatalystRepo)
+    // TODO: Make more robust to work with gamma once getCodeCatalystConfig()
+    // can provide a valid hostname
+    return !Uri.parse(url).authority.endsWith('codecatalyst.aws')
 }
