@@ -124,16 +124,17 @@ export function createProjectPrompter(
 
 export function createRepoPrompter(
     client: codecatalyst.CodeCatalystClient,
-    proj?: codecatalyst.CodeCatalystProject
+    proj?: codecatalyst.CodeCatalystProject,
+    thirdParty?: boolean
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
     const helpUri = isCloud9() ? docs.cloud9.cloneRepo : docs.vscode.main
     const repos = proj
-        ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name })
-        : client.listResources('repo')
+        ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name }, thirdParty)
+        : client.listResources('repo', thirdParty)
 
     return createResourcePrompter(repos, helpUri, {
         title: 'Select a CodeCatalyst Repository',
-        placeholder: 'Search for a Repository',
+        placeholder: 'Search for a CodeCatalyst Repository',
     })
 }
 
@@ -188,6 +189,15 @@ export async function selectCodeCatalystResource<T extends ResourceType>(
 
     const response = await prompter.prompt()
     return isValidResponse(response) ? (response as codecatalyst.CodeCatalystResource & { type: T }) : undefined
+}
+
+export async function selectCodeCatalystRepository(
+    client: codecatalyst.CodeCatalystClient,
+    includeThirdPartyRepos?: boolean
+): Promise<codecatalyst.CodeCatalystRepo | undefined> {
+    const prompter = createRepoPrompter(client, undefined, includeThirdPartyRepos)
+    const response = await prompter.prompt()
+    return isValidResponse(response) ? response : undefined
 }
 
 /**
