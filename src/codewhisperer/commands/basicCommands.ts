@@ -11,7 +11,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { startSecurityScanWithProgress } from './startSecurityScan'
+import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { codeScanState } from '../models/model'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
@@ -57,20 +57,29 @@ export const showSecurityScan = Commands.declare(
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
             if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.showReauthenticatePrompt()
+                await AuthUtil.instance.notifyReauthenticate()
             }
             const editor = vscode.window.activeTextEditor
             if (editor) {
-                if (!codeScanState.running) {
-                    codeScanState.running = true
-                    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+                if (codeScanState.isNotStarted()) {
+                    // User intends to start as "Start Security Scan" is shown in the explorer tree
+                    codeScanState.setToRunning()
                     startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context.extensionContext)
+                } else if (codeScanState.isRunning()) {
+                    // User intends to stop as "Stop Security Scan" is shown in the explorer tree
+                    // Cancel only when the code scan state is "Running"
+                    await confirmStopSecurityScan()
                 }
+                await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             } else {
                 vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
 )
+
+export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
+    await AuthUtil.instance.reauthenticate()
+})
 
 export function get(key: string, context: vscode.Memento): any {
     return context.get(key)
@@ -87,7 +96,6 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
 
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
-
     await showConnectionPrompt()
 })
 

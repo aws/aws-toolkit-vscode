@@ -4,7 +4,7 @@
  */
 import { existsSync, statSync, readdirSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
+import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
 import { getLogger } from '../../../shared/logger'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import * as CodeWhispererConstants from '../../models/constants'
@@ -15,16 +15,8 @@ export const importRegex =
     /^(?:from[ ]+(\S+)[ ]+)?import[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*([,]*[ ]+(\S+)(?:[ ]+as[ ]+\S+)?[ ]*)*$/gm
 
 export class PythonDependencyGraph extends DependencyGraph {
-    getReadableSizeLimit(): string {
-        return `${CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes / Math.pow(2, 10)}KB`
-    }
-
-    willReachSizeLimit(current: number, adding: number): boolean {
-        return current + adding > CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
-    }
-
-    reachSizeLimit(size: number): boolean {
-        return size > CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
+    getPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes
     }
 
     private async readImports(uri: vscode.Uri) {
@@ -188,7 +180,7 @@ export class PythonDependencyGraph extends DependencyGraph {
         })
     }
 
-    async generateTruncation(uri: vscode.Uri): Promise<TruncPaths> {
+    async generateTruncation(uri: vscode.Uri): Promise<Truncation> {
         try {
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
             if (workspaceFolder === undefined) {
@@ -200,22 +192,15 @@ export class PythonDependencyGraph extends DependencyGraph {
             await sleep(1000)
             const truncDirPath = this.getTruncDirPath(uri)
             this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
-            const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
+            const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
             const zipFileSize = statSync(zipFilePath).size
             return {
-                root: truncDirPath,
-                src: {
-                    dir: truncDirPath,
-                    zip: zipFilePath,
-                    size: this._totalSize,
-                    zipSize: zipFileSize,
-                },
-                build: {
-                    dir: '',
-                    zip: '',
-                    size: 0,
-                    zipSize: 0,
-                },
+                rootDir: truncDirPath,
+                zipFilePath: zipFilePath,
+                scannedFiles: new Set(this._pickedSourceFiles),
+                srcPayloadSizeInBytes: this._totalSize,
+                zipFileSizeInBytes: zipFileSize,
+                buildPayloadSizeInBytes: 0,
                 lines: this._totalLines,
             }
         } catch (error) {

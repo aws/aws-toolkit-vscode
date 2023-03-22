@@ -216,6 +216,10 @@
                         "remoteConnected": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -242,6 +246,11 @@
                 "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
@@ -3468,7 +3477,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.100",
+        "@aws-toolkits/telemetry": "^1.0.117",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",

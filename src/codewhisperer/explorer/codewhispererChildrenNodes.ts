@@ -13,6 +13,7 @@ import {
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,
+    reconnect,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
 
@@ -48,10 +49,10 @@ export const createOpenReferenceLogNode = () =>
     })
 
 export const createSecurityScanNode = () => {
-    const prefix = codeScanState.running ? 'Running' : 'Run'
+    const prefix = codeScanState.getPrefixTextForButton()
     return showSecurityScan.build().asTreeNode({
         label: `${prefix} Security Scan`,
-        iconPath: codeScanState.running ? getIcon('vscode-loading~spin') : getIcon('vscode-debug-alt-small'),
+        iconPath: codeScanState.getIconForButton(),
         tooltip: `${prefix} Security Scan`,
         contextValue: `awsCodeWhisperer${prefix}SecurityScanNode`,
     })
@@ -60,6 +61,12 @@ export const createSecurityScanNode = () => {
 export const createSsoSignIn = () =>
     showSsoSignIn.build().asTreeNode({
         label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
+        iconPath: getIcon('vscode-debug-start'),
+    })
+
+export const createReconnectNode = () =>
+    reconnect.build().asTreeNode({
+        label: localize('AWS.explorerNode.reconnectNode.label', 'Reconnect'),
         iconPath: getIcon('vscode-debug-start'),
     })
 

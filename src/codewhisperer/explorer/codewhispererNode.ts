@@ -14,17 +14,14 @@ import {
     createLearnMore,
     createSsoSignIn,
     createFreeTierLimitMetNode,
+    createReconnectNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
-import { getIcon } from '../../shared/icons'
 
 export class CodeWhispererNode implements RootNode {
-    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
-
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -38,14 +35,6 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
-        if (!this.isAvailable) {
-            const item = new vscode.TreeItem('CodeWhisperer (Preview)')
-            item.description = 'Unavailable in Dev Environment'
-            item.iconPath = getIcon('vscode-circle-slash')
-
-            return item
-        }
-
         if (!isCloud9()) {
             AuthUtil.instance.restore()
         }
@@ -73,19 +62,17 @@ export class CodeWhispererNode implements RootNode {
         if (accessToken) {
             return 'Access Token'
         }
-        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
+        if (AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'
                 : 'AWS Builder ID Connected'
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            return 'Expired Connection'
         }
         return ''
     }
 
     public getChildren() {
-        if (!this.isAvailable) {
-            return []
-        }
-
         const termsAccepted = globals.context.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey)
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
@@ -97,9 +84,12 @@ export class CodeWhispererNode implements RootNode {
                 return [createLearnMore(), createEnableCodeSuggestionsNode()]
             }
         } else {
-            const accessToken = this.getDescription()
-            if (accessToken || AuthUtil.instance.isConnected()) {
+            const isAccessToken = this.getDescription() === 'Access Token'
+            if (isAccessToken || AuthUtil.instance.isConnected()) {
                 if (termsAccepted) {
+                    if (AuthUtil.instance.isConnectionExpired()) {
+                        return [createReconnectNode(), createLearnMore()]
+                    }
                     if (this._showFreeTierLimitReachedNode) {
                         return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
                     } else {
