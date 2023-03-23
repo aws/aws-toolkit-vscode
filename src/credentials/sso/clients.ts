@@ -16,6 +16,7 @@ import {
     SSOServiceException,
 } from '@aws-sdk/client-sso'
 import {
+    AuthorizationPendingException,
     CreateTokenRequest,
     RegisterClientRequest,
     SSOOIDC,
@@ -192,8 +193,9 @@ function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>)
     client.middlewareStack.add(
         (next, context) => args => {
             if (HttpRequest.isInstance(args.request)) {
+                const { hostname, path } = args.request
                 const input = omitIfPresent(args.input, 'clientSecret', 'accessToken', 'refreshToken')
-                getLogger().debug('API request: %s %s %O', args.request.hostname, args.request.path, input)
+                getLogger().debug('API request: %s %s %O', hostname, path, input)
             }
             return next(args)
         },
@@ -202,10 +204,22 @@ function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>)
 
     client.middlewareStack.add(
         (next, context) => async args => {
-            const result = await next(args)
-            if (HttpRequest.isInstance(args.request) && HttpResponse.isInstance(result.response)) {
+            if (!HttpRequest.isInstance(args.request)) {
+                return next(args)
+            }
+
+            const { hostname, path } = args.request
+            const result = await next(args).catch(e => {
+                if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
+                    const err = { ...e }
+                    delete err['stack']
+                    getLogger().error('API response: %s %s %O', hostname, path, err)
+                }
+                throw e
+            })
+            if (HttpResponse.isInstance(result.response)) {
                 const output = omitIfPresent(result.output, 'clientSecret', 'accessToken', 'refreshToken')
-                getLogger().debug('API response: %s %s %O', args.request.hostname, args.request.path, output)
+                getLogger().debug('API response: %s %s %O', hostname, path, output)
             }
 
             return result
