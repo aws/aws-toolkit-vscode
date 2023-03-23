@@ -120,13 +120,14 @@ export async function activate(context: ExtContext): Promise<void> {
                     })
             }
         }),
+        // TODO: update the following
         /**
          * Accept terms of service
          */
         Commands.register('aws.codeWhisperer.acceptTermsOfService', async () => {
             await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
-            await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
-            await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
+            // await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
+            // await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
@@ -316,8 +317,9 @@ export async function activate(context: ExtContext): Promise<void> {
         await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     }
 
+    // TODO: remove this
     async function getManualTriggerStatus(): Promise<boolean> {
-        return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
+        return true
     }
 
     function getAutoTriggerStatus(): boolean {

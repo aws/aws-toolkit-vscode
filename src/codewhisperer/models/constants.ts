@@ -142,8 +142,6 @@ export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
-export const termsAcceptedKey = 'CODEWHISPERER_TERMS_ACCEPTED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'

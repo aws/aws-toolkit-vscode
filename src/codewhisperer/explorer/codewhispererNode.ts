@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../models/constants'
 import {
-    createEnableCodeSuggestionsNode,
     createAutoSuggestionsNode,
     createOpenReferenceLogNode,
     createSecurityScanNode,
@@ -73,34 +72,24 @@ export class CodeWhispererNode implements RootNode {
     }
 
     public getChildren() {
-        const termsAccepted = globals.context.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey)
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
 
         if (isCloud9()) {
-            if (termsAccepted) {
-                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
-            } else {
-                return [createLearnMore(), createEnableCodeSuggestionsNode()]
-            }
+            return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
         } else {
             const isAccessToken = this.getDescription() === 'Access Token'
             if (isAccessToken || AuthUtil.instance.isConnected()) {
-                if (termsAccepted) {
-                    if (AuthUtil.instance.isConnectionExpired()) {
-                        return [createReconnectNode(), createLearnMore()]
-                    }
-                    if (this._showFreeTierLimitReachedNode) {
-                        return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
-                    } else {
-                        return [
-                            createAutoSuggestionsNode(autoTriggerEnabled),
-                            createSecurityScanNode(),
-                            createOpenReferenceLogNode(),
-                        ]
-                    }
+                if (AuthUtil.instance.isConnectionExpired()) {
+                    return [createReconnectNode(), createLearnMore()]
+                } else if (this._showFreeTierLimitReachedNode) {
+                    return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
                 } else {
-                    return [createSsoSignIn(), createLearnMore()]
+                    return [
+                        createAutoSuggestionsNode(autoTriggerEnabled),
+                        createSecurityScanNode(),
+                        createOpenReferenceLogNode(),
+                    ]
                 }
             } else {
                 return [createSsoSignIn(), createLearnMore()]

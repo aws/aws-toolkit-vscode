@@ -12,6 +12,7 @@ import { distance } from 'fastest-levenshtein'
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -51,8 +52,7 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     public isActive(): boolean {
-        const isTermsAccepted = this.globals.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
-        return TelemetryHelper.instance.isTelemetryEnabled() && isTermsAccepted
+        return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
     }
 
     public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {

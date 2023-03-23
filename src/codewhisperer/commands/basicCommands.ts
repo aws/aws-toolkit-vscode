@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { showView } from '../vue/backend'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
@@ -37,7 +36,7 @@ export const toggleCodeSuggestions = Commands.declare(
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
     (context: ExtContext) => async () => {
-        showView(context.extensionContext)
+        await vscode.commands.executeCommand('aws.codeWhisperer.acceptTermsOfService')
     }
 )
 
