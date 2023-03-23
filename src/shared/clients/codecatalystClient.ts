@@ -745,7 +745,7 @@ export async function excludeThirdPartyRepos(
  *
  * 1P is CodeCatalyst, 3P is something like Github.
  */
-async function isThirdPartyRepo(
+export async function isThirdPartyRepo(
     client: CodeCatalystClient,
     codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest
 ): Promise<boolean> {
