@@ -26,8 +26,6 @@ import {
     enableCodeSuggestions,
     toggleCodeSuggestions,
     showReferenceLog,
-    set,
-    get,
     showSecurityScan,
     showLearnMore,
     showSsoSignIn,
@@ -119,33 +117,6 @@ export async function activate(context: ExtContext): Promise<void> {
                         }
                     })
             }
-        }),
-        // TODO: update the following
-        /**
-         * Accept terms of service
-         */
-        Commands.register('aws.codeWhisperer.acceptTermsOfService', async () => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
-            // await set(CodeWhispererConstants.termsAcceptedKey, true, context.extensionContext.globalState)
-            // await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-
-            const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
-            if (!isShow) {
-                showCodeWhispererWelcomeMessage()
-                await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
-            }
-            if (!isCloud9()) {
-                await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
-            }
-        }),
-        /**
-         * Cancel terms of service
-         */
-        Commands.register('aws.codeWhisperer.cancelTermsOfService', async () => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
-            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         }),
         /**
          * Open Configuration
@@ -309,15 +280,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    async function showCodeWhispererWelcomeMessage(): Promise<void> {
-        const filePath = isCloud9()
-            ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
-            : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
-        const readmeUri = vscode.Uri.file(filePath)
-        await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
-    }
-
-    // TODO: remove this
+    // ?
     async function getManualTriggerStatus(): Promise<boolean> {
         return true
     }

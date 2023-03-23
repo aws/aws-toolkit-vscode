@@ -16,6 +16,7 @@ import { codeScanState } from '../models/model'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -36,7 +37,18 @@ export const toggleCodeSuggestions = Commands.declare(
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
     (context: ExtContext) => async () => {
-        await vscode.commands.executeCommand('aws.codeWhisperer.acceptTermsOfService')
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+
+        const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
+        if (!isShow) {
+            showCodeWhispererWelcomeMessage(context)
+            await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
+        }
+        if (!isCloud9()) {
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        }
     }
 )
 
@@ -119,3 +131,11 @@ export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLim
 export const updateReferenceLog = Commands.declare('aws.codeWhisperer.updateReferenceLog', () => () => {
     ReferenceLogViewProvider.instance.update()
 })
+
+async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
+    const filePath = isCloud9()
+        ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
+        : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
+    const readmeUri = vscode.Uri.file(filePath)
+    await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+}
