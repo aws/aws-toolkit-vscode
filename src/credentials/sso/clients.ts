@@ -195,7 +195,7 @@ function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>)
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
                 const input = omitIfPresent(args.input, 'clientSecret', 'accessToken', 'refreshToken')
-                getLogger().debug('API request: %s %s %O', hostname, path, input)
+                getLogger().debug('API request (%s %s): %O', hostname, path, input)
             }
             return next(args)
         },
@@ -213,13 +213,13 @@ function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>)
                 if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
                     const err = { ...e }
                     delete err['stack']
-                    getLogger().error('API response: %s %s %O', hostname, path, err)
+                    getLogger().error('API response (%s %s): %O', hostname, path, err)
                 }
                 throw e
             })
             if (HttpResponse.isInstance(result.response)) {
                 const output = omitIfPresent(result.output, 'clientSecret', 'accessToken', 'refreshToken')
-                getLogger().debug('API response: %s %s %O', hostname, path, output)
+                getLogger().debug('API response (%s %s): %O', hostname, path, output)
             }
 
             return result
