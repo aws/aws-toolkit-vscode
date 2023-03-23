@@ -160,8 +160,14 @@ class CawsCloneDialogComponent(
                 val projects = cache.getResource(CawsResources.ALL_PROJECTS, cawsConnectionSettings).await()
                 projects.forEach { cawsProject ->
                     val items = cache.getResource(CawsResources.codeRepositories(cawsProject), cawsConnectionSettings).await()
-                    items.forEach {
-                        repoListModel.add(it)
+                    items.forEach { item ->
+                        val url = cache.getResource(
+                            CawsResources.cloneUrls(CawsCodeRepository(cawsProject.space, cawsProject.project, item.name)),
+                            cawsConnectionSettings
+                        ).toCompletableFuture().get()
+                        if (url.contains(CawsEndpoints.CAWS_GIT_PATTERN)) {
+                            repoListModel.add(item)
+                        }
                     }
                 }
 
