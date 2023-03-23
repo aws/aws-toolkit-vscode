@@ -12,8 +12,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import com.intellij.util.io.exists
 import com.intellij.util.io.lastModified
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath

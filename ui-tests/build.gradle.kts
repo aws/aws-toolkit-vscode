@@ -68,4 +68,10 @@ tasks.register<Test>("uiTestCore") {
     ciOnly {
         enableRemoteCoverage(this)
     }
+
+    // TODO: can these be scoped down
+    jvmArgs(
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
 }

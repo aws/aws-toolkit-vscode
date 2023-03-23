@@ -7,6 +7,7 @@ import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.RunManager
 import com.intellij.execution.application.ApplicationConfiguration
 import com.intellij.execution.application.ApplicationConfigurationType
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
@@ -93,7 +94,11 @@ class JavaAwsConnectionExtensionIntegrationTest {
                 credential = mockCredential.id
             }
         )
-        runConfiguration.setMainClass(psiClass)
+
+        runReadAction {
+            runConfiguration.setMainClass(psiClass)
+        }
+
         compileModule(module)
 
         assertThat(executeRunConfigurationAndWait(runConfiguration).stdout).isEqualToIgnoringWhitespace(mockRegion.id)

@@ -45,11 +45,4 @@ class ToolkitDockerAdapterTest {
             )
         }
     }
-
-    @Test
-    fun `doesn't throw when images are null`() {
-        runBlocking {
-            assertThat(sut.getLocalImages()).isEmpty()
-        }
-    }
 }

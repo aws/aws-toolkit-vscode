@@ -9,7 +9,11 @@ import java.util.concurrent.ConcurrentHashMap
  * An SPI to provide regions supported by this toolkit
  */
 abstract class ToolkitRegionProvider {
-    protected data class PartitionData(val description: String, val services: Map<String, Service>, val regions: Map<String, AwsRegion>)
+    protected data class PartitionData(
+        val description: String,
+        val services: Map<String, Service>,
+        val regions: Map<String, AwsRegion>
+    )
 
     protected abstract fun partitionData(): Map<String, PartitionData>
 

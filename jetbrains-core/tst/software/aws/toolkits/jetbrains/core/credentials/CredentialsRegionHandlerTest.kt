@@ -154,7 +154,7 @@ class CredentialsRegionHandlerTest {
         val notification = getOnlyNotification()
 
         runInEdtAndWait {
-            Notification.fire(notification, notification.actions.first { it.templateText == "Never" })
+            Notification.fire(notification, notification.actions.first { it.templateText == "Never" }, null)
         }
 
         assertThat(AwsSettings.getInstance().useDefaultCredentialRegion).isEqualTo(UseAwsCredentialRegion.Never)
@@ -173,7 +173,7 @@ class CredentialsRegionHandlerTest {
         val notification = getOnlyNotification()
 
         runInEdtAndWait {
-            Notification.fire(notification, notification.actions.first { it.templateText == "Always" })
+            Notification.fire(notification, notification.actions.first { it.templateText == "Always" }, null)
         }
 
         assertThat(AwsSettings.getInstance().useDefaultCredentialRegion).isEqualTo(UseAwsCredentialRegion.Always)

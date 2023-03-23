@@ -9,6 +9,7 @@ import com.goide.dlv.DlvRemoteVmConnection
 import com.goide.execution.GoRunUtil
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Key
@@ -35,7 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 fun inferSourceRoot(project: Project, virtualFile: VirtualFile): VirtualFile? {
     val projectFileIndex = ProjectFileIndex.getInstance(project)
-    return projectFileIndex.getContentRootForFile(virtualFile)?.let { root ->
+    val contentRoot = runReadAction {
+        projectFileIndex.getContentRootForFile(virtualFile)
+    }
+
+    return contentRoot?.let { root ->
         var file = virtualFile.parent
         while (file != null) {
             if ((file.isDirectory && file.children.any { !it.isDirectory && it.name == "go.mod" })) {

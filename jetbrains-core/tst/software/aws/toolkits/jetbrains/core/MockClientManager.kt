@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.testFramework.ThreadTracker
+import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -76,7 +76,7 @@ class MockClientManager : AwsClientManager() {
             // Make a new http client that is scoped to the disposable and replace the global one with it, otherwise the apache connection reaper thread
             // is detected as leaking threads and fails the tests
             // TODO: We aren't closing cred providers and sdks when they are removed, we need to see what ramifications that has
-            ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "idle-connection-reaper")
+            ThreadLeakTracker.longRunningThreadCreated(disposable, "idle-connection-reaper")
 
             val httpClient = AwsSdkClient()
             ApplicationManager.getApplication().replaceService(SdkClientProvider::class.java, httpClient, disposable)

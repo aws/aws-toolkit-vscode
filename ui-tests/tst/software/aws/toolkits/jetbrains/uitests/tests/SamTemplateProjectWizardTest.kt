@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.io.TempDir
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
@@ -21,6 +22,7 @@ import software.aws.toolkits.jetbrains.uitests.utils.setupSamCli
 import java.nio.file.Path
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.1", disabledReason = "Flakes on 231")
 class SamTemplateProjectWizardTest {
     @TempDir
     lateinit var tempDir: Path

@@ -8,12 +8,12 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.util.io.exists
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils.makeATestSam
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule

@@ -93,10 +93,9 @@ class SchemasViewerTest {
     fun canOpenFileDialog() {
         val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider(), mockRegionProvider.createAwsRegion())
 
-        runInEdtAndGet {
-            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
-                .toCompletableFuture()
-        }.get()
+        SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
+            .toCompletableFuture()
+            .get()
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(getSchemaFileName(connectionSettings, SCHEMA)) }
     }

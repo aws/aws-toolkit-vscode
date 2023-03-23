@@ -4,8 +4,8 @@ assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.c
 awsSdk = "2.18.20"
 commonmark = "0.17.1"
 detekt = "1.21.0"
-intellijGradle = "1.10.0"
-intellijRemoteRobot = "0.11.16"
+intellijGradle = "1.13.2"
+intellijRemoteRobot = "0.11.18"
 jackson = "2.13.3"
 jacoco = "0.8.8"
 jgit = "5.11.0.202103091610-r"
@@ -13,7 +13,8 @@ junit4 = "4.13.2"
 junit5 = "5.9.2"
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#adding-kotlin-support
 # https://kotlinlang.org/docs/releases.html#release-details
-kotlin = "1.7.20"
+kotlin = "1.8.10"
+# potentially overridden in <root>/settings.gradle.kts
 kotlinCoroutines = "1.6.4"
 mockito = "4.6.1"
 mockitoKotlin = "4.0.0"

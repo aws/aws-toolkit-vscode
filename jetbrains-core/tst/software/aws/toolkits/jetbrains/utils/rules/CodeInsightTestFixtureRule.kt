@@ -17,7 +17,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PlatformTestUtil
-import com.intellij.testFramework.ThreadTracker
+import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.fixtures.impl.LightTempDirTestFixtureImpl
@@ -28,7 +28,6 @@ import org.junit.runner.Description
 import org.mockito.Mockito
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.NoopLoggedErrorProcessor
 import java.nio.file.Paths
 
 /**
@@ -47,11 +46,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     }
 
     protected open fun createTestFixture(): CodeInsightTestFixture {
-        // HACK: 221.4165 snapshot broke binary compatability
-        // remove after https://github.com/JetBrains/intellij-community/commit/0e6212b7b5a07804287050a22bf9ce9d0f7116bd is available
-        val fixtureBuilder = NoopLoggedErrorProcessor.execute {
-            IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
-        }
+        val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription, testName)
         val newFixture = IdeaTestFixtureFactory.getFixtureFactory()
             .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true))
         newFixture.setUp()
@@ -63,7 +58,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
         super.before(description)
         this.description = description
         // This timer is cancelled but it still continues running when the test is over since it cancels lazily. This is fine, so suppress the leak
-        ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Debugger Worker launch timer")
+        ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Debugger Worker launch timer")
     }
 
     override fun after() {

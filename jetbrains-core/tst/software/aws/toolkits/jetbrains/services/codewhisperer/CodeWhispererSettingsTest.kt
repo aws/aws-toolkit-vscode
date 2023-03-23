@@ -29,7 +29,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhi
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfiguration
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
-import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidget
 import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceToolWindowFactory
 import kotlin.test.fail
@@ -112,9 +111,9 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         val codeReferenceWindow = ToolWindowManager.getInstance(projectRule.project).getToolWindow(
             CodeWhispererCodeReferenceToolWindowFactory.id
         ) ?: fail("Code Reference Log window not found")
-        val statusBarWidgetFactory = projectRule.project.service<StatusBarWidgetsManager>().findWidgetFactory(
-            CodeWhispererStatusBarWidget.ID
-        ) ?: fail("CodeWhisperer status bar widget not found")
+        val statusBarWidgetFactory = projectRule.project.service<StatusBarWidgetsManager>().getWidgetFactories().firstOrNull {
+            it.id == CodeWhispererStatusBarWidgetFactory.ID
+        } ?: fail("CodeWhisperer status bar widget not found")
 
         runInEdtAndWait {
             assertThat(
@@ -133,9 +132,9 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
         val codeReferenceWindow = ToolWindowManager.getInstance(projectRule.project).getToolWindow(
             CodeWhispererCodeReferenceToolWindowFactory.id
         ) ?: fail("Code Reference Log window not found")
-        val statusBarWidgetFactory = projectRule.project.service<StatusBarWidgetsManager>().findWidgetFactory(
-            CodeWhispererStatusBarWidget.ID
-        ) ?: fail("CodeWhisperer status bar widget not found")
+        val statusBarWidgetFactory = projectRule.project.service<StatusBarWidgetsManager>().getWidgetFactories().firstOrNull {
+            it.id == CodeWhispererStatusBarWidgetFactory.ID
+        } ?: fail("CodeWhisperer status bar widget not found")
         val originalIsIncludeCodeWithReference = settingsManager.isIncludeCodeWithReference()
         runInEdt {
             CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(false)

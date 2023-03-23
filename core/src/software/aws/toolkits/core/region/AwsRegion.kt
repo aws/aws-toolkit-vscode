@@ -40,7 +40,11 @@ fun AwsRegion.mergeWithExistingEnvironmentVariables(existing: MutableMap<String,
     mergeWithExistingEnvironmentVariables(existing.keys, existing::putAll, replace)
 }
 
-fun AwsRegion.mergeWithExistingEnvironmentVariables(existingKeys: Collection<String>, putValues: (Map<String, String>) -> Unit, replace: Boolean = false) {
+fun AwsRegion.mergeWithExistingEnvironmentVariables(
+    existingKeys: Collection<String>,
+    putValues: (Map<String, String>) -> Unit,
+    replace: Boolean = false
+) {
     val regionEnvs = this.toEnvironmentVariables()
     if (replace || regionEnvs.keys.none { it in existingKeys }) {
         putValues(regionEnvs)

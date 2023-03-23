@@ -64,6 +64,7 @@ object Lambda {
         }?.isHandlerValid(project, handler) == true
     }
 
+    @Suppress("MissingRecentApi")
     private fun findSamBuildContents(project: Project): Collection<VirtualFile> =
         ModuleManager.getInstance(project).modules.flatMap { findSamBuildContents(it) }
 

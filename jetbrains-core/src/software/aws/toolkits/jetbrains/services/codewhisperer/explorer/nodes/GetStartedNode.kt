@@ -63,10 +63,8 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
         }
 
         if (isCodeWhispererEnabled(project)) {
-            StartupActivity.POST_STARTUP_ACTIVITY.extensionList.forEach {
-                if (it is CodeWhispererProjectStartupActivity) {
-                    it.runActivity(project)
-                }
+            StartupActivity.POST_STARTUP_ACTIVITY.findExtension(CodeWhispererProjectStartupActivity::class.java)?.let {
+                it.runActivity(project)
             }
             if (!explorerActionManager.hasShownHowToUseCodeWhisperer()) {
                 showHowToUseCodeWhispererPage(project)

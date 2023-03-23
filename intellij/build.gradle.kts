@@ -61,13 +61,15 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":jetbrains-core"))
-    implementation(project(":jetbrains-ultimate"))
+    implementation(project(":jetbrains-core", "instrumentedJar"))
+    implementation(project(":jetbrains-ultimate", "instrumentedJar"))
     project.findProject(":jetbrains-gateway")?.let {
+        // does this need to be the instrumented variant?
         implementation(it)
         gatewayResources(project(":jetbrains-gateway", configuration = "gatewayResources"))
     }
     project.findProject(":jetbrains-rider")?.let {
+        // does this need to be the instrumented variant?
         implementation(it)
         resharperDlls(project(":jetbrains-rider", configuration = "resharperDlls"))
     }

@@ -34,6 +34,23 @@ when (providers.gradleProperty("ideProfileName").get()) {
     }
 }
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            when (providers.gradleProperty("ideProfileName").get()) {
+                "2022.1", "2022.2" -> {
+                    // pull value from IJ library list: https://github.com/JetBrains/intellij-community/blob/<mv>/.idea/libraries/kotlinx_coroutines_jdk8.xml
+                    version("kotlinCoroutines", "1.5.2")
+                    // only needed due to binary incompat for single test on 221 & 222
+                    version("kotlin", "1.6.20")
+                }
+
+                else -> {}
+            }
+        }
+    }
+}
+
 include("jetbrains-ultimate")
 include("jetbrains-rider")
 include("intellij")

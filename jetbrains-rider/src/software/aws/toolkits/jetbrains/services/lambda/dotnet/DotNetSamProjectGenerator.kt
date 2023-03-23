@@ -23,6 +23,7 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharp
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel
@@ -200,12 +201,14 @@ class DotNetSamProjectGenerator(
             solutionFiles = solutionFiles
         ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
 
-        val project = SolutionManager.openExistingSolution(
-            projectToClose = null,
-            forceOpenInNewFrame = false,
-            solutionFile = solutionFile,
-            forceConsiderTrusted = true
-        ) ?: return@Runnable
+        val project = runBlocking {
+            SolutionManager.openExistingSolution(
+                projectToClose = null,
+                forceOpenInNewFrame = false,
+                solutionFile = solutionFile,
+                forceConsiderTrusted = true
+            )
+        } ?: return@Runnable
 
         vcsPanel?.createInitializer()?.execute(project)
 

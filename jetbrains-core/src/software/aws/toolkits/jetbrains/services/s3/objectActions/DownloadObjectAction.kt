@@ -10,11 +10,11 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.util.io.exists
 import com.intellij.util.io.isDirectory
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.deleteIfExists
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.outputStream

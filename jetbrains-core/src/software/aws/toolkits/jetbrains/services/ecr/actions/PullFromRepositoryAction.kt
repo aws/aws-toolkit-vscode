@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.ecr.actions
 
-import com.intellij.docker.DockerServerRuntimeInstance
 import com.intellij.docker.agent.OngoingProcess
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.progress.ProgressIndicator
@@ -18,6 +17,7 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.docker.DockerRuntimeFacade
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.EcrLogin
 import software.aws.toolkits.jetbrains.services.ecr.EcrRepositoryNode
@@ -41,7 +41,7 @@ class PullFromRepositoryAction : EcrDockerAction() {
         val client: EcrClient = project.awsClient()
         val scope = projectCoroutineScope(project)
         scope.launch {
-            val runtime = scope.dockerServerRuntimeAsync().await()
+            val runtime = scope.dockerServerRuntimeAsync(project).await()
             val authData = withContext(getCoroutineBgContext()) {
                 client.authorizationToken.authorizationData().first()
             }
@@ -102,7 +102,7 @@ private class PullFromEcrTask(
     private val ecrLogin: EcrLogin,
     private val repository: Repository,
     private val image: String,
-    private val runtime: DockerServerRuntimeInstance
+    private val dockerRuntime: DockerRuntimeFacade
 ) : Task.Backgroundable(project, message("ecr.pull.progress", repository.repositoryUri, image)) {
     private var task: OngoingProcess? = null
 
@@ -114,7 +114,7 @@ private class PullFromEcrTask(
     override fun run(indicator: ProgressIndicator) {
         indicator.isIndeterminate = true
         val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, repository, image)
-        task = ToolkitDockerAdapter(project, runtime).pullImage(config, indicator).also {
+        task = ToolkitDockerAdapter(project, dockerRuntime).pullImage(config, indicator).also {
             // don't return until docker process exits
             it.await()
         }

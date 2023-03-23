@@ -25,7 +25,7 @@ class LazyLogRuleTest {
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
+val LOG = LoggerFactory.getLogger("")
 fun foo() {
     LOG.debug { "Hi" }
 }
@@ -42,7 +42,7 @@ fun foo() {
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
+val LOG = LoggerFactory.getLogger("")
 fun foo() {
     LOG.debug("Hi")
 }
@@ -62,7 +62,7 @@ fun foo() {
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
+val LOG = LoggerFactory.getLogger("")
 fun foo() {
     val e = RuntimeException()
     LOG.debug(e) {"Hi" }
@@ -82,7 +82,7 @@ package software.aws.toolkits.jetbrains.uitests.really.cool.test
 
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
+val LOG = LoggerFactory.getLogger("")
 fun foo() {
     LOG.debug("Hi")
 }

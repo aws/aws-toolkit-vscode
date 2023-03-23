@@ -18,6 +18,7 @@ import com.intellij.ui.dsl.builder.Row
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.toNullableProperty
 import com.jetbrains.gateway.ssh.IntelliJPlatformProduct
 import software.amazon.awssdk.services.codecatalyst.model.InstanceType
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
@@ -222,5 +223,5 @@ fun Row.cawsEnvironmentTimeout(timeout: KMutableProperty0<InactivityTimeout>) {
                 }
             }
         }
-    ).bindItem(timeout)
+    ).bindItem(timeout.toNullableProperty())
 }

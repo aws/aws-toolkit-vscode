@@ -7,13 +7,13 @@ import com.jetbrains.rd.util.lifetime.Lifetime
 import com.jetbrains.rd.util.reactive.IOptProperty
 import com.jetbrains.rd.util.reactive.OptProperty
 import com.jetbrains.rd.util.reactive.Property
-import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplate
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateGenerator
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateProvider
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateState
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.core.compatability.RiderProjectTemplate
 import software.aws.toolkits.resources.message
 
 class DotNetSamProjectProvider : RiderProjectTemplateProvider {
@@ -27,7 +27,7 @@ class DotNetSamProjectProvider : RiderProjectTemplateProvider {
         return OptProperty(state)
     }
 
-    private class RiderSamProject : RiderProjectTemplate {
+    private class RiderSamProject : RiderProjectTemplate() {
 
         override val group = "AWS"
         override val icon = AwsIcons.Resources.SERVERLESS_APP

@@ -7,7 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.projectRoots.ProjectJdkTable
-import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.python.PythonLanguage
@@ -29,7 +28,9 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingModule() {
-        ModuleRootModificationUtil.setModuleSdk(projectRule.module, PyTestSdk("3.9.0"))
+        val sdk = PyTestSdk("3.9.0")
+        projectRule.setModuleSdk(projectRule.module, sdk)
+
         val event: AnActionEvent = mock {
             on { getData(LangDataKeys.LANGUAGE) }.thenReturn(PythonLanguage.INSTANCE)
             on { getData(LangDataKeys.MODULE) }.thenReturn(projectRule.module)
@@ -47,7 +48,7 @@ class RuntimeGroupTest {
         runInEdtAndWait {
             runWriteAction {
                 ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
-                ProjectRootManager.getInstance(project).projectSdk = PyTestSdk("3.9.0")
+                ProjectRootManager.getInstance(project).projectSdk = sdk
             }
 
             val event: AnActionEvent = mock {

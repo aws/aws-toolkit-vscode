@@ -15,7 +15,6 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.serviceContainer.NonInjectable
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.io.delete
-import com.intellij.util.io.exists
 import com.intellij.util.io.readText
 import com.intellij.util.io.write
 import org.jetbrains.annotations.VisibleForTesting
@@ -40,8 +39,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.io.path.exists
 
-class DefaultToolManager @NonInjectable internal constructor(private val clock: Clock = Clock.systemUTC()) : ToolManager {
+class DefaultToolManager @NonInjectable internal constructor(private val clock: Clock) : ToolManager {
+    constructor() : this(Clock.systemUTC())
+
     private val versionCache = ToolVersionCache()
     private val updateCheckCache = ConcurrentHashMap<ManagedToolType<*>, Instant>()
     private val managedToolLock = ReentrantLock()

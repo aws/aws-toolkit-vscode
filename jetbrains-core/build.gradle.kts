@@ -1,13 +1,13 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.isCi
-import software.aws.toolkits.gradle.jvmTarget
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
 val toolkitVersion: String by project
@@ -70,21 +70,13 @@ val gatewayArtifacts by configurations.creating {
     isCanBeResolved = false
     // share same dependencies as default configuration
     extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
-
-    attributes {
-        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
-        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
-        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
-        attribute(KotlinPlatformType.Companion.attribute, KotlinPlatformType.jvm)
-        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, project.jvmTarget().get().majorVersion.toInt())
-        attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment.STANDARD_JVM))
-        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named("gateway-instrumented-jar"))
-    }
 }
 
 val gatewayJar = tasks.create<Jar>("gatewayJar") {
+    dependsOn(tasks.instrumentedJar)
+
     archiveBaseName.set("aws-toolkit-jetbrains-IC-GW")
-    from(sourceSets.main.get().output) {
+    from(tasks.instrumentedJar.get().outputs.files.map { zipTree(it) }) {
         exclude("**/plugin.xml")
         exclude("**/plugin-intellij.xml")
         exclude("**/inactive")
@@ -156,4 +148,13 @@ dependencies {
     testImplementation(libs.wiremock)
     testImplementation(libs.kotlin.coroutinesTest)
     testImplementation(libs.kotlin.coroutinesDebug)
+}
+
+// fix implicit dependency on generated source
+tasks.withType<Detekt>() {
+    dependsOn(generateTelemetry)
+}
+
+tasks.withType<DetektCreateBaselineTask>() {
+    dependsOn(generateTelemetry)
 }

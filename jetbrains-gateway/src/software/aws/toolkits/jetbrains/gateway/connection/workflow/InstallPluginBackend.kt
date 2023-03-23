@@ -9,11 +9,11 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.util.io.Compressor
 import com.intellij.util.io.DigestUtil
 import com.intellij.util.io.HttpRequests
-import com.intellij.util.io.exists
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider

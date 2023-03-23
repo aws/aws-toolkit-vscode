@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.ui.treeStructure.treetable.TreeTableTree
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -65,7 +66,9 @@ abstract class ObjectActionTestBase {
 
     protected fun AnAction.executeAction(nodes: List<S3TreeNode>) {
         val event = createEventFor(this, nodes)
-        actionPerformed(event)
+        runInEdtAndWait {
+            actionPerformed(event)
+        }
     }
 
     protected fun AnAction.updateAction(nodes: List<S3TreeNode>): Presentation {

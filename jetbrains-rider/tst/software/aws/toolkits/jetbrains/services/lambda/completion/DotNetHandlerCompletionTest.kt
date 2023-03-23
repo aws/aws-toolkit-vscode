@@ -8,7 +8,6 @@ import base.backendStartTimeout
 import base.msBuild
 import base.setUpCustomToolset
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.util.IconLoader
 import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rd.ui.icons.toIdeaIcon
 import com.jetbrains.rider.test.annotations.TestEnvironment
@@ -17,6 +16,7 @@ import com.jetbrains.rider.test.protocol.testProtocolHost
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
+import software.aws.toolkits.jetbrains.services.lambda.compat.CachedImageIcon
 import java.time.Duration
 
 class DotNetHandlerCompletionTest : BaseTestWithSolution() {
@@ -71,7 +71,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Suppress("SameParameterValue")
     private fun assertIconPath(iconModel: IconModel?, expectedPath: String) {
         assertThat(iconModel).isNotNull
-        val ideaIconSecond = iconModel?.let { iconModel.toIdeaIcon(project) as? IconLoader.CachedImageIcon }
+        val ideaIconSecond = iconModel?.let { iconModel.toIdeaIcon(project) as? CachedImageIcon }
         assertThat(ideaIconSecond).isNotNull
         assertThat(ideaIconSecond?.url?.path).endsWith(expectedPath.trimStart('/'))
     }

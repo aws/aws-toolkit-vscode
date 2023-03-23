@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.gateway.connection
 
 import com.intellij.openapi.util.SystemInfo
-import com.intellij.util.io.exists
 import com.intellij.util.io.readText
 import com.intellij.util.net.NetUtils
 import org.apache.sshd.scp.server.ScpCommandFactory
@@ -17,6 +16,7 @@ import org.apache.sshd.sftp.server.SftpSubsystemFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.rules.ExternalResource
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.utils.exists
 import java.nio.file.Paths
 
 class SshServerRule(private val tempFolderRule: TemporaryFolder) : ExternalResource() {

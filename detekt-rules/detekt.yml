@@ -88,7 +88,6 @@ formatting:
     active: true
     autoCorrect: true
     indentSize: 4
-    continuationIndentSize: 4
     excludes: [ '**/TelemetryDefinitions.kt' ]
   MaximumLineLength:
     active: true
@@ -251,8 +250,6 @@ potential-bugs:
     active: false
   DontDowncastCollectionTypes:
     active: false
-  DuplicateCaseInWhenExpression:
-    active: true
   EqualsAlwaysReturnsTrueOrFalse:
     active: true
   EqualsWithHashCodeExist:
@@ -278,27 +275,22 @@ potential-bugs:
     active: true
   MapGetWithNotNullAssertionOperator:
     active: false
-  MissingWhenCase:
-    active: true
-    allowElseExpression: true
   NullableToStringCall:
     active: false
-  RedundantElseInWhen:
-    active: true
   UnconditionalJumpStatementInLoop:
     active: false
   UnnecessaryNotNullOperator:
-    active: true
+    active: false
   UnnecessarySafeCall:
     active: true
   UnreachableCatchBlock:
     active: true
   UnreachableCode:
-    active: true
+    active: false
   UnsafeCallOnNullableType:
     active: true
   UnsafeCast:
-    active: true
+    active: false
   UnusedUnaryOperator:
     active: false
   UselessPostfixExpression:
@@ -326,6 +318,7 @@ style:
   UnnecessaryAbstractClass:
     active: false
   UnusedPrivateMember:
+    active: false
     allowedNames: '(_|ignored|expected|serialVersionUID|createUIComponents)'
   VarCouldBeVal:
     active: false

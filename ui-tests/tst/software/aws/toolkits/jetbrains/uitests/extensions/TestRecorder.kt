@@ -3,13 +3,14 @@
 
 package software.aws.toolkits.jetbrains.uitests.extensions
 
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import org.junit.jupiter.api.extension.TestWatcher
 import software.aws.toolkits.core.utils.outputStream
 import java.net.URL
 import java.nio.file.Paths
+import javax.imageio.ImageIO
 
-class TestRecorder : TestWatcher {
+class TestRecorder : AfterTestExecutionCallback {
     private companion object {
         val TEST_REPORTS_LOCATION by lazy {
             System.getProperty("testReportPath")?.let {
@@ -18,10 +19,19 @@ class TestRecorder : TestWatcher {
         }
     }
 
-    override fun testFailed(context: ExtensionContext, cause: Throwable) {
-        val testReport = TEST_REPORTS_LOCATION?.resolve(context.displayName) ?: return
+    override fun afterTestExecution(context: ExtensionContext?) {
+        val testDisplayName = context?.displayName ?: return
+        if (context.executionException?.isPresent != true) {
+            return
+        }
+
+        val testReport = TEST_REPORTS_LOCATION?.resolve(testDisplayName) ?: return
 
         uiTest {
+            testReport.resolve("screenshot.png").outputStream().use {
+                ImageIO.write(getScreenshot(), "png", it)
+            }
+
             testReport.resolve("uiHierarchy.html").outputStream().use {
                 URL("http://127.0.0.1:$robotPort/").openStream().copyTo(it)
             }

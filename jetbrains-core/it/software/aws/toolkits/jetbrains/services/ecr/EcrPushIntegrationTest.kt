@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.ecr
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.testFramework.ProjectRule
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.ecr.model.Image
 import software.amazon.awssdk.services.ecr.model.ImageIdentifier
 import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
+import software.aws.toolkits.jetbrains.core.docker.getDockerServerRuntimeFacade
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import java.util.UUID
 
@@ -52,28 +54,28 @@ class EcrPushIntegrationTest {
         dockerfile.writeText(
             """
                 # arbitrary base image with a shell
-                FROM public.ecr.aws/amazonlinux/amazonlinux:2
+                FROM public.ecr.aws/docker/library/alpine:latest
                 RUN touch $(date +%s)
             """.trimIndent()
         )
 
         val project = projectRule.project
         runBlocking {
-            val serverInstance = EcrUtils.getDockerServerRuntimeInstance().runtimeInstance
+            val serverRuntime = getDockerServerRuntimeFacade(project)
             val ecrLogin = ecrClient.authorizationToken.authorizationData().first().getDockerLogin()
-            val dockerAdapter = ToolkitDockerAdapter(project, serverInstance)
+            val dockerAdapter = ToolkitDockerAdapter(project, serverRuntime)
             val imageId = dockerAdapter.buildLocalImage(dockerfile)!!
 
             // gross transform because we only have the short SHA right now
-            val localImage = serverInstance.agent.getImages(null).first { it.imageId.startsWith(EcrIntegrationTestUtils.getImagePrefix(imageId)) }
+            val localImage = serverRuntime.agent.getImages(null).first { it.imageId.startsWith(EcrIntegrationTestUtils.getImagePrefix(imageId)) }
             val localImageId = localImage.imageId
             val pushRequest = ImageEcrPushRequest(
-                serverInstance,
+                serverRuntime,
                 localImageId,
                 remoteRepo,
                 remoteTag
             )
-            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest).await()
 
             assertThat(
                 ecrClient.batchGetImage {
@@ -96,7 +98,7 @@ class EcrPushIntegrationTest {
         dockerfile.writeText(
             """
                 # arbitrary base image with a shell
-                FROM public.ecr.aws/lambda/provided:latest
+                FROM public.ecr.aws/docker/library/alpine:latest
                 RUN touch $(date +%s)
             """.trimIndent()
         )
@@ -109,11 +111,11 @@ class EcrPushIntegrationTest {
             remoteTag
         )
         runBlocking {
-            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest).await()
 
             // find our local image id
-            val serverInstance = EcrUtils.getDockerServerRuntimeInstance().runtimeInstance
-            val localImageId = serverInstance.agent.getImages(null).first { it.imageRepoTags.contains("${remoteRepo.repositoryUri}:$remoteTag") }.imageId
+            val serverRuntime = getDockerServerRuntimeFacade(projectRule.project)
+            val localImageId = serverRuntime.agent.getImages(null).first { it.imageRepoTags.contains("${remoteRepo.repositoryUri}:$remoteTag") }.imageId
 
             assertThat(
                 ecrClient.batchGetImage {
