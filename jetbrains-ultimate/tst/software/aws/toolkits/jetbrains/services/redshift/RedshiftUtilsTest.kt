@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.redshift
 
+import com.intellij.testFramework.ProjectExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -13,12 +14,13 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheExtension
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
-import software.aws.toolkits.jetbrains.testFramework.ProjectExtension
 
 class RedshiftUtilsTest {
-    @JvmField
-    @RegisterExtension
-    val projectRule = ProjectExtension()
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val projectRule = ProjectExtension()
+    }
 
     @JvmField
     @RegisterExtension
