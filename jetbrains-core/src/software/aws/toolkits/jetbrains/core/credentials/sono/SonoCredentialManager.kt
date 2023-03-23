@@ -5,22 +5,18 @@ package software.aws.toolkits.jetbrains.core.credentials.sono
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
+import software.aws.toolkits.jetbrains.core.credentials.reauthProviderIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
@@ -72,35 +68,11 @@ class SonoCredentialManager {
     fun getProviderAndPromptAuth(): BearerTokenProvider {
         val provider = provider()
         return when (provider?.state()) {
-            null -> runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
+            null -> runUnderProgressIfNeeded(project, message("credentials.sono.login.pending"), true) {
                 loginSso(project, SONO_URL, ALL_SONO_SCOPES)
             }
 
-            BearerTokenAuthState.NOT_AUTHENTICATED -> {
-                runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
-                    provider.reauthenticate()
-                }
-
-                return provider
-            }
-
-            BearerTokenAuthState.NEEDS_REFRESH -> {
-                try {
-                    runUnderProgressIfNeeded(null, message("credentials.sono.login.refreshing"), true) {
-                        provider.resolveToken()
-                        BearerTokenProviderListener.notifyCredUpdate(provider.id)
-                    }
-                } catch (e: SsoOidcException) {
-                    LOG.warn(e) { "Redriving AWS Builder ID login flow since token could not be refreshed" }
-                    runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
-                        provider.reauthenticate()
-                    }
-                }
-
-                return provider
-            }
-
-            BearerTokenAuthState.AUTHORIZED -> provider
+            else -> reauthProviderIfNeeded(project, provider)
         }
     }
 
@@ -112,12 +84,8 @@ class SonoCredentialManager {
         fun getInstance(project: Project? = null) = project?.let { it.service<SonoCredentialManager>() } ?: service()
 
         fun loginSono(project: Project?) {
-            val provider = SonoCredentialManager.getInstance(project).getProviderAndPromptAuth()
-            val connection = ToolkitAuthManager.getInstance().getConnection(provider.id) ?: error("Mismatch between provider id and connection id")
-            ToolkitConnectionManager.getInstance(project).switchConnection(connection)
+            SonoCredentialManager.getInstance(project).getProviderAndPromptAuth()
         }
-
-        private val LOG = getLogger<SonoCredentialManager>()
 
         private val SSO_REGION by lazy {
             with(AwsRegionProvider.getInstance()) {

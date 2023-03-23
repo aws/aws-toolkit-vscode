@@ -241,7 +241,7 @@ class ConnectionSettingsMenuBuilder private constructor() {
             addAll(
                 object : DumbAwareAction(message("credentials.individual_identity.reconnect")) {
                     override fun actionPerformed(e: AnActionEvent) {
-                        reauthProviderIfNeeded(value)
+                        reauthProviderIfNeeded(e.project, value)
                     }
                 },
 

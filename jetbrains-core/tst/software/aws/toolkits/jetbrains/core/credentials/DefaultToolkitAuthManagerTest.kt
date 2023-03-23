@@ -291,6 +291,7 @@ class DefaultToolkitAuthManagerTest {
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             doNothing().whenever(context).reauthenticate()
+            whenever(context.state()).thenReturn(BearerTokenAuthState.NOT_AUTHENTICATED)
         }.use {
             // before
             assertThat(sut.listConnections()).hasSize(0)

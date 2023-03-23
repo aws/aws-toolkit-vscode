@@ -141,10 +141,10 @@ class SsoAccessTokenProvider(
 
     fun refreshToken(currentToken: AccessToken): AccessToken {
         if (currentToken.refreshToken == null) {
-            throw InvalidRequestException.builder().build()
+            throw InvalidRequestException.builder().message("Requested token refresh, but refresh token was null").build()
         }
 
-        val registration = loadClientRegistration() ?: throw InvalidClientException.builder().build()
+        val registration = loadClientRegistration() ?: throw InvalidClientException.builder().message("Unable to load client registration").build()
 
         val newToken = client.createToken {
             it.clientId(registration.clientId)

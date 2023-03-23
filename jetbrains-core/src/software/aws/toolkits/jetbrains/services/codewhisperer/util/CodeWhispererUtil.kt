@@ -9,7 +9,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
-import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
@@ -17,6 +16,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.maybeReauthProviderIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -29,7 +29,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowA
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
-import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import java.net.URI
@@ -104,19 +103,7 @@ object CodeWhispererUtil {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         if (connection !is BearerSsoConnection) return
         val tokenProvider = tokenProvider(project) ?: return
-        val state = tokenProvider.state()
-        if (state == BearerTokenAuthState.NEEDS_REFRESH) {
-            try {
-                runUnderProgressIfNeeded(null, message("settings.states.validating.short"), false) {
-                    tokenProvider.resolveToken()
-                }
-            } catch (e: SsoOidcException) {
-                runInEdt {
-                    notifyConnectionExpired(project, connection)
-                    callback()
-                }
-            }
-        } else if (state == BearerTokenAuthState.NOT_AUTHENTICATED) {
+        maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
                 notifyConnectionExpired(project, connection)
                 callback()
