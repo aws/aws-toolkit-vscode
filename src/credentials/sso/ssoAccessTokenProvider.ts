@@ -127,7 +127,7 @@ export class SsoAccessTokenProvider {
                 reason: getTelemetryReason(err),
                 sessionDuration: getSessionDuration(this.tokenCacheKey),
                 credentialType: 'bearerToken',
-                credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'other',
+                credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
             })
 
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {

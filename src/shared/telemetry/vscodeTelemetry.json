@@ -31,11 +31,6 @@
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
-        },
-        {
-            "name": "sessionDuration",
-            "type": "int",
-            "description": "Length of time, in milliseconds, that an authentication session has lived for. Useful for determining how frequently a user has to reauthenticate."
         }
     ],
     "metrics": [
@@ -63,32 +58,6 @@
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",
             "metadata": [{ "type": "result" }, { "type": "cli" }]
-        },
-        {
-            "name": "aws_refreshCredentials",
-            "description": "Emitted when credentials are automatically refreshed by the AWS SDK or Toolkit",
-            "passive": true,
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "credentialType",
-                    "required": false
-                },
-                {
-                    "type": "credentialSourceId",
-                    "required": false
-                },
-                {
-                    "type": "sessionDuration",
-                    "required": false
-                }
-            ]
         },
         {
             "name": "ssm_createDocument",
