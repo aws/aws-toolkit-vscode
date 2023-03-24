@@ -9,7 +9,7 @@ import { createBucketCommand } from './commands/createBucket'
 import { createFolderCommand } from './commands/createFolder'
 import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
-import { downloadFileAsCommand } from './commands/downloadFileAs'
+import { downloadFilesCommand } from './commands/downloadFiles'
 import { presignedURLCommand } from './commands/presignedURL'
 import { editFileCommand, openFileReadModeCommand } from './commands/openFile'
 import { uploadFileCommand } from './commands/uploadFile'
@@ -47,8 +47,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.s3.presignedURL', async (node: S3FileNode) => {
             await presignedURLCommand(node)
         }),
-        Commands.register('aws.s3.downloadFileAs', async (node: S3FileNode) => {
-            await downloadFileAsCommand(node)
+        Commands.register('aws.s3.downloadFiles', async (node: S3FileNode, allNodes?: S3FileNode[]) => {
+            await downloadFilesCommand(node, allNodes)
         }),
         Commands.register('aws.s3.openFile', async (node: S3FileNode) => {
             await openFileReadModeCommand(node, manager)

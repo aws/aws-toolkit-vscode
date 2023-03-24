@@ -47,6 +47,7 @@ export async function activate(args: {
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
+        canSelectMany: true,
     })
     view.onDidExpandElement(element => {
         if (element.element instanceof S3FolderNode) {

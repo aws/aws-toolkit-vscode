@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FileViewerManager } from '../fileViewerManager'
-import { downloadFileAsCommand } from './downloadFileAs'
+import { downloadFilesCommand } from './downloadFiles'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 const sizeLimit = 50 * Math.pow(10, 6)
@@ -47,7 +47,7 @@ async function isFileSizeValid(size: number | undefined, fileNode: S3FileNode): 
             )
             .then(async response => {
                 if (response === downloadAs) {
-                    await downloadFileAsCommand(fileNode)
+                    await downloadFilesCommand(fileNode)
                 }
             })
         return false
