@@ -39,20 +39,20 @@ const multiUserOrg = 'multiUserOrg'
  *     This is because this test uses BuilderId/SSO information
  *     that the extension would have naturally created in that process.
  *
- *   - A Space already exists in your Code Catalyst account.
+ *   - A Space already exists in your CodeCatalyst account.
  *     We cannot currently automate this due to space creation
- *     not being available in the Code Catalyst API.
+ *     not being available in the CodeCatalyst API.
  *
  *     TODO: Create a new space instead of using an existing one,
  *     if the api eventually allows us to do so.
  *
- *   - You do not have a Code Catalyst project with the same name
+ *   - You do not have a CodeCatalyst project with the same name
  *     as {@link projectName} and {@link isolatedProjectName}.
- *      These projects are modified when this test is run.
+ *     These projects are modified when this test is run.
  *
  * The test project cannot be torn down.
  *
- *   - The code catalyst api does not provide a way to delete
+ *   - The CodeCatalyst api does not provide a way to delete
  *     a Project. So the projects will exist in the Space unless
  *     deleted manually.
  *
@@ -76,7 +76,7 @@ const multiUserOrg = 'multiUserOrg'
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe('Test how this codebase uses the Code Catalyst API', function () {
+describe('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
@@ -280,7 +280,7 @@ describe('Test how this codebase uses the Code Catalyst API', function () {
     })
 
     /**
-     * Creates a code catalyst commands instance.
+     * Creates a CodeCatalyst commands instance.
      *
      * This holds the underlying functions that are triggered
      * when the user interacts with the vscode UI model.
@@ -295,7 +295,7 @@ describe('Test how this codebase uses the Code Catalyst API', function () {
     }
 
     /**
-     * Creates a code catalyst api client.
+     * Creates a CodeCatalyst api client.
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
         const conn = await getCodeCatalystSsoConnection(auth)
@@ -304,7 +304,7 @@ describe('Test how this codebase uses the Code Catalyst API', function () {
 
     /**
      * Returns the existing Sso connection that has been
-     * verified to work with Code Catalyst.
+     * verified to work with CodeCatalyst.
      *
      * This relies on SSO information already being configured.
      */
@@ -330,7 +330,7 @@ describe('Test how this codebase uses the Code Catalyst API', function () {
     }
 
     /**
-     * Gets the first code catalyst space it finds.
+     * Gets the first CodeCatalyst space it finds.
      *
      * The intention for this is to require no setup of a Space by the
      * user if they want to run this test locally.
@@ -341,7 +341,7 @@ describe('Test how this codebase uses the Code Catalyst API', function () {
         if (firstPageOfSpaces === undefined || firstPageOfSpaces.length === 0) {
             // Space must already exist due to CC not providing an api to create a space.
             throw new Error(
-                'No spaces found in account. A Code Catalyst Space must be created manually before running this test.'
+                'No spaces found in account. A CodeCatalyst Space must be created manually before running this test.'
             )
         }
 

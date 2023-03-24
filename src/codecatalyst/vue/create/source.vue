@@ -51,12 +51,13 @@
             <!-- New Branch -->
             <span class="flex-sizing">
                 <label class="options-label soft mb-8" style="display: block" for="branch-input"
-                    >Optional - Create a Branch from an Existing Branch</label
+                    >Create Branch - Optional for CodeCatalyst Repos</label
                 >
                 <input
                     id="branch-input"
                     type="text"
-                    placeholder="branch-name"
+                    :placeholder="newBranchNamePlaceholder"
+                    :disabled="!newBranchNameAllowed"
                     v-model="model.newBranch"
                     @input="update"
                 />
@@ -67,15 +68,23 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'none'">
-        <span style="width: 100%">
-            <label class="option-label soft">Project</label>
-            <select class="picker" v-model="model.selectedProject" @input="update">
-                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.name" :value="project">
-                    {{ `${project.org.name} / ${project.name}` }}
-                </option>
-            </select>
-        </span>
+        <div class="modes flex-sizing mt-16">
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Space</label>
+                <button class="project-button" @click="quickPickProject()">
+                    {{ selectedSpaceName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Project</label>
+                <button class="project-button" @click="quickPickProject(model.selectedProject?.org.name)">
+                    {{ selectedProjectName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+        </div>
     </div>
 </template>
 
@@ -116,6 +125,8 @@ export default defineComponent({
             branches: {} as Record<string, CodeCatalystBranch[] | undefined>,
             loadingProjects: false,
             loadingBranches: {} as Record<string, boolean | undefined>,
+            newBranchNameAllowed: false,
+            newBranchNamePlaceholder: 'Select branch first...',
         }
     },
     async created() {
@@ -131,6 +142,40 @@ export default defineComponent({
                     this.loadingBranches[project.name] = false
                 })
                 this.useFirstBranch()
+            }
+        },
+        async 'model.selectedBranch'(branch?: CodeCatalystBranch) {
+            if (this.model.type !== 'linked' || branch === undefined) {
+                this.newBranchNameAllowed = false
+                this.newBranchNamePlaceholder = ''
+                return
+            }
+
+            // Disable user input for new branch name while calculating
+            this.newBranchNameAllowed = false
+            this.newBranchNamePlaceholder = 'Loading...'
+
+            // Clear the existing new branch value so user does not see it
+            const previousNewBranch = this.model.newBranch
+            this.$emit('update:modelValue', { ...this.model, newBranch: undefined })
+
+            // Only want to allow users to set a branch name if first party repo
+            const isThirdPartyRepo = await client.isThirdPartyRepo({
+                spaceName: branch.org.name,
+                projectName: branch.project.name,
+                sourceRepositoryName: branch.repo.name,
+            })
+            if (isThirdPartyRepo) {
+                this.newBranchNamePlaceholder = 'Not Applicable for Linked Repo'
+                this.newBranchNameAllowed = false
+                // Clear the new branch in case one was already selected
+                this.$emit('update:modelValue', { ...this.model, newBranch: undefined })
+            } else {
+                // First Party
+                this.newBranchNamePlaceholder = 'branch-name'
+                this.newBranchNameAllowed = true
+                // Since this can have a new branch, set this back to what it previously was
+                this.$emit('update:modelValue', { ...this.model, newBranch: previousNewBranch })
             }
         },
     },
