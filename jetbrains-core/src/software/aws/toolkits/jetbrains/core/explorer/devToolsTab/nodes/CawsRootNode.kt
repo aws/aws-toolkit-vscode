@@ -15,6 +15,8 @@ import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.OpenWorkspaceInGateway
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 
@@ -27,7 +29,11 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
         }
 
         val actions = ActionManager.getInstance().getAction(groupId) as ActionGroup
-        return actions.getChildren(null).map {
+        return actions.getChildren(null).mapNotNull {
+            if (it is OpenWorkspaceInGateway && isRunningOnRemoteBackend()) {
+                return@mapNotNull null
+            }
+
             object : AbstractActionTreeNode(nodeProject, it.templatePresentation.text, it.templatePresentation.icon) {
                 override fun onDoubleClick(event: MouseEvent) {
                     val e = AnActionEvent.createFromInputEvent(
