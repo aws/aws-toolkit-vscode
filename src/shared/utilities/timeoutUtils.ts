@@ -50,7 +50,7 @@ export class Timeout {
     public readonly onCompletion = this._onCompletionEmitter.event
 
     /**
-     * @param timeoutLength Length of timeout duration (in ms)
+     * @param timeoutLength Timeout duration (in ms)
      */
     public constructor(timeoutLength: number) {
         this._startTime = globals.clock.Date.now()

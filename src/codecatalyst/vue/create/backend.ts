@@ -26,6 +26,7 @@ import {
     CodeCatalystProject,
     CodeCatalystClient,
     DevEnvironment,
+    isThirdPartyRepo,
 } from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
@@ -34,6 +35,7 @@ import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { recordSource } from '../../utils'
 import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 import { createProjectPrompter } from '../../wizards/selectResource'
+import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -120,6 +122,10 @@ export class CodeCatalystCreateWebview extends VueWebview {
         )
 
         return branches.flatten().promise()
+    }
+
+    public isThirdPartyRepo(codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest): Promise<boolean> {
+        return isThirdPartyRepo(this.client, codeCatalystRepo)
     }
 
     public getAllInstanceDescriptions() {

@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { selectCodeCatalystResource } from './wizards/selectResource'
+import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl, recordSource } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
@@ -33,7 +33,7 @@ export async function listCommands(): Promise<void> {
 export async function cloneCodeCatalystRepo(client: CodeCatalystClient, url?: vscode.Uri): Promise<void> {
     let resource: { name: string; project: string; org: string }
     if (!url) {
-        const r = await selectCodeCatalystResource(client, 'repo')
+        const r = await selectCodeCatalystRepository(client, false)
         if (!r) {
             throw new CancellationError('user')
         }
