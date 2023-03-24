@@ -54,19 +54,19 @@ export class TelemetryHelper {
     private firstResponseRequestId = ''
     private sessionId = ''
     // variables for user trigger decision
+    // these will be cleared after a invocation session
     private sessionDecisions: CodewhispererUserTriggerDecision[] = []
     public sessionInvocations: CodewhispererServiceInvocation[] = []
-    public triggerChar?: string = undefined
+    private triggerChar?: string = undefined
     private prevTriggerDecision?: CodewhispererPreviousSuggestionState
-    public isRequestCancelled = false
-    public lastRequestId = ''
-    public numberOfRequests = 0
-    public typeAheadLength = 0
-    public timeSinceLastModification = 0
-    public lastTriggerDecisionTime = 0
-    public invocationTime = 0
-    public firstRecommendationTime = 0
-    public recommendationShownTime = 0
+    private isRequestCancelled = false
+    private lastRequestId = ''
+    private numberOfRequests = 0
+    private typeAheadLength = 0
+    private timeSinceLastModification = 0
+    private lastTriggerDecisionTime = 0
+    private invocationTime = 0
+    private firstRecommendationTime = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -268,6 +268,38 @@ export class TelemetryHelper {
         this.resetUserTriggerDecisionTelemetry()
     }
 
+    public setIsRequestCancelled(isRequestCancelled: boolean) {
+        this.isRequestCancelled = isRequestCancelled
+    }
+
+    public setTriggerCharForUserTriggerDecision(triggerChar: string) {
+        this.triggerChar = triggerChar
+    }
+
+    public setLastRequestId(requestId: string) {
+        this.lastRequestId = requestId
+    }
+
+    public setNumberOfRequestsInSession(numberOfRequests: number) {
+        this.numberOfRequests = numberOfRequests
+    }
+
+    public setTypeAheadLength(typeAheadLength: number) {
+        this.typeAheadLength = typeAheadLength
+    }
+
+    public setTimeSinceLastModification(timeSinceLastModification: number) {
+        this.timeSinceLastModification = timeSinceLastModification
+    }
+
+    public setInvocationStartTime(invocationTime: number) {
+        this.invocationTime = invocationTime
+    }
+
+    public setFirstRecommendationResponseTime(firstRecommendationTime: number) {
+        this.firstRecommendationTime = firstRecommendationTime
+    }
+
     private resetUserTriggerDecisionTelemetry() {
         this.sessionDecisions = []
         this.isRequestCancelled = false
@@ -277,10 +309,8 @@ export class TelemetryHelper {
         this.numberOfRequests = 0
         this.typeAheadLength = 0
         this.timeSinceLastModification = 0
-        this.lastTriggerDecisionTime = 0
         this.invocationTime = 0
         this.firstRecommendationTime = 0
-        this.recommendationShownTime = 0
     }
 
     private getAggregatedCompletionType(

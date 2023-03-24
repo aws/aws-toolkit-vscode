@@ -385,7 +385,7 @@ export class InlineCompletionService {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
             return
         }
-        TelemetryHelper.instance.invocationTime = performance.now()
+        TelemetryHelper.instance.setInvocationStartTime(performance.now())
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -406,7 +406,7 @@ export class InlineCompletionService {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     this.setCodeWhispererStatusBarOk()
-                    TelemetryHelper.instance.isRequestCancelled = true
+                    TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) {
@@ -414,7 +414,7 @@ export class InlineCompletionService {
                 }
                 page++
             }
-            TelemetryHelper.instance.numberOfRequests = page + 1
+            TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }

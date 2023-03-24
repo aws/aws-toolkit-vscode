@@ -386,8 +386,9 @@ export async function activate(context: ExtContext): Promise<void> {
                     !vsCodeState.isCodeWhispererEditing
                 ) {
                     if (vsCodeState.lastUserModificationTime) {
-                        TelemetryHelper.instance.timeSinceLastModification =
+                        TelemetryHelper.instance.setTimeSinceLastModification(
                             performance.now() - vsCodeState.lastUserModificationTime
+                        )
                     }
                     vsCodeState.lastUserModificationTime = performance.now()
                     /**

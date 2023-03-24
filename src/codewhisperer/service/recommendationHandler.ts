@@ -201,9 +201,9 @@ export class RecommendationHandler {
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
                 TelemetryHelper.instance.setSessionId(sessionId)
-                TelemetryHelper.instance.firstRecommendationTime = performance.now()
+                TelemetryHelper.instance.setFirstRecommendationResponseTime(performance.now())
                 if (nextToken === '') {
-                    TelemetryHelper.instance.lastRequestId = requestId
+                    TelemetryHelper.instance.setLastRequestId(requestId)
                     TelemetryHelper.instance.setAllPaginationEndTime()
                 }
             } else {
@@ -281,7 +281,7 @@ export class RecommendationHandler {
             const typedPrefix = editor.document
                 .getText(new vscode.Range(this.startPos, editor.selection.active))
                 .replace('\r\n', '\n')
-            TelemetryHelper.instance.typeAheadLength = typedPrefix.length
+            TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
