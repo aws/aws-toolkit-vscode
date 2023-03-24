@@ -21,6 +21,7 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLoadingPanel
+import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.BottomGap
@@ -53,6 +54,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.core.utils.buildMap
@@ -61,8 +63,10 @@ import software.aws.toolkits.jetbrains.gateway.connection.extractRepoName
 import software.aws.toolkits.jetbrains.gateway.connection.normalizeRepoUrl
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.recursivelySetBackground
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.setDefaultBackgroundAndBorder
+import software.aws.toolkits.jetbrains.services.caws.CawsCodeRepository
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.caws.CawsProject
+import software.aws.toolkits.jetbrains.services.caws.CawsResources
 import software.aws.toolkits.jetbrains.services.caws.InactivityTimeout
 import software.aws.toolkits.jetbrains.services.caws.isSubscriptionFreeTier
 import software.aws.toolkits.jetbrains.services.caws.isSupportedInFreeTier
@@ -105,7 +109,8 @@ class CawsSettings(
 
     // intermediate values
     var connectionSettings: ClientConnectionSettings<*>? = null,
-    var branchCloneType: BranchCloneType = BranchCloneType.EXISTING
+    var branchCloneType: BranchCloneType = BranchCloneType.EXISTING,
+    var is3P: Boolean = false
 )
 
 fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = MultistagePanelContainer(
@@ -134,6 +139,10 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                     val cawsClient = connectionSettings.awsClient<CodeCatalystClient>()
                     if (context.cloneType == CawsWizardCloneType.UNLINKED_3P) {
                         error("Not implemented")
+                    }
+
+                    if (context.is3P) {
+                        context.branchCloneType = BranchCloneType.EXISTING
                     }
 
                     if (context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING) {
@@ -334,27 +343,32 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
 
                         row {
                             label(message("caws.workspace.details.branch_title"))
-                                .comment(message("caws.workspace.details.create_branch_comment"))
                         }
 
+                        row { comment(message("caws.workspace.details.create_branch_comment")) }
+
+                        lateinit var branchOptions: Row
+                        lateinit var newBranchOption: Cell<JBRadioButton>
                         lateinit var newBranch: Row
                         buttonsGroup {
-                            row {
-                                radioButton(message("caws.workspace.details.branch_new"), BranchCloneType.NEW_FROM_EXISTING).applyToComponent {
-                                    isSelected = context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING
-                                }.bindSelected(
-                                    { context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING },
-                                    { if (it) context.branchCloneType = BranchCloneType.NEW_FROM_EXISTING }
-                                ).actionListener { event, component ->
-                                    newBranch.visibleIf(component.selected)
-                                }
+                            branchOptions = row {
+                                newBranchOption = radioButton(message("caws.workspace.details.branch_new"), BranchCloneType.NEW_FROM_EXISTING)
+                                    .applyToComponent {
+                                        isSelected = context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING
+                                    }.bindSelected(
+                                        { context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING },
+                                        { if (it) context.branchCloneType = BranchCloneType.NEW_FROM_EXISTING }
+                                    ).actionListener { event, component ->
+                                        newBranch.visibleIf(component.selected)
+                                    }
 
-                                radioButton(message("caws.workspace.details.branch_existing"), BranchCloneType.EXISTING).applyToComponent {
-                                    isSelected = context.branchCloneType == BranchCloneType.EXISTING
-                                }.bindSelected(
-                                    { context.branchCloneType == BranchCloneType.EXISTING },
-                                    { if (it) context.branchCloneType = BranchCloneType.EXISTING }
-                                )
+                                radioButton(message("caws.workspace.details.branch_existing"), BranchCloneType.EXISTING)
+                                    .applyToComponent {
+                                        isSelected = context.branchCloneType == BranchCloneType.EXISTING
+                                    }.bindSelected(
+                                        { context.branchCloneType == BranchCloneType.EXISTING },
+                                        { if (it) context.branchCloneType = BranchCloneType.EXISTING }
+                                    )
                             }
                         }.bind({ context.branchCloneType }, { context.branchCloneType = it })
 
@@ -377,6 +391,16 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                                 linkedBranchCombo.proposeModelUpdate { model ->
                                     projectCombo.selected()?.let { project ->
                                         linkedRepoCombo.selected()?.let { repo ->
+                                            context.is3P = isRepo3P(project, repo.name)
+                                            if (context.is3P) {
+                                                branchOptions.visible(false)
+                                                newBranch.visible(false)
+                                            } else {
+                                                branchOptions.visible(true)
+                                                if (newBranchOption.component.isSelected) {
+                                                    newBranch.visible(true)
+                                                }
+                                            }
                                             val branches = getBranchNames(project, repo.name, client)
                                             branches.forEach { model.addElement(it) }
                                         }
@@ -558,6 +582,14 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
         .items()
         .map { it.toSourceRepository() }
         .sortedBy { it.name }
+
+    private fun isRepo3P(project: CawsProject, repo: String): Boolean {
+        val connectionSettings = context.connectionSettings ?: throw RuntimeException("ConnectionSettings was not set")
+        val url = AwsResourceCache.getInstance().getResource(
+            CawsResources.cloneUrls(CawsCodeRepository(project.space, project.project, repo)), connectionSettings
+        ).toCompletableFuture().get()
+        return !url.contains(CawsEndpoints.CAWS_GIT_PATTERN)
+    }
 
     private fun getBranchNames(project: CawsProject, repo: String, client: CodeCatalystClient) =
         client.listSourceRepositoryBranchesPaginator {
