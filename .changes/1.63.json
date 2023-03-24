@@ -1,0 +1,14 @@
+{
+  "date" : "2023-03-24",
+  "version" : "1.63",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue where multiple Builder ID entries show up in connection list"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix temporary deadlock when user fails to complete reauthentication request"
+  }, {
+    "type" : "bugfix",
+    "description" : "Only allow cloning a repository from CodeCatalyst if it's hosted on CodeCatalyst"
+  } ]
+}

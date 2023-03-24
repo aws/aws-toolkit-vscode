@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix temporary deadlock when user fails to complete reauthentication request"
-}
