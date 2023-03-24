@@ -8,6 +8,7 @@ import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { Lambda } from 'aws-sdk'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
@@ -88,7 +89,8 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
 
             try {
                 lambdaLocation = path.join(downloadLocation, getLambdaDetails(functionNode.configuration).fileName)
-                await downloadAndUnzipLambda(progress, functionNode, downloadLocation)
+                const lambdaFunction = await downloadAndUnzipLambda(progress, functionNode, downloadLocation)
+                createApplicationJson(lambdaFunction, functionNode.regionCode, downloadLocation)
             } catch (e) {
                 // initial download failed or runtime is unsupported.
                 // show error and return a failure
@@ -137,7 +139,7 @@ async function downloadAndUnzipLambda(
     functionNode: LambdaFunctionNode,
     extractLocation: string,
     lambda = new DefaultLambdaClient(functionNode.regionCode)
-): Promise<void> {
+): Promise<Lambda.GetFunctionResponse> {
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined
     try {
@@ -168,6 +170,7 @@ async function downloadAndUnzipLambda(
         await streams
         progress.report({ message: 'Extracting...' })
         new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
+        return response
     } finally {
         tryRemoveFolder(tempDir)
     }
@@ -225,4 +228,58 @@ function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionN
     const lambdaIndex = normalizedLocation.indexOf(`/${lambdaDetails.fileName}`)
 
     return lambdaIndex > -1 ? normalizedLocation.slice(0, lambdaIndex) : path.dirname(normalizedLocation)
+}
+
+export type ApplicationJson = {
+    ApplicationName?: string
+    DeploymentMethod: 'lambda' | 'cloudformation'
+    Functions: {
+        [logicalId: string]: {
+            PhysicalId: {
+                [region: string]: string
+            }
+        }
+    }
+    StackName?: string
+}
+
+/**
+ * Create and write a '.application.json' file to hold metadata about
+ * the downloaded lambda function
+ * @param lambdaFunc Lambda function
+ * @param region aws region
+ * @param downloadLocation dir path where the file will be written
+ */
+export function createApplicationJson(
+    lambdaFunc: Lambda.GetFunctionResponse,
+    region: string,
+    downloadLocation: string
+) {
+    const physicalId = lambdaFunc.Configuration?.FunctionName ?? ''
+    const logicalId = lambdaFunc.Tags?.['aws:cloudformation:logical-id'] ?? physicalId
+    const stackName = lambdaFunc.Tags?.['aws:cloudformation:stack-name'] ?? undefined
+    const deploymentMethod = stackName !== undefined ? 'cloudformation' : 'lambda'
+    const appJson: ApplicationJson = {
+        DeploymentMethod: deploymentMethod,
+        Functions: {
+            [logicalId]: {
+                PhysicalId: {
+                    [region]: physicalId,
+                },
+            },
+        },
+        StackName: stackName,
+    }
+
+    writeAppJsonFile(downloadLocation, appJson)
+}
+
+function writeAppJsonFile(destinationPath: string, appJson: ApplicationJson) {
+    // Should not block download lambda if there is an error writing .application.json file
+    try {
+        fs.writeFileSync(path.join(destinationPath, '.application.json'), JSON.stringify(appJson, undefined, 4))
+    } catch (e) {
+        const err = e as Error
+        getLogger().error('download lambda: Error writing .application.json file, %s', err.message)
+    }
 }
