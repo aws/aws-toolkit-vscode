@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Only allow cloning a repository from CodeCatalyst if it's hosted on CodeCatalyst"
+}
