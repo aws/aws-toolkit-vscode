@@ -1,0 +1,42 @@
+{
+	"date": "2023-03-24",
+	"version": "1.66.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"Enable Command Execution\" shows wrong message"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Update dependency amazon-states-language-service from 1.8.0 -> 1.9.0. This will allow newlines in Step Functions intrinsic functions."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: Disable new branch option when creating new Dev Environment for linked repo"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: `Clone CodeCatalyst Repository` command now only lists non-linked repos"
+		},
+		{
+			"type": "Feature",
+			"description": "Option to sign out of existing Builder ID when adding a new one"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: wait up to 1 hour (instead of 3 minutes) for Dev Environment to start"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer improves right context handling"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer will no longer automatically format code after accepting code suggestions"
+		}
+	]
+}

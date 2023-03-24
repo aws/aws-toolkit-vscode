@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeCatalyst: Disable new branch option when creating new Dev Environment for linked repo"
-}
