@@ -1,3 +1,15 @@
+## 1.66.0 2023-03-24
+
+- **Bug Fix** CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails
+- **Bug Fix** "Enable Command Execution" shows wrong message
+- **Bug Fix** Update dependency amazon-states-language-service from 1.8.0 -> 1.9.0. This will allow newlines in Step Functions intrinsic functions.
+- **Bug Fix** CodeCatalyst: Disable new branch option when creating new Dev Environment for linked repo
+- **Bug Fix** CodeCatalyst: `Clone CodeCatalyst Repository` command now only lists non-linked repos
+- **Feature** Option to sign out of existing Builder ID when adding a new one
+- **Feature** CodeCatalyst: wait up to 1 hour (instead of 3 minutes) for Dev Environment to start
+- **Feature** CodeWhisperer improves right context handling
+- **Feature** CodeWhisperer will no longer automatically format code after accepting code suggestions
+
 ## 1.65.0 2023-03-15
 
 - **Feature** auth: The status bar shows more information about which connections are in-use and which of those are expired or invalid.
