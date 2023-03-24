@@ -31,7 +31,7 @@ export class CodeWhispererCodeCoverageTracker {
     private _language: CodewhispererLanguage
     private _serviceInvocationCount: number
 
-    private constructor(language: CodewhispererLanguage, private readonly globals: vscode.Memento) {
+    private constructor(language: CodewhispererLanguage) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
@@ -229,7 +229,7 @@ export class CodeWhispererCodeCoverageTracker {
         if (!cwsprLanguage) {
             return undefined
         }
-        const instance = this.instances.get(language) ?? new this(cwsprLanguage, memeto)
+        const instance = this.instances.get(language) ?? new this(cwsprLanguage)
         this.instances.set(language, instance)
         return instance
     }
