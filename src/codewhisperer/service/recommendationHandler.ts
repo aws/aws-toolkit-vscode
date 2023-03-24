@@ -22,7 +22,6 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
@@ -31,7 +30,6 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
-import { CodeWhispererSettings } from '../util/codewhispererSettings'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -262,28 +260,18 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                const event = {
-                    codewhispererRequestId: requestId ? requestId : undefined,
-                    codewhispererSessionId: sessionId ? sessionId : undefined,
-                    codewhispererLastSuggestionIndex: this.recommendations.length - 1,
-                    codewhispererTriggerType: triggerType,
-                    codewhispererAutomatedTriggerType: autoTriggerType,
-                    codewhispererCompletionType:
-                        invocationResult === 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
-                    result: invocationResult,
-                    duration: latency ? latency : 0,
-                    codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
-                    codewhispererCursorOffset: TelemetryHelper.instance.cursorOffset
-                        ? TelemetryHelper.instance.cursorOffset
-                        : 0,
-                    codewhispererLanguage: languageContext.language,
-                    reason: reason ? reason.substring(0, 200) : undefined,
-                    credentialStartUrl: TelemetryHelper.instance.startUrl,
-                    codewhispererImportRecommendationEnabled:
-                        CodeWhispererSettings.instance.isImportRecommendationEnabled(),
-                }
-                telemetry.codewhisperer_serviceInvocation.emit(event)
-                TelemetryHelper.instance.sessionInvocations.push(event)
+                TelemetryHelper.instance.recordServiceInvocationTelemetry(
+                    requestId,
+                    sessionId,
+                    this.recommendations.length - 1,
+                    triggerType,
+                    autoTriggerType,
+                    invocationResult,
+                    latency,
+                    this.startPos.line,
+                    languageContext.language,
+                    reason
+                )
             }
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
@@ -317,7 +305,7 @@ export class RecommendationHandler {
                 editor.document.languageId
             )
         }
-        if (!RecommendationHandler.instance.checkAndResetCancellationTokens()) {
+        if (!RecommendationHandler.instance.isCancellationRequested()) {
             this.requestId = requestId
             this.sessionId = sessionId
             this.nextToken = nextToken
@@ -330,8 +318,12 @@ export class RecommendationHandler {
         this.cancellationToken.cancel()
     }
 
+    isCancellationRequested() {
+        return this.cancellationToken.token.isCancellationRequested
+    }
+
     checkAndResetCancellationTokens() {
-        if (this.cancellationToken.token.isCancellationRequested) {
+        if (this.isCancellationRequested()) {
             this.cancellationToken.dispose()
             this.cancellationToken = new vscode.CancellationTokenSource()
             this.nextToken = ''

@@ -8,6 +8,7 @@ import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
 import {
+    CodewhispererLanguage,
     CodewhispererPreviousSuggestionState,
     CodewhispererServiceInvocation,
     CodewhispererUserDecision,
@@ -21,6 +22,7 @@ import {
     CodewhispererTriggerType,
 } from '../../shared/telemetry/telemetry'
 import { getImportCount } from './importAdderUtil'
+import { CodeWhispererSettings } from './codewhispererSettings'
 
 export class TelemetryHelper {
     /**
@@ -79,6 +81,38 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    public recordServiceInvocationTelemetry(
+        requestId: string,
+        sessionId: string,
+        lastSuggestionIndex: number,
+        triggerType: CodewhispererTriggerType,
+        autoTriggerType: CodewhispererAutomatedTriggerType | undefined,
+        result: 'Succeeded' | 'Failed',
+        duration: number | undefined,
+        lineNumber: number | undefined,
+        language: CodewhispererLanguage,
+        reason: string
+    ) {
+        const event = {
+            codewhispererRequestId: requestId ? requestId : undefined,
+            codewhispererSessionId: sessionId ? sessionId : undefined,
+            codewhispererLastSuggestionIndex: lastSuggestionIndex,
+            codewhispererTriggerType: triggerType,
+            codewhispererAutomatedTriggerType: autoTriggerType,
+            codewhispererCompletionType: result === 'Succeeded' ? this.completionType : undefined,
+            result,
+            duration: duration || 0,
+            codewhispererLineNumber: lineNumber || 0,
+            codewhispererCursorOffset: this.cursorOffset || 0,
+            codewhispererLanguage: language,
+            reason: reason ? reason.substring(0, 200) : undefined,
+            credentialStartUrl: this.startUrl,
+            codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+        }
+        telemetry.codewhisperer_serviceInvocation.emit(event)
+        this.sessionInvocations.push(event)
     }
 
     public recordUserDecisionTelemetryForEmptyList(
