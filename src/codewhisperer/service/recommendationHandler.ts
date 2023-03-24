@@ -305,7 +305,7 @@ export class RecommendationHandler {
                 editor.document.languageId
             )
         }
-        if (!RecommendationHandler.instance.isCancellationRequested()) {
+        if (!this.isCancellationRequested()) {
             this.requestId = requestId
             this.sessionId = sessionId
             this.nextToken = nextToken
