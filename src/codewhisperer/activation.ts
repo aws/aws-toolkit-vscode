@@ -280,11 +280,6 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    // ?
-    async function getManualTriggerStatus(): Promise<boolean> {
-        return true
-    }
-
     function getAutoTriggerStatus(): boolean {
         return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
     }
@@ -293,8 +288,10 @@ export async function activate(context: ExtContext): Promise<void> {
         const isShowMethodsEnabled: boolean =
             vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
         const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
-        const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
+        const isManualTriggerEnabled: boolean = true
         const isSuggestionsWithCodeReferencesEnabled = codewhispererSettings.isSuggestionsWithCodeReferencesEnabled()
+
+        // TODO:remove isManualTriggerEnabled
         return {
             isShowMethodsEnabled,
             isManualTriggerEnabled,
@@ -307,7 +304,7 @@ export async function activate(context: ExtContext): Promise<void> {
         setSubscriptionsforCloud9()
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
-        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', await getManualTriggerStatus())
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
     } else {
         await setSubscriptionsforVsCodeInline()
     }
@@ -478,11 +475,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
-        // If the vscode is refreshed we need to maintain the status bar
-        const acceptedTermsAndEnabledCodeWhisperer: boolean = await getManualTriggerStatus()
-        if (acceptedTermsAndEnabledCodeWhisperer) {
-            InlineCompletion.instance.setCodeWhispererStatusBarOk()
-        }
+
+        InlineCompletion.instance.setCodeWhispererStatusBarOk()
     }
 
     function setSubscriptionsforCloud9() {
@@ -545,34 +539,22 @@ export async function activate(context: ExtContext): Promise<void> {
              * Maintaining this variable because VS Code does not expose official intelliSense isActive API
              */
             vscode.window.onDidChangeVisibleTextEditors(async e => {
-                resetIntelliSenseState(
-                    await getManualTriggerStatus(),
-                    getAutoTriggerStatus(),
-                    RecommendationHandler.instance.isValidResponse()
-                )
+                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
-                resetIntelliSenseState(
-                    await getManualTriggerStatus(),
-                    getAutoTriggerStatus(),
-                    RecommendationHandler.instance.isValidResponse()
-                )
+                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
                     resetIntelliSenseState(
-                        await getManualTriggerStatus(),
+                        true,
                         getAutoTriggerStatus(),
                         RecommendationHandler.instance.isValidResponse()
                     )
                 }
             }),
             vscode.workspace.onDidSaveTextDocument(async e => {
-                resetIntelliSenseState(
-                    await getManualTriggerStatus(),
-                    getAutoTriggerStatus(),
-                    RecommendationHandler.instance.isValidResponse()
-                )
+                resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             })
         )
     }

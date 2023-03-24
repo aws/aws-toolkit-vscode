@@ -78,8 +78,7 @@ export class CodeWhispererNode implements RootNode {
         if (isCloud9()) {
             return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
         } else {
-            const isAccessToken = this.getDescription() === 'Access Token'
-            if (isAccessToken || AuthUtil.instance.isConnected()) {
+            if (AuthUtil.instance.isConnected()) {
                 if (AuthUtil.instance.isConnectionExpired()) {
                     return [createReconnectNode(), createLearnMore()]
                 } else if (this._showFreeTierLimitReachedNode) {

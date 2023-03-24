@@ -41,8 +41,11 @@ export const enableCodeSuggestions = Commands.declare(
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-        const isShow = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
-        if (!isShow) {
+        const hasShownWelcomeMsgBefore = get(
+            CodeWhispererConstants.welcomeMessageKey,
+            context.extensionContext.globalState
+        )
+        if (!hasShownWelcomeMsgBefore) {
             showCodeWhispererWelcomeMessage(context)
             await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
         }
