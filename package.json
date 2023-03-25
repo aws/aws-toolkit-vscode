@@ -216,6 +216,10 @@
                         "remoteConnected": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -242,6 +246,11 @@
                 "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {

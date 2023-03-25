@@ -35,6 +35,7 @@ import {
     updateReferenceLog,
     showIntroduction,
     showAccessTokenErrorLearnMore,
+    reconnect,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -52,6 +53,7 @@ import { Auth } from '../credentials/auth'
 import { isUserCancelledError } from '../shared/errors'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
+import { ImportAdderProvider } from './service/importAdderProvider'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -134,7 +136,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
             }
             if (!isCloud9()) {
-                setStatusBarOK()
+                await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             }
         }),
         /**
@@ -167,6 +169,8 @@ export async function activate(context: ExtContext): Promise<void> {
         showSecurityScan.register(context, securityPanelViewProvider, client),
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
+        // show reconnect prompt
+        reconnect.register(),
         // learn more about CodeWhisperer
         showLearnMore.register(),
         // learn more about CodeWhisperer access token migration
@@ -203,8 +207,17 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
             ReferenceInlineProvider.instance
+        ),
+        vscode.languages.registerCodeLensProvider(
+            [...CodeWhispererConstants.supportedLanguages, { scheme: 'untitled' }],
+            ImportAdderProvider.instance
         )
     )
+
+    if (!isCloud9() && !auth.isConnectionValid()) {
+        // this is to proactively check and reflect the state if user's connection is expired
+        auth.refreshCodeWhisperer()
+    }
 
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(
@@ -245,62 +258,13 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
+            await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+            await globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-            const t = new Date()
-
-            if (t <= CodeWhispererConstants.accessTokenCutOffDate) {
-                maybeShowTokenMigrationWarning()
-            } else {
-                await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-                await globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
-                await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-                maybeShowTokenMigrationError()
-            }
+            maybeShowTokenMigrationError()
         } else if (accessTokenExpired) {
             maybeShowTokenMigrationError()
         }
-    }
-
-    function maybeShowTokenMigrationWarning() {
-        const doNotShowAgain =
-            context.extensionContext.globalState.get<boolean>(
-                CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey
-            ) || false
-        const notificationLastShown: number =
-            context.extensionContext.globalState.get<number | undefined>(
-                CodeWhispererConstants.accessTokenMigrationDoNotShowLastShown
-            ) || 1
-
-        //Add 7 days to notificationLastShown to determine whether warn message should show
-        if (doNotShowAgain || notificationLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
-            return
-        }
-
-        vscode.window
-            .showWarningMessage(
-                CodeWhispererConstants.accessTokenMigrationWarningMessage,
-                CodeWhispererConstants.accessTokenMigrationWarningButtonMessage,
-                CodeWhispererConstants.accessTokenMigrationDoNotShowAgain
-            )
-            .then(async resp => {
-                if (resp === CodeWhispererConstants.accessTokenMigrationWarningButtonMessage) {
-                    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-                    await showSsoSignIn.execute()
-                } else if (resp === CodeWhispererConstants.accessTokenMigrationDoNotShowAgain) {
-                    await vscode.window.showInformationMessage(
-                        CodeWhispererConstants.accessTokenMigrationDoNotShowAgainInfo,
-                        'OK'
-                    )
-                    await context.extensionContext.globalState.update(
-                        CodeWhispererConstants.accessTokenMigrationDoNotShowAgainKey,
-                        true
-                    )
-                }
-            })
-        context.extensionContext.globalState.update(
-            CodeWhispererConstants.accessTokenMigrationDoNotShowLastShown,
-            Date.now()
-        )
     }
 
     function maybeShowTokenMigrationError() {
@@ -323,13 +287,13 @@ export async function activate(context: ExtContext): Promise<void> {
                 CodeWhispererConstants.accessTokenMigrationErrorMessage,
                 CodeWhispererConstants.accessTokenMigrationErrorButtonMessage,
                 CodeWhispererConstants.accessTokenMigrationLearnMore,
-                CodeWhispererConstants.accessTokenMigrationDoNotShowAgain
+                CodeWhispererConstants.DoNotShowAgain
             )
             .then(async resp => {
                 if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
                     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                     await showSsoSignIn.execute()
-                } else if (resp === CodeWhispererConstants.accessTokenMigrationDoNotShowAgain) {
+                } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
                     await context.extensionContext.globalState.update(
                         CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey,
                         true
@@ -342,14 +306,6 @@ export async function activate(context: ExtContext): Promise<void> {
             CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown,
             Date.now()
         )
-    }
-
-    function setStatusBarOK() {
-        if (isInlineCompletionEnabled()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-        } else {
-            InlineCompletion.instance.setCodeWhispererStatusBarOk()
-        }
     }
 
     async function showCodeWhispererWelcomeMessage(): Promise<void> {

@@ -31,6 +31,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
+import { CodeWhispererSettings } from '../util/codewhispererSettings'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -276,6 +277,8 @@ export class RecommendationHandler {
                     codewhispererLanguage: languageContext.language,
                     reason: reason ? reason.substring(0, 200) : undefined,
                     credentialStartUrl: TelemetryHelper.instance.startUrl,
+                    codewhispererImportRecommendationEnabled:
+                        CodeWhispererSettings.instance.isImportRecommendationEnabled(),
                 })
             }
             if (invocationResult === 'Succeeded') {

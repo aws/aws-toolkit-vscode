@@ -22,6 +22,7 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
+import { ImportAdderProvider } from './importAdderProvider'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -153,6 +154,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(RecommendationHandler.instance.startPos)) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             this.activeItemIndex = undefined
             return
         }
@@ -176,6 +178,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 r.content,
                 r.references
             )
+            ImportAdderProvider.instance.onShowRecommendation(document, RecommendationHandler.instance.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
             TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
@@ -190,6 +193,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
         this.activeItemIndex = undefined
         return []
     }
@@ -302,16 +306,20 @@ export class InlineCompletionService {
     async onEditorChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
+        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
     }
 
     async onFocusChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
         }
     }
 
@@ -319,6 +327,7 @@ export class InlineCompletionService {
         try {
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             RecommendationHandler.instance.cancelPaginatedRequest()
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
@@ -367,6 +376,11 @@ export class InlineCompletionService {
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ) {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
+            return
+        }
+        const isAutoTrigger = triggerType === 'AutoTrigger'
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
             return
         }
         await this.clearInlineCompletionStates(editor)
@@ -447,12 +461,23 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
+        this.statusBar.show()
+    }
+
+    setCodeWhispererStatusBarDisconnected() {
+        this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        this.statusBar.command = 'aws.codeWhisperer.reconnect'
+        ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
 
@@ -493,9 +518,9 @@ export class InlineCompletionService {
 }
 
 export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (!AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.hideCodeWhispererStatusBar()
-    } else {
+    if (AuthUtil.instance.isConnectionValid()) {
         InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+    } else {
+        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
     }
 })

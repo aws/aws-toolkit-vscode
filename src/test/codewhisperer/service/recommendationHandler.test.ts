@@ -123,6 +123,7 @@ describe('recommendationHandler', function () {
                 codewhispererLastSuggestionIndex: -1,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererAutomatedTriggerType: 'Enter',
+                codewhispererImportRecommendationEnabled: true,
                 codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
                 codewhispererLineNumber: 1,

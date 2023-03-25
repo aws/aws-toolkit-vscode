@@ -24,18 +24,18 @@ import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { PromptSettings } from '../../shared/settings'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
-// No connections are valid within C9
+// No connections are valid within C9 classic
 export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
-    !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
+    !isCloud9('classic') && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
 
 export class AuthUtil {
-    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
     static #instance: AuthUtil
 
     private usingEnterpriseSSO: boolean = false
+    private reauthenticatePromptShown: boolean = false
 
     private readonly clearAccessToken = once(() =>
         globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
@@ -49,10 +49,14 @@ export class AuthUtil {
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        // codewhisperer uses sigv4 creds on C9
-        if (isCloud9() || !this.isAvailable) {
+        // codewhisperer uses sigv4 creds on C9 classic
+        if (isCloud9('classic')) {
             return
         }
+
+        this.auth.onDidChangeConnectionState(() => {
+            this.refreshCodeWhisperer()
+        })
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
@@ -77,7 +81,7 @@ export class AuthUtil {
 
     // current active cwspr connection
     public get conn() {
-        return this.isAvailable ? this.secondaryAuth.activeConnection : undefined
+        return this.secondaryAuth.activeConnection
     }
 
     public get isUsingSavedConnection() {
@@ -100,14 +104,14 @@ export class AuthUtil {
         await this.secondaryAuth.useNewConnection(conn)
     }
 
-    public async connectToEnterpriseSso(startUrl: string) {
+    public async connectToEnterpriseSso(startUrl: string, region: string) {
         const existingConn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
@@ -136,29 +140,59 @@ export class AuthUtil {
     }
 
     public isConnectionExpired(): boolean {
-        return this.secondaryAuth.isConnectionExpired
+        return (
+            this.secondaryAuth.isConnectionExpired &&
+            this.conn !== undefined &&
+            isValidCodeWhispererConnection(this.conn)
+        )
     }
 
     public async reauthenticate() {
         if (this.isConnectionExpired()) {
             try {
                 await this.auth.reauthenticate(this.conn!)
+                this.refreshCodeWhisperer()
             } catch (err) {
                 throw ToolkitError.chain(err, 'Unable to authenticate connection')
             }
         }
     }
 
-    public async showReauthenticatePrompt() {
+    public async refreshCodeWhisperer() {
+        await Promise.all([
+            vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+        ])
+    }
+
+    public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
+        const settings = PromptSettings.instance
+        const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
+        if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
+            return
+        }
         await vscode.window
-            .showWarningMessage(CodeWhispererConstants.connectionExpired, 'Cancel', 'Learn More', 'Authenticate')
+            .showInformationMessage(
+                CodeWhispererConstants.connectionExpired,
+                CodeWhispererConstants.connectWithAWSBuilderId,
+                CodeWhispererConstants.DoNotShowAgain
+            )
             .then(async resp => {
-                if (resp === 'Learn More') {
-                    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                } else if (resp === 'Authenticate') {
+                if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
                     await this.reauthenticate()
+                } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
+                    settings.disablePrompt('codeWhispererConnectionExpired')
                 }
             })
+        if (isAutoTrigger) {
+            this.reauthenticatePromptShown = true
+        }
+    }
+
+    public async notifyReauthenticate(isAutoTrigger?: boolean) {
+        await this.refreshCodeWhisperer()
+        this.showReauthenticatePrompt(isAutoTrigger)
     }
 
     #hasSeenUpgradeNotification = false
