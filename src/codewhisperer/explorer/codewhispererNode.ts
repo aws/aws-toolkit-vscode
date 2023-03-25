@@ -39,7 +39,7 @@ export class CodeWhispererNode implements RootNode {
             AuthUtil.instance.restore()
         }
 
-        const item = new vscode.TreeItem('CodeWhisperer (Preview)')
+        const item = new vscode.TreeItem('CodeWhisperer')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = AuthUtil.instance.isUsingSavedConnection
