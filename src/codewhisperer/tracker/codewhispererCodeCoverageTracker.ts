@@ -12,6 +12,7 @@ import { distance } from 'fastest-levenshtein'
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -30,7 +31,7 @@ export class CodeWhispererCodeCoverageTracker {
     private _language: CodewhispererLanguage
     private _serviceInvocationCount: number
 
-    private constructor(language: CodewhispererLanguage, private readonly globals: vscode.Memento) {
+    private constructor(language: CodewhispererLanguage) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
@@ -51,8 +52,7 @@ export class CodeWhispererCodeCoverageTracker {
     }
 
     public isActive(): boolean {
-        const isTermsAccepted = this.globals.get<boolean>(CodeWhispererConstants.termsAcceptedKey) || false
-        return TelemetryHelper.instance.isTelemetryEnabled() && isTermsAccepted
+        return TelemetryHelper.instance.isTelemetryEnabled() && AuthUtil.instance.isConnected()
     }
 
     public countAcceptedTokens(range: vscode.Range, text: string, filename: string) {
@@ -229,7 +229,7 @@ export class CodeWhispererCodeCoverageTracker {
         if (!cwsprLanguage) {
             return undefined
         }
-        const instance = this.instances.get(language) ?? new this(cwsprLanguage, memeto)
+        const instance = this.instances.get(language) ?? new this(cwsprLanguage)
         this.instances.set(language, instance)
         return instance
     }
