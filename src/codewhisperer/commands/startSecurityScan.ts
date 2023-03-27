@@ -244,8 +244,12 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
 
 export async function confirmStopSecurityScan() {
     // Confirm if user wants to stop security scan
-    const resp = await vscode.window.showWarningMessage(CodeWhispererConstants.stopScanMessage, confirm, cancel)
-    if (resp === confirm && codeScanState.isRunning()) {
+    const resp = await vscode.window.showWarningMessage(
+        CodeWhispererConstants.stopScanMessage,
+        CodeWhispererConstants.stopScanBtn,
+        cancel
+    )
+    if (resp === CodeWhispererConstants.stopScanBtn && codeScanState.isRunning()) {
         getLogger().verbose('User requested to stop security scan. Stopping security scan.')
         codeScanState.setToCancelling()
     }
