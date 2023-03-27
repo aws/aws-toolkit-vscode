@@ -24,6 +24,8 @@ import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     public nextMove: number
@@ -383,6 +385,7 @@ export class InlineCompletionService {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
             return
         }
+        TelemetryHelper.instance.setInvocationStartTime(performance.now())
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -403,6 +406,7 @@ export class InlineCompletionService {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+                    TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) {
@@ -410,6 +414,7 @@ export class InlineCompletionService {
                 }
                 page++
             }
+            TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
