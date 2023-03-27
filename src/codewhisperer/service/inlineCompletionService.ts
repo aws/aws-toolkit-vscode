@@ -334,7 +334,7 @@ export class InlineCompletionService {
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
             this.disposeInlineCompletion()
-            this.setCodeWhispererStatusBarOk()
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             this.disposeCommandOverrides()
         } finally {
             this.clearRejectionTimer()
@@ -405,7 +405,7 @@ export class InlineCompletionService {
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
-                    this.setCodeWhispererStatusBarOk()
+                    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
                     TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
@@ -418,7 +418,7 @@ export class InlineCompletionService {
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
-        this.setCodeWhispererStatusBarOk()
+        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         if (triggerType === 'OnDemand' && RecommendationHandler.instance.recommendations.length === 0) {
             if (RecommendationHandler.instance.errorMessagePrompt !== '') {
                 showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
@@ -480,6 +480,7 @@ export class InlineCompletionService {
     }
 
     setCodeWhispererStatusBarDisconnected() {
+        this._isPaginationRunning = false
         this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
         this.statusBar.command = 'aws.codeWhisperer.reconnect'
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
