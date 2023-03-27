@@ -54,8 +54,10 @@ export class AuthUtil {
             return
         }
 
-        this.auth.onDidChangeConnectionState(() => {
-            this.refreshCodeWhisperer()
+        this.auth.onDidChangeConnectionState(e => {
+            if (e.state !== 'authenticating') {
+                this.refreshCodeWhisperer()
+            }
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
@@ -151,7 +153,6 @@ export class AuthUtil {
         if (this.isConnectionExpired()) {
             try {
                 await this.auth.reauthenticate(this.conn!)
-                this.refreshCodeWhisperer()
             } catch (err) {
                 throw ToolkitError.chain(err, 'Unable to authenticate connection')
             }
