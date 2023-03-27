@@ -22,7 +22,6 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
@@ -31,7 +30,6 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
-import { CodeWhispererSettings } from '../util/codewhispererSettings'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -203,7 +201,9 @@ export class RecommendationHandler {
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
                 TelemetryHelper.instance.setSessionId(sessionId)
+                TelemetryHelper.instance.setFirstRecommendationResponseTime(performance.now())
                 if (nextToken === '') {
+                    TelemetryHelper.instance.setLastRequestId(requestId)
                     TelemetryHelper.instance.setAllPaginationEndTime()
                 }
             } else {
@@ -260,26 +260,18 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                telemetry.codewhisperer_serviceInvocation.emit({
-                    codewhispererRequestId: requestId ? requestId : undefined,
-                    codewhispererSessionId: sessionId ? sessionId : undefined,
-                    codewhispererLastSuggestionIndex: this.recommendations.length - 1,
-                    codewhispererTriggerType: triggerType,
-                    codewhispererAutomatedTriggerType: autoTriggerType,
-                    codewhispererCompletionType:
-                        invocationResult === 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
-                    result: invocationResult,
-                    duration: latency ? latency : 0,
-                    codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
-                    codewhispererCursorOffset: TelemetryHelper.instance.cursorOffset
-                        ? TelemetryHelper.instance.cursorOffset
-                        : 0,
-                    codewhispererLanguage: languageContext.language,
-                    reason: reason ? reason.substring(0, 200) : undefined,
-                    credentialStartUrl: TelemetryHelper.instance.startUrl,
-                    codewhispererImportRecommendationEnabled:
-                        CodeWhispererSettings.instance.isImportRecommendationEnabled(),
-                })
+                TelemetryHelper.instance.recordServiceInvocationTelemetry(
+                    requestId,
+                    sessionId,
+                    this.recommendations.length - 1,
+                    triggerType,
+                    autoTriggerType,
+                    invocationResult,
+                    latency,
+                    this.startPos.line,
+                    languageContext.language,
+                    reason
+                )
             }
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
@@ -289,6 +281,7 @@ export class RecommendationHandler {
             const typedPrefix = editor.document
                 .getText(new vscode.Range(this.startPos, editor.selection.active))
                 .replace('\r\n', '\n')
+            TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
@@ -312,10 +305,12 @@ export class RecommendationHandler {
                 editor.document.languageId
             )
         }
-        this.requestId = requestId
-        this.sessionId = sessionId
-        this.nextToken = nextToken
-        this.errorCode = errorCode
+        if (!this.isCancellationRequested()) {
+            this.requestId = requestId
+            this.sessionId = sessionId
+            this.nextToken = nextToken
+            this.errorCode = errorCode
+        }
     }
 
     cancelPaginatedRequest() {
@@ -323,8 +318,12 @@ export class RecommendationHandler {
         this.cancellationToken.cancel()
     }
 
+    isCancellationRequested() {
+        return this.cancellationToken.token.isCancellationRequested
+    }
+
     checkAndResetCancellationTokens() {
-        if (this.cancellationToken.token.isCancellationRequested) {
+        if (this.isCancellationRequested()) {
             this.cancellationToken.dispose()
             this.cancellationToken = new vscode.CancellationTokenSource()
             this.nextToken = ''

@@ -146,6 +146,9 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
+                if (changedSource === DocumentChangedSource.SpecialCharsKey) {
+                    TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(event.contentChanges[0].text)
+                }
                 this.invokeAutomatedTrigger(triggerType, editor, client, config)
             }
         } catch (error) {

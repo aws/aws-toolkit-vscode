@@ -16,6 +16,7 @@ import {
     SSOServiceException,
 } from '@aws-sdk/client-sso'
 import {
+    AuthorizationPendingException,
     CreateTokenRequest,
     RegisterClientRequest,
     SSOOIDC,
@@ -28,6 +29,9 @@ import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
+import { Client } from '@aws-sdk/smithy-client'
+import { HttpHandlerOptions } from '@aws-sdk/types'
+import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -66,13 +70,13 @@ export class OidcClient {
     }
 
     public static create(region: string) {
-        return new this(
-            new SSOOIDC({
-                region,
-                endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
-            }),
-            globals.clock
-        )
+        const client = new SSOOIDC({
+            region,
+            endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
+        })
+
+        addLoggingMiddleware(client)
+        return new this(client, globals.clock)
     }
 }
 
@@ -173,4 +177,53 @@ export class SsoClient {
             provider
         )
     }
+}
+
+function omitIfPresent<T extends Record<string, unknown>>(obj: T, ...keys: string[]): T {
+    const objCopy = { ...obj }
+    for (const key of keys) {
+        if (key in objCopy) {
+            ;(objCopy as any)[key] = '[omitted]'
+        }
+    }
+    return objCopy
+}
+
+function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>) {
+    client.middlewareStack.add(
+        (next, context) => args => {
+            if (HttpRequest.isInstance(args.request)) {
+                const { hostname, path } = args.request
+                const input = omitIfPresent(args.input, 'clientSecret', 'accessToken', 'refreshToken')
+                getLogger().debug('API request (%s %s): %O', hostname, path, input)
+            }
+            return next(args)
+        },
+        { step: 'finalizeRequest' }
+    )
+
+    client.middlewareStack.add(
+        (next, context) => async args => {
+            if (!HttpRequest.isInstance(args.request)) {
+                return next(args)
+            }
+
+            const { hostname, path } = args.request
+            const result = await next(args).catch(e => {
+                if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
+                    const err = { ...e }
+                    delete err['stack']
+                    getLogger().error('API response (%s %s): %O', hostname, path, err)
+                }
+                throw e
+            })
+            if (HttpResponse.isInstance(result.response)) {
+                const output = omitIfPresent(result.output, 'clientSecret', 'accessToken', 'refreshToken')
+                getLogger().debug('API response (%s %s): %O', hostname, path, output)
+            }
+
+            return result
+        },
+        { step: 'deserialize' }
+    )
 }
