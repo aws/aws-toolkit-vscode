@@ -22,7 +22,7 @@ You can request suggestions at any time. Use **Option-C** on Mac or **ALT-C** on
 
 **Customizing keyboard shortcuts**
 
-You can change CodeWhisperer keyboard shortcuts in Keyboard Shortcuts Editor (a link opens to VSC shortcut editor). To open Keyboard Shortcuts Editor, go to Settings, and click on Keyboard shortcuts.
+You can change CodeWhisperer keyboard shortcuts in [Keyboard Shortcuts Editor](https://code.visualstudio.com/docs/getstarted/keybindings). To open Keyboard Shortcuts Editor, go to Settings, and click on Keyboard shortcuts.
 
 ---
 
