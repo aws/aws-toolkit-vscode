@@ -750,7 +750,9 @@ export async function isThirdPartyRepo(
     codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest
 ): Promise<boolean> {
     const url = await client.getRepoCloneUrl(codeCatalystRepo)
-    // TODO: Make more robust to work with gamma once getCodeCatalystConfig()
-    // can provide a valid hostname
-    return !Uri.parse(url).authority.endsWith('codecatalyst.aws')
+    // TODO: Make more robust to work with getCodeCatalystConfig().
+    return (
+        !Uri.parse(url).authority.endsWith('codecatalyst.aws') &&
+        !Uri.parse(url).authority.endsWith('caws.dev-tools.aws.dev')
+    )
 }

@@ -433,9 +433,7 @@
     "shapes": {
         "AccessDeniedException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"
@@ -456,10 +454,7 @@
         },
         "ArtifactType": {
             "type": "string",
-            "enum": [
-                "SourceCode",
-                "BuiltJars"
-            ]
+            "enum": ["SourceCode", "BuiltJars"]
         },
         "Base64EncodedPaginationToken": {
             "type": "string",
@@ -469,23 +464,15 @@
         },
         "CodeScanFindingsSchema": {
             "type": "string",
-            "enum": [
-                "codescan/findings/1.0"
-            ]
+            "enum": ["codescan/findings/1.0"]
         },
         "CodeScanStatus": {
             "type": "string",
-            "enum": [
-                "Completed",
-                "Pending",
-                "Failed"
-            ]
+            "enum": ["Completed", "Pending", "Failed"]
         },
         "ConflictException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"
@@ -495,10 +482,7 @@
         },
         "CreateCodeScanRequest": {
             "type": "structure",
-            "required": [
-                "artifacts",
-                "programmingLanguage"
-            ],
+            "required": ["artifacts", "programmingLanguage"],
             "members": {
                 "artifacts": {
                     "shape": "ArtifactMap"
@@ -519,10 +503,7 @@
         },
         "CreateCodeScanResponse": {
             "type": "structure",
-            "required": [
-                "jobId",
-                "status"
-            ],
+            "required": ["jobId", "status"],
             "members": {
                 "jobId": {
                     "shape": "CreateCodeScanResponseJobIdString"
@@ -542,11 +523,7 @@
         },
         "CreateProfileRequest": {
             "type": "structure",
-            "required": [
-                "identitySource",
-                "profileName",
-                "referenceTrackerConfiguration"
-            ],
+            "required": ["identitySource", "profileName", "referenceTrackerConfiguration"],
             "members": {
                 "identitySource": {
                     "shape": "IdentitySource"
@@ -571,9 +548,7 @@
         },
         "CreateProfileResponse": {
             "type": "structure",
-            "required": [
-                "profileArn"
-            ],
+            "required": ["profileArn"],
             "members": {
                 "profileArn": {
                     "shape": "ResourceArn"
@@ -582,9 +557,7 @@
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": [
-                "contentMd5"
-            ],
+            "required": ["contentMd5"],
             "members": {
                 "contentMd5": {
                     "shape": "CreateUploadUrlRequestContentMd5String"
@@ -601,10 +574,7 @@
         },
         "CreateUploadUrlResponse": {
             "type": "structure",
-            "required": [
-                "uploadId",
-                "uploadUrl"
-            ],
+            "required": ["uploadId", "uploadUrl"],
             "members": {
                 "uploadId": {
                     "shape": "UploadId"
@@ -619,9 +589,7 @@
         },
         "DeleteProfileRequest": {
             "type": "structure",
-            "required": [
-                "profileArn"
-            ],
+            "required": ["profileArn"],
             "members": {
                 "profileArn": {
                     "shape": "ResourceArn"
@@ -634,12 +602,7 @@
         },
         "FileContext": {
             "type": "structure",
-            "required": [
-                "leftFileContent",
-                "rightFileContent",
-                "filename",
-                "programmingLanguage"
-            ],
+            "required": ["leftFileContent", "rightFileContent", "filename", "programmingLanguage"],
             "members": {
                 "leftFileContent": {
                     "shape": "FileContextLeftFileContentString"
@@ -674,9 +637,7 @@
         },
         "GenerateRecommendationsRequest": {
             "type": "structure",
-            "required": [
-                "fileContext"
-            ],
+            "required": ["fileContext"],
             "members": {
                 "fileContext": {
                     "shape": "FileContext"
@@ -717,9 +678,7 @@
         },
         "GetAccessTokenRequest": {
             "type": "structure",
-            "required": [
-                "identityToken"
-            ],
+            "required": ["identityToken"],
             "members": {
                 "identityToken": {
                     "shape": "GetAccessTokenRequestIdentityTokenString"
@@ -742,9 +701,7 @@
         },
         "GetCodeScanRequest": {
             "type": "structure",
-            "required": [
-                "jobId"
-            ],
+            "required": ["jobId"],
             "members": {
                 "jobId": {
                     "shape": "GetCodeScanRequestJobIdString"
@@ -758,9 +715,7 @@
         },
         "GetCodeScanResponse": {
             "type": "structure",
-            "required": [
-                "status"
-            ],
+            "required": ["status"],
             "members": {
                 "status": {
                     "shape": "CodeScanStatus"
@@ -817,9 +772,7 @@
         },
         "InternalServerException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"
@@ -833,10 +786,7 @@
         },
         "ListCodeScanFindingsRequest": {
             "type": "structure",
-            "required": [
-                "jobId",
-                "codeScanFindingsSchema"
-            ],
+            "required": ["jobId", "codeScanFindingsSchema"],
             "members": {
                 "jobId": {
                     "shape": "ListCodeScanFindingsRequestJobIdString"
@@ -856,9 +806,7 @@
         },
         "ListCodeScanFindingsResponse": {
             "type": "structure",
-            "required": [
-                "codeScanFindings"
-            ],
+            "required": ["codeScanFindings"],
             "members": {
                 "nextToken": {
                     "shape": "PaginationToken"
@@ -887,9 +835,7 @@
         },
         "ListProfilesResponse": {
             "type": "structure",
-            "required": [
-                "profiles"
-            ],
+            "required": ["profiles"],
             "members": {
                 "profiles": {
                     "shape": "ProfileList"
@@ -901,9 +847,7 @@
         },
         "ListRecommendationsRequest": {
             "type": "structure",
-            "required": [
-                "fileContext"
-            ],
+            "required": ["fileContext"],
             "members": {
                 "fileContext": {
                     "shape": "FileContext"
@@ -944,9 +888,7 @@
         },
         "ListTagsForResourceRequest": {
             "type": "structure",
-            "required": [
-                "resourceName"
-            ],
+            "required": ["resourceName"],
             "members": {
                 "resourceName": {
                     "shape": "ResourceArn"
@@ -974,12 +916,7 @@
         },
         "Profile": {
             "type": "structure",
-            "required": [
-                "arn",
-                "identityDetails",
-                "profileName",
-                "referenceTrackerConfiguration"
-            ],
+            "required": ["arn", "identityDetails", "profileName", "referenceTrackerConfiguration"],
             "members": {
                 "arn": {
                     "shape": "ResourceArn"
@@ -1012,9 +949,7 @@
         },
         "ProgrammingLanguage": {
             "type": "structure",
-            "required": [
-                "languageName"
-            ],
+            "required": ["languageName"],
             "members": {
                 "languageName": {
                     "shape": "ProgrammingLanguageLanguageNameString"
@@ -1029,9 +964,7 @@
         },
         "Recommendation": {
             "type": "structure",
-            "required": [
-                "content"
-            ],
+            "required": ["content"],
             "members": {
                 "content": {
                     "shape": "RecommendationContentString"
@@ -1060,10 +993,7 @@
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
-            "enum": [
-                "BLOCK",
-                "ALLOW"
-            ]
+            "enum": ["BLOCK", "ALLOW"]
         },
         "Reference": {
             "type": "structure",
@@ -1094,9 +1024,7 @@
         },
         "ReferenceTrackerConfiguration": {
             "type": "structure",
-            "required": [
-                "recommendationsWithReferences"
-            ],
+            "required": ["recommendationsWithReferences"],
             "members": {
                 "recommendationsWithReferences": {
                     "shape": "RecommendationsWithReferencesPreference"
@@ -1123,9 +1051,7 @@
         },
         "ResourceNotFoundException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"
@@ -1135,10 +1061,7 @@
         },
         "SSOIdentityDetails": {
             "type": "structure",
-            "required": [
-                "instanceArn",
-                "oidcClientId"
-            ],
+            "required": ["instanceArn", "oidcClientId"],
             "members": {
                 "instanceArn": {
                     "shape": "ResourceArn"
@@ -1150,9 +1073,7 @@
         },
         "SSOIdentitySource": {
             "type": "structure",
-            "required": [
-                "instanceArn"
-            ],
+            "required": ["instanceArn"],
             "members": {
                 "instanceArn": {
                     "shape": "ResourceArn"
@@ -1189,10 +1110,7 @@
         },
         "Tag": {
             "type": "structure",
-            "required": [
-                "key",
-                "value"
-            ],
+            "required": ["key", "value"],
             "members": {
                 "key": {
                     "shape": "TagKey"
@@ -1225,10 +1143,7 @@
         },
         "TagResourceRequest": {
             "type": "structure",
-            "required": [
-                "resourceName",
-                "tags"
-            ],
+            "required": ["resourceName", "tags"],
             "members": {
                 "resourceName": {
                     "shape": "ResourceArn"
@@ -1249,9 +1164,7 @@
         },
         "ThrottlingException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"
@@ -1264,10 +1177,7 @@
         },
         "UntagResourceRequest": {
             "type": "structure",
-            "required": [
-                "resourceName",
-                "tagKeys"
-            ],
+            "required": ["resourceName", "tagKeys"],
             "members": {
                 "resourceName": {
                     "shape": "ResourceArn"
@@ -1283,9 +1193,7 @@
         },
         "UpdateProfileRequest": {
             "type": "structure",
-            "required": [
-                "profileArn"
-            ],
+            "required": ["profileArn"],
             "members": {
                 "profileArn": {
                     "shape": "ResourceArn"
@@ -1303,9 +1211,7 @@
         },
         "UpdateProfileResponse": {
             "type": "structure",
-            "required": [
-                "profileArn"
-            ],
+            "required": ["profileArn"],
             "members": {
                 "profileArn": {
                     "shape": "ResourceArn"
@@ -1319,9 +1225,7 @@
         },
         "ValidationException": {
             "type": "structure",
-            "required": [
-                "message"
-            ],
+            "required": ["message"],
             "members": {
                 "message": {
                     "shape": "String"

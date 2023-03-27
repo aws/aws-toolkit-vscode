@@ -9,13 +9,15 @@ const localize = nls.loadMessageBundle()
 import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { AuthorizationPendingException, SlowDownException, SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
-import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
+import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile, builderIdStartUrl } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
-import { isClientFault, ToolkitError } from '../../shared/errors'
+import { getTelemetryReason, getTelemetryResult, isClientFault, ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -81,11 +83,7 @@ export class SsoAccessTokenProvider {
         if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
             const refreshed = await this.refreshToken(data.token, data.registration)
 
-            if (refreshed) {
-                await this.cache.token.save(this.tokenCacheKey, refreshed)
-            }
-
-            return refreshed?.token
+            return refreshed.token
         } else {
             await this.invalidate()
         }
@@ -95,6 +93,7 @@ export class SsoAccessTokenProvider {
         const access = await this.runFlow()
         const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
         await this.cache.token.save(identity, access)
+        await setSessionCreationDate(this.tokenCacheKey, new Date())
 
         return { ...access.token, identity }
     }
@@ -118,9 +117,19 @@ export class SsoAccessTokenProvider {
         try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
+            const refreshed = this.formatToken(response, registration)
+            await this.cache.token.save(this.tokenCacheKey, refreshed)
 
-            return this.formatToken(response, registration)
+            return refreshed
         } catch (err) {
+            telemetry.aws_refreshCredentials.emit({
+                result: getTelemetryResult(err),
+                reason: getTelemetryReason(err),
+                sessionDuration: getSessionDuration(this.tokenCacheKey),
+                credentialType: 'bearerToken',
+                credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+            })
+
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 await this.cache.token.clear(this.tokenCacheKey)
             }
@@ -227,4 +236,26 @@ async function pollForTokenWithProgress<T>(
                 ),
             ])
     )
+}
+
+const sessionCreationDateKey = '#sessionCreationDates'
+async function setSessionCreationDate(id: string, date: Date, memento = globals.context.globalState) {
+    try {
+        await memento.update(sessionCreationDateKey, {
+            ...memento.get(sessionCreationDateKey),
+            [id]: date.getTime(),
+        })
+    } catch (err) {
+        getLogger().verbose('auth: failed to set session creation date: %s', err)
+    }
+}
+
+function getSessionCreationDate(id: string, memento = globals.context.globalState): number | undefined {
+    return memento.get(sessionCreationDateKey, {} as Record<string, number>)[id]
+}
+
+function getSessionDuration(id: string, memento = globals.context.globalState) {
+    const creationDate = getSessionCreationDate(id, memento)
+
+    return creationDate !== undefined ? Date.now() - creationDate : undefined
 }
