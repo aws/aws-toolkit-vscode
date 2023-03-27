@@ -32,12 +32,9 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
-const codeScanLogger = makeLogger(
-    {
-        outputChannels: [securityScanOutputChannel]
-    }
-)
-
+const codeScanLogger = makeLogger({
+    outputChannels: [securityScanOutputChannel],
+})
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
@@ -122,7 +119,7 @@ export async function startSecurityScan(
         const uploadStartTime = performance.now()
         try {
             artifactMap = await getPresignedUrlAndUpload(client, truncation)
-        } catch(error) {
+        } catch (error) {
             getLogger().error('Failed to upload code artifacts', error)
             throw error
         } finally {
@@ -181,8 +178,7 @@ export async function startSecurityScan(
         getLogger().error('Security scan failed.', error)
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
-        }
-        else {
+        } else {
             errorPromptHelper(error as Error)
             codeScanTelemetryEntry.result = 'Failed'
         }
@@ -230,8 +226,7 @@ export function errorPromptHelper(error: Error) {
     }
 }
 
-
-function populateCodeScanLogStream(scannedFiles: Set<string>){
+function populateCodeScanLogStream(scannedFiles: Set<string>) {
     // Clear log
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
@@ -244,14 +239,12 @@ function populateCodeScanLogStream(scannedFiles: Set<string>){
     for (const file of scannedFiles) {
         const uri = vscode.Uri.file(file)
         codeScanLogger.verbose(`File scanned: ${uri.fsPath}`)
-    }    
+    }
 }
 
 export async function confirmStopSecurityScan() {
     // Confirm if user wants to stop security scan
-     const resp = await vscode.window.showWarningMessage(
-        CodeWhispererConstants.stopScanMessage, confirm, cancel
-    )
+    const resp = await vscode.window.showWarningMessage(CodeWhispererConstants.stopScanMessage, confirm, cancel)
     if (resp === confirm && codeScanState.isRunning()) {
         getLogger().verbose('User requested to stop security scan. Stopping security scan.')
         codeScanState.setToCancelling()
@@ -259,21 +252,24 @@ export async function confirmStopSecurityScan() {
 }
 
 export function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
-    const totalFiles = `${scannedFiles.size} ${(scannedFiles.size === 1) ? 'file' : 'files'}`
-    const totalIssues = `${total} ${(total === 1) ? 'issue was' : 'issues were'}`
+    const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
+    const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
     const fileSizeLimitReached = isProjectTruncated ? 'File size limit reached.' : ''
     const learnMore = 'Learn More'
     const items = [CodeWhispererConstants.showScannedFilesMessage]
     if (isProjectTruncated) {
         items.push(learnMore)
     }
-    vscode.window.showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`, ...items).then(
-        (value) => {
+    vscode.window
+        .showInformationMessage(
+            `Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`,
+            ...items
+        )
+        .then(value => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
             } else if (value === learnMore) {
                 vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
             }
-        }
-    )
+        })
 }

@@ -108,7 +108,7 @@ export async function onInlineAcceptance(
         } finally {
             vsCodeState.isCodeWhispererEditing = false
         }
-        
+
         CodeWhispererTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,
