@@ -86,11 +86,9 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
+
             if (
-                configurationChangeEvent.affectsConfiguration(
-                    'aws.codeWhisperer.includeSuggestionsWithCodeReferences'
-                ) ||
-                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')
+                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
             ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
@@ -106,6 +104,22 @@ export async function activate(context: ExtContext): Promise<void> {
                         })
                 }
             }
+
+            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')) {
+                if (auth.isEnterpriseSsoInUse()) {
+                    await vscode.window
+                        .showInformationMessage(
+                            CodeWhispererConstants.ssoConfigAlertMessageShareData,
+                            CodeWhispererConstants.settingsLearnMore
+                        )
+                        .then(async resp => {
+                            if (resp === CodeWhispererConstants.settingsLearnMore) {
+                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                            }
+                        })
+                }
+            }
+
             if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
                     .showInformationMessage(
