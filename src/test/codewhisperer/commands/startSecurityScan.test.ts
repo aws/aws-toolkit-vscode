@@ -21,7 +21,11 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel, confirm } from '../../../shared/localizedText'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { codeScanLogsOutputChannelId, showScannedFilesMessage, stopScanMessage } from '../../../codewhisperer/models/constants'
+import {
+    codeScanLogsOutputChannelId,
+    showScannedFilesMessage,
+    stopScanMessage,
+} from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 
 const mockCreateCodeScanResponse = {
@@ -114,7 +118,7 @@ let editor: vscode.TextEditor
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
 
-    beforeEach(async function () { 
+    beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
         appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')

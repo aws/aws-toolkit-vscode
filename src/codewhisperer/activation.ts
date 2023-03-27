@@ -54,6 +54,7 @@ import { isUserCancelledError } from '../shared/errors'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
 import { ImportAdderProvider } from './service/importAdderProvider'
+import { TelemetryHelper } from './util/telemetryHelper'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -398,6 +399,11 @@ export async function activate(context: ExtContext): Promise<void> {
                     e.contentChanges.length != 0 &&
                     !vsCodeState.isCodeWhispererEditing
                 ) {
+                    if (vsCodeState.lastUserModificationTime) {
+                        TelemetryHelper.instance.setTimeSinceLastModification(
+                            performance.now() - vsCodeState.lastUserModificationTime
+                        )
+                    }
                     vsCodeState.lastUserModificationTime = performance.now()
                     /**
                      * Important:  Doing this sleep(10) is to make sure

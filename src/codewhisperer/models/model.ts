@@ -81,7 +81,7 @@ export interface InlineCompletionItem {
 enum CodeScanStatus {
     NotStarted,
     Running,
-    Cancelling
+    Cancelling,
 }
 
 export class CodeScanState {
@@ -134,7 +134,6 @@ export class CodeScanState {
         }
     }
 }
-
 
 export const codeScanState: CodeScanState = new CodeScanState()
 
