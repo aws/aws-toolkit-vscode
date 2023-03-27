@@ -187,6 +187,13 @@ describe('FileViewerManager', function () {
         return window.visibleTextEditors.filter(e => e.document.fileName.endsWith(documentName))
     }
 
+    function registerFileSystemProviders(isCaseSensitive: boolean = true): vscode.Disposable[] {
+        return [
+            vscode.workspace.registerFileSystemProvider(editScheme, fs, { isCaseSensitive }),
+            vscode.workspace.registerFileSystemProvider(readScheme, fs, { isReadonly: true, isCaseSensitive }),
+        ]
+    }
+
     beforeEach(function () {
         s3 = createS3()
         fs = new VirualFileSystem()
@@ -196,10 +203,7 @@ describe('FileViewerManager', function () {
             edit: editScheme,
         })
 
-        disposables = [
-            vscode.workspace.registerFileSystemProvider(editScheme, fs),
-            vscode.workspace.registerFileSystemProvider(readScheme, fs, { isReadonly: true }),
-        ]
+        disposables = registerFileSystemProviders()
     })
 
     afterEach(async function () {
@@ -302,6 +306,48 @@ describe('FileViewerManager', function () {
             const file = makeFile('foo.txt', Buffer.from('0', 'utf-8'))
             const err = await fileViewerManager.openInReadMode({ ...file, bucket }).catch(e => e)
             assert.ok(err instanceof ToolkitError)
+        })
+
+        it('is case-sensitive for file names', async function () {
+            // Create and assert content of file with lowercase name
+            const lowerCaseFileContent = 'lowercaseContent'
+            const lowerCaseFile = makeFile('myFile.txt', Buffer.from(lowerCaseFileContent, 'utf-8'))
+            s3.addFile(lowerCaseFile)
+            await fileViewerManager.openInReadMode({ ...lowerCaseFile, bucket })
+            await assertTextEditorContains(lowerCaseFileContent)
+
+            // Create similarily named file, but with different uppercase in name
+            const upperCaseFileContent = 'uppercaseContent'
+            const upperCaseFile = makeFile('MyFile.txt', Buffer.from(upperCaseFileContent, 'utf-8'))
+            s3.addFile(upperCaseFile)
+            await fileViewerManager.openInReadMode({ ...upperCaseFile, bucket })
+            await assertTextEditorContains(upperCaseFileContent)
+        })
+    })
+
+    describe('file uri case insensitivity', function () {
+        beforeEach(function () {
+            vscode.Disposable.from(...disposables).dispose()
+            // Case insensitive file system providers
+            disposables = registerFileSystemProviders(false)
+        })
+
+        it('opens an existing file since names are the same', async function () {
+            // Create and assert content of file with lowercase name
+            const lowerCaseFileContent = 'lowercaseContent'
+            const lowerCaseFile = makeFile('file.txt', Buffer.from(lowerCaseFileContent, 'utf-8'))
+            s3.addFile(lowerCaseFile)
+            await fileViewerManager.openInReadMode({ ...lowerCaseFile, bucket })
+            await assertTextEditorContains(lowerCaseFileContent)
+
+            // Create similarily named file, but with uppercase character
+            const upperCaseFileContent = 'uppercaseContent'
+            const upperCaseFile = makeFile('File.txt', Buffer.from(upperCaseFileContent, 'utf-8'))
+            s3.addFile(upperCaseFile)
+
+            // Attempt to open uppercase file opens existing lowercase file instead
+            await fileViewerManager.openInReadMode({ ...upperCaseFile, bucket })
+            await assertTextEditorContains(lowerCaseFileContent)
         })
     })
 })
