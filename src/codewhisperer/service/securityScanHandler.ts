@@ -147,10 +147,7 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(
-        truncation.zipFilePath,
-        srcResp
-    )
+    await uploadArtifactToS3(truncation.zipFilePath, srcResp)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
@@ -172,22 +169,25 @@ export function throwIfCancelled() {
 
 export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
-    const headersObj = (resp.kmsKeyArn !== '' || resp.kmsKeyArn !== undefined) ? {
-        'Content-MD5': getMd5(fileName),
-        'x-amz-server-side-encryption': 'aws:kms',
-        'Content-Type': 'application/zip',
-        'x-amz-server-side-encryption-aws-kms-key-id': resp.kmsKeyArn,
-        'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64')
-    } : {
-        'Content-MD5': getMd5(fileName),
-        'x-amz-server-side-encryption': 'aws:kms',
-        'Content-Type': 'application/zip',
-        'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64')
-    }
+    const headersObj =
+        resp.kmsKeyArn !== '' || resp.kmsKeyArn !== undefined
+            ? {
+                  'Content-MD5': getMd5(fileName),
+                  'x-amz-server-side-encryption': 'aws:kms',
+                  'Content-Type': 'application/zip',
+                  'x-amz-server-side-encryption-aws-kms-key-id': resp.kmsKeyArn,
+                  'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
+              }
+            : {
+                  'Content-MD5': getMd5(fileName),
+                  'x-amz-server-side-encryption': 'aws:kms',
+                  'Content-Type': 'application/zip',
+                  'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
+              }
     const response = await got(resp.uploadUrl, {
         method: 'PUT',
         body: readFileSync(fileName),
-        headers: headersObj
+        headers: headersObj,
     })
     getLogger().debug(`StatusCode: ${response.statusCode}`)
 }
