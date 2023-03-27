@@ -227,6 +227,8 @@ export const reloadWindowPrompt =
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
 
+export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, since you are in Professional tier`
+
 export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
 export const accessTokenCutOffDate = new Date(2023, 0, 31)
