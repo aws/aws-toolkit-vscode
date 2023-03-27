@@ -1,6 +1,6 @@
 ## Using Amazon CodeWhisperer
 
-CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include **Java, Python, JavaScript, C# and TypeScript**.
+CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include **Java, Python, JavaScript, C# , TypeScript, C, C++, Go, Rust, PHP, Scala, Kotlin, Ruby, Shell and SQL**.
 
 ---
 
@@ -17,6 +17,12 @@ If you don’t like the suggestions you see, keep typing (or hit ESC). The sugge
 **Requesting suggestions manually**
 
 You can request suggestions at any time. Use **Option-C** on Mac or **ALT-C** on Windows. After you receive suggestions, use TAB to accept and arrow keys to navigate.
+
+---
+
+**Customizing keyboard shortcuts**
+
+You can change CodeWhisperer keyboard shortcuts in [Keyboard Shortcuts Editor](https://code.visualstudio.com/docs/getstarted/keybindings). To open Keyboard Shortcuts Editor, go to Settings, and click on Keyboard shortcuts.
 
 ---
 
