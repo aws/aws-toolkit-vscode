@@ -264,8 +264,7 @@ fun GeneralCommandLine.samInitCommand(
 fun GeneralCommandLine.samSyncCommand(
     environmentVariables: Map<String, String>,
     templatePath: Path,
-    settings: SyncServerlessApplicationSettings,
-    syncOnlyCode: Boolean
+    settings: SyncServerlessApplicationSettings
 ) = this.apply {
     withEnvironment(environmentVariables)
     withWorkDirectory(templatePath.toAbsolutePath().parent.toString())
@@ -305,7 +304,6 @@ fun GeneralCommandLine.samSyncCommand(
         addParameter("--use-container")
     }
     addParameter("--no-dependency-layer")
-    if (syncOnlyCode) {
-        addParameter("--code")
-    }
+
+    addParameter("--no-watch")
 }

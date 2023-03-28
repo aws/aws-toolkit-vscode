@@ -16,27 +16,22 @@ import icons.AwsIcons
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
-import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateFileUtils
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateFileUtils.getSamTemplateFile
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateFileUtils.validateTemplateFile
-import software.aws.toolkits.jetbrains.services.lambda.sam.sync.SyncServerlessApplicationExperiment
 import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
 import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.services.lambda.upload.UploadFunctionContinueDialog
@@ -187,18 +182,7 @@ class DeployServerlessApplicationAction : AnAction(
     override fun update(e: AnActionEvent) {
         super.update(e)
 
-        e.presentation.isVisible = if (!SyncServerlessApplicationExperiment.isEnabled()) {
-            // If there are no supported runtime groups, it will never succeed so don't show it
-            if (LambdaHandlerResolver.supportedRuntimeGroups().isEmpty()) {
-                false
-            } else {
-                if (e.place == ToolkitPlaces.EXPLORER_TOOL_WINDOW) {
-                    true
-                } else {
-                    getSamTemplateFile(e) != null
-                }
-            }
-        } else false
+        e.presentation.isVisible = false
     }
 
     private fun saveSettings(project: Project, templateFile: VirtualFile, settings: DeployServerlessApplicationSettings) {

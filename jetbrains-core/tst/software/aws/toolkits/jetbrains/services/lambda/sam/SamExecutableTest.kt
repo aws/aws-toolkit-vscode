@@ -629,8 +629,7 @@ class SamExecutableTest {
                 tags = emptyMap(),
                 useContainer = false,
                 capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = false
+            )
         )
 
         assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
@@ -648,7 +647,8 @@ class SamExecutableTest {
                 "--capabilities",
                 "CAPABILITY_NAMED_IAM",
                 "CAPABILITY_AUTO_EXPAND",
-                "--no-dependency-layer"
+                "--no-dependency-layer",
+                "--no-watch"
             ).joinToString(separator = " ")
         )
     }
@@ -674,8 +674,7 @@ class SamExecutableTest {
                 tags = emptyMap(),
                 useContainer = false,
                 capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = false
+            )
         )
 
         assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
@@ -699,7 +698,8 @@ class SamExecutableTest {
                 """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
                 """ \"Hello4\"=\"It's\" """.trim(),
                 """ \"Hello5\"=\"2+2=22\" """.trim(),
-                "--no-dependency-layer"
+                "--no-dependency-layer",
+                "--no-watch"
             ).joinToString(separator = " ")
         )
     }
@@ -726,8 +726,7 @@ class SamExecutableTest {
                 ),
                 useContainer = false,
                 capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = false
+            )
         )
 
         assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
@@ -752,47 +751,8 @@ class SamExecutableTest {
                 """ \"Hello4\"=\"It's\" """.trim(),
                 """ \"Hello5\"=\"2+2=22\" """.trim(),
                 """ \"Hello;6\"=\"World\" """.trim(),
-                "--no-dependency-layer"
-            ).joinToString(separator = " ")
-        )
-    }
-
-    @Test
-    fun `sam sync command code only is correct`() {
-        val templatePath = tempFolder.newFile("template.yaml").toPath()
-
-        val cmd = GeneralCommandLine("sam").samSyncCommand(
-            environmentVariables = mapOf("Foo" to "Bar"),
-            templatePath = templatePath,
-            SyncServerlessApplicationSettings(
-                stackName = "MyStack",
-                bucket = "myBucket",
-                ecrRepo = null,
-                parameters = emptyMap(),
-                tags = emptyMap(),
-                useContainer = false,
-                capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = true
-        )
-
-        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
-        assertThat(cmd.environment).containsEntry("Foo", "Bar")
-        assertThat(cmd.commandLineString).isEqualTo(
-            listOf(
-                "sam",
-                "sync",
-                "--stack-name",
-                "MyStack",
-                "--template-file",
-                "$templatePath",
-                "--s3-bucket",
-                "myBucket",
-                "--capabilities",
-                "CAPABILITY_NAMED_IAM",
-                "CAPABILITY_AUTO_EXPAND",
                 "--no-dependency-layer",
-                "--code"
+                "--no-watch"
             ).joinToString(separator = " ")
         )
     }
@@ -812,8 +772,7 @@ class SamExecutableTest {
                 tags = emptyMap(),
                 useContainer = true,
                 capabilities = listOf(CreateCapabilities.NAMED_IAM, CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = false
+            )
         )
 
         assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
@@ -832,7 +791,8 @@ class SamExecutableTest {
                 "CAPABILITY_NAMED_IAM",
                 "CAPABILITY_AUTO_EXPAND",
                 "--use-container",
-                "--no-dependency-layer"
+                "--no-dependency-layer",
+                "--no-watch"
             ).joinToString(separator = " ")
         )
     }
@@ -852,8 +812,7 @@ class SamExecutableTest {
                 tags = emptyMap(),
                 useContainer = true,
                 capabilities = listOf(CreateCapabilities.AUTO_EXPAND)
-            ),
-            syncOnlyCode = false
+            )
         )
 
         assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
@@ -871,7 +830,8 @@ class SamExecutableTest {
                 "--capabilities",
                 "CAPABILITY_AUTO_EXPAND",
                 "--use-container",
-                "--no-dependency-layer"
+                "--no-dependency-layer",
+                "--no-watch"
             ).joinToString(separator = " ")
         )
     }
