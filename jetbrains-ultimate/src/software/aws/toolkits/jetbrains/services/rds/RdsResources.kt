@@ -9,6 +9,7 @@ const val POSTGRES_ENGINE_TYPE = "postgres"
 
 const val JDBC_MYSQL = "mysql"
 const val JDBC_MYSQL_AURORA = "mysql:aurora"
+const val JDBC_MARIADB = "mariadb"
 const val JDBC_POSTGRES = "postgresql"
 
 object RdsResources {

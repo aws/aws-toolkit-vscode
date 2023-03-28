@@ -72,6 +72,7 @@ class DatagripUtilsTest {
     fun `jdbcAdapterFromRuntime works`() {
         assertThat(jdbcAdapterFromRuntime("postgres")).isEqualTo("postgresql")
         assertThat(jdbcAdapterFromRuntime("mysql")).isEqualTo("mysql")
+        assertThat(jdbcAdapterFromRuntime("mariadb")).isEqualTo("mariadb")
         assertThat(jdbcAdapterFromRuntime("redshift")).isEqualTo("redshift")
         assertThat(jdbcAdapterFromRuntime("mongo")).isNull()
     }

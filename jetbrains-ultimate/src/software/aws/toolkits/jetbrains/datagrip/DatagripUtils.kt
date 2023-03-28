@@ -13,9 +13,11 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.rds.AuroraMySql
 import software.aws.toolkits.jetbrains.services.rds.AuroraPostgres
+import software.aws.toolkits.jetbrains.services.rds.JDBC_MARIADB
 import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL
 import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL_AURORA
 import software.aws.toolkits.jetbrains.services.rds.JDBC_POSTGRES
+import software.aws.toolkits.jetbrains.services.rds.Maria
 import software.aws.toolkits.jetbrains.services.rds.MySql
 import software.aws.toolkits.jetbrains.services.rds.Postgres
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.JDBC_REDSHIFT
@@ -46,6 +48,7 @@ fun ProtoConnection.getAwsConnectionSettings(): ConnectionSettings {
 fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
     in Postgres.engines -> JDBC_POSTGRES
     in MySql.engines -> JDBC_MYSQL
+    in Maria.engines -> JDBC_MARIADB
     in AuroraMySql.engines -> JDBC_MYSQL_AURORA
     in AuroraPostgres.engines -> JDBC_POSTGRES
     REDSHIFT_ENGINE_TYPE -> JDBC_REDSHIFT
@@ -54,11 +57,11 @@ fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
 
 fun secretsManagerIsApplicable(dataSource: LocalDataSource): Boolean {
     val dbms = dataSource.dbms
-    return dbms == Dbms.MYSQL || dbms == Dbms.POSTGRES || dbms == Dbms.REDSHIFT || dbms == Dbms.MYSQL_AURORA
+    return dbms == Dbms.MYSQL || dbms == Dbms.MARIA || dbms == Dbms.POSTGRES || dbms == Dbms.REDSHIFT || dbms == Dbms.MYSQL_AURORA
 }
 
 fun iamIsApplicable(dataSource: LocalDataSource): Boolean =
-    dataSource.dbms == Dbms.MYSQL || dataSource.dbms == Dbms.POSTGRES || dataSource.dbms == Dbms.MYSQL_AURORA
+    dataSource.dbms == Dbms.MYSQL || dataSource.dbms == Dbms.MARIA || dataSource.dbms == Dbms.POSTGRES || dataSource.dbms == Dbms.MYSQL_AURORA
 
 fun validateIamConfiguration(connection: ProtoConnection) {
     // MariaDB/Mysql aurora will never work if SSL is turned off, so validate and give

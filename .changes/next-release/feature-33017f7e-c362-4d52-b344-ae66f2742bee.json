@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Support for RDS MariaDB instances (#3530)"
+}
