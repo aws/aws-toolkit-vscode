@@ -66,6 +66,7 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.7':
                 case 'python3.8':
                 case 'python3.9':
+                case 'python3.10':
                     assert.deepStrictEqual(
                         result,
                         validPythonTemplateOptions,

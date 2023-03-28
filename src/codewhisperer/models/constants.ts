@@ -142,8 +142,6 @@ export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
-export const termsAcceptedKey = 'CODEWHISPERER_TERMS_ACCEPTED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
@@ -227,6 +225,8 @@ export const reloadWindowPrompt =
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
 
+export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, since you are in Professional tier`
+
 export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
 export const accessTokenCutOffDate = new Date(2023, 0, 31)
@@ -241,8 +241,9 @@ export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
-export const freeTierLimitReached =
-    'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
+export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
+
+export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
 export const throttlingLearnMore = `Learn More`
 

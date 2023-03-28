@@ -16,10 +16,11 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
+import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
+import { asyncCallWithTimeout } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import {
@@ -224,12 +225,11 @@ export class RecommendationHandler {
             getLogger().error('CodeWhisperer Invocation Exception : ', error)
             getLogger().verbose(`CodeWhisperer Invocation Exception : ${error}`)
             if (isAwsError(error)) {
-                const awsError = error as AWSError
-                this.errorMessagePrompt = awsError.message
-                requestId = awsError.requestId || ''
-                errorCode = awsError.code
-                reason = `CodeWhisperer Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
-                await this.onThrottlingException(awsError, triggerType)
+                this.errorMessagePrompt = error.message
+                requestId = error.requestId || ''
+                errorCode = error.code
+                reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
+                await this.onThrottlingException(error, triggerType)
             } else {
                 errorCode = error as string
                 reason = error ? String(error) : 'unknown'
