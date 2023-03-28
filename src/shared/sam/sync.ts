@@ -41,9 +41,10 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl } from '../constants'
+import { samSyncUrl, samInitDocUrl, samAboutInstallUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
+import { showOnce } from '../utilities/messages'
 
 const localize = nls.loadMessageBundle()
 
@@ -312,14 +313,14 @@ async function getSamCliPathAndVersion() {
     }
 
     const info = await new SamCliInfoInvocation(samCliPath).execute()
-    const semverVersion = parse(info.version)
+    const parsedVersion = parse(info.version)
     telemetry.record({ version: info.version })
 
-    if (semverVersion?.compare('1.53.0') === -1) {
+    if (parsedVersion?.compare('1.53.0') === -1) {
         throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
     }
 
-    return { path: samCliPath, version: semverVersion }
+    return { path: samCliPath, parsedVersion }
 }
 
 let oldTerminal: ProcessTerminal | undefined
@@ -381,7 +382,7 @@ async function loadLegacyParameterOverrides(template: TemplateItem) {
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
-    const { path: samCliPath, version } = await getSamCliPathAndVersion()
+    const { path: samCliPath, parsedVersion } = await getSamCliPathAndVersion()
     const { boundArgs } = await saveAndBindArgs(args)
     const overrides = await loadLegacyParameterOverrides(args.template)
     if (overrides !== undefined) {
@@ -393,8 +394,19 @@ export async function runSamSync(args: SyncParams) {
 
     // '--no-watch' was not added until https://github.com/aws/aws-sam-cli/releases/tag/v1.77.0
     // Forcing every user to upgrade will be a headache for what is otherwise a minor problem
-    if (version?.compare('1.77.0') ?? -1 >= 0) {
+    if ((parsedVersion?.compare('1.77.0') ?? -1) >= 0) {
         boundArgs.push('--no-watch')
+    }
+
+    if ((parsedVersion?.compare('1.78.0') ?? 1) < 0) {
+        showOnce('sam.sync.updateMessage', async () => {
+            const openDocsItem = 'Open Installation Documentation'
+            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements. Update to 1.78.0 or higher for faster executions.`
+            const resp = await vscode.window.showInformationMessage(message, openDocsItem)
+            if (resp === openDocsItem) {
+                await openUrl(samAboutInstallUrl)
+            }
+        })
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
