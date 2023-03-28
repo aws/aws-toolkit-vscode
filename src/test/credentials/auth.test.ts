@@ -222,7 +222,7 @@ describe('Auth', function () {
 
         it('prompts the user if the token is invalid or expired', async function () {
             const conn = await setupInvalidSsoConnection(auth, ssoProfile)
-            const token = await runExpiredGetTokenFlow(conn, /Login again/i)
+            const token = await runExpiredGetTokenFlow(conn, /Login/i)
             assert.notStrictEqual(token, undefined)
         })
 

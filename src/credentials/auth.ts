@@ -669,9 +669,9 @@ export class Auth implements AuthService, ConnectionManager {
         // TODO: cancellable notification?
         if (previousState === 'valid') {
             const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
-            const loginAgain = localize('aws.auth.invalidConnection.loginAgain', 'Login again')
-            const resp = await vscode.window.showInformationMessage(message, loginAgain, localizedText.no)
-            if (resp !== loginAgain) {
+            const login = localize('aws.auth.invalidConnection.loginAgain', 'Login')
+            const resp = await vscode.window.showInformationMessage(message, login, localizedText.no)
+            if (resp !== login) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
                     code: 'InvalidConnection',
