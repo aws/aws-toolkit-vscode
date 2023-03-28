@@ -265,6 +265,8 @@ export default defineComponent({
 <style scope>
 .picker {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .source-pickers {
@@ -315,6 +317,8 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 
 #branch-input {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .project-button {
