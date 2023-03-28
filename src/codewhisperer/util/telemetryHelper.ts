@@ -44,8 +44,6 @@ export class TelemetryHelper {
 
     public startUrl: string | undefined
 
-    public decisionQueue: UserDecisionQueue = new UserDecisionQueue(5)
-
     // variables for client component latency
     private invokeSuggestionStartTime = 0
     private fetchCredentialStartTime = 0
@@ -69,6 +67,7 @@ export class TelemetryHelper {
     private lastTriggerDecisionTime = 0
     private invocationTime = 0
     private firstRecommendationTime = 0
+    private classifierResult = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -185,13 +184,6 @@ export class TelemetryHelper {
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
             }
             telemetry.codewhisperer_userDecision.emit(event)
-            if (
-                this.decisionQueue.lastDecisionTime &&
-                Date.now() - this.decisionQueue.lastDecisionTime > 2 * 60 * 1000
-            ) {
-                this.decisionQueue.clear()
-            }
-            this.decisionQueue.push(event, i === recommendations.length - 1)
             events.push(event)
         })
         // aggregate user decision events at requestId level
@@ -270,11 +262,22 @@ export class TelemetryHelper {
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererClassifierResult: autoTriggerType === 'Classifier' ? this.classifierResult : undefined,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
         this.resetUserTriggerDecisionTelemetry()
+    }
+
+    public getLastTriggerDecisionForClassifier() {
+        if (this.lastTriggerDecisionTime && Date.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
+            return this.prevTriggerDecision
+        }
+    }
+
+    public setClassifierResult(classifierResult: number) {
+        this.classifierResult = classifierResult
     }
 
     public setIsRequestCancelled(isRequestCancelled: boolean) {
@@ -448,85 +451,5 @@ export class TelemetryHelper {
             credentialStartUrl: this.startUrl,
         })
         this.resetClientComponentLatencyTime()
-    }
-}
-
-class UserDecisionQueue {
-    public readonly size: number
-
-    private buffer: Map<string, CodewhispererSuggestionState[]> = new Map()
-    private previousN: CodewhispererSuggestionState[] = []
-    public lastDecisionTime?: number
-
-    constructor(size: number) {
-        this.size = size
-    }
-
-    push(event: CodewhispererUserDecision, isLast: boolean = false) {
-        const sessionId = event.codewhispererSessionId
-        const decision = event.codewhispererSuggestionState
-        if (!sessionId) {
-            return
-        }
-
-        if (this.buffer.has(sessionId)) {
-            this.buffer.get(sessionId)?.push(decision)
-        } else {
-            this.buffer.set(sessionId, [decision])
-        }
-        this.lastDecisionTime = Date.now()
-        if (isLast) {
-            this.flush()
-        }
-    }
-
-    clear() {
-        this.buffer = new Map()
-        this.previousN = []
-    }
-
-    flush() {
-        // assert size is strict equal to 1
-        if (this.buffer.size !== 1) {
-            console.error('size is not correct')
-            return
-        }
-        let prevSessionId
-
-        for (const [sessionId, decisions] of this.buffer) {
-            prevSessionId = sessionId
-            this.previousN.push(this.aggregate(decisions))
-            if (this.previousN.length > this.size) {
-                this.previousN = this.previousN.splice(1)
-            }
-        }
-        if (prevSessionId) {
-            this.buffer.delete(prevSessionId)
-        }
-    }
-
-    mostRecentDecision(): CodewhispererSuggestionState | undefined {
-        return this.previousN[this.previousN.length - 1]
-    }
-
-    topNDecision(): CodewhispererSuggestionState[] {
-        return this.previousN
-    }
-
-    // aggregate recommendation level suggestion state to trigger level suggestion state
-    private aggregate(decisions: CodewhispererSuggestionState[]): CodewhispererSuggestionState {
-        let isEmpty = true
-        for (let i = 0; i < decisions.length; i++) {
-            const decision = decisions[i]
-            if (decision === 'Accept') {
-                return 'Accept'
-            } else if (decision === 'Reject') {
-                return 'Reject'
-            } else if (decision !== 'Empty') {
-                isEmpty = false
-            }
-        }
-
-        return isEmpty ? 'Empty' : 'Discard'
     }
 }
