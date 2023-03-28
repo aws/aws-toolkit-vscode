@@ -61,6 +61,7 @@ export interface SyncParams {
 }
 
 export const prefixNewBucketName = (name: string) => `newbucket:${name}`
+export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
 function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
@@ -144,11 +145,11 @@ function createEcrPrompter(client: DefaultEcrClient) {
 
     return createQuickPick(items, {
         title: 'Select an ECR Repository',
-        placeholder: 'Select a repository (or enter repository URI)',
+        placeholder: 'Select a repository (or enter a name to create one)',
         buttons: createCommonButtons(samSyncUrl, consoleUrl),
         filterBoxInputSettings: {
-            label: 'Existing repository URI',
-            transform: v => v,
+            label: 'Create a New Repository',
+            transform: v => prefixNewRepoName(v),
         },
         noItemsFoundItem: {
             label: localize(
@@ -273,6 +274,21 @@ async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
     }
 }
 
+async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
+    const newRepoName = resp.ecrRepoUri?.match(/^newrepo:(.*)/)?.[1]
+    if (newRepoName === undefined) {
+        return resp.ecrRepoUri
+    }
+
+    try {
+        const repo = await new DefaultEcrClient(resp.region).createRepository(newRepoName)
+
+        return repo.repository?.repositoryUri
+    } catch (err) {
+        throw ToolkitError.chain(err, `Failed to create new ECR repository "${newRepoName}"`)
+    }
+}
+
 async function injectCredentials(conn: IamConnection, env = process.env) {
     const creds = await conn.getCredentials()
     return { ...env, ...asEnvironmentVariables(creds) }
@@ -283,7 +299,8 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
         codeOnly: args.deployType === 'code',
         templatePath: args.template.uri.fsPath,
         bucketName: await ensureBucket(args),
-        ...selectFrom(args, 'stackName', 'ecrRepoUri', 'region', 'skipDependencyLayer'),
+        ecrRepoUri: await ensureRepo(args),
+        ...selectFrom(args, 'stackName', 'region', 'skipDependencyLayer'),
     }
 
     await Promise.all([
