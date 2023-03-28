@@ -11,13 +11,14 @@ plugins {
 }
 
 dependencies {
-    api(project(":jetbrains-core", "instrumentedJar"))
+    compileOnly(project(":jetbrains-core"))
+    runtimeOnly(project(":jetbrains-core", "instrumentedJar"))
 
+    testCompileOnly(project(":jetbrains-core"))
+    testRuntimeOnly(project(":jetbrains-core", "instrumentedJar"))
     testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation(libs.mockk)
-
-    integrationTestImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
 }
 
 intellijToolkit {

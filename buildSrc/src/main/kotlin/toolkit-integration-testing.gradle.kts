@@ -18,12 +18,12 @@ sourceSets {
     }
 }
 
-configurations.getByName("integrationTestImplementation") {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME))
+configurations.getByName("integrationTestCompileClasspath") {
+    extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
     isCanBeResolved = true
 }
-configurations.getByName("integrationTestRuntimeOnly") {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_ONLY_CONFIGURATION_NAME))
+configurations.getByName("integrationTestRuntimeClasspath") {
+    extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
     isCanBeResolved = true
 }
 
