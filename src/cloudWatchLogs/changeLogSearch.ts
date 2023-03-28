@@ -38,7 +38,8 @@ export async function getNewData(
         case 'filterPattern':
             newPattern = await showInputBox({
                 title: oldData.logGroupInfo.streamName ? 'Filter Log Stream' : 'Search Log Group',
-                placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
+                placeholder: 'Enter Text Here',
+                value: oldData.parameters.filterPattern ?? undefined,
             })
             if (newPattern === undefined) {
                 return
@@ -47,7 +48,7 @@ export async function getNewData(
             break
 
         case 'timeFilter':
-            newTimeRange = (await new TimeFilterSubmenu().prompt()) as TimeFilterResponse
+            newTimeRange = (await new TimeFilterSubmenu(oldData.parameters).prompt()) as TimeFilterResponse
             if (newTimeRange === undefined) {
                 return
             }

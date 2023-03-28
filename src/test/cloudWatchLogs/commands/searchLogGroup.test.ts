@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { createSearchPatternPrompter, SearchLogGroupWizard } from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { CloudWatchLogsGroupInfo, CloudWatchLogsParameters } from '../../../cloudWatchLogs/registry/logDataRegistry'
-import { TimeFilterSubmenu } from '../../../cloudWatchLogs/timeFilterSubmenu'
+import { TimeFilterResponse, TimeFilterSubmenu } from '../../../cloudWatchLogs/timeFilterSubmenu'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { getTestWindow } from '../../shared/vscode/window'
 import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
@@ -91,6 +91,42 @@ describe('searchLogGroup', async function () {
                 assert(!testTimeRangeMenu.validateDate('2000/12/01-2001/10/03'))
                 assert(!testTimeRangeMenu.validateDate('2022/01/01-2022/05/03'))
                 assert(!testTimeRangeMenu.validateDate('2000/12/01-2099/10/03')) // Future date.
+            })
+        })
+
+        it('uses previously selected range', async function () {
+            const january1st = 1672531200000
+            const january10th = 1673308800000
+            // Has previous selection range from Jan 1st to Jan 10th
+            const prompter = new TimeFilterSubmenu({ startTime: january1st, endTime: january10th })
+
+            getTestWindow().onDidShowQuickPick(input => {
+                input.acceptItem('Custom time range')
+            })
+
+            getTestWindow().onDidShowInputBox(input => {
+                // Should be our previously selected range
+                input.acceptValue(input.value)
+            })
+
+            const res = (await prompter.prompt()) as TimeFilterResponse
+
+            assert.strictEqual(res.start, january1st)
+            assert.strictEqual(res.end, january10th)
+        })
+
+        describe('formatTimesToDateRange()', async function () {
+            it('converts valid start and end milliseconds', async function () {
+                assert.strictEqual(
+                    testTimeRangeMenu.formatTimesToDateRange(1672578000000, 1673355600000),
+                    '2023/01/01-2023/01/10'
+                )
+            })
+
+            it('returns undefined on missing input', function () {
+                assert.strictEqual(testTimeRangeMenu.formatTimesToDateRange(undefined, Date.now()), undefined)
+                assert.strictEqual(testTimeRangeMenu.formatTimesToDateRange(Date.now(), undefined), undefined)
+                assert.strictEqual(testTimeRangeMenu.formatTimesToDateRange(undefined, undefined), undefined)
             })
         })
     })
