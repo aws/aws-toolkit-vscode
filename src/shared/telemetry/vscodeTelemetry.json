@@ -73,24 +73,6 @@
             "metadata": [{ "type": "result" }, { "type": "cli" }]
         },
         {
-            "name": "aws_refreshCredentials",
-            "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
-            "passive": true,
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "credentialType",
-                    "required": false
-                },
-                {
-                    "type": "credentialSourceId",
-                    "required": false
-                }
-            ]
-        },
-        {
             "name": "ssm_createDocument",
             "description": "An SSM Document is created locally",
             "unit": "None",

@@ -134,9 +134,11 @@ describe('Auth', function () {
         assert.strictEqual(auth.activeConnection, undefined)
     })
 
-    it('throws when creating a duplicate connection', async function () {
-        await auth.createConnection(ssoProfile)
-        await assert.rejects(() => auth.createConnection(ssoProfile))
+    it('does not throw when creating a duplicate connection', async function () {
+        const initialConn = await auth.createConnection({ ...ssoProfile, scopes: ['a'] })
+        const duplicateConn = await auth.createConnection({ ...ssoProfile, scopes: ['b'] })
+        assert.deepStrictEqual(initialConn.scopes, ['a'])
+        assert.deepStrictEqual(duplicateConn.scopes, ['a', 'b'])
     })
 
     it('throws when using an invalid connection that was deleted', async function () {

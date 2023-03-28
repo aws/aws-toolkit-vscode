@@ -21,6 +21,12 @@ import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { SsoConnection } from '../../credentials/auth'
 import { TokenProvider } from '../../credentials/sdkV2Compat'
+import { Uri } from 'vscode'
+import {
+    GetSourceRepositoryCloneUrlsRequest,
+    ListSourceRepositoriesItem,
+    ListSourceRepositoriesItems,
+} from 'aws-sdk/clients/codecatalyst'
 
 // REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
@@ -411,12 +417,33 @@ class CodeCatalystClientInternal {
 
     /**
      * Gets a flat list of all repos for the given CodeCatalyst user.
+     * @param thirdParty If you want to include 3P (eg github) results in
+     *                   your output.
      */
     public listSourceRepositories(
-        request: CodeCatalyst.ListSourceRepositoriesRequest
+        request: CodeCatalyst.ListSourceRepositoriesRequest,
+        thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) =>
-            this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
+            const allRepositories = this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+            let finalRepositories = allRepositories
+
+            // Filter out 3P repos
+            if (!thirdParty) {
+                finalRepositories = allRepositories.then(async repos => {
+                    repos.items = await excludeThirdPartyRepos(
+                        this,
+                        request.spaceName,
+                        request.projectName,
+                        repos.items
+                    )
+                    return repos
+                })
+            }
+
+            return finalRepositories
+        }
+
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
             summaries =>
@@ -445,12 +472,17 @@ class CodeCatalystClientInternal {
 
     /**
      * Lists ALL of the given resource in the current account
+     *
+     * @param thirdParty If you want 3P repos in the result.
      */
     public listResources(resourceType: 'org'): AsyncCollection<CodeCatalystOrg[]>
     public listResources(resourceType: 'project'): AsyncCollection<CodeCatalystProject[]>
-    public listResources(resourceType: 'repo'): AsyncCollection<CodeCatalystRepo[]>
+    public listResources(resourceType: 'repo', thirdParty?: boolean): AsyncCollection<CodeCatalystRepo[]>
     public listResources(resourceType: 'devEnvironment'): AsyncCollection<DevEnvironment[]>
-    public listResources(resourceType: CodeCatalystResource['type']): AsyncCollection<CodeCatalystResource[]> {
+    public listResources(
+        resourceType: CodeCatalystResource['type'],
+        ...args: any[]
+    ): AsyncCollection<CodeCatalystResource[]> {
         function mapInner<T, U>(
             collection: AsyncCollection<T[]>,
             fn: (element: T) => AsyncCollection<U[]>
@@ -465,7 +497,7 @@ class CodeCatalystClientInternal {
                 return mapInner(this.listResources('org'), o => this.listProjects({ spaceName: o.name }))
             case 'repo':
                 return mapInner(this.listResources('project'), p =>
-                    this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name })
+                    this.listSourceRepositories({ projectName: p.name, spaceName: p.org.name }, ...args)
                 )
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
@@ -481,13 +513,14 @@ class CodeCatalystClientInternal {
     }
 
     /**
-     * Gets the git source host URL for the given CodeCatalyst repo.
+     * Gets the git source host URL for the given CodeCatalyst or third-party repo.
      */
     public async getRepoCloneUrl(args: CodeCatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
         const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
 
         // The git extension skips over credential providers if the username is included in the authority
-        return `https://${r.https.replace(/.*@/, '')}`
+        const uri = Uri.parse(r.https)
+        return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString()
     }
 
     public async createDevEnvironment(args: CodeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
@@ -559,64 +592,107 @@ class CodeCatalystClientInternal {
     public async startDevEnvironmentWithProgress(
         args: CodeCatalyst.StartDevEnvironmentRequest,
         status: string,
-        timeout: Timeout = new Timeout(180000)
+        timeout: Timeout = new Timeout(1000 * 60 * 60)
     ): Promise<DevEnvironment> {
-        let lastStatus: undefined | string
+        // Track the status changes chronologically so that we can
+        // 1. reason about hysterisis (weird flip-flops)
+        // 2. have visibility in the logs
+        const lastStatus = new Array<{ status: string; start: number }>()
+        let alias: string | undefined
+
         try {
             const devenv = await this.getDevEnvironment(args)
-            lastStatus = devenv.status
-            if (status === 'RUNNING' && lastStatus === 'RUNNING') {
+            alias = devenv.alias
+            lastStatus.push({ status: devenv.status, start: Date.now() })
+            if (status === 'RUNNING' && devenv.status === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
                 return devenv
             }
         } catch {
-            lastStatus = undefined
+            lastStatus.length = 0
+        }
+
+        function statusesToString() {
+            let s = ''
+            for (let i = 0; i < lastStatus.length; i++) {
+                const item = lastStatus[i]
+                const nextItem = i < lastStatus.length - 1 ? lastStatus[i + 1] : undefined
+                const nextTime = nextItem ? nextItem.start : Date.now()
+                const elapsed = nextTime - item.start
+                s += `${s ? ' ' : ''}${item.status}/${elapsed}ms`
+            }
+            return `[${s}]`
+        }
+
+        const doLog = (kind: 'debug' | 'info', msg: string) => {
+            const name = (alias ? alias : args.id).substring(0, 19)
+            const fmt = `${msg} (time: %d s): %s %s`
+            if (kind === 'debug') {
+                this.log.debug(fmt, timeout.elapsedTime / 1000, name, statusesToString())
+            } else {
+                this.log.info(fmt, timeout.elapsedTime / 1000, name, statusesToString())
+            }
         }
 
         const progress = await showMessageWithCancel(
-            localize('AWS.CodeCatalyst.startMde.message', 'CodeCatalyst'),
+            localize('AWS.CodeCatalyst.devenv.message', 'CodeCatalyst'),
             timeout
         )
-        progress.report({ message: localize('AWS.CodeCatalyst.startMde.checking', 'checking status...') })
+        progress.report({ message: localize('AWS.CodeCatalyst.devenv.checking', 'checking status...') })
 
         const pollDevEnv = waitUntil(
             async () => {
-                this.log.debug(
-                    'devenv not started, waiting (time: %d seconds): %s',
-                    timeout.elapsedTime / 1000,
-                    args.id
-                )
+                doLog('debug', 'devenv not started, waiting')
                 // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
                     return
                 }
 
                 const resp = await this.getDevEnvironment(args)
-                if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
+                const startingStates = lastStatus.filter(o => o.status === 'STARTING').length
+                if (
+                    startingStates > 1 &&
+                    lastStatus[0].status === 'STARTING' &&
+                    (resp.status === 'STOPPED' || resp.status === 'STOPPING')
+                ) {
                     throw new ToolkitError('Dev Environment failed to start', { code: 'BadDevEnvState' })
                 }
 
                 if (resp.status === 'STOPPED') {
                     progress.report({
-                        message: localize('AWS.CodeCatalyst.startMde.stopStart', 'Resuming Dev Environment...'),
+                        message: localize('AWS.CodeCatalyst.devenv.stopStart', 'Resuming Dev Environment...'),
                     })
-                    await this.startDevEnvironment(args)
+                    try {
+                        await this.startDevEnvironment(args)
+                    } catch (e) {
+                        const err = e as AWS.AWSError
+                        // May happen after "Update Dev Environment":
+                        //      ConflictException: "Cannot start Dev Environment because update process is still going on"
+                        // Continue retrying in that case.
+                        if (err.code === 'ConflictException') {
+                            doLog('debug', 'devenv not started (ConflictException), waiting')
+                        } else {
+                            throw new ToolkitError('Dev Environment failed to start', {
+                                code: 'BadDevEnvState',
+                                cause: err,
+                            })
+                        }
+                    }
                 } else if (resp.status === 'STOPPING') {
                     progress.report({
-                        message: localize(
-                            'AWS.CodeCatalyst.startMde.resuming',
-                            'Waiting for Dev Environment to stop...'
-                        ),
+                        message: localize('AWS.CodeCatalyst.devenv.resuming', 'Waiting for Dev Environment to stop...'),
                     })
                 } else if (resp.status === 'FAILED') {
                     throw new ToolkitError('Dev Environment failed to start', { code: 'FailedDevEnv' })
                 } else {
                     progress.report({
-                        message: localize('AWS.CodeCatalyst.startMde.starting', 'Opening Dev Environment...'),
+                        message: localize('AWS.CodeCatalyst.devenv.starting', 'Opening Dev Environment...'),
                     })
                 }
 
-                lastStatus = resp.status
+                if (lastStatus[lastStatus.length - 1].status !== resp.status) {
+                    lastStatus.push({ status: resp.status, start: Date.now() })
+                }
                 return resp.status === 'RUNNING' ? resp : undefined
             },
             // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
@@ -625,10 +701,58 @@ class CodeCatalystClientInternal {
 
         const devenv = await waitTimeout(pollDevEnv, timeout)
         if (!devenv) {
+            doLog('info', 'devenv failed to start')
             throw new ToolkitError('Dev Environment failed to start', { code: 'Timeout' })
         }
-        this.log.info('devenv started after %d seconds: %s', timeout.elapsedTime / 1000, args.id)
+        doLog('info', 'devenv started')
 
         return devenv
     }
+}
+
+/**
+ * Returns only the first-party repos from the given
+ * list of repository items.
+ */
+export async function excludeThirdPartyRepos(
+    client: CodeCatalystClient,
+    spaceName: CodeCatalystOrg['name'],
+    projectName: CodeCatalystProject['name'],
+    items?: Pick<ListSourceRepositoriesItem, 'name'>[]
+): Promise<ListSourceRepositoriesItems | undefined> {
+    if (items === undefined) {
+        return items
+    }
+
+    // Filter out 3P repos.
+    return (
+        await Promise.all(
+            items.map(async item => {
+                return (await isThirdPartyRepo(client, {
+                    spaceName,
+                    projectName,
+                    sourceRepositoryName: item.name,
+                }))
+                    ? undefined
+                    : item
+            })
+        )
+    ).filter(item => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+}
+
+/**
+ * Determines if a repo is third party (3P) compared to first party (1P).
+ *
+ * 1P is CodeCatalyst, 3P is something like Github.
+ */
+export async function isThirdPartyRepo(
+    client: CodeCatalystClient,
+    codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest
+): Promise<boolean> {
+    const url = await client.getRepoCloneUrl(codeCatalystRepo)
+    // TODO: Make more robust to work with getCodeCatalystConfig().
+    return (
+        !Uri.parse(url).authority.endsWith('codecatalyst.aws') &&
+        !Uri.parse(url).authority.endsWith('caws.dev-tools.aws.dev')
+    )
 }
