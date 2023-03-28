@@ -241,8 +241,9 @@ export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
-export const freeTierLimitReached =
-    'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
+export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
+
+export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
 export const throttlingLearnMore = `Learn More`
 

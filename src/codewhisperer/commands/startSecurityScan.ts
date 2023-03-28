@@ -29,6 +29,7 @@ import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { isAwsError } from '../../shared/errors'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -181,6 +182,16 @@ export async function startSecurityScan(
         } else {
             errorPromptHelper(error as Error)
             codeScanTelemetryEntry.result = 'Failed'
+        }
+
+        if (isAwsError(error)) {
+            if (
+                error.code === 'ThrottlingException' &&
+                error.message.includes(CodeWhispererConstants.throttlingMessage)
+            ) {
+                vscode.window.showErrorMessage(CodeWhispererConstants.freeTierLimitReachedCodeScan)
+                await vscode.commands.executeCommand('aws.codeWhisperer.refresh', true)
+            }
         }
         codeScanTelemetryEntry.reason = (error as Error).message
     } finally {

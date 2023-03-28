@@ -24,15 +24,6 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
     })
 }
 
-export function isAwsError(error: any): boolean {
-    return (
-        typeof error?.name === 'string' &&
-        typeof error.message === 'string' &&
-        typeof error.code === 'string' &&
-        error.time instanceof Date
-    )
-}
-
 export function isInlineCompletionEnabled() {
     return semver.gte(vscode.version, '1.68.0') && getInlineSuggestEnabled() && !isCloud9()
 }
