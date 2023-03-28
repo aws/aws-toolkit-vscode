@@ -38,6 +38,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.UiTelemetry
+import java.io.IOException
 import javax.swing.JComponent
 
 data class ConnectionDialogCustomizer(
@@ -117,7 +118,7 @@ open class ToolkitAddConnectionDialog(
             try {
                 // Edge case when user choose SSO but enter AWS Builder ID url
                 if (loginType == LoginOptions.SSO && startUrl == SONO_URL) {
-                    error("User should not do SSO login with AWS Builder ID url")
+                    error("User should not perform Identity Center login with AWS Builder ID url")
                 }
 
                 val scopes = if (loginType == LoginOptions.AWS_BUILDER_ID) {
@@ -133,11 +134,19 @@ open class ToolkitAddConnectionDialog(
                 }
             } catch (e: Exception) {
                 val message = when (e) {
+                    is IllegalStateException -> e.message ?: message("general.unknown_error")
                     is ProcessCanceledException -> message("codewhisperer.credential.login.dialog.exception.cancel_login")
                     is InvalidGrantException -> message("codewhisperer.credential.login.exception.invalid_grant")
                     is InvalidRequestException -> message("codewhisperer.credential.login.exception.invalid_input")
                     is SsoOidcException -> message("codewhisperer.credential.login.exception.general.oidc")
-                    else -> message("codewhisperer.credential.login.exception.general")
+                    else -> {
+                        val baseMessage = when (e) {
+                            is IOException -> "codewhisperer.credential.login.exception.io"
+                            else -> "codewhisperer.credential.login.exception.general"
+                        }
+
+                        message(baseMessage, "${e.javaClass.name}: ${e.message}")
+                    }
                 }
                 LOG.warn(e) { message }
                 setErrorText(message)
