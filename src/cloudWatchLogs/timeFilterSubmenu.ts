@@ -5,11 +5,12 @@
 
 import { Prompter, PromptResult } from '../shared/ui/prompter'
 import { InputBoxPrompter } from '../shared/ui/inputPrompter'
-import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } from '../shared/ui/pickerPrompter'
+import { QuickPickPrompter, DataQuickPickItem, createQuickPick } from '../shared/ui/pickerPrompter'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { isValidResponse, StepEstimator } from '../shared/wizards/wizard'
 import { createCommonButtons } from '../shared/ui/buttons'
 import * as nls from 'vscode-nls'
+import { CloudWatchLogsParameters } from './registry/logDataRegistry'
 
 const localize = nls.loadMessageBundle()
 
@@ -31,11 +32,11 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     private steps?: [current: number, total: number]
     public defaultPrompter: QuickPickPrompter<typeof customRange | number> = this.createMenuPrompter()
 
-    public constructor() {
+    public constructor(private readonly oldData?: Pick<CloudWatchLogsParameters, 'startTime' | 'endTime'>) {
         super()
     }
 
-    private get recentTimeItems(): ItemLoadTypes<number> {
+    private get recentTimeItems(): DataQuickPickItem<number>[] {
         const options: DataQuickPickItem<number>[] = []
         options.push({
             label: 'Any time',
@@ -86,6 +87,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         return createInputBox({
             title: 'Enter custom date range',
             placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
+            value: this.formatTimesToDateRange(this.oldData?.startTime, this.oldData?.endTime),
             validateInput: input => this.validateDate(input),
             buttons: createCommonButtons(),
         })
@@ -107,7 +109,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     } else {
-                        return resp
+                        return undefined
                     }
 
                     break
@@ -115,7 +117,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                 case 'custom-range': {
                     const resp = await this.createDateBox().prompt()
                     if (isValidResponse(resp)) {
-                        const [startTime, endTime] = this.parseDate(resp)
+                        const [startTime, endTime] = this.parseDateRange(resp)
 
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     }
@@ -158,9 +160,36 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         this.steps = [current, total]
     }
 
-    private parseDate(resp: string) {
+    private parseDateRange(resp: string) {
         const parts = resp.split('-')
-        return [new Date(parts[0]), new Date(parts[1])]
+
+        return [this.parseDate(parts[0]), this.parseDate(parts[1])]
+    }
+
+    private parseDate(date: string) {
+        const [year, month, day] = date.split('/').map(Number)
+        return new Date(Date.UTC(year, month - 1, day))
+    }
+
+    /**
+     * Formats a given start and end time in milliseconds to
+     * a string in the format 'YYYY/MM/DD-YYYY/MM/DD'
+     *
+     * Returns undefined if any of the times are not provided.
+     */
+    public formatTimesToDateRange(startTimeMillis?: number, endTimeMillis?: number): string | undefined {
+        if (startTimeMillis === undefined || endTimeMillis === undefined) {
+            return undefined
+        }
+        const startDate = new Date(startTimeMillis)
+        const endDate = new Date(endTimeMillis)
+
+        // Convert to string with format: YYYY/MM/DD
+        const allDashes = new RegExp('-', 'g')
+        const formattedStartDate = startDate.toISOString().split('T')[0].replace(allDashes, '/')
+        const formattedEndDate = endDate.toISOString().split('T')[0].replace(allDashes, '/')
+
+        return `${formattedStartDate}-${formattedEndDate}`
     }
 
     // Unused
