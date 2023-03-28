@@ -1,0 +1,4 @@
+{
+  "type" : "deprecation",
+  "description" : "An upcoming release will remove support for IDEs based on the 2022.1 platform"
+}
