@@ -41,7 +41,7 @@ import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
-import { samSyncUrl, samInitDocUrl, samAboutInstallUrl } from '../constants'
+import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
@@ -400,11 +400,11 @@ export async function runSamSync(args: SyncParams) {
 
     if ((parsedVersion?.compare('1.78.0') ?? 1) < 0) {
         showOnce('sam.sync.updateMessage', async () => {
-            const openDocsItem = 'Open Installation Documentation'
-            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements. Update to 1.78.0 or higher for faster executions.`
+            const openDocsItem = 'Open Upgrade Documentation'
+            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements for "sam sync". Update to 1.78.0 or higher for faster executions.`
             const resp = await vscode.window.showInformationMessage(message, openDocsItem)
             if (resp === openDocsItem) {
-                await openUrl(samAboutInstallUrl)
+                await openUrl(samUpgradeUrl)
             }
         })
     }
