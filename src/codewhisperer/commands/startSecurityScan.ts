@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
@@ -35,6 +36,8 @@ const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisper
 const codeScanLogger = makeLogger({
     outputChannels: [securityScanOutputChannel],
 })
+const localize = nls.loadMessageBundle()
+export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
@@ -244,12 +247,8 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
 
 export async function confirmStopSecurityScan() {
     // Confirm if user wants to stop security scan
-    const resp = await vscode.window.showWarningMessage(
-        CodeWhispererConstants.stopScanMessage,
-        CodeWhispererConstants.stopScanBtn,
-        cancel
-    )
-    if (resp === CodeWhispererConstants.stopScanBtn && codeScanState.isRunning()) {
+    const resp = await vscode.window.showWarningMessage(CodeWhispererConstants.stopScanMessage, stopScanButton, cancel)
+    if (resp === stopScanButton && codeScanState.isRunning()) {
         getLogger().verbose('User requested to stop security scan. Stopping security scan.')
         codeScanState.setToCancelling()
     }

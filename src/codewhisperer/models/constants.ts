@@ -279,5 +279,3 @@ export const stopScanMessage =
     'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
 
 export const showScannedFilesMessage = 'Show Scanned Files'
-
-export const stopScanBtn = 'Stop Scan'

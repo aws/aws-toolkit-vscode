@@ -25,7 +25,6 @@ import {
     codeScanLogsOutputChannelId,
     showScannedFilesMessage,
     stopScanMessage,
-    stopScanBtn,
 } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 
@@ -191,7 +190,7 @@ describe('startSecurityScan', function () {
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {
             if (message.message === stopScanMessage) {
-                message.selectItem(stopScanBtn)
+                message.selectItem(startSecurityScan.stopScanButton)
             }
         })
         model.codeScanState.setToRunning()
