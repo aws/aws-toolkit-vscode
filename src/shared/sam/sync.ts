@@ -305,20 +305,21 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     return { boundArgs }
 }
 
-async function getSamCliPath() {
+async function getSamCliPathAndVersion() {
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
         throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
     }
 
     const info = await new SamCliInfoInvocation(samCliPath).execute()
+    const semverVersion = parse(info.version)
     telemetry.record({ version: info.version })
 
-    if (parse(info.version)?.compare('1.53.0') === -1) {
+    if (semverVersion?.compare('1.53.0') === -1) {
         throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
     }
 
-    return samCliPath
+    return { path: samCliPath, version: semverVersion }
 }
 
 let oldTerminal: ProcessTerminal | undefined
@@ -380,7 +381,7 @@ async function loadLegacyParameterOverrides(template: TemplateItem) {
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
-    const samCliPath = await getSamCliPath()
+    const { path: samCliPath, version } = await getSamCliPathAndVersion()
     const { boundArgs } = await saveAndBindArgs(args)
     const overrides = await loadLegacyParameterOverrides(args.template)
     if (overrides !== undefined) {
@@ -388,6 +389,12 @@ export async function runSamSync(args: SyncParams) {
         // implementation. Plus we would have to redefine `sam_sync` to add it.
         telemetry.record({ isUsingTemplatesJson: true } as any)
         boundArgs.push('--parameter-overrides', ...overrides)
+    }
+
+    // '--no-watch' was not added until https://github.com/aws/aws-sam-cli/releases/tag/v1.77.0
+    // Forcing every user to upgrade will be a headache for what is otherwise a minor problem
+    if (version?.compare('1.77.0') ?? -1 >= 0) {
+        boundArgs.push('--no-watch')
     }
 
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
@@ -514,14 +521,6 @@ export function registerSync() {
             autoconnect: true,
         },
         (arg?: unknown) => telemetry.sam_sync.run(() => runSync('infra', arg))
-    )
-
-    Commands.register(
-        {
-            id: 'aws.samcli.syncCode',
-            autoconnect: true,
-        },
-        (arg?: unknown) => telemetry.sam_sync.run(() => runSync('code', arg))
     )
 
     const settings = SamCliSettings.instance
