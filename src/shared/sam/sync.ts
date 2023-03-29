@@ -417,11 +417,16 @@ export async function runSamSync(args: SyncParams) {
 
     if ((parsedVersion?.compare('1.78.0') ?? 1) < 0) {
         showOnce('sam.sync.updateMessage', async () => {
+            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements for "sam sync". Update to 1.78.0 or higher for faster deployments.`
+            const learnMoreUrl = vscode.Uri.parse(
+                'https://aws.amazon.com/about-aws/whats-new/2023/03/aws-toolkits-jetbrains-vs-code-sam-accelerate/'
+            )
             const openDocsItem = 'Open Upgrade Documentation'
-            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements for "sam sync". Update to 1.78.0 or higher for faster executions.`
-            const resp = await vscode.window.showInformationMessage(message, openDocsItem)
+            const resp = await vscode.window.showInformationMessage(message, localizedText.learnMore, openDocsItem)
             if (resp === openDocsItem) {
                 await openUrl(samUpgradeUrl)
+            } else if (resp === localizedText.learnMore) {
+                await openUrl(learnMoreUrl)
             }
         })
     }
