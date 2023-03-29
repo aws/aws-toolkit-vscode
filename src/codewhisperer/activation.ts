@@ -66,6 +66,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
+    } else {
+        determineIsClassifierEnabled()
     }
     /**
      * CodeWhisperer security panel
@@ -220,6 +222,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
+    }
+
+    function determineIsClassifierEnabled() {
+        const isClassifierEnabled = context.extensionContext.globalState.get<boolean | undefined>(
+            CodeWhispererConstants.isClassifierEnabledKey
+        )
+        if (isClassifierEnabled === undefined) {
+            const result = Math.random() <= 0.4
+            context.extensionContext.globalState.update(CodeWhispererConstants.isClassifierEnabledKey, result)
+        }
     }
 
     async function showAccessTokenMigrationDialogue() {

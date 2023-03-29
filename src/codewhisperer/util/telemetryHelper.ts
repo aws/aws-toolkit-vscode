@@ -67,6 +67,7 @@ export class TelemetryHelper {
     private lastTriggerDecisionTime = 0
     private invocationTime = 0
     private firstRecommendationTime = 0
+    private classifierResult?: number = undefined
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -234,12 +235,13 @@ export class TelemetryHelper {
 
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
+        const language = this.sessionDecisions[0].codewhispererLanguage
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
             credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             codewhispererCompletionType: this.getAggregatedCompletionType(this.sessionDecisions),
-            codewhispererLanguage: this.sessionDecisions[0].codewhispererLanguage,
+            codewhispererLanguage: language,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
             codewhispererSuggestionCount: this.sessionDecisions
                 .map(e => e.codewhispererSuggestionCount)
@@ -261,11 +263,22 @@ export class TelemetryHelper {
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
+            codewhispererClassifierResult: language === 'java' ? this.classifierResult : undefined,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
         this.resetUserTriggerDecisionTelemetry()
+    }
+
+    public getLastTriggerDecisionForClassifier() {
+        if (this.lastTriggerDecisionTime && Date.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
+            return this.prevTriggerDecision
+        }
+    }
+
+    public setClassifierResult(classifierResult: number) {
+        this.classifierResult = classifierResult
     }
 
     public setIsRequestCancelled(isRequestCancelled: boolean) {

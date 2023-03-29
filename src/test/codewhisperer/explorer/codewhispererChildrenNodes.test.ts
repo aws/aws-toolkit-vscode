@@ -5,14 +5,14 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { 
+import {
     createEnableCodeSuggestionsNode,
-    createAutoSuggestionsNode, 
-    createOpenReferenceLogNode, 
-    createSecurityScanNode, 
-    createSsoSignIn, 
+    createAutoSuggestionsNode,
+    createOpenReferenceLogNode,
+    createSecurityScanNode,
+    createSsoSignIn,
     createLearnMore,
-    createFreeTierLimitMetNode 
+    createFreeTierLimitMetNode,
 } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
 
 describe('codewhisperer children nodes', function () {
@@ -62,4 +62,3 @@ describe('codewhisperer children nodes', function () {
         assert.strictEqual(node.resource.id, 'aws.codeWhisperer.freeTierLimit')
     })
 })
-    
