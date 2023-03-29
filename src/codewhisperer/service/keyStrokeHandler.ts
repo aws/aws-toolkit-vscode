@@ -158,6 +158,9 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
+                if (isClassifierSupportedLanguage) {
+                    ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
+                }
                 if (changedSource === DocumentChangedSource.SpecialCharsKey) {
                     TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(event.contentChanges[0].text)
                 }

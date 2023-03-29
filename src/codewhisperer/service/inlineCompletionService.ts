@@ -316,12 +316,14 @@ export class InlineCompletionService {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
         ImportAdderProvider.instance.clear()
+        this.disposeInlineCompletion()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
             ImportAdderProvider.instance.clear()
+            this.disposeInlineCompletion()
         }
     }
 
