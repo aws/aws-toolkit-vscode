@@ -625,7 +625,9 @@ class CodeCatalystClientInternal {
         }
 
         const doLog = (kind: 'debug' | 'error' | 'info', msg: string) => {
-            const fmt = `${msg} (time: %ds${startAttempts <= 1 ? '' : ', startAttempts: ' + startAttempts}): %s %s`
+            const fmt = `${msg} (time: %ds${
+                startAttempts <= 1 ? '' : ', startAttempts: ' + startAttempts.toString()
+            }): %s %s`
             if (kind === 'debug') {
                 this.log.debug(fmt, timeout.elapsedTime / 1000, getName(), statusesToString())
             } else if (kind === 'error') {
