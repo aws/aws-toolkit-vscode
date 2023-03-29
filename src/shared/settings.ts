@@ -544,6 +544,8 @@ const devSettings = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    reportRequestIds: Boolean,
+    renderDebugDetails: Boolean,
     endpoints: Record(String, String),
     cawsStage: String,
 }
