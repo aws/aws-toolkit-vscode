@@ -22,7 +22,7 @@ import {
     throwIfCancelled,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { codeScanState, CodeScanStoppedError, CodeScanTelemetryEntry } from '../models/model'
+import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { cancel, ok, viewSettings } from '../../shared/localizedText'
 import { statSync } from 'fs'
@@ -167,6 +167,7 @@ export async function startSecurityScan(
             return accumulator + current.issues.length
         }, 0)
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
+        throwIfCancelled()
         getLogger().verbose(`Security scan totally found ${total} issues.`)
         if (isCloud9()) {
             securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
@@ -180,7 +181,7 @@ export async function startSecurityScan(
         getLogger().verbose(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed.', error)
-        if (error instanceof CodeScanStoppedError) {
+        if (codeScanState.isCancelling()) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
             errorPromptHelper(error as Error)
