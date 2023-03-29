@@ -675,10 +675,10 @@ class CodeCatalystClientInternal {
                     lastStatus &&
                     ['STOPPED', 'FAILED'].includes(lastStatus.status) &&
                     ['STOPPED', 'FAILED'].includes(resp.status) &&
-                    elapsed > 10000 &&
+                    elapsed > 60000 &&
                     startAttempts > 2
                 ) {
-                    // If still STOPPED/FAILED after 10+ seconds, don't keep retrying for 1 hour...
+                    // If still STOPPED/FAILED after 60+ seconds, don't keep retrying for 1 hour...
                     throw new ToolkitError(failedStartMsg(), { code: 'FailedDevEnv' })
                 } else if (['STOPPED', 'FAILED'].includes(resp.status)) {
                     progress.report({
