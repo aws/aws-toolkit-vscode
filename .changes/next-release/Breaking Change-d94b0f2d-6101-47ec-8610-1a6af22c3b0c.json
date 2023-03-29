@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "\"Sync SAM Application\" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode."
-}
