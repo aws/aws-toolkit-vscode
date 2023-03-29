@@ -665,7 +665,7 @@ class CodeCatalystClientInternal {
                 }
 
                 const lastStatus = statuses[statuses.length - 1]
-                const elapsed = Date.now() - item.start
+                const elapsed = Date.now() - lastStatus.start
                 const resp = await this.getDevEnvironment(args)
                 alias = resp.alias
 
