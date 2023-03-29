@@ -235,7 +235,7 @@ async function verifySSHHost({
 
         const confirmTitle = localize(
             'AWS.codecatalyst.confirm.installSshConfig.title',
-            '{0} Toolkit will add host {1} to ~/.ssh/config. This allows you to use SSH with your development envionments',
+            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
             getIdeProperties().company,
             configHostName
         )
