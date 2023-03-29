@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "`aws.experiments.samSyncCode` has been removed as similiar functionality is now in SAM CLI by default in 1.78.0."
-}

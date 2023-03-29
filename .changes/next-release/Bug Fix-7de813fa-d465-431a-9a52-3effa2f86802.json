@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "S3 filesystem provider is not case-sensitive, so requesting \"s3://bucket1/Test.json\" may open \"s3://bucket1/test.json\""
-}
