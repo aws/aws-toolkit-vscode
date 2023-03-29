@@ -145,27 +145,16 @@ export class KeyStrokeHandler {
                 case DocumentChangedSource.RegularKey: {
                     if (!ClassifierTrigger.instance.isClassifierEnabled() || !isClassifierSupportedLanguage) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
+                    } else {
+                        triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
+                            ? 'Classifier'
+                            : undefined
                     }
                     break
                 }
                 default: {
                     break
                 }
-            }
-
-            if (
-                ClassifierTrigger.instance.isClassifierEnabled() &&
-                isClassifierSupportedLanguage &&
-                [
-                    DocumentChangedSource.EnterKey,
-                    DocumentChangedSource.SpecialCharsKey,
-                    DocumentChangedSource.IntelliSense,
-                    DocumentChangedSource.RegularKey,
-                ].includes(changedSource)
-            ) {
-                triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
-                    ? 'Classifier'
-                    : triggerType
             }
 
             if (triggerType) {

@@ -235,12 +235,13 @@ export class TelemetryHelper {
 
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
+        const language = this.sessionDecisions[0].codewhispererLanguage
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
             credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             codewhispererCompletionType: this.getAggregatedCompletionType(this.sessionDecisions),
-            codewhispererLanguage: this.sessionDecisions[0].codewhispererLanguage,
+            codewhispererLanguage: language,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
             codewhispererSuggestionCount: this.sessionDecisions
                 .map(e => e.codewhispererSuggestionCount)
@@ -262,7 +263,7 @@ export class TelemetryHelper {
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierResult: language === 'java' ? this.classifierResult : undefined,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
