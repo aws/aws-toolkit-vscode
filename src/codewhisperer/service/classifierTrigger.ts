@@ -5,9 +5,12 @@
 
 import * as os from 'os'
 import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import * as CodeWhispererConstants from '../models/constants'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 
 interface normalizedCoefficients {
     readonly cursor: number
@@ -155,7 +158,6 @@ export class ClassifierTrigger {
         while: -0.158144,
         with: 0.400751,
         yield: 0.275915,
-        language_python: 0.107185,
         '"': -0.162722,
         '!': -0.99026,
         '': -0.471628,
@@ -257,6 +259,19 @@ export class ClassifierTrigger {
         this.lastInvocationLineNumber = lineNumber
     }
 
+    public isClassifierEnabled() {
+        return globals.context.globalState.get<boolean>(CodeWhispererConstants.isClassifierEnabledKey)
+    }
+
+    public recordClassifierResultForManualTrigger(editor: vscode.TextEditor) {
+        const isClassifierSupportedLanguage = this.isSupportedLanguage(
+            runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId)
+        )
+        if (this.isClassifierEnabled() && isClassifierSupportedLanguage) {
+            this.shouldTriggerFromClassifier(undefined, editor, undefined)
+        }
+    }
+
     public isSupportedLanguage(language?: CodewhispererLanguage) {
         if (!language) {
             return false
@@ -265,13 +280,13 @@ export class ClassifierTrigger {
     }
 
     public shouldTriggerFromClassifier(
-        event: vscode.TextDocumentChangeEvent,
+        event: vscode.TextDocumentChangeEvent | undefined,
         editor: vscode.TextEditor,
         autoTriggerType: string | undefined
     ): boolean {
         const fileContext = extractContextForCodeWhisperer(editor)
         const osPlatform = this.normalizeOsName(os.platform(), os.version())
-        const char = event.contentChanges[0].text
+        const char = event ? event.contentChanges[0].text : ''
         const lineNum = editor.selection.active.line
         const offSet = editor.selection.active.character
         const classifierResult = this.getClassifierResult(

@@ -143,7 +143,7 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    if (!isClassifierSupportedLanguage) {
+                    if (!ClassifierTrigger.instance.isClassifierEnabled() || !isClassifierSupportedLanguage) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
                     }
                     break
@@ -154,6 +154,7 @@ export class KeyStrokeHandler {
             }
 
             if (
+                ClassifierTrigger.instance.isClassifierEnabled() &&
                 isClassifierSupportedLanguage &&
                 [
                     DocumentChangedSource.EnterKey,

@@ -262,7 +262,7 @@ export class TelemetryHelper {
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: autoTriggerType === 'Classifier' ? this.classifierResult : undefined,
+            codewhispererClassifierResult: this.classifierResult,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)

@@ -14,6 +14,7 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { ClassifierTrigger } from '../service/classifierTrigger'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -92,6 +93,7 @@ export async function invokeRecommendation(
             }
         } else if (isInlineCompletionEnabled()) {
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
         } else {
             if (
