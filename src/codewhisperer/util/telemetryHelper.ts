@@ -67,7 +67,7 @@ export class TelemetryHelper {
     private lastTriggerDecisionTime = 0
     private invocationTime = 0
     private firstRecommendationTime = 0
-    private classifierResult = 0
+    private classifierResult?: number = undefined
 
     constructor() {
         this.triggerType = 'OnDemand'
