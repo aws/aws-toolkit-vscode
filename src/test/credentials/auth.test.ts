@@ -170,6 +170,15 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             assert.strictEqual(events.emits[0]?.id, conn.id)
         })
+
+        it('sets the active connection even when the underlying provider throws', async function () {
+            const err = new Error('test')
+            const conn = await auth.createConnection(ssoProfile)
+            tokenProviders.get(conn.id)?.getToken.rejects(err)
+            await auth.useConnection(conn)
+            assert.strictEqual(auth.activeConnection?.id, conn.id)
+            assert.strictEqual(auth.getInvalidationReason(conn), err)
+        })
     })
 
     it('can login and fires an event', async function () {
@@ -235,6 +244,15 @@ describe('Auth', function () {
             await assert.rejects(token, ToolkitError)
 
             assert.strictEqual(auth.activeConnection?.state, 'invalid')
+        })
+
+        it('chains errors when handling invalid connections', async function () {
+            const err1 = new ToolkitError('test', { code: 'test' })
+            const conn = await auth.createConnection(ssoProfile)
+            tokenProviders.get(conn.id)?.getToken.rejects(err1)
+            const err2 = await runExpiredGetTokenFlow(conn, /no/i).catch(e => e)
+            assert.ok(err2 instanceof ToolkitError)
+            assert.strictEqual(err2.cause, err1)
         })
     })
 
