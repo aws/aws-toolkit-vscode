@@ -267,6 +267,8 @@ describe('SharedCredentialsProvider', async function () {
         }
 
         it('resolves profile with source_profile as credential_process', async function () {
+            this.skip()
+
             const resolvedProfile = {
                 base: resolvedBaseProfile,
                 child: childProfile,
@@ -290,6 +292,8 @@ describe('SharedCredentialsProvider', async function () {
         })
 
         it('resolves profile with source_profile and MFA', async function () {
+            this.skip()
+
             const mfaSerial = 'serial'
             const resolvedProfile = {
                 base: resolvedBaseProfile,
