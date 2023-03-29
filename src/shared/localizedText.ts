@@ -23,6 +23,7 @@ export const recentlyUsed = localize('AWS.generic.recentlyUsed', 'recently used'
 export const viewSettings = localize('AWS.generic.viewSettings', 'View Settings')
 export const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
 export const loadMore = localize('AWS.generic.loadMore', 'Load More')
+export const learnMore = localize('AWS.generic.learnMore', 'Learn More')
 
 export const checklogs = () =>
     localize(
