@@ -33,12 +33,13 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { recordSource } from '../../utils'
-import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
-import { createProjectPrompter } from '../../wizards/selectResource'
+import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
 import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
+import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 
 interface LinkedResponse {
     readonly type: 'linked'
+    readonly selectedSpace: Pick<CodeCatalystOrg, 'name'>
     readonly selectedProject: CodeCatalystProject
     readonly selectedBranch: CodeCatalystBranch
     readonly newBranch: string
@@ -46,6 +47,7 @@ interface LinkedResponse {
 
 interface EmptyResponse {
     readonly type: 'none'
+    readonly selectedSpace: Pick<CodeCatalystOrg, 'name'>
     readonly selectedProject: CodeCatalystProject
 }
 
@@ -53,6 +55,7 @@ export type SourceResponse = LinkedResponse | EmptyResponse
 
 export class CodeCatalystCreateWebview extends VueWebview {
     private projectPrompter?: QuickPickPrompter<CodeCatalystProject>
+    private spacePrompter?: QuickPickPrompter<CodeCatalystOrg>
 
     public readonly id = 'createCodeCatalyst'
     public readonly source = 'src/codecatalyst/vue/create/index.js'
@@ -64,13 +67,8 @@ export class CodeCatalystCreateWebview extends VueWebview {
     ) {
         super()
 
-        // When webview first loads, an instance of this class
-        // is created.
-        // We build the prompter here since it immeditely starts
-        // fetching the Projects upon creation.
-        // When a user triggers the prompt to select a Project the **first** time,
-        // the fetching of Projects will already be in progress.
-        this.projectPrompter = createProjectPrompter(this.client)
+        // triggers pre-loading of Spaces
+        this.spacePrompter = createOrgPrompter(client)
     }
 
     public close() {
@@ -79,24 +77,38 @@ export class CodeCatalystCreateWebview extends VueWebview {
     }
 
     /**
-     * Opens a quick pick that lists all Projects from all Spaces.
+     * Opens a quick pick that lists all Spaces of the user.
      *
-     * @param spaceName Only show Projects from this Space in the quick pick. If undefined,
-     *                  shows Projects from all Spaces.
-     * @returns Project if it was selected, otherwise undefined due to user cancellation.
+     * @returns Space if it was selected, otherwise undefined due to user cancellation.
      */
-    public async quickPickProject(spaceName?: CodeCatalystOrg['name']): Promise<CodeCatalystProject | undefined> {
-        // We use an existing prompter since it would have already started
-        // fetching Projects (improved UX).
-        if (this.projectPrompter === undefined) {
-            this.projectPrompter = createProjectPrompter(this.client, spaceName)
+    public async quickPickSpace(): Promise<CodeCatalystOrg | undefined> {
+        this.spacePrompter = this.spacePrompter ?? createOrgPrompter(this.client)
+        const selectedSpace = await this.spacePrompter.prompt()
+        this.spacePrompter = undefined // We want the prompter to be re-created on subsequent calls
+
+        if (!isValidResponse(selectedSpace)) {
+            return undefined
         }
 
+        // This will initiate preloading of the projects
+        this.projectPrompter = createProjectPrompter(this.client, selectedSpace?.name)
+
+        return selectedSpace
+    }
+
+    /**
+     * Opens a quick pick that lists all Projects from a given Space.
+     *
+     * @param spaceName Space to show Projects from
+     * @returns Project if it was selected, otherwise undefined due to user cancellation.
+     */
+    public async quickPickProject(spaceName: CodeCatalystOrg['name']): Promise<CodeCatalystProject | undefined> {
+        this.projectPrompter = this.projectPrompter ?? createProjectPrompter(this.client, spaceName)
         const selectedProject = await this.projectPrompter.prompt()
-        this.projectPrompter = undefined
+        this.projectPrompter = undefined // We want the prompter to be re-created on subsequent calls
 
         if (!isValidResponse(selectedProject)) {
-            return
+            return undefined
         }
 
         return selectedProject
