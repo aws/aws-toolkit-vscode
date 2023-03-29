@@ -30,6 +30,8 @@ describe('createRepositoryCommand', function () {
 
         const stub = sandbox.stub(ecr, 'createRepository').callsFake(async name => {
             assert.strictEqual(name, repoName)
+
+            return {} as any
         })
 
         getTestWindow().onDidShowInputBox(input => {
