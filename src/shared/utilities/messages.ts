@@ -14,6 +14,7 @@ import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
+import globals from '../extensionGlobals'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -304,4 +305,19 @@ export async function copyToClipboard(data: string, label?: string, env: Env = v
     const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
     vscode.window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
     getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
+}
+
+export async function showOnce<T>(
+    key: string,
+    fn: () => Promise<T>,
+    memento = globals.context.globalState
+): Promise<T | undefined> {
+    if (memento.get(key)) {
+        return
+    }
+
+    const result = fn()
+    await memento.update(key, true)
+
+    return result
 }

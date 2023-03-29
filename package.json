@@ -224,15 +224,10 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false,
-                        "samSyncCode": false
+                        "jsonResourceModification": false
                     },
                     "properties": {
                         "jsonResourceModification": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "samSyncCode": {
                             "type": "boolean",
                             "default": false
                         }
@@ -960,10 +955,6 @@
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
-                },
-                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1213,11 +1204,6 @@
                     "group": "3_lambda@3"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@4"
-                },
-                {
                     "command": "aws.quickStart",
                     "when": "view == aws.explorer",
                     "group": "y_toolkitMeta@1"
@@ -1283,11 +1269,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
                     "group": "z_aws@1"
-                },
-                {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
-                    "group": "z_aws@2"
                 },
                 {
                     "command": "aws.uploadLambda",
@@ -1400,11 +1381,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
-                },
-                {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -3119,11 +3095,6 @@
             {
                 "command": "aws.samcli.sync",
                 "title": "%AWS.command.samcli.sync%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.samcli.syncCode",
-                "title": "%AWS.command.samcli.syncCode%",
                 "category": "%AWS.title%"
             },
             {
