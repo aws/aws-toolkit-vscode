@@ -1,0 +1,17 @@
+{
+  "date" : "2023-03-29",
+  "version" : "1.64",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Required SAM CLI upgrade to v1.78.0 to for using Sync Serverless Application option."
+  }, {
+    "type" : "feature",
+    "description" : "Support for RDS MariaDB instances (#3530)"
+  }, {
+    "type" : "feature",
+    "description" : "Added 2023.1 support"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for IDEs based on the 2022.1 platform"
+  } ]
+}

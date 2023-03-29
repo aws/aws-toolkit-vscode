@@ -1,4 +1,0 @@
-{
-  "type" : "breaking",
-  "description" : "Required SAM CLI upgrade to v1.78.0 to for using Sync Serverless Application option."
-}

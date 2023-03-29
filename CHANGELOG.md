@@ -1,3 +1,8 @@
+# _1.63_ (2023-03-24)
+- **(Bug Fix)** Fix issue where multiple Builder ID entries show up in connection list
+- **(Bug Fix)** Fix temporary deadlock when user fails to complete reauthentication request
+- **(Bug Fix)** Only allow cloning a repository from CodeCatalyst if it's hosted on CodeCatalyst
+
 # _1.62_ (2023-03-20)
 - **(Bug Fix)** Show friendlier application name when signing in using SSO
 - **(Bug Fix)** Fix confusing experience when attempting to sign in to multiple Builder IDs
