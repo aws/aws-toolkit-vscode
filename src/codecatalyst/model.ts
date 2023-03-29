@@ -190,14 +190,11 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const runningDevEnv = await client.startDevEnvironmentWithProgress(
-        {
-            id,
-            spaceName: org.name,
-            projectName: project.name,
-        },
-        'RUNNING'
-    )
+    const runningDevEnv = await client.startDevEnvironmentWithProgress({
+        id,
+        spaceName: org.name,
+        projectName: project.name,
+    })
 
     const hostname = getHostNameFromEnv({ id, org, project })
     const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`
