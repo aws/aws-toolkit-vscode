@@ -1,0 +1,34 @@
+{
+	"date": "2023-03-29",
+	"version": "1.67.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "\"Sync SAM Application\" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "auth: switching to a connection that just expired shows an error"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "S3 filesystem provider is not case-sensitive, so requesting \"s3://bucket1/Test.json\" may open \"s3://bucket1/test.json\""
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: create, run and debug Python 3.10 Lambdas"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: retry connection to \"FAILED\" Dev Environments"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: improved messages and logging when connecting to Dev Environment"
+		},
+		{
+			"type": "Removal",
+			"description": "`aws.experiments.samSyncCode` has been removed as similiar functionality is now in SAM CLI by default in 1.78.0."
+		}
+	]
+}

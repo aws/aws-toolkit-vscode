@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "auth: switching to a connection that just expired shows an error"
-}

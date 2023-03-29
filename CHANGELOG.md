@@ -1,3 +1,13 @@
+## 1.67.0 2023-03-29
+
+- **Breaking Change** "Sync SAM Application" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode.
+- **Bug Fix** auth: switching to a connection that just expired shows an error
+- **Bug Fix** S3 filesystem provider is not case-sensitive, so requesting "s3://bucket1/Test.json" may open "s3://bucket1/test.json"
+- **Feature** SAM: create, run and debug Python 3.10 Lambdas
+- **Feature** CodeCatalyst: retry connection to "FAILED" Dev Environments
+- **Feature** CodeCatalyst: improved messages and logging when connecting to Dev Environment
+- **Removal** `aws.experiments.samSyncCode` has been removed as similiar functionality is now in SAM CLI by default in 1.78.0.
+
 ## 1.66.0 2023-03-24
 
 - **Bug Fix** CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails
