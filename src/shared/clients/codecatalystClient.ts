@@ -551,7 +551,7 @@ class CodeCatalystClientInternal {
     ): Promise<CodeCatalyst.StartDevEnvironmentSessionResponse & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startDevEnvironmentSession(args), false)
         if (!r.sessionId) {
-            throw new TypeError('Received falsy development environment "sessionId"')
+            throw new TypeError('got falsy dev environment "sessionId"')
         }
         return { ...r, sessionId: r.sessionId }
     }
@@ -588,7 +588,7 @@ class CodeCatalystClientInternal {
      * TODO: may combine this progress stuff into some larger construct
      *
      * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
-     * on the development environment starting should not progress.
+     * on the dev environment starting should not progress.
      */
     public async startDevEnvironmentWithProgress(
         args: CodeCatalyst.StartDevEnvironmentRequest,
