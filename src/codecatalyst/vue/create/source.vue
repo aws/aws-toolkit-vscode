@@ -15,7 +15,7 @@
         <div class="modes flex-sizing mt-16">
             <span class="flex-sizing mt-8">
                 <label class="option-label soft">Space</label>
-                <button class="project-button" @click="quickPickProject()">
+                <button class="project-button" @click="quickPickSpace()">
                     {{ selectedSpaceName }}
                     <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
                 </button>
@@ -23,7 +23,7 @@
 
             <span class="flex-sizing mt-8">
                 <label class="option-label soft">Project</label>
-                <button class="project-button" @click="quickPickProject(model.selectedProject?.org.name)">
+                <button class="project-button" @click="quickPickProject()" :disabled="!isSpaceSelected">
                     {{ selectedProjectName }}
                     <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
                 </button>
@@ -71,7 +71,7 @@
         <div class="modes flex-sizing mt-16">
             <span class="flex-sizing mt-8">
                 <label class="option-label soft">Space</label>
-                <button class="project-button" @click="quickPickProject()">
+                <button class="project-button" @click="quickPickSpace()">
                     {{ selectedSpaceName }}
                     <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
                 </button>
@@ -79,7 +79,7 @@
 
             <span class="flex-sizing mt-8">
                 <label class="option-label soft">Project</label>
-                <button class="project-button" @click="quickPickProject(model.selectedProject?.org.name)">
+                <button class="project-button" @click="quickPickProject()" :disabled="!isSpaceSelected">
                     {{ selectedProjectName }}
                     <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
                 </button>
@@ -90,7 +90,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { CodeCatalystBranch, CodeCatalystOrg, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
+import { CodeCatalystBranch, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { createClass, createType } from '../../../webviews/util'
 import { CodeCatalystCreateWebview, SourceResponse } from './backend'
@@ -214,14 +214,17 @@ export default defineComponent({
                 return 'Branch already exists'
             }
         },
+        isSpaceSelected() {
+            return !!this.model.selectedSpace
+        },
         isProjectSelected() {
             return !!this.model.selectedProject
         },
         selectedSpaceName() {
-            if (this.model.selectedProject === undefined) {
+            if (this.model.selectedSpace === undefined) {
                 return 'Not Selected'
             }
-            return this.model.selectedProject.org.name
+            return this.model.selectedSpace.name
         },
         selectedProjectName() {
             if (this.model.selectedProject === undefined) {
@@ -248,12 +251,24 @@ export default defineComponent({
             })
             this.update()
         },
-        async quickPickProject(spaceToGetProjects: CodeCatalystOrg['name'] | undefined = undefined) {
-            const res = await client.quickPickProject(spaceToGetProjects)
-            if (res === undefined) {
+        async quickPickSpace() {
+            const space = await client.quickPickSpace()
+            if (space === undefined) {
                 return
             }
-            this.$emit('update:modelValue', { ...this.modelValue, selectedProject: res })
+            this.$emit('update:modelValue', { ...this.modelValue, selectedSpace: space, selectedProject: undefined })
+        },
+        async quickPickProject() {
+            const selectedSpace = this.modelValue.selectedSpace
+            if (selectedSpace === undefined) {
+                return
+            }
+
+            const project = await client.quickPickProject(selectedSpace.name)
+            if (project === undefined) {
+                return
+            }
+            this.$emit('update:modelValue', { ...this.modelValue, selectedProject: project })
         },
     },
     emits: {
