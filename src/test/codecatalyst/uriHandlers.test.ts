@@ -94,7 +94,7 @@ describe('CodeCatalyst handlers', function () {
                     message.assertSeverity(SeverityLevel.Error)
                 })
 
-            when(client.getDevEnvironment(anything())).thenReject(new Error('No development environment found'))
+            when(client.getDevEnvironment(anything())).thenReject(new Error('No dev environment found'))
             await handler.handleUri(createConnectUri(devenvId))
             await errorMessage
         })

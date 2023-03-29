@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Usage:
-#   When connecting to a development environment
+#   When connecting to a dev environment
 #       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… SPACE_NAME=… PROJECT_NAME=… DEVENV_ID=… ./codecatalyst_connect
 
 set -e
@@ -37,7 +37,7 @@ _parse_json_for_value() {
     echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
 }
 
-# Note: A development environment must have been previously started by VSCode Extension/CodeCatalyst
+# Note: dev environment must have been previously started by VSCode Extension/CodeCatalyst
 _start_dev_environment_session() {
     # Function inputs
     local CODECATALYST_ENDPOINT=$1

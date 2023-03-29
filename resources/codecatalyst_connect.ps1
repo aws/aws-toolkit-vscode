@@ -1,5 +1,5 @@
 # Usage:
-#   When connecting to a development environment
+#   When connecting to a dev environment
 #       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:CODECATALYST_ENDPOINT=… $Env:BEARER_TOKEN_LOCATION=… $Env:SPACE_NAME=… $Env:PROJECT_NAME=… $Env:DEVENV_ID=… ./code_catalyst_connect.ps1
 
 function Get-Timestamp {
