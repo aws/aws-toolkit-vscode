@@ -7,6 +7,8 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.util.ExecUtil
+import com.intellij.ide.BrowserUtil
+import com.intellij.notification.NotificationAction
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
@@ -53,6 +55,7 @@ import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.SamTelemetry
 import software.aws.toolkits.telemetry.SyncedResources
+import java.net.URI
 
 class SyncServerlessAppAction : AnAction(
     message("serverless.application.sync"),
@@ -73,6 +76,7 @@ class SyncServerlessAppAction : AnAction(
                     project = project,
                     content = (samExecutable as ExecutableInstance.BadExecutable).validationError
                 )
+                LOG.warn { "Invalid SAM CLI Executable" }
                 return@thenAccept
             }
 
@@ -86,7 +90,24 @@ class SyncServerlessAppAction : AnAction(
                         "sam.cli.version.upgrade.required",
                         execVersion.parsedVersion, minVersion.parsedVersion
                     ),
-                    project = project
+                    project = project,
+                    listOf(
+                        NotificationAction.createSimple(message("sam.cli.version.upgrade.reason")) {
+                            BrowserUtil.browse(
+                                URI(
+                                    "https://aws.amazon.com/about-aws/whats-new/2023/03/aws-toolkits-jetbrains-vs-code-sam-accelerate/"
+                                )
+                            )
+                        },
+                        NotificationAction.createSimple(message("sam.cli.version.upgrade.instructions")) {
+                            BrowserUtil.browse(
+                                URI(
+                                    "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/" +
+                                        "manage-sam-cli-versions.html#manage-sam-cli-versions-upgrade"
+                                )
+                            )
+                        }
+                    )
                 )
                 return@thenAccept
             }
@@ -95,6 +116,7 @@ class SyncServerlessAppAction : AnAction(
 
             validateTemplateFile(project, templateFile)?.let {
                 notifyError(content = it, project = project)
+                LOG.warn { it }
                 return@thenAccept
             }
 
@@ -161,6 +183,14 @@ class SyncServerlessAppAction : AnAction(
                                     null -> return@runInEdt
                                     true -> {
                                         Messages.showWarningDialog(message("lambda.debug.docker.not_connected"), message("docker.not.found"))
+                                        SamTelemetry.sync(
+                                            project = project,
+                                            result = Result.Failed,
+                                            syncedResources = syncedResourceType,
+                                            lambdaPackageType = lambdaType,
+                                            version = SamCommon.getVersionString(),
+                                            reason = "Docker not available"
+                                        )
                                         return@runInEdt
                                     }
 
