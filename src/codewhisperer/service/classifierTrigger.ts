@@ -300,7 +300,7 @@ export class ClassifierTrigger {
         )
 
         const shouldTrigger = classifierResult > this.triggerThreshold
-        TelemetryHelper.instance.setClassifierResult(sigmoid(classifierResult))
+        TelemetryHelper.instance.setClassifierResult(classifierResult)
         return shouldTrigger
     }
 
