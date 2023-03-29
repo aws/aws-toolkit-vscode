@@ -664,10 +664,18 @@ class CodeCatalystClientInternal {
                     throw new CancellationError('user')
                 }
 
+                const lastStatus = statuses[statuses.length - 1]
+                const elapsed = Date.now() - item.start
                 const resp = await this.getDevEnvironment(args)
                 alias = resp.alias
 
-                if (['STOPPED', 'FAILED'].includes(resp.status) && startAttempts > 2 && timeout.elapsedTime > 10000) {
+                if (
+                    lastStatus &&
+                    ['STOPPED', 'FAILED'].includes(lastStatus.status) &&
+                    ['STOPPED', 'FAILED'].includes(resp.status) &&
+                    elapsed > 10000 &&
+                    startAttempts > 2
+                ) {
                     // If still STOPPED/FAILED after 10+ seconds, don't keep retrying for 1 hour...
                     throw new ToolkitError(failedStartMsg(), { code: 'FailedDevEnv' })
                 } else if (['STOPPED', 'FAILED'].includes(resp.status)) {
@@ -695,8 +703,7 @@ class CodeCatalystClientInternal {
                     })
                 }
 
-                const lastStatus = statuses[statuses.length - 1]?.status
-                if (lastStatus !== resp.status) {
+                if (lastStatus?.status !== resp.status) {
                     statuses.push({ status: resp.status, start: Date.now() })
                     if (resp.status !== 'RUNNING') {
                         doLog('debug', `devenv not started, waiting`)
