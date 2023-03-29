@@ -341,6 +341,20 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
 
 The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
 
+### VSCode Marketplace
+
+The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
+is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
+the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
+
+Note therefore:
+
+1. Don't delete images from `docs/marketplace/` unless the _current published_
+   AWS Toolkit release doesn't depend on them.
+2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
+   `master`). Changes to other branches won't affect the marketplace page.
+
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:

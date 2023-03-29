@@ -1,3 +1,25 @@
+## 1.67.0 2023-03-29
+
+- **Breaking Change** "Sync SAM Application" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode.
+- **Bug Fix** auth: switching to a connection that just expired shows an error
+- **Bug Fix** S3 filesystem provider is not case-sensitive, so requesting "s3://bucket1/Test.json" may open "s3://bucket1/test.json"
+- **Feature** SAM: create, run and debug Python 3.10 Lambdas
+- **Feature** CodeCatalyst: retry connection to "FAILED" Dev Environments
+- **Feature** CodeCatalyst: improved messages and logging when connecting to Dev Environment
+- **Removal** `aws.experiments.samSyncCode` has been removed as similiar functionality is now in SAM CLI by default in 1.78.0.
+
+## 1.66.0 2023-03-24
+
+- **Bug Fix** CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails
+- **Bug Fix** "Enable Command Execution" shows wrong message
+- **Bug Fix** Update dependency amazon-states-language-service from 1.8.0 -> 1.9.0. This will allow newlines in Step Functions intrinsic functions.
+- **Bug Fix** CodeCatalyst: Disable new branch option when creating new Dev Environment for linked repo
+- **Bug Fix** CodeCatalyst: `Clone CodeCatalyst Repository` command now only lists non-linked repos
+- **Feature** Option to sign out of existing Builder ID when adding a new one
+- **Feature** CodeCatalyst: wait up to 1 hour (instead of 3 minutes) for Dev Environment to start
+- **Feature** CodeWhisperer improves right context handling
+- **Feature** CodeWhisperer will no longer automatically format code after accepting code suggestions
+
 ## 1.65.0 2023-03-15
 
 - **Feature** auth: The status bar shows more information about which connections are in-use and which of those are expired or invalid.

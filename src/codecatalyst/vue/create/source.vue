@@ -68,15 +68,23 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'none'">
-        <span style="width: 100%">
-            <label class="option-label soft">Project</label>
-            <select class="picker" v-model="model.selectedProject" @input="update">
-                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.name" :value="project">
-                    {{ `${project.org.name} / ${project.name}` }}
-                </option>
-            </select>
-        </span>
+        <div class="modes flex-sizing mt-16">
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Space</label>
+                <button class="project-button" @click="quickPickProject()">
+                    {{ selectedSpaceName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Project</label>
+                <button class="project-button" @click="quickPickProject(model.selectedProject?.org.name)">
+                    {{ selectedProjectName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+        </div>
     </div>
 </template>
 
@@ -257,6 +265,8 @@ export default defineComponent({
 <style scope>
 .picker {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .source-pickers {
@@ -307,6 +317,8 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 
 #branch-input {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .project-button {
