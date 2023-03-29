@@ -15,9 +15,10 @@ import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../share
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
-import { getTelemetryReason, getTelemetryResult, isClientFault, ToolkitError } from '../../shared/errors'
+import { getRequestId, getTelemetryReason, getTelemetryResult, isClientFault, ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { DevSettings } from '../../shared/settings'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -122,7 +123,12 @@ export class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
-            telemetry.aws_refreshCredentials.emit({
+            const span = telemetry.aws_refreshCredentials
+            if (DevSettings.instance.get('reportRequestIds', false)) {
+                span.record({ requestId: getRequestId(err) } as any)
+            }
+
+            span.emit({
                 result: getTelemetryResult(err),
                 reason: getTelemetryReason(err),
                 sessionDuration: getSessionDuration(this.tokenCacheKey),

@@ -297,3 +297,13 @@ export function isUserCancelledError(error: unknown): boolean {
 export function isClientFault(error: ServiceException): boolean {
     return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
 }
+
+export function getRequestId(error: unknown): string | undefined {
+    if (isAwsError(error)) {
+        return error.requestId
+    }
+
+    if (error instanceof ServiceException) {
+        return error.$metadata.requestId
+    }
+}
