@@ -117,6 +117,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             const emptyDevEnvSettings = buildDevEnvSettings()
             const emptyDevEnv = await webviewClient.createDevEnvOfType(emptyDevEnvSettings, {
                 type: 'none',
+                selectedSpace: { name: spaceName },
                 selectedProject: { name: projectName, org: { name: spaceName }, type: 'project' },
             })
             assert.strictEqual(emptyDevEnv.project.name, projectName)
@@ -128,6 +129,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
             const actualDevEnv = await webviewClient.createDevEnvOfType(differentDevEnvSettings, {
                 type: 'none',
+                selectedSpace: { name: spaceName },
                 selectedProject: { name: projectName, org: { name: spaceName }, type: 'project' },
             })
 
@@ -202,6 +204,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             // Create multiple Dev Envs
             const projectSource: SourceResponse = {
                 type: 'none',
+                selectedSpace: { name: spaceName },
                 selectedProject: { name: isolatedProjectName, org: { name: spaceName }, type: 'project' },
             }
             const createdDevEnvs = await Promise.all([
