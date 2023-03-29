@@ -7,7 +7,6 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
 interface normalizedCoefficients {
@@ -17,7 +16,6 @@ interface normalizedCoefficients {
     readonly lenLeftPrev: number
     readonly lenRight: number
     readonly lineDiff: number
-    readonly timeDiff: number
 }
 /*
  uses ML classifier to determine if user input should trigger CWSPR service
@@ -39,222 +37,220 @@ export class ClassifierTrigger {
     // ML classifier coefficients
     // os coefficient
     private osCoefficientMap: Readonly<Record<string, number>> = {
-        'Mac OS X': 0.1168,
-        win32: 0.0973,
-        'Windows 10': 0.3181,
-        'Windows 7': 0.2702,
+        'Mac OS X': 0.102638,
+        win32: 0.040345,
+        'Windows 10': 0.28953,
+        'Windows 7': 0.086803,
     }
     // trigger type coefficient
     private triggerTypeCoefficientMap: Readonly<Record<string, number>> = {
-        SpecialCharacters: -0.1402,
-        Enter: 0.1915,
+        SpecialCharacters: 0.017268,
+        Enter: 0.117394,
     }
-    // language coefficient
-    private languageCoefficientMap: Readonly<Record<string, number>> = {
-        python: 0.1376,
-    }
+
     // other metadata coefficient
-    private lineNumCoefficient = 0.5011
-    private cursorOffsetCoefficient = -0.2242
-    private lengthOfLeftCurrentCoefficient = -0.989
-    private lengthOfLeftPrevCoefficient = 0.4184
-    private lengthofRightCoefficient = -0.5168
-    private lineDiffCoefficient = 0.0546
-    private prevDecisionAcceptCoefficient = 1.3668
-    private prevDecisionRejectCoefficient = -0.0017
-    private prevDecisionOtherCoefficient = 0.1409
-    private ideVscode = -0.0513
+    private lineNumCoefficient = 0.695076
+    private cursorOffsetCoefficient = -0.43856
+    private lengthOfLeftCurrentCoefficient = -1.074552
+    private lengthOfLeftPrevCoefficient = 0.415858
+    private lengthofRightCoefficient = -0.500256
+    private lineDiffCoefficient = 1.227713
+    private prevDecisionAcceptCoefficient = 1.362196
+    private prevDecisionRejectCoefficient = -0.047703
+    private prevDecisionOtherCoefficient = 0.143317
+    private ideVscode = -0.114251
 
     // intercept of logistic regression classifier
     private intercept = -0.44590798
 
     private maxx: normalizedCoefficients = {
-        cursor: 88911.0,
-        lineNum: 1997.0,
-        lenLeftCur: 164.0,
-        lenLeftPrev: 160.0,
+        cursor: 90716.0,
+        lineNum: 2085.0,
+        lenLeftCur: 166.0,
+        lenLeftPrev: 161.0,
         lenRight: 10239.0,
         lineDiff: 349.0,
-        timeDiff: 268602852.0,
     }
 
     private minn: normalizedCoefficients = {
-        cursor: 0.0,
+        cursor: 1.0,
         lineNum: 0.0,
         lenLeftCur: 0.0,
         lenLeftPrev: 0.0,
         lenRight: 0.0,
-        lineDiff: -32222.0,
-        timeDiff: 0.0,
+        lineDiff: -5157.0,
     }
     // character and keywords coefficient
     private charCoefficient: Readonly<Record<string, number>> = {
-        '#': -2.029,
-        '\\': -1.8354,
-        '8': -1.7039,
-        '6': -1.5019,
-        '*': -1.3513,
-        '7': -1.3149,
-        '5': -1.1897,
-        '0': -1.1892,
-        '/': -1.1556,
-        throw: 1.0807,
-        break: -1.076,
-        Z: -1.0552,
-        ']': -1.0037,
-        '1': -0.9934,
-        continue: -0.966,
-        protected: -0.9652,
-        '`': -0.9439,
-        ';': -0.9193,
-        '@': -0.9031,
-        $: -0.8492,
-        lambda: 0.8379,
-        '9': -0.8106,
-        '~': -0.7694,
-        '}': -0.7169,
-        '4': -0.6625,
-        '2': -0.6617,
-        elif: 0.643,
-        P: -0.6421,
-        '-': -0.6402,
-        raise: 0.633,
-        else: -0.5776,
-        '%': -0.5776,
-        except: 0.5733,
-        ')': -0.5302,
-        '+': -0.5119,
-        async: 0.4974,
-        void: 0.4922,
-        final: -0.491,
-        '(': 0.4842,
-        z: -0.4791,
-        '>': -0.46,
-        case: 0.4481,
-        def: 0.4392,
-        if: 0.4326,
-        D: -0.4288,
-        V: -0.4142,
-        '3': -0.4089,
-        j: -0.3884,
-        U: -0.3768,
-        as: 0.3754,
-        catch: -0.3736,
-        '^': -0.3706,
-        N: -0.3677,
-        "'": -0.3661,
-        S: -0.3615,
-        from: -0.3608,
-        '?': -0.3582,
-        p: -0.3573,
-        X: -0.3521,
-        '&': -0.3459,
-        '"': -0.3403,
-        ':': 0.3375,
-        private: -0.3331,
-        I: -0.3305,
-        '.': -0.3216,
-        for: 0.3081,
-        try: -0.3079,
-        '|': -0.288,
-        '{': 0.2848,
-        static: -0.2829,
-        abstract: -0.2815,
-        d: -0.2793,
-        public: -0.2789,
-        a: -0.278,
-        k: -0.2715,
-        pass: -0.2622,
-        h: -0.261,
-        '<': -0.254,
-        s: -0.2508,
-        v: -0.2501,
-        T: -0.2482,
-        boolean: -0.245,
-        None: 0.2415,
-        c: -0.2401,
-        nonlocal: -0.2363,
-        f: -0.2333,
-        long: -0.2267,
-        new: 0.2254,
-        O: -0.2207,
-        W: -0.215,
-        default: 0.2082,
-        _: -0.2056,
-        K: -0.2038,
-        Y: -0.2029,
-        '=': -0.1995,
-        B: 0.1966,
-        R: -0.1958,
-        or: 0.1914,
-        n: -0.1914,
-        char: 0.1911,
-        await: -0.1903,
-        byte: -0.1868,
-        M: -0.1858,
-        C: -0.185,
-        and: -0.1817,
-        o: -0.1807,
-        extends: 0.1807,
-        int: 0.1771,
-        synchronized: 0.175,
-        m: -0.1742,
-        False: -0.1713,
-        this: 0.1699,
-        E: -0.1688,
-        while: -0.1679,
-        return: 0.1674,
-        w: -0.1671,
-        Q: 0.1614,
-        A: -0.1526,
-        G: -0.1466,
-        implements: 0.1439,
-        transient: -0.1426,
-        b: -0.1418,
-        l: -0.1321,
-        H: 0.1313,
-        ',': -0.1255,
-        native: -0.1252,
-        F: -0.1185,
-        t: -0.1172,
-        import: -0.112,
-        x: 0.1078,
-        L: -0.105,
-        e: -0.1015,
-        do: 0.0916,
-        assert: 0.091,
-        instanceof: -0.0894,
-        g: -0.089,
-        yield: 0.089,
-        with: 0.0888,
-        throws: 0.0869,
-        global: -0.0811,
-        float: 0.0791,
-        class: -0.077,
-        super: 0.0767,
-        y: -0.0714,
-        interface: 0.0675,
-        enum: -0.0621,
-        package: -0.0602,
-        not: 0.0594,
-        i: -0.0569,
-        del: 0.0516,
-        '[': -0.0511,
-        True: -0.0499,
-        double: -0.0479,
-        in: -0.0476,
-        is: -0.0254,
-        J: 0.017,
-        q: -0.0103,
-        r: -0.0029,
-        u: 0.0015,
+        False: -0.083505,
+        None: 0.306,
+        True: -0.057586,
+        abstract: -0.127709,
+        and: 0.196992,
+        as: 0.093336,
+        assert: 0.181738,
+        async: 0.597813,
+        await: -0.238037,
+        boolean: -0.134727,
+        break: -1.033123,
+        byte: 0.02461,
+        case: 0.362508,
+        catch: -0.453977,
+        char: 0.049842,
+        class: 0.002792,
         const: 0.0,
-        short: 0.0,
-        volatile: 0.0,
-        switch: 0.0,
+        continue: -0.903924,
+        def: 0.715946,
+        default: 0.09979,
+        del: 0.14807,
+        do: -0.195257,
+        double: 0.014083,
+        elif: 1.188137,
+        else: -0.479359,
+        enum: 0.150915,
+        except: 1.064073,
+        extends: -0.079624,
+        final: -0.845024,
+        finally: -0.198092,
+        float: 0.533561,
+        for: 0.225931,
+        from: -0.256604,
+        global: -0.082052,
         goto: 0.0,
-        finally: 0.0,
+        if: 0.417686,
+        implements: -0.033625,
+        import: -0.193438,
+        in: 0.095462,
+        instanceof: 0.181306,
+        int: -0.45144,
+        interface: 0.135839,
+        is: 0.312377,
+        lambda: 0.997797,
+        long: -0.482117,
+        native: -0.108527,
+        new: 0.380958,
+        nonlocal: 0.0,
+        not: 0.139249,
+        or: 0.024189,
+        package: -0.128968,
+        pass: -0.422767,
+        private: -0.400126,
+        protected: -0.749059,
+        public: -0.290176,
+        raise: 0.98372,
+        return: 0.26258,
+        short: 0.0,
+        static: -0.422215,
         strictfp: 0.0,
+        super: -0.061203,
+        switch: 0.0,
+        synchronized: 0.058414,
+        this: -0.27418,
+        throw: 0.380921,
+        throws: 0.032822,
+        transient: -0.100722,
+        try: -0.726115,
+        void: 0.147821,
+        volatile: 0.0,
+        while: -0.158144,
+        with: 0.400751,
+        yield: 0.275915,
+        language_python: 0.107185,
+        '"': -0.162722,
+        '!': -0.99026,
+        '': -0.471628,
+        '#': -1.810876,
+        $: -0.452123,
+        '%': -0.329621,
+        '&': -0.279653,
+        "'": -0.443367,
+        '(': 0.184168,
+        ')': -0.718342,
+        '*': -1.489626,
+        '+': -0.736006,
+        ',': -0.342575,
+        '-': -0.950035,
+        '.': -0.540129,
+        '/': -1.395258,
+        '0': -1.457238,
+        '1': -1.094267,
+        '2': -1.011995,
+        '3': -0.583036,
+        '4': -1.037645,
+        '5': -1.633417,
+        '6': -1.868711,
+        '7': -1.643608,
+        '8': -2.052011,
+        '9': -1.28873,
+        ':': 0.062965,
+        ';': -1.101242,
+        '<': -0.451429,
+        '=': -0.376955,
+        '>': -0.504938,
+        '?': -0.694492,
+        '@': -1.294691,
+        A: -0.333319,
+        B: -0.070534,
+        C: -0.29784,
+        D: -0.816886,
+        E: -0.350734,
+        F: -0.389955,
+        G: -0.367616,
+        H: -0.628719,
+        I: -0.444782,
+        J: 0.415714,
+        K: -0.704028,
+        L: -0.397781,
+        M: -0.366598,
+        N: -0.643249,
+        O: -0.525682,
+        P: -0.627397,
+        Q: -0.511114,
+        R: -0.564166,
+        S: -0.523443,
+        T: -0.441952,
+        U: -0.622641,
+        V: -0.647597,
+        W: 0.046767,
+        X: -0.198077,
+        Y: -0.580768,
+        Z: -0.900616,
+        '[': -0.387163,
+        '\\': -1.954455,
+        ']': -1.028313,
+        '^': -0.44017,
+        _: -0.409321,
+        '`': -1.264675,
+        a: -0.351206,
+        b: -0.267324,
+        c: -0.357747,
+        d: -0.404917,
+        e: -0.26934,
+        f: -0.335575,
+        g: -0.188718,
+        h: -0.326342,
+        i: -0.225867,
+        j: -0.653398,
+        k: -0.316385,
+        l: -0.345242,
+        m: -0.266107,
+        n: -0.331833,
+        o: -0.34594,
+        p: -0.466481,
+        q: -0.606473,
+        r: -0.220341,
+        s: -0.42861,
+        t: -0.271349,
+        u: -0.128044,
+        v: -0.415449,
+        w: -0.37644,
+        x: -0.208712,
+        y: -0.324526,
+        z: -0.850803,
+        '{': -0.048079,
+        '|': -0.388645,
+        '}': -0.827595,
+        '~': -0.641978,
     }
 
     public setLastInvocationLineNumber(lineNumber: number) {
@@ -285,8 +281,7 @@ export class ClassifierTrigger {
             autoTriggerType,
             char,
             lineNum,
-            offSet,
-            runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId)
+            offSet
         )
 
         const shouldTrigger = classifierResult > this.triggerThreshold
@@ -301,12 +296,8 @@ export class ClassifierTrigger {
         triggerType: string | undefined,
         char: string,
         lineNum: number,
-        cursorOffset: number,
-        language: CodewhispererLanguage | undefined
+        cursorOffset: number
     ): number {
-        if (!language) {
-            return 0
-        }
         const leftContextLines = leftContext.split(/\r?\n/)
         const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
         const tokens = leftContextAtCurrentLine.trim().split(' ')
@@ -319,7 +310,6 @@ export class ClassifierTrigger {
         const osCoefficient: number = this.osCoefficientMap[os] ?? 0
         const charCoefficient: number = this.charCoefficient[char] ?? 0
         const keyWordCoefficient: number = this.charCoefficient[keyword] ?? 0
-        const languageCoefficient: number = this.languageCoefficientMap[language] ?? 0
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
 
@@ -345,7 +335,6 @@ export class ClassifierTrigger {
             (this.lineNumCoefficient * (lineNum - this.minn.lineNum)) / (this.maxx.lineNum - this.minn.lineNum) +
             (this.cursorOffsetCoefficient * (cursorOffset - this.minn.cursor)) / (this.maxx.cursor - this.minn.cursor) +
             (this.lineDiffCoefficient * (lineDiff - this.minn.lineDiff)) / (this.maxx.lineDiff - this.minn.lineDiff) +
-            languageCoefficient +
             osCoefficient +
             triggerTypeCoefficient +
             charCoefficient +
