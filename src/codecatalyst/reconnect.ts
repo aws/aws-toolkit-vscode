@@ -51,7 +51,7 @@ function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: strin
             memento.update(codecatalystReconnectKey, pendingReconnects)
         }
     } else {
-        getLogger().info('codecatalyst: attempting to poll development envionments')
+        getLogger().info('codecatalyst: attempting to poll dev environments')
 
         // Reconnect devenvs (if coming from a restart)
         reconnectDevEnvs(client, ctx).catch(err => {
