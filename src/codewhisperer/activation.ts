@@ -46,10 +46,8 @@ import { Commands } from '../shared/vscode/commands2'
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
-import { AuthUtil, isUpgradeableConnection } from './util/authUtil'
+import { AuthUtil } from './util/authUtil'
 import { Auth } from '../credentials/auth'
-import { isUserCancelledError } from '../shared/errors'
-import { showViewLogsMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
@@ -241,22 +239,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
         if (AuthUtil.instance.hasAccessToken()) {
             await Auth.instance.tryAutoConnect()
-            const conn = Auth.instance.activeConnection
-            if (isUpgradeableConnection(conn)) {
-                const didUpgrade = await AuthUtil.instance.promptUpgrade(conn, 'passive').catch(err => {
-                    if (!isUserCancelledError(err)) {
-                        getLogger().error('codewhisperer: failed to upgrade connection: %s', err)
-                        showViewLogsMessage('Failed to upgrade current connection.')
-                    }
-
-                    return false
-                })
-
-                if (didUpgrade) {
-                    return
-                }
-            }
-
             await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
             await globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')

@@ -23,7 +23,6 @@ import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { PromptSettings } from '../../shared/settings'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
@@ -99,11 +98,20 @@ export class AuthUtil {
     }
 
     public async connectToAwsBuilderId() {
-        const existingConn = (await this.auth.listConnections()).find(
-            (conn): conn is SsoConnection => isValidCodeWhispererConnection(conn) && isBuilderIdConnection(conn)
-        )
-        const conn = existingConn ?? (await this.auth.createConnection(awsBuilderIdSsoProfile))
-        await this.secondaryAuth.useNewConnection(conn)
+        const existingConn = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        if (!existingConn) {
+            const newConn = await this.auth.createConnection(awsBuilderIdSsoProfile)
+            await this.secondaryAuth.useNewConnection(newConn)
+
+            return newConn
+        }
+
+        if (isValidCodeWhispererConnection(existingConn)) {
+            await this.secondaryAuth.useNewConnection(existingConn)
+            return existingConn
+        }
+
+        return this.rescopeConnection(existingConn)
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
@@ -118,7 +126,7 @@ export class AuthUtil {
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.promptUpgrade(existingConn, 'startUrl')
+            return this.rescopeConnection(existingConn)
         }
     }
 
@@ -196,31 +204,11 @@ export class AuthUtil {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
 
-    #hasSeenUpgradeNotification = false
-    public async promptUpgrade(existingConn: SsoConnection, upgradeType: 'current' | 'startUrl' | 'passive') {
-        const modal = upgradeType === 'current' || upgradeType === 'startUrl'
-        if (upgradeType !== 'startUrl' && this.#hasSeenUpgradeNotification) {
-            return false
-        }
-        this.#hasSeenUpgradeNotification = upgradeType === 'startUrl' ? this.#hasSeenUpgradeNotification : true
-
-        const message =
-            upgradeType === 'startUrl'
-                ? 'The provided start URL is associated with a connection that lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
-                : 'The current connection lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
-
-        const resp = await vscode.window.showWarningMessage(
-            message,
-            { modal },
-            { title: 'Yes' },
-            { title: 'No', isCloseAffordance: true }
-        )
-        if (resp?.title !== 'Yes') {
-            throw new CancellationError('user')
-        }
-
+    public async rescopeConnection(existingConn: SsoConnection) {
         const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
         try {
+            await this.auth.reauthenticate(upgradedConn)
+
             if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
                 await this.auth.useConnection(upgradedConn)
             } else {
@@ -235,7 +223,7 @@ export class AuthUtil {
         // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
         await this.auth.deleteConnection(existingConn)
 
-        return true
+        return upgradedConn
     }
 
     public hasAccessToken() {
