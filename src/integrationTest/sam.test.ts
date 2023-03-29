@@ -113,6 +113,15 @@ const scenarios: TestScenario[] = [
     //     dependencyManager: 'pip',
     // },
     {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        vscodeMinimum: '1.65.0',
+    },
+    {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -212,6 +221,16 @@ const scenarios: TestScenario[] = [
     //     language: 'python',
     //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        baseImage: 'amazon/python3.10-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        vscodeMinimum: '1.65.0',
+    },
     {
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
@@ -536,7 +555,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (skipLanguagesOnApi.includes(scenario.language)) {
+                    if (
+                        skipLanguagesOnApi.includes(scenario.language) ||
+                        semver.lt(vscode.version, scenario.vscodeMinimum)
+                    ) {
                         this.skip()
                     }
 
@@ -551,6 +573,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
+                    if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
+                        this.skip()
+                    }
+
                     setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('template')
                 })

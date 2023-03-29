@@ -19,7 +19,7 @@ import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
-import { cancel, confirm } from '../../../shared/localizedText'
+import { cancel } from '../../../shared/localizedText'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import {
     codeScanLogsOutputChannelId,
@@ -190,7 +190,7 @@ describe('startSecurityScan', function () {
         const testWindow = getTestWindow()
         testWindow.onDidShowMessage(message => {
             if (message.message === stopScanMessage) {
-                message.selectItem(confirm)
+                message.selectItem(startSecurityScan.stopScanButton)
             }
         })
         model.codeScanState.setToRunning()
