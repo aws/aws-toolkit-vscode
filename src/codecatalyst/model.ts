@@ -182,6 +182,7 @@ interface DevEnvConnection {
     readonly hostname: string
     readonly envProvider: EnvProvider
     readonly SessionProcess: typeof ChildProcess
+    readonly devenv: DevEnvironment
 }
 
 export async function prepareDevEnvConnection(
@@ -209,6 +210,7 @@ export async function prepareDevEnvConnection(
 
     return {
         hostname,
+        devenv: runningDevEnv,
         envProvider,
         sshPath: ssh,
         vscPath: vsc,
@@ -228,17 +230,12 @@ export async function openDevEnv(
     devenv: DevEnvironmentId,
     targetPath?: string
 ): Promise<void> {
-    const { SessionProcess, vscPath } = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
+    const env = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
     if (!targetPath) {
-        const env = await client.getDevEnvironment({
-            spaceName: devenv.org.name,
-            projectName: devenv.project.name,
-            id: devenv.id,
-        })
-        const repo = env.repositories.length == 1 ? env.repositories[0].repositoryName : undefined
+        const repo = env.devenv.repositories.length == 1 ? env.devenv.repositories[0].repositoryName : undefined
         targetPath = repo ? `/projects/${repo}` : '/projects'
     }
-    await startVscodeRemote(SessionProcess, getHostNameFromEnv(devenv), targetPath, vscPath)
+    await startVscodeRemote(env.SessionProcess, getHostNameFromEnv(env.devenv), targetPath, env.vscPath)
 }
 
 // The "codecatalyst_connect" metric should really be splt into two parts:
