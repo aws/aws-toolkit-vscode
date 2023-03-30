@@ -10,6 +10,6 @@ sealed class IdeBackendStatus {
         val projectStatus
             get() = hostStatus.projects?.get(projectIdx) ?: throw RuntimeException("Project status index is invalid")
     }
-    object HostAlive : IdeBackendStatus()
+    class HostAlive(val status: UnattendedHostStatus?) : IdeBackendStatus()
     object HostNotAlive : IdeBackendStatus()
 }

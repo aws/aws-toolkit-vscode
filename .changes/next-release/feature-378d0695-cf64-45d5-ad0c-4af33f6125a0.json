@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Attempt to download IDE thin client earlier in the CodeCatalyst Dev Environment connection process"
+}

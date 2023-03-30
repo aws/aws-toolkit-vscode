@@ -13,11 +13,14 @@ import com.intellij.openapi.rd.createNestedDisposable
 import com.intellij.openapi.rd.util.launchChildIOBackground
 import com.intellij.openapi.rd.util.launchIOBackground
 import com.intellij.openapi.rd.util.launchOnUiAnyModality
+import com.intellij.openapi.rd.util.startUnderBackgroundProgressAsync
 import com.intellij.openapi.rd.util.startUnderModalProgressAsync
 import com.intellij.openapi.ui.DialogBuilder
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.BuildNumber
 import com.intellij.openapi.util.Disposer
+import com.intellij.remoteDev.downloader.CodeWithMeClientDownloader
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.dsl.gridLayout.VerticalAlign
@@ -43,12 +46,14 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.core.utils.buildList
+import software.aws.toolkits.jetbrains.gateway.connection.GET_IDE_BACKEND_VERSION_COMMAND
 import software.aws.toolkits.jetbrains.gateway.connection.GitSettings
 import software.aws.toolkits.jetbrains.gateway.connection.IDE_BACKEND_DIR
 import software.aws.toolkits.jetbrains.gateway.connection.StdOutResult
@@ -58,7 +63,6 @@ import software.aws.toolkits.jetbrains.gateway.connection.workflow.CloneCode
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.CopyScripts
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.InstallPluginBackend.InstallLocalPluginBackend
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.InstallPluginBackend.InstallMarketplacePluginBackend
-import software.aws.toolkits.jetbrains.gateway.connection.workflow.PatchBackend
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.PrimeSshAgent
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.StartBackend
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.TabbedWorkflowEmitter
@@ -77,9 +81,13 @@ import java.time.Duration
 import java.util.UUID
 import javax.swing.JLabel
 import kotlin.system.measureTimeMillis
+import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 import com.intellij.ui.dsl.builder.panel as panelv2
 import software.aws.toolkits.telemetry.Result as TelemetryResult
 
+@ExperimentalTime
 class CawsConnectionProvider : GatewayConnectionProvider {
     companion object {
         val CAWS_CONNECTION_PARAMETERS = AttributeBagKey.create<Map<String, String>>("CAWS_CONNECTION_PARAMETERS")
@@ -252,6 +260,43 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                             )
                             LOG.info { "FS test took ${fsTestTime}ms" }
 
+                            lifetime.startUnderBackgroundProgressAsync(message("caws.download.thin_client"), isIndeterminate = true) {
+                                val (backendVersion, getBackendVersionTime) = measureTimedValue {
+                                    tryOrNull {
+                                        executor.executeCommandNonInteractive(
+                                            "sh", "-c", GET_IDE_BACKEND_VERSION_COMMAND,
+                                            timeout = Duration.ofSeconds(15)
+                                        ).stdout
+                                    }
+                                }
+                                CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                    project = null,
+                                    userId = userId,
+                                    result = if (backendVersion != null) TelemetryResult.Succeeded else TelemetryResult.Failed,
+                                    duration = getBackendVersionTime.toDouble(DurationUnit.MILLISECONDS),
+                                    codecatalystDevEnvironmentWorkflowStep = "getBackendVersion"
+                                )
+
+                                if (backendVersion.isNullOrBlank()) {
+                                    LOG.warn { "Could not determine backend version to prefetch thin client" }
+                                } else {
+                                    val (clientPaths, downloadClientTime) = measureTimedValue {
+                                        BuildNumber.fromStringOrNull(backendVersion)?.asStringWithoutProductCode()?.let { build ->
+                                            LOG.info { "Fetching client for version: $build" }
+                                            CodeWithMeClientDownloader.downloadClientAndJdk(build, indicator)
+                                        }
+                                    }
+
+                                    CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                        project = null,
+                                        userId = userId,
+                                        result = if (clientPaths != null) TelemetryResult.Succeeded else TelemetryResult.Failed,
+                                        duration = downloadClientTime.toDouble(DurationUnit.MILLISECONDS),
+                                        codecatalystDevEnvironmentWorkflowStep = "downloadThinClient"
+                                    )
+                                }
+                            }
+
                             runBackendWorkflow(
                                 view,
                                 workflowEmitter,
@@ -417,9 +462,6 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                 }
             }
 
-            if (AwsToolkit.isDeveloperMode()) {
-                add(PatchBackend(gatewayHandle, executor, lifetime))
-            }
             add(StartBackend(gatewayHandle, remoteScriptPath, remoteProjectName, executor, lifetime, envId, isSmallInstance))
         }
 

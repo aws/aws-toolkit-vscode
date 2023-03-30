@@ -20,7 +20,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.gateway.GatewayProduct
 import software.aws.toolkits.jetbrains.gateway.ToolkitInstallSettings
 import software.aws.toolkits.jetbrains.gateway.connection.AbstractSsmCommandExecutor
-import software.aws.toolkits.jetbrains.gateway.connection.IDE_BACKEND_DIR
+import software.aws.toolkits.jetbrains.gateway.connection.GET_IDE_BACKEND_VERSION_COMMAND
 import software.aws.toolkits.jetbrains.utils.execution.steps.CliBasedStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
@@ -68,7 +68,7 @@ abstract class InstallPluginBackend(
                 }
             }
 
-            return "$baseUrl$(cat $IDE_BACKEND_DIR/build.txt)"
+            return "$baseUrl$($GET_IDE_BACKEND_VERSION_COMMAND)"
         }
     }
 
