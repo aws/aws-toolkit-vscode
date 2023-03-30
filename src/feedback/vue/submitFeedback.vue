@@ -26,13 +26,6 @@
         <div>
             <div>
                 <div style="margin-bottom: 10px">
-                    <div
-                        style="float: right; font-size: smaller"
-                        id="remaining"
-                        :class="comment.length > 2000 ? 'exceeds-max-length' : ''"
-                    >
-                        {{ 2000 - comment.length }} characters remaining
-                    </div>
                     <div>
                         <em
                             >Feedback is <b>anonymous</b>. If you need a reply,
@@ -40,6 +33,20 @@
                                 >contact us on GitHub</a
                             >.</em
                         >
+                    </div>
+                    <br />
+                    <div>
+                        <em>
+                            Don't add personally identifiable information (PII), confidential or sensitive information
+                            in your feedback. Please remove any PII when sharing file paths, error messages, etc.
+                        </em>
+                        <div
+                            style="float: right; font-size: smaller"
+                            id="remaining"
+                            :class="comment.length > 2000 ? 'exceeds-max-length' : ''"
+                        >
+                            {{ 2000 - comment.length }} characters remaining
+                        </div>
                     </div>
                 </div>
             </div>
