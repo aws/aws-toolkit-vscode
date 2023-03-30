@@ -34,6 +34,7 @@ import {
     showIntroduction,
     showAccessTokenErrorLearnMore,
     reconnect,
+    refreshStatusBar,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -43,7 +44,7 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands } from '../shared/vscode/commands2'
-import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
+import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil } from './util/authUtil'

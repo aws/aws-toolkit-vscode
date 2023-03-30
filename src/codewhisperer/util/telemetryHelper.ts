@@ -328,7 +328,7 @@ export class TelemetryHelper {
         this.timeSinceLastModification = 0
         this.invocationTime = 0
         this.firstRecommendationTime = 0
-        this.classifierResult = 0
+        this.classifierResult = undefined
     }
 
     private getAggregatedCompletionType(

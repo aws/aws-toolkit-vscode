@@ -329,7 +329,9 @@ export class InlineCompletionService {
             ReferenceInlineProvider.instance.removeInlineReference()
             ImportAdderProvider.instance.clear()
             // when cursor change due to mouse movement we need to reset the active item index for inline
-            this.inlineCompletionProvider?.clearActiveItemIndex()
+            if (e.kind === 2) {
+                this.inlineCompletionProvider?.clearActiveItemIndex()
+            }
         }
     }
 
@@ -530,11 +532,3 @@ export class InlineCompletionService {
         }, 5 * 1000)
     }
 }
-
-export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-    } else {
-        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
-    }
-})
