@@ -206,7 +206,7 @@ export class TelemetryHelper {
         // the request level user decision will contain information from both the service_invocation event
         // and the user_decision events for recommendations within that request
         const serviceInvocation = this.sessionInvocations.find(e => e.codewhispererRequestId === requestId)
-        if (!serviceInvocation) {
+        if (!serviceInvocation || !events.length) {
             return
         }
         const aggregated: CodewhispererUserTriggerDecision = {
@@ -232,7 +232,9 @@ export class TelemetryHelper {
     private sendUserTriggerDecisionTelemetry(sessionId: string) {
         // the user trigger decision will aggregate information from request level user decisions within one session
         // and add additional session level insights
-
+        if (!this.sessionDecisions.length) {
+            return
+        }
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const language = this.sessionDecisions[0].codewhispererLanguage
@@ -324,6 +326,7 @@ export class TelemetryHelper {
         this.timeSinceLastModification = 0
         this.invocationTime = 0
         this.firstRecommendationTime = 0
+        this.classifierResult = 0
     }
 
     private getAggregatedCompletionType(

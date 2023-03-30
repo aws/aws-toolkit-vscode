@@ -42,6 +42,10 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         return this.activeItemIndex
     }
 
+    public clearActiveItemIndex() {
+        this.activeItemIndex = undefined
+    }
+
     private getGhostText(prefix: string, suggestion: string): string {
         const prefixLines = prefix.split(/\r\n|\r|\n/)
         const n = prefixLines.length
@@ -319,9 +323,13 @@ export class InlineCompletionService {
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
+        // e.kind will be 1 for keyboard cursor change events
+        // we do not want to reset the states for keyboard events because they can be typeahead
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
             ImportAdderProvider.instance.clear()
+            // when cursor change due to mouse movement we need to reset the active item index for inline
+            this.inlineCompletionProvider?.clearActiveItemIndex()
         }
     }
 

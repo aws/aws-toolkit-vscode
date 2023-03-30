@@ -6,7 +6,7 @@
 import * as os from 'os'
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
+import { CodewhispererLanguage, CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import * as CodeWhispererConstants from '../models/constants'
@@ -269,6 +269,16 @@ export class ClassifierTrigger {
         )
         if (this.isClassifierEnabled() && isClassifierSupportedLanguage) {
             this.shouldTriggerFromClassifier(undefined, editor, undefined)
+        }
+    }
+
+    public recordClassifierResultForAutoTrigger(
+        event: vscode.TextDocumentChangeEvent,
+        editor: vscode.TextEditor,
+        triggerType: CodewhispererAutomatedTriggerType
+    ) {
+        if (triggerType !== 'Classifier' && this.isClassifierEnabled()) {
+            this.shouldTriggerFromClassifier(event, editor, triggerType)
         }
     }
 
