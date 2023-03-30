@@ -725,9 +725,10 @@ export class Auth implements AuthService, ConnectionManager {
                 return token.registration.scopes
             }
 
-            const profile = createBuilderIdProfile(await getScopes())
-            const key = getSsoProfileKey(profile)
-            if (this.store.getProfile(key) === undefined) {
+            const builderIdConn = (await this.listConnections()).find(isBuilderIdConnection)
+            if (!builderIdConn) {
+                const profile = createBuilderIdProfile(await getScopes())
+                const key = getSsoProfileKey(profile)
                 await this.store.addProfile(key, profile)
                 await this.store.setCurrentProfileId(key)
             }
@@ -1089,7 +1090,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
         return {
             detail: getDetail(),
             data: conn,
-            invalidSelection: true,
+            invalidSelection: state !== 'authenticating',
             label: codicon`${getIcon('vscode-error')} ${conn.label}`,
             description:
                 state === 'authenticating'

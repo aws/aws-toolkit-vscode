@@ -24,6 +24,8 @@ import {
 import { getImportCount } from './importAdderUtil'
 import { CodeWhispererSettings } from './codewhispererSettings'
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 export class TelemetryHelper {
     /**
      * Trigger type for getting CodeWhisperer recommendation

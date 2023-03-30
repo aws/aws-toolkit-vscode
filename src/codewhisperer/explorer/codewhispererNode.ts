@@ -75,23 +75,27 @@ export class CodeWhispererNode implements RootNode {
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
 
-        if (isCloud9()) {
-            return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
-        } else {
-            if (AuthUtil.instance.isConnected()) {
-                if (AuthUtil.instance.isConnectionExpired()) {
-                    return [createReconnectNode(), createLearnMore()]
-                } else if (this._showFreeTierLimitReachedNode) {
-                    return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
-                } else {
-                    return [
-                        createAutoSuggestionsNode(autoTriggerEnabled),
-                        createSecurityScanNode(),
-                        createOpenReferenceLogNode(),
-                    ]
-                }
+        if (!AuthUtil.instance.isConnected()) {
+            return [createSsoSignIn(), createLearnMore()]
+        }
+
+        if (AuthUtil.instance.isConnectionExpired()) {
+            return [createReconnectNode(), createLearnMore()]
+        } else if (this._showFreeTierLimitReachedNode) {
+            if (isCloud9()) {
+                return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
-                return [createSsoSignIn(), createLearnMore()]
+                return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
+            }
+        } else {
+            if (isCloud9()) {
+                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
+            } else {
+                return [
+                    createAutoSuggestionsNode(autoTriggerEnabled),
+                    createSecurityScanNode(),
+                    createOpenReferenceLogNode(),
+                ]
             }
         }
     }
