@@ -270,7 +270,7 @@ async function promptQuickstart(): Promise<void> {
  */
 export function showWelcomeMessage(context: vscode.ExtensionContext): void {
     if (getCodeCatalystDevEnvId() !== undefined) {
-        // Do not show clippy in CodeCatalyst development environments.
+        // Do not show clippy in CodeCatalyst dev environments.
         return
     }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version

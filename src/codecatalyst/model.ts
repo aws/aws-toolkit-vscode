@@ -108,7 +108,7 @@ export function createCodeCatalystEnvProvider(
 type EnvProvider = () => Promise<NodeJS.ProcessEnv>
 
 /**
- * Creates a new {@link ChildProcess} class bound to a specific development environment. All instances of this
+ * Creates a new {@link ChildProcess} class bound to a specific dev environment. All instances of this
  * derived class will have SSM session information injected as environment variables as-needed.
  */
 export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
@@ -174,7 +174,7 @@ export async function getConnectedDevEnv(
 }
 
 /**
- * Everything needed to connect to a development environment via VS Code or `ssh`
+ * Everything needed to connect to a dev environment via VS Code or `ssh`
  */
 interface DevEnvConnection {
     readonly sshPath: string
