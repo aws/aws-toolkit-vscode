@@ -17,6 +17,7 @@ import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { InlineCompletionService } from '../service/inlineCompletionService'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -142,3 +143,11 @@ async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<voi
     const readmeUri = vscode.Uri.file(filePath)
     await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
 }
+
+export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
+    if (AuthUtil.instance.isConnectionValid()) {
+        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+    } else {
+        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
+    }
+})
