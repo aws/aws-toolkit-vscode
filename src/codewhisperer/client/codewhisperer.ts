@@ -16,16 +16,10 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { getLogger } from '../../shared/logger'
-import { throttle } from 'lodash'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../credentials/auth'
-
-const refreshCredentials = throttle(() => {
-    getLogger().verbose('codewhisperer: invalidating expired credentials')
-    globals.awsContext.credentialsShim?.refresh()
-}, 60000)
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -123,7 +117,7 @@ export class DefaultCodeWhispererClient {
                                     resp.error?.code === 'AccessDeniedException' &&
                                     resp.error.message.match(/expired/i)
                                 ) {
-                                    refreshCredentials()
+                                    AuthUtil.instance.reauthenticate()
                                     resp.error.retryable = true
                                 }
                             })

@@ -15,6 +15,7 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
+import { isIamConnection } from '../../credentials/auth'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -61,7 +62,7 @@ export async function invokeRecommendation(
             try {
                 RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                 RecommendationHandler.instance.clearRecommendations()
-                if (isCloud9('classic')) {
+                if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     await RecommendationHandler.instance.getRecommendations(
                         client,
                         editor,

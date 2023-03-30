@@ -19,6 +19,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ClassifierTrigger } from './classifierTrigger'
+import { isIamConnection } from '../../credentials/auth'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -189,7 +190,7 @@ export class KeyStrokeHandler {
                 try {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
-                    if (isCloud9('classic')) {
+                    if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                         await RecommendationHandler.instance.getRecommendations(
                             client,
                             editor,
