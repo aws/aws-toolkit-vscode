@@ -21,7 +21,7 @@ import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, hostNamePrefix } from './tools'
-import { isCodeCatalystVSCode } from './utils'
+import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
@@ -150,7 +150,7 @@ export interface ConnectedDevEnv {
 
 export async function getConnectedDevEnv(
     codeCatalystClient: CodeCatalystClient,
-    devenvClient = new DevEnvClient()
+    devenvClient = DevEnvClient.instance
 ): Promise<ConnectedDevEnv | undefined> {
     const devEnvId = devenvClient.id
     if (!devEnvId || !devenvClient.isCodeCatalystDevEnv()) {
@@ -313,7 +313,7 @@ export function associateDevEnv(
         const devenvs = await client
             .listResources('devEnvironment')
             .flatten()
-            .filter(env => env.repositories.length > 0 && isCodeCatalystVSCode(env.ides))
+            .filter(env => env.repositories.length > 0 && isDevenvVscode(env.ides))
             .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
 
         yield* repos.map(repo => ({
