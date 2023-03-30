@@ -22,8 +22,13 @@ import kotlin.streams.toList
 
 class DefaultTelemetryPublisher(
     private val clientMetadata: ClientMetadata = ClientMetadata.DEFAULT_METADATA,
-    private val client: ToolkitTelemetryClient = createDefaultTelemetryClient()
+    private val clientProvider: () -> ToolkitTelemetryClient
 ) : TelemetryPublisher {
+    constructor() : this(clientProvider = { createDefaultTelemetryClient() })
+
+    private val lazyClient = lazy { clientProvider() }
+    private val client by lazyClient
+
     override suspend fun publish(metricEvents: Collection<MetricEvent>) {
         withContext(getCoroutineBgContext()) {
             client.postMetrics {
@@ -89,7 +94,9 @@ class DefaultTelemetryPublisher(
         }
 
     override fun close() {
-        client.close()
+        if (lazyClient.isInitialized()) {
+            client.close()
+        }
     }
 
     private companion object {

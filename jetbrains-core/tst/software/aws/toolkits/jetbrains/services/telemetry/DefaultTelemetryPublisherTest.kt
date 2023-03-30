@@ -40,7 +40,7 @@ class DefaultTelemetryPublisherTest {
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
             clientMetadata = clientMetadata,
-            client = mockTelemetryClient
+            clientProvider = { mockTelemetryClient }
         )
 
         runBlocking {
@@ -108,7 +108,7 @@ class DefaultTelemetryPublisherTest {
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
             clientMetadata = clientMetadata,
-            client = mockTelemetryClient
+            clientProvider = { mockTelemetryClient }
         )
 
         runBlocking {
