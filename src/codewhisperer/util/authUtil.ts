@@ -15,6 +15,7 @@ import {
     createSsoProfile,
     isSsoConnection,
     hasScopes,
+    isIamConnection,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
@@ -26,9 +27,17 @@ import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile()
-// No connections are valid within C9 classic
-export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
-    !isCloud9('classic') && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
+
+export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
+    if (isCloud9('classic')) {
+        return isIamConnection(conn)
+    }
+
+    return (
+        (isCloud9('codecatalyst') && isIamConnection(conn)) ||
+        (isSsoConnection(conn) && hasScopes(conn, codewhispererScopes))
+    )
+}
 
 export class AuthUtil {
     static #instance: AuthUtil
@@ -48,11 +57,6 @@ export class AuthUtil {
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        // codewhisperer uses sigv4 creds on C9 classic
-        if (isCloud9('classic')) {
-            return
-        }
-
         this.auth.onDidChangeConnectionState(e => {
             if (e.state !== 'authenticating') {
                 this.refreshCodeWhisperer()
@@ -68,7 +72,7 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-            TelemetryHelper.instance.startUrl = this.conn?.startUrl
+            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -141,8 +145,26 @@ export class AuthUtil {
             throw new ToolkitError('No connection found', { code: 'NoConnection' })
         }
 
+        if (!isSsoConnection(this.conn)) {
+            throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
+        }
+
         const bearerToken = await this.conn.getToken()
         return bearerToken.accessToken
+    }
+
+    public async getCredentials() {
+        await this.restore()
+
+        if (this.conn === undefined) {
+            throw new ToolkitError('No connection found', { code: 'NoConnection' })
+        }
+
+        if (!isIamConnection(this.conn)) {
+            throw new ToolkitError('Connection is not an IAM connection', { code: 'BadConnectionType' })
+        }
+
+        return this.conn.getCredentials()
     }
 
     public isConnectionValid(): boolean {
@@ -181,6 +203,7 @@ export class AuthUtil {
         if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
             return
         }
+
         await vscode.window
             .showInformationMessage(
                 CodeWhispererConstants.connectionExpired,
@@ -206,22 +229,14 @@ export class AuthUtil {
 
     public async rescopeConnection(existingConn: SsoConnection) {
         const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
-        try {
-            await this.auth.reauthenticate(upgradedConn)
-
-            if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
-                await this.auth.useConnection(upgradedConn)
-            } else {
-                await this.secondaryAuth.useNewConnection(upgradedConn)
-            }
-        } catch (err) {
-            // Don't allow duplicates to exist on errors
-            await this.auth.deleteConnection(upgradedConn)
-            throw err
-        }
-
-        // This is non-breaking as codewhisperer is the only thing saving enterprise SSO connections at the moment
         await this.auth.deleteConnection(existingConn)
+        await this.auth.reauthenticate(upgradedConn)
+
+        if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
+            await this.auth.useConnection(upgradedConn)
+        } else {
+            await this.secondaryAuth.useNewConnection(upgradedConn)
+        }
 
         return upgradedConn
     }

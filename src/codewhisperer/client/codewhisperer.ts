@@ -20,6 +20,7 @@ import { throttle } from 'lodash'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { isSsoConnection } from '../../credentials/auth'
 
 const refreshCredentials = throttle(() => {
     getLogger().verbose('codewhisperer: invalidating expired credentials')
@@ -94,7 +95,7 @@ export class DefaultCodeWhispererClient {
             {
                 apiConfig: apiConfig,
                 region: CodeWhispererConstants.region,
-                credentials: this.credentials,
+                credentials: this.credentials ?? (await AuthUtil.instance.getCredentials()),
                 endpoint: CodeWhispererConstants.endpoint,
                 onRequestSetup: [
                     req => {
@@ -166,12 +167,11 @@ export class DefaultCodeWhispererClient {
     }
 
     private isBearerTokenAuth(): boolean {
-        // return true if access token is cleared because of SSO code path
         const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-        if (!accessToken) {
-            return true
+        if (accessToken) {
+            return false
         }
-        return AuthUtil.instance.isConnected()
+        return isSsoConnection(AuthUtil.instance.conn)
     }
 
     public async generateRecommendations(

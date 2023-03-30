@@ -17,7 +17,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { ToolkitError, UnknownError } from '../shared/errors'
+import { formatError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache, getTokenCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
@@ -38,6 +38,7 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 import { getDependentAuths } from './secondaryAuth'
+import { DevSettings } from '../shared/settings'
 import { partition } from '../shared/utilities/mementos'
 import { createRegionPrompter } from '../shared/ui/common/region'
 
@@ -306,7 +307,8 @@ interface ConnectionStateChangeEvent {
 }
 
 export class Auth implements AuthService, ConnectionManager {
-    private readonly ssoCache = getCache()
+    readonly #ssoCache = getCache()
+    readonly #validationErrors = new Map<Connection['id'], Error>()
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
@@ -460,6 +462,10 @@ export class Auth implements AuthService, ConnectionManager {
         return this.store.getProfile(connection.id)?.metadata.connectionState
     }
 
+    public getInvalidationReason(connection: Pick<Connection, 'id'>): Error | undefined {
+        return this.#validationErrors.get(connection.id)
+    }
+
     /**
      * Attempts to remove all auth state related to the connection.
      *
@@ -492,6 +498,10 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const profile = await this.store.updateProfile(id, { connectionState })
+        if (connectionState !== 'invalid') {
+            this.#validationErrors.delete(id)
+        }
+
         if (this.#activeConnection?.id === id) {
             this.#activeConnection.state = connectionState
             this.#onDidChangeActiveConnection.fire(this.#activeConnection)
@@ -502,16 +512,16 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
-        if (profile.type === 'sso') {
-            const provider = this.getTokenProvider(id, profile)
-            if ((await provider.getToken()) === undefined) {
-                return this.updateConnectionState(id, 'invalid')
+        const runCheck = async () => {
+            if (profile.type === 'sso') {
+                const provider = this.getTokenProvider(id, profile)
+                if ((await provider.getToken()) === undefined) {
+                    return this.updateConnectionState(id, 'invalid')
+                } else {
+                    return this.updateConnectionState(id, 'valid')
+                }
             } else {
-                return this.updateConnectionState(id, 'valid')
-            }
-        } else {
-            const provider = await this.getCredentialsProvider(id)
-            try {
+                const provider = await this.getCredentialsProvider(id)
                 const credentials = await this.getCachedCredentials(provider)
                 if (credentials !== undefined) {
                     return this.updateConnectionState(id, 'valid')
@@ -522,10 +532,16 @@ export class Auth implements AuthService, ConnectionManager {
                 } else {
                     return this.updateConnectionState(id, 'invalid')
                 }
-            } catch {
-                return this.updateConnectionState(id, 'invalid')
             }
         }
+
+        return runCheck().catch(err => this.handleValidationError(id, err))
+    }
+
+    private async handleValidationError(id: Connection['id'], err: unknown) {
+        this.#validationErrors.set(id, UnknownError.cast(err))
+
+        return this.updateConnectionState(id, 'invalid')
     }
 
     private async getCredentialsProvider(id: Connection['id']) {
@@ -569,7 +585,7 @@ export class Auth implements AuthService, ConnectionManager {
                 scopes: profile.scopes,
                 region: profile.ssoRegion,
             },
-            this.ssoCache
+            this.#ssoCache
         )
     }
 
@@ -617,7 +633,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return result
         } catch (err) {
-            await this.updateConnectionState(id, 'invalid')
+            await this.handleValidationError(id, err)
             throw err
         }
     }
@@ -640,7 +656,9 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
-        const token = await provider.getToken()
+        const token = await provider.getToken().catch(err => {
+            this.#validationErrors.set(id, err)
+        })
 
         return token ?? this.handleInvalidCredentials(id, () => provider.createToken())
     }
@@ -664,6 +682,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (previousState === 'invalid') {
             throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
                 code: 'InvalidConnection',
+                cause: this.#validationErrors.get(id),
             })
         }
         // TODO: cancellable notification?
@@ -675,6 +694,7 @@ export class Auth implements AuthService, ConnectionManager {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
                     code: 'InvalidConnection',
+                    cause: this.#validationErrors.get(id),
                 })
             }
         }
@@ -705,9 +725,10 @@ export class Auth implements AuthService, ConnectionManager {
                 return token.registration.scopes
             }
 
-            const profile = createBuilderIdProfile(await getScopes())
-            const key = getSsoProfileKey(profile)
-            if (this.store.getProfile(key) === undefined) {
+            const builderIdConn = (await this.listConnections()).find(isBuilderIdConnection)
+            if (!builderIdConn) {
+                const profile = createBuilderIdProfile(await getScopes())
+                const key = getSsoProfileKey(profile)
                 await this.store.addProfile(key, profile)
                 await this.store.setCurrentProfileId(key)
             }
@@ -1049,47 +1070,57 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
         const state = auth.getConnectionState(conn)
-        if (state !== 'valid') {
+        if (state === 'valid') {
             return {
                 data: conn,
-                invalidSelection: true,
-                label: codicon`${getIcon('vscode-error')} ${conn.label}`,
-                description:
-                    state === 'authenticating'
-                        ? 'authenticating...'
-                        : localize(
-                              'aws.auth.promptConnection.expired.description',
-                              'Expired or Invalid, select to authenticate'
-                          ),
-                onClick:
-                    state !== 'authenticating'
-                        ? async () => {
-                              // XXX: this is hack because only 1 picker can be shown at a time
-                              // Some legacy auth providers will show a picker, hiding this one
-                              // If we detect this then we'll jump straight into using the connection
-                              let hidden = false
-                              const sub = prompter.quickPick.onDidHide(() => {
-                                  hidden = true
-                                  sub.dispose()
-                              })
-                              const newConn = await reauthCommand.execute(auth, conn)
-                              if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
-                                  await auth.useConnection(newConn)
-                              } else {
-                                  await prompter.clearAndLoadItems(loadItems())
-                                  prompter.selectItems(
-                                      ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
-                                  )
-                              }
-                          }
-                        : undefined,
+                label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
+                description: getConnectionDescription(conn),
             }
         }
 
+        const getDetail = () => {
+            if (!DevSettings.instance.get('renderDebugDetails', false)) {
+                return
+            }
+
+            const err = auth.getInvalidationReason(conn)
+            return err ? formatError(err) : undefined
+        }
+
         return {
+            detail: getDetail(),
             data: conn,
-            label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
-            description: getConnectionDescription(conn),
+            invalidSelection: state !== 'authenticating',
+            label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            description:
+                state === 'authenticating'
+                    ? 'authenticating...'
+                    : localize(
+                          'aws.auth.promptConnection.expired.description',
+                          'Expired or Invalid, select to authenticate'
+                      ),
+            onClick:
+                state !== 'authenticating'
+                    ? async () => {
+                          // XXX: this is hack because only 1 picker can be shown at a time
+                          // Some legacy auth providers will show a picker, hiding this one
+                          // If we detect this then we'll jump straight into using the connection
+                          let hidden = false
+                          const sub = prompter.quickPick.onDidHide(() => {
+                              hidden = true
+                              sub.dispose()
+                          })
+                          const newConn = await reauthCommand.execute(auth, conn)
+                          if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
+                              await auth.useConnection(newConn)
+                          } else {
+                              await prompter.clearAndLoadItems(loadItems())
+                              prompter.selectItems(
+                                  ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
+                              )
+                          }
+                      }
+                    : undefined,
         }
     }
 

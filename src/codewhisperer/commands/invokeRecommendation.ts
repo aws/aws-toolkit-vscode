@@ -61,7 +61,7 @@ export async function invokeRecommendation(
             try {
                 RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                 RecommendationHandler.instance.clearRecommendations()
-                if (isCloud9('classic') || !AuthUtil.instance.isConnected()) {
+                if (isCloud9('classic')) {
                     await RecommendationHandler.instance.getRecommendations(
                         client,
                         editor,
