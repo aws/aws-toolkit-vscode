@@ -731,6 +731,13 @@ export class Auth implements AuthService, ConnectionManager {
                 const key = getSsoProfileKey(profile)
                 await this.store.addProfile(key, profile)
                 await this.store.setCurrentProfileId(key)
+            } else {
+                const scopes = await getScopes()
+
+                // If this token wasn't created by us (or doesn't match the scopes), invalidate it
+                if (!scopes || !hasScopes(builderIdConn, scopes) || scopes.length !== builderIdConn.scopes?.length) {
+                    await this.invalidateConnection(builderIdConn.id)
+                }
             }
         }
 
