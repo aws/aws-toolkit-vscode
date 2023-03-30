@@ -16,6 +16,9 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import { ClassifierTrigger } from './classifierTrigger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -32,6 +35,8 @@ export class KeyStrokeHandler {
      */
 
     private idleTriggerTimer?: NodeJS.Timer
+
+    public lastInvocationTime?: number
 
     constructor() {
         this.specialChar = ''
@@ -120,9 +125,10 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
-            if ([DocumentChangedSource.RegularKey].includes(changedSource)) {
-                this.startIdleTimeTriggerTimer(event, editor, client, config)
-            }
+            const isClassifierSupportedLanguage = ClassifierTrigger.instance.isSupportedLanguage(
+                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId)
+            )
+
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
                     triggerType = 'Enter'
@@ -137,6 +143,13 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
+                    if (!ClassifierTrigger.instance.isClassifierEnabled() || !isClassifierSupportedLanguage) {
+                        this.startIdleTimeTriggerTimer(event, editor, client, config)
+                    } else {
+                        triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
+                            ? 'Classifier'
+                            : undefined
+                    }
                     break
                 }
                 default: {
@@ -145,6 +158,12 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
+                if (isClassifierSupportedLanguage) {
+                    ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
+                }
+                if (changedSource === DocumentChangedSource.SpecialCharsKey) {
+                    TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(event.contentChanges[0].text)
+                }
                 this.invokeAutomatedTrigger(triggerType, editor, client, config)
             }
         } catch (error) {
@@ -160,7 +179,8 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry
     ): Promise<void> {
         if (editor) {
-            if (isCloud9()) {
+            ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
+            if (isCloud9('any')) {
                 if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                     return
                 }
@@ -169,14 +189,28 @@ export class KeyStrokeHandler {
                 try {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
-                    await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType,
-                        false
-                    )
+                    if (isCloud9('classic') || !AuthUtil.instance.isConnected()) {
+                        await RecommendationHandler.instance.getRecommendations(
+                            client,
+                            editor,
+                            'AutoTrigger',
+                            config,
+                            autoTriggerType,
+                            false
+                        )
+                    } else {
+                        if (AuthUtil.instance.isConnectionExpired()) {
+                            await AuthUtil.instance.showReauthenticatePrompt()
+                        }
+                        await RecommendationHandler.instance.getRecommendations(
+                            client,
+                            editor,
+                            'AutoTrigger',
+                            config,
+                            autoTriggerType,
+                            true
+                        )
+                    }
                     if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false)) {
                         await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                             vsCodeState.isIntelliSenseActive = true
