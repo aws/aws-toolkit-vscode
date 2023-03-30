@@ -32,6 +32,8 @@ object CodeWhispererConstants {
     const val INVOCATION_INTERVAL: Long = 2050
 
     const val CODEWHISPERER_LEARN_MORE_URI = "https://aws.amazon.com/codewhisperer"
+    const val CODEWHISPERER_SSO_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer-auth.html"
+    const val CODEWHISPERER_LOGIN_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisper-setup-general.html"
     const val CODEWHISPERER_LOGIN_HELP_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer.html"
 
     const val THROTTLING_MESSAGE = "Maximum recommendation count reached for this month."

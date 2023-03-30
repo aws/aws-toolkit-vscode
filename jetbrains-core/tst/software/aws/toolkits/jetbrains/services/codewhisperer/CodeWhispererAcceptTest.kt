@@ -7,9 +7,12 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_LEFT
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_RIGHT
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TAB
+import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -48,6 +51,11 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
     @Test
     fun `test accept recommendation with no typeahead no right context`() {
         testAcceptRecommendationWithTypingAndMatchingRightContext("", "")
+    }
+
+    @Test
+    fun `test accept recommendation with no typeahead no right context using keyboard`() {
+        testAcceptRecommendationWithTypingAndMatchingRightContext("", "", true)
     }
 
     @Test
@@ -104,7 +112,7 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
         }
     }
 
-    private fun testAcceptRecommendationWithTypingAndMatchingRightContext(typing: String, rightContext: String) {
+    private fun testAcceptRecommendationWithTypingAndMatchingRightContext(typing: String, rightContext: String, useKeyboard: Boolean = false) {
         projectRule.fixture.configureByText(javaFileName, buildContextWithRecommendation(rightContext))
         runInEdtAndWait {
             projectRule.fixture.editor.caretModel.moveToOffset(javaTestContext.length - 2)
@@ -118,8 +126,17 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
                 if (index < editor.caretModel.offset - startOffset) return@forEachIndexed
                 projectRule.fixture.type(char)
             }
-            popupManagerSpy.popupComponents.acceptButton.doClick()
+            acceptHelper(useKeyboard)
             assertThat(editor.document.text).isEqualTo(expectedContext)
+        }
+    }
+
+    private fun acceptHelper(useKeyboard: Boolean) {
+        if (useKeyboard) {
+            EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_TAB)
+                .execute(projectRule.fixture.editor, null, DataContext.EMPTY_CONTEXT)
+        } else {
+            popupManagerSpy.popupComponents.acceptButton.doClick()
         }
     }
 

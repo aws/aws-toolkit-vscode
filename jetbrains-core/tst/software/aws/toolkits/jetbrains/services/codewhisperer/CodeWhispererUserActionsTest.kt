@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.codeInsight.codeVision.ui.visibleAreaChanged
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_DELETE_LINE
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_DELETE_TO_WORD_START
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_LEFT_WITH_SELECTION
@@ -13,19 +14,27 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_SELECT_WORD_AT
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_END_WITH_SELECTION
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_START_WITH_SELECTION
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.event.VisibleAreaEvent
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.popup.listeners.CodeWhispererScrollListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
+import java.awt.Rectangle
 
 class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
 
@@ -117,6 +126,23 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
             .showPopup(any(), any(), popupCaptor.capture(), any(), any())
         runInEdtAndWait {
             popupManagerSpy.closePopup(popupCaptor.lastValue)
+        }
+    }
+
+    @Test
+    fun `test CodeWhispererScrollListener re-render popup when visibleArea gets changed when popup is active`() {
+        // Arrange
+        val oldRect = Rectangle(0, 0, 20, 10)
+        val newRect = Rectangle(0, 10, 20, 10)
+        val event = mock<VisibleAreaEvent> {
+            on { this.oldRectangle } doReturn oldRect
+            on { this.newRectangle } doReturn newRect
+        }
+        withCodeWhispererServiceInvokedAndWait { states ->
+            CodeWhispererInvocationStatus.getInstance().setPopupActive(true)
+            val listener = CodeWhispererScrollListener(states)
+            listener.visibleAreaChanged(event)
+            verify(popupManagerSpy, times(2)).showPopup(any(), any(), any(), any(), any())
         }
     }
 
