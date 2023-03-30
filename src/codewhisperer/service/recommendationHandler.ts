@@ -20,7 +20,7 @@ import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { asyncCallWithTimeout } from '../util/commonUtil'
+import { asyncCallWithTimeout, isInlineCompletionEnabled } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
 import {
@@ -293,8 +293,10 @@ export class RecommendationHandler {
                     this.setSuggestionState(i + this.recommendations.length, 'Discard')
                 }
             })
-            this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
-            this._onDidReceiveRecommendation.fire()
+            this.recommendations = pagination ? this.recommendations.concat(recommendation) : recommendation
+            if (isInlineCompletionEnabled()) {
+                this._onDidReceiveRecommendation.fire()
+            }
         }
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && this.recommendations.length === 0 && nextToken === '') {
