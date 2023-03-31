@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 
 import { isCloud9 } from './extensionUtilities'
 
-export const extensionSettingsPrefix = 'aws'
 export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
 export const productName: string = 'aws-toolkit-vscode'
