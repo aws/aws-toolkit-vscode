@@ -539,6 +539,7 @@ export class Experiments extends Settings.define(
 }
 
 const devSettings = {
+    logfile: String,
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
