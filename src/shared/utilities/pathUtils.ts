@@ -8,6 +8,19 @@ import * as _path from 'path'
 
 export const driveLetterRegex = /^[a-zA-Z]\:/
 
+/**
+ * Expands "~" at the start of `fname` to user home dir.
+ * TODO: expand env vars too.
+ */
+export function resolvePath(fname: string) {
+    const homedir = os.homedir()
+    if (fname.startsWith('~/') || fname.startsWith('~\\')) {
+        return _path.join(homedir, fname.substring(2))
+    }
+
+    return fname
+}
+
 function isUncPath(path: string) {
     return /^\s*[\/\\]{2}[^\/\\]+/.test(path)
 }
