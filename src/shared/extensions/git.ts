@@ -16,7 +16,7 @@ import { pushIf } from '../utilities/collectionUtils'
 interface GitFile {
     name: string
     /**
-     * Reads the file's contents
+     * Reads the file's contents. Affected by {@link maxBufferSizeInMB}.
      * @throws If the Git API becomes disabled or we were unable to read the file
      */
     read: () => Promise<string>
@@ -49,6 +49,11 @@ interface GitConfig {
 
 const execFileAsync = promisify(execFile)
 const minGitFilterVersion = new SemVer('2.27.0')
+
+// Arbitrary limit for the in-mem buffer when downloading files via `git cat-file`
+// This can be increased though for larger files streaming might be a better choice
+// See https://github.com/nodejs/node/issues/9829 for a discussion on `maxBuffer`
+const maxBufferSizeInMB = 100
 
 function formatBranch(branch?: GitTypes.Branch): string {
     return branch?.name ?? branch?.commit ?? 'unknown'
@@ -369,7 +374,7 @@ export class GitExtension {
 
                         return execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
-                            maxBuffer: 1024 * 1024 * 6,
+                            maxBuffer: 1024 * 1024 * maxBufferSizeInMB,
                         }).then(({ stdout }) => stdout)
                     },
                 }))
