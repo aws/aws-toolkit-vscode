@@ -20,11 +20,9 @@ import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
-import { createClient } from '../shared/clients/codecatalystClient'
-import { getConnectedDevEnv } from './model'
+import { getThisDevEnv } from './model'
 import { isDevenvVscode } from './utils'
 import { getLogger } from '../shared/logger/logger'
-import { UnknownError } from '../shared/errors'
 
 const localize = nls.loadMessageBundle()
 
@@ -64,32 +62,13 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
     }
 
-    async function getDevEnv() {
-        try {
-            await authProvider.restore()
-            const conn = authProvider.activeConnection
-            if (conn !== undefined && authProvider.auth.getConnectionState(conn) === 'valid') {
-                const client = await createClient(conn)
-
-                return await getConnectedDevEnv(client)
-            }
-        } catch (err) {
-            getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
-        }
-        return undefined
-    }
-
     const settings = PromptSettings.instance
     if (getCodeCatalystDevEnvId()) {
-        const devenv = await getDevEnv()
-        getLogger().error(
-            `codecatalyst: Dev Environment ides=[${devenv?.summary.ides?.reduce(
-                (o1, o2) => o1 + ' ' + o2?.name ?? '',
-                ''
-            )}]`
-        )
-
-        if (!isDevenvVscode(devenv?.summary.ides)) {
+        const thisDevenv = await getThisDevEnv(authProvider)
+        getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
+        if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
+            // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
+            // Can happen if devenv is switched to ides="cloud9", etc.
             vscode.commands.executeCommand('workbench.action.remote.close')
             return
         }

@@ -8,6 +8,7 @@ import globals from '../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import {
+    createClient,
     CodeCatalystClient,
     DevEnvironment,
     CodeCatalystRepo,
@@ -26,6 +27,8 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
+import { CodeCatalystAuthenticationProvider } from './auth'
+import { UnknownError } from '../shared/errors'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -171,6 +174,23 @@ export async function getConnectedDevEnv(
     })
 
     return { summary, devenvClient: devenvClient }
+}
+
+/**
+ * Gets the current devenv that Toolkit is running in, if any.
+ */
+export async function getThisDevEnv(authProvider: CodeCatalystAuthenticationProvider) {
+    try {
+        await authProvider.restore()
+        const conn = authProvider.activeConnection
+        if (conn !== undefined && authProvider.auth.getConnectionState(conn) === 'valid') {
+            const client = await createClient(conn)
+            return await getConnectedDevEnv(client)
+        }
+    } catch (err) {
+        getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
+    }
+    return undefined
 }
 
 /**
