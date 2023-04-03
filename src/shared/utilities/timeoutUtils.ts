@@ -275,7 +275,6 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
  *
  * Attempts to use the extension-scoped `setTimeout` if it exists, otherwise will fallback to the global scheduler.
  */
-
 export function sleep(duration: number = 0): Promise<void> {
     const schedule = globals?.clock?.setTimeout ?? setTimeout
     return new Promise(r => schedule(r, Math.max(duration, 0)))
