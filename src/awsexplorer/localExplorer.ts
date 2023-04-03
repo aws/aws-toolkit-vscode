@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { throttle } from '../shared/utilities/functionUtils'
 
 export interface RootNode<T = unknown> extends TreeNode<T> {
     /**
@@ -19,26 +20,6 @@ export interface RootNode<T = unknown> extends TreeNode<T> {
      * If not implemented, it is assumed that the node is always visible.
      */
     canShow?(): Promise<boolean> | boolean
-}
-
-function throttle<T>(cb: () => T | Promise<T>, delay: number): () => Promise<T> {
-    let timer: NodeJS.Timeout | undefined
-    let promise: Promise<T> | undefined
-
-    return () => {
-        timer?.refresh()
-
-        return (promise ??= new Promise<T>((resolve, reject) => {
-            timer = setTimeout(async () => {
-                timer = promise = undefined
-                try {
-                    resolve(await cb())
-                } catch (err) {
-                    reject(err)
-                }
-            }, delay)
-        }))
-    }
 }
 
 /**
