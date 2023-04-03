@@ -46,7 +46,7 @@ describe('throttle', function () {
         assert.strictEqual(counter, 2)
     })
 
-    describe('windo rolling', function () {
+    describe('window rolling', function () {
         let clock: ReturnType<typeof installFakeClock>
         const calls: ReturnType<typeof fn>[] = []
         const callAndSleep = async (delayInMs: number) => {
