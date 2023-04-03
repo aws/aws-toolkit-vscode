@@ -38,11 +38,11 @@ export class DevEnvClient implements vscode.Disposable {
                 if (this.lastStatus !== r.status) {
                     const newStatus = r.status ?? 'NULL'
                     getLogger().info(
-                        'codecatalyst: DevEnvClient: status change (old=%s new=%s) action=%s: %s',
+                        'codecatalyst: DevEnvClient: status change (old=%s new=%s)%s%s',
                         this.lastStatus,
                         newStatus,
-                        r.actionId ?? '?',
-                        r.message ?? '(no message)'
+                        r.actionId ? ` action=${r.actionId}` : '',
+                        r.message ? `: "${r.message}"` : ''
                     )
                     if (this.onStatusChangeFn) {
                         this.onStatusChangeFn(this.lastStatus, newStatus)
