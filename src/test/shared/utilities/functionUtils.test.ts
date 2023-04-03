@@ -46,23 +46,34 @@ describe('throttle', function () {
         assert.strictEqual(counter, 2)
     })
 
-    it('rolls the delay window when called', async function () {
-        fn = fn = throttle(() => void counter++, 10)
-        const clock = installFakeClock()
+    describe('windo rolling', function () {
+        let clock: ReturnType<typeof installFakeClock>
         const calls: ReturnType<typeof fn>[] = []
         const callAndSleep = async (delayInMs: number) => {
             calls.push(fn())
             await clock.tickAsync(delayInMs)
         }
 
-        await callAndSleep(5) // timeout set at T+10ms
-        await callAndSleep(5) // timeout moved to T+15ms
-        await callAndSleep(10) // timeout moved to T+20ms
-        await callAndSleep(10) // timeout expired, start new one at T+30ms
+        beforeEach(function () {
+            clock = installFakeClock()
+            fn = throttle(() => void counter++, 10)
+        })
 
-        // finish at T+40ms
-        await Promise.all(calls)
-        assert.strictEqual(counter, 2)
-        assert.strictEqual(calls.length, 4)
+        afterEach(function () {
+            clock.uninstall()
+            calls.length = 0
+        })
+
+        it('rolls the delay window when called', async function () {
+            await callAndSleep(5) // timeout set at T+10ms
+            await callAndSleep(5) // timeout moved to T+15ms
+            await callAndSleep(10) // timeout moved to T+20ms
+            await callAndSleep(10) // timeout expired, start new one at T+30ms
+
+            // finish at T+40ms
+            await Promise.all(calls)
+            assert.strictEqual(counter, 2)
+            assert.strictEqual(calls.length, 4)
+        })
     })
 })
