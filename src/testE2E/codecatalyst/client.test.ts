@@ -29,9 +29,6 @@ import { captureEventOnce } from '../../test/testUtil'
 import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import { getLogger } from '../../shared/logger'
-import { SystemUtilities } from '../../shared/systemUtilities'
-import { ChildProcess } from '../../shared/utilities/childProcess'
-import { isMinimumVersion } from '../../shared/vscode/env'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
@@ -122,12 +119,6 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         beforeEach(function () {
-            // Installing the SSH extension doesn't seem to work on minver
-            // It probably needs to be installed prior to running the tests
-            if (isMinimumVersion()) {
-                this.currentTest?.skip()
-            }
-
             getTestWindow().onDidShowMessage(m => {
                 const updateSshConfigItem = m.items.find(i => i.title === 'Update SSH config')
                 updateSshConfigItem?.select()
