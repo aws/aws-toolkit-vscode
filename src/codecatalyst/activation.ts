@@ -20,6 +20,9 @@ import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
+import { getThisDevEnv } from './model'
+import { isDevenvVscode } from './utils'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -54,13 +57,22 @@ export async function activate(ctx: ExtContext): Promise<void> {
         watchRestartingDevEnvs(ctx, authProvider)
     }
 
-    const devenvClient = new DevEnvClient()
-    if (devenvClient.id) {
-        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(devenvClient))
+    ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
+    if (DevEnvClient.instance.id) {
+        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
     }
 
     const settings = PromptSettings.instance
     if (getCodeCatalystDevEnvId()) {
+        const thisDevenv = await getThisDevEnv(authProvider)
+        getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
+        if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
+            // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
+            // Can happen if devenv is switched to ides="cloud9", etc.
+            vscode.commands.executeCommand('workbench.action.remote.close')
+            return
+        }
+
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
