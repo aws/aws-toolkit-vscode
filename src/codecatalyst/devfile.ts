@@ -16,7 +16,7 @@ import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
-    const client = new DevEnvClient()
+    const client = DevEnvClient.instance
     if (!client.isCodeCatalystDevEnv()) {
         throw new Error('Cannot update devfile outside a Dev Environment')
     }
@@ -60,7 +60,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 
     public constructor(
         registry: DevfileRegistry,
-        private readonly client = new DevEnvClient(),
+        private readonly client = DevEnvClient.instance,
         workspace: Workspace = vscode.workspace
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)

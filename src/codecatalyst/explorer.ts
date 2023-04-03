@@ -6,16 +6,14 @@
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
 import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
-import { createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
-import { UnknownError } from '../shared/errors'
+import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
-import { getLogger } from '../shared/logger/logger'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
-import { ConnectedDevEnv, getConnectedDevEnv, getDevfileLocation } from './model'
+import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 
 const getStartedCommand = Commands.register(
@@ -127,7 +125,7 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
-        this.devenv = await this.getDevEnv()
+        this.devenv = await getThisDevEnv(this.authProvider)
 
         const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         item.contextValue = this.authProvider.isUsingSavedConnection
@@ -142,19 +140,5 @@ export class CodeCatalystRootNode implements RootNode {
         }
 
         return item
-    }
-
-    private async getDevEnv() {
-        try {
-            await this.authProvider.restore()
-            const conn = this.authProvider.activeConnection
-            if (conn !== undefined && this.authProvider.auth.getConnectionState(conn) === 'valid') {
-                const client = await createClient(conn)
-
-                return await getConnectedDevEnv(client)
-            }
-        } catch (err) {
-            getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
-        }
     }
 }
