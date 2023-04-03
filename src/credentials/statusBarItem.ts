@@ -13,7 +13,7 @@ import { DevSettings } from '../shared/settings'
 import { Auth, login } from './auth'
 import { getAllConnectionsInUse, onDidChangeConnections } from './secondaryAuth'
 import { codicon, getIcon } from '../shared/icons'
-import { shared } from '../shared/utilities/functionUtils'
+import { throttle } from '../shared/utilities/functionUtils'
 
 const statusbarPriority = 1
 
@@ -26,10 +26,7 @@ export async function initializeAwsCredentialsStatusBarItem(
     statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
 
-    const update = shared(async () => {
-        updateItem(statusBarItem)
-        handleDevSettings(devSettings, statusBarItem)
-    })
+    const update = throttle(() => updateItem(statusBarItem, devSettings))
 
     update()
     context.subscriptions.push(
@@ -37,11 +34,11 @@ export async function initializeAwsCredentialsStatusBarItem(
         onDidChangeConnections(() => update()),
         Auth.instance.onDidChangeActiveConnection(() => update()),
         Auth.instance.onDidChangeConnectionState(() => update()),
-        devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
+        devSettings.onDidChangeActiveSettings(() => update())
     )
 }
 
-function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.StatusBarItem) {
+function handleDevSettings(statusBarItem: vscode.StatusBarItem, devSettings: DevSettings) {
     const developerMode = Object.keys(devSettings.activeSettings)
 
     if (developerMode.length > 0) {
@@ -52,7 +49,7 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
     }
 }
 
-function updateItem(statusBarItem: vscode.StatusBarItem): void {
+function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSettings): void {
     const company = getIdeProperties().company
     const connections = getAllConnectionsInUse(Auth.instance)
     const connectedTooltip = localize(
@@ -88,4 +85,7 @@ function updateItem(statusBarItem: vscode.StatusBarItem): void {
         ? new vscode.ThemeColor('statusBarItem.errorBackground')
         : undefined
     ;(statusBarItem as any).backgroundColor = color
+
+    // Do this last to override the normal behavior
+    handleDevSettings(statusBarItem, devSettings)
 }
