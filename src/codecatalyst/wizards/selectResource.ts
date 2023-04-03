@@ -17,7 +17,7 @@ import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { associateDevEnv, docs } from '../model'
-import { getHelpUrl, isCodeCatalystVSCode } from '../utils'
+import { getHelpUrl, isDevenvVscode } from '../utils'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
@@ -144,7 +144,7 @@ export function createDevEnvPrompter(
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
     const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
     const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
-    const filtered = envs.map(arr => arr.filter(env => isCodeCatalystVSCode(env.ides)))
+    const filtered = envs.map(arr => arr.filter(env => isDevenvVscode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }

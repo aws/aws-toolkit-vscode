@@ -15,7 +15,7 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
-import { recordSource } from './utils'
+import { isDevenvVscode, recordSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -28,6 +28,7 @@ export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCataly
         if (restartHandled || conn === undefined || authProvider.auth.getConnectionState(conn) !== 'valid') {
             return
         }
+        getLogger().info(`codecatalyst: reconnect: onDidChangeActiveConnection: startUrl=${conn.startUrl}`)
 
         const client = await createClient(conn)
         const envId = getCodeCatalystDevEnvId()
@@ -81,7 +82,7 @@ async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Pr
     const polledDevEnvs = devenvNames.join(', ')
     const progressTitle = localize(
         'AWS.codecatalyst.reconnect.restarting',
-        'The following devenvs are restarting: {0}',
+        'Dev Environments restarting: {0}',
         polledDevEnvs
     )
     vscode.window.withProgress(
@@ -143,6 +144,7 @@ async function pollDevEnvs(
     await setWatchedDevEnvStatus(memento, devenvs, true)
 
     const shouldCloseRootInstance = Object.keys(devenvs).length === 1
+    getLogger().info(`codecatalyst: reconnect: pollDevEnvs: ${Object.keys(devenvs).length}`)
 
     while (Object.keys(devenvs).length > 0) {
         if (token.isCancellationRequested) {
@@ -152,7 +154,6 @@ async function pollDevEnvs(
 
         for (const id in devenvs) {
             const details = devenvs[id]
-
             const devenvName = getDevEnvName(details.alias, id)
 
             try {
@@ -162,6 +163,9 @@ async function pollDevEnvs(
                     projectName: details.projectName,
                 })
 
+                const ide = metadata.ides?.[0]?.name
+                getLogger().info(`codecatalyst: reconnect: ides=${ide} statusReason=${metadata.statusReason}`)
+
                 if (metadata?.status === 'RUNNING') {
                     progress.report({
                         message: `Dev Environment ${devenvName} is now running. Attempting to reconnect.`,
@@ -169,11 +173,21 @@ async function pollDevEnvs(
 
                     openReconnectedDevEnv(client, id, details, shouldCloseRootInstance)
 
-                    // We no longer need to watch this devenv anymore because it's already being re-opened in SSH
+                    // Don't watch this devenv, it is already being re-opened in SSH.
+                    delete devenvs[id]
+                } else if (!isDevenvVscode(metadata.ides)) {
+                    // Technically vscode _can_ connect to a ideRuntime=jetbrains/cloud9 devenv, but
+                    // we refuse to anyway so that the experience is consistent with other IDEs
+                    // (jetbrains/cloud9) which are not capable of connecting to a devenv that lacks
+                    // their runtime/bootstrap files.
+                    const ide = metadata.ides?.[0]
+                    const toIde = ide ? ` to "${ide.name}"` : ''
+                    progress.report({ message: `Dev Environment ${devenvName} was switched${toIde}` })
+                    // Don't watch devenv that is no longer connectable.
                     delete devenvs[id]
                 } else if (isTerminating(metadata)) {
                     progress.report({ message: `Dev Environment ${devenvName} is terminating` })
-                    // We no longer need to watch a devenv that is in a terminating state
+                    // Don't watch devenv that is terminating.
                     delete devenvs[id]
                 } else if (isExpired(details.previousConnectionTimestamp)) {
                     progress.report({ message: `Dev Environment ${devenvName} has expired` })
@@ -192,7 +206,6 @@ function isTerminating(devenv: Pick<DevEnvironment, 'status'>): boolean {
     if (!devenv.status) {
         return false
     }
-
     return devenv.status === 'FAILED' || devenv.status === 'DELETING' || devenv.status === 'DELETED'
 }
 
