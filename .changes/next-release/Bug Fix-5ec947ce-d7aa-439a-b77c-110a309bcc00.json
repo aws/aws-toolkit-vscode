@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: Toolkit attempts reconnect to non-vscode Dev Environment"
+}
