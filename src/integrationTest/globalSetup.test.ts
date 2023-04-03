@@ -6,48 +6,30 @@
 /**
  * Before/After hooks for all integration tests.
  */
-import * as assert from 'assert'
+import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { invokeLambda, patchObject, setRunnableTimeout } from '../test/setupUtil'
+import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 
 // ASSUMPTION: Tests are not run concurrently
 
-const timeout: { id: NodeJS.Timeout | undefined; name: string | undefined } = { id: undefined, name: undefined }
-function clearTestTimeout() {
-    if (timeout.id !== undefined) {
-        clearTimeout(timeout.id)
-        timeout.id = undefined
-        timeout.name = undefined
-    }
-}
+let windowPatch: vscode.Disposable
+let authHook: vscode.Disposable
+const maxTestDuration = 300_000
 
-/**
- * Used in integration tests to avoid hangs, because Mocha's timeout() does not
- * seem to work.
- *
- * TODO: See if Mocha's timeout() works after upgrading to Mocha
- * 8.x, then this function can be removed.
- */
-export function setTestTimeout(testName: string | undefined, ms: number) {
-    if (!testName) {
-        throw Error()
-    }
-    if (timeout.id !== undefined) {
-        throw Error(`timeout set by previous test was not cleared: "${timeout.name}"`)
-    }
-    timeout.name = testName
-    timeout.id = setTimeout(function () {
-        const name = timeout.name
-        clearTestTimeout()
-        assert.fail(`Exceeded timeout of ${(ms / 1000).toFixed(1)} seconds: "${name}"`)
-    }, ms)
-}
-
-// Before all tests begin, once only:
-before(async function () {
+export async function mochaGlobalSetup(this: Mocha.Runner) {
     console.log('globalSetup: before()')
+
+    // Prevent CI from hanging by forcing a timeout on both hooks and tests
+    this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
+    this.on('test', test => setRunnableTimeout(test, maxTestDuration))
+
+    // Set up a listener for proxying login requests
+    patchWindow()
+
     // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
 
@@ -56,26 +38,62 @@ before(async function () {
     if (getLogger() instanceof WinstonToolkitLogger) {
         ;(getLogger() as WinstonToolkitLogger).logToConsole()
     }
-})
-// After all tests end, once only:
-after(async function () {
+}
+
+export async function mochaGlobalTeardown(this: Mocha.Context) {
     console.log('globalSetup: after()')
-})
+    windowPatch.dispose()
+}
 
-afterEach(function () {
-    clearTestTimeout()
-})
+export const mochaHooks = {
+    afterEach(this: Mocha.Context) {
+        patchWindow()
+    },
+}
 
-// TODO: migrate to mochaHooks (requires mocha 8.x)
-// https://mochajs.org/#available-root-hooks
-//
-// export mochaHooks = {
-//     // Before all tests begin, once only:
-//     beforeAll(async () => {
-//         // Needed for getLogger().
-//         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-//     }),
-//     // After all tests end, once only:
-//     afterAll(async () => {
-//     }),
-// }
+function patchWindow() {
+    windowPatch?.dispose()
+    authHook?.dispose()
+    resetTestWindow()
+    authHook = registerAuthHook()
+    windowPatch = patchObject(vscode, 'window', getTestWindow())
+}
+
+/**
+ * Registers a hook to proxy SSO logins to a Lambda function.
+ *
+ * The function is expected to perform a browser login using the following parameters:
+ * * `secret` - a SecretsManager secret containing login credentials.
+ * * `userCode` - the user verification code e.g. `ABCD-EFGH`. This is returned by the device authorization flow.
+ * * `verificationUri` - the url to login with. This is returned by the device authorization flow.
+ */
+function registerAuthHook(secret = process.env['LOGIN_SECRET_ARN'], lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
+    return getTestWindow().onDidShowMessage(message => {
+        if (message.items[0].title.match(/Copy Code/)) {
+            if (!lambdaId) {
+                const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
+                if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
+                    throw new Error(`${baseMessage}. You may need to login manually before running tests.`)
+                } else {
+                    throw new Error(`${baseMessage}. Check that environment variables are set correctly.`)
+                }
+            }
+
+            const openStub = patchObject(vscode.env, 'openExternal', async target => {
+                try {
+                    await invokeLambda(lambdaId, {
+                        secret,
+                        userCode: await vscode.env.clipboard.readText(),
+                        verificationUri: target.toString(),
+                    })
+                } finally {
+                    openStub.dispose()
+                }
+
+                return true
+            })
+
+            message.items[0].select()
+        }
+    })
+}

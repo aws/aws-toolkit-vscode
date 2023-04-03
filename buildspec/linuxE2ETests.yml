@@ -1,0 +1,39 @@
+version: 0.2
+
+env:
+    variables:
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
+        NO_COVERAGE: 'true'
+        # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
+        DEBIAN_FRONTEND: 'noninteractive'
+        LOGIN_SECRET_ARN: 'codecatalyst-test-account'
+
+phases:
+    install:
+        commands:
+            - '>/dev/null add-apt-repository universe'
+            - '>/dev/null apt-get -qq install -y apt-transport-https'
+            - '>/dev/null apt-get -qq update'
+            - '>/dev/null apt-get -qq install -y ca-certificates'
+            - 'apt-get install --reinstall ca-certificates'
+            # Dependencies for running vscode.
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+
+    build:
+        commands:
+            - npm ci --unsafe-perm
+            # We cannot run `code` as root during tests
+            # From: https://github.com/aws/aws-codebuild-docker-images/blob/2f796bb9c81fcfbc8585832b99a5f780ae2b2f52/ubuntu/standard/6.0/Dockerfile#L56
+            - mkdir -p /home/codebuild-user
+            - chown -R codebuild-user:codebuild-user /tmp /home/codebuild-user .
+            - su codebuild-user -c "xvfb-run npm run testE2E"
+            - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+            - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
+            - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+        finally:
+            - rm -rf ~/.aws/sso/cache || true
+reports:
+    integ-test:
+        files:
+            - '*'
+        base-directory: '.test-reports'
