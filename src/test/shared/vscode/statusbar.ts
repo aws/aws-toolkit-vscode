@@ -21,6 +21,7 @@ export function createTestStatusBarItem(item: vscode.StatusBarItem): TestStatusB
     }
 
     return new Proxy(item, {
+        set: (target, prop, val) => Reflect.set(target, prop, val, target),
         get: (target, prop: keyof TestStatusBarItem, recv) => {
             if (isKeyOf(prop, state)) {
                 return state[prop]
