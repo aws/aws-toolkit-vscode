@@ -4,9 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { getTelemetryReason, getTelemetryResult, ToolkitError } from '../../shared/errors'
+import { getTelemetryReason, getTelemetryResult, resolveErrorMessageToDisplay, ToolkitError } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
+import { AWSError } from 'aws-sdk'
 
 describe('ToolkitError', function () {
     it('can store an error message', function () {
@@ -216,6 +217,84 @@ describe('Telemetry', function () {
             const error1 = new ToolkitError('', { code: 'ErrorCode' })
             const error2 = new ToolkitError('', { cause: error1 })
             assert.strictEqual(getTelemetryReason(error2), 'ErrorCode')
+        })
+    })
+})
+
+describe('resolveErrorMessageToDisplay()', function () {
+    const defaultMessage = 'My Default Message!'
+    const normalErrorMessage = 'Normal error message'
+    const toolkitErrorMessage = 'Toolkit error message'
+    const awsErrorMessage = 'AWS error message'
+
+    it('returns default message if no error is given', function () {
+        const message = resolveErrorMessageToDisplay(undefined, defaultMessage)
+        assert.strictEqual(message, defaultMessage)
+    })
+
+    it('returns default message if normal error is given', function () {
+        const message = resolveErrorMessageToDisplay(new Error(normalErrorMessage), defaultMessage)
+        assert.strictEqual(message, defaultMessage)
+    })
+
+    it('returns toolkit message if toolkit error is given', function () {
+        const message = resolveErrorMessageToDisplay(new ToolkitError(toolkitErrorMessage), defaultMessage)
+        assert.strictEqual(message, toolkitErrorMessage)
+    })
+
+    describe('prioritized AWS errors', function () {
+        class TestAwsError extends Error implements AWSError {
+            constructor(readonly code: string, message: string, readonly time: Date) {
+                super(message)
+            }
+        }
+
+        const errorTime: Date = new Date()
+        const prioritizedAwsErrorNames: string[] = [
+            'ServiceQuotaExceededException',
+            'ConflictException',
+            'ValidationException',
+            'ResourceNotFoundException',
+        ]
+        const prioritiziedAwsErrors: TestAwsError[] = prioritizedAwsErrorNames.map(name => {
+            return new TestAwsError(name, awsErrorMessage, errorTime)
+        })
+
+        // Sanity check specific errors are resolved as expected
+        prioritiziedAwsErrors.forEach(error => {
+            it(`resolves ${error.code} message when provided directly`, function () {
+                const message = resolveErrorMessageToDisplay(error, defaultMessage)
+                assert.strictEqual(message, `${defaultMessage}: ${awsErrorMessage}`)
+            })
+        })
+
+        it('resolves AWS Error when nested in a ToolkitError cause', function () {
+            const awsError = prioritiziedAwsErrors[0]
+            const toolkitError = new ToolkitError(toolkitErrorMessage, { cause: awsError })
+
+            const message = resolveErrorMessageToDisplay(toolkitError, defaultMessage)
+
+            assert.strictEqual(message, `${toolkitErrorMessage}: ${awsErrorMessage}`)
+        })
+
+        it('resolves AWS Error when nested multiple levels in a ToolkitError cause', function () {
+            const awsError = prioritiziedAwsErrors[0]
+            const toolkitErrorTail = new ToolkitError(`${toolkitErrorMessage}-tail`, { cause: awsError })
+            const toolkitErrorMiddle = new ToolkitError(`${toolkitErrorMessage}-middle`, { cause: toolkitErrorTail })
+            const toolkitErrorHead = new ToolkitError(`${toolkitErrorMessage}-head`, { cause: toolkitErrorMiddle })
+
+            const message = resolveErrorMessageToDisplay(toolkitErrorHead, defaultMessage)
+
+            assert.strictEqual(message, `${toolkitErrorMessage}-head: ${awsErrorMessage}`)
+        })
+
+        it('resolves toolkit message if cause is non-prioritized AWS error', function () {
+            const nonPrioritizedAwsError = new TestAwsError('NonPrioritizedAwsException', awsErrorMessage, errorTime)
+            const toolkitError = new ToolkitError(toolkitErrorMessage, { cause: nonPrioritizedAwsError })
+
+            const message = resolveErrorMessageToDisplay(toolkitError, defaultMessage)
+
+            assert.strictEqual(message, toolkitErrorMessage)
         })
     })
 })
