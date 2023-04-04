@@ -392,7 +392,7 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
         case installBtn:
             // Available options are:
             // extension.open: opens extension page in VS Code extension marketplace view
-            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
+            // workbench.extensions.installExtension: autoinstalls plugin with no additional feedback
             // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
 
             // not sure if these are 100% stable.
