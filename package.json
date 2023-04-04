@@ -3477,6 +3477,7 @@
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
+        "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",

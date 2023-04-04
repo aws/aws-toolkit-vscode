@@ -123,7 +123,7 @@ export class SystemUtilities {
             'code', // $PATH
         ]
         for (const vsc of vscs) {
-            if (vsc !== 'code' && !fs.existsSync(vsc)) {
+            if (!vsc || (vsc !== 'code' && !fs.existsSync(vsc))) {
                 continue
             }
             const proc = new ChildProcess(vsc, ['--version'])
@@ -132,7 +132,7 @@ export class SystemUtilities {
                 SystemUtilities.vscPath = vsc
                 return vsc
             }
-            getLogger().warn('getVscodeCliPath: failed: %s', proc)
+            getLogger().warn('getVscodeCliPath: failed: %s %O', proc, proc.result())
         }
 
         return undefined
