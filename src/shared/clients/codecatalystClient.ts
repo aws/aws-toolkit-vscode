@@ -306,7 +306,7 @@ class CodeCatalystClientInternal {
             return this.call(this.sdkClient.createAccessToken(args), false)
         } catch (e) {
             if ((e as Error).name === 'ServiceQuotaExceededException') {
-                throw new ToolkitError('Access token limit exceeded', { code: 'ServiceQuotaExceeded' })
+                throw new ToolkitError('Access token limit exceeded', { cause: e as Error })
             }
             throw e
         }
