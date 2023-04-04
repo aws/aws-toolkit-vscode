@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as vscode from 'vscode'
 import {
     CodeCatalystClient,
     CodeCatalystOrg,
@@ -12,7 +13,7 @@ import {
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../../codecatalyst/model'
-import { Auth, SsoConnection } from '../../credentials/auth'
+import { Auth, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
@@ -20,15 +21,17 @@ import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vu
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
-import { integrationSuite } from '../../../scripts/test/launchTestUtilities'
+import { getTestWindow } from '../../test/shared/vscode/window'
+import { patchObject, registerAuthHook, using } from '../../test/setupUtil'
+import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { captureEventOnce } from '../../test/testUtil'
+import { toStream } from '../../shared/utilities/collectionUtils'
+import { toCollection } from '../../shared/utilities/asyncCollection'
+import { getLogger } from '../../shared/logger'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
-
-// This is a public Space, use it carefully.
-// Ask someone from the VSCode team to add you to this CC space
-// if needed. It has many Projects in it
-const multiUserOrg = 'multiUserOrg'
 
 /**
  * Key Information:
@@ -81,21 +84,26 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
 
+    /**
+     * Stores all dev environments created during this test suite
+     */
+    const testDevEnvironments: DevEnvironment[] = []
+
     before(async function () {
-        if (!['local', integrationSuite].includes(process.env['AWS_TOOLKIT_AUTOMATION'] ?? '')) {
-            this.skip()
-        }
+        await using(registerAuthHook('codecatalyst-test-account'), async () => {
+            // These instances all interact with the CC API at some point.
+            // Use the right one for your use case.
+            commands = await createTestCodeCatalystCommands()
+            client = await createTestCodeCatalystClient(Auth.instance)
+            webviewClient = new CodeCatalystCreateWebview(client, CodeCatalystCommands.declared, () => {})
 
-        // These instances all interact with the CC API at some point.
-        // Use the right one for your use case.
-        commands = await createTestCodeCatalystCommands()
-        client = await createTestCodeCatalystClient(Auth.instance)
-        webviewClient = new CodeCatalystCreateWebview(client, CodeCatalystCommands.declared, () => {})
+            spaceName = (await getCurrentUsersSpace()).name
+            projectName = (await tryCreateTestProject(spaceName)).name
+        })
+    })
 
-        spaceName = (await getCurrentUsersSpace()).name
-        projectName = (await tryCreateTestProject(spaceName)).name
-
-        await deleteExistingDevEnvs(projectName)
+    beforeEach(function () {
+        registerAuthHook('codecatalyst-test-account')
     })
 
     describe('Dev Environment functionality', function () {
@@ -105,21 +113,32 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         const isolatedProjectName = 'aws-toolkit-integ-test-project-isolated'
 
         before(async function () {
+            // Attempt to reap older dev environments associated with the test projects
+            await Promise.all([deleteOldDevEnvironments(projectName), deleteOldDevEnvironments(isolatedProjectName)])
+
             defaultDevEnvSettings = buildDevEnvSettings()
             defaultDevEnv = await createDevEnv(defaultDevEnvSettings)
         })
 
         after(async function () {
-            await Promise.all([deleteExistingDevEnvs(projectName), deleteExistingDevEnvs(isolatedProjectName)])
+            await deleteTestDevEnvs()
+        })
+
+        beforeEach(function () {
+            getTestWindow().onDidShowMessage(m => {
+                const updateSshConfigItem = m.items.find(i => i.title === 'Update SSH config')
+                updateSshConfigItem?.select()
+            })
         })
 
         it('creates an empty Dev Environment', async function () {
             const emptyDevEnvSettings = buildDevEnvSettings()
-            const emptyDevEnv = await webviewClient.createDevEnvOfType(emptyDevEnvSettings, {
+            const emptyDevEnv = await createDevEnvFromWebview(emptyDevEnvSettings, {
                 type: 'none',
                 selectedSpace: { name: spaceName },
                 selectedProject: { name: projectName, org: { name: spaceName }, type: 'project' },
             })
+
             assert.strictEqual(emptyDevEnv.project.name, projectName)
             assert.strictEqual(emptyDevEnv.org.name, spaceName)
         })
@@ -127,7 +146,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         it('creates a Dev Environment with a different instance type + storage', async function () {
             const differentDevEnvSettings = buildDevEnvSettings('dev.standard1.medium', { sizeInGiB: 32 })
 
-            const actualDevEnv = await webviewClient.createDevEnvOfType(differentDevEnvSettings, {
+            const actualDevEnv = await createDevEnvFromWebview(differentDevEnvSettings, {
                 type: 'none',
                 selectedSpace: { name: spaceName },
                 selectedProject: { name: projectName, org: { name: spaceName }, type: 'project' },
@@ -145,6 +164,37 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             // due to this we'll want to revisit this test.
             // For now, we can manually create repository in the test project
             // and then continue this test from that point.
+        })
+
+        it('prompts to install the ssh extension if not available', async function () {
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+                this.skip()
+            }
+
+            await assert.rejects(
+                prepareDevEnvConnection(client, { ...defaultDevEnv }),
+                /Remote SSH extension not installed/
+            )
+            const notification = await getTestWindow().waitForMessage(
+                /Connecting to Dev Environment requires the Remote SSH extension/
+            )
+
+            // Normally selecting `Install...` would open up the extensions tab
+            // But for this test we actually do want to install the extension programtically
+            const executeCommand = vscode.commands.executeCommand
+            const patchInstall = patchObject(vscode.commands, 'executeCommand', (command, ...args) => {
+                if (command === 'extension.open') {
+                    patchInstall.dispose()
+                    return executeCommand('workbench.extensions.installExtension', ...args)
+                } else {
+                    return executeCommand(command, ...args)
+                }
+            })
+
+            notification.selectItem('Install...')
+            await captureEventOnce(vscode.extensions.onDidChange, 30_000).catch(() => {
+                throw new Error('Timed out waiting to install remote SSH extension')
+            })
         })
 
         it('connects to a running Dev Environment', async function () {
@@ -199,7 +249,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             // We want a clean project for this test due to additional dev envs
             // from previous tests polluting the 'list dev env' output.
             await tryCreateTestProject(spaceName, isolatedProjectName)
-            await deleteExistingDevEnvs(isolatedProjectName)
+            await deleteTestDevEnvs(isolatedProjectName)
 
             // Create multiple Dev Envs
             const projectSource: SourceResponse = {
@@ -208,13 +258,13 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
                 selectedProject: { name: isolatedProjectName, org: { name: spaceName }, type: 'project' },
             }
             const createdDevEnvs = await Promise.all([
-                webviewClient.createDevEnvOfType(buildDevEnvSettings(), projectSource),
-                webviewClient.createDevEnvOfType(buildDevEnvSettings(), projectSource),
+                createDevEnvFromWebview(buildDevEnvSettings(), projectSource),
+                createDevEnvFromWebview(buildDevEnvSettings(), projectSource),
             ])
             assert.strictEqual(createdDevEnvs.length, 2)
 
             // List all Dev Envs
-            const listedDevEnvs = await getAllDevEnvs(isolatedProjectName)
+            const listedDevEnvs = await getAllTestDevEnvironments(isolatedProjectName)
 
             const actualDevEnvIds = listedDevEnvs.map(d => d.id)
             const expectedDevEnvIds = createdDevEnvs.map(d => d.id)
@@ -226,7 +276,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
             // Delete all Dev Envs
             await Promise.all(listedDevEnvs.map(devEnv => commands.deleteDevEnv(devEnv)))
-            const remainingDevEnvs = await getAllDevEnvs(isolatedProjectName)
+            const remainingDevEnvs = await getAllTestDevEnvironments(isolatedProjectName)
             if (remainingDevEnvs.length > 0) {
                 // Dev Envs may still be returned if they are still in the process of being deleted.
                 // Just ensure they are in the process or fully deleted.
@@ -238,10 +288,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
         it('lists all spaces for the given user', async function () {
             const spaces = await client.listSpaces().flatten().promise()
-            const expectedSpaces = [spaceName, multiUserOrg]
-            spaces.forEach(space => {
-                assert.ok(expectedSpaces.includes(space.name))
-            })
+            assert.ok(spaces.find(space => space.name === spaceName))
         })
 
         it('lists all projects for the given user', async function () {
@@ -272,13 +319,25 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             return `test-alias-${Date.now() + Math.random()}`
         }
 
-        function createDevEnv(devEnvSettings: DevEnvironmentSettings): Promise<DevEnvironment> {
-            return client.createDevEnvironment({
+        async function createDevEnv(devEnvSettings: DevEnvironmentSettings): Promise<DevEnvironment> {
+            const env = await client.createDevEnvironment({
                 spaceName,
                 projectName,
                 ides: [{ name: 'VSCode' }],
                 ...devEnvSettings,
             })
+
+            testDevEnvironments.push(env)
+            return env
+        }
+
+        async function createDevEnvFromWebview(
+            ...args: Parameters<typeof webviewClient.createDevEnvOfType>
+        ): Promise<DevEnvironment> {
+            const env = await webviewClient.createDevEnvOfType(...args)
+            testDevEnvironments.push(env)
+
+            return env
         }
     })
 
@@ -301,7 +360,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      * Creates a CodeCatalyst api client.
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
-        const conn = await getCodeCatalystSsoConnection(auth)
+        const conn = await useCodeCatalystSsoConnection(auth)
         return await createCodeCatalystClient(conn)
     }
 
@@ -309,12 +368,14 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      * Returns the existing Sso connection that has been
      * verified to work with CodeCatalyst.
      *
-     * This relies on SSO information already being configured.
+     * A new connection will be created if one is not available.
+     * The returned connection is set as the active connection if not already.
      */
-    async function getCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
+    async function useCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
         const builderIdSsoConnection = (await auth.listConnections()).find(isValidCodeCatalystConnection)
-        assert.ok(builderIdSsoConnection, 'To fix, setup Builder Id as if you were a user of the extension.')
-        return builderIdSsoConnection
+        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile()))
+
+        return auth.useConnection(conn)
     }
 
     /**
@@ -353,24 +414,45 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
     }
 
     /**
-     * Deletes any existing dev envs from the given project, resolves only
-     * once all are fully deleted on the server side.
+     * Deletes any existing dev envs created by this test suite, resolves only
+     * once all are fully deleted on the server side. Can optionally filter per-project.
      */
-    async function deleteExistingDevEnvs(projectName: CodeCatalystProject['name']): Promise<void> {
-        const currentDevEnvs = await getAllDevEnvs(projectName)
+    async function deleteTestDevEnvs(projectName?: CodeCatalystProject['name']): Promise<void> {
+        const environments = await getAllTestDevEnvironments(projectName)
 
         // Deleting a dev env that has already been deleted will throw an error.
         // We need to be selective about which dev envs get explicitly deleted.
-        const devEnvsToDelete = currentDevEnvs
+        const devEnvsToDelete = environments
             .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
-            .map(async devEnv => deleteDevEnv(projectName, devEnv.id))
+            .map(async devEnv => deleteDevEnv(devEnv.project.name, devEnv.id))
 
         // These dev envs are already in the process of being deleted, so we just need to wait until they are fully deleted.
-        const devEnvsToWaitForDeletion = currentDevEnvs
+        const devEnvsToWaitForDeletion = environments
             .filter(devEnv => ['DELETING'].includes(devEnv.status))
-            .map(async devEnv => waitUntilDevEnvDeleted(projectName, devEnv.id))
+            .map(async devEnv => waitUntilDevEnvDeleted(devEnv.project.name, devEnv.id))
 
         await Promise.all([...devEnvsToDelete, ...devEnvsToWaitForDeletion])
+    }
+
+    /**
+     * Deletes all dev environments associated with the project that are older than one day
+     */
+    async function deleteOldDevEnvironments(projectName: CodeCatalystProject['name']): Promise<void> {
+        const environments = await getAllDevEnvs(projectName)
+
+        // Deleting a dev env that has already been deleted will throw an error.
+        // We need to be selective about which dev envs get explicitly deleted.
+        const oneDayInMs = 60 * 60 * 24 * 1000
+        await Promise.all(
+            environments
+                .filter(devEnv => Date.now() - devEnv.lastUpdatedTime.getTime() >= oneDayInMs)
+                .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
+                .map(devEnv =>
+                    deleteDevEnv(devEnv.project.name, devEnv.id).catch(err => {
+                        getLogger().warn(`tests: failed to deleted old dev environment "${devEnv.id}": %s`, err)
+                    })
+                )
+        )
     }
 
     async function getAllDevEnvs(projectName: CodeCatalystProject['name']): Promise<DevEnvironment[]> {
@@ -379,6 +461,19 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             .flatten()
             .promise()
         return currentDevEnvs
+    }
+
+    function getAllTestDevEnvironments(projectName?: CodeCatalystProject['name']) {
+        const projects = Array.from(
+            testDevEnvironments.map(env => env.project.name).reduce((set, name) => set.add(name), new Set<string>())
+        )
+
+        const currentDevEnvs = toCollection(() => toStream(projects.map(name => getAllDevEnvs(name))))
+            .flatten()
+            .filter(env => !!testDevEnvironments.find(other => other.id === env.id))
+            .filter(env => !projectName || env.project.name === projectName)
+
+        return currentDevEnvs.promise()
     }
 
     /**

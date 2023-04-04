@@ -20,7 +20,6 @@ import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
-import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
@@ -34,8 +33,6 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 /* Test constants go here */
 const codelensTimeout: number = 60000
 const codelensRetryInterval: number = 200
-// note: this refers to the _test_ timeout, not the invocation timeout
-const debugTimeout: number = 240000
 const noDebugSessionTimeout: number = 5000
 const noDebugSessionInterval: number = 100
 
@@ -562,7 +559,6 @@ describe('SAM Integration Tests', async function () {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('api', {
                         api: {
                             path: '/hello',
@@ -577,7 +573,6 @@ describe('SAM Integration Tests', async function () {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('template')
                 })
 
