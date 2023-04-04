@@ -6,7 +6,6 @@ env:
         NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
         DEBIAN_FRONTEND: 'noninteractive'
-        LOGIN_SECRET_ARN: 'codecatalyst-test-account'
 
 phases:
     install:
@@ -33,7 +32,7 @@ phases:
         finally:
             - rm -rf ~/.aws/sso/cache || true
 reports:
-    integ-test:
+    e2e-test:
         files:
             - '*'
         base-directory: '.test-reports'

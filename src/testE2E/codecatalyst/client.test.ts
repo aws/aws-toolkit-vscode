@@ -22,7 +22,7 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
-import { patchObject } from '../../test/setupUtil'
+import { patchObject, registerAuthHook, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { captureEventOnce } from '../../test/testUtil'
@@ -90,14 +90,20 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
     const testDevEnvironments: DevEnvironment[] = []
 
     before(async function () {
-        // These instances all interact with the CC API at some point.
-        // Use the right one for your use case.
-        commands = await createTestCodeCatalystCommands()
-        client = await createTestCodeCatalystClient(Auth.instance)
-        webviewClient = new CodeCatalystCreateWebview(client, CodeCatalystCommands.declared, () => {})
+        await using(registerAuthHook('codecatalyst-test-account'), async () => {
+            // These instances all interact with the CC API at some point.
+            // Use the right one for your use case.
+            commands = await createTestCodeCatalystCommands()
+            client = await createTestCodeCatalystClient(Auth.instance)
+            webviewClient = new CodeCatalystCreateWebview(client, CodeCatalystCommands.declared, () => {})
 
-        spaceName = (await getCurrentUsersSpace()).name
-        projectName = (await tryCreateTestProject(spaceName)).name
+            spaceName = (await getCurrentUsersSpace()).name
+            projectName = (await tryCreateTestProject(spaceName)).name
+        })
+    })
+
+    beforeEach(function () {
+        registerAuthHook('codecatalyst-test-account')
     })
 
     describe('Dev Environment functionality', function () {

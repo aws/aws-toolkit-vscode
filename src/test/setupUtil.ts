@@ -119,8 +119,8 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
         getLogger().debug('lambda invocation request id: %s', response.$response.requestId)
     }
 
-    const respStr = response.Payload?.toString('utf-8') ?? ''
-    if (respStr === 'null') {
+    const respStr = response.Payload?.toString('utf-8')
+    if (!respStr || respStr === 'null') {
         return
     }
 
@@ -137,7 +137,7 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
 }
 
 function maskArns(text: string) {
-    return text.replace(/arn:aws:(?:.*?):(.*?):(.*?):./g, (match, region, account) => {
+    return text.replace(/arn:(aws|aws-cn|aws-us-gov):(?:.*?):(.*?):(.*?):./g, (match, region, account) => {
         if (region) {
             match = match.replace(region, '[omitted]')
         }
@@ -147,4 +147,68 @@ function maskArns(text: string) {
 
         return match
     })
+}
+
+/**
+ * Registers a hook to proxy SSO logins to a Lambda function.
+ *
+ * The function is expected to perform a browser login using the following parameters:
+ * * `secret` - a SecretsManager secret containing login credentials.
+ * * `userCode` - the user verification code e.g. `ABCD-EFGH`. This is returned by the device authorization flow.
+ * * `verificationUri` - the url to login with. This is returned by the device authorization flow.
+ */
+export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
+    return getTestWindow().onDidShowMessage(message => {
+        if (message.items[0].title.match(/Copy Code/)) {
+            if (!lambdaId) {
+                const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
+                if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
+                    throw new Error(`${baseMessage}. You may need to login manually before running tests.`)
+                } else {
+                    throw new Error(`${baseMessage}. Check that environment variables are set correctly.`)
+                }
+            }
+
+            const openStub = patchObject(vscode.env, 'openExternal', async target => {
+                try {
+                    await invokeLambda(lambdaId, {
+                        secret,
+                        userCode: await vscode.env.clipboard.readText(),
+                        verificationUri: target.toString(),
+                    })
+                } finally {
+                    openStub.dispose()
+                }
+
+                return true
+            })
+
+            message.items[0].select()
+        }
+    })
+}
+
+/**
+ * Calls {@link fn} and disposes {@link disposable} after the function finishes
+ */
+export function using<T extends (...args: any[]) => any>(
+    disposable: vscode.Disposable,
+    fn: T,
+    ...args: Parameters<T>
+): ReturnType<T> {
+    let isPromise = false
+
+    try {
+        const val = fn(...args)
+        if (val instanceof Promise) {
+            isPromise = true
+            return val.finally(() => disposable.dispose()) as any
+        }
+
+        return val
+    } finally {
+        if (!isPromise) {
+            disposable.dispose()
+        }
+    }
 }
