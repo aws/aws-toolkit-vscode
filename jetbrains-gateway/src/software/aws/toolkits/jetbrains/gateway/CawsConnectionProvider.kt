@@ -42,7 +42,6 @@ import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
 import software.amazon.awssdk.services.codecatalyst.model.DevEnvironmentStatus
 import software.amazon.awssdk.services.codecatalyst.model.InstanceType
 import software.aws.toolkits.core.utils.AttributeBagKey
-import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -56,9 +55,7 @@ import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.gateway.connection.GET_IDE_BACKEND_VERSION_COMMAND
 import software.aws.toolkits.jetbrains.gateway.connection.GitSettings
 import software.aws.toolkits.jetbrains.gateway.connection.IDE_BACKEND_DIR
-import software.aws.toolkits.jetbrains.gateway.connection.StdOutResult
 import software.aws.toolkits.jetbrains.gateway.connection.caws.CawsCommandExecutor
-import software.aws.toolkits.jetbrains.gateway.connection.resultFromStdOut
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.CloneCode
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.CopyScripts
 import software.aws.toolkits.jetbrains.gateway.connection.workflow.InstallPluginBackend.InstallLocalPluginBackend
@@ -80,7 +77,6 @@ import software.aws.toolkits.telemetry.CodecatalystTelemetry
 import java.time.Duration
 import java.util.UUID
 import javax.swing.JLabel
-import kotlin.system.measureTimeMillis
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
@@ -204,61 +200,6 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                 terminate()
                                 return@startUnderModalProgressAsync JLabel()
                             }
-
-                            val start = System.currentTimeMillis()
-                            var attemptCount = 0
-                            val fsTestTime = measureTimeMillis {
-                                val attempts = 15
-                                run repeatBlock@{
-                                    repeat(attempts) {
-                                        indicator.checkCanceled()
-                                        val testFs = executor.executeCommandNonInteractive(
-                                            "sh", "-c", "mkdir -p '$pluginPath' && echo true || echo false",
-                                            timeout = Duration.ofSeconds(15)
-                                        )
-
-                                        LOG.debug { "$testFs" }
-                                        attemptCount = it + 1
-                                        when (testFs.resultFromStdOut()) {
-                                            StdOutResult.SUCCESS -> {
-                                                LOG.info { "Filesystem writablity test succeeded for $pluginPath on attempt $it" }
-                                                return@repeatBlock
-                                            }
-
-                                            StdOutResult.FAILED -> LOG.warn { "Filesystem writability test failed (#$it)" }
-                                            StdOutResult.TIMEOUT -> LOG.warn {
-                                                """
-                                                    |Filesystem writability test timed out (#$it)"
-                                                    |available stdout: ${testFs.fullStdout}
-                                                    |available stderr: ${testFs.stderr}
-                                                """.trimMargin()
-                                            }
-                                            StdOutResult.UNKNOWN -> LOG.warn { "Unknown status: ${testFs.stdout}" }
-                                        }
-
-                                        if (it == attempts - 1) {
-                                            CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
-                                                project = null,
-                                                userId = userId,
-                                                result = TelemetryResult.Failed,
-                                                duration = (System.currentTimeMillis() - start).toDouble(),
-                                                codecatalystDevEnvironmentWorkflowStep = "fileSystemCheck",
-                                                value = attemptCount.toDouble()
-                                            )
-                                            error("Dev Environment did not have a writable filesystem after $attempts attempts")
-                                        }
-                                    }
-                                }
-                            }
-                            CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
-                                project = null,
-                                userId = userId,
-                                result = TelemetryResult.Succeeded,
-                                duration = fsTestTime.toDouble(),
-                                codecatalystDevEnvironmentWorkflowStep = "fileSystemCheck",
-                                value = attemptCount.toDouble()
-                            )
-                            LOG.info { "FS test took ${fsTestTime}ms" }
 
                             lifetime.startUnderBackgroundProgressAsync(message("caws.download.thin_client"), isIndeterminate = true) {
                                 val (backendVersion, getBackendVersionTime) = measureTimedValue {
