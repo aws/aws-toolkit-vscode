@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Dropped support for NodeJs 12.x Lambda Runtime"
+}

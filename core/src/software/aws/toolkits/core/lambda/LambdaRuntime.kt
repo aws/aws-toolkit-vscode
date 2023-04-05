@@ -19,7 +19,6 @@ enum class LambdaRuntime(
         // and 1.17.0 broke the arguments
         minSamDebugging = "1.18.1"
     ),
-    NODEJS12_X(Runtime.NODEJS12_X, architectures = ARM_COMPATIBLE),
     NODEJS14_X(Runtime.NODEJS14_X, minSamDebugging = "1.17.0", minSamInit = "1.17.0", architectures = ARM_COMPATIBLE),
     NODEJS16_X(Runtime.NODEJS16_X, minSamDebugging = "1.49.0", minSamInit = "1.49.0", architectures = ARM_COMPATIBLE),
     NODEJS18_X(Runtime.NODEJS18_X, minSamDebugging = "1.65.0", minSamInit = "1.65.0", architectures = ARM_COMPATIBLE),
