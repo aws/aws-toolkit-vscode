@@ -100,7 +100,9 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    expiresAt = clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180),
+                    createdAt = sut.authorizationCreationTime
+
                 )
             )
 
@@ -144,7 +146,8 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    expiresAt = clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180),
+                    createdAt = sut.authorizationCreationTime
                 )
             )
 
@@ -177,6 +180,7 @@ class SsoAccessTokenProviderTest {
         val startTime = Instant.now()
         val accessToken = runBlocking { sut.accessToken() }
         val callDuration = Duration.between(startTime, Instant.now())
+        val creationTime = sut.authorizationCreationTime
 
         assertThat(accessToken).usingRecursiveComparison()
             .isEqualTo(
@@ -184,7 +188,8 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    expiresAt = clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180),
+                    createdAt = creationTime
                 )
             )
 
@@ -273,7 +278,8 @@ class SsoAccessTokenProviderTest {
                     ssoUrl,
                     ssoRegion,
                     "accessToken",
-                    expiresAt = clock.instant().plusSeconds(180)
+                    expiresAt = clock.instant().plusSeconds(180),
+                    createdAt = sut.authorizationCreationTime
                 )
             )
 

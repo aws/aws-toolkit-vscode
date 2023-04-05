@@ -270,7 +270,7 @@ class DiskCacheTest {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(now.minusSeconds(100))}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(now.minusSeconds(100))}",
             }
             """.trimIndent()
         )
@@ -372,7 +372,8 @@ class DiskCacheTest {
                 ssoUrl,
                 ssoRegion,
                 "DummyAccessToken",
-                expiresAt = Instant.from(expirationTime)
+                expiresAt = Instant.from(expirationTime),
+                createdAt = Instant.EPOCH
             )
         )
 
@@ -388,7 +389,8 @@ class DiskCacheTest {
                     "startUrl": "$ssoUrl", 
                     "region": "$ssoRegion",
                     "accessToken": "DummyAccessToken",
-                    "expiresAt": "2020-04-07T21:31:33Z"
+                    "expiresAt": "2020-04-07T21:31:33Z",
+                    "createdAt":"1970-01-01T00:00:00Z"
                 }       
                 """.trimIndent()
             )
@@ -422,7 +424,8 @@ class DiskCacheTest {
                     "region": "$ssoRegion",
                     "accessToken": "DummyAccessToken",
                     "refreshToken": "RefreshToken",
-                    "expiresAt": "2020-04-07T21:31:33Z"
+                    "expiresAt": "2020-04-07T21:31:33Z",
+                    "createdAt":"1970-01-01T00:00:00Z"
                 }       
                 """.trimIndent()
             )
@@ -438,7 +441,8 @@ class DiskCacheTest {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+                "createdAt":"1970-01-01T00:00:00Z"
             }
             """.trimIndent()
         )
@@ -463,7 +467,8 @@ class DiskCacheTest {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+                "createdAt":"1970-01-01T00:00:00Z"
             }
             """.trimIndent()
         )
@@ -489,7 +494,8 @@ class DiskCacheTest {
                 "startUrl": "$ssoUrl", 
                 "region": "$ssoRegion",
                 "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
+                "createdAt":"1970-01-01T00:00:00Z"
             }
             """.trimIndent()
         )
