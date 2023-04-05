@@ -28,7 +28,7 @@ class ExecutableCommonTest {
         assertThat(commandLine.environment.containsKey("AWS_ACCESS_KEY_ID")).isFalse
         assertThat(commandLine.environment.containsKey("AWS_SECRET_ACCESS_KEY")).isFalse
         assertThat(commandLine.environment.containsKey("AWS_SESSION_TOKEN")).isFalse
-        assertThat(commandLine.environment.containsKey("SAM_CLI_TELEMETRY_FROM_IDE")).isFalse
+        assertThat(commandLine.environment.containsKey("AWS_TOOLING_USER_AGENT")).isFalse
         assertThat(commandLine.parentEnvironmentType).isEqualTo(GeneralCommandLine.ParentEnvironmentType.NONE)
     }
 
@@ -47,7 +47,7 @@ class ExecutableCommonTest {
         )
         val commandLine = ExecutableCommon.getCommandLine(path, name, SamExecutable(), clientMetadata)
         assertThat(commandLine.exePath).isEqualTo(path)
-        assertThat(commandLine.environment.containsKey("SAM_CLI_TELEMETRY_FROM_IDE")).isTrue
+        assertThat(commandLine.environment.containsKey("AWS_TOOLING_USER_AGENT")).isTrue
     }
 
     @Test
