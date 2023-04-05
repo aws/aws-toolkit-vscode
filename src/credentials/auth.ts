@@ -573,8 +573,11 @@ export class Auth implements AuthService, ConnectionManager {
     })
 
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+        // XXX: Use the token created by dev environments if and only if the profile is strictly for CodeCatalyst
         const shouldUseSoftwareStatement =
-            getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
+            getCodeCatalystDevEnvId() !== undefined &&
+            profile.startUrl === builderIdStartUrl &&
+            profile.scopes?.every(scope => codecatalystScopes.includes(scope))
 
         const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
 
@@ -731,13 +734,6 @@ export class Auth implements AuthService, ConnectionManager {
                 const key = getSsoProfileKey(profile)
                 await this.store.addProfile(key, profile)
                 await this.store.setCurrentProfileId(key)
-            } else {
-                const scopes = await getScopes()
-
-                // If this token wasn't created by us (or doesn't match the scopes), invalidate it
-                if (!scopes || !hasScopes(builderIdConn, scopes) || scopes.length !== builderIdConn.scopes?.length) {
-                    await this.invalidateConnection(builderIdConn.id)
-                }
             }
         }
 
