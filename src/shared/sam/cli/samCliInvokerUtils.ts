@@ -105,7 +105,7 @@ export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Pro
     return {
         ...options,
         env: {
-            SAM_CLI_TELEMETRY_FROM_IDE: await getUserAgent({ includeClientId: false }),
+            AWS_TOOLING_USER_AGENT: await getUserAgent({ includeClientId: false }),
             ...options?.env,
         },
     }
