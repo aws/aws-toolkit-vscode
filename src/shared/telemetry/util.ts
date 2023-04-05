@@ -61,17 +61,22 @@ export const getClientId = shared(
     }
 )
 
+export const platformPair = () => `${env.appName.replace(/\s/g, '-')}/${version}`
+
 /**
  * Returns a string that should be used as the extension's user agent.
  *
- * Omits the `ClientId` pair by default.
+ * Omits the platform and `ClientId` pairs by default.
  */
 export async function getUserAgent(
-    opt?: { includeClientId?: boolean },
+    opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
 ): Promise<string> {
-    const platformName = env.appName.replace(/\s/g, '-')
-    const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`, `${platformName}/${version}`]
+    const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+
+    if (opt?.includePlatform) {
+        pairs.push(platformPair())
+    }
 
     if (opt?.includeClientId) {
         const clientId = await getClientId(globalState)
