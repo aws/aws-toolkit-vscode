@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { Memento, ConfigurationTarget } from 'vscode'
 import { Settings } from '../../../shared/settings'
-import { convertLegacy, getClientId, getUserAgent, TelemetryConfig } from '../../../shared/telemetry/util'
+import { convertLegacy, getClientId, getUserAgent, platformPair, TelemetryConfig } from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 
@@ -166,6 +166,12 @@ describe('getUserAgent', function () {
         assert.ok(lastPair?.startsWith(`AWS-Toolkit-For-VSCode/${extensionVersion}`))
     })
 
+    it('includes only one pair by default', async function () {
+        const userAgent = await getUserAgent()
+        const pairs = userAgent.split(' ')
+        assert.strictEqual(pairs.length, 1)
+    })
+
     it('omits `ClientId` by default', async function () {
         const userAgent = await getUserAgent()
         assert.ok(!userAgent.includes('ClientId'))
@@ -175,5 +181,13 @@ describe('getUserAgent', function () {
         const userAgent = await getUserAgent({ includeClientId: true })
         const lastPair = userAgent.split(' ').pop()
         assert.ok(lastPair?.startsWith('ClientId/'))
+    })
+
+    it('includes the platform before `ClientId` if opted in', async function () {
+        const userAgent = await getUserAgent({ includePlatform: true, includeClientId: true })
+        const pairs = userAgent.split(' ')
+        const clientPairIndex = pairs.findIndex(pair => pair.startsWith('ClientId/'))
+        const beforeClient = pairs[clientPairIndex - 1]
+        assert.strictEqual(beforeClient, platformPair())
     })
 })

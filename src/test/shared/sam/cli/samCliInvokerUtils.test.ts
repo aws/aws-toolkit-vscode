@@ -93,7 +93,7 @@ describe('addTelemetryEnvVar', async function () {
         assert.deepStrictEqual(result, {
             cwd: '/foo',
             env: {
-                SAM_CLI_TELEMETRY_FROM_IDE: result.env?.['SAM_CLI_TELEMETRY_FROM_IDE'],
+                AWS_TOOLING_USER_AGENT: result.env?.['AWS_TOOLING_USER_AGENT'],
                 AWS_REGION: 'us-east-1',
             },
         })

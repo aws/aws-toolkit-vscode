@@ -126,7 +126,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         }
 
         if (userAgent && !opt.customUserAgent) {
-            opt.customUserAgent = await getUserAgent({ includeClientId: true })
+            opt.customUserAgent = await getUserAgent({ includePlatform: true, includeClientId: true })
         }
 
         const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
