@@ -9,7 +9,7 @@ import { NavigationTabItems, Query, SearchSuggestion } from '../models/model'
 import * as mynahClient from '../client/mynah'
 import * as sanitize from 'sanitize-html'
 import * as vs from 'vscode'
-import { ApiDocsSearchResponse, ApiDocsSuggestion, FullyQualifiedName, SearchResponse } from '../client/mynahclient'
+import { ApiDocsSearchResponse, ApiDocsSuggestion, SearchResponse } from '../client/mynahclient'
 
 const sanitizeOptions = {
     allowedTags: [
@@ -142,7 +142,7 @@ export const getSearchSuggestions = async (
         if (
             query.input === '' &&
             query.codeQuery?.simpleNames.length === 0 &&
-            query.codeQuery?.usedFullyQualifiedNames.length === 0
+            query.codeQuery?.fullyQualifiedNames.used.length === 0
         ) {
             reject(new Error(NoQueryErrorMessage))
         } else {
@@ -150,15 +150,9 @@ export const getSearchSuggestions = async (
                 // If there is codeQuery and usedFullyQualifiedNames, convert them to symbol source type
                 const apiDocsSearchRequest: mynahClient.ApiDocsSearchRequest = {
                     code: {
-                        usedFullyQualifiedNames: query.codeQuery?.usedFullyQualifiedNames
-                            .map(fqn => {
-                                const fqnExpanded: string[] = fqn.split('.')
-                                return {
-                                    sources: fqnExpanded.slice(0, fqnExpanded.length - 1),
-                                    symbols: fqnExpanded.slice(fqnExpanded.length - 1, fqnExpanded.length),
-                                } as FullyQualifiedName
-                            })
-                            .filter(elem => elem.sources !== undefined && elem.sources?.length > 0),
+                        usedFullyQualifiedNames: query.codeQuery?.fullyQualifiedNames.used.filter(
+                            elem => elem.source !== undefined && elem.source?.length > 0
+                        ),
                         language:
                             guessLanguageFromContextKeys([...query.queryContext.should, ...query.queryContext.must]) ??
                             vs.window.activeTextEditor?.document.languageId,
@@ -193,7 +187,7 @@ export const getSearchSuggestions = async (
                     codeQuery:
                         query.codeQuery === undefined ||
                         (query.codeQuery.simpleNames.length === 0 &&
-                            query.codeQuery.usedFullyQualifiedNames.length === 0)
+                            query.codeQuery.fullyQualifiedNames.used.length === 0)
                             ? undefined
                             : query.codeQuery,
                 }

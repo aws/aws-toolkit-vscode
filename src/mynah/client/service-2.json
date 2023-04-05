@@ -140,7 +140,12 @@
                     "shape": "SimpleNames"
                 },
                 "usedFullyQualifiedNames": {
-                    "shape": "FullyQualifiedSymbolDeclarationPaths"
+                    "shape": "FullyQualifiedSymbolDeclarationPaths",
+                    "deprecated": true,
+                    "deprecatedMessage": "To avoid loss of precision, use `fullyQualifiedNames` instead"
+                },
+                "fullyQualifiedNames": {
+                    "shape": "FullyQualifiedNamesDeclarationsUsages"
                 }
             }
         },
@@ -169,10 +174,10 @@
         "FullyQualifiedName": {
             "type": "structure",
             "members": {
-                "sources": {
+                "source": {
                     "shape": "SourceIdentifier"
                 },
-                "symbols": {
+                "symbol": {
                     "shape": "SymbolIdentifier"
                 }
             }
@@ -184,6 +189,22 @@
             },
             "max": 25,
             "min": 1
+        },
+        "FullyQualifiedNamesDeclarationsUsages": {
+            "type": "structure",
+            "members": {
+                "used": {
+                    "shape": "FullyQualifiedNamesUsages"
+                }
+            }
+        },
+        "FullyQualifiedNamesUsages": {
+            "type": "list",
+            "member": {
+                "shape": "FullyQualifiedName"
+            },
+            "max": 25,
+            "min": 0
         },
         "FullyQualifiedSymbolDeclarationPath": {
             "type": "string",
