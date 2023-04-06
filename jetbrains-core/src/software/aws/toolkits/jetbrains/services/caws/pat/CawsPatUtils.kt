@@ -8,6 +8,7 @@ import com.intellij.credentialStore.Credentials
 import com.intellij.credentialStore.generateServiceName
 import com.intellij.ide.passwordSafe.PasswordSafe
 import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
+import software.amazon.awssdk.services.codecatalyst.model.ServiceQuotaExceededException
 import software.aws.toolkits.resources.message
 
 private val SUBSYSTEM = "AWS Toolkit - ${message("code.aws")} PAT"
@@ -20,13 +21,16 @@ fun getPat(user: String) =
 fun patExists(user: String) = getPat(user) != null
 
 fun generateAndStorePat(cawsClient: CodeCatalystClient, user: String) {
-    if (patExists(user)) {
-        throw RuntimeException("PAT for $user already exists!")
-    }
+    // ideally we invalidate any existing PAT but we don't have that information
 
-    val pat = cawsClient.createAccessToken {
-        it.name("$user-AwsJetBrainsToolkit-${System.currentTimeMillis()}")
-    }.secret()
+    val pat = try {
+        cawsClient.createAccessToken {
+            it.name("$user-AwsJetBrainsToolkit-${System.currentTimeMillis()}")
+        }.secret()
+    } catch (e: ServiceQuotaExceededException) {
+        // warn user has too many PATs
+        throw e
+    }
 
     val credentialAttributes = credentialAttributes(user)
     PasswordSafe.instance.set(credentialAttributes, Credentials(user, pat))

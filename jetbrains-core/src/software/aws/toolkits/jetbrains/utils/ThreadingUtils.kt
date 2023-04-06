@@ -30,7 +30,7 @@ fun <T> runUnderProgressIfNeeded(project: Project?, title: String, cancelable: B
         task.invoke()
     }
 
-fun <T> computeOnEdt(supplier: () -> T): T {
+fun <T> computeOnEdt(modalityState: ModalityState = ModalityState.any(), supplier: () -> T): T {
     val application = ApplicationManager.getApplication()
     if (application.isDispatchThread) {
         return supplier.invoke()
@@ -51,7 +51,7 @@ fun <T> computeOnEdt(supplier: () -> T): T {
         }
     }
 
-    ApplicationManager.getApplication().invokeLater(runnable, ModalityState.any())
+    ApplicationManager.getApplication().invokeLater(runnable, modalityState)
 
     ProgressIndicatorUtils.awaitWithCheckCanceled(semaphore, indicator)
     ExceptionUtil.rethrowAllAsUnchecked(error.get())
