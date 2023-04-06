@@ -25,6 +25,10 @@ export const VSCODE_EXTENSION_ID = {
     remotessh: 'ms-vscode-remote.remote-ssh',
 }
 
+export const vscodeExtensionMinVersion = {
+    remotessh: '0.98.0',
+}
+
 /**
  * Long-lived, extension-scoped, shared globals.
  */
