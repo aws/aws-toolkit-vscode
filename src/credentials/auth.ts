@@ -17,7 +17,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { formatError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, formatError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
@@ -676,7 +676,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         if (previousState === 'invalid') {
             throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
-                code: 'InvalidConnection',
+                code: errorCode.invalidConnection,
                 cause: this.#validationErrors.get(id),
             })
         }
@@ -687,7 +687,7 @@ export class Auth implements AuthService, ConnectionManager {
             if (resp !== localizedText.yes) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
-                    code: 'InvalidConnection',
+                    code: errorCode.invalidConnection,
                     cause: this.#validationErrors.get(id),
                 })
             }
