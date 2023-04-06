@@ -21,7 +21,6 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
-import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ExtendedInputBoxOptions, InputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
@@ -96,17 +95,16 @@ export async function prepareDocument(
 }
 
 /** "Search Log Group" command */
-export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogDataRegistry): Promise<void> {
-    let result: Result
-    const source = node ? 'Explorer' : 'Command'
-    if (node && !node.logGroup.logGroupName) {
-        throw new Error('CWL: Log Group node does not have a name.')
-    }
+export async function searchLogGroup(
+    registry: LogDataRegistry,
+    logData?: { regionName: string; groupName: string }
+): Promise<void> {
+    const wizard = new SearchLogGroupWizard(logData)
 
-    const wizard = node?.logGroup.logGroupName
-        ? new SearchLogGroupWizard({ groupName: node.logGroup.logGroupName, regionName: node.regionCode })
-        : new SearchLogGroupWizard()
     const response = await wizard.run()
+
+    let result: Result
+    const source = logData ? 'Explorer' : 'Command'
 
     if (!response) {
         result = 'Cancelled'
@@ -114,11 +112,11 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
         return
     }
 
-    const logData = handleWizardResponse(response, registry)
+    const userResponse = handleWizardResponse(response, registry)
 
-    const uri = createURIFromArgs(logData.logGroupInfo, logData.parameters)
+    const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
 
-    result = await prepareDocument(uri, logData, registry)
+    result = await prepareDocument(uri, userResponse, registry)
     telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
 }
 

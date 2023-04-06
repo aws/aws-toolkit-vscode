@@ -24,25 +24,22 @@ import {
     filterLogEventsFromUri,
 } from '../registry/logDataRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import { prepareDocument } from './searchLogGroup'
+import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../shared/telemetry/telemetry'
-
-export interface SelectLogStreamResponse {
-    region: string
-    logGroupName: string
-    logStreamName: string
-}
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     let result: Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
-    if (!logStreamResponse) {
-        telemetry.cloudwatchlogs_open.emit({
-            result: 'Cancelled',
-            cloudWatchResourceType: 'logStream',
-            source: 'Explorer',
-        })
+    if (
+        logStreamResponse === undefined ||
+        logStreamResponse.kind === 'cancelled' ||
+        logStreamResponse.kind === 'failed'
+    ) {
         return
+    }
+
+    if (logStreamResponse.kind === 'doSearchLogGroup') {
+        return searchLogGroup(registry, { regionName: node.regionCode, groupName: node.logGroup.logGroupName! })
     }
 
     const logGroupInfo: CloudWatchLogsGroupInfo = {
@@ -63,17 +60,27 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
     telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logStream', source: 'Explorer' })
 }
 
+/**
+ * This represents the final user choice from the select log stream wizard.
+ *
+ * Why? This wizard has different kinds of results, and this is a simple way to
+ * represent them.
+ */
+export type LogSearchChoice =
+    | { kind: 'doSearchLogGroup' }
+    | { kind: 'selectedLogStream'; logStreamName: string; logGroupName: string; region: string }
+    | { kind: 'cancelled' }
+    | { kind: 'failed' }
+
 export interface SelectLogStreamWizardContext {
-    pickLogStream(): Promise<string | undefined>
+    pickLogStream(): Promise<LogSearchChoice>
 }
 
 export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     private readonly totalSteps = 1
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
 
-    public async pickLogStream(): Promise<string | undefined> {
-        let telemetryResult: Result = 'Succeeded'
-
+    public async pickLogStream(): Promise<LogSearchChoice> {
         const client = new DefaultCloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
@@ -87,6 +94,16 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
                 totalSteps: this.totalSteps,
             },
         })
+
+        // Add item to top of quick pick which indicates user instead wants to do Search Log Group quickpick flow
+        const searchLogGroupItems: vscode.QuickPickItem[] = [
+            { label: 'Actions', kind: vscode.QuickPickItemKind.Separator },
+            { label: 'Search Log Group', detail: 'Search all Log Streams in this Log Group' },
+            { label: 'Log Streams', kind: vscode.QuickPickItemKind.Separator },
+        ]
+
+        qp.items = searchLogGroupItems.concat(qp.items)
+
         const populator = new IteratorTransformer(
             () =>
                 getPaginatedAwsCallIter({
@@ -110,21 +127,55 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 
         const val = picker.verifySinglePickerOutput(choices)
 
-        let result = val?.label
+        const result = val?.label
 
+        // The possible results of this wizard are not binary, the following
+        // returns an object representing the final result (along with any necessary data)
+        return this.shouldSearchLogGroup(result) ?? this.getSelectedLogStream(result)
+    }
+
+    /**
+     * Returns an object indicating the user wants to search the log groups,
+     * otherwise undefined
+     */
+    shouldSearchLogGroup(quickPickResult?: string): (LogSearchChoice & { kind: 'doSearchLogGroup' }) | undefined {
+        if (quickPickResult !== 'Search Log Group') {
+            return undefined
+        }
+
+        return { kind: 'doSearchLogGroup' }
+    }
+
+    /**
+     * Returns the result of the log stream selection process.
+     *
+     * It is possible nothing was selected, this will be indicated
+     * by the return value.
+     */
+    getSelectedLogStream(result?: string): LogSearchChoice {
+        let telemetryResult: Result = 'Succeeded'
+        let choice: LogSearchChoice
         // handle no items for a group as a cancel
         if (!result || result === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
-            result = undefined
+            choice = { kind: 'cancelled' }
             telemetryResult = 'Cancelled'
         }
         // retry handled by caller -- should this be a "Failed"?
         // of note: we don't track if an error pops up, we just track if the error is selected.
-        if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
+        else if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
+            choice = { kind: 'failed' }
             telemetryResult = 'Failed'
+        } else {
+            choice = {
+                kind: 'selectedLogStream',
+                logStreamName: result,
+                region: this.regionCode,
+                logGroupName: this.logGroupName,
+            }
         }
 
         telemetry.cloudwatchlogs_openGroup.emit({ result: telemetryResult })
-        return result
+        return choice
     }
 }
 
@@ -139,8 +190,8 @@ export function convertDescribeLogToQuickPickItems(
     }))
 }
 
-export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamResponse> {
-    private readonly response: Partial<SelectLogStreamResponse>
+export class SelectLogStreamWizard extends MultiStepWizard<LogSearchChoice> {
+    private response: LogSearchChoice = { kind: 'cancelled' }
 
     public constructor(
         node: LogGroupNode,
@@ -150,38 +201,30 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
         )
     ) {
         super()
-        this.response = {
-            region: node.regionCode,
-            logGroupName: node.logGroup.logGroupName,
-        }
     }
 
     protected get startStep(): WizardStep {
         return this.selectStream
     }
 
-    protected getResult(): SelectLogStreamResponse | undefined {
-        if (!this.response.region || !this.response.logGroupName || !this.response.logStreamName) {
-            return undefined
+    protected getResult(): LogSearchChoice {
+        if (this.response.kind === 'cancelled') {
+            telemetry.cloudwatchlogs_open.emit({
+                result: 'Cancelled',
+                cloudWatchResourceType: 'logStream',
+                source: 'Explorer',
+            })
         }
 
-        return {
-            region: this.response.region,
-            logGroupName: this.response.logGroupName,
-            logStreamName: this.response.logStreamName,
-        }
+        return this.response
     }
 
     private readonly selectStream: WizardStep = async () => {
-        const returnVal = await this.context.pickLogStream()
-
-        // retry on error
-        if (returnVal === picker.IteratingQuickPickController.ERROR_ITEM.label) {
+        this.response = await this.context.pickLogStream()
+        if (this.response.kind === 'failed') {
+            // retry on error
             return WIZARD_RETRY
         }
-
-        this.response.logStreamName = returnVal
-
         return WIZARD_TERMINATE
     }
 }
