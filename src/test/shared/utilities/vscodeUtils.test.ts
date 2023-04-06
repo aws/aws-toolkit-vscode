@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
+import * as vscode from 'vscode'
 
 describe('vscodeUtils', async function () {
     it('activateExtension(), isExtensionActive()', async function () {
@@ -18,5 +19,83 @@ describe('vscodeUtils', async function () {
 
         await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
         assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
+    })
+})
+
+describe('isExtensionInstalled()', function () {
+    const smallerVersion = '0.9.0'
+    const extVersion = '1.0.0'
+    const largerVersion = '2.0.0'
+    const extId = 'my.ext.id'
+    let ext: vscode.Extension<any>
+    let getExtension: (extId: string) => vscode.Extension<any>
+
+    beforeEach(function () {
+        ext = {
+            packageJSON: {
+                version: extVersion,
+            },
+        } as vscode.Extension<any>
+        getExtension = _ => ext
+    })
+
+    it('fails if extension could not be found', function () {
+        const noExtFunc = (extId: string) => undefined
+        assert.ok(!vscodeUtil.isExtensionInstalled(extId, undefined, noExtFunc))
+    })
+
+    it('succeeds on same min version', function () {
+        assert.ok(vscodeUtil.isExtensionInstalled(extId, extVersion, getExtension))
+    })
+
+    it('succeeds on smaller min version', function () {
+        assert.ok(vscodeUtil.isExtensionInstalled(extId, smallerVersion, getExtension))
+    })
+
+    it('fails on larger min version', function () {
+        assert.ok(!vscodeUtil.isExtensionInstalled(extId, largerVersion, getExtension))
+    })
+
+    it('can handle labels on a version', function () {
+        ext.packageJSON.version = `${extVersion}-SNAPSHOT`
+        assert.ok(vscodeUtil.isExtensionInstalled(extId, `${smallerVersion}-ALPHA`, getExtension))
+    })
+
+    it('is valid when no min version is provided', function () {
+        assert.ok(vscodeUtil.isExtensionInstalled(extId, undefined, getExtension))
+    })
+
+    it('fails on malformed version', function () {
+        // malformed min version
+        assert.ok(!vscodeUtil.isExtensionInstalled(extId, 'malformed.version', getExtension))
+
+        // malformed ext version
+        ext.packageJSON.version = 'malformed.version'
+        assert.ok(!vscodeUtil.isExtensionInstalled(extId, extVersion, getExtension))
+    })
+})
+
+describe('buildMissingExtensionMessage()', function () {
+    const extId = 'MY.EXT.ID'
+    const extName = 'MY EXTENSION'
+    const minVer = '1.0.0'
+    const feat = 'FEATURE'
+
+    // Test when a minVer is given
+    it('minVer', function () {
+        const message = vscodeUtil.buildMissingExtensionMessage(extId, extName, minVer, feat)
+        assert.strictEqual(
+            message,
+            `${feat} requires the ${extName} extension (\'${extId}\' of version >=${minVer}) to be installed and enabled.`
+        )
+    })
+
+    // Test when a minVer is not given
+    it('no minVer', function () {
+        const message = vscodeUtil.buildMissingExtensionMessage(extId, extName, undefined, feat)
+        assert.strictEqual(
+            message,
+            `${feat} requires the ${extName} extension (\'${extId}\') to be installed and enabled.`
+        )
     })
 })
