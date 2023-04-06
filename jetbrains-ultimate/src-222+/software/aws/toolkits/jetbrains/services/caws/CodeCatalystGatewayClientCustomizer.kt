@@ -4,13 +4,15 @@
 package software.aws.toolkits.jetbrains.services.caws
 
 import com.intellij.openapi.extensions.ExtensionNotApplicableException
+import com.jetbrains.rdserver.unattendedHost.customization.DefaultGatewayExitCustomizationProvider
 import com.jetbrains.rdserver.unattendedHost.customization.GatewayClientCustomizationProvider
+import com.jetbrains.rdserver.unattendedHost.customization.GatewayExitCustomizationProvider
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayControlCenterProvider
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayHostnameDisplayKind
 import icons.AwsIcons
 import software.aws.toolkits.resources.message
 
-class GatewayNameCustomizer : GatewayClientCustomizationProvider {
+class CodeCatalystGatewayClientCustomizer : GatewayClientCustomizationProvider {
     init {
         if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) == null) {
             throw ExtensionNotApplicableException.create()
@@ -25,4 +27,8 @@ class GatewayNameCustomizer : GatewayClientCustomizationProvider {
 
     override val icon = AwsIcons.Logos.CODE_CATALYST_SMALL
     override val title = message("caws.workspace.backend.title")
+
+    override val exitCustomization: GatewayExitCustomizationProvider = object : GatewayExitCustomizationProvider by DefaultGatewayExitCustomizationProvider() {
+        override val isEnabled: Boolean = false
+    }
 }

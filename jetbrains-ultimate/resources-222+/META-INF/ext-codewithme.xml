@@ -6,7 +6,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <gateway.customization.metrics implementation="software.aws.toolkits.jetbrains.services.caws.RebuildDevfileRequiredNotification"/>
-        <gateway.customization.name implementation="software.aws.toolkits.jetbrains.services.caws.GatewayNameCustomizer"/>
+        <gateway.customization.name implementation="software.aws.toolkits.jetbrains.services.caws.CodeCatalystGatewayClientCustomizer"/>
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
