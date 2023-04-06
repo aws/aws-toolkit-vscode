@@ -24,7 +24,7 @@ import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { patchObject, registerAuthHook, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from '../../shared/extensions'
 import { captureEventOnce } from '../../test/testUtil'
 import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
@@ -167,7 +167,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('prompts to install the ssh extension if not available', async function () {
-            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
                 this.skip()
             }
 

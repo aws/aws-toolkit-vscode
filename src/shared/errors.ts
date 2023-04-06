@@ -11,6 +11,10 @@ import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
 
+export const errorCode = {
+    invalidConnection: 'InvalidConnection',
+}
+
 export interface ErrorInformation {
     /**
      * Error names are optional, but if provided they should be generic yet self-explanatory.
