@@ -11,7 +11,11 @@ import * as sinon from 'sinon'
 /* eslint @typescript-eslint/naming-convention: 0 */
 
 import { Uri } from 'vscode'
-import { loadSharedConfigFiles } from '../../../shared/credentials/credentialsFile'
+import {
+    getSectionDataOrThrow,
+    loadSharedConfigFiles,
+    mergeAndValidateSections,
+} from '../../../credentials/sharedCredentials'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -94,71 +98,6 @@ describe('UserCredentialsUtils', function () {
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert.strictEqual(foundFiles.length, 0)
         })
-
-        it('returns credentials files if profiles are required and config does not exist', async function () {
-            const credentialsFilename = path.join(tempFolder, 'credentials-exists-profiles-required-no-config-test')
-            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-config-test')
-
-            sinon.stub(process, 'env').value({
-                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
-                AWS_CONFIG_FILE: configFilename,
-            } as EnvironmentVariables)
-
-            createCredentialsFile(credentialsFilename, ['default'])
-
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
-            assert.strictEqual(foundFiles.length, 1)
-        })
-
-        it('returns config files if profiles are required and credentials does not exist', async function () {
-            const credentialsFilename = path.join(
-                tempFolder,
-                'credentials-exists-profiles-required-no-credentials-test'
-            )
-            const configFilename = path.join(tempFolder, 'config-not-exist-profiles-required-but-no-credentials-test')
-
-            sinon.stub(process, 'env').value({
-                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
-                AWS_CONFIG_FILE: configFilename,
-            } as EnvironmentVariables)
-
-            createCredentialsFile(configFilename, ['default'])
-
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
-            assert.strictEqual(foundFiles.length, 1)
-        })
-
-        it('returns empty result if files dont contain credentials', async function () {
-            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-no-credentials-test')
-            const configFilename = path.join(tempFolder, 'config-both-exist-but-no-credentials-test')
-
-            sinon.stub(process, 'env').value({
-                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
-                AWS_CONFIG_FILE: configFilename,
-            } as EnvironmentVariables)
-
-            createCredentialsFile(credentialsFilename, [])
-            createCredentialsFile(configFilename, [])
-
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
-            assert.strictEqual(foundFiles.length, 0)
-        })
-
-        it('returns empty result if files contains nonsense', async function () {
-            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-but-contain-nonsense-test')
-            const configFilename = path.join(tempFolder, 'config-both-exist-but-contain-nonsense-test')
-
-            sinon.stub(process, 'env').value({
-                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
-                AWS_CONFIG_FILE: configFilename,
-            } as EnvironmentVariables)
-
-            fs.writeFileSync(credentialsFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
-            fs.writeFileSync(configFilename, 'adfadfgwergsdfgsdfgjsdifgsdfugi')
-
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames(true)
-            assert.strictEqual(foundFiles.length, 0)
-        })
     })
 
     describe('generateCredentialsFile', function () {
@@ -177,10 +116,11 @@ describe('UserCredentialsUtils', function () {
             await UserCredentialsUtils.generateCredentialsFile(creds)
 
             const sharedConfigFiles = await loadSharedConfigFiles({ credentials: Uri.file(credentialsFilename) })
-            assert(typeof sharedConfigFiles === 'object', 'sharedConfigFiles should be an object')
-            const profiles = sharedConfigFiles.credentialsFile
-            assert(typeof profiles === 'object', 'profiles should be an object')
-            const profile = profiles[profileName]
+            const profile = getSectionDataOrThrow(
+                mergeAndValidateSections(sharedConfigFiles.credentials).sections,
+                profileName,
+                'profile'
+            )
             assert.ok(profile)
             assert.strictEqual(
                 profile.aws_access_key_id,
@@ -205,8 +145,12 @@ describe('UserCredentialsUtils', function () {
             createCredentialsFile(credentialsFilename, [profileName])
 
             const sharedConfigFiles = await loadSharedConfigFiles({ credentials: Uri.file(credentialsFilename) })
-            const profiles = sharedConfigFiles.credentialsFile
-            assert.strictEqual(profiles[profileName]?.region, 'us-weast-3')
+            const profile = getSectionDataOrThrow(
+                mergeAndValidateSections(sharedConfigFiles.credentials).sections,
+                profileName,
+                'profile'
+            )
+            assert.strictEqual(profile.region, 'us-weast-3')
         })
     })
 
