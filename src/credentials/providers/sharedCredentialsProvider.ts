@@ -145,7 +145,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return getSectionDataOrThrow(this.sections, name, 'profile')
     }
 
-    private getSsoProfileFromProfile(profile = this.profile): SsoProfile {
+    private getSsoProfileFromProfile(profile = this.profile): SsoProfile & { identifier?: string } {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
         const sessionName = this.profile[sharedCredentialProperties.SSO_SESSION]
         if (sessionName === undefined) {
@@ -165,6 +165,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         return {
             type: 'sso',
+            identifier: sessionName,
             scopes: scopes?.split(',').map(s => s.trim()),
             startUrl: sessionData[sharedCredentialProperties.SSO_START_URL],
             ssoRegion: sessionData[sharedCredentialProperties.SSO_REGION] ?? defaultRegion,
