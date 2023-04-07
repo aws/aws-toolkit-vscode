@@ -29,7 +29,6 @@
         <handlerResolver id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver"/>
         <handlerCompletion id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.completion.DotNetHandlerCompletion"/>
         <sam.runtimeDebugSupport id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetRuntimeDebugSupport"/>
-        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.Dotnet31ImageDebug"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.Dotnet50ImageDebug"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.Dotnet60ImageDebug"/>
         <sam.projectWizard id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>

@@ -23,7 +23,7 @@ class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
         val handler = "HelloWorld::HelloWorld.Function::FunctionHandler"
         val handlerElements = Lambda.findPsiElementsForHandler(
             project,
-            Runtime.DOTNETCORE3_1,
+            Runtime.DOTNET6,
             handler
         )
         handlerElements.size.shouldBe(1, "Mismatch number of elements found for a specified handler string: $handler")
@@ -45,7 +45,7 @@ class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
         frameworkLogger.info("Test name: $name")
         val handlerElements = Lambda.findPsiElementsForHandler(
             project,
-            Runtime.DOTNETCORE2_1,
+            Runtime.DOTNET6,
             handler
         )
         handlerElements.size.shouldBe(0, "Mismatch number of elements found for a specified handler string: $handler")

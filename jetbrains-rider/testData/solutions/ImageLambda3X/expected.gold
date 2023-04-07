@@ -1,5 +1,0 @@
---> Function.cs:15(478,530) // return System.Environment.GetEnvironmentVariables();
-Function.FunctionHandler() in EchoLambda, HelloWorld.dll
-    +this = Function: null
-    +context = LambdaContext: null
-
