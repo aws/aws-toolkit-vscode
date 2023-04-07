@@ -97,10 +97,8 @@ export class SearchHistoryStore {
             .filter(
                 record =>
                     record.query.input !== '' ||
-                    (record.query.codeQuery?.simpleNames.length !== undefined &&
-                        record.query.codeQuery?.simpleNames.length > 0) ||
-                    (record.query.codeQuery?.usedFullyQualifiedNames.length !== undefined &&
-                        record.query.codeQuery?.usedFullyQualifiedNames.length > 0)
+                    (record.query.codeQuery?.simpleNames.length ?? 0) > 0 ||
+                    (record.query.codeQuery?.fullyQualifiedNames.used.length ?? 0) > 0
             )
             .filter(record => record.recordDate !== undefined)
             .filter(

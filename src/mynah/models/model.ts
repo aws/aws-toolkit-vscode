@@ -48,9 +48,16 @@ export interface QueryContext {
     mustNot: string[]
 }
 
+export interface FullyQualifiedName {
+    readonly source: string[]
+    readonly symbol: string[]
+}
+
 export interface CodeQuery {
     simpleNames: string[]
-    usedFullyQualifiedNames: string[]
+    fullyQualifiedNames: {
+        used: FullyQualifiedName[]
+    }
 }
 
 export interface CodeSelection {

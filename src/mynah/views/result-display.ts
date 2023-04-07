@@ -25,6 +25,7 @@ import {
     SearchSuggestion,
     Trigger,
 } from '../models/model'
+import { CodeQuery as TelemetryCodeQuery } from '../telemetry/telemetry-metadata'
 import { getIcon, Icon } from '../../shared/icons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { NoQueryErrorMessage } from '../service/search'
@@ -284,6 +285,15 @@ export class ResultDisplay {
             must: Array.from(queryContext.must),
             mustNot: Array.from(queryContext.mustNot),
         }
+        let codeQuery: TelemetryCodeQuery | undefined = undefined
+        if (query.codeQuery !== undefined) {
+            codeQuery = {
+                simpleNames: query.codeQuery.simpleNames,
+                usedFullyQualifiedNames: query.codeQuery.fullyQualifiedNames.used.map(name =>
+                    [...name.source, ...name.symbol].join('.')
+                ),
+            }
+        }
         const searchMetadata: SearchMetadata = {
             query: input,
             trigger: this.getTelemetrySearchTrigger(trigger),
@@ -291,7 +301,7 @@ export class ResultDisplay {
             queryContext: context,
             code,
             sourceId,
-            codeQuery: query.codeQuery,
+            codeQuery,
             implicit: query.implicit ?? false,
             selectedTab: query.selectedTab,
         }

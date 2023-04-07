@@ -13,9 +13,14 @@ import { NotificationInfoStore } from '../stores/notificationsInfoStore'
 import * as vs from 'vscode'
 import { mynahSelectedCodeDecorator } from '../decorations/selectedCode'
 import { StatusBar } from '../utils/status-bar'
-import { CodeQuery, Query, QueryContext, SearchInput, Trigger } from '../models/model'
+import { CodeQuery, Query, QueryContext, SearchInput, Trigger, FullyQualifiedName } from '../models/model'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { NotificationMetadata, TriggerInteractionType } from '../telemetry/telemetry-metadata'
+
+interface FullyQualifiedNames {
+    readonly usedFullyQualifiedNames: Set<FullyQualifiedName>
+    readonly namesWereTruncated: boolean
+}
 
 export class ManualInputSearch extends SearchInput {
     private apiHelpStatusBar!: StatusBar | undefined
@@ -70,7 +75,7 @@ export class ManualInputSearch extends SearchInput {
                     const hoveredWordRange = document.getWordRangeAtPosition(position)
 
                     //Checks target word has FQNs
-                    if (await this.checkIfSelectionHasFQNs(hoveredWordRange)) {
+                    if (await this.checkIfSelectionHasFqns(hoveredWordRange)) {
                         // Mynah.show command arguments to simulate a code selection with hover
                         const args = {
                             range: hoveredWordRange,
@@ -95,7 +100,7 @@ export class ManualInputSearch extends SearchInput {
         )
 
         vs.window.onDidChangeTextEditorSelection(async event => {
-            if (await this.checkIfSelectionHasFQNs()) {
+            if (await this.checkIfSelectionHasFqns()) {
                 this.apiHelpStatusBar = new StatusBar({
                     text: 'Show similar examples with Mynah',
                     commands: { Examples: 'Mynah.show' },
@@ -104,7 +109,7 @@ export class ManualInputSearch extends SearchInput {
         })
     }
 
-    private async checkIfSelectionHasFQNs(customRangeInDocument?: vs.Range): Promise<boolean> {
+    private async checkIfSelectionHasFqns(customRangeInDocument?: vs.Range): Promise<boolean> {
         const codeQuery = await this.extractCodeQuery(false, true, customRangeInDocument)
 
         if (this.apiHelpStatusBar !== undefined) {
@@ -112,7 +117,7 @@ export class ManualInputSearch extends SearchInput {
             this.apiHelpStatusBar = undefined
         }
 
-        return codeQuery !== undefined && codeQuery.usedFullyQualifiedNames.length > 0
+        return (codeQuery?.fullyQualifiedNames?.used?.length ?? 0) > 0
     }
 
     // TODO: Refine this interface. This method likely doesn't belong in this
@@ -177,7 +182,7 @@ export class ManualInputSearch extends SearchInput {
                 codeQuery: !hasCodeQuery
                     ? {
                           simpleNames: [],
-                          usedFullyQualifiedNames: [],
+                          fullyQualifiedNames: { used: [] },
                       }
                     : codeQuery,
                 codeSelection: !hasCodeQuery
@@ -394,29 +399,29 @@ export class ManualInputSearch extends SearchInput {
         return [simpleNames, listWasLongerThanMaxLenght]
     }
 
-    private prepareFqns(names: any): { usedFullyQualifiedNames: Set<string>; namesWereTruncated: boolean } {
-        const identifierSeparator = '.'
-        const usedFullyQualifiedNames: Set<string> = new Set(
-            names.fullyQualified.usedSymbols
-                .map((elem: any) => [...elem.source, ...elem.symbol].join(identifierSeparator))
-                .filter((elem: any) => elem.length > 1 && elem.length < 512)
+    private prepareFqns(names: any): FullyQualifiedNames {
+        const usedFullyQualifiedNames: Set<FullyQualifiedName> = new Set(
+            names.fullyQualified.usedSymbols.map((name: any) => ({ source: name.source, symbol: name.symbol }))
         )
 
         const maxUsedFullyQualifiedNamesLength = 25
 
         if (usedFullyQualifiedNames.size > maxUsedFullyQualifiedNamesLength) {
             const usedFullyQualifiedNamesSorted = Array.from(usedFullyQualifiedNames).sort(
-                (name, other) => name.length - other.length
+                (name, other) => name.source.length + name.symbol.length - (other.source.length + other.symbol.length)
             )
             return {
-                usedFullyQualifiedNames: new Set(
+                usedFullyQualifiedNames: new Set<FullyQualifiedName>(
                     usedFullyQualifiedNamesSorted.slice(0, maxUsedFullyQualifiedNamesLength)
                 ),
                 namesWereTruncated: true,
             }
         }
 
-        return { usedFullyQualifiedNames, namesWereTruncated: false }
+        return {
+            usedFullyQualifiedNames,
+            namesWereTruncated: false,
+        }
     }
 
     private async extractCodeQuery(
@@ -464,7 +469,9 @@ export class ManualInputSearch extends SearchInput {
 
         return {
             simpleNames,
-            usedFullyQualifiedNames: Array.from(usedFullyQualifiedNames),
+            fullyQualifiedNames: {
+                used: Array.from(usedFullyQualifiedNames),
+            },
         }
     }
 }
