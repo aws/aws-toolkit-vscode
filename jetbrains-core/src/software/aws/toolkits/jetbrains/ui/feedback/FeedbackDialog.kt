@@ -48,7 +48,7 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
     private val sadIcon = IconUtil.scale(AwsIcons.Misc.FROWN, null, 3f)
     private var commentText: String = initialComment
     private lateinit var comment: Cell<JBTextArea>
-    private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length"))
+    private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length")).also { it.foreground = UIUtil.getLabelInfoForeground() }
 
     private val dialogPanel = panel {
         row {
@@ -90,8 +90,9 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
             }.bind({ sentiment }, { sentiment = it })
 
             row(message("feedback.comment.textbox.title")) {}
+            row { comment(message("feedback.customer.alert.info")) }
             row {
-                comment = textArea().rows(6).columns(50).bindText(::commentText).applyToComponent {
+                comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
                     this.emptyText.text = message("feedback.comment.emptyText")
                     this.lineWrap = true
 
