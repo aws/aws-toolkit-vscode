@@ -200,18 +200,18 @@ object IdeVersions {
             ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "231.8109-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2023.1",
                 plugins = commonPlugins223 + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
-                    "PythonCore:231.8109.90",
-                    "Docker:231.8109.91"
+                    "PythonCore:231.8109.144",
+                    "Docker:231.8109.217"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "231.8109-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2023.1",
                 plugins = commonPlugins223 + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
@@ -220,20 +220,20 @@ object IdeVersions {
                     "JavaScriptDebugger",
                     "com.intellij.database",
                     "com.jetbrains.codeWithMe",
-                    "Pythonid:231.8109.90",
-                    "org.jetbrains.plugins.go:231.8109.90",
+                    "Pythonid:231.8109.175",
+                    "org.jetbrains.plugins.go:231.8109.175",
                     // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
                     "org.intellij.intelliLang"
                 )
             ),
             rider = RiderProfile(
-                sdkVersion = "2023.1-EAP8-SNAPSHOT",
+                sdkVersion = "2023.1",
                 plugins = commonPlugins223 + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
                 netFrameworkTarget = "net472",
                 rdGenVersion = "2023.1.2",
-                nugetVersion = "2023.1.0-eap08"
+                nugetVersion = "2023.1.0"
             )
         ),
 
