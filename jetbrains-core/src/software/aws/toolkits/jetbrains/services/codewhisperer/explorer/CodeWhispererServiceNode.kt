@@ -27,6 +27,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.Pau
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.ResumeCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.RunCodeScanNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.WhatIsCodeWhispererNode
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import java.time.LocalDate
@@ -74,6 +75,10 @@ class CodeWhispererServiceNode(
     override fun onDoubleClick(event: MouseEvent) {}
 
     override fun getChildren(): Collection<AbstractTreeNode<*>> {
+        if (isRunningOnRemoteBackend()) {
+            return emptyList()
+        }
+
         val manager = CodeWhispererExplorerActionManager.getInstance()
         val activeConnectionType = manager.checkActiveCodeWhispererConnectionType(project)
 
@@ -94,6 +99,11 @@ class CodeWhispererServiceNode(
 
     override fun update(presentation: PresentationData) {
         super.update(presentation)
+        if (isRunningOnRemoteBackend()) {
+            presentation.addText(message("codewhisperer.explorer.root_node.unavailable"), SimpleTextAttributes.GRAY_ATTRIBUTES)
+            return
+        }
+
         val connectionType = CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)
         when (connectionType) {
             CodeWhispererLoginType.Accountless -> {
