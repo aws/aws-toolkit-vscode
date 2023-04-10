@@ -67,7 +67,7 @@ describe('UserCredentialsUtils', function () {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert.strictEqual(foundFiles.length, 1)
-            assert.strictEqual(foundFiles[0], credentialsFilename)
+            assert.strictEqual(foundFiles[0], Uri.file(credentialsFilename).toString())
         })
 
         it('returns config file if it exists and credentials file does not exist', async function () {
@@ -83,7 +83,7 @@ describe('UserCredentialsUtils', function () {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert.strictEqual(foundFiles.length, 1)
-            assert.strictEqual(foundFiles[0], configFilename)
+            assert.strictEqual(foundFiles[0], Uri.file(configFilename).toString())
         })
 
         it('returns empty result if neither file exists', async function () {
