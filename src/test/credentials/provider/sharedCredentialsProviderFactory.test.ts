@@ -6,25 +6,28 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
+import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../credentials/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../credentials/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../credentials/sharedCredentials'
-import { Profile } from '../../../shared/credentials/credentialsFile'
 
 describe('SharedCredentialsProviderFactory', async function () {
     let sandbox: sinon.SinonSandbox
-    let loadSharedCredentialsProfilesStub: sinon.SinonStub<[], Promise<Map<string, Profile>>>
+    let loadSharedCredentialsSectionsStub: sinon.SinonStub<
+        [],
+        ReturnType<typeof sharedCredentials.loadSharedCredentialsSections>
+    >
 
     let sharedCredentialsLastModifiedMillis: number
 
-    let sharedCredentialProfiles: Map<string, Profile>
+    let sharedCredentialProfiles: Map<string, sharedCredentials.Profile>
 
-    const validProfile: Profile = {
+    const validProfile: sharedCredentials.Profile = {
         aws_access_key_id: 'x',
         aws_secret_access_key: 'y',
     }
 
-    const inValidProfile: Profile = {
+    const inValidProfile: sharedCredentials.Profile = {
         aws_access_key_id: 'x',
     }
 
@@ -42,13 +45,26 @@ describe('SharedCredentialsProviderFactory', async function () {
             } as any as fs.Stats
         })
 
-        sharedCredentialProfiles = new Map<string, Profile>()
+        sharedCredentialProfiles = new Map<string, sharedCredentials.Profile>()
         sharedCredentialProfiles.set(validProfileName1, validProfile)
         sharedCredentialProfiles.set(validProfileName2, validProfile)
 
-        loadSharedCredentialsProfilesStub = sandbox
-            .stub(sharedCredentials, 'loadSharedCredentialsProfiles')
-            .callsFake(async () => sharedCredentialProfiles)
+        loadSharedCredentialsSectionsStub = sandbox
+            .stub(sharedCredentials, 'loadSharedCredentialsSections')
+            .callsFake(async () => ({
+                sections: Array.from(sharedCredentialProfiles.entries()).map(([k, v]) => ({
+                    name: k,
+                    type: 'profile',
+                    assignments: Object.entries(v).map(([key, value]) => ({
+                        key,
+                        value: value!,
+                        range: new Range(0, 0, 0, 0),
+                    })),
+                    source: Uri.file(''),
+                    startLines: [],
+                })),
+                errors: [],
+            }))
     })
 
     afterEach(async function () {
@@ -113,7 +129,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         await sut.refresh()
 
         assert.ok(
-            loadSharedCredentialsProfilesStub.calledOnce,
+            loadSharedCredentialsSectionsStub.calledOnce,
             'Credentials should have only been loaded from disk once'
         )
     })
@@ -130,6 +146,6 @@ describe('SharedCredentialsProviderFactory', async function () {
         // Expect: Reload
         await sut.refresh()
 
-        assert.ok(loadSharedCredentialsProfilesStub.calledTwice, 'Credentials should have been loaded from disk twice')
+        assert.ok(loadSharedCredentialsSectionsStub.calledTwice, 'Credentials should have been loaded from disk twice')
     })
 })
