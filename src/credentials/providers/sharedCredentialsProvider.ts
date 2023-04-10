@@ -145,11 +145,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return getSectionDataOrThrow(this.sections, name, 'profile')
     }
 
-    private getSsoProfileFromProfile(profile = this.profile): SsoProfile & { identifier?: string } {
+    private getSsoProfileFromProfile(): SsoProfile & { identifier?: string } {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
         const sessionName = this.profile[sharedCredentialProperties.SSO_SESSION]
         if (sessionName === undefined) {
-            assertHasProps(profile, sharedCredentialProperties.SSO_START_URL)
+            assertHasProps(this.profile, sharedCredentialProperties.SSO_START_URL)
 
             return {
                 type: 'sso',
