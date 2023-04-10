@@ -13,7 +13,7 @@ import {
 } from '../../../credentials/wizards/templates'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
 import { StepEstimator } from '../../../shared/wizards/wizard'
-import { Profile } from '../../../shared/credentials/credentialsFile'
+import { Profile } from '../../../credentials/sharedCredentials'
 
 class TestPrompter extends Prompter<string | undefined> {
     public constructor(private readonly name: string, private readonly profile: Profile) {
