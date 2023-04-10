@@ -275,6 +275,8 @@ export class DefaultS3Client {
      * Generates a presigned URL for the given file in S3.
      * Takes a valid time option, which must be in seconds. This is the time the URL will be valid for
      *
+     * For upload URLs, content type is set to 'application/octet-stream'. The request for this URL must include
+     * this header and value.
      * @returns the string of the link to the presigned URL
      */
     public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
@@ -287,6 +289,7 @@ export class DefaultS3Client {
             Key: request.key,
             Body: request.body,
             Expires: time,
+            ContentType: request.operation === 'putObject' ? 'application/octet-stream' : undefined,
         })
         return url
     }
