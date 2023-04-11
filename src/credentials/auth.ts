@@ -16,7 +16,7 @@ import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, formatError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache, getTokenCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
@@ -311,6 +311,7 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #validationErrors = new Map<Connection['id'], Error>()
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
+    readonly #invalidCredentialsTimeouts = new Map<Connection['id'], Timeout>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
 
@@ -500,6 +501,7 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = await this.store.updateProfile(id, { connectionState })
         if (connectionState !== 'invalid') {
             this.#validationErrors.delete(id)
+            this.#invalidCredentialsTimeouts.get(id)?.dispose()
         }
 
         if (this.#activeConnection?.id === id) {
@@ -688,11 +690,17 @@ export class Auth implements AuthService, ConnectionManager {
                 cause: this.#validationErrors.get(id),
             })
         }
-        // TODO: cancellable notification?
         if (previousState === 'valid') {
+            const timeout = new Timeout(60000)
+            this.#invalidCredentialsTimeouts.set(id, timeout)
+
             const message = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
             const login = localize('aws.auth.invalidConnection.loginAgain', 'Login')
-            const resp = await vscode.window.showInformationMessage(message, login, localizedText.no)
+            const resp = await Promise.race([
+                vscode.window.showInformationMessage(message, login, localizedText.no),
+                timeout.promisify(),
+            ])
+
             if (resp !== login) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
@@ -709,6 +717,16 @@ export class Auth implements AuthService, ConnectionManager {
         if (this.activeConnection !== undefined) {
             return
         }
+
+        // Clear anything stuck in an 'authenticating...' state
+        // This can rarely happen when closing VS Code during authentication
+        await Promise.all(
+            this.store.listProfiles().map(async ([id, profile]) => {
+                if (profile.metadata.connectionState === 'authenticating') {
+                    await this.store.updateProfile(id, { connectionState: 'invalid' })
+                }
+            })
+        )
 
         // Use the environment token if available
         // This token only has CC permissions currently!
