@@ -2,7 +2,6 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { AWSError, CognitoIdentityCredentials, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
@@ -17,15 +16,10 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { getLogger } from '../../shared/logger'
-import { throttle } from 'lodash'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-
-const refreshCredentials = throttle(() => {
-    getLogger().verbose('codewhisperer: invalidating expired credentials')
-    globals.awsContext.credentialsShim?.refresh()
-}, 60000)
+import { isSsoConnection } from '../../credentials/auth'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -41,6 +35,7 @@ export type ListRecommendationsResponse =
     | CodeWhispererUserClient.GenerateCompletionsResponse
 export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
 export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
+export type Completion = CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
 export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
 export type CreateUploadUrlRequest = Readonly<
@@ -66,7 +61,8 @@ export type CreateUploadUrlResponse =
 export type CreateCodeScanResponse =
     | CodeWhispererClient.CreateCodeScanResponse
     | CodeWhispererUserClient.StartCodeAnalysisResponse
-
+export type Import = CodeWhispererUserClient.Import
+export type Imports = CodeWhispererUserClient.Imports
 export class DefaultCodeWhispererClient {
     private credentials?: CognitoIdentityCredentials
 
@@ -93,7 +89,7 @@ export class DefaultCodeWhispererClient {
             {
                 apiConfig: apiConfig,
                 region: CodeWhispererConstants.region,
-                credentials: this.credentials,
+                credentials: this.credentials ?? (await AuthUtil.instance.getCredentials()),
                 endpoint: CodeWhispererConstants.endpoint,
                 onRequestSetup: [
                     req => {
@@ -121,7 +117,7 @@ export class DefaultCodeWhispererClient {
                                     resp.error?.code === 'AccessDeniedException' &&
                                     resp.error.message.match(/expired/i)
                                 ) {
-                                    refreshCredentials()
+                                    AuthUtil.instance.reauthenticate()
                                     resp.error.retryable = true
                                 }
                             })
@@ -165,12 +161,11 @@ export class DefaultCodeWhispererClient {
     }
 
     private isBearerTokenAuth(): boolean {
-        // return true if access token is cleared because of SSO code path
         const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-        if (!accessToken) {
-            return true
+        if (accessToken) {
+            return false
         }
-        return AuthUtil.instance.isConnected()
+        return isSsoConnection(AuthUtil.instance.conn)
     }
 
     public async generateRecommendations(
@@ -196,9 +191,9 @@ export class DefaultCodeWhispererClient {
         request: CreateUploadUrlRequest
     ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createArtifactUploadUrl(request).promise()
+            return (await this.createUserSdkClient()).createUploadUrl(request).promise()
         }
-        return (await this.createSdkClient()).createUploadUrl(request).promise()
+        return (await this.createSdkClient()).createCodeScanUploadUrl(request).promise()
     }
 
     public async createCodeScan(
