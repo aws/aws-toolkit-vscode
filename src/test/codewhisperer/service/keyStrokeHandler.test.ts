@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
-import { vsCodeState, ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import {
     DocumentChangedSource,
     KeyStrokeHandler,
@@ -74,11 +74,12 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 'd'
             )
-            vsCodeState.isIntelliSenseActive = true
+            InlineCompletion.instance.isTypeaheadInProgress = true
             RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
             RecommendationHandler.instance.recommendations = [{ content: 'def two_sum(nums, target):\n for i in nums' }]
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
+            InlineCompletion.instance.isTypeaheadInProgress = false
         })
 
         it('Should not call invokeAutomatedTrigger when changed text across multiple lines', async function () {
@@ -106,7 +107,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is new line', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -118,7 +119,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is a specialcharacter', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -130,7 +131,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \n', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -142,7 +143,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \r\n', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 2)),
@@ -154,7 +155,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing {', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -166,7 +167,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing spaces equivalent to \t', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -179,7 +180,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger with SpecialCharacter when inputing spaces not equivalent to \t', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -191,7 +192,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not start idle trigger timer when inputing special characters', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -202,7 +203,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should start idle trigger timer when inputing non-special characters', async function () {
-            const mockEditor = createMockTextEditor()
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),

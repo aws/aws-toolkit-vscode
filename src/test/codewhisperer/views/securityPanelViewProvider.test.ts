@@ -12,16 +12,20 @@ import { AggregatedCodeScanIssue, CodeScanIssue } from '../../../codewhisperer/m
 import { createMockTextEditor, createTextDocumentChangeEvent } from '../testUtil'
 import { TextEditorDecorationType, Range } from 'vscode'
 
-const codeScanIssue: CodeScanIssue[] = [{
-    startLine: 0,
-    endLine: 4, 
-    comment: 'foo'
-}]
+const codeScanIssue: CodeScanIssue[] = [
+    {
+        startLine: 0,
+        endLine: 4,
+        comment: 'foo',
+    },
+]
 
-const aggregatedCodeScanIssue: AggregatedCodeScanIssue[] = [{
-    filePath: '/test.py',
-    issues: codeScanIssue
-}]
+const aggregatedCodeScanIssue: AggregatedCodeScanIssue[] = [
+    {
+        filePath: '/test.py',
+        issues: codeScanIssue,
+    },
+]
 
 describe('securityPanelViewProvider', function () {
     let decorationCalled: boolean
@@ -31,18 +35,18 @@ describe('securityPanelViewProvider', function () {
     let mockExtensionContext: vscode.ExtensionContext
     let securityPanelViewProvider: SecurityPanelViewProvider
 
-    function setDecorationsArgs (decorationType: TextEditorDecorationType, rangesOrOptions: Range[]): void {
+    function setDecorationsArgs(decorationType: TextEditorDecorationType, rangesOrOptions: Range[]): void {
         decorationCalled = true
         editorDecorationType = decorationType
         editorRangesOrOptions = rangesOrOptions
     }
 
-    function createEditor(){
+    function createEditor() {
         const editor = createMockTextEditor()
         editor.setDecorations = setDecorationsArgs
         return editor
     }
-    
+
     beforeEach(async function () {
         decorationCalled = false
         editorDecorationType = undefined
@@ -56,14 +60,14 @@ describe('securityPanelViewProvider', function () {
         sinon.restore()
     })
 
-    it('should add lines to panel and add decorations to editor when adding lines', async function() {
+    it('should add lines to panel and add decorations to editor when adding lines', async function () {
         securityPanelViewProvider.addLines(aggregatedCodeScanIssue, mockEditor)
         assert.ok(decorationCalled)
         assert.strictEqual(editorRangesOrOptions?.length, 1)
         assert.ok(editorDecorationType?.key !== undefined)
     })
 
-    it('should dispose security panel item', async function() {
+    it('should dispose security panel item', async function () {
         const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
             mockEditor.document,
             new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -72,7 +76,7 @@ describe('securityPanelViewProvider', function () {
 
         securityPanelViewProvider.addLines(aggregatedCodeScanIssue, mockEditor)
         assert.strictEqual(editorRangesOrOptions?.length, 1)
-        
+
         securityPanelViewProvider.disposeSecurityPanelItem(mockEvent, mockEditor)
         assert.ok(decorationCalled)
         assert.strictEqual(editorRangesOrOptions?.length, 0)

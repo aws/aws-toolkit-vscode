@@ -40,6 +40,34 @@
             ],
             "idempotent": true
         },
+        "CreateUploadUrl": {
+            "name": "CreateUploadUrl",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "CreateUploadUrlRequest"
+            },
+            "output": {
+                "shape": "CreateUploadUrlResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ],
+            "idempotent": true
+        },
         "GenerateCompletions": {
             "name": "GenerateCompletions",
             "http": {
@@ -205,6 +233,9 @@
                 },
                 "references": {
                     "shape": "References"
+                },
+                "mostRelevantMissingImports": {
+                    "shape": "Imports"
                 }
             }
         },
@@ -234,7 +265,7 @@
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": ["contentMd5", "artifactType"],
+            "required": ["contentMd5"],
             "members": {
                 "contentMd5": {
                     "shape": "CreateUploadUrlRequestContentMd5String"
@@ -258,6 +289,9 @@
                 },
                 "uploadUrl": {
                     "shape": "PreSignedUrl"
+                },
+                "kmsKeyArn": {
+                    "shape": "ResourceArn"
                 }
             }
         },
@@ -363,6 +397,28 @@
                 }
             }
         },
+        "Import": {
+            "type": "structure",
+            "members": {
+                "statement": {
+                    "shape": "ImportStatementString"
+                }
+            }
+        },
+        "ImportStatementString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "Imports": {
+            "type": "list",
+            "member": {
+                "shape": "Import"
+            },
+            "max": 10,
+            "min": 0
+        },
         "InternalServerException": {
             "type": "structure",
             "required": ["message"],
@@ -433,7 +489,7 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "(python|javascript|java|csharp|typescript)"
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
@@ -486,6 +542,11 @@
                 "shape": "Reference"
             },
             "max": 10,
+            "min": 0
+        },
+        "ResourceArn": {
+            "type": "string",
+            "max": 1224,
             "min": 0
         },
         "ResourceNotFoundException": {

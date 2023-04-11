@@ -97,7 +97,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let mockSecurityPanelViewProvider: SecurityPanelViewProvider
         let mockClient: DefaultCodeWhispererClient
         let mockExtContext: ExtContext
-        
+
         beforeEach(async function () {
             resetCodeWhispererGlobalVariables()
             mockExtensionContext = await FakeExtensionContext.create()
@@ -111,9 +111,9 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.restore()
         })
 
-        it('prompts user to reauthenticate if connection is expired', async function () {            
+        it('prompts user to reauthenticate if connection is expired', async function () {
             targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
-            
+
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
@@ -121,14 +121,14 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.ok(spy.called)
         })
 
-        it('shows information message if there is no active text editor', async function () {            
+        it('shows information message if there is no active text editor', async function () {
             targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
-            
+
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-            
+
             assert.ok(vscode.window.activeTextEditor === undefined)
             await targetCommand.execute()
-            assert.strictEqual(getTestWindow().shownMessages[0].message, "Open a valid file to scan.")
-        })    
+            assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
+        })
     })
 })
