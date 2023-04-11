@@ -31,6 +31,7 @@ import {
     Section,
 } from '../sharedCredentials'
 import { hasScopes, SsoProfile } from '../auth'
+import { builderIdStartUrl } from '../sso/model'
 
 const sharedCredentialProperties = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -138,6 +139,20 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             getLogger().error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
             return false
         }
+
+        // XXX: hide builder ID profiles until account linking is supported
+        try {
+            const ssoProfile = this.getSsoProfileFromProfile()
+            if (ssoProfile.startUrl === builderIdStartUrl) {
+                getLogger().verbose(
+                    `Profile ${this.profileName} uses Builder ID which is not supported for sigv4 auth.`
+                )
+                return false
+            }
+        } catch {
+            // Swallow error. Continue as-if it were valid.
+        }
+
         return true
     }
 

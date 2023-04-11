@@ -214,6 +214,15 @@ describe('Auth', function () {
         assert.notStrictEqual(t1.accessToken, t3.accessToken, 'Access tokens should change after `reauthenticate`')
     })
 
+    it('releases all notification locks after reauthenticating', async function () {
+        const conn = await setupInvalidSsoConnection(auth, ssoProfile)
+        const pendingToken = conn.getToken()
+        await getTestWindow().waitForMessage(/connection is invalid or expired/i)
+        await auth.reauthenticate(conn)
+        await assert.rejects(pendingToken)
+        assert.ok(await conn.getToken())
+    })
+
     describe('SSO Connections', function () {
         async function runExpiredGetTokenFlow(conn: SsoConnection, selection: string | RegExp) {
             const token = conn.getToken()
