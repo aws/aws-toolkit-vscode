@@ -230,7 +230,6 @@ export class AuthUtil {
     public async rescopeConnection(existingConn: SsoConnection) {
         const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
         await this.auth.deleteConnection(existingConn)
-        await this.auth.reauthenticate(upgradedConn)
 
         if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
             await this.auth.useConnection(upgradedConn)

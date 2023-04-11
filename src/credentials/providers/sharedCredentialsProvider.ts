@@ -10,18 +10,27 @@ import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loade
 import { chain } from '@aws-sdk/property-provider'
 import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { fromEnv } from '@aws-sdk/credential-provider-env'
-import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { resolveProviderWithCancel } from '../credentialsUtilities'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
+import { assertHasProps, getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
 import { toRecord } from '../../shared/utilities/collectionUtils'
+import {
+    extractData,
+    getRequiredFields,
+    getSectionDataOrThrow,
+    getSectionOrThrow,
+    isProfileSection,
+    Profile,
+    Section,
+} from '../sharedCredentials'
+import { hasScopes, SsoProfile } from '../auth'
 
 const sharedCredentialProperties = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -37,6 +46,8 @@ const sharedCredentialProperties = {
     SSO_REGION: 'sso_region',
     SSO_ACCOUNT_ID: 'sso_account_id',
     SSO_ROLE_NAME: 'sso_role_name',
+    SSO_SESSION: 'sso_session',
+    SSO_REGISTRATION_SCOPES: 'sso_registration_scopes',
 } as const
 
 const credentialSources = {
@@ -55,6 +66,7 @@ function validateProfile(profile: Profile, ...props: string[]): string | undefin
 
 function isSsoProfile(profile: Profile): boolean {
     return (
+        hasProps(profile, sharedCredentialProperties.SSO_SESSION) ||
         hasProps(profile, sharedCredentialProperties.SSO_START_URL) ||
         hasProps(profile, sharedCredentialProperties.SSO_REGION) ||
         hasProps(profile, sharedCredentialProperties.SSO_ROLE_NAME) ||
@@ -66,20 +78,10 @@ function isSsoProfile(profile: Profile): boolean {
  * Represents one profile from the AWS Shared Credentials files.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
-    private readonly profile: Profile
+    private readonly section = getSectionOrThrow(this.sections, this.profileName, 'profile')
+    private readonly profile = extractData(this.section)
 
-    public constructor(
-        private readonly profileName: string,
-        private readonly allSharedCredentialProfiles: Map<string, Profile>
-    ) {
-        const profile = this.allSharedCredentialProfiles.get(profileName)
-
-        if (!profile) {
-            throw new Error(`Profile not found: ${profileName}`)
-        }
-
-        this.profile = profile
-    }
+    public constructor(private readonly profileName: string, private readonly sections: Section[]) {}
 
     public getCredentialsId(): CredentialsId {
         return {
@@ -139,6 +141,37 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return true
     }
 
+    private getProfile(name: string) {
+        return getSectionDataOrThrow(this.sections, name, 'profile')
+    }
+
+    private getSsoProfileFromProfile(): SsoProfile & { identifier?: string } {
+        const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
+        const sessionName = this.profile[sharedCredentialProperties.SSO_SESSION]
+        if (sessionName === undefined) {
+            assertHasProps(this.profile, sharedCredentialProperties.SSO_START_URL)
+
+            return {
+                type: 'sso',
+                scopes: ['sso:account:access'],
+                startUrl: this.profile[sharedCredentialProperties.SSO_START_URL],
+                ssoRegion: this.profile[sharedCredentialProperties.SSO_REGION] ?? defaultRegion,
+            }
+        }
+
+        const sessionData = getSectionDataOrThrow(this.sections, sessionName, 'sso-session')
+        const scopes = sessionData[sharedCredentialProperties.SSO_REGISTRATION_SCOPES]
+        assertHasProps(sessionData, sharedCredentialProperties.SSO_START_URL)
+
+        return {
+            type: 'sso',
+            identifier: sessionName,
+            scopes: scopes?.split(',').map(s => s.trim()),
+            startUrl: sessionData[sharedCredentialProperties.SSO_START_URL],
+            ssoRegion: sessionData[sharedCredentialProperties.SSO_REGION] ?? defaultRegion,
+        }
+    }
+
     /**
      * Returns undefined if the Profile is valid, else a string indicating what is invalid
      */
@@ -161,13 +194,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 sharedCredentialProperties.AWS_SECRET_ACCESS_KEY
             )
         } else if (isSsoProfile(this.profile)) {
-            return validateProfile(
-                this.profile,
-                sharedCredentialProperties.SSO_START_URL,
-                sharedCredentialProperties.SSO_REGION,
-                sharedCredentialProperties.SSO_ROLE_NAME,
-                sharedCredentialProperties.SSO_ACCOUNT_ID
-            )
+            return undefined
         } else {
             return 'not supported by the Toolkit'
         }
@@ -191,7 +218,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         const source = new SharedCredentialsProvider(
             this.profile[sharedCredentialProperties.SOURCE_PROFILE]!,
-            this.allSharedCredentialProfiles
+            this.sections
         )
         const creds = await source.getCredentials()
         loadedCreds[this.profile[sharedCredentialProperties.SOURCE_PROFILE]!] = {
@@ -252,13 +279,13 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             profilesTraversed.push(profileName)
 
             // Missing reference
-            if (!this.allSharedCredentialProfiles.has(profileName)) {
+            if (!this.sections.find(s => s.name === profileName && s.type === 'profile')) {
                 return `Shared Credentials Profile ${profileName} not found. Reference chain: ${profilesTraversed.join(
                     ' -> '
                 )}`
             }
 
-            profile = this.allSharedCredentialProfiles.get(profileName)!
+            profile = this.getProfile(profileName)
         }
     }
 
@@ -315,29 +342,42 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider(loadedCreds)
         }
 
-        if (hasProps(this.profile, sharedCredentialProperties.SSO_START_URL)) {
-            logger.verbose(
-                `Profile ${this.profileName} contains ${sharedCredentialProperties.SSO_START_URL} - treating as SSO Credentials`
-            )
+        if (isSsoProfile(this.profile)) {
+            logger.verbose(`Profile ${this.profileName} is an SSO profile - treating as SSO Credentials`)
 
-            const region = this.profile[sharedCredentialProperties.SSO_REGION]!
-            const startUrl = this.profile[sharedCredentialProperties.SSO_START_URL]!
-            const accountId = this.profile[sharedCredentialProperties.SSO_ACCOUNT_ID]!
-            const roleName = this.profile[sharedCredentialProperties.SSO_ROLE_NAME]!
-            const tokenProvider = new SsoAccessTokenProvider({ region, startUrl })
-            const client = SsoClient.create(region, tokenProvider)
-
-            return async () => {
-                if ((await tokenProvider.getToken()) === undefined) {
-                    await tokenProvider.createToken()
-                }
-
-                return client.getRoleCredentials({ accountId, roleName })
-            }
+            return this.makeSsoCredentaislProvider()
         }
 
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
+    }
+
+    private makeSsoCredentaislProvider() {
+        const ssoProfile = this.getSsoProfileFromProfile()
+        if (!hasScopes(ssoProfile, ['sso:account:access'])) {
+            throw new Error(`Session for "${this.profileName}" is missing required scope: sso:account:access`)
+        }
+
+        const region = ssoProfile.ssoRegion
+        const tokenProvider = new SsoAccessTokenProvider({ ...ssoProfile, region })
+        const client = SsoClient.create(region, tokenProvider)
+
+        return async () => {
+            if ((await tokenProvider.getToken()) === undefined) {
+                await tokenProvider.createToken()
+            }
+
+            const data = getRequiredFields(
+                this.section,
+                sharedCredentialProperties.SSO_ACCOUNT_ID,
+                sharedCredentialProperties.SSO_ROLE_NAME
+            )
+
+            return client.getRoleCredentials({
+                accountId: data[sharedCredentialProperties.SSO_ACCOUNT_ID],
+                roleName: data[sharedCredentialProperties.SSO_ROLE_NAME],
+            })
+        }
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
@@ -356,7 +396,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
         // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
         // So the workaround is to do give the SDK the merged profiles directly
-        const profiles = toRecord(this.allSharedCredentialProfiles.keys(), k => this.allSharedCredentialProfiles.get(k))
+        const profileSections = this.sections.filter(isProfileSection)
+        const profiles = toRecord(
+            profileSections.map(s => s.name),
+            k => this.getProfile(k)
+        )
 
         return fromIni({
             profile: this.profileName,
