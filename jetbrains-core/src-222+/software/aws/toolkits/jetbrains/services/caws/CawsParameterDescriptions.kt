@@ -48,11 +48,11 @@ fun isSubscriptionFreeTier(
     client: CodeCatalystClient,
     space: String?
 ): Boolean {
-    val subscriptionTier = if (existingProject != null) {
-        checkIfSubscriptionIsFreeTier(client, existingProject.space)
+    val subscriptionTier = if (space != null) {
+        checkIfSubscriptionIsFreeTier(client, space)
     } else {
-        space?.let { checkIfSubscriptionIsFreeTier(client, it) }
-    } ?: return true
+        return true
+    }
 
     return subscriptionTier == "FREE"
 }

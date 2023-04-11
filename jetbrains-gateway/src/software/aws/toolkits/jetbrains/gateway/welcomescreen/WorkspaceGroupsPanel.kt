@@ -25,7 +25,6 @@ import com.intellij.util.ui.components.BorderLayoutPanel
 import com.jetbrains.rd.util.lifetime.Lifetime
 import software.amazon.awssdk.services.codecatalyst.CodeCatalystClient
 import software.aws.toolkits.jetbrains.gateway.CawsSettings
-import software.aws.toolkits.jetbrains.gateway.CawsWizardCloneType
 import software.aws.toolkits.jetbrains.gateway.SourceRepository
 import software.aws.toolkits.jetbrains.gateway.Workspace
 import software.aws.toolkits.jetbrains.gateway.cawsWizard
@@ -173,10 +172,6 @@ class WorkspaceGroupsPanel(
                             CawsSettings().also {
                                 it.project = project
                                 it.linkedRepoName = workspaceGroup.repoName ?: ""
-                                // TODO: 3p unlinked case
-                                if (workspaceGroup.repoName == null) {
-                                    it.cloneType = CawsWizardCloneType.NONE
-                                }
                             }
                         )
                     )

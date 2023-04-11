@@ -146,7 +146,6 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
                 lifetime,
                 CawsSettings().also {
                     it.initialSpace = CawsSpaceTracker.getInstance().lastSpaceName()
-                    it.cloneType = CawsWizardCloneType.NONE
                 }
             )
         )

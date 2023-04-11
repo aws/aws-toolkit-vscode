@@ -19,6 +19,7 @@ import software.aws.toolkits.jetbrains.gateway.toSourceRepository
 import software.aws.toolkits.jetbrains.gateway.toWorkspace
 import software.aws.toolkits.jetbrains.services.caws.CawsProject
 import software.aws.toolkits.jetbrains.services.caws.listAccessibleProjectsPaginator
+import software.aws.toolkits.jetbrains.settings.CawsSpaceTracker
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -147,6 +148,9 @@ class WorkspaceDataRetriever(
     }
 
     fun markWorkspaceAsDirty(identifer: WorkspaceIdentifier) {
+        if (CawsSpaceTracker.getInstance().lastSpaceName() != identifer.project.space) {
+            return
+        }
         dirtyWorkspaces.add(identifer)
         updateAlarm.cancelAllRequests()
         pollForUpdate()
