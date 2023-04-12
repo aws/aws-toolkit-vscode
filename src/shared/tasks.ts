@@ -29,7 +29,7 @@ interface BaseTask {
 }
 
 interface StoppedTask<T = unknown, U extends any[] = []> extends BaseTask {
-    start(...args: U): PendingTask<T> 
+    start(...args: U): PendingTask<T>
     cancel(reason?: Error): void
     isPending(): this is PendingTask<T>
     isCompleted(): this is CompletedTask<T>
@@ -43,7 +43,7 @@ interface PendingTask<T = unknown> extends BaseTask {
     isCancelled(): this is CancelledTask<T>
 }
 
-interface CompletedTask<T = unknown> extends BaseTask{
+interface CompletedTask<T = unknown> extends BaseTask {
     readonly result: Result<T>
 }
 
@@ -51,7 +51,6 @@ interface CancelledTask<T = unknown> extends BaseTask {
     readonly result: Result<T>
     readonly reason?: unknown
 }
-
 
 export const isCancellable = <T, U extends any[]>(task: Task<T, U>): task is StoppedTask<T, U> | PendingTask<T> => {
     return task.state === 'pending' || task.state === 'stopped'
@@ -98,11 +97,11 @@ export class Tasks {
     #onDidAddTask?: vscode.EventEmitter<Task>
     #onDidRemoveTask?: vscode.EventEmitter<Task>
     #onDidChangeTaskState?: vscode.EventEmitter<Task>
-    readonly #tasks = new Map<Task['id'], Task & { info: TaskInfo }>
+    readonly #tasks = new Map<Task['id'], Task & { info: TaskInfo }>()
     readonly #context = new AsyncLocalStorage<ExecutionContext>()
 
     public get context() {
-        return this.#context.getStore()    
+        return this.#context.getStore()
     }
 
     public get currentTask() {
@@ -137,21 +136,22 @@ export class Tasks {
             fulfilled: false,
         }
 
-        const setResult = (result: Result<T>) => (task as Mutable<CompletedTask<T>>).result ??= result
-        const setReason = (reason?: unknown) => (task as Mutable<CancelledTask<T>>).reason = reason
-        const setPromise = (promise: Promise<T>) => (task as Mutable<PendingTask<T>>).promise = () => promise
-        const chainReason = (reason?: unknown) => new ToolkitError(`Task "${this.getTaskLabel(task)}" cancelled`, {
-            cause: reason ? UnknownError.cast(reason) : undefined,
-        })
+        const setResult = (result: Result<T>) => ((task as Mutable<CompletedTask<T>>).result ??= result)
+        const setReason = (reason?: unknown) => ((task as Mutable<CancelledTask<T>>).reason = reason)
+        const setPromise = (promise: Promise<T>) => ((task as Mutable<PendingTask<T>>).promise = () => promise)
+        const chainReason = (reason?: unknown) =>
+            new ToolkitError(`Task "${this.getTaskLabel(task)}" cancelled`, {
+                cause: reason ? UnknownError.cast(reason) : undefined,
+            })
 
         cancelToken.onCancellationRequested(event => {
             if (!isCancellable(task)) {
                 return
             }
 
-            setReason(event.reason)    
+            setReason(event.reason)
             this.updateInfo(task.id, { state: 'cancelling' })
-            
+
             for (const child of this.getChildren(task)) {
                 if (isCancellable(child)) {
                     child.cancel(event.reason)
@@ -177,7 +177,7 @@ export class Tasks {
                     if (cancelToken.isCancellationRequested) {
                         setResult(Result.err(cancelToken.reason))
                         this.updateInfo(task.id, { fulfilled: true, state: 'cancelled' })
-    
+
                         throw chainReason(cancelToken.reason)
                     }
                 }
@@ -186,7 +186,7 @@ export class Tasks {
                     if (this.context.cancelToken.isCancellationRequested) {
                         const message = `Parent task "${this.context.taskId}" cancelled`
                         cancelToken.cancel(new ToolkitError(message, { cause: this.context.cancelToken.reason }))
-                    } 
+                    }
 
                     throwIfCancelled()
                     this.link(task, this.context)
@@ -196,7 +196,8 @@ export class Tasks {
                 }
 
                 const ctx = { taskId: task.id, cancelToken }
-                const promise = this.#context.run(ctx, (fn as (...args: any[]) => Promise<T>), ...args)
+                const promise = this.#context
+                    .run(ctx, fn as (...args: any[]) => Promise<T>, ...args)
                     .then(val => {
                         setResult(Result.ok(val))
                         throwIfCancelled()
@@ -211,7 +212,7 @@ export class Tasks {
                                 cancelToken.cancel(err)
                             } else {
                                 throwIfCancelled()
-                            }    
+                            }
                         }
 
                         throw err
@@ -220,24 +221,24 @@ export class Tasks {
                         const finalState = task.state === 'pending' ? 'completed' : 'cancelled'
                         this.updateInfo(task.id, { fulfilled: true, state: finalState })
                         this.sweep(task.id)
-                    }) 
+                    })
 
                 setPromise(promise)
                 return task
-            }
+            },
         } as unknown as Task<T, U>
-            
+
         this.addTask(task)
         return task as StoppedTask<T, U>
     }
 
     public getChildren(task: Pick<Task, 'id'>) {
         const children = this.getTask(task.id)?.info.children ?? []
-        
+
         return children.map(child => this.getTask(child)).filter(isNonNullable)
     }
 
-    public getAllTasks() {        
+    public getAllTasks() {
         return Array.from(this.#tasks.values())
     }
 
@@ -266,7 +267,7 @@ export class Tasks {
     private getTask(id: Task['id']) {
         return this.#tasks.get(id)
     }
-    
+
     private getTaskLabel(task: Pick<Task, 'id'>) {
         const opt = this.getTask(task.id)?.info
 
@@ -278,7 +279,7 @@ export class Tasks {
         if (task === undefined) {
             return
         }
-    
+
         const oldState = task.info.state
         task.info = { ...task.info, ...info }
         if (info.state !== undefined) {
@@ -312,7 +313,7 @@ export class Tasks {
 
     static #instance: Tasks
     public static get instance() {
-        return this.#instance ??= new this()
+        return (this.#instance ??= new this())
     }
 }
 
@@ -348,11 +349,14 @@ export function isRootTask(service = Tasks.instance) {
 export function runTask<T>(task: TaskWithOptions<T, []>): Promise<T>
 export function runTask<T>(name: string, fn: () => Promise<T>): Promise<T>
 export function runTask<T>(taskOrName: string | TaskWithOptions<T, []>, fn?: () => Promise<T>): Promise<T> {
-    const task = typeof taskOrName === 'string' ? {
-        name: taskOrName,
-        fn: fn!,
-    } : taskOrName
-        
+    const task =
+        typeof taskOrName === 'string'
+            ? {
+                  name: taskOrName,
+                  fn: fn!,
+              }
+            : taskOrName
+
     return Tasks.instance.createTask(task).start().promise()
 }
 
