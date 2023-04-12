@@ -21,6 +21,7 @@ import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
+import { runTask } from '../tasks'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -68,13 +69,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
     },
 }
 
-/**
- * Installs a selected CLI: wraps confirmation, cleanup, and telemetry logic.
- * @param cli CLI to install
- * @param confirmBefore Prompt before starting install?
- * @returns CLI Path
- */
-export async function installCli(cli: AwsClis, confirm: boolean): Promise<string | never> {
+async function _installCli(...[cli, confirm]: Parameters<typeof installCli>) {
     const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -106,7 +101,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         }
 
         const progress = await showMessageWithCancel(
-            localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
+            localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name)
         )
 
         tempDir = await makeTemporaryToolkitFolder()
@@ -160,6 +155,16 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
 
         telemetry.aws_toolInstallation.emit({ result, toolId: cli })
     }
+}
+
+/**
+ * Installs a selected CLI: wraps confirmation, cleanup, and telemetry logic.
+ * @param cli CLI to install
+ * @param confirm Prompt before starting install?
+ * @returns CLI Path
+ */
+export async function installCli(cli: AwsClis, confirm: boolean): Promise<string | never> {
+    return runTask(`installCli("${cli}")`, () => _installCli(cli, confirm))
 }
 
 /**
