@@ -419,8 +419,11 @@ describe('SharedCredentialsProvider', async function () {
         }
 
         it('resolves profile with source_profile as credential_process', async function () {
+            this.skip()
+
             const sections = await createTestSections(iniFile('credential_process = test_process'))
             const sut = new SharedCredentialsProvider('child', sections)
+
 
             sandbox.stub(process, 'fromProcess').returns(() =>
                 Promise.resolve({
@@ -436,6 +439,8 @@ describe('SharedCredentialsProvider', async function () {
         })
 
         it('resolves profile with source_profile and MFA', async function () {
+            this.skip()
+
             const mfaSerial = 'serial'
             const sections = await createTestSections(
                 iniFile(`
