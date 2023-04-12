@@ -16,7 +16,7 @@ import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ChildProcess } from '../utilities/childProcess'
 
 import * as nls from 'vscode-nls'
-import { Timeout, CancellationError } from './timeoutUtils'
+import { CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
@@ -105,24 +105,18 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             throw new CancellationError('user')
         }
 
-        const timeout = new Timeout(600000)
         const progress = await showMessageWithCancel(
             localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
-            timeout
         )
 
         tempDir = await makeTemporaryToolkitFolder()
         let cliPath: string
-        try {
-            switch (cli) {
-                case 'session-manager-plugin':
-                    cliPath = await installSsmCli(tempDir, progress, timeout)
-                    break
-                default:
-                    throw new InstallerError(`Invalid not found for CLI: ${cli}`)
-            }
-        } finally {
-            timeout.dispose()
+        switch (cli) {
+            case 'session-manager-plugin':
+                cliPath = await installSsmCli(tempDir, progress)
+                break
+            default:
+                throw new InstallerError(`Invalid not found for CLI: ${cli}`)
         }
         // validate
         if (!(await hasCliCommand(cliToInstall, false))) {
@@ -207,10 +201,10 @@ function getOsCliSource(cli: Cli): string {
     }
 }
 
-async function downloadCliSource(cli: Cli, tempDir: string, timeout: Timeout): Promise<string> {
+async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
     const installerSource = getOsCliSource(cli)
     const destinationFile = path.join(tempDir, path.parse(getOsCliSource(cli)).base)
-    const fetcher = new HttpResourceFetcher(installerSource, { showUrl: true, timeout })
+    const fetcher = new HttpResourceFetcher(installerSource, { showUrl: true })
     getLogger().info(`Downloading installer from ${installerSource}...`)
     await fetcher.get(destinationFile)
 
@@ -242,15 +236,14 @@ function handleError<T extends Promise<unknown>>(promise: T): T {
 
 async function installSsmCli(
     tempDir: string,
-    progress: vscode.Progress<{ message?: string; increment?: number }>,
-    timeout: Timeout
+    progress: vscode.Progress<{ message?: string; increment?: number }>
 ): Promise<string> {
     progress.report({ message: msgDownloading })
 
-    const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir, timeout)
+    const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
     const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
-    const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
+    const TimedProcess = ChildProcess.extend({ rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })

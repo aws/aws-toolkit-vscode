@@ -8,7 +8,7 @@ import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
-import { Timeout, waitTimeout } from '../../utilities/timeoutUtils'
+import { CancelToken, Timeout, waitTimeout } from '../../utilities/timeoutUtils'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { dirname } from 'path'
 
@@ -91,7 +91,7 @@ export class SamCliBuildInvocation {
      *
      * @returns Process exit code, or -1 if `SamCliBuildInvocation` stopped the process and stored a failure message in `SamCliBuildInvocation.failure()`.
      */
-    public async execute(timer?: Timeout): Promise<number> {
+    public async execute(timer?: Timeout | CancelToken): Promise<number> {
         await this.validate()
 
         const invokeArgs: string[] = [
@@ -128,7 +128,7 @@ export class SamCliBuildInvocation {
                     'AWS.sam.build.failure.diskSpace',
                     '"sam build" failed. Check system disk space.'
                 )
-            } else if (timer !== undefined) {
+            } else if (timer instanceof Timeout) {
                 timer.refresh()
             }
         }
@@ -144,7 +144,7 @@ export class SamCliBuildInvocation {
         })
 
         // TODO: add `Timeout` support to `ChildProcess` itself instead of wrapping the promise
-        if (timer) {
+        if (timer instanceof Timeout) {
             childProcessResult = waitTimeout(childProcessResult, timer, {
                 completeTimeout: false,
                 onExpire: () => {

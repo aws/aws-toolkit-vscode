@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
+import { bindToOuterScope } from '../shared/tasks'
 import { Message } from './client'
 
 interface Command<T extends any[] = any, R = any> {
@@ -29,7 +30,7 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
         }
     }
 
-    const messageListener = webview.onDidReceiveMessage(async (event: Message) => {
+    const handleMessage = async (event: Message) => {
         const { id, command, data } = event
         const metadata: Omit<Message, 'id' | 'command' | 'data'> = {}
 
@@ -70,7 +71,9 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
         // TODO: check if webview has been disposed of before posting message (not necessary but nice)
         // We also get a boolean value back, maybe retry sending on false?
         webview.postMessage({ id, command, data: result, ...metadata })
-    })
+    }
+
+    const messageListener = webview.onDidReceiveMessage(bindToOuterScope(handleMessage))
 
     return { dispose: () => (messageListener.dispose(), disposeListeners()) }
 }

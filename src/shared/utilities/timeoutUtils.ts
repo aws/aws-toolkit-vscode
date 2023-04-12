@@ -26,12 +26,58 @@ export class CancellationError extends Error {
 }
 
 export interface CancelEvent {
-    readonly agent: CancellationAgent
+    readonly reason: Error
 }
 
 /** A {@link CancellationToken} that provides a reason for the cancellation event. */
-interface TypedCancellationToken extends CancellationToken {
-    readonly onCancellationRequested: Event<CancelEvent>
+interface TypedCancellationToken<T> extends CancellationToken {
+    readonly onCancellationRequested: Event<T>
+}
+
+export class CancelToken implements TypedCancellationToken<CancelEvent> {
+    #completed = false
+    #cancelled = false
+    #reason?: Error
+    readonly #onCompletion = new EventEmitter<void>()
+    readonly #onCancellationRequested = new EventEmitter<CancelEvent>()
+    public readonly onCompletion = this.#onCompletion.event
+    public readonly onCancellationRequested = this.#onCancellationRequested.event
+
+    public get reason() {
+        return this.#reason
+    }
+
+    public get completed() {
+        return this.#completed
+    }
+
+    public get isCancellationRequested() {
+        return this.#cancelled
+    }
+
+    public cancel(reason: Error = new CancellationError('user')): void {
+        if (this.#completed) {
+            return
+        }
+
+        this.#reason = reason
+        this.#completed = this.#cancelled = true
+        this.#onCancellationRequested.fire({ reason })
+        this.#onCompletion.fire()
+        this.#onCompletion.dispose()
+        this.#onCancellationRequested.dispose()
+    }
+
+    public dispose(): void {
+        if (this.#completed) {
+            return
+        }
+
+        this.#completed = true
+        this.#onCompletion.fire()
+        this.#onCompletion.dispose()
+        this.#onCancellationRequested.dispose()
+    }
 }
 
 /**
@@ -44,7 +90,7 @@ export class Timeout {
     private readonly _timeoutLength: number
     private _timerTimeout: NodeJS.Timeout
     private _completionReason?: CancellationAgent | 'completed'
-    private readonly _token: TypedCancellationToken
+    private readonly _token: TypedCancellationToken<CancelEvent>
     private readonly _onCancellationRequestedEmitter = new EventEmitter<CancelEvent>()
     private readonly _onCompletionEmitter = new EventEmitter<void>()
     public readonly onCompletion = this._onCompletionEmitter.event
@@ -105,7 +151,7 @@ export class Timeout {
     /**
      * Returns a token suitable for use in-place of VS Code's {@link CancellationToken}
      */
-    public get token(): TypedCancellationToken {
+    public get token(): TypedCancellationToken<CancelEvent> {
         return this._token
     }
 
@@ -126,7 +172,7 @@ export class Timeout {
         globals.clock.clearTimeout(this._timerTimeout)
 
         if (type !== 'completed') {
-            this._onCancellationRequestedEmitter.fire({ agent: type })
+            this._onCancellationRequestedEmitter.fire({ reason: new CancellationError(type) })
         }
 
         this._onCancellationRequestedEmitter.dispose()
@@ -166,7 +212,7 @@ export class Timeout {
 
         return new Promise((resolve, reject) => {
             this._onCompletionEmitter.event(resolve)
-            this._onCancellationRequestedEmitter.event(({ agent }) => reject(new CancellationError(agent)))
+            this._onCancellationRequestedEmitter.event(({ reason }) => reject(reason))
         })
     }
 }

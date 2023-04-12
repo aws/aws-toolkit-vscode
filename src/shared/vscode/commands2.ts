@@ -11,6 +11,7 @@ import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
+import { isRootTask, runTask } from '../tasks'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -40,7 +41,7 @@ export interface Command<T extends Callback = Callback> {
      * Only commands registered via {@link Commands} have certain guarantees such as
      * logging and error-handling.
      */
-    execute(...parameters: Parameters<T>): Promise<ReturnType<T> | undefined>
+    execute(...parameters: Parameters<T>): Promise<Awaited<ReturnType<T>>>
 }
 
 interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
@@ -257,8 +258,8 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
         return this
     }
 
-    public async execute(...args: Parameters<T>): Promise<ReturnType<T> | undefined> {
-        return this.commands.executeCommand<ReturnType<T>>(this.resource.info.id, ...args)
+    public async execute(...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> {
+        return this.commands.executeCommand(this.resource.info.id, ...args) as any
     }
 
     public dispose(): void {
@@ -306,6 +307,7 @@ interface CommandInfo<T extends Callback> {
     readonly logging?: boolean
     /** Does the command require credentials? (default: false) */
     readonly autoconnect?: boolean
+    readonly runAsTask?: boolean
 
     /**
      * The telemetry metric associated with this command.
@@ -361,8 +363,8 @@ function endRecordCommand(id: string, token: number, name?: MetricName, err?: un
     })
 }
 
-async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
-    const { args, label, logging } = { logging: true, ...info }
+async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T>> {
+    const { args, label, logging, runAsTask } = { runAsTask: true, logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
     const threshold = isAutomation() || info.telemetryName ? 0 : 300_000 // 5 minutes
@@ -374,7 +376,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         telemetry[info.telemetryName].record({ command: info.id })
     }
 
-    try {
+    const run = async () => {
         if (info.autoconnect === true) {
             await vscode.commands.executeCommand('_aws.auth.autoConnect')
         }
@@ -383,13 +385,33 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         logging && endRecordCommand(info.id, telemetryToken, info.telemetryName)
 
         return result
+    }
+
+    try {
+        if (runAsTask) {
+            return await runTask({
+                fn: run,
+                type: 'Command',
+                name: info.name ?? info.id,
+                metadata: {
+                    commandId: info.id,
+                    telemetryName: info.telemetryName,
+                }, 
+            })
+        } 
+
+        return await run()
     } catch (error) {
         logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
 
-        if (errorHandler !== undefined) {
-            errorHandler(info, error)
-        } else {
+        if (errorHandler === undefined) {
             logger.error(`command: ${label} failed without error handler: %s`, error)
+            throw error
+        }
+
+        if (isRootTask()) {
+            return errorHandler(info, error) as any
+        } else {
             throw error
         }
     }

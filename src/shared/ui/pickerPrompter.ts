@@ -12,6 +12,7 @@ import { Prompter, PromptResult, Transform } from './prompter'
 import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
+import { bindToOuterScope, getExecutionContext } from '../tasks'
 
 const localize = nls.loadMessageBundle()
 
@@ -204,7 +205,7 @@ function promptUser<T>(
     onDidShowEmitter: vscode.EventEmitter<void>
 ): Promise<DataQuickPickItem<T>[] | undefined> {
     return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
-        picker.onDidAccept(() => acceptItems(picker, resolve))
+        picker.onDidAccept(bindToOuterScope(() => acceptItems(picker, resolve)))
         picker.onDidHide(() => resolve(castDatumToItems(WIZARD_EXIT)))
         picker.onDidTriggerButton(button => {
             if (button === vscode.QuickInputButtons.Back) {
@@ -218,7 +219,7 @@ function promptUser<T>(
         })
         picker.show()
         onDidShowEmitter.fire()
-    }).finally(() => picker.dispose())
+    })
 }
 
 /**
@@ -466,6 +467,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
+        getExecutionContext()?.cancelToken.onCompletion(() => {
+            this.quickPick.hide()
+            this.quickPick.dispose()
+        })
+
         await this.setEstimatorHook()
         const choices = await promptUser(this.quickPick, this.onDidShowEmitter)
         this.onDidShowEmitter.dispose()
@@ -476,8 +482,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
         this._lastPicked = choices[0]
         const result = choices[0].data
-
-        return result instanceof Function ? await result() : result
+        try {    
+            return result instanceof Function ? await result() : result
+        } finally {
+            this.quickPick.dispose()
+        }
     }
 
     /**

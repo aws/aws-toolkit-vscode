@@ -16,8 +16,12 @@ import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { watchBetaVSIX } from './beta'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { entries } from '../shared/utilities/tsUtils'
+import { entries, isNonNullable } from '../shared/utilities/tsUtils'
 import { isReleaseVersion } from '../shared/vscode/env'
+import { ResourceTreeNode } from '../shared/treeview/resource'
+import { isCancellable, isCompleted, Task, Tasks } from '../shared/tasks'
+import { addColor, getIcon } from '../shared/icons'
+import { RootNode } from '../awsexplorer/localExplorer'
 
 interface MenuOption {
     readonly label: string
@@ -276,3 +280,320 @@ async function showGlobalState() {
 }
 
 export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')
+
+class TaskMemory {
+    #epoch = new Date()
+    readonly #settings = { showTimestamps: false }
+    readonly #tasks = new Map<Task['id'], Task>()
+    readonly #timestamps = new Map<Task['id'], { start: number; end?: number }>()
+    readonly #onDidChange = new vscode.EventEmitter<void>()
+    public readonly onDidChange = this.#onDidChange.event
+
+    public get settings() {
+        return this.#settings
+    }
+
+    public constructor(service: Tasks) {
+        service.onDidAddTask(task => {
+            this.#tasks.set(task.id, task)
+            this.#timestamps.set(task.id, { start: Date.now() - this.#epoch.getTime() })
+            this.#onDidChange.fire()
+        })
+        service.onDidChangeTaskState(task => {
+            this.#tasks.set(task.id, task)
+            if (task.state === 'completed' || task.state === 'cancelled') {
+                this.#timestamps.set(task.id, {
+                    ...this.#timestamps.get(task.id)!,
+                    end: Date.now() - this.#epoch.getTime(),
+                })
+            }
+            this.#onDidChange.fire()
+        })
+    }
+
+    public clear() {
+        this.#tasks.clear()
+        this.#timestamps.clear()
+        this.#epoch = new Date()
+        this.#onDidChange.fire()
+    }
+
+    public findRootTasks(): Task[] {
+        const roots = new Map(this.#tasks.entries())
+        const allChildren = Array.from(this.#tasks.values()).map(t => t.info.children)
+        for (const children of allChildren) {
+            children.forEach(c => roots.delete(c))
+        }
+
+        return Array.from(roots.values())
+    }
+
+    public getChildren(task: Pick<Task, 'id'>) {
+        const children = this.#tasks.get(task.id)?.info.children ?? []
+
+        return children.map(child => this.#tasks.get(child)).filter(isNonNullable)
+    }
+
+    public getTimestamps(task: Pick<Task, 'id'>) {
+        return this.#timestamps.get(task.id)
+    }
+
+    public updateSettings(settings: this['settings']) {
+        Object.assign(this.#settings, settings)
+        this.#onDidChange.fire()
+    }
+}
+
+class TaskServiceResource {
+    public readonly id = 'tasks'
+
+    public constructor(private readonly memory: TaskMemory) {}
+
+    public getTreeItem() {
+        const item = new vscode.TreeItem('Tasks')
+
+        return item
+    }
+
+    public listTasks() {
+        return sortAndGroupTasks(this.memory.findRootTasks(), this.memory)
+    }
+
+    public toTreeNode() {
+        return new ResourceTreeNode<this, TaskResource | AggregateTask>(this, {
+            placeholder: '[No tasks found]',
+            childrenProvider: {
+                onDidChange: this.memory.onDidChange,
+                listResources: () => this.listTasks().map(task => task.toTreeNode()),
+            },
+        })
+    }
+}
+
+const getTaskIcon = (task: Task) => {
+    if (isCompleted(task) && !task.result.isOk()) {
+        return addColor(getIcon('vscode-error'), 'testing.iconErrored')
+    }
+
+    switch (task.state) {
+        case 'pending':
+            return getIcon('vscode-loading~spin')
+        case 'completed':
+            return getIcon('vscode-check')
+        case 'stopped':
+            return getIcon('vscode-ellipsis')
+        case 'cancelling':
+            return getIcon('vscode-gear~spin')
+        case 'cancelled':
+            return getIcon('vscode-circle-slash')
+    }
+}
+
+const cancelTask = Commands.register({ id: '_aws.dev.tasks.cancel', runAsTask: false }, (task: Task) => {
+    if (isCancellable(task)) {
+        task.cancel()
+    }
+})
+
+const cancelAllTasks = Commands.register({ id: '_aws.dev.tasks.cancelAll', runAsTask: false }, (tasks: Task[]) => {
+    for (const task of tasks) {
+        if (isCancellable(task)) {
+            task.cancel()
+        }
+    }
+})
+
+function groupAdjacentTasks(tasks: Task[]): Task[][] {
+    let group: Task[] | undefined
+    const aggregated: Task[][] = []
+
+    for (const task of tasks.sort(sortTasks)) {
+        if (
+            group === undefined ||
+            !(task.state === group[0].state && task.info.name === group[0].info.name && task.info.children.length === 0)
+        ) {
+            aggregated.push((group = [task]))
+        } else {
+            group.push(task)
+        }
+    }
+
+    return aggregated
+}
+
+function sortAndGroupTasks(tasks: Task[], memory: TaskMemory) {
+    if (memory.settings.showTimestamps) {
+        return tasks.map(task => new TaskResource(task, memory))
+    }
+
+    return groupAdjacentTasks(tasks).map(group => {
+        if (group.length === 1) {
+            return new TaskResource(group[0], memory)
+        } else {
+            return new AggregateTask(group[0].info.name ?? '[anonymous task]', group, memory)
+        }
+    })
+}
+
+function sortTasks(a: Task, b: Task) {
+    if (a.state === b.state) {
+        if (a.info.name === b.info.name) {
+            return a.id - b.id
+        }
+
+        return (a.info.name ?? '').localeCompare(b.info.name ?? '')
+    }
+
+    const cmp = (o: Task) => {
+        switch (o.state) {
+            case 'stopped':
+                return 0
+            case 'pending':
+            case 'cancelling':
+                return 1
+            case 'cancelled':
+                return 2
+            case 'completed':
+                return 3
+        }
+    }
+
+    return cmp(a) - cmp(b)
+}
+
+class TaskResource {
+    public readonly id = String(this.task.id)
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+
+    public constructor(private readonly task: Task, private readonly memory: TaskMemory) {
+        this.memory.onDidChange(() => this.onDidChangeEmitter.fire())
+    }
+
+    public listTasks() {
+        return sortAndGroupTasks(this.memory.getChildren(this.task), this.memory)
+    }
+
+    public getTreeItem() {
+        const timestamps = this.memory.getTimestamps(this.task)
+        const startTime =
+            timestamps?.start && this.memory.settings.showTimestamps ? `T+${timestamps.start / 1000}s` : undefined
+        const totalTime =
+            timestamps?.start && timestamps?.end && this.memory.settings.showTimestamps
+                ? `(${timestamps.end - timestamps.start}ms)`
+                : undefined
+
+        const item = new vscode.TreeItem(this.task.info.name ?? this.id)
+        item.description = startTime ? `${startTime}${totalTime ? ` ${totalTime}` : ''}` : this.task.state
+        item.iconPath = getTaskIcon(this.task)
+        item.command = cancelTask.build(this.task).asCommand({ title: '' })
+        item.tooltip = [
+            this.task.info.type ? `type: ${this.task.info.type}` : undefined,
+            this.task.info.metadata ? `metadata: ${JSON.stringify(this.task.info.metadata, undefined, 2)}` : undefined,
+        ]
+            .filter(isNonNullable)
+            .join('\n')
+
+        return item
+    }
+
+    public toTreeNode(): ResourceTreeNode<this, TaskResource | AggregateTask> {
+        const children = this.listTasks().map(task => task.toTreeNode())
+
+        if (children.length === 0) {
+            return new ResourceTreeNode(this)
+        }
+
+        return new ResourceTreeNode<this, TaskResource | AggregateTask>(this, {
+            childrenProvider: { listResources: () => children },
+        })
+    }
+}
+
+class AggregateTask {
+    public readonly id = String(this.tasks.map(task => task.id))
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+
+    public constructor(
+        private readonly name: string,
+        private readonly tasks: Task[],
+        private readonly memory: TaskMemory
+    ) {
+        if (tasks.length === 0) {
+            throw new Error('An aggregate task must be initialized with at least one task')
+        }
+        if (tasks.some(task => task.info.children.length !== 0)) {
+            throw new Error('Aggregate tasks should not have any children')
+        }
+        this.memory.onDidChange(() => this.onDidChangeEmitter.fire())
+    }
+
+    public getTreeItem() {
+        const item = new vscode.TreeItem(this.name)
+        item.description = `${this.tasks.length} ${this.tasks[0].state}`
+        item.iconPath = getTaskIcon(this.tasks[0])
+        item.command = cancelAllTasks.build(this.tasks).asCommand({ title: '' })
+        item.tooltip = this.tasks[0].info.type ? `type: ${this.tasks[0].info.type}` : undefined
+
+        return item
+    }
+
+    public toTreeNode(): ResourceTreeNode<this> {
+        return new ResourceTreeNode(this)
+    }
+}
+
+const clearMemory = Commands.register({ id: '_aws.dev.tasks.clearMemory', runAsTask: false }, (memory: TaskMemory) =>
+    memory.clear()
+)
+
+const toggleStartTimes = Commands.register(
+    { id: '_aws.dev.tasks.toggleStartTimes', runAsTask: false },
+    (memory: TaskMemory) =>
+        memory.updateSettings({ ...memory.settings, showTimestamps: !memory.settings.showTimestamps })
+)
+
+class TasksExplorer implements RootNode {
+    #memory?: TaskMemory
+    public readonly id = 'tasks-explorer'
+    public readonly resource = this
+    public readonly onDidChangeChildren = this.memory.onDidChange
+
+    public get memory() {
+        return (this.#memory ??= new TaskMemory(this.service))
+    }
+
+    public constructor(
+        private readonly devSettings = DevSettings.instance,
+        private readonly service = Tasks.instance
+    ) {}
+
+    public canShow() {
+        return this.devSettings.get('showTasksExplorer', false)
+    }
+
+    public getTreeItem() {
+        const item = new vscode.TreeItem('Tasks Explorer (Toolkit Developer)')
+        item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+
+        return item
+    }
+
+    public getChildren() {
+        const settings = this.memory.settings
+
+        return [
+            clearMemory.build(this.memory).asTreeNode({ label: 'Clear Memory', iconPath: getIcon('vscode-trash') }),
+            toggleStartTimes.build(this.memory).asTreeNode({
+                label: `${settings.showTimestamps ? 'Hide' : 'Show'} Start Times`,
+                iconPath: settings.showTimestamps ? getIcon('vscode-eye-closed') : getIcon('vscode-eye'),
+            }),
+            new TaskServiceResource(this.memory).toTreeNode(),
+        ]
+    }
+}
+
+export function getTasksRootNode(): RootNode {
+    return new TasksExplorer()
+}

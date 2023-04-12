@@ -32,6 +32,8 @@ import {
 } from '../sharedCredentials'
 import { hasScopes, SsoProfile } from '../auth'
 import { builderIdStartUrl } from '../sso/model'
+import { runTask } from '../../shared/tasks'
+import { AsyncResource } from 'async_hooks'
 
 const sharedCredentialProperties = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -261,14 +263,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         const loadedCreds = await this.patchSourceCredentials()
 
-        const provider = chain(this.makeCredentialsProvider(loadedCreds))
+        return runTask('SharedCredentialsProvider.getCredentials()', async () => {
+            const provider = chain(this.makeCredentialsProvider(loadedCreds))
 
-        // SSO profiles already show a notification, no need to show another
-        if (isSsoProfile(this.profile)) {
-            return provider()
-        } else {
-            return resolveProviderWithCancel(this.profileName, provider())
-        }
+            // SSO profiles already show a notification, no need to show another
+            if (isSsoProfile(this.profile)) {
+                return provider()
+            } else {
+                return resolveProviderWithCancel(this.profileName, provider())
+            }
+        })
     }
 
     /**
@@ -419,7 +423,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         return fromIni({
             profile: this.profileName,
-            mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
+            mfaCodeProvider: AsyncResource.bind(
+                async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName)
+            ),
             roleAssumer: assumeRole,
             loadedConfig: Promise.resolve({
                 credentialsFile: loadedCreds ?? profiles,

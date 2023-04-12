@@ -14,48 +14,51 @@ import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { isNonNullable } from '../shared/utilities/tsUtils'
+import { runTask } from '../shared/tasks'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
-    const saveConnectionItem = {
-        label: `Yes, keep using ${newConn.label} with ${tools.join(', ')} while using ${
-            oldConn.label
-        } with other services.`,
-        detail: `To remove later, select "Remove Connection from Tool" from the tool's context (right-click) menu.`,
-        data: 'yes',
-    } as const
+    return runTask('prompt use new connection', async () => {
+        const saveConnectionItem = {
+            label: `Yes, keep using ${newConn.label} with ${tools.join(', ')} while using ${
+                oldConn.label
+            } with other services.`,
+            detail: `To remove later, select "Remove Connection from Tool" from the tool's context (right-click) menu.`,
+            data: 'yes',
+        } as const
 
-    const useConnectionItem = {
-        label: `No, switch everything to authenticate with ${(swapNo ? newConn : oldConn).label}.`,
-        detail: 'This will not log you out; you can reconnect at any time by switching connections.',
-        data: 'no',
-    } as const
+        const useConnectionItem = {
+            label: `No, switch everything to authenticate with ${(swapNo ? newConn : oldConn).label}.`,
+            detail: 'This will not log you out; you can reconnect at any time by switching connections.',
+            data: 'no',
+        } as const
 
-    const helpButton = createHelpButton()
-    const openLink = helpButton.onClick.bind(helpButton)
-    helpButton.onClick = () => {
-        telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_help' })
-        openLink()
-    }
+        const helpButton = createHelpButton()
+        const openLink = helpButton.onClick.bind(helpButton)
+        helpButton.onClick = () => {
+            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_help' })
+            openLink()
+        }
 
-    const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-        title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
-        placeholder: 'Confirm choice',
-        buttons: [helpButton, createExitButton()],
+        const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
+            title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
+            placeholder: 'Confirm choice',
+            buttons: [helpButton, createExitButton()],
+        })
+
+        switch (resp) {
+            case 'yes':
+                telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_yes' })
+                break
+            case 'no':
+                telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_no' })
+                break
+            default:
+                telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_exit' })
+        }
+
+        return resp
     })
-
-    switch (resp) {
-        case 'yes':
-            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_yes' })
-            break
-        case 'no':
-            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_no' })
-            break
-        default:
-            telemetry.ui_click.emit({ elementId: 'connection_multiple_auths_exit' })
-    }
-
-    return resp
 }
 
 let oldConn: Auth['activeConnection']

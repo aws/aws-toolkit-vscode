@@ -138,3 +138,5 @@ export type Mutable<T> = { -readonly [P in keyof T]: T[P] }
 export type FactoryFunction<T extends abstract new (...args: any[]) => any> = (
     ...args: ConstructorParameters<T>
 ) => InstanceType<T>
+
+export type OptionalKeys<T, U extends keyof T> = Omit<T, U> & Partial<Pick<T, U>>

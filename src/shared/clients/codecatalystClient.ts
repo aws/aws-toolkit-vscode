@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
+import { CancellationError, CancelToken, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
 import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
@@ -28,6 +28,7 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
+import { getExecutionContextOrThrow } from '../tasks'
 
 // REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
@@ -592,8 +593,12 @@ class CodeCatalystClientInternal {
      */
     public async startDevEnvironmentWithProgress(
         args: CodeCatalyst.StartDevEnvironmentRequest,
-        timeout: Timeout = new Timeout(1000 * 60 * 60)
+        cancelToken: CancelToken = getExecutionContextOrThrow().cancelToken
     ): Promise<DevEnvironment> {
+        const timeout = new Timeout(600000)
+        cancelToken.onCompletion(() => timeout.dispose())
+        cancelToken.onCancellationRequested(() => timeout.cancel())
+
         // Track the status changes chronologically so that we can
         // 1. reason about hysterisis (weird flip-flops)
         // 2. have visibility in the logs
@@ -637,10 +642,7 @@ class CodeCatalystClientInternal {
             }
         }
 
-        const progress = await showMessageWithCancel(
-            localize('AWS.CodeCatalyst.devenv.message', 'CodeCatalyst'),
-            timeout
-        )
+        const progress = await showMessageWithCancel(localize('AWS.CodeCatalyst.devenv.message', 'CodeCatalyst'))
         progress.report({ message: localize('AWS.CodeCatalyst.devenv.checking', 'Checking status...') })
 
         try {

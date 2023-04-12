@@ -1060,8 +1060,6 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
         return {
             detail: getDetail(),
-            data: conn,
-            invalidSelection: true,
             label: codicon`${getIcon('vscode-error')} ${conn.label}`,
             description:
                 state === 'authenticating'
@@ -1070,28 +1068,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
                           'aws.auth.promptConnection.expired.description',
                           'Expired or Invalid, select to authenticate'
                       ),
-            onClick:
-                state !== 'authenticating'
-                    ? async () => {
-                          // XXX: this is hack because only 1 picker can be shown at a time
-                          // Some legacy auth providers will show a picker, hiding this one
-                          // If we detect this then we'll jump straight into using the connection
-                          let hidden = false
-                          const sub = prompter.quickPick.onDidHide(() => {
-                              hidden = true
-                              sub.dispose()
-                          })
-                          const newConn = await reauthCommand.execute(auth, conn)
-                          if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
-                              await auth.useConnection(newConn)
-                          } else {
-                              await prompter.clearAndLoadItems(loadItems())
-                              prompter.selectItems(
-                                  ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
-                              )
-                          }
-                      }
-                    : undefined,
+            data: () => reauthCommand.execute(auth, conn),
         }
     }
 

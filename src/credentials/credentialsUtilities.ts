@@ -12,11 +12,10 @@ import { authHelpUrl } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
-import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../shared/settings'
 import { Profile } from './sharedCredentials'
+import { getExecutionContextOrThrow } from '../shared/tasks'
 
-const credentialsTimeout = 300000 // 5 minutes
 const credentialsProgressDelay = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
@@ -69,14 +68,9 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
 export async function resolveProviderWithCancel(
     profile: string,
     provider: Promise<Credentials>,
-    timeout: Timeout | number = credentialsTimeout
+    timeout = getExecutionContextOrThrow().cancelToken
 ): Promise<Credentials> {
-    if (typeof timeout === 'number') {
-        timeout = new Timeout(timeout)
-    }
-
     globals.clock.setTimeout(() => {
-        timeout = timeout as Timeout // Typescript lost scope of the correct type here
         if (timeout.completed !== true) {
             showMessageWithCancel(
                 localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
@@ -85,15 +79,7 @@ export async function resolveProviderWithCancel(
         }
     }, credentialsProgressDelay)
 
-    return await waitTimeout(provider, timeout, {
-        allowUndefined: false,
-        onCancel: () => {
-            throw new Error(`Request to get credentials for "${profile}" cancelled`)
-        },
-        onExpire: () => {
-            throw new Error(`Request to get credentials for "${profile}" expired`)
-        },
-    })
+    return provider
 }
 
 export class CredentialsSettings extends fromExtensionManifest('aws', { profile: String }) {}

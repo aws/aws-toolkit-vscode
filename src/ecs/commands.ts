@@ -15,7 +15,7 @@ import { PromptSettings, Settings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
 import { removeAnsi } from '../shared/utilities/textUtilities'
-import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { checkPermissionsForSsm, EcsSettings } from './util'
 import { CommandWizard, CommandWizardState } from './wizards/executeCommand'
@@ -93,8 +93,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
         span.record({ ecsExecuteCommandType: 'command' })
 
         const { container, task, command } = await runCommandWizard(obj)
-        const timeout = new Timeout(600000)
-        showMessageWithCancel('Running command...', timeout)
+        showMessageWithCancel('Running command...')
 
         try {
             const { path, args, dispose } = await container.prepareCommandForTask(command, task)
@@ -108,7 +107,6 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
             const proc = new ChildProcess(path, args, { logging: 'noparams' })
             await proc
                 .run({
-                    timeout,
                     rejectOnError: true,
                     rejectOnErrorCode: true,
                     // TODO: `showOutputMessage` should not be writing to the logs...
@@ -130,8 +128,6 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
                 'Failed to execute command in container.'
             )
             throw ToolkitError.chain(err, failedMessage)
-        } finally {
-            timeout.dispose()
         }
     })
 })

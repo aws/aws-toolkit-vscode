@@ -13,9 +13,11 @@ import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
+import { Timeout, CancelToken } from '../utilities/timeoutUtils'
 import { isCloud9 } from '../extensionUtilities'
 import { Headers } from 'got/dist/source/core'
+import { getExecutionContext } from '../tasks'
+import { ToolkitError } from '../errors'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -56,18 +58,20 @@ export class HttpResourceFetcher implements ResourceFetcher {
             showUrl: boolean
             friendlyName?: string
             onSuccess?(contents: string): void
-            timeout?: Timeout
+            timeout?: Timeout | CancelToken
         }
-    ) {}
+    ) {
+        this.params.timeout ??= getExecutionContext()?.cancelToken
+    }
 
     /**
-     * Returns the contents of the resource, or undefined if the resource could not be retrieved.
+     * Returns the contents of the resource
      *
      * @param pipeLocation Optionally pipe the download to a file system location
      */
-    public get(): Promise<string | undefined>
+    public get(): Promise<string>
     public get(pipeLocation: string): FetcherResult
-    public get(pipeLocation?: string): Promise<string | undefined> | FetcherResult {
+    public get(pipeLocation?: string): Promise<string> | FetcherResult {
         this.logger.verbose(`downloading: ${this.logText()}`)
 
         if (pipeLocation) {
@@ -116,7 +120,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return { content: contents, eTag: eTagResponse }
     }
 
-    private async downloadRequest(): Promise<string | undefined> {
+    private async downloadRequest(): Promise<string> {
         try {
             // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
             const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body.toString()
@@ -129,11 +133,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
             return contents
         } catch (err) {
             const error = err as CancelError | RequestError
-            this.logger.verbose(
-                `Error downloading ${this.logText()}: %s`,
-                error.message ?? error.code ?? error.response?.statusMessage ?? error.response?.statusCode
-            )
-            return undefined
+            throw new ToolkitError(`Error downloading ${this.logText()}`, {
+                cause: error,
+                cancelled: error instanceof CancelError,
+            })
         }
     }
 
@@ -141,12 +144,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
     }
 
-    private logCancellation(event: CancelEvent) {
-        getLogger().debug(`Download for "${this.logText()}" ${event.agent === 'user' ? 'cancelled' : 'timed out'}`)
+    private logCancellation(reason: Error) {
+        getLogger().debug(`Download for "${this.logText()}" cancelled: %s`, reason)
     }
 
     // TODO: make pipeLocation a vscode.Uri
-    private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
+    private pipeGetRequest(pipeLocation: string, timeout?: Timeout | CancelToken): FetcherResult {
         const requester = isCloud9() ? patchedGot : got
         const requestStream = requester.stream(this.url, { headers: this.buildRequestHeaders() })
         const fsStream = fs.createWriteStream(pipeLocation)
@@ -159,9 +162,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 err ? reject(err) : resolve()
             })
 
-            const cancelListener = timeout?.token.onCancellationRequested(event => {
-                this.logCancellation(event)
-                pipe.destroy(new CancellationError(event.agent))
+            const token = timeout instanceof Timeout ? timeout.token : timeout
+            const cancelListener = token?.onCancellationRequested(({ reason }) => {
+                this.logCancellation(reason)
+                pipe.destroy(reason)
             })
 
             pipe.on('close', () => cancelListener?.dispose())
@@ -170,15 +174,19 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return Object.assign(done, { requestStream, fsStream })
     }
 
-    private async getResponseFromGetRequest(timeout?: Timeout, headers?: RequestHeaders): Promise<Response<string>> {
+    private async getResponseFromGetRequest(
+        timeout?: Timeout | CancelToken,
+        headers?: RequestHeaders
+    ): Promise<Response<string>> {
         const requester = isCloud9() ? patchedGot : got
         const promise = requester(this.url, {
             headers: this.buildRequestHeaders(headers),
         })
 
-        const cancelListener = timeout?.token.onCancellationRequested(event => {
-            this.logCancellation(event)
-            promise.cancel(new CancellationError(event.agent).message)
+        const token = timeout instanceof Timeout ? timeout.token : timeout
+        const cancelListener = token?.onCancellationRequested(({ reason }) => {
+            this.logCancellation(reason)
+            promise.cancel(reason.message)
         })
 
         promise.finally(() => cancelListener?.dispose())
@@ -217,14 +225,12 @@ export async function getPropertyFromJsonUrl(
 ): Promise<any | undefined> {
     const resourceFetcher = fetcher ?? new HttpResourceFetcher(url, { showUrl: true })
     const result = await resourceFetcher.get()
-    if (result) {
-        try {
-            const json = JSON.parse(result)
-            if (json[property]) {
-                return json[property]
-            }
-        } catch (err) {
-            getLogger().error(`JSON parsing failed for "${url}": ${(err as Error).message}`)
+    try {
+        const json = JSON.parse(result)
+        if (json[property]) {
+            return json[property]
         }
+    } catch (err) {
+        getLogger().error(`JSON parsing failed for "${url}": ${(err as Error).message}`)
     }
 }

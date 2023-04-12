@@ -9,6 +9,7 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import { getIcon } from '../shared/icons'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
+import { runTask } from '../shared/tasks'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -59,7 +60,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         return element
     }
 
-    public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
+    public async _getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
         if (element) {
             this.regionProvider.setLastTouchedRegion(element.regionCode)
         }
@@ -90,6 +91,12 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         }
 
         return childNodes
+    }
+
+    public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
+        const name = `AwsExplorer.getChildren(${element ? `"${element.id ?? element.label}"` : ''})`
+
+        return runTask(name, () => this._getChildren(element))
     }
 
     public getRegionNodesSize(): number {

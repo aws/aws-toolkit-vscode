@@ -162,7 +162,9 @@ describe('timeoutUtils', async function () {
             beforeEach(function () {
                 timer = this.timer = new timeoutUtils.Timeout(checkTimerMs * 6)
                 cancellation = new Promise<'user' | 'timeout' | 'completed'>((resolve, reject) => {
-                    timer.token.onCancellationRequested(({ agent }) => resolve(agent))
+                    timer.token.onCancellationRequested((
+                        { reason }) => reason instanceof timeoutUtils.CancellationError ? resolve(reason.agent) : reject(reason)
+                    )
                     timer.onCompletion(() => resolve('completed'))
                     setTimeout(() => reject(new Error('Timed out waiting for event')), 1000)
                 })

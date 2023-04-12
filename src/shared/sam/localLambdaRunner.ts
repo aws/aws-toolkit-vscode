@@ -15,7 +15,7 @@ import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import { Timeout } from '../utilities/timeoutUtils'
+import { CancelToken, Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
@@ -30,6 +30,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
+import { getExecutionContext } from '../tasks'
 
 const localize = nls.loadMessageBundle()
 
@@ -117,7 +118,7 @@ export async function makeInputTemplate(
 }
 
 async function buildLambdaHandler(
-    timer: Timeout,
+    timer: Timeout | CancelToken,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs,
     settings: SamCliSettings
@@ -172,7 +173,7 @@ async function buildLambdaHandler(
 }
 
 async function invokeLambdaHandler(
-    timer: Timeout,
+    timer: Timeout | CancelToken,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs,
     settings: SamCliSettings
@@ -303,13 +304,15 @@ export async function runLambdaFunction(
     }
 
     const settings = SamCliSettings.instance
-    const timer = new Timeout(settings.getLocalInvokeTimeout())
+    const timer = getExecutionContext()?.cancelToken ?? new Timeout(settings.getLocalInvokeTimeout())
 
     // TODO: refactor things to not mutate the config
     config.templatePath = await buildLambdaHandler(timer, envVars, config, settings)
 
     await onAfterBuild()
-    timer.refresh()
+    if (timer instanceof Timeout) {
+        timer.refresh()
+    }
 
     let apiRequest: Promise<void> | undefined
     if (config.invokeTarget.target === 'api') {
@@ -390,7 +393,7 @@ function stopApi(samStartApiProc: ChildProcess, config: vscode.DebugConfiguratio
  * Lambda, which will then enter debugging.
  */
 async function requestLocalApi(
-    timeout: Timeout,
+    timeout: Timeout | CancelToken,
     api: APIGatewayProperties,
     apiPort: number,
     payload: any
@@ -515,8 +518,12 @@ export async function attachDebugger({
  * @param timeout  Time to wait
  * @param isDebugPort  Is this a debugger port or a `sam local start-api` HTTP port?
  */
-export async function waitForPort(port: number, timeout: Timeout, isDebugPort: boolean = true): Promise<void> {
-    const time = timeout.remainingTime
+export async function waitForPort(
+    port: number,
+    timeout: Timeout | CancelToken,
+    isDebugPort: boolean = true
+): Promise<void> {
+    const time = timeout instanceof Timeout ? timeout.remainingTime : 60000 // arbitrary amount of time
     try {
         // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(port, samLocalPortCheckRetryIntervalMillis, time)

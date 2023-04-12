@@ -25,30 +25,31 @@ import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Result, Runtime } from '../../shared/telemetry/telemetry'
+import { Runtime } from '../../shared/telemetry/telemetry'
+import { ToolkitError } from '../../shared/errors'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
-    const result = await runDownloadLambda(functionNode)
-
-    telemetry.lambda_import.emit({
-        result,
-        runtime: functionNode.configuration.Runtime as Runtime | undefined,
+    return telemetry.lambda_import.run(() => {
+        telemetry.record({ runtime: functionNode.configuration.Runtime as Runtime | undefined })
+        return runDownloadLambda(functionNode)
     })
 }
 
-async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Result> {
+async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
     if (workspaceFolders.length === 0) {
-        vscode.window.showErrorMessage(
-            localize('AWS.lambda.download.noWorkspaceFolders', 'Open a workspace before downloading a Lambda function.')
+        const msg = localize(
+            'AWS.lambda.download.noWorkspaceFolders',
+            'Open a workspace before downloading a Lambda function.'
         )
-        return 'Cancelled'
+        throw new ToolkitError(msg, { code: 'NoWorkspace' })
     }
     const selectedUri = await promptUserForLocation(new WizardContext(), { step: 1, totalSteps: 1 })
     if (!selectedUri) {
-        return 'Cancelled'
+        throw new CancellationError('user')
     }
 
     const downloadLocation = path.join(selectedUri.fsPath, functionName, path.sep)
@@ -68,11 +69,11 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
 
         if (!isConfirmed) {
             getLogger().info('DownloadLambda cancelled')
-            return 'Cancelled'
+            throw new CancellationError('user')
         }
     }
 
-    return await vscode.window.withProgress<Result>(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -90,20 +91,15 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
                 lambdaLocation = path.join(downloadLocation, getLambdaDetails(functionNode.configuration).fileName)
                 await downloadAndUnzipLambda(progress, functionNode, downloadLocation)
             } catch (e) {
-                // initial download failed or runtime is unsupported.
-                // show error and return a failure
-                const err = e as Error
-                getLogger().error(err)
-                vscode.window.showErrorMessage(
+                throw ToolkitError.chain(
+                    e,
                     localize(
                         'AWS.lambda.download.downloadError',
                         'Error downloading Lambda function {0}: {1}',
                         functionNode.configuration.FunctionArn!,
-                        err.message
+                        (e as Error).message
                     )
                 )
-
-                return 'Failed'
             }
 
             try {
@@ -118,12 +114,10 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(downloadLocation))!
 
                 await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
-
-                return 'Succeeded'
             } catch (e) {
                 // failed to open handler file or add launch config.
                 // not a failure since the function is downloaded to a workspace directory.
-                return 'Succeeded'
+                getLogger().warn('Lambda download succeeded but failed to open the handler: %s', e)
             }
         }
     )
