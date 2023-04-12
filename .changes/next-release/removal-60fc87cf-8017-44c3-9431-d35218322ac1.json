@@ -1,4 +1,4 @@
 {
   "type" : "removal",
-  "description" : "Dropped support for dotnetcore 3.1 Lambda Runtime"
+  "description" : "Drop support for the .NET Core 3.1 Lambda runtime"
 }

@@ -1,4 +1,4 @@
 {
   "type" : "bugfix",
-  "description" : "Provided UX consistent in all access points for creating Dev Environment"
+  "description" : "Provide consistent UX in all Dev Environment wizard variants"
 }
