@@ -166,6 +166,8 @@ class CawsConnectionProvider : GatewayConnectionProvider {
 
                             val pluginPath = "$IDE_BACKEND_DIR/plugins/${AwsToolkit.pluginPath().fileName}"
                             var retries = 3
+                            val startTimeToCheckInstallation = System.currentTimeMillis()
+
                             val toolkitInstallSettings: ToolkitInstallSettings? = coroutineScope {
                                 while (retries > 0) {
                                     indicator.checkCanceled()
@@ -173,6 +175,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                         pluginPath,
                                         timeout = Duration.ofSeconds(15)
                                     )
+
                                     when (pluginIsInstalled) {
                                         null -> {
                                             if (retries == 1) {
@@ -188,9 +191,19 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                     }
                                 }
                             } as ToolkitInstallSettings?
+
                             toolkitInstallSettings ?: let {
                                 // environment is non-responsive to SSM; restart
                                 LOG.warn { "Restarting $envId since it appears unresponsive to SSM Run-Command" }
+                                val timeTakenToCheckInstallation = System.currentTimeMillis() - startTimeToCheckInstallation
+                                CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                    project = null,
+                                    userId = userId,
+                                    result = TelemetryResult.Failed,
+                                    codecatalystDevEnvironmentWorkflowStep = "ToolkitInstallationSSMCheck",
+                                    codecatalystDevEnvironmentWorkflowError = "Timeout/Unknown error while connecting to Dev Env via SSM",
+                                    duration = timeTakenToCheckInstallation.toDouble()
+                                )
                                 coroutineScope {
                                     launchChildIOBackground {
                                         environmentActions.stopEnvironment()
