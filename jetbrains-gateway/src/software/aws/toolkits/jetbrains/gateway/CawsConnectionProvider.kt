@@ -148,7 +148,26 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                             canBeCancelled = true,
                             isIndeterminate = true,
                         ) {
-                            validateEnvironmentIsRunning(indicator, environmentActions)
+                            val timeBeforeEnvIsRunningCheck = System.currentTimeMillis()
+                            var validateEnvIsRunningResult = TelemetryResult.Succeeded
+                            var errorMessageDuringStateValidation: String? = null
+                            try {
+                                validateEnvironmentIsRunning(indicator, environmentActions)
+                            } catch (e: Exception) {
+                                validateEnvIsRunningResult = TelemetryResult.Failed
+                                errorMessageDuringStateValidation = e.message
+                                throw e
+                            } finally {
+                                CodecatalystTelemetry.devEnvironmentWorkflowStatistic(
+                                    project = null,
+                                    userId = userId,
+                                    result = validateEnvIsRunningResult,
+                                    duration = (System.currentTimeMillis() - timeBeforeEnvIsRunningCheck).toDouble(),
+                                    codecatalystDevEnvironmentWorkflowStep = "validateEnvRunning",
+                                    codecatalystDevEnvironmentWorkflowError = errorMessageDuringStateValidation
+                                )
+                            }
+
                             val isSmallInstance = cawsClient.getDevEnvironment {
                                 it.id(envId)
                                 it.projectName(projectName)
@@ -350,7 +369,10 @@ class CawsConnectionProvider : GatewayConnectionProvider {
         }
     }
 
-    private fun validateEnvironmentIsRunning(indicator: ProgressIndicator, environmentActions: WorkspaceActions) {
+    private fun validateEnvironmentIsRunning(
+        indicator: ProgressIndicator,
+        environmentActions: WorkspaceActions
+    ) {
         when (val status = environmentActions.getEnvironmentDetails().status()) {
             DevEnvironmentStatus.PENDING, DevEnvironmentStatus.STARTING -> environmentActions.waitForTaskReady(indicator)
             DevEnvironmentStatus.RUNNING -> {
