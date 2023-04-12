@@ -26,7 +26,7 @@ import {
     goRuntimes,
     RuntimeFamily,
 } from '../../../lambda/models/samLambdaRuntime'
-import { Timeout } from '../../utilities/timeoutUtils'
+import { CancelToken, Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as javaDebug from './javaSamDebug'
 import * as pythonDebug from './pythonSamDebug'
@@ -207,7 +207,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //  Non-serializable...
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
-    onWillAttachDebugger?(debugPort: number, timeout: Timeout): Promise<void>
+    onWillAttachDebugger?(debugPort: number, timeout: Timeout | CancelToken): Promise<void>
 
     /**
      * Specifies container architecture. Necessary for C#, to either swap debugger download or to force into no-debug mode

@@ -17,7 +17,7 @@ describe('getPropertyFromJsonUrl', function () {
     })
 
     it('undefined if resource is not present', async function () {
-        when(mockFetcher.get()).thenResolve(undefined)
+        when(mockFetcher.get()).thenResolve('')
         assert.strictEqual(await getPropertyFromJsonUrl(dummyUrl, dummyProperty, instance(mockFetcher)), undefined)
     })
 

@@ -45,6 +45,7 @@ import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
+import { bindToOuterScope } from '../tasks'
 
 const localize = nls.loadMessageBundle()
 
@@ -641,7 +642,8 @@ class ProcessTerminal implements vscode.Pseudoterminal {
         return this.process.stopped
     }
 
-    public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
+    // VS Code calls `open` so we must bind process execution to the initialization scope
+    private readonly _open = bindToOuterScope(() => {
         this.process
             .run({
                 onStdout: text => this.mapStdio(text),
@@ -652,6 +654,10 @@ class ProcessTerminal implements vscode.Pseudoterminal {
                 this.onDidExitEmitter.fire({ error: UnknownError.cast(err), exitCode: -1, stderr: '', stdout: '' })
             )
             .finally(() => this.onDidWriteEmitter.fire('\r\nPress any key to close this terminal'))
+    })
+
+    public open(initialDimensions: vscode.TerminalDimensions | undefined): void {
+        this._open()
     }
 
     public close(): void {

@@ -8,6 +8,7 @@ import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { AwsContext } from './awsContext'
 import { DevSettings } from './settings'
+import { onCancellationRequested, runTask } from './tasks'
 import { getUserAgent } from './telemetry/util'
 
 // These are not on the public API but are very useful for logging purposes.
@@ -135,6 +136,25 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         if (serviceName) {
             opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()] ?? opt.endpoint
         }
+
+        listeners.push(request => {
+            runTask({
+                name: `${serviceName?.toLowerCase() ?? 'unknown'}.${request.operation}()`,
+                type: 'ServiceOperation',
+                metadata: {
+                    service: serviceName?.toLowerCase() ?? 'unknown',
+                    endpoint: request.service.endpoint.hostname,
+                },
+                fn: () => {
+                    onCancellationRequested(() => request.abort())
+
+                    return new Promise<void>((resolve, reject) => {
+                        request.on('error', reject)
+                        request.on('complete', () => resolve())
+                    })
+                },
+            })
+        })
 
         const service = new type(opt)
         const originalSetup = service.setupRequestListeners.bind(service)

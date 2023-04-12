@@ -9,11 +9,12 @@ import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { Env } from '../../shared/vscode/env'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { sleep } from './timeoutUtils'
+import { CancelToken, sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
+import { getExecutionContextOrThrow } from '../tasks'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -154,7 +155,7 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
  */
 async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
-    timeout: Timeout
+    timeout: Timeout | CancelToken
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
     if (isCloud9()) {
@@ -183,7 +184,7 @@ async function showProgressWithTimeout(
  */
 export async function showMessageWithCancel(
     message: string,
-    timeout: Timeout
+    timeout: Timeout | CancelToken = getExecutionContextOrThrow().cancelToken
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout)

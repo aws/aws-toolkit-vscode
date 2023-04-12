@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { getExecutionContext } from '../tasks'
 import { assign } from '../utilities/collectionUtils'
 import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
@@ -103,6 +104,11 @@ export class InputBoxPrompter extends Prompter<string> {
     }
 
     protected async promptUser(): Promise<PromptResult<string>> {
+        getExecutionContext()?.cancelToken.onCompletion(() => {
+            this.inputBox.hide()
+            this.inputBox.dispose()
+        })
+
         const promptPromise = new Promise<PromptResult<string>>(resolve => {
             this.inputBox.onDidAccept(() => {
                 this.recentItem = this.inputBox.value
@@ -128,7 +134,7 @@ export class InputBoxPrompter extends Prompter<string> {
             this.inputBox.dispose()
         })
 
-        return await promptPromise
+        return promptPromise
     }
 
     public setStepEstimator(estimator: StepEstimator<string>): void {

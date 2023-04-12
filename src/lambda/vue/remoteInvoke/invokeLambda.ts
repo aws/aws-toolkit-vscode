@@ -20,6 +20,7 @@ import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { Result } from '../../../shared/telemetry/telemetry'
+import { runTask } from '../../../shared/tasks'
 
 const localize = nls.loadMessageBundle()
 
@@ -83,10 +84,12 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async getSample(requestName: string) {
-        const sampleUrl = `${sampleRequestPath}${requestName}`
-        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+        return runTask('getSample', async () => {
+            const sampleUrl = `${sampleRequestPath}${requestName}`
+            const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
 
-        return sample
+            return sample
+        })
     }
 
     public async promptFile() {

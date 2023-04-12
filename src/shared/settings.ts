@@ -583,6 +583,7 @@ const devSettings = {
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
     cawsStage: String,
+    showTasksExplorer: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

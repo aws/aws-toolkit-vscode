@@ -60,7 +60,7 @@ async function downloadS3File(
         ? streamToFile(downloadStream, options.saveLocation)
         : streamToBuffer(downloadStream, file.sizeBytes)
 
-    options?.timeout?.token.onCancellationRequested(({ agent }) => downloadStream.destroy(new CancellationError(agent)))
+    options?.timeout?.token.onCancellationRequested(({ reason }) => downloadStream.destroy(reason))
 
     if (options?.progressLocation) {
         vscode.window.withProgress(

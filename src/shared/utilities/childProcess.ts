@@ -5,8 +5,10 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
+import { UnknownError } from '../errors'
 import * as logger from '../logger'
-import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
+import { getExecutionContext } from '../tasks'
+import { Timeout, CancellationError, waitUntil, CancelToken } from './timeoutUtils'
 
 interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -14,7 +16,7 @@ interface RunParameterContext {
     /** Attempts to stop the running process. See {@link ChildProcess.stop}. */
     stop(force?: boolean, signal?: string): void
     /** The active `Timeout` object (if applicable). */
-    readonly timeout?: Timeout
+    readonly timeout?: Timeout | CancelToken
     /** The logger being used by the process. */
     readonly logger: logger.Logger
 }
@@ -33,7 +35,7 @@ export interface ChildProcessOptions {
     /** Rejects the Promise on non-zero exit codes. Can also use a callback for custom errors. (default: false) */
     rejectOnErrorCode?: boolean | ((code: number) => Error)
     /** A `Timeout` token. The running process will be terminated on expiration or cancellation. */
-    timeout?: Timeout
+    timeout?: Timeout | CancelToken
     /** Options sent to the `spawn` command. This is merged in with the base options if they exist. */
     spawnOptions?: child_process.SpawnOptions
     /** Callback for intercepting text from the stdout stream. */
@@ -120,6 +122,7 @@ export class ChildProcess {
         const options = {
             collect: true,
             waitForStreams: true,
+            timeout: getExecutionContext()?.cancelToken,
             ...this.baseOptions,
             ...params,
             spawnOptions: { ...this.baseOptions.spawnOptions, ...params.spawnOptions },
@@ -295,10 +298,10 @@ export class ChildProcess {
         const pid = process.pid
         ChildProcess.runningProcesses.set(pid, this)
 
-        const timeoutListener = options?.timeout?.token.onCancellationRequested(({ agent }) => {
-            const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
-            this.log.verbose(`${message}${this.toString(options?.logging === 'noparams')}`)
-            errorHandler(new CancellationError(agent), true)
+        const token = options?.timeout instanceof Timeout ? options.timeout.token : options?.timeout
+        const timeoutListener = token?.onCancellationRequested(({ reason }) => {
+            this.log.verbose(`Cancelled: ${this.toString(options?.logging === 'noparams')}`)
+            errorHandler(reason ? UnknownError.cast(reason) : new CancellationError('user'), true)
         })
 
         const dispose = () => {

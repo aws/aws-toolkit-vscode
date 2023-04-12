@@ -29,6 +29,7 @@ import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { UnknownError } from '../shared/errors'
+import { runTask } from '../shared/tasks'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -211,11 +212,13 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const runningDevEnv = await client.startDevEnvironmentWithProgress({
-        id,
-        spaceName: org.name,
-        projectName: project.name,
-    })
+    const runningDevEnv = await runTask('startDevEnvironment', () =>
+        client.startDevEnvironmentWithProgress({
+            id,
+            spaceName: org.name,
+            projectName: project.name,
+        })
+    )
 
     const hostname = getHostNameFromEnv({ id, org, project })
     const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`

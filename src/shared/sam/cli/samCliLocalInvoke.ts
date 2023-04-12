@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
-import { Timeout } from '../../utilities/timeoutUtils'
+import { CancelToken, Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
@@ -33,7 +33,7 @@ export interface SamLocalInvokeCommandArgs {
     options?: child_process.SpawnOptions
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
-    timeout?: Timeout
+    timeout?: Timeout | CancelToken
     /** Allows us to name debug sessions so we can terminate them later */
     name?: string
 }
@@ -76,13 +76,17 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     onStdout: (text: string): void => {
                         getLogger('debugConsole').info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
-                        params.timeout?.refresh()
+                        if (params.timeout instanceof Timeout) {
+                            params.timeout.refresh()
+                        }
                         this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                     },
                     onStderr: (text: string): void => {
                         getLogger('debugConsole').error(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
-                        params.timeout?.refresh()
+                        if (params.timeout instanceof Timeout) {
+                            params.timeout.refresh()
+                        }
                         this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
                         if (checkForCues) {
                             // Look for messages like "Debugger attached" before returning back to caller
@@ -214,7 +218,7 @@ export class SamCliLocalInvokeInvocation {
         this.args.skipPullImage = !!this.args.skipPullImage
     }
 
-    public async execute(timeout?: Timeout): Promise<ChildProcess> {
+    public async execute(timeout?: Timeout | CancelToken): Promise<ChildProcess> {
         await this.validate()
 
         const sam = await this.config.getOrDetectSamCli()
