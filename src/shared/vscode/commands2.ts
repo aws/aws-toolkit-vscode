@@ -43,12 +43,52 @@ export interface Command<T extends Callback = Callback> {
     execute(...parameters: Parameters<T>): Promise<ReturnType<T> | undefined>
 }
 
+/**
+ * Represents a command that has been registered with VS Code, meaning
+ * it can be executed with the `executeCommand` API.
+ */
 interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
     dispose(): void
 }
 
-interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any> extends Command<T> {
+/**
+ * Represents a command that has been declared but not yet registered with
+ * VS Code
+ *
+ * This is a "lazy" command that is only registered when it is actually used.
+ */
+interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any[]> extends Command<T> {
     register(...dependencies: U): RegisteredCommand<T>
+}
+
+/**
+ * Classes that have "declared" commands which wrap the underlying
+ * logic provided by 'T'.
+ *
+ * These declared commands can then be used to do things like register
+ * it as a VS Code command, or to build a tree node that uses the command.
+ *
+ * @param T The class that declares the commands
+ */
+interface CommandDeclarations<T> {
+    readonly backend: T
+
+    readonly declared: { [K in FunctionKeys<T>]: DeclaredCommand<Functions<T>[K], [T]> }
+}
+
+export abstract class BaseCommandDeclarations<T> implements CommandDeclarations<T> {
+    public readonly declared: { [K in FunctionKeys<T>]: DeclaredCommand<Functions<T>[K], [T]> } = {} as any
+
+    public constructor(readonly extContext: vscode.ExtensionContext, readonly backend: T) {}
+
+    /**
+     * Registers all declared commands with VS Code commands api.
+     */
+    public registerCommandsWithVSCode(): void {
+        this.extContext.subscriptions.push(
+            ...Object.values<DeclaredCommand>(this.declared).map(c => c.register(this.backend))
+        )
+    }
 }
 
 /**

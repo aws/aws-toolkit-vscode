@@ -9,6 +9,7 @@ import { Settings } from '../shared/settings'
 import { Auth } from './auth'
 import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
+import { AuthCommandDeclarations } from './commands'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -24,4 +25,7 @@ export async function initialize(
             loginManager.logout()
         }
     })
+
+    const authCommands = new AuthCommandDeclarations(extensionContext)
+    authCommands.registerCommandsWithVSCode()
 }

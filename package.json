@@ -1984,6 +1984,11 @@
                 "category": "%AWS.title%"
             },
             {
+                "command": "aws.auth.showConnectionsPage",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%"
+            },
+            {
                 "command": "aws.auth.switchConnections",
                 "title": "%AWS.command.auth.switchConnections%",
                 "category": "%AWS.title%"
