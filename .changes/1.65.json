@@ -1,0 +1,38 @@
+{
+  "date" : "2023-04-13",
+  "version" : "1.65",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "[CodeWhisperer]: Introducing \"Stop code scan\" feature where users will be able to stop the ongoing code scan and immediately start a new one. "
+  }, {
+    "type" : "feature",
+    "description" : "[CodeWhisperer]: Automatic import recommendations"
+  }, {
+    "type" : "feature",
+    "description" : "[CodeWhisperer]: Now supports cross region calls."
+  }, {
+    "type" : "feature",
+    "description" : "Attempt to download IDE thin client earlier in the CodeCatalyst Dev Environment connection process"
+  }, {
+    "type" : "feature",
+    "description" : "[CodeWhisperer]: New supported programming languages: C, C++, Go, Kotlin, Php, Ruby, Rust, Scala, Shell, Sql."
+  }, {
+    "type" : "bugfix",
+    "description" : "Include more information in the Dev Environment status tooltip"
+  }, {
+    "type" : "bugfix",
+    "description" : "Provide consistent UX in all Dev Environment wizard variants"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'MissingResourceException: Registry key is not defined'"
+  }, {
+    "type" : "bugfix",
+    "description" : "[CodeWhisperer]: Multiple bug fixes to improve user experience"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the Node.js 12.x Lambda runtime"
+  }, {
+    "type" : "removal",
+    "description" : "Drop support for the .NET Core 3.1 Lambda runtime"
+  } ]
+}

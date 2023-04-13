@@ -1,3 +1,9 @@
+# _1.64_ (2023-03-29)
+- **(Breaking Change)** Required SAM CLI upgrade to v1.78.0 to for using Sync Serverless Application option.
+- **(Feature)** Support for RDS MariaDB instances ([#3530](https://github.com/aws/aws-toolkit-jetbrains/issues/3530))
+- **(Feature)** Added 2023.1 support
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2022.1 platform
+
 # _1.63_ (2023-03-24)
 - **(Bug Fix)** Fix issue where multiple Builder ID entries show up in connection list
 - **(Bug Fix)** Fix temporary deadlock when user fails to complete reauthentication request

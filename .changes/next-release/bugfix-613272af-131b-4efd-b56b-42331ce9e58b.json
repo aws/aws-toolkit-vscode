@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix 'MissingResourceException: Registry key is not defined'"
-}
