@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { getLogger } from '../shared/logger'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth, Connection, createSsoProfile, SsoConnection, StatefulConnection } from './auth'
+import { Auth, Connection, SsoConnection, StatefulConnection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
@@ -235,8 +235,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
         await promptForRescope(conn, this.toolLabel)
         const scopes = Array.from(new Set([...(conn.scopes ?? []), ...extraScopes]))
-        const profile = createSsoProfile(conn.startUrl, conn.ssoRegion, scopes)
-        const updatedConn = await this.auth.updateConnection(conn, profile)
+        const updatedConn = await this.auth.updateConnection(conn, {
+            type: 'sso',
+            scopes,
+            startUrl: conn.startUrl,
+            ssoRegion: conn.ssoRegion,
+        })
 
         return this.auth.reauthenticate(updatedConn)
     }
