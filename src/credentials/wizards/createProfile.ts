@@ -9,13 +9,13 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
-import { ParsedIniData, Profile } from '../../shared/credentials/credentialsFile'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { ProfileKey } from './templates'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
 import { showLoginFailedMessage } from '../credentialsUtilities'
+import { ParsedIniData, Profile } from '../sharedCredentials'
 
 function createProfileNamePrompter(profiles: ParsedIniData) {
     return createInputBox({
