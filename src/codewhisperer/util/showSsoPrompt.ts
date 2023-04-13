@@ -7,32 +7,31 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { getStartUrl } from './getStartUrl'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
-import { AuthUtil, isUpgradeableConnection } from './authUtil'
+import { AuthUtil } from './authUtil'
 import { failedToConnectAwsBuilderId } from '../models/constants'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { isUserCancelledError, ToolkitError } from '../../shared/errors'
+import { ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { Auth } from '../../credentials/auth'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { createBuilderIdItem, createIamItem, createSsoItem } from '../../credentials/auth'
+import { createBuilderIdItem, createIamItem, createSsoItem, isIamConnection } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export const showConnectionPrompt = async () => {
-    const currentConn = Auth.instance.activeConnection
-    if (isUpgradeableConnection(currentConn)) {
-        const didUpgrade = await AuthUtil.instance.promptUpgrade(currentConn, 'current').catch(err => {
-            if (!isUserCancelledError(err)) {
-                getLogger().error('codewhisperer: failed to upgrade connection: %s', err)
-                showViewLogsMessage('Failed to upgrade current connection.')
+    // Skip this prompt on C9 because:
+    // * The UI looks bad with C9's style of pickers
+    // * C9 will always start with _some_ form of auth so this prompt is less common
+    if (isCloud9()) {
+        if (isCloud9('classic')) {
+            const iamConn = (await AuthUtil.instance.auth.listConnections()).find(isIamConnection)
+            if (iamConn) {
+                await AuthUtil.instance.auth.useConnection(iamConn)
             }
-
-            return false
-        })
-
-        if (didUpgrade) {
-            return
+        } else {
+            await AuthUtil.instance.connectToAwsBuilderId()
         }
+
+        return
     }
 
     const resp = await showQuickPick([createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()], {

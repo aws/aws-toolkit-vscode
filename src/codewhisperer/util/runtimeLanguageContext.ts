@@ -28,6 +28,16 @@ export class RuntimeLanguageContext {
             typescript: 'typescript',
             typescriptreact: 'tsx',
             csharp: 'csharp',
+            c: 'c',
+            cpp: 'cpp',
+            go: 'go',
+            kotlin: 'kotlin',
+            php: 'php',
+            ruby: 'ruby',
+            rust: 'rust',
+            scala: 'scala',
+            shellscript: 'shell',
+            sql: 'sql',
         })
 
         const values = Array.from(this.supportedLanguageMap.values())

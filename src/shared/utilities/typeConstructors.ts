@@ -181,6 +181,9 @@ export const Optional = OptionalConstructor
 export type Any = any
 export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
 
+export type Unknown = unknown
+export const Unknown: TypeConstructor<unknown> = addTypeName('Unknown', value => value)
+
 export type Instance<T extends abstract new (...args: any[]) => unknown> = InstanceType<T>
 export const Instance = InstanceConstructor
 
