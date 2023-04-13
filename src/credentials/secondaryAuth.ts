@@ -5,15 +5,21 @@
 
 import globals from '../shared/extensionGlobals'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
+import * as localizedText from '../shared/localizedText'
 import { getLogger } from '../shared/logger'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth, Connection, StatefulConnection } from './auth'
+import { Auth, Connection, createSsoProfile, SsoConnection, StatefulConnection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { isNonNullable } from '../shared/utilities/tsUtils'
+import { builderIdStartUrl } from './sso/model'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
@@ -56,6 +62,22 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     }
 
     return resp
+}
+
+async function promptForRescope(conn: SsoConnection, toolLabel: string) {
+    const message = localize(
+        'aws.auth.rescopeConnection.message',
+        '{0} requires access to your {1} connection to continue. Proceed to login to grant {0} access?',
+        toolLabel,
+        conn.startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenter
+    )
+    const resp = await vscode.window.showInformationMessage(message, { modal: true }, localizedText.proceed)
+    if (resp !== localizedText.proceed) {
+        telemetry.ui_click.emit({ elementId: 'connection_rescope_cancel' })
+        throw new CancellationError('user')
+    }
+
+    telemetry.ui_click.emit({ elementId: 'connection_rescope_proceed' })
 }
 
 let oldConn: Auth['activeConnection']
@@ -157,14 +179,14 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 this.#activeConnection = conn
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
-        })
+        }
 
         this.auth.onDidUpdateConnection(conn => {
             if (this.#savedConnection?.id === conn.id) {
                 this.#savedConnection = conn as unknown as T
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
-        }
+        })
 
         // Register listener and handle connection immediately in case we were instantiated late
         handleConnectionChanged(this.auth.activeConnection)
@@ -208,6 +230,15 @@ export class SecondaryAuth<T extends Connection = Connection> {
         } else {
             await this.auth.useConnection(conn)
         }
+    }
+
+    public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
+        await promptForRescope(conn, this.toolLabel)
+        const scopes = Array.from(new Set([...(conn.scopes ?? []), ...extraScopes]))
+        const profile = createSsoProfile(conn.startUrl, conn.ssoRegion, scopes)
+        const updatedConn = await this.auth.updateConnection(conn, profile)
+
+        return this.auth.reauthenticate(updatedConn)
     }
 
     // Used to lazily restore persisted connections.

@@ -14,7 +14,6 @@ import {
     codecatalystScopes,
     hasScopes,
     createBuilderIdConnection,
-    createBuilderIdProfile,
     ssoAccountAccessScopes,
 } from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
@@ -111,7 +110,6 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-        const okItem: vscode.MessageItem = { title: localizedText.ok }
         const continueItem: vscode.MessageItem = { title: localizedText.continueText }
         const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
@@ -140,19 +138,7 @@ export class CodeCatalystAuthenticationProvider {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: 'Upgrade' } as ConnectionFlowEvent)
 
-            const message =
-                'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login.\n\n Upgrade now?'
-            const resp = await vscode.window.showInformationMessage(message, { modal: true }, okItem, cancelItem)
-            if (resp !== okItem) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
-            }
-
-            const upgradedConn = await this.auth.updateConnection(
-                conn,
-                createBuilderIdProfile(Array.from(new Set([...(conn.scopes ?? []), ...codecatalystScopes])))
-            )
-
-            return this.auth.reauthenticate(upgradedConn)
+            return this.secondaryAuth.addScopes(conn, codecatalystScopes)
         }
 
         if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
