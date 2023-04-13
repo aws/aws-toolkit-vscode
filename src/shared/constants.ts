@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 
 import { isCloud9 } from './extensionUtilities'
 
-export const extensionSettingsPrefix = 'aws'
 export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
 export const productName: string = 'aws-toolkit-vscode'
@@ -17,6 +16,9 @@ export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.c
 export const aboutCredentialsFileUrl: string =
     'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html'
 export const samAboutInstallUrl = vscode.Uri.parse('https://aws.amazon.com/serverless/sam/')
+export const samUpgradeUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/manage-sam-cli-versions.html#manage-sam-cli-versions-upgrade'
+)
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'

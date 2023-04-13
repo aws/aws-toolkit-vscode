@@ -10,7 +10,7 @@ import * as glob from 'glob'
 import * as fs from 'fs-extra'
 
 /**
- * @param initTests List of relative paths to test files to run before all discovered tests.
+ * @param initTests List of relative paths to test files containing root hooks: https://mochajs.org/#available-root-hooks
  */
 export async function runTests(testFolder: string, initTests: string[] = [], testFiles?: string[]): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
@@ -61,9 +61,8 @@ export async function runTests(testFolder: string, initTests: string[] = [], tes
         throw new Error('Individual file and list of files given to run tests on. One must be chosen.')
     }
 
-    // Explicitly add additional tests (globalSetup) as the first tests.
-    // TODO: migrate to mochaHooks (requires mocha 8.x).
-    // https://mochajs.org/#available-root-hooks
+    // The `require` option for Mocha isn't working for some reason (maybe user error?)
+    // So instead we are loading the modules ourselves and registering the relevant hooks
     initTests.forEach(relativePath => {
         const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
         if (!fs.pathExistsSync(fullPath)) {
@@ -71,7 +70,16 @@ export async function runTests(testFolder: string, initTests: string[] = [], tes
             throw Error(`missing ${fullPath}`)
         }
 
-        mocha.addFile(fullPath)
+        const pluginFile = require(fullPath)
+        if (pluginFile.mochaGlobalSetup) {
+            mocha.globalSetup(pluginFile.mochaGlobalSetup)
+        }
+        if (pluginFile.mochaGlobalTeardown) {
+            mocha.globalTeardown(pluginFile.mochaGlobalTeardown)
+        }
+        if (pluginFile.mochaHooks) {
+            mocha.rootHooks(pluginFile.mochaHooks)
+        }
     })
 
     function runMocha(files: string[]): Promise<void> {

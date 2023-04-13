@@ -88,9 +88,10 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
         })
     }
 
-    public async disabledExperiments(pluginName: string): Promise<void> {}
-    public async enabledExperiments(pluginName: string): Promise<void> {}
-    public async getExperimentsSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
-        return {}
+    public isSet(key: string, section?: string): boolean {
+        const merged = section ? [section, key].join('.') : key
+        const value = get(this.data, merged.split('.'))
+
+        return value !== undefined
     }
 }

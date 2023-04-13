@@ -13,12 +13,24 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { createBuilderIdItem, createIamItem, createSsoItem } from '../../credentials/auth'
+import { createBuilderIdItem, createIamItem, createSsoItem, isIamConnection } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export const showConnectionPrompt = async () => {
-    const didUpgrade = await AuthUtil.instance.tryUpgradeActiveConnection()
-    if (didUpgrade) {
+    // Skip this prompt on C9 because:
+    // * The UI looks bad with C9's style of pickers
+    // * C9 will always start with _some_ form of auth so this prompt is less common
+    if (isCloud9()) {
+        if (isCloud9('classic')) {
+            const iamConn = (await AuthUtil.instance.auth.listConnections()).find(isIamConnection)
+            if (iamConn) {
+                await AuthUtil.instance.auth.useConnection(iamConn)
+            }
+        } else {
+            await AuthUtil.instance.connectToAwsBuilderId()
+        }
+
         return
     }
 

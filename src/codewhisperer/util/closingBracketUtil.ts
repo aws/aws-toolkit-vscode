@@ -124,6 +124,6 @@ export async function handleExtraBrackets(
     )
     const bracketsToRemove = getBracketsToRemove(recommendation, rightContext)
     if (bracketsToRemove.length) {
-        removeBracketsFromRightContext(editor, bracketsToRemove, endPosition)
+        await removeBracketsFromRightContext(editor, bracketsToRemove, endPosition)
     }
 }

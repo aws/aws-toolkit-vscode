@@ -52,7 +52,8 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
     vscode.env.openExternal(vscode.Uri.parse(url))
 }
 
-export function isCodeCatalystVSCode(ides: Ides | undefined): boolean {
+/** Returns true if the dev env has a "vscode" IDE runtime. */
+export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
 }
 

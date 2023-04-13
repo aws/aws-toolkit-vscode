@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { selectCodeCatalystResource } from './wizards/selectResource'
+import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl, recordSource } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
@@ -18,11 +18,12 @@ import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, errorCode } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { Auth, SsoConnection } from '../credentials/auth'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -33,7 +34,7 @@ export async function listCommands(): Promise<void> {
 export async function cloneCodeCatalystRepo(client: CodeCatalystClient, url?: vscode.Uri): Promise<void> {
     let resource: { name: string; project: string; org: string }
     if (!url) {
-        const r = await selectCodeCatalystResource(client, 'repo')
+        const r = await selectCodeCatalystRepository(client, false)
         if (!r) {
             throw new CancellationError('user')
         }
@@ -135,11 +136,41 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
 
         await authProvider.restore()
         const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-        const client = await createClient(conn)
+        const validatedConn = await validateConnection(conn, authProvider.auth)
+        const client = await createClient(validatedConn)
         telemetry.record({ userId: client.identity.id })
 
         return command(client, ...args)
     }
+}
+
+/**
+ * Returns a connection that is ensured to be authenticated.
+ *
+ * Provides the user the ability to re-authenticate if needed,
+ * otherwise throwing an error.
+ */
+async function validateConnection(conn: SsoConnection, auth: Auth): Promise<SsoConnection> {
+    if (auth.getConnectionState(conn) === 'valid') {
+        return conn
+    }
+
+    // Have user try to log in
+    const loginMessage = localize('aws.auth.invalidConnection', 'Connection is invalid or expired, login again?')
+    const result = await vscode.window.showErrorMessage(loginMessage, 'Login')
+
+    if (result !== 'Login') {
+        throw new ToolkitError('User cancelled login.', { cancelled: true, code: errorCode.invalidConnection })
+    }
+
+    conn = await auth.reauthenticate(conn)
+
+    // Log in attempt failed
+    if (auth.getConnectionState(conn) !== 'valid') {
+        throw new ToolkitError('Login failed.', { code: errorCode.invalidConnection })
+    }
+
+    return conn
 }
 
 function createCommandDecorator(commands: CodeCatalystCommands): CommandDecorator {

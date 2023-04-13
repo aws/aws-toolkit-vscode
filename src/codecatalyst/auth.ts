@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import {
     Auth,
     isBuilderIdConnection,
@@ -112,16 +112,19 @@ export class CodeCatalystAuthenticationProvider {
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
         const okItem: vscode.MessageItem = { title: localizedText.ok }
+        const continueItem: vscode.MessageItem = { title: localizedText.continueText }
         const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
         if (conn === undefined) {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: 'Create' } as ConnectionFlowEvent)
 
-            const message =
-                'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login.\n\n Create one now?'
-            const resp = await vscode.window.showInformationMessage(message, { modal: true }, okItem, cancelItem)
-            if (resp !== okItem) {
+            const message = `The ${
+                getIdeProperties().company
+            } Toolkit extension requires a connection for CodeCatalyst to begin.\n\n Proceed to the browser to allow access?`
+
+            const resp = await vscode.window.showInformationMessage(message, { modal: true }, continueItem, cancelItem)
+            if (resp !== continueItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
             }
 
@@ -159,10 +162,10 @@ export class CodeCatalystAuthenticationProvider {
             const resp = await vscode.window.showInformationMessage(
                 'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
                 { modal: true },
-                okItem,
+                continueItem,
                 cancelItem
             )
-            if (resp !== okItem) {
+            if (resp !== continueItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
             }
 

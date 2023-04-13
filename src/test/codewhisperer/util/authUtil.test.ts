@@ -44,7 +44,7 @@ describe('AuthUtil', async function () {
             picker.acceptItem(picker.items[1])
         })
 
-        await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl)
+        await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
@@ -66,17 +66,20 @@ describe('AuthUtil', async function () {
 
     it('should show reauthenticate prompt', async function () {
         getTestWindow().onDidShowMessage(m => {
-            if (m.severity === SeverityLevel.Warning) {
-                m.selectItem('Cancel')
+            if (m.severity === SeverityLevel.Information) {
+                m.close()
             }
         })
 
         await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codewhispererScopes }))
         await authUtil.showReauthenticatePrompt()
 
-        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Warning)
+        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
-        assert.strictEqual(warningMessage[0].message, 'AWS Toolkit: Connection expired. Reauthenticate to continue.')
+        assert.strictEqual(
+            warningMessage[0].message,
+            'Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
+        )
     })
 
     it('prompts to attach connection to CodeWhisperer when switching to an unsupported connection', async function () {
@@ -100,35 +103,31 @@ describe('AuthUtil', async function () {
         assert.notStrictEqual(auth.activeConnection?.id, authUtil.conn?.id)
     })
 
-    it('prompts to sign out of duplicate builder ID connections', async function () {
-        getTestWindow().onDidShowQuickPick(picker => {
-            const signout = picker.findItemOrThrow(/Sign out to add another\?/i)
-            picker.acceptItem(signout)
-        })
-
+    it('does not prompt to sign out of duplicate builder ID connections', async function () {
         await authUtil.connectToAwsBuilderId()
         await authUtil.connectToAwsBuilderId()
         assert.ok(authUtil.isConnected())
 
         const ssoConnectionIds = new Set(auth.activeConnectionEvents.emits.filter(isSsoConnection).map(c => c.id))
-        assert.strictEqual(ssoConnectionIds.size, 2, 'Expected exactly 2 unique SSO connection IDs, one for each call')
+        assert.strictEqual(ssoConnectionIds.size, 1, 'Expected exactly 1 unique SSO connection id')
         assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
     })
 
     it('prompts to upgrade connections if they do not have the required scopes', async function () {
         getTestWindow().onDidShowMessage(message => {
             assert.ok(message.modal)
-            message.assertMessage(/The current connection lacks permissions required by CodeWhisperer/)
-            message.selectItem('Yes')
+            message.assertMessage(/CodeWhisperer requires access to your/)
+            message.selectItem('Proceed')
         })
 
         const upgradeableConn = await auth.createConnection(createBuilderIdProfile())
         await auth.useConnection(upgradeableConn)
         assert.strictEqual(authUtil.isConnected(), false)
 
-        await authUtil.tryUpgradeActiveConnection()
+        await authUtil.connectToAwsBuilderId()
         assert.ok(authUtil.isConnected())
         assert.ok(authUtil.isConnectionValid())
+        assert.ok(isSsoConnection(authUtil.conn))
         assert.strictEqual(authUtil.conn?.id, upgradeableConn.id)
         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)

@@ -39,8 +39,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.extensionContext.subscriptions.push(manager)
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerFileSystemProvider(s3EditScheme, fs),
-        vscode.workspace.registerFileSystemProvider(s3ReadScheme, fs, { isReadonly: true }),
+        vscode.workspace.registerFileSystemProvider(s3EditScheme, fs, { isCaseSensitive: true }),
+        vscode.workspace.registerFileSystemProvider(s3ReadScheme, fs, { isReadonly: true, isCaseSensitive: true }),
         Commands.register('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),

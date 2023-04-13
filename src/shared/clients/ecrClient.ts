@@ -67,9 +67,9 @@ export class DefaultEcrClient {
         return collection.filter(isNonNullable).map(list => list.map(repo => (assertHasProps(repo), repo)))
     }
 
-    public async createRepository(repositoryName: string): Promise<void> {
+    public async createRepository(repositoryName: string) {
         const sdkClient = await this.createSdkClient()
-        await sdkClient.createRepository({ repositoryName: repositoryName }).promise()
+        return sdkClient.createRepository({ repositoryName: repositoryName }).promise()
     }
 
     public async deleteRepository(repositoryName: string): Promise<void> {

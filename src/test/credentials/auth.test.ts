@@ -88,6 +88,15 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             assert.strictEqual(auth.activeConnectionEvents.emits[0]?.id, conn.id)
         })
+
+        it('sets the active connection even when the underlying provider throws', async function () {
+            const err = new Error('test')
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(err)
+            await auth.useConnection(conn)
+            assert.strictEqual(auth.activeConnection?.id, conn.id)
+            assert.strictEqual(auth.getInvalidationReason(conn), err)
+        })
     })
 
     it('can login and fires an event', async function () {
@@ -162,10 +171,20 @@ describe('Auth', function () {
         })
     })
 
+    const expiredConnPattern = /connection ".*?" is invalid or expired/i
+    it('releases all notification locks after reauthenticating', async function () {
+        const conn = await auth.createInvalidSsoConnection(ssoProfile)
+        const pendingToken = conn.getToken()
+        await getTestWindow().waitForMessage(expiredConnPattern)
+        await auth.reauthenticate(conn)
+        await assert.rejects(pendingToken)
+        assert.ok(await conn.getToken())
+    })
+
     describe('SSO Connections', function () {
         async function runExpiredGetTokenFlow(conn: SsoConnection, selection: string | RegExp) {
             const token = conn.getToken()
-            const message = await getTestWindow().waitForMessage(/connection ".*?" is invalid or expired/i)
+            const message = await getTestWindow().waitForMessage(expiredConnPattern)
             message.selectItem(selection)
 
             return token
@@ -179,7 +198,7 @@ describe('Auth', function () {
 
         it('prompts the user if the token is invalid or expired', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
-            const token = await runExpiredGetTokenFlow(conn, /yes/i)
+            const token = await runExpiredGetTokenFlow(conn, /login/i)
             assert.notStrictEqual(token, undefined)
         })
 
@@ -192,6 +211,15 @@ describe('Auth', function () {
             await assert.rejects(token, ToolkitError)
 
             assert.strictEqual(auth.activeConnection?.state, 'invalid')
+        })
+
+        it('chains errors when handling invalid connections', async function () {
+            const err1 = new ToolkitError('test', { code: 'test' })
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(err1)
+            const err2 = await runExpiredGetTokenFlow(conn, /no/i).catch(e => e)
+            assert.ok(err2 instanceof ToolkitError)
+            assert.strictEqual(err2.cause, err1)
         })
     })
 

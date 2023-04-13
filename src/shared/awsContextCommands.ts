@@ -16,14 +16,13 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { PromptSettings } from './settings'
 import { isNonNullable } from './utilities/tsUtils'
-import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
 import { CreateProfileWizard } from '../credentials/wizards/createProfile'
-import { Profile } from './credentials/credentialsFile'
 import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/templates'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
+import { extractData, loadSharedCredentialsSections, Profile } from '../credentials/sharedCredentials'
 
 /**
  * @deprecated
@@ -117,8 +116,10 @@ export class AwsContextCommands {
      */
     public async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
         const profiles = {} as Record<string, Profile>
-        for (const [k, v] of (await loadSharedCredentialsProfiles()).entries()) {
-            profiles[k] = v
+        for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
+            if (v.type === 'profile') {
+                profiles[k] = extractData(v)
+            }
         }
 
         const wizard = new CreateProfileWizard(profiles, staticCredentialsTemplate)

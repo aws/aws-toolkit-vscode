@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.66.0-SNAPSHOT",
+    "version": "1.69.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -216,6 +216,10 @@
                         "remoteConnected": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -224,15 +228,10 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false,
-                        "samSyncCode": false
+                        "jsonResourceModification": false
                     },
                     "properties": {
                         "jsonResourceModification": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "samSyncCode": {
                             "type": "boolean",
                             "default": false
                         }
@@ -242,6 +241,11 @@
                 "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
@@ -952,10 +956,6 @@
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
-                },
-                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1195,11 +1195,6 @@
                     "group": "3_lambda@3"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@4"
-                },
-                {
                     "command": "aws.quickStart",
                     "when": "view == aws.explorer",
                     "group": "y_toolkitMeta@1"
@@ -1265,11 +1260,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
                     "group": "z_aws@1"
-                },
-                {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
-                    "group": "z_aws@2"
                 },
                 {
                     "command": "aws.uploadLambda",
@@ -1382,11 +1372,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
                     "group": "1@2"
-                },
-                {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -3061,11 +3046,6 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.samcli.syncCode",
-                "title": "%AWS.command.samcli.syncCode%",
-                "category": "%AWS.title%"
-            },
-            {
                 "command": "aws.codeWhisperer",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
@@ -3451,6 +3431,7 @@
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
+        "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
@@ -3468,9 +3449,9 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.100",
+        "@aws-toolkits/telemetry": "^1.0.120",
         "@cspotcode/source-map-support": "^0.8.1",
-        "@sinonjs/fake-timers": "^8.1.0",
+        "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
@@ -3486,11 +3467,11 @@
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
-        "@types/sinonjs__fake-timers": "^8.1.1",
+        "@types/sinonjs__fake-timers": "^8.1.2",
         "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
         "@types/vscode": "1.50.0",
-        "@types/vscode-webview": "^1.57.0",
+        "@types/vscode-webview": "^1.57.1",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^5.38.0",
         "@typescript-eslint/parser": "^5.38.0",
@@ -3525,7 +3506,7 @@
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
         "webfont": "^11.2.26",
-        "webpack": "^5.76.0",
+        "webpack": "^5.76.3",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.9.2"
     },
@@ -3566,7 +3547,7 @@
         "vue": "^3.2.31",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
-        "xml2js": "^0.4.19",
+        "xml2js": "^0.5.0",
         "yaml": "^1.9.2",
         "yaml-cfn": "^0.3.2"
     },

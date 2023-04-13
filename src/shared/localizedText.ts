@@ -13,6 +13,7 @@ export const ok = localize('AWS.generic.response.ok', 'OK')
 export const retry = localize('AWS.generic.response.retry', 'Retry')
 export const skip = localize('AWS.generic.response.skip', 'Skip')
 export const confirm = localize('AWS.generic.confirm', 'Confirm')
+export const continueText = localize('AWS.generic.continue', 'Continue')
 export const invalidArn = localize('AWS.error.invalidArn', 'Invalid ARN')
 export const localizedDelete = localize('AWS.generic.delete', 'Delete')
 export const cancel = localize('AWS.generic.cancel', 'Cancel')
@@ -23,6 +24,7 @@ export const recentlyUsed = localize('AWS.generic.recentlyUsed', 'recently used'
 export const viewSettings = localize('AWS.generic.viewSettings', 'View Settings')
 export const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
 export const loadMore = localize('AWS.generic.loadMore', 'Load More')
+export const learnMore = localize('AWS.generic.learnMore', 'Learn More')
 
 export const checklogs = () =>
     localize(

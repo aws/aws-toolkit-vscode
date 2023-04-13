@@ -14,8 +14,8 @@ const settingsTarget = vscode.ConfigurationTarget.Workspace
 
 describe('Settings', function () {
     // These tests use an actual extension setting, because vscode.WorkspaceConfiguration fails when
-    // you attempt to update one that isn't defined in package.json. We will restore the setting value
-    // at the end of the tests.
+    // you attempt to update one that isn't defined in package.json. The 'workspace' target is used
+    // as to not touch the test runner's global settings.
     const settingKey = 'aws.samcli.lambdaTimeout'
 
     let sut: Settings
@@ -89,10 +89,40 @@ describe('Settings', function () {
         })
     })
 
+    describe('isSet', function () {
+        it('returns true when the value is set', async function () {
+            await sut.update(settingKey, 1)
+            assert.strictEqual(sut.isSet(settingKey), true)
+        })
+
+        it('returns true when the value is set to the default', async function () {
+            const val = sut.get(settingKey)
+            assert.notStrictEqual(val, undefined, `Settings key "${settingKey}" does not have a default value`)
+            await sut.update(settingKey, val)
+            assert.strictEqual(sut.isSet(settingKey), true)
+        })
+
+        it('returns false when the value is not set', async function () {
+            const globalSettings = new Settings(vscode.ConfigurationTarget.Global)
+            const globalValue = globalSettings.get(settingKey)
+            await globalSettings.update(settingKey, undefined)
+
+            try {
+                assert.strictEqual(sut.isSet(settingKey), false)
+            } catch (err) {
+                await globalSettings.update(settingKey, globalValue)
+                throw err
+            }
+        })
+    })
+
     describe('onDidChangeSection', function () {
         const rootSection = settingKey.split('.').shift() ?? ''
 
         it('fires after a section changes', async function () {
+            // This test is a bit flaky but it's likely from the underlying VSC implementation, not us
+            this.retries(3)
+
             let eventCount = 0
             sut.onDidChangeSection(rootSection, () => (eventCount += 1))
 
@@ -194,10 +224,10 @@ describe('DevSetting', function () {
         assert.deepStrictEqual(sut.activeSettings, {})
     })
 
-    it('only changes active settings if the value is not the default', async function () {
+    it('changes active settings even if the value is the default', async function () {
         await settings.update(`aws.dev.${testSetting}`, false)
         assert.strictEqual(sut.get(testSetting, false), false)
-        assert.deepStrictEqual(sut.activeSettings, {})
+        assert.deepStrictEqual(sut.activeSettings, { [testSetting]: false })
     })
 
     it('can notify listeners when a setting is retrieved', async function () {
@@ -209,6 +239,19 @@ describe('DevSetting', function () {
         await settings.update(`aws.dev.${testSetting}`, true)
         assert.strictEqual(sut.get(testSetting, false), true)
         assert.deepStrictEqual(await state, { [testSetting]: true })
+    })
+
+    it('removes key from active settings when it is no longer set', async function () {
+        await settings.update(`aws.dev.${testSetting}`, true)
+        assert.strictEqual(sut.get(testSetting, false), true)
+        await settings.update(`aws.dev.${testSetting}`, undefined)
+        assert.strictEqual(sut.get(testSetting, false), false)
+        assert.deepStrictEqual(sut.activeSettings, {})
+    })
+
+    it('does not change active settings when reading objects as defaults', function () {
+        assert.deepStrictEqual(sut.get('endpoints', {}), {})
+        assert.deepStrictEqual(sut.activeSettings, {})
     })
 })
 

@@ -61,9 +61,9 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
-import { getCodeCatalystDevEnvId, isReleaseVersion } from './shared/vscode/env'
+import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
-import { isUserCancelledError, ToolkitError } from './shared/errors'
+import { isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
@@ -218,9 +218,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        if (getCodeCatalystDevEnvId() === undefined) {
-            await activateCodeWhisperer(extContext)
-        }
+        await activateCodeWhisperer(extContext)
 
         await activateEcr(context)
 
@@ -273,7 +271,7 @@ async function handleError(error: unknown, topic: string, defaultMessage: string
 
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
     const logId = getLogger().error(`${topic}: %s`, error)
-    const message = error instanceof ToolkitError ? error.message : defaultMessage
+    const message = resolveErrorMessageToDisplay(error, defaultMessage)
 
     await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
         if (resp === logsItem) {

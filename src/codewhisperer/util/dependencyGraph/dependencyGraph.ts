@@ -14,16 +14,12 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { getLogger } from '../../../shared/logger'
 
 export interface Truncation {
-    dir: string
-    zip: string
-    size: number
-    zipSize: number
-}
-
-export interface TruncPaths {
-    root: string
-    src: Truncation
-    build: Truncation
+    rootDir: string
+    zipFilePath: string
+    scannedFiles: Set<string>
+    srcPayloadSizeInBytes: number
+    buildPayloadSizeInBytes: number
+    zipFileSizeInBytes: number
     lines: number
 }
 
@@ -63,6 +59,8 @@ export abstract class DependencyGraph {
     protected _truncDir: string = ''
     protected _totalLines: number = 0
 
+    private _isProjectTruncated = false
+
     constructor(languageId: string) {
         this._languageId = languageId
     }
@@ -88,6 +86,30 @@ export abstract class DependencyGraph {
         return path.dirname(uri.fsPath)
     }
 
+    public getReadableSizeLimit(): string {
+        const totalBytesInMB = Math.pow(2, 20)
+        const totalBytesInKB = Math.pow(2, 10)
+        if (this.getPayloadSizeLimitInBytes() >= totalBytesInMB) {
+            return `${this.getPayloadSizeLimitInBytes() / totalBytesInMB}MB`
+        } else {
+            return `${this.getPayloadSizeLimitInBytes() / totalBytesInKB}KB`
+        }
+    }
+
+    public willReachSizeLimit(current: number, adding: number): boolean {
+        const willReachLimit = current + adding > this.getPayloadSizeLimitInBytes()
+        this._isProjectTruncated = this._isProjectTruncated || willReachLimit
+        return willReachLimit
+    }
+
+    public reachSizeLimit(size: number): boolean {
+        return size > this.getPayloadSizeLimitInBytes()
+    }
+
+    public isProjectTruncated(): boolean {
+        return this._isProjectTruncated
+    }
+
     protected getDirPaths(uri: vscode.Uri): string[] {
         let dirPath = this.getBaseDirPath(uri)
         const paths: string[] = [dirPath]
@@ -108,11 +130,11 @@ export abstract class DependencyGraph {
         }
     }
 
-    protected zipDir(dir: string, out: string, extension: string): string {
+    protected zipDir(dir: string, extension: string): string {
         const zip = new admZip()
         zip.addLocalFolder(dir)
-        zip.writeZip(out + extension)
-        return out + extension
+        zip.writeZip(dir + extension)
+        return dir + extension
     }
 
     protected removeDir(dir: string) {
@@ -137,14 +159,6 @@ export abstract class DependencyGraph {
         return this._truncDir
     }
 
-    protected getTruncSourceDirPath(uri: vscode.Uri) {
-        return path.join(this.getTruncDirPath(uri), 'src')
-    }
-
-    protected getTruncBuildDirPath(uri: vscode.Uri) {
-        return path.join(this.getTruncDirPath(uri), 'build')
-    }
-
     protected getFilesTotalSize(files: string[]) {
         return files.map(file => statSync(file)).reduce((accumulator, { size }) => accumulator + size, 0)
     }
@@ -155,13 +169,10 @@ export abstract class DependencyGraph {
         })
     }
 
-    public removeTmpFiles(truncation: TruncPaths) {
+    public removeTmpFiles(truncation: Truncation) {
         getLogger().verbose(`Cleaning up temporary files...`)
-        this.removeZip(truncation.src.zip)
-        this.removeZip(truncation.build.zip)
-        this.removeDir(truncation.src.dir)
-        this.removeDir(truncation.build.dir)
-        this.removeDir(truncation.root)
+        this.removeZip(truncation.zipFilePath)
+        this.removeDir(truncation.rootDir)
         getLogger().verbose(`Complete cleaning up temporary files.`)
     }
 
@@ -170,7 +181,7 @@ export abstract class DependencyGraph {
         return await asyncCallWithTimeout(this.generateTruncation(uri), 'Context truncation timeout.', seconds * 1000)
     }
 
-    abstract generateTruncation(uri: vscode.Uri): Promise<TruncPaths>
+    abstract generateTruncation(uri: vscode.Uri): Promise<Truncation>
 
     abstract searchDependency(uri: vscode.Uri): Promise<Set<string>>
 
@@ -182,9 +193,5 @@ export abstract class DependencyGraph {
 
     abstract getDependencies(uri: vscode.Uri, imports: string[]): void
 
-    abstract reachSizeLimit(size: number): boolean
-
-    abstract willReachSizeLimit(current: number, adding: number): boolean
-
-    abstract getReadableSizeLimit(): string
+    abstract getPayloadSizeLimitInBytes(): number
 }

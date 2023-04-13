@@ -24,6 +24,7 @@ import { getLogger } from '../shared/logger'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { getSshConfigPath } from '../shared/extensions/ssh'
+import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from '../shared/extensions'
 
 interface DependencyPaths {
     readonly vsc: string
@@ -39,8 +40,13 @@ interface MissingTool {
 export const hostNamePrefix = 'aws-devenv-'
 
 export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
-        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to Dev Environment')
+    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
+        showInstallExtensionMsg(
+            VSCODE_EXTENSION_ID.remotessh,
+            'Remote SSH',
+            'Connecting to Dev Environment',
+            vscodeExtensionMinVersion.remotessh
+        )
 
         return Result.err(
             new ToolkitError('Remote SSH extension not installed', {
@@ -235,7 +241,7 @@ async function verifySSHHost({
 
         const confirmTitle = localize(
             'AWS.codecatalyst.confirm.installSshConfig.title',
-            '{0} Toolkit will add host {1} to ~/.ssh/config. This allows you to use SSH with your development envionments',
+            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
             getIdeProperties().company,
             configHostName
         )

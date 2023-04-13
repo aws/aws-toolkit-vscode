@@ -26,6 +26,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import { ImportAdderProvider } from '../service/importAdderProvider'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -97,10 +98,16 @@ export async function onInlineAcceptance(
             ) {
                 await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
             }
+            await ImportAdderProvider.instance.onAcceptRecommendation(
+                acceptanceEntry.editor,
+                RecommendationHandler.instance.recommendations[acceptanceEntry.acceptIndex],
+                start.line
+            )
         } catch (error) {
-            getLogger().error(`${error} in handling right contexts`)
+            getLogger().error(`${error} in handling extra brackets or imports`)
+        } finally {
+            vsCodeState.isCodeWhispererEditing = false
         }
-        vsCodeState.isCodeWhispererEditing = false
 
         CodeWhispererTracker.getTracker().enqueue({
             time: new Date(),

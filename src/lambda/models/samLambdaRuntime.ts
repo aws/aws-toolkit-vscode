@@ -33,7 +33,12 @@ export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs14.x',
     'nodejs12.x',
 ])
-export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['python3.9', 'python3.8', 'python3.7'])
+export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.10',
+    'python3.9',
+    'python3.8',
+    'python3.7',
+])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore3.1', 'dotnet6'])

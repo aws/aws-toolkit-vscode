@@ -22,6 +22,11 @@ export const VSCODE_EXTENSION_ID = {
     java: 'redhat.java',
     javadebug: 'vscjava.vscode-java-debug',
     git: 'vscode.git',
+    remotessh: 'ms-vscode-remote.remote-ssh',
+}
+
+export const vscodeExtensionMinVersion = {
+    remotessh: '0.98.0',
 }
 
 /**

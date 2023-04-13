@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../extensionGlobals'
+
 /**
  * Creates a function that always returns a 'shared' Promise.
  *
@@ -53,4 +55,33 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
     const cache: { [key: string]: T | undefined } = {}
 
     return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
+}
+
+/**
+ * Prevents a function from executing until {@link delay} milliseconds have passed
+ * since the last invocation. Omitting {@link delay} will throttle the function for
+ * a single event loop.
+ *
+ * Multiple calls made during the throttle window will receive references to the
+ * same Promise similar to {@link shared}. The window will also be 'rolled', delaying
+ * the execution by another {@link delay} milliseconds.
+ */
+export function throttle<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
+    let timer: NodeJS.Timeout | undefined
+    let promise: Promise<T> | undefined
+
+    return () => {
+        timer?.refresh()
+
+        return (promise ??= new Promise<T>((resolve, reject) => {
+            timer = globals.clock.setTimeout(async () => {
+                timer = promise = undefined
+                try {
+                    resolve(await cb())
+                } catch (err) {
+                    reject(err)
+                }
+            }, delay)
+        }))
+    }
 }

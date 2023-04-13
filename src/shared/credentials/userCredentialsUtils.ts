@@ -9,8 +9,7 @@ import { mkdirp, writeFile } from 'fs-extra'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
-import { loadSharedConfigFiles, Profile } from './credentialsFile'
-import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
+import { isNonNullable } from '../utilities/tsUtils'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.
@@ -59,50 +58,18 @@ export class UserCredentialsUtils {
      *
      * @returns array of filenames for files found.
      */
-    public static async findExistingCredentialsFilenames(isCredentialsRequired = false): Promise<string[]> {
-        const configFilename = getConfigFilename()
-        const credentialsFileName = getCredentialsFilename()
+    public static async findExistingCredentialsFilenames(): Promise<string[]> {
+        const files = [vscode.Uri.file(getConfigFilename()), vscode.Uri.file(getCredentialsFilename())]
 
-        const configs = await loadSharedConfigFiles({
-            config: vscode.Uri.file(configFilename),
-            credentials: vscode.Uri.file(credentialsFileName),
-        })
-        const credentials = new Map([
-            [credentialsFileName, configs.credentialsFile],
-            [configFilename, configs.configFile],
-        ])
-
-        const credentialFiles = []
-        for (const [filename, profiles] of credentials.entries()) {
-            const exists = await SystemUtilities.fileExists(filename)
-            if (!exists) {
-                continue
-            }
-
-            if (!isCredentialsRequired) {
-                credentialFiles.push(filename)
-                continue
-            }
-
-            // ensure that the given filename has at least one valid profile
-            const validProfiles = []
-            const allProfiles = new Map(Object.entries(profiles).filter(item => item[1] !== undefined)) as Map<
-                string,
-                Profile
-            >
-            for (const profile of Object.keys(profiles)) {
-                const credProvider = new SharedCredentialsProvider(profile, allProfiles)
-                if (await credProvider.isAvailable()) {
-                    validProfiles.push(profile)
+        const filenames = await Promise.all(
+            files.map(async uri => {
+                if (await SystemUtilities.fileExists(uri)) {
+                    return uri.fsPath
                 }
-            }
+            })
+        )
 
-            if (validProfiles.length !== 0) {
-                credentialFiles.push(filename)
-            }
-        }
-
-        return credentialFiles
+        return filenames.filter(isNonNullable)
     }
 
     /**

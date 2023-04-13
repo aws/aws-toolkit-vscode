@@ -10,15 +10,15 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
-import { randomUUID } from 'crypto'
+import * as uuid from 'uuid' // TODO: use crypto.randomUUID when C9 is on node16
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { codicon, getIcon } from '../shared/icons'
 import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { ToolkitError, UnknownError } from '../shared/errors'
+import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
+import { errorCode, formatError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
@@ -39,11 +39,15 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 import { getDependentAuths } from './secondaryAuth'
+import { DevSettings } from '../shared/settings'
+import { partition } from '../shared/utilities/mementos'
+import { createRegionPrompter } from '../shared/ui/common/region'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
+export const defaultSsoRegion = 'us-east-1'
 
 export function createBuilderIdProfile(
     scopes = [...ssoAccountAccessScopes]
@@ -51,7 +55,7 @@ export function createBuilderIdProfile(
     return {
         scopes,
         type: 'sso',
-        ssoRegion: 'us-east-1',
+        ssoRegion: defaultSsoRegion,
         startUrl: builderIdStartUrl,
     }
 }
@@ -310,7 +314,9 @@ interface ConnectionStateChangeEvent {
 }
 
 export class Auth implements AuthService, ConnectionManager {
-    private readonly ssoCache = getCache()
+    readonly #ssoCache = getCache()
+    readonly #validationErrors = new Map<Connection['id'], Error>()
+    readonly #invalidCredentialsTimeouts = new Map<Connection['id'], Timeout>()
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
@@ -418,7 +424,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error('Creating IAM connections is not supported')
         }
 
-        const id = randomUUID()
+        const id = uuid.v4()
         const tokenProvider = this.getTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
@@ -475,6 +481,10 @@ export class Auth implements AuthService, ConnectionManager {
         return this.store.getProfile(connection.id)?.metadata.connectionState
     }
 
+    public getInvalidationReason(connection: Pick<Connection, 'id'>): Error | undefined {
+        return this.#validationErrors.get(connection.id)
+    }
+
     /**
      * Attempts to remove all auth state related to the connection.
      *
@@ -509,6 +519,11 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const profile = await this.store.updateMetadata(id, { connectionState })
+        if (connectionState !== 'invalid') {
+            this.#validationErrors.delete(id)
+            this.#invalidCredentialsTimeouts.get(id)?.dispose()
+        }
+
         if (this.#activeConnection?.id === id) {
             this.#activeConnection.state = connectionState
             this.#onDidChangeActiveConnection.fire(this.#activeConnection)
@@ -519,16 +534,16 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
-        if (profile.type === 'sso') {
-            const provider = this.getTokenProvider(id, profile)
-            if ((await provider.getToken()) === undefined) {
-                return this.updateConnectionState(id, 'invalid')
+        const runCheck = async () => {
+            if (profile.type === 'sso') {
+                const provider = this.getTokenProvider(id, profile)
+                if ((await provider.getToken()) === undefined) {
+                    return this.updateConnectionState(id, 'invalid')
+                } else {
+                    return this.updateConnectionState(id, 'valid')
+                }
             } else {
-                return this.updateConnectionState(id, 'valid')
-            }
-        } else {
-            const provider = await this.getCredentialsProvider(id)
-            try {
+                const provider = await this.getCredentialsProvider(id)
                 const credentials = await this.getCachedCredentials(provider)
                 if (credentials !== undefined) {
                     return this.updateConnectionState(id, 'valid')
@@ -539,10 +554,16 @@ export class Auth implements AuthService, ConnectionManager {
                 } else {
                     return this.updateConnectionState(id, 'invalid')
                 }
-            } catch {
-                return this.updateConnectionState(id, 'invalid')
             }
         }
+
+        return runCheck().catch(err => this.handleValidationError(id, err))
+    }
+
+    private async handleValidationError(id: Connection['id'], err: unknown) {
+        this.#validationErrors.set(id, UnknownError.cast(err))
+
+        return this.updateConnectionState(id, 'invalid')
     }
 
     private async getCredentialsProvider(id: Connection['id']) {
@@ -574,8 +595,11 @@ export class Auth implements AuthService, ConnectionManager {
     })
 
     private getTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
+        // XXX: Use the token created by dev environments if and only if the profile is strictly for CodeCatalyst
         const shouldUseSoftwareStatement =
-            getCodeCatalystDevEnvId() !== undefined && profile.startUrl === builderIdStartUrl
+            getCodeCatalystDevEnvId() !== undefined &&
+            profile.startUrl === builderIdStartUrl &&
+            profile.scopes?.every(scope => codecatalystScopes.includes(scope))
 
         const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
 
@@ -586,7 +610,7 @@ export class Auth implements AuthService, ConnectionManager {
                 scopes: profile.scopes,
                 region: profile.ssoRegion,
             },
-            this.ssoCache
+            this.#ssoCache
         )
     }
 
@@ -607,17 +631,12 @@ export class Auth implements AuthService, ConnectionManager {
         profile: StoredProfile<SsoProfile>
     ): SsoConnection & StatefulConnection {
         const provider = this.getTokenProvider(id, profile)
-        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
-        const label =
-            profile.startUrl === builderIdStartUrl
-                ? localizedText.builderId()
-                : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
 
         return {
             id,
             ...profile,
             state: profile.metadata.connectionState,
-            label: profile.metadata?.label ?? label,
+            label: profile.metadata?.label ?? getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
         }
     }
@@ -632,7 +651,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             return result
         } catch (err) {
-            await this.updateConnectionState(id, 'invalid')
+            await this.handleValidationError(id, err)
             throw err
         }
     }
@@ -655,7 +674,9 @@ export class Auth implements AuthService, ConnectionManager {
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
-        const token = await provider.getToken()
+        const token = await provider.getToken().catch(err => {
+            this.#validationErrors.set(id, err)
+        })
 
         return token ?? this.handleInvalidCredentials(id, () => provider.createToken())
     }
@@ -673,26 +694,37 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
-        const previous = this.store.getProfile(id)?.metadata
+        const profile = this.store.getProfile(id)
+        const previousState = profile?.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')
 
-        if (previous?.connectionState === 'invalid') {
+        if (previousState === 'invalid') {
             throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
-                code: 'InvalidConnection',
+                code: errorCode.invalidConnection,
+                cause: this.#validationErrors.get(id),
             })
         }
+        if (previousState === 'valid') {
+            const timeout = new Timeout(60000)
+            this.#invalidCredentialsTimeouts.set(id, timeout)
 
-        if (previous?.connectionState === 'valid') {
+            const connLabel = profile?.metadata.label ?? (profile?.type === 'sso' ? getSsoProfileLabel(profile) : id)
             const message = localize(
                 'aws.auth.invalidConnection',
                 'Connection "{0}" is invalid or expired, login again?',
-                previous.label ?? id
+                connLabel
             )
-            const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
-            if (resp !== localizedText.yes) {
+            const login = localize('aws.auth.invalidConnection.loginAgain', 'Login')
+            const resp = await Promise.race([
+                vscode.window.showInformationMessage(message, login, localizedText.no),
+                timeout.promisify(),
+            ])
+
+            if (resp !== login) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,
-                    code: 'InvalidConnection',
+                    code: errorCode.invalidConnection,
+                    cause: this.#validationErrors.get(id),
                 })
             }
         }
@@ -705,14 +737,25 @@ export class Auth implements AuthService, ConnectionManager {
             return
         }
 
+        // Clear anything stuck in an 'authenticating...' state
+        // This can rarely happen when closing VS Code during authentication
+        await Promise.all(
+            this.store.listProfiles().map(async ([id, profile]) => {
+                if (profile.metadata.connectionState === 'authenticating') {
+                    await this.store.updateMetadata(id, { connectionState: 'invalid' })
+                }
+            })
+        )
+
         // Use the environment token if available
+        // This token only has CC permissions currently!
         if (getCodeCatalystDevEnvId() !== undefined) {
             const profile = createBuilderIdProfile(codecatalystScopes)
             const codecatalystConn = (await this.listConnections())
                 .filter(isBuilderIdConnection)
                 .find(conn => !codecatalystScopes.some(s => conn.scopes?.includes(s)))
             if (!codecatalystConn) {
-                const key = randomUUID()
+                const key = uuid.v4()
                 await this.store.addProfile(key, profile)
                 await this.store.setCurrentProfileId(key)
             }
@@ -757,8 +800,20 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(globals.context.globalState)))
+        const devEnvId = getCodeCatalystDevEnvId()
+        const memento =
+            devEnvId !== undefined ? partition(globals.context.globalState, devEnvId) : globals.context.globalState
+
+        return (this.#instance ??= new Auth(new ProfileStore(memento)))
     }
+}
+
+const getSsoProfileLabel = (profile: SsoProfile) => {
+    const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+
+    return profile.startUrl === builderIdStartUrl
+        ? localizedText.builderId()
+        : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
 }
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
@@ -930,6 +985,25 @@ async function promptLogoutExistingBuilderIdConnection(): Promise<'signout' | 'c
     return resp === undefined ? 'cancel' : resp
 }
 
+export async function showRegionPrompter(
+    title: string = `IAM Identity Center: Select Region`,
+    placeholder: string = `Select region for your organization's IAM Identity Center`
+) {
+    const region = await createRegionPrompter(undefined, {
+        defaultRegion: defaultSsoRegion,
+        buttons: createCommonButtons(),
+        title: title,
+        placeholder: placeholder,
+    }).prompt()
+
+    if (!isValidResponse(region)) {
+        throw new CancellationError('user')
+    }
+    telemetry.ui_click.emit({ elementId: 'connection_region' })
+
+    return region
+}
+
 Commands.register('aws.auth.help', async () => {
     vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
@@ -965,10 +1039,11 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
             if (!isValidResponse(startUrl)) {
                 throw new CancellationError('user')
             }
-
             telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
 
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl))
+            const region = await showRegionPrompter()
+
+            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
             return Auth.instance.useConnection(conn)
         }
         case 'builderId': {
@@ -1036,47 +1111,57 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'sso') {
 
     function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
         const state = auth.getConnectionState(conn)
-        if (state !== 'valid') {
+        if (state === 'valid') {
             return {
                 data: conn,
-                invalidSelection: true,
-                label: codicon`${getIcon('vscode-error')} ${conn.label}`,
-                description:
-                    state === 'authenticating'
-                        ? 'authenticating...'
-                        : localize(
-                              'aws.auth.promptConnection.expired.description',
-                              'Expired or Invalid, select to authenticate'
-                          ),
-                onClick:
-                    state !== 'authenticating'
-                        ? async () => {
-                              // XXX: this is hack because only 1 picker can be shown at a time
-                              // Some legacy auth providers will show a picker, hiding this one
-                              // If we detect this then we'll jump straight into using the connection
-                              let hidden = false
-                              const sub = prompter.quickPick.onDidHide(() => {
-                                  hidden = true
-                                  sub.dispose()
-                              })
-                              const newConn = await reauthCommand.execute(auth, conn)
-                              if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
-                                  await auth.useConnection(newConn)
-                              } else {
-                                  await prompter.clearAndLoadItems(loadItems())
-                                  prompter.selectItems(
-                                      ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
-                                  )
-                              }
-                          }
-                        : undefined,
+                label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
+                description: getConnectionDescription(conn),
             }
         }
 
+        const getDetail = () => {
+            if (!DevSettings.instance.get('renderDebugDetails', false)) {
+                return
+            }
+
+            const err = auth.getInvalidationReason(conn)
+            return err ? formatError(err) : undefined
+        }
+
         return {
+            detail: getDetail(),
             data: conn,
-            label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
-            description: getConnectionDescription(conn),
+            invalidSelection: state !== 'authenticating',
+            label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            description:
+                state === 'authenticating'
+                    ? 'authenticating...'
+                    : localize(
+                          'aws.auth.promptConnection.expired.description',
+                          'Expired or Invalid, select to authenticate'
+                      ),
+            onClick:
+                state !== 'authenticating'
+                    ? async () => {
+                          // XXX: this is hack because only 1 picker can be shown at a time
+                          // Some legacy auth providers will show a picker, hiding this one
+                          // If we detect this then we'll jump straight into using the connection
+                          let hidden = false
+                          const sub = prompter.quickPick.onDidHide(() => {
+                              hidden = true
+                              sub.dispose()
+                          })
+                          const newConn = await reauthCommand.execute(auth, conn)
+                          if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
+                              await auth.useConnection(newConn)
+                          } else {
+                              await prompter.clearAndLoadItems(loadItems())
+                              prompter.selectItems(
+                                  ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
+                              )
+                          }
+                      }
+                    : undefined,
         }
     }
 

@@ -11,6 +11,10 @@ import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
 
+export const errorCode = {
+    invalidConnection: 'InvalidConnection',
+}
+
 export interface ErrorInformation {
     /**
      * Error names are optional, but if provided they should be generic yet self-explanatory.
@@ -275,16 +279,102 @@ export function getTelemetryReason(error: unknown | undefined): string | undefin
     return 'Unknown'
 }
 
-export function isAwsError(error: unknown | undefined): error is AWSError {
+/**
+ * Determines the appropriate error message to display to the user.
+ *
+ * We do not want to display every error message to the user, this
+ * resolves what we actually want to show them based off the given
+ * input.
+ */
+export function resolveErrorMessageToDisplay(error: unknown, defaultMessage: string): string {
+    const mainMessage = error instanceof ToolkitError ? error.message : defaultMessage
+    // We want to explicitly show certain AWS Error messages if they are raised
+    const prioritizedMessage = findPrioritizedAwsError(error)?.message
+    return prioritizedMessage ? `${mainMessage}: ${prioritizedMessage}` : mainMessage
+}
+
+/**
+ * Patterns that match the value of {@link AWSError.code}
+ */
+export const prioritizedAwsErrors: RegExp[] = [
+    /^ConflictException$/,
+    /^ValidationException$/,
+    /^ResourceNotFoundException$/,
+    /^ServiceQuotaExceededException$/,
+]
+
+/**
+ * Sometimes there are AWS specific errors that we want to explicitly
+ * show to the user, these are 'prioritized' errors.
+ *
+ * In certain cases we may unknowingly wrap these errors in a Toolkit error
+ * as the 'cause', in return masking the the underlying error from being
+ * reported to the user.
+ *
+ * Since we do not want developers to worry if they are allowed to wrap
+ * a specific AWS error in a Toolkit error, we will instead handle
+ * it in this function by extracting the 'prioritized' error if it is
+ * found.
+ *
+ * @returns new ToolkitError with prioritized error message, otherwise original error
+ */
+export function findPrioritizedAwsError(
+    error: unknown,
+    prioritizedErrors = prioritizedAwsErrors
+): AWSError | undefined {
+    const awsError = findAwsErrorInCausalChain(error)
+
+    if (awsError === undefined || !prioritizedErrors.some(regex => regex.test(awsError.code))) {
+        return undefined
+    }
+
+    return awsError
+}
+
+/**
+ * This will search through the causal chain of errors (if it exists)
+ * until it finds an {@link AWSError}.
+ *
+ * {@link ToolkitError} instances can wrap a 'cause', which is the underlying
+ * error that caused it.
+ *
+ * @returns AWSError if found, otherwise undefined
+ */
+export function findAwsErrorInCausalChain(error: unknown): AWSError | undefined {
+    let currentError = error
+
+    while (currentError !== undefined) {
+        if (isAwsError(currentError)) {
+            return currentError
+        }
+
+        // TODO: Base Error has 'cause' in ES2022. If we upgrade this can be made
+        // non-ToolkitError specific
+        if (currentError instanceof ToolkitError && currentError.cause !== undefined) {
+            currentError = currentError.cause
+            continue
+        }
+
+        return undefined
+    }
+
+    return undefined
+}
+
+export function isAwsError(error: unknown): error is AWSError {
     if (error === undefined) {
         return false
     }
 
-    return error instanceof Error && hasCode(error) && (error as { time?: unknown }).time instanceof Date
+    return error instanceof Error && hasCode(error) && hasTime(error)
 }
 
 function hasCode(error: Error): error is typeof error & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
+}
+
+function hasTime(error: Error): error is typeof error & { time: Date } {
+    return (error as { time?: unknown }).time instanceof Date
 }
 
 export function isUserCancelledError(error: unknown): boolean {
@@ -296,4 +386,14 @@ export function isUserCancelledError(error: unknown): boolean {
  */
 export function isClientFault(error: ServiceException): boolean {
     return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
+}
+
+export function getRequestId(error: unknown): string | undefined {
+    if (isAwsError(error)) {
+        return error.requestId
+    }
+
+    if (error instanceof ServiceException) {
+        return error.$metadata.requestId
+    }
 }

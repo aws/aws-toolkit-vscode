@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
-import { extensionSettingsPrefix } from '../constants'
 import { setLogger } from './logger'
 import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
@@ -18,6 +17,7 @@ import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { SystemUtilities } from '../systemUtilities'
+import { resolvePath } from '../utilities/pathUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -31,7 +31,11 @@ export async function activate(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const chan = logOutputChannel
-    const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
+    const settings = Settings.instance.getSection('aws')
+    const devLogfile = settings.get('dev.logfile', '')
+    const logUri = devLogfile
+        ? vscode.Uri.file(resolvePath(devLogfile))
+        : vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
     await SystemUtilities.createDirectory(extensionContext.logUri)
 
@@ -139,8 +143,7 @@ export function makeLogger(
 }
 
 function getLogLevel(): LogLevel {
-    const configuration = Settings.instance.getSection(extensionSettingsPrefix)
-
+    const configuration = Settings.instance.getSection('aws')
     return configuration.get('logLevel', defaultLogLevel)
 }
 

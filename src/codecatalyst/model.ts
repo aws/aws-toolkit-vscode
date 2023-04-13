@@ -8,6 +8,7 @@ import globals from '../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import {
+    createClient,
     CodeCatalystClient,
     DevEnvironment,
     CodeCatalystRepo,
@@ -21,11 +22,13 @@ import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, hostNamePrefix } from './tools'
-import { isCodeCatalystVSCode } from './utils'
+import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
+import { CodeCatalystAuthenticationProvider } from './auth'
+import { UnknownError } from '../shared/errors'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -108,7 +111,7 @@ export function createCodeCatalystEnvProvider(
 type EnvProvider = () => Promise<NodeJS.ProcessEnv>
 
 /**
- * Creates a new {@link ChildProcess} class bound to a specific development environment. All instances of this
+ * Creates a new {@link ChildProcess} class bound to a specific dev environment. All instances of this
  * derived class will have SSM session information injected as environment variables as-needed.
  */
 export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
@@ -150,7 +153,7 @@ export interface ConnectedDevEnv {
 
 export async function getConnectedDevEnv(
     codeCatalystClient: CodeCatalystClient,
-    devenvClient = new DevEnvClient()
+    devenvClient = DevEnvClient.instance
 ): Promise<ConnectedDevEnv | undefined> {
     const devEnvId = devenvClient.id
     if (!devEnvId || !devenvClient.isCodeCatalystDevEnv()) {
@@ -174,7 +177,24 @@ export async function getConnectedDevEnv(
 }
 
 /**
- * Everything needed to connect to a development environment via VS Code or `ssh`
+ * Gets the current devenv that Toolkit is running in, if any.
+ */
+export async function getThisDevEnv(authProvider: CodeCatalystAuthenticationProvider) {
+    try {
+        await authProvider.restore()
+        const conn = authProvider.activeConnection
+        if (conn !== undefined && authProvider.auth.getConnectionState(conn) === 'valid') {
+            const client = await createClient(conn)
+            return await getConnectedDevEnv(client)
+        }
+    } catch (err) {
+        getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
+    }
+    return undefined
+}
+
+/**
+ * Everything needed to connect to a dev environment via VS Code or `ssh`
  */
 interface DevEnvConnection {
     readonly sshPath: string
@@ -182,6 +202,7 @@ interface DevEnvConnection {
     readonly hostname: string
     readonly envProvider: EnvProvider
     readonly SessionProcess: typeof ChildProcess
+    readonly devenv: DevEnvironment
 }
 
 export async function prepareDevEnvConnection(
@@ -190,14 +211,11 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const runningDevEnv = await client.startDevEnvironmentWithProgress(
-        {
-            id,
-            spaceName: org.name,
-            projectName: project.name,
-        },
-        'RUNNING'
-    )
+    const runningDevEnv = await client.startDevEnvironmentWithProgress({
+        id,
+        spaceName: org.name,
+        projectName: project.name,
+    })
 
     const hostname = getHostNameFromEnv({ id, org, project })
     const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`
@@ -212,6 +230,7 @@ export async function prepareDevEnvConnection(
 
     return {
         hostname,
+        devenv: runningDevEnv,
         envProvider,
         sshPath: ssh,
         vscPath: vsc,
@@ -231,17 +250,12 @@ export async function openDevEnv(
     devenv: DevEnvironmentId,
     targetPath?: string
 ): Promise<void> {
-    const { SessionProcess, vscPath } = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
+    const env = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
     if (!targetPath) {
-        const env = await client.getDevEnvironment({
-            spaceName: devenv.org.name,
-            projectName: devenv.project.name,
-            id: devenv.id,
-        })
-        const repo = env.repositories.length == 1 ? env.repositories[0].repositoryName : undefined
+        const repo = env.devenv.repositories.length == 1 ? env.devenv.repositories[0].repositoryName : undefined
         targetPath = repo ? `/projects/${repo}` : '/projects'
     }
-    await startVscodeRemote(SessionProcess, getHostNameFromEnv(devenv), targetPath, vscPath)
+    await startVscodeRemote(env.SessionProcess, getHostNameFromEnv(env.devenv), targetPath, env.vscPath)
 }
 
 // The "codecatalyst_connect" metric should really be splt into two parts:
@@ -319,7 +333,7 @@ export function associateDevEnv(
         const devenvs = await client
             .listResources('devEnvironment')
             .flatten()
-            .filter(env => env.repositories.length > 0 && isCodeCatalystVSCode(env.ides))
+            .filter(env => env.repositories.length > 0 && isDevenvVscode(env.ides))
             .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
 
         yield* repos.map(repo => ({

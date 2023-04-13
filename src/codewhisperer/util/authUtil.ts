@@ -16,7 +16,7 @@ import {
     isSsoConnection,
     hasScopes,
     ssoAccountAccessScopes,
-    createBuilderIdConnection,
+    isIamConnection,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
@@ -25,19 +25,27 @@ import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { PromptSettings } from '../../shared/settings'
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)
-// No connections are valid within C9
-export const isValidCodeWhispererConnection = (conn: Connection): conn is SsoConnection =>
-    !isCloud9() && isSsoConnection(conn) && hasScopes(conn, codewhispererScopes)
+
+export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
+    if (isCloud9('classic')) {
+        return isIamConnection(conn)
+    }
+
+    return (
+        (isCloud9('codecatalyst') && isIamConnection(conn)) ||
+        (isSsoConnection(conn) && hasScopes(conn, codewhispererScopes))
+    )
+}
 
 export class AuthUtil {
-    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
     static #instance: AuthUtil
 
     private usingEnterpriseSSO: boolean = false
+    private reauthenticatePromptShown: boolean = false
 
     private readonly clearAccessToken = once(() =>
         globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
@@ -51,10 +59,11 @@ export class AuthUtil {
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        // codewhisperer uses sigv4 creds on C9
-        if (isCloud9() || !this.isAvailable) {
-            return
-        }
+        this.auth.onDidChangeConnectionState(e => {
+            if (e.state !== 'authenticating') {
+                this.refreshCodeWhisperer()
+            }
+        })
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
@@ -65,7 +74,7 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-            TelemetryHelper.instance.startUrl = this.conn?.startUrl
+            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -77,7 +86,7 @@ export class AuthUtil {
 
     // current active cwspr connection
     public get conn() {
-        return this.isAvailable ? this.secondaryAuth.activeConnection : undefined
+        return this.secondaryAuth.activeConnection
     }
 
     public get isUsingSavedConnection() {
@@ -92,32 +101,36 @@ export class AuthUtil {
         return this.conn !== undefined && this.usingEnterpriseSSO
     }
 
-    public async tryUpgradeActiveConnection() {
-        if (isUpgradeableConnection(this.auth.activeConnection)) {
-            return this.promptUpgrade(this.auth.activeConnection, 'current')
-        } else {
-            return false
-        }
-    }
-
     public async connectToAwsBuilderId() {
-        const conn = await createBuilderIdConnection(this.auth, defaultScopes)
-        await this.secondaryAuth.useNewConnection(conn)
+        const existingConn = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        if (!existingConn) {
+            const newConn = await this.auth.createConnection(awsBuilderIdSsoProfile)
+            await this.secondaryAuth.useNewConnection(newConn)
+
+            return newConn
+        }
+
+        if (isValidCodeWhispererConnection(existingConn)) {
+            await this.secondaryAuth.useNewConnection(existingConn)
+            return existingConn
+        }
+
+        return this.secondaryAuth.addScopes(existingConn, codewhispererScopes)
     }
 
-    public async connectToEnterpriseSso(startUrl: string) {
+    public async connectToEnterpriseSso(startUrl: string, region: string) {
         const existingConn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, 'us-east-1', defaultScopes))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultScopes))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.promptUpgrade(existingConn, 'startUrl')
+            return this.secondaryAuth.addScopes(existingConn, codewhispererScopes)
         }
     }
 
@@ -139,8 +152,26 @@ export class AuthUtil {
             throw new ToolkitError('No connection found', { code: 'NoConnection' })
         }
 
+        if (!isSsoConnection(this.conn)) {
+            throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
+        }
+
         const bearerToken = await this.conn.getToken()
         return bearerToken.accessToken
+    }
+
+    public async getCredentials() {
+        await this.restore()
+
+        if (this.conn === undefined) {
+            throw new ToolkitError('No connection found', { code: 'NoConnection' })
+        }
+
+        if (!isIamConnection(this.conn)) {
+            throw new ToolkitError('Connection is not an IAM connection', { code: 'BadConnectionType' })
+        }
+
+        return this.conn.getCredentials()
     }
 
     public isConnectionValid(): boolean {
@@ -148,7 +179,11 @@ export class AuthUtil {
     }
 
     public isConnectionExpired(): boolean {
-        return this.secondaryAuth.isConnectionExpired
+        return (
+            this.secondaryAuth.isConnectionExpired &&
+            this.conn !== undefined &&
+            isValidCodeWhispererConnection(this.conn)
+        )
     }
 
     public async reauthenticate() {
@@ -161,53 +196,42 @@ export class AuthUtil {
         }
     }
 
-    public async showReauthenticatePrompt() {
-        await vscode.window
-            .showWarningMessage(CodeWhispererConstants.connectionExpired, 'Cancel', 'Learn More', 'Authenticate')
-            .then(async resp => {
-                if (resp === 'Learn More') {
-                    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                } else if (resp === 'Authenticate') {
-                    await this.reauthenticate()
-                }
-            })
+    public async refreshCodeWhisperer() {
+        await Promise.all([
+            vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
+        ])
     }
 
-    #hasSeenUpgradeNotification = false
-    public async promptUpgrade(existingConn: SsoConnection, upgradeType: 'current' | 'startUrl' | 'passive') {
-        const modal = upgradeType === 'current' || upgradeType === 'startUrl'
-        if (upgradeType === 'passive' && this.#hasSeenUpgradeNotification) {
-            return false
-        }
-        this.#hasSeenUpgradeNotification = upgradeType === 'passive' ? true : this.#hasSeenUpgradeNotification
-
-        const message =
-            upgradeType === 'startUrl'
-                ? 'The provided start URL is associated with a connection that lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
-                : 'The current connection lacks permissions required by CodeWhisperer. Upgrading the connection will require another login.\n\nUpgrade now?'
-
-        const resp = await vscode.window.showInformationMessage(
-            message,
-            { modal },
-            { title: 'Yes' },
-            { title: 'No', isCloseAffordance: true }
-        )
-        if (resp?.title !== 'Yes') {
-            return false
+    public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
+        const settings = PromptSettings.instance
+        const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
+        if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
+            return
         }
 
-        const upgradedConn = await this.auth.updateConnection(
-            existingConn,
-            createSsoProfile(
-                existingConn.startUrl,
-                existingConn.ssoRegion,
-                Array.from(new Set([...(existingConn.scopes ?? []), ...codewhispererScopes]))
+        await vscode.window
+            .showInformationMessage(
+                CodeWhispererConstants.connectionExpired,
+                CodeWhispererConstants.connectWithAWSBuilderId,
+                CodeWhispererConstants.DoNotShowAgain
             )
-        )
+            .then(async resp => {
+                if (resp === CodeWhispererConstants.connectWithAWSBuilderId) {
+                    await this.reauthenticate()
+                } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
+                    settings.disablePrompt('codeWhispererConnectionExpired')
+                }
+            })
+        if (isAutoTrigger) {
+            this.reauthenticatePromptShown = true
+        }
+    }
 
-        await this.auth.reauthenticate(upgradedConn)
-
-        return true
+    public async notifyReauthenticate(isAutoTrigger?: boolean) {
+        await this.refreshCodeWhisperer()
+        this.showReauthenticatePrompt(isAutoTrigger)
     }
 
     public hasAccessToken() {

@@ -20,7 +20,6 @@ import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
-import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
@@ -34,8 +33,6 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 /* Test constants go here */
 const codelensTimeout: number = 60000
 const codelensRetryInterval: number = 200
-// note: this refers to the _test_ timeout, not the invocation timeout
-const debugTimeout: number = 240000
 const noDebugSessionTimeout: number = 5000
 const noDebugSessionInterval: number = 100
 
@@ -112,6 +109,15 @@ const scenarios: TestScenario[] = [
     //     language: 'python',
     //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        vscodeMinimum: '1.65.0',
+    },
     {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
@@ -212,6 +218,16 @@ const scenarios: TestScenario[] = [
     //     language: 'python',
     //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        baseImage: 'amazon/python3.10-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        vscodeMinimum: '1.65.0',
+    },
     {
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
@@ -536,11 +552,13 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (skipLanguagesOnApi.includes(scenario.language)) {
+                    if (
+                        skipLanguagesOnApi.includes(scenario.language) ||
+                        semver.lt(vscode.version, scenario.vscodeMinimum)
+                    ) {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
                     await testTarget('api', {
                         api: {
                             path: '/hello',
@@ -551,7 +569,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    setTestTimeout(this.test?.fullTitle(), debugTimeout)
+                    if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
+                        this.skip()
+                    }
+
                     await testTarget('template')
                 })
 

@@ -146,7 +146,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         private readonly auth: Auth,
         private readonly memento = globals.context.globalState
     ) {
-        this.auth.onDidChangeActiveConnection(async conn => {
+        const handleConnectionChanged = async (conn?: Connection) => {
             if (
                 conn === undefined &&
                 this.#savedConnection &&
@@ -164,7 +164,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 this.#savedConnection = conn as unknown as T
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
-        })
+        }
+
+        // Register listener and handle connection immediately in case we were instantiated late
+        handleConnectionChanged(this.auth.activeConnection)
+        this.auth.onDidChangeActiveConnection(handleConnectionChanged)
     }
 
     public get activeConnection(): T | undefined {
