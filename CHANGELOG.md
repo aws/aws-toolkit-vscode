@@ -1,3 +1,15 @@
+## 1.68.0 2023-04-13
+
+- **Bug Fix** Dev Env Space quick pick shows all Spaces + Projects
+- **Bug Fix** CodeCatalyst: Toolkit attempts reconnect to non-vscode Dev Environment
+- **Bug Fix** The AWS status bar item is colored despite there not being anything that needs user attention
+- **Feature** CodeWhisperer: Now also provides import recommendations
+- **Feature** CodeWhisperer: new code scan features: 
+1. highlighting scanned files 
+2. stop security scan
+- **Feature** auth: support `sso_session` for profiles in AWS shared ini files
+- **Feature** CodeWhisperer: new supported programming languages: c, cpp, go, kotlin, php, ruby, rust, scala, shell, sql. 
+
 ## 1.67.0 2023-03-29
 
 - **Breaking Change** "Sync SAM Application" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode.
