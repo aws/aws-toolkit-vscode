@@ -5,17 +5,18 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue } from '../models/model'
+import { AggregatedCodeScanIssue, codeScanState, CodeScanStoppedError } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { TruncPaths } from '../util/dependencyGraph/dependencyGraph'
 import { existsSync, statSync, readFileSync } from 'fs'
 import { RawCodeScanIssue } from '../models/model'
 import got from 'got'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
+import { Truncation } from '../util/dependencyGraph/dependencyGraph'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -92,6 +93,7 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
+        throwIfCancelled()
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -103,6 +105,7 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
             getLogger().verbose(`Complete Polling scan job status.`)
             break
         }
+        throwIfCancelled()
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
         if (timer > CodeWhispererConstants.codeScanJobTimeoutSeconds) {
@@ -131,40 +134,23 @@ export async function createScanJob(
     return resp
 }
 
-export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncPaths: TruncPaths) {
-    if (truncPaths.src.zip === '') {
+export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClient, truncation: Truncation) {
+    if (truncation.zipFilePath === '') {
         throw new Error("Truncation failure: can't find valid source zip.")
     }
-    const srcReq: codewhispererClient.CreateUploadUrlRequest = {
-        artifactType: CodeWhispererConstants.artifactTypeSource,
-        contentMd5: getMd5(truncPaths.src.zip),
+    const srcReq: CreateUploadUrlRequest = {
+        contentMd5: getMd5(truncation.zipFilePath),
+        artifactType: 'SourceCode',
     }
     getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
     getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
-    await uploadArtifactToS3(srcResp.uploadUrl, truncPaths.src.zip)
+    await uploadArtifactToS3(truncation.zipFilePath, srcResp)
     getLogger().verbose(`Complete uploading src context.`)
-    let artifactMap: codewhispererClient.ArtifactMap = {
+    const artifactMap: ArtifactMap = {
         SourceCode: srcResp.uploadId,
-    }
-    if (truncPaths.build.zip !== '') {
-        const buildReq: codewhispererClient.CreateUploadUrlRequest = {
-            artifactType: CodeWhispererConstants.artifactTypeBuild,
-            contentMd5: getMd5(truncPaths.build.zip),
-        }
-        getLogger().verbose(`Prepare for uploading build context...`)
-        const buildResp = await client.createUploadUrl(buildReq)
-        getLogger().verbose(`Request id: ${buildResp.$response.requestId}`)
-        getLogger().verbose(`Complete Getting presigned Url for uploading build context.`)
-        getLogger().verbose(`Uploading build context...`)
-        await uploadArtifactToS3(buildResp.uploadUrl, truncPaths.build.zip)
-        getLogger().verbose(`Complete uploading build context.`)
-        artifactMap = {
-            SourceCode: srcResp.uploadId,
-            BuiltJars: buildResp.uploadId,
-        }
     }
     return artifactMap
 }
@@ -175,15 +161,33 @@ function getMd5(fileName: string) {
     return hasher.digest('base64')
 }
 
-export async function uploadArtifactToS3(presignedUrl: string, fileName: string) {
-    const response = await got(presignedUrl, {
+export function throwIfCancelled() {
+    if (codeScanState.isCancelling()) {
+        throw new CodeScanStoppedError()
+    }
+}
+
+export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrlResponse) {
+    const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
+    const headersObj =
+        resp.kmsKeyArn !== '' || resp.kmsKeyArn !== undefined
+            ? {
+                  'Content-MD5': getMd5(fileName),
+                  'x-amz-server-side-encryption': 'aws:kms',
+                  'Content-Type': 'application/zip',
+                  'x-amz-server-side-encryption-aws-kms-key-id': resp.kmsKeyArn,
+                  'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
+              }
+            : {
+                  'Content-MD5': getMd5(fileName),
+                  'x-amz-server-side-encryption': 'aws:kms',
+                  'Content-Type': 'application/zip',
+                  'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
+              }
+    const response = await got(resp.uploadUrl, {
         method: 'PUT',
         body: readFileSync(fileName),
-        headers: {
-            'Content-MD5': getMd5(fileName),
-            'x-amz-server-side-encryption': 'AES256',
-            'Content-Type': 'application/zip',
-        },
+        headers: headersObj,
     })
     getLogger().debug(`StatusCode: ${response.statusCode}`)
 }

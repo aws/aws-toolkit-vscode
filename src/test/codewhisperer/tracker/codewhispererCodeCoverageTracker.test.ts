@@ -12,8 +12,8 @@ import globals from '../../../shared/extensionGlobals'
 import { assertTelemetryCurried } from '../../testUtil'
 import { vsCodeState } from '../../../codewhisperer/models/model'
 import { FakeMemento } from '../../fakeExtensionContext'
-import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererCodecoverageTracker', function () {
     const language = 'python'
@@ -25,9 +25,9 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('unsupported language', function () {
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('cpp'), undefined)
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ruby'), undefined)
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('go'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('vb'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ipynb'), undefined)
         })
 
         it('supported language', function () {
@@ -35,6 +35,9 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('javascriptreact'), undefined)
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('java'), undefined)
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('javascript'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('cpp'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('ruby'), undefined)
+            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('go'), undefined)
         })
 
         it('supported language and should return singleton object per language', function () {
@@ -64,39 +67,36 @@ describe('codewhispererCodecoverageTracker', function () {
         afterEach(function () {
             resetCodeWhispererGlobalVariables()
             CodeWhispererCodeCoverageTracker.instances.clear()
-            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, undefined)
             sinon.restore()
         })
 
-        it('inactive case: telemetryEnable = true, termsAccepted = undefined | false', function () {
+        it('inactive case: telemetryEnable = true, isConnected = false', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('python', fakeMemeto)
             if (!tracker) {
                 assert.fail()
             }
-            assert.strictEqual(tracker.isActive(), false)
 
-            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
             assert.strictEqual(tracker.isActive(), false)
         })
 
-        it('inactive case: telemetryEnabled = false, termsAccepted = undefined | false', function () {
+        it('inactive case: telemetryEnabled = false, isConnected = false', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('java', fakeMemeto)
             if (!tracker) {
                 assert.fail()
             }
-            assert.strictEqual(tracker.isActive(), false)
 
-            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, false)
             assert.strictEqual(tracker.isActive(), false)
         })
 
-        it('active case: telemetryEnabled = true, termsAccepted = true', function () {
-            fakeMemeto.update(CodeWhispererConstants.termsAcceptedKey, true)
+        it('active case: telemetryEnabled = true, isConnected = true', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             tracker = CodeWhispererCodeCoverageTracker.getTracker('javascript', fakeMemeto)
             if (!tracker) {
