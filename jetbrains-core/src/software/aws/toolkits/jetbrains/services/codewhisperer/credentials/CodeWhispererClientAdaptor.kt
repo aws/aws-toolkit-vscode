@@ -4,24 +4,29 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.credentials
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager.Companion.CREDENTIALS_CHANGED
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -34,14 +39,12 @@ import kotlin.reflect.jvm.isAccessible
 interface CodeWhispererClientAdaptor : Disposable {
     val project: Project
 
-    fun listRecommendationsPaginator(
-        firstRequest: ListRecommendationsRequest,
-        isSigv4: Boolean = shouldUseSigv4Client(project)
-    ): Sequence<ListRecommendationsResponse>
+    fun generateCompletionsPaginator(
+        firstRequest: GenerateCompletionsRequest,
+    ): Sequence<GenerateCompletionsResponse>
 
     fun createUploadUrl(
-        request: CreateUploadUrlRequest,
-        isSigv4: Boolean = shouldUseSigv4Client(project)
+        request: CreateUploadUrlRequest
     ): CreateUploadUrlResponse
 
     fun createCodeScan(
@@ -67,64 +70,97 @@ interface CodeWhispererClientAdaptor : Disposable {
     }
 }
 
-class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeWhispererClientAdaptor {
+open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeWhispererClientAdaptor {
     private val mySigv4Client by lazy { createUnmanagedSigv4Client() }
 
-    // Will purge once sigV4 client for CW is no longer needed
+    @Volatile private var myBearerClient: CodeWhispererRuntimeClient? = null
+
     private val KProperty0<*>.isLazyInitialized: Boolean
         get() {
             isAccessible = true
             return (getDelegate() as Lazy<*>).isInitialized()
         }
 
-    private val myBearerClient: CodeWhispererRuntimeClient
-        get() = getBearerClient(project)
+    init {
+        initClientUpdateListener()
+    }
 
-    override fun listRecommendationsPaginator(firstRequest: ListRecommendationsRequest, isSigv4: Boolean) = sequence<ListRecommendationsResponse> {
+    private fun initClientUpdateListener() {
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            ToolkitConnectionManagerListener.TOPIC,
+            object : ToolkitConnectionManagerListener {
+                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                    if (newConnection is AwsBearerTokenConnection) {
+                        myBearerClient = getBearerClient(newConnection.getConnectionSettings().providerId)
+                    }
+                }
+            }
+        )
+    }
+
+    private fun bearerClient(): CodeWhispererRuntimeClient {
+        if (myBearerClient != null) return myBearerClient as CodeWhispererRuntimeClient
+        myBearerClient = getBearerClient()
+        return myBearerClient as CodeWhispererRuntimeClient
+    }
+
+    override fun generateCompletionsPaginator(firstRequest: GenerateCompletionsRequest) = sequence<GenerateCompletionsResponse> {
         var nextToken: String? = firstRequest.nextToken()
         do {
-            val response = if (isSigv4) {
-                mySigv4Client.listRecommendations(firstRequest.copy { it.nextToken(nextToken) })
-            } else {
-                myBearerClient.generateCompletions(firstRequest.copy { it.nextToken(nextToken) }.transform()).transform()
-            }
+            val response = bearerClient().generateCompletions(firstRequest.copy { it.nextToken(nextToken) })
             nextToken = response.nextToken()
             yield(response)
         } while (!nextToken.isNullOrEmpty())
     }
 
-    override fun createUploadUrl(request: CreateUploadUrlRequest, isSigv4: Boolean): CreateUploadUrlResponse =
-        if (isSigv4) {
-            mySigv4Client.createUploadUrl(request)
-        } else {
-            myBearerClient.createArtifactUploadUrl(request.transform()).transform()
-        }
+    override fun createUploadUrl(request: CreateUploadUrlRequest): CreateUploadUrlResponse =
+        bearerClient().createUploadUrl(request)
 
     override fun createCodeScan(request: CreateCodeScanRequest, isSigv4: Boolean): CreateCodeScanResponse =
         if (isSigv4) {
             mySigv4Client.createCodeScan(request)
         } else {
-            myBearerClient.startCodeAnalysis(request.transform()).transform()
+            bearerClient().startCodeAnalysis(request.transform()).transform()
         }
 
     override fun getCodeScan(request: GetCodeScanRequest, isSigv4: Boolean): GetCodeScanResponse =
         if (isSigv4) {
             mySigv4Client.getCodeScan(request)
         } else {
-            myBearerClient.getCodeAnalysis(request.transform()).transform()
+            bearerClient().getCodeAnalysis(request.transform()).transform()
         }
 
     override fun listCodeScanFindings(request: ListCodeScanFindingsRequest, isSigv4: Boolean): ListCodeScanFindingsResponse =
         if (isSigv4) {
             mySigv4Client.listCodeScanFindings(request)
         } else {
-            myBearerClient.listCodeAnalysisFindings(request.transform()).transform()
+            bearerClient().listCodeAnalysisFindings(request.transform()).transform()
         }
 
     override fun dispose() {
         if (this::mySigv4Client.isLazyInitialized) {
             mySigv4Client.close()
         }
+        myBearerClient?.close()
+    }
+
+    /**
+     * Every different SSO/AWS Builder ID connection requires a new client which has its corresponding bearer token provider,
+     * thus we have to create them dynamically.
+     * Invalidate and recycle the old client first, and create a new client with the new connection.
+     * This makes sure when we invoke CW, we always use the up-to-date connection.
+     * In case this fails to close the client, myBearerClient is already set to null thus next time when we invoke CW,
+     * it will go through this again which should get the current up-to-date connection. This stale client would be
+     * unused and stay in memory for a while until eventually closed by ToolkitClientManager.
+     */
+    open fun getBearerClient(oldProviderIdToRemove: String = ""): CodeWhispererRuntimeClient {
+        myBearerClient = null
+        ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED)
+            .providerRemoved(oldProviderIdToRemove)
+
+        val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
+        connection as? AwsBearerTokenConnection ?: error("$connection is not a bearer token connection")
+        return AwsClientManager.getInstance().getClient<CodeWhispererRuntimeClient>(connection.getConnectionSettings())
     }
 
     companion object {
@@ -133,15 +169,11 @@ class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeWhispe
             CodeWhispererConstants.Config.Sigv4ClientRegion,
             CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT
         )
-
-        /**
-         * Every different SSO/AWS Builder ID connection requires a new client which has its correspoding bearer token provider,
-         * thus we have to create them dynamically.
-         */
-        private fun getBearerClient(project: Project): CodeWhispererRuntimeClient {
-            val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-            connection as? AwsBearerTokenConnection ?: error("$connection is not a bearer token connection")
-            return AwsClientManager.getInstance().getClient<CodeWhispererRuntimeClient>(connection.getConnectionSettings())
-        }
     }
+}
+
+class MockCodeWhispererClientAdaptor(override val project: Project) : CodeWhispererClientAdaptorImpl(project) {
+    override fun getBearerClient(oldProviderIdToRemove: String): CodeWhispererRuntimeClient = project.awsClient()
+
+    override fun dispose() {}
 }

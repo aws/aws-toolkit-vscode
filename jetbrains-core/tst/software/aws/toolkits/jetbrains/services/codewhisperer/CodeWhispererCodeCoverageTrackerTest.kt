@@ -40,6 +40,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
@@ -108,8 +109,9 @@ internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: 
         AwsSettings.getInstance().isTelemetryEnabled = true
         batcher = mock()
         telemetryServiceSpy = spy(TestTelemetryService(batcher = batcher))
+
         exploreActionManagerMock = mock {
-            on { hasAcceptedTermsOfService() } doReturn true
+            on { checkActiveCodeWhispererConnectionType(any()) } doReturn CodeWhispererLoginType.Sono
         }
 
         ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreActionManagerMock, disposableRule.disposable)
@@ -152,7 +154,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
         )
         val responseContext = ResponseContext("sessionId", CodewhispererCompletionType.Block)
         val recommendationContext = RecommendationContext(
-            listOf(DetailContext("requestId", pythonResponse.recommendations()[0], pythonResponse.recommendations()[0], false, false)),
+            listOf(DetailContext("requestId", pythonResponse.completions()[0], pythonResponse.completions()[0], false, false)),
             "x, y",
             "x, y",
             mock()

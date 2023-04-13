@@ -113,10 +113,11 @@ class DiskCacheTest {
     fun `valid scoped client registration loads correctly`() {
         val key = ClientRegistrationCacheKey(
             startUrl = ssoUrl,
-            scopes = scopes
+            scopes = scopes,
+            region = ssoRegion
         )
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        cacheLocation.resolve("a0e13839876dcf0cc23a629a1139a3ccb3b9a9e6.json").writeText(
+        cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json").writeText(
             """
             {
                 "clientId": "DummyId", 
@@ -171,7 +172,8 @@ class DiskCacheTest {
     fun `scoped client registration saves correctly`() {
         val key = ClientRegistrationCacheKey(
             startUrl = ssoUrl,
-            scopes = scopes
+            scopes = scopes,
+            region = ssoRegion
         )
         val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
         sut.saveClientRegistration(
@@ -184,7 +186,7 @@ class DiskCacheTest {
             )
         )
 
-        val clientRegistration = cacheLocation.resolve("a0e13839876dcf0cc23a629a1139a3ccb3b9a9e6.json")
+        val clientRegistration = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         if (SystemInfo.isUnix) {
             assertThat(Files.getPosixFilePermissions(clientRegistration)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
         }
@@ -226,7 +228,7 @@ class DiskCacheTest {
     @Test
     fun `invalidate scoped client registration deletes the file`() {
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        val cacheFile = cacheLocation.resolve("a0e13839876dcf0cc23a629a1139a3ccb3b9a9e6.json")
+        val cacheFile = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         cacheFile.writeText(
             """
             {
@@ -239,7 +241,8 @@ class DiskCacheTest {
 
         val key = ClientRegistrationCacheKey(
             startUrl = ssoUrl,
-            scopes = scopes
+            scopes = scopes,
+            region = ssoRegion
         )
 
         assertThat(sut.loadClientRegistration(key)).isNotNull()

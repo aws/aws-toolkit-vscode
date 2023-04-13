@@ -14,12 +14,12 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
-import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractActionTreeNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.ActionGroupOnRightClick
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererReconnectNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.FreeTierUsageLimitHitNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.GetStartedNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.OpenCodeReferenceNode
@@ -46,6 +46,7 @@ class CodeWhispererServiceNode(
     private val getStartedCodeWhispererNode by lazy { GetStartedNode(nodeProject) }
     private val openCodeReferenceNode by lazy { OpenCodeReferenceNode(nodeProject) }
     private val runCodeScanNode by lazy { RunCodeScanNode(nodeProject) }
+    private val codeWhispererReconnectNode by lazy { CodeWhispererReconnectNode(nodeProject) }
     private val freeTierUsageLimitHitNode by lazy {
         // we should probably build the text dynamically in case the format setting changes,
         // but that shouldn't happen often enough for us to care
@@ -84,6 +85,7 @@ class CodeWhispererServiceNode(
 
         return when (activeConnectionType) {
             CodeWhispererLoginType.Logout -> listOf(whatIsCodeWhispererNode, getStartedCodeWhispererNode)
+            CodeWhispererLoginType.Expired -> listOf(codeWhispererReconnectNode, whatIsCodeWhispererNode)
 
             else -> {
                 if (manager.isSuspended(nodeProject)) {
@@ -106,22 +108,20 @@ class CodeWhispererServiceNode(
 
         val connectionType = CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)
         when (connectionType) {
+            CodeWhispererLoginType.Expired -> {
+                presentation.addText(message("codewhisperer.explorer.root_node.login_type.expired"), SimpleTextAttributes.GRAY_ATTRIBUTES)
+            }
+
             CodeWhispererLoginType.Accountless -> {
                 presentation.addText(message("codewhisperer.explorer.root_node.login_type.accountless"), SimpleTextAttributes.GRAY_ATTRIBUTES)
             }
 
             CodeWhispererLoginType.SSO -> {
-                // Only show this hint text when CodeWhisperer is using secondary connection
-                if (isCodeWhispererUsingSecondaryConnection(project)) {
-                    presentation.addText(message("codewhisperer.explorer.root_node.login_type.sso"), SimpleTextAttributes.GRAY_ATTRIBUTES)
-                }
+                presentation.addText(message("codewhisperer.explorer.root_node.login_type.sso"), SimpleTextAttributes.GRAY_ATTRIBUTES)
             }
 
             CodeWhispererLoginType.Sono -> {
-                // Only show this hint text when CodeWhisperer is using secondary connection
-                if (isCodeWhispererUsingSecondaryConnection(project)) {
-                    presentation.addText(message("codewhisperer.explorer.root_node.login_type.aws_builder_id"), SimpleTextAttributes.GRAY_ATTRIBUTES)
-                }
+                presentation.addText(message("codewhisperer.explorer.root_node.login_type.aws_builder_id"), SimpleTextAttributes.GRAY_ATTRIBUTES)
             }
             else -> {}
         }
@@ -130,11 +130,4 @@ class CodeWhispererServiceNode(
     override fun actionGroupName(): String = "aws.toolkit.explorer.codewhisperer"
 
     override fun feature() = CodeWhispererConnection.getInstance()
-}
-
-/**
- * return true if CodeWhisperer is used in the background otherwise false
- */
-private fun isCodeWhispererUsingSecondaryConnection(project: Project) = with(ConnectionPinningManager.getInstance(project)) {
-    isFeaturePinned(CodeWhispererConnection.getInstance())
 }

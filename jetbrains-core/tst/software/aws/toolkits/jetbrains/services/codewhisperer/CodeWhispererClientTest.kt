@@ -127,7 +127,7 @@ class CodeWhispererClientTest {
 
     @Test
     fun `check createUploadUrl request header`() {
-        mockClient.createUploadUrl {}
+        mockClient.createCodeScanUploadUrl {}
         verify(
             postRequestedFor(urlEqualTo("/"))
                 .withHeader(CodeWhispererEndpointCustomizer.TOKEN_KEY_NAME, matching(CodeWhispererTestUtil.testValidAccessToken))

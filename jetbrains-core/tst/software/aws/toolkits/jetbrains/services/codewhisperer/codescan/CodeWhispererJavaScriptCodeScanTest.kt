@@ -17,6 +17,7 @@ import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureR
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
+import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
 class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
@@ -29,17 +30,15 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     private var totalSize: Long = 0
     private var totalLines: Long = 0
 
-    override fun setupCodeScanFindings(): String = defaultCodeScanFindings(testJs)
-
     @Before
     override fun setup() {
         super.setup()
         setupJavaScriptProject()
-        setupResponse()
         sessionConfigSpy = spy(CodeScanSessionConfig.create(testJs, project) as JavaScriptCodeScanSessionConfig)
+        setupResponse(testJs.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
-            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
             onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
@@ -51,6 +50,10 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
         assertThat(payload.context.totalFiles).isEqualTo(3)
+
+        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
+        assertThat(payload.context.scannedFiles).containsExactly(testJs, utilsJs, helperJs)
+
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Javascript)
         assertThat(payload.context.totalLines).isEqualTo(totalLines)
@@ -93,6 +96,7 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
     fun `test includeDependencies()`() {
         val payloadMetadata = sessionConfigSpy.includeDependencies()
         assertNotNull(payloadMetadata)
+        assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
         assertThat(payloadMetadata.sourceFiles.size).isEqualTo(3)
         assertThat(payloadMetadata.payloadSize).isEqualTo(totalSize)
         assertThat(payloadMetadata.linesScanned).isEqualTo(this.totalLines)
@@ -116,7 +120,12 @@ class CodeWhispererJavaScriptCodeScanTest : CodeWhispererCodeScanTestBase(Python
         }
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
+        assertThat(sessionConfigSpy.isProjectTruncated()).isTrue
         assertThat(payload.context.totalFiles).isEqualTo(2)
+
+        assertThat(payload.context.scannedFiles.size).isEqualTo(2)
+        assertThat(payload.context.scannedFiles).containsExactly(testJs, utilsJs)
+
         assertThat(payload.context.srcPayloadSize).isEqualTo(816)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Javascript)
         assertThat(payload.context.totalLines).isEqualTo(31)

@@ -1,7 +1,7 @@
 ## Using Amazon CodeWhisperer
 
 CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE.
-Supported languages include: **Java, Python, JavaScript, C# and TypeScript**.
+Supported languages include: **Java, Python, JavaScript, C#, TypeScript, C, C++, Go, Rust, PHP, Scala, Kotlin, Ruby, Shell and SQL**.
 
 ---
 

@@ -22,7 +22,6 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginDialog
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererTermsOfServiceDialog
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity
 import software.aws.toolkits.resources.message
@@ -49,14 +48,11 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
         val explorerActionManager = CodeWhispererExplorerActionManager.getInstance()
         val connectionManager = ToolkitConnectionManager.getInstance(project)
         connectionManager.activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
-            // Already have connection, show ToS if needed and that's it
-            showCodeWhispererToSIfNeeded(project)
             project.refreshDevToolTree()
         } ?: run {
             runInEdt {
                 // Start from scratch if no active connection
                 if (CodeWhispererLoginDialog(project).showAndGet()) {
-                    showCodeWhispererToSIfNeeded(project)
                     project.refreshDevToolTree()
                 }
             }
@@ -69,17 +65,6 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
             if (!explorerActionManager.hasShownHowToUseCodeWhisperer()) {
                 showHowToUseCodeWhispererPage(project)
             }
-        }
-    }
-
-    private fun showCodeWhispererToSIfNeeded(project: Project) {
-        val manager = CodeWhispererExplorerActionManager.getInstance()
-        if (manager.hasAcceptedTermsOfService()) return
-        if (CodeWhispererTermsOfServiceDialog(null).showAndGet()) {
-            manager.setHasAcceptedTermsOfService(true)
-            UiTelemetry.click(project, "cwToS_accept")
-        } else {
-            UiTelemetry.click(project, "cwToS_cancel")
         }
     }
 

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.TokenConnectionSettings
+import software.aws.toolkits.core.credentials.DEFAULT_SSO_REGION
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -22,7 +24,6 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.DEFAULT_SSO_REGION
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
@@ -85,12 +86,14 @@ interface ToolkitAuthManager {
     }
 }
 
-interface ToolkitConnectionManager {
+interface ToolkitConnectionManager : Disposable {
     fun activeConnection(): ToolkitConnection?
 
     fun activeConnectionForFeature(feature: FeatureWithPinnedConnection): ToolkitConnection?
 
     fun switchConnection(connection: ToolkitConnection?)
+
+    override fun dispose() {}
 
     companion object {
         fun getInstance(project: Project?) = project?.let { it.service<ToolkitConnectionManager>() } ?: service()
@@ -100,8 +103,8 @@ interface ToolkitConnectionManager {
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
-fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_SONO_SCOPES): BearerTokenProvider {
-    val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl)
+fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_REGION, scopes: List<String> = ALL_SONO_SCOPES): BearerTokenProvider {
+    val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
     val manager = ToolkitAuthManager.getInstance()
 
     return manager.getConnection(connectionId)?.let { connection ->
@@ -150,7 +153,7 @@ fun loginSso(project: Project?, startUrl: String, scopes: List<String> = ALL_SON
         // No existing connection, start from scratch
         val connection = manager.createConnection(
             ManagedSsoProfile(
-                DEFAULT_SSO_REGION,
+                region,
                 startUrl,
                 scopes
             )

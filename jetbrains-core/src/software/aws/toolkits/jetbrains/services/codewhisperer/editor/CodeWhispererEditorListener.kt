@@ -9,7 +9,7 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.psi.PsiDocumentManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererCodeCoverageTracker
@@ -25,7 +25,7 @@ class CodeWhispererEditorListener : EditorFactoryListener {
                 editor.document.addDocumentListener(
                     object : BulkAwareDocumentListener {
                         override fun documentChanged(event: DocumentEvent) {
-                            if (!CodeWhispererExplorerActionManager.getInstance().hasAcceptedTermsOfService()) return
+                            if (!isCodeWhispererEnabled(project)) return
                             CodeWhispererInvocationStatus.getInstance().documentChanged()
                             CodeWhispererCodeCoverageTracker.getInstance(language).apply {
                                 activateTrackerIfNotActive()

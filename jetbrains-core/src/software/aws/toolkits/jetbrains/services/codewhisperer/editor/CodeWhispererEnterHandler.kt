@@ -9,25 +9,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
-import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
-import software.aws.toolkits.telemetry.CodewhispererTriggerType
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 
-class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler) :
-    EnterHandler(originalHandler),
-    CodeWhispererAutoTriggerHandler {
+class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler) : EnterHandler(originalHandler) {
     override fun executeWriteAction(editor: Editor, caret: Caret?, dataContext: DataContext?) {
-        val latencyContext = LatencyContext()
-        latencyContext.codewhispererPreprocessingStart = System.nanoTime()
-        latencyContext.codewhispererEndToEndStart = System.nanoTime()
         originalHandler.execute(editor, caret, dataContext)
-        if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.AutoTrigger)) {
-            return
-        }
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            performAutomatedTriggerAction(editor, CodewhispererAutomatedTriggerType.Enter, latencyContext)
+            CodeWhispererAutoTriggerService.getInstance().tryInvokeAutoTrigger(editor, CodeWhispererAutomatedTriggerType.Enter)
         }
     }
 }

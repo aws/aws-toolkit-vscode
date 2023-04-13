@@ -8,8 +8,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
-import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
@@ -27,7 +27,7 @@ class CodeWhispererStateTest : CodeWhispererTestBase() {
             assertThat(actualProject).isEqualTo(projectRule.project)
             assertThat(actualEditor).isEqualTo(editor)
             assertThat(actualTriggerTypeInfo.triggerType).isEqualTo(CodewhispererTriggerType.OnDemand)
-            assertThat(actualTriggerTypeInfo.automatedTriggerType).isEqualTo(CodewhispererAutomatedTriggerType.Unknown)
+            assertThat(actualTriggerTypeInfo.automatedTriggerType).isEqualTo(CodeWhispererAutomatedTriggerType.Unknown)
             assertThat(actualFilename).isEqualTo(pythonFileName)
             assertThat(actualProgrammingLanguage.languageId).isEqualTo(CodewhispererLanguage.Python.toString())
 
@@ -63,11 +63,11 @@ class CodeWhispererStateTest : CodeWhispererTestBase() {
             val (actualDetailContexts, actualUserInput) = actualRecommendationContext
 
             assertThat(actualUserInput).isEqualTo("")
-            val expectedCount = pythonResponse.recommendations().size
+            val expectedCount = pythonResponse.completions().size
             assertThat(actualDetailContexts.size).isEqualTo(expectedCount)
             actualDetailContexts.forEachIndexed { i, actualDetailContext ->
                 val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext
-                assertThat(actualRecommendationDetail.content()).isEqualTo(pythonResponse.recommendations()[i].content())
+                assertThat(actualRecommendationDetail.content()).isEqualTo(pythonResponse.completions()[i].content())
                 assertThat(actualRequestId).isEqualTo(pythonResponse.responseMetadata().requestId())
                 assertThat(actualIsDiscarded).isEqualTo(false)
             }

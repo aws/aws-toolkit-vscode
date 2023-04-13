@@ -5,7 +5,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.lineMarkerProvider language="JavaScript" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
     </extensions>
-
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeGroup"/>
         <builder id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaBuilder"/>
@@ -21,5 +20,6 @@
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript"/>
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx"/>
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx"/>
+        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererJSImportAdder"/>
     </extensions>
 </idea-plugin>

@@ -16,11 +16,12 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.Payload
@@ -33,13 +34,14 @@ import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.io.FileInputStream
 import java.util.Base64
+import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
 class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
     private lateinit var psifile: PsiFile
     private lateinit var file: File
     private lateinit var sessionConfigSpy: PythonCodeScanSessionConfig
-    private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, 600, 200)
+    private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
     private lateinit var codeScanSessionSpy: CodeWhispererCodeScanSession
 
@@ -57,9 +59,10 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             """.trimMargin()
         )
         file = psifile.virtualFile.toNioPath().toFile()
-        setupResponse()
 
         sessionConfigSpy = spy(CodeScanSessionConfig.create(psifile.virtualFile, project) as PythonCodeScanSessionConfig)
+        setupResponse(psifile.virtualFile.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
+
         sessionConfigSpy.stub {
             onGeneric { sessionConfigSpy.createPayload() }.thenReturn(Payload(payloadContext, file))
         }
@@ -67,17 +70,15 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         // Mock CodeWhispererClient needs to be setup before initializing CodeWhispererCodeScanSession
         codeScanSessionContext = CodeScanSessionContext(project, sessionConfigSpy)
         codeScanSessionSpy = spy(CodeWhispererCodeScanSession(codeScanSessionContext))
-        doNothing().`when`(codeScanSessionSpy).uploadArtifactTOS3(any(), any(), any())
+        doNothing().`when`(codeScanSessionSpy).uploadArtifactToS3(any(), any(), any(), any(), isNull())
 
         mockClient.stub {
-            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
             onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
         }
     }
-
-    override fun setupCodeScanFindings(): String = defaultCodeScanFindings(psifile.virtualFile)
 
     @Test
     fun `test createUploadUrlAndUpload()`() {
@@ -91,7 +92,13 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
 
         val inOrder = inOrder(codeScanSessionSpy)
         inOrder.verify(codeScanSessionSpy).createUploadUrl(eq(fileMd5), eq("artifactType"))
-        inOrder.verify(codeScanSessionSpy).uploadArtifactTOS3(eq(fakeCreateUploadUrlResponse.uploadUrl()), eq(file), eq(fileMd5))
+        inOrder.verify(codeScanSessionSpy).uploadArtifactToS3(
+            eq(fakeCreateUploadUrlResponse.uploadUrl()),
+            eq(fakeCreateUploadUrlResponse.uploadId()),
+            eq(file),
+            eq(fileMd5),
+            eq(null)
+        )
     }
 
     @Test
@@ -99,7 +106,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         val response = codeScanSessionSpy.createUploadUrl("md5", "type")
 
         argumentCaptor<CreateUploadUrlRequest>().apply {
-            verify(mockClient).createUploadUrl(capture(), any())
+            verify(mockClient).createUploadUrl(capture())
             assertThat(response.uploadUrl()).isEqualTo(s3endpoint)
             assertThat(response.uploadId()).isEqualTo(UPLOAD_ID)
             assertThat(firstValue.contentMd5()).isEqualTo("md5")
@@ -109,7 +116,10 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
 
     @Test
     fun `test mapToCodeScanIssues`() {
-        val recommendations = listOf(defaultCodeScanFindings(psifile.virtualFile), getFakeRecommendationsOnNonExistentFile())
+        val recommendations = listOf(
+            fakeListCodeScanFindingsResponse.codeScanFindings(),
+            getFakeRecommendationsOnNonExistentFile()
+        )
         val res = codeScanSessionSpy.mapToCodeScanIssues(recommendations)
         assertThat(res).hasSize(2)
     }

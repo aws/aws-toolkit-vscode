@@ -11,15 +11,15 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.util.LocalTimeCounter
-import software.amazon.awssdk.services.codewhisperer.model.Recommendation
-import software.amazon.awssdk.services.codewhisperer.model.Reference
-import software.amazon.awssdk.services.codewhisperer.model.Span
+import software.amazon.awssdk.services.codewhispererruntime.model.Completion
+import software.amazon.awssdk.services.codewhispererruntime.model.Reference
+import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationChunk
 import kotlin.math.max
 
 class CodeWhispererRecommendationManager {
-    fun reformat(requestContext: RequestContext, recommendation: Recommendation): Recommendation {
+    fun reformat(requestContext: RequestContext, recommendation: Completion): Completion {
         val project = requestContext.project
         val editor = requestContext.editor
         val document = editor.document
@@ -50,10 +50,14 @@ class CodeWhispererRecommendationManager {
         }
         val rangeMarkers = mutableMapOf<RangeMarker, Reference>()
         recommendation.references().forEach {
+            val referenceStart = invocationStartOffset + it.recommendationContentSpan().start()
+            if (referenceStart >= endOffset) return@forEach
+            val tempEnd = invocationStartOffset + it.recommendationContentSpan().end()
+            val referenceEnd = if (tempEnd <= endOffset) tempEnd else endOffset
             rangeMarkers[
                 tempDocument.createRangeMarker(
-                    invocationStartOffset + it.recommendationContentSpan().start(),
-                    invocationStartOffset + it.recommendationContentSpan().end()
+                    referenceStart,
+                    referenceEnd
                 )
             ] = it
         }
@@ -69,7 +73,7 @@ class CodeWhispererRecommendationManager {
         val reformattedReferences = rangeMarkers.map { (rangeMarker, reference) ->
             reformatReference(reference, rangeMarker, invocationStartOffset)
         }
-        return Recommendation.builder()
+        return Completion.builder()
             .content(reformattedRecommendation)
             .references(reformattedReferences)
             .build()
@@ -110,50 +114,71 @@ class CodeWhispererRecommendationManager {
     fun buildDetailContext(
         requestContext: RequestContext,
         userInput: String,
-        recommendations: List<Recommendation>,
+        recommendations: List<Completion>,
         requestId: String,
     ): List<DetailContext> {
         val seen = mutableSetOf<String>()
         return recommendations.map {
             val isDiscardedByUserInput = !it.content().startsWith(userInput)
-            val truncated = truncateRecommendationUsingRightContext(requestContext, it)
+            if (isDiscardedByUserInput) {
+                return@map DetailContext(requestId, it, it, isDiscarded = true, isTruncatedOnRight = false, rightOverlap = "")
+            }
+
+            val overlap = findRightContextOverlap(requestContext, it)
+            val overlapIndex = it.content().lastIndexOf(overlap)
+            val truncatedContent =
+                if (overlap.isNotEmpty() && overlapIndex >= 0) {
+                    it.content().substring(0, overlapIndex)
+                } else {
+                    it.content()
+                }
+            val truncated = it.toBuilder()
+                .content(truncatedContent)
+                .build()
+            val isDiscardedByUserInputForTruncated = !truncated.content().startsWith(userInput)
+            if (isDiscardedByUserInputForTruncated) {
+                return@map DetailContext(requestId, it, truncated, isDiscarded = true, isTruncatedOnRight = true, rightOverlap = overlap)
+            }
+
             val reformatted = reformat(requestContext, truncated)
             val isDiscardedByRightContextTruncationDedupe = truncated.content().isEmpty() || !seen.add(reformatted.content())
             DetailContext(
                 requestId,
                 it,
                 reformatted,
-                isDiscardedByUserInput || isDiscardedByRightContextTruncationDedupe,
-                truncated.content().length != it.content().length
+                isDiscardedByRightContextTruncationDedupe,
+                truncated.content().length != it.content().length,
+                overlap
             )
         }
     }
 
-    private fun truncateRecommendationUsingRightContext(
+    private fun findRightContextOverlap(
         requestContext: RequestContext,
-        recommendation: Recommendation
-    ): Recommendation {
+        recommendation: Completion
+    ): String {
         val document = requestContext.editor.document
         val caret = requestContext.editor.caretModel.primaryCaret
         val rightContext = document.charsSequence.subSequence(caret.offset, document.charsSequence.length).toString()
         val recommendationContent = recommendation.content()
         val rightContextFirstLine = rightContext.substringBefore("\n")
         val overlap =
-            if (recommendationContent.none { it == '\n' }) {
-                overlap(recommendationContent, rightContextFirstLine)
-            } else if (rightContextFirstLine.isEmpty()) {
-                overlap(recommendationContent, rightContext)
-            } else {
+            if (rightContextFirstLine.isEmpty()) {
                 val tempOverlap = overlap(recommendationContent, rightContext)
+                if (tempOverlap.isEmpty()) overlap(recommendationContent.trimEnd(), rightContext.trimStart()) else tempOverlap
+            } else {
+                // this is necessary to prevent display issue if first line of right context is not empty
+                var tempOverlap = overlap(recommendationContent, rightContext)
+                if (tempOverlap.isEmpty()) {
+                    tempOverlap = overlap(recommendationContent.trimEnd(), rightContext.trimStart())
+                }
                 if (recommendationContent.substring(0, recommendationContent.length - tempOverlap.length).none { it == '\n' }) {
                     tempOverlap
                 } else {
                     ""
                 }
             }
-        return recommendation.toBuilder()
-            .content(recommendation.content().subSequence(0, recommendationContent.length - overlap.length).toString())
-            .build()
+        return overlap
     }
 
     fun overlap(first: String, second: String): String {

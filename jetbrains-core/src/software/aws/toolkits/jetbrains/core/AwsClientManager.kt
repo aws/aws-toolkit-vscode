@@ -40,6 +40,10 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
                 override fun providerRemoved(identifier: CredentialIdentifier) {
                     invalidateSdks(identifier.id)
                 }
+
+                override fun providerRemoved(providerId: String) {
+                    invalidateSdks(providerId)
+                }
             }
         )
     }

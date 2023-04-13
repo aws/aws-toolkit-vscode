@@ -9,108 +9,22 @@ import software.amazon.awssdk.services.codewhisperer.model.ArtifactType
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanFindingsSchema
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisFindingsSchema
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisStatus
-import software.amazon.awssdk.services.codewhispererruntime.model.Completion
-import software.amazon.awssdk.services.codewhispererruntime.model.CreateArtifactUploadUrlRequest
-import software.amazon.awssdk.services.codewhispererruntime.model.CreateArtifactUploadUrlResponse
-import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
-import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsResponse
-import software.amazon.awssdk.services.codewhispererruntime.model.Reference
-import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.metadata
-import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonRequest
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
-import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testNextToken
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
 
 class CodeWhispererSdkMapperUtilTest {
     // TODO: revisit these test cases since if we miss one field, they don't capture
-    @Test
-    fun `ListRecommendationsRequest`() {
-        val expected = pythonRequest
-        val actual = pythonRequest.transform()
-        assertThat(actual).isInstanceOf(GenerateCompletionsRequest::class.java)
-        assertThat(actual.fileContext())
-            .usingRecursiveComparison()
-            .isEqualTo(expected.fileContext())
-    }
-
-    @Test
-    fun `GenerateCompletionsResponse`() {
-        val expected = GenerateCompletionsResponse.builder()
-            .completions(
-                Completion.builder()
-                    .content("foo")
-                    .references(
-                        Reference.builder()
-                            .licenseName("license")
-                            .recommendationContentSpan(
-                                Span.builder()
-                                    .start(0)
-                                    .end(1)
-                                    .build()
-                            )
-                            .build()
-                    )
-                    .build()
-            )
-            .nextToken(testNextToken)
-            .responseMetadata(metadata)
-            .sdkHttpResponse(sdkHttpResponse)
-            .build() as GenerateCompletionsResponse
-
-        val actual = expected.transform()
-        assertThat(actual.nextToken())
-            .isNotNull
-            .isInstanceOf(String::class.java)
-            .isEqualTo(expected.nextToken())
-        assertThat(actual.recommendations())
-            .isNotNull
-            .usingRecursiveComparison()
-            .isEqualTo(expected.completions())
-    }
-
-    @Test
-    fun `CreateUploadUrlRequest`() {
-        val expected = software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest.builder()
-            .artifactType(ArtifactType.BUILT_JARS)
-            .contentMd5("md5")
-            .build()
-
-        val actual = expected.transform()
-        assertThat(actual)
-            .isNotNull
-            .isInstanceOf(CreateArtifactUploadUrlRequest::class.java)
-            .usingRecursiveComparison()
-            .isEqualTo(expected)
-    }
-
-    @Test
-    fun `CreateArtifactUploadUrlResponse`() {
-        val expected = CreateArtifactUploadUrlResponse.builder()
-            .uploadId("id")
-            .uploadUrl("url")
-            .responseMetadata(metadata)
-            .sdkHttpResponse(sdkHttpResponse)
-            .build() as CreateArtifactUploadUrlResponse
-
-        val actual = expected.transform()
-        assertThat(actual)
-            .isNotNull
-            .isInstanceOf(CreateUploadUrlResponse::class.java)
-            .usingRecursiveComparison()
-            .isEqualTo(expected)
-    }
 
     @Test
     fun `CreateCodeScanRequest`() {

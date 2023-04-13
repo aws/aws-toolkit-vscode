@@ -29,7 +29,7 @@ class CodeWhispererUserInputTest : CodeWhispererTestBase() {
             val actualRecommendations = states.recommendationContext.details.map {
                 it.recommendation.content()
             }
-            assertThat(actualRecommendations).isEqualTo(pythonResponse.recommendations().map { it.content() })
+            assertThat(actualRecommendations).isEqualTo(pythonResponse.completions().map { it.content() })
         }
     }
 
@@ -38,13 +38,13 @@ class CodeWhispererUserInputTest : CodeWhispererTestBase() {
         val userInput = "test"
         addUserInputAfterInvocation(userInput)
 
-        val expectedRecommendations = pythonResponse.recommendations().map { it.content() }
+        val expectedRecommendations = pythonResponse.completions().map { it.content() }
 
         withCodeWhispererServiceInvokedAndWait { states ->
             val actualRecommendations = states.recommendationContext.details.map { it.recommendation.content() }
             assertThat(actualRecommendations).isEqualTo(expectedRecommendations)
             states.recommendationContext.details.forEachIndexed { index, context ->
-                val expectedDiscarded = !pythonResponse.recommendations()[index].content().startsWith(userInput)
+                val expectedDiscarded = !pythonResponse.completions()[index].content().startsWith(userInput)
                 val actualDiscarded = context.isDiscarded
                 assertThat(actualDiscarded).isEqualTo(expectedDiscarded)
             }
@@ -63,7 +63,7 @@ class CodeWhispererUserInputTest : CodeWhispererTestBase() {
             assertThat(popupManagerSpy.sessionContext.typeahead).isEqualTo(typeahead)
             states.recommendationContext.details.forEachIndexed { index, actualContext ->
                 val actualDiscarded = actualContext.isDiscarded
-                val expectedDiscarded = !pythonResponse.recommendations()[index].content().startsWith(userInput + typeahead)
+                val expectedDiscarded = !pythonResponse.completions()[index].content().startsWith(userInput + typeahead)
                 assertThat(actualDiscarded).isEqualTo(expectedDiscarded)
             }
         }
@@ -93,7 +93,7 @@ class CodeWhispererUserInputTest : CodeWhispererTestBase() {
             assertThat(states.recommendationContext.userInputSinceInvocation).isEqualTo(userInput)
             states.recommendationContext.details.forEachIndexed { index, actualContext ->
                 val actualDiscarded = actualContext.isDiscarded
-                val expectedDiscarded = !pythonResponse.recommendations()[index].content().startsWith(userInput)
+                val expectedDiscarded = !pythonResponse.completions()[index].content().startsWith(userInput)
                 assertThat(actualDiscarded).isEqualTo(expectedDiscarded)
             }
         }

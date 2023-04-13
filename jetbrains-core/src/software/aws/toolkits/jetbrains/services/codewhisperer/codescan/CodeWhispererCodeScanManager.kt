@@ -22,6 +22,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.impl.FileDocumentManagerImpl
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -29,14 +30,19 @@ import com.intellij.refactoring.suggested.range
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import com.intellij.ui.treeStructure.Tree
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.withTimeout
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
+import software.amazon.awssdk.services.codewhispererruntime.model.ThrottlingException
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
@@ -51,9 +57,11 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanEditorMouseMotionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
@@ -65,6 +73,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Icon
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
+import kotlin.coroutines.CoroutineContext
 
 class CodeWhispererCodeScanManager(val project: Project) {
     private val codeScanResultsPanel by lazy {
@@ -94,12 +103,24 @@ class CodeWhispererCodeScanManager(val project: Project) {
 
     private val isCodeScanInProgress = AtomicBoolean(false)
 
+    private lateinit var codeScanJob: Job
+
     /**
      * Returns true if the code scan is in progress.
+     * This function will return true for a cancelled code scan job which is in cancellation state.
      */
-    private fun isCodeScanInProgress(): Boolean = isCodeScanInProgress.get()
+    fun isCodeScanInProgress(): Boolean = isCodeScanInProgress.get()
 
-    fun getActionButtonIcon(): Icon = if (isCodeScanInProgress()) AllIcons.Process.Step_1 else AllIcons.Actions.Execute
+    /**
+     * Code scan job is active when the [Job] is started and is in active state.
+     */
+    fun isCodeScanJobActive(): Boolean = this::codeScanJob.isInitialized && codeScanJob.isActive
+
+    fun getRunActionButtonIcon(): Icon = if (isCodeScanInProgress()) AllIcons.Process.Step_1 else AllIcons.Actions.Execute
+
+    fun getActionButtonIconForExplorerNode(): Icon = if (isCodeScanInProgress()) AllIcons.Actions.Suspend else AllIcons.Actions.Execute
+
+    fun getActionButtonText(): String = if (!isCodeScanInProgress()) message("codewhisperer.codescan.run_scan") else message("codewhisperer.codescan.stop_scan")
 
     /**
      * Triggers a code scan and displays results in the new tab in problems view panel.
@@ -116,8 +137,26 @@ class CodeWhispererCodeScanManager(val project: Project) {
         // Prepare for a code scan
         beforeCodeScan()
         // launch code scan coroutine
-        launchCodeScanCoroutine()
+        codeScanJob = launchCodeScanCoroutine()
     }
+
+    fun stopCodeScan() {
+        // Return if code scan job is not active.
+        if (!codeScanJob.isActive) return
+        if (isCodeScanInProgress() && confirmCancelCodeScan()) {
+            LOG.info { "Security scan stopped by user..." }
+            // Checking `codeScanJob.isActive` to ensure that the job is not already completed by the time user confirms.
+            if (codeScanJob.isActive) {
+                codeScanResultsPanel.setStoppingCodeScan()
+                codeScanJob.cancel(CancellationException("User requested cancellation"))
+            }
+        }
+    }
+
+    private fun confirmCancelCodeScan(): Boolean = MessageDialogBuilder
+        .okCancel(message("codewhisperer.codescan.stop_scan"), message("codewhisperer.codescan.stop_scan_confirm_message"))
+        .yesText(message("codewhisperer.codescan.stop_scan_confirm_button"))
+        .ask(project)
 
     private fun launchCodeScanCoroutine() = projectCoroutineScope(project).launch {
         var codeScanStatus: Result = Result.Failed
@@ -139,10 +178,19 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 when (codeScanResponse) {
                     is CodeScanResponse.Success -> {
                         val issues = codeScanResponse.issues
-                        renderResponseOnUIThread(issues)
+                        coroutineContext.ensureActive()
+                        renderResponseOnUIThread(
+                            issues,
+                            codeScanResponse.responseContext.payloadContext.scannedFiles,
+                            codeScanSessionConfig.isProjectTruncated()
+                        )
                         codeScanStatus = Result.Succeeded
                     }
+
                     is CodeScanResponse.Failure -> {
+                        if (codeScanResponse.failureReason !is TimeoutCancellationException && codeScanResponse.failureReason is CancellationException) {
+                            codeScanStatus = Result.Cancelled
+                        }
                         throw codeScanResponse.failureReason
                     }
                 }
@@ -153,7 +201,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             }
         } catch (e: Exception) {
             isCodeScanInProgress.set(false)
-            val errorMessage = handleException(e)
+            val errorMessage = handleException(coroutineContext, e)
             codeScanResponseContext = codeScanResponseContext.copy(reason = errorMessage)
         } finally {
             // After code scan
@@ -167,18 +215,32 @@ class CodeWhispererCodeScanManager(val project: Project) {
         }
     }
 
-    fun handleException(e: Exception): String {
+    fun handleException(coroutineContext: CoroutineContext, e: Exception): String {
         val errorMessage = when (e) {
             is CodeWhispererException -> e.awsErrorDetails().errorMessage() ?: message("codewhisperer.codescan.service_error")
             is CodeWhispererCodeScanException -> e.message
             is WaiterTimeoutException, is TimeoutCancellationException -> message("codewhisperer.codescan.scan_timed_out")
+            is CancellationException -> "Code scan job cancelled by user."
             else -> null
         } ?: message("codewhisperer.codescan.run_scan_error")
 
         val errorCode = (e as? CodeWhispererException)?.awsErrorDetails()?.errorCode()
         val requestId = if (e is CodeWhispererException) e.requestId() else null
 
-        codeScanResultsPanel.showError(errorMessage)
+        if (!coroutineContext.isActive) {
+            codeScanResultsPanel.setDefaultUI()
+        } else {
+            codeScanResultsPanel.showError(errorMessage)
+        }
+
+        if (
+            e is ThrottlingException &&
+            e.message == CodeWhispererConstants.THROTTLING_MESSAGE
+        ) {
+            CodeWhispererExplorerActionManager.getInstance().setSuspended(project)
+            CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit(project, isCodeScan = true)
+        }
+
         LOG.error {
             "Failed to run security scan and display results. Caused by: $errorMessage, status code: $errorCode, " +
                 "exception: ${e::class.simpleName}, request ID: $requestId " +
@@ -356,7 +418,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
         return codeScanTreeNodeRoot
     }
 
-    suspend fun renderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>) {
+    suspend fun renderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
         withContext(getCoroutineUiContext()) {
             val root = createCodeScanIssuesTree(issues)
             val codeScanTreeModel = CodeWhispererCodeScanTreeModel(root)
@@ -365,14 +427,14 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 codeScanIssuesContent.displayName =
                     message("codewhisperer.codescan.scan_display_with_issues", totalIssuesCount, INACTIVE_TEXT_COLOR)
             }
-            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel)
+            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel, scannedFiles, isProjectTruncated)
         }
     }
 
     @TestOnly
-    suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>) {
+    suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
         assert(ApplicationManager.getApplication().isUnitTestMode)
-        renderResponseOnUIThread(issues)
+        renderResponseOnUIThread(issues, scannedFiles, isProjectTruncated)
     }
 
     companion object {

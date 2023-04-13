@@ -53,7 +53,7 @@ class CodeWhispererCompletionIntegrationTest : CodeWhispererIntegrationTestBase(
         assertDoesNotThrow {
             invokeCodeWhispererService()
             verify(popupManager, never()).showPopup(any(), any(), any(), any(), any())
-            verify(clientAdaptor, never()).listRecommendationsPaginator(any(), any())
+            verify(clientAdaptor, never()).generateCompletionsPaginator(any())
             testMessageShown(message("codewhisperer.language.error", file.fileType.name))
         }
     }

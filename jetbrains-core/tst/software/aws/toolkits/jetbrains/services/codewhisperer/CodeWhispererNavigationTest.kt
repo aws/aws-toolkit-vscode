@@ -39,7 +39,7 @@ class CodeWhispererNavigationTest : CodeWhispererTestBase() {
 
             assertThat(popupManagerSpy.sessionContext.selectedIndex).isEqualTo(0)
 
-            val expectedCount = pythonResponse.recommendations().size
+            val expectedCount = pythonResponse.completions().size
             var expectedSelectedIndex: Int
             val navigationButton: JButton
             val oppositeButton: JButton

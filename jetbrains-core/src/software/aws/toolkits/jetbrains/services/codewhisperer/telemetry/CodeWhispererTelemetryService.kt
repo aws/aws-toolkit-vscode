@@ -4,28 +4,54 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import software.amazon.awssdk.services.codewhisperer.model.Recommendation
+import org.apache.commons.collections4.queue.CircularFifoQueue
+import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererLanguage
+import software.aws.toolkits.telemetry.CodewhispererPreviousSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
+import java.time.Duration
 import java.time.Instant
+import java.util.Queue
 
 class CodeWhispererTelemetryService {
+    // store previous 5 userTrigger decisions
+    private val previousUserTriggerDecisions = CircularFifoQueue<CodewhispererPreviousSuggestionState>(5)
+
+    private var previousUserTriggerDecisionTimestamp: Instant? = null
+
+    private val codewhispererTimeSinceLastUserDecision: Double?
+        get() {
+            return previousUserTriggerDecisionTimestamp?.let {
+                Duration.between(it, Instant.now()).toMillis().toDouble()
+            }
+        }
+
+    val previousUserTriggerDecision: CodewhispererPreviousSuggestionState?
+        get() = if (previousUserTriggerDecisions.isNotEmpty()) previousUserTriggerDecisions.last() else null
+
     companion object {
         fun getInstance(): CodeWhispererTelemetryService = service()
         val LOG = getLogger<CodeWhispererTelemetryService>()
@@ -61,7 +87,7 @@ class CodeWhispererTelemetryService {
         val startUrl = getConnectionStartUrl(requestContext.connection)
         CodewhispererTelemetry.serviceInvocation(
             project = project,
-            codewhispererAutomatedTriggerType = automatedTriggerType,
+            codewhispererAutomatedTriggerType = automatedTriggerType.telemetryType,
             codewhispererCompletionType = responseContext.completionType,
             codewhispererCursorOffset = offset,
             codewhispererLanguage = codewhispererLanguage,
@@ -73,7 +99,8 @@ class CodeWhispererTelemetryService {
             duration = latency,
             reason = exceptionType,
             success = invocationSuccess,
-            credentialStartUrl = startUrl
+            credentialStartUrl = startUrl,
+            codewhispererImportRecommendationEnabled = CodeWhispererSettings.getInstance().isImportAdderEnabled()
         )
     }
 
@@ -81,7 +108,7 @@ class CodeWhispererTelemetryService {
         requestId: String,
         requestContext: RequestContext,
         responseContext: ResponseContext,
-        detail: Recommendation,
+        detail: Completion,
         index: Int,
         suggestionState: CodewhispererSuggestionState,
         numOfRecommendations: Int
@@ -97,6 +124,7 @@ class CodeWhispererTelemetryService {
                 "Recommendation: ${detail.content()}"
         }
         val startUrl = getConnectionStartUrl(requestContext.connection)
+        val importEnabled = CodeWhispererSettings.getInstance().isImportAdderEnabled()
         CodewhispererTelemetry.userDecision(
             project = project,
             codewhispererCompletionType = responseContext.completionType,
@@ -107,9 +135,59 @@ class CodeWhispererTelemetryService {
             codewhispererSuggestionIndex = index,
             codewhispererSuggestionReferenceCount = detail.references().size,
             codewhispererSuggestionReferences = jacksonObjectMapper().writeValueAsString(detail.references().map { it.licenseName() }.toSet().toList()),
+            codewhispererSuggestionImportCount = if (importEnabled) detail.mostRelevantMissingImports().size else null,
             codewhispererSuggestionState = suggestionState,
             codewhispererTriggerType = triggerTypeInfo.triggerType,
             credentialStartUrl = startUrl
+        )
+    }
+
+    fun sendUserTriggerDecisionEvent(
+        requestContext: RequestContext,
+        responseContext: ResponseContext,
+        recommendationContext: RecommendationContext,
+        suggestionState: CodewhispererSuggestionState,
+        popupShownTime: Duration?
+    ) {
+        val totalImportCount = recommendationContext.details.fold(0) { grandTotal, detail ->
+            grandTotal + detail.recommendation.mostRelevantMissingImports().size
+        }
+
+        val automatedTriggerType = requestContext.triggerTypeInfo.automatedTriggerType
+        val triggerChar = if (automatedTriggerType is CodeWhispererAutomatedTriggerType.SpecialChar) {
+            automatedTriggerType.specialChar.toString()
+        } else null
+
+        val classifierResult = if (requestContext.fileContextInfo.programmingLanguage is CodeWhispererJava) {
+            CodeWhispererAutoTriggerService.getClassifierResultIfNeeded(requestContext.editor)
+        } else null
+
+        CodewhispererTelemetry.userTriggerDecision(
+            project = requestContext.project,
+            codewhispererSessionId = responseContext.sessionId,
+            codewhispererFirstRequestId = requestContext.latencyContext.firstRequestId,
+            credentialStartUrl = getConnectionStartUrl(requestContext.connection),
+            codewhispererIsPartialAcceptance = null,
+            codewhispererPartialAcceptanceCount = null,
+            codewhispererCharactersAccepted = null,
+            codewhispererCharactersRecommended = null,
+            codewhispererCompletionType = responseContext.completionType,
+            codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType(),
+            codewhispererTriggerType = requestContext.triggerTypeInfo.triggerType,
+            codewhispererAutomatedTriggerType = automatedTriggerType.telemetryType,
+            codewhispererLineNumber = requestContext.caretPosition.line,
+            codewhispererCursorOffset = requestContext.caretPosition.offset,
+            codewhispererSuggestionCount = recommendationContext.details.size,
+            codewhispererSuggestionImportCount = totalImportCount,
+            codewhispererTotalShownTime = popupShownTime?.toMillis()?.toDouble(),
+            codewhispererTriggerCharacter = triggerChar,
+            codewhispererTypeaheadLength = recommendationContext.userInputSinceInvocation.length,
+            codewhispererTimeSinceLastDocumentChange = CodeWhispererInvocationStatus.getInstance().getTimeSinceDocumentChanged(),
+            codewhispererTimeSinceLastUserDecision = codewhispererTimeSinceLastUserDecision,
+            codewhispererTimeToFirstRecommendation = requestContext.latencyContext.paginationFirstCompletionTime,
+            codewhispererPreviousSuggestionState = previousUserTriggerDecision,
+            codewhispererSuggestionState = suggestionState,
+            codewhispererClassifierResult = classifierResult
         )
     }
 
@@ -124,7 +202,6 @@ class CodeWhispererTelemetryService {
                 "Uncompressed source payload size in bytes: ${payloadContext.srcPayloadSize}, \n" +
                 "Uncompressed build payload size in bytes: ${payloadContext.buildPayloadSize}, \n" +
                 "Compressed source zip file size in bytes: ${payloadContext.srcZipFileSize}, \n" +
-                "Compressed build zip file size in bytes: ${payloadContext.buildZipFileSize}, \n" +
                 "Total project size in bytes: ${codeScanEvent.totalProjectSizeInBytes}, \n" +
                 "Total duration of the security scan job in milliseconds: ${codeScanEvent.duration}, \n" +
                 "Context truncation duration in milliseconds: ${payloadContext.totalTimeInMilliseconds}, \n" +
@@ -141,7 +218,6 @@ class CodeWhispererTelemetryService {
             codewhispererCodeScanSrcPayloadBytes = payloadContext.srcPayloadSize.toInt(),
             codewhispererCodeScanBuildPayloadBytes = payloadContext.buildPayloadSize?.toInt(),
             codewhispererCodeScanSrcZipFileBytes = payloadContext.srcZipFileSize.toInt(),
-            codewhispererCodeScanBuildZipFileBytes = payloadContext.buildZipFileSize?.toInt(),
             codewhispererCodeScanTotalIssues = totalIssues,
             codewhispererLanguage = payloadContext.language,
             duration = codeScanEvent.duration,
@@ -182,8 +258,11 @@ class CodeWhispererTelemetryService {
         recommendationContext: RecommendationContext,
         sessionContext: SessionContext,
         hasUserAccepted: Boolean,
+        popupShownTime: Duration? = null
     ) {
         val detailContexts = recommendationContext.details
+        val decisions = mutableListOf<CodewhispererSuggestionState>()
+
         detailContexts.forEachIndexed { index, detailContext ->
             val (requestId, detail, _, isDiscarded) = detailContext
             val suggestionState = recordSuggestionState(
@@ -195,7 +274,51 @@ class CodeWhispererTelemetryService {
                 detail.content().isEmpty()
             )
             sendUserDecisionEvent(requestId, requestContext, responseContext, detail, index, suggestionState, detailContexts.size)
+
+            decisions.add(suggestionState)
         }
+
+        with(aggregateUserDecision(decisions)) {
+            // the order of the following matters
+            // step 1, send out current decision
+            previousUserTriggerDecisionTimestamp = Instant.now()
+            sendUserTriggerDecisionEvent(
+                requestContext,
+                responseContext,
+                recommendationContext,
+                CodewhispererSuggestionState.from(this.toString()),
+                popupShownTime,
+            )
+
+            // step 2, put current decision into queue for later reference
+            previousUserTriggerDecisions.add(this)
+            // we need this as well because AutotriggerService will reset the queue periodically
+            CodeWhispererAutoTriggerService.getInstance().addPreviousDecision(this)
+        }
+    }
+
+    /**
+     * Aggregate recommendation level user decision to trigger level user decision based on the following rule
+     * - Accept if there is an Accept
+     * - Reject if there is a Reject
+     * - Empty if all decisions are Empty
+     * - Discard otherwise
+     */
+    fun aggregateUserDecision(decisions: List<CodewhispererSuggestionState>): CodewhispererPreviousSuggestionState {
+        var isEmpty = true
+
+        for (decision in decisions) {
+            if (decision == CodewhispererSuggestionState.Accept) {
+                return CodewhispererPreviousSuggestionState.Accept
+            } else if (decision == CodewhispererSuggestionState.Reject) {
+                return CodewhispererPreviousSuggestionState.Reject
+            } else if (decision != CodewhispererSuggestionState.Empty) {
+                isEmpty = false
+            }
+        }
+
+        return if (isEmpty) CodewhispererPreviousSuggestionState.Empty
+        else CodewhispererPreviousSuggestionState.Discard
     }
 
     fun sendPerceivedLatencyEvent(
@@ -219,6 +342,7 @@ class CodeWhispererTelemetryService {
             credentialStartUrl = startUrl
         )
     }
+
     fun sendClientComponentLatencyEvent(states: InvocationContext) {
         val requestContext = states.requestContext
         val responseContext = states.responseContext
@@ -241,7 +365,7 @@ class CodeWhispererTelemetryService {
         )
     }
 
-    private fun recordSuggestionState(
+    fun recordSuggestionState(
         index: Int,
         selectedIndex: Int,
         hasSeen: Boolean,
@@ -264,6 +388,12 @@ class CodeWhispererTelemetryService {
         } else {
             CodewhispererSuggestionState.Reject
         }
+
+    @TestOnly
+    fun previousDecisions(): Queue<CodewhispererPreviousSuggestionState> {
+        assert(ApplicationManager.getApplication().isUnitTestMode)
+        return this.previousUserTriggerDecisions
+    }
 }
 
 fun isTelemetryEnabled(): Boolean = AwsSettings.getInstance().isTelemetryEnabled

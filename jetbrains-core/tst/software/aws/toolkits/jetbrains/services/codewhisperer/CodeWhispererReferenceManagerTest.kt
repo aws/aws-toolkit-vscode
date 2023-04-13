@@ -11,9 +11,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.codewhisperer.model.Recommendation
-import software.amazon.awssdk.services.codewhisperer.model.Reference
-import software.amazon.awssdk.services.codewhisperer.model.Span
+import software.amazon.awssdk.services.codewhispererruntime.model.Completion
+import software.amazon.awssdk.services.codewhispererruntime.model.Reference
+import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -37,7 +37,7 @@ class CodeWhispererReferenceManagerTest {
         )
         .build()
 
-    private val recommendation = Recommendation.builder()
+    private val recommendation = Completion.builder()
         .references(originalReference)
         .content("test\nreference")
         .build()

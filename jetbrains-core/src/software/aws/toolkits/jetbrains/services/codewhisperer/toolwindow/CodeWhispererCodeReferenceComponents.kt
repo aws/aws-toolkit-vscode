@@ -8,7 +8,7 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.ActionLink
-import software.amazon.awssdk.services.codewhisperer.model.Reference
+import software.amazon.awssdk.services.codewhispererruntime.model.Reference
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType

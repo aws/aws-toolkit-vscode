@@ -52,8 +52,11 @@ class CodeWhispererPopupComponents {
     val acceptButton = createNavigationButton(
         message("codewhisperer.popup.button.accept", POPUP_DIM_HEX)
     )
-    val buttonsPanel = JPanel(GridBagLayout()).apply {
-        border = BorderFactory.createEmptyBorder(5, 4, 5, 4)
+    val buttonsPanel = CodeWhispererPopupInfoPanel {
+        border = BorderFactory.createCompoundBorder(
+            border,
+            BorderFactory.createEmptyBorder(3, 0, 3, 0)
+        )
         add(acceptButton, navigationButtonConstraints)
         add(prevButton, middleButtonConstraints)
         add(nextButton, navigationButtonConstraints)
@@ -77,15 +80,20 @@ class CodeWhispererPopupComponents {
         ActionPlaces.EDITOR_POPUP,
         ActionToolbar.NAVBAR_MINIMUM_BUTTON_SIZE
     )
-    private val recommendationInfoPanel = JPanel(GridBagLayout()).apply {
-        border = BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 1, 0, POPUP_PANEL_SEPARATOR),
-            BorderFactory.createEmptyBorder(2, 6, 2, 5)
-        )
+    private val recommendationInfoPanel = CodeWhispererPopupInfoPanel {
         add(recommendationInfoLabel, inlineLabelConstraints)
         addHorizontalGlue()
         add(kebabMenu, kebabMenuConstraints)
     }
+    val importLabel = JLabel().apply {
+        font = font.deriveFont(POPUP_INFO_TEXT_SIZE)
+    }
+
+    val importPanel = CodeWhispererPopupInfoPanel {
+        add(importLabel, inlineLabelConstraints)
+        addHorizontalGlue()
+    }
+
     val licenseCodeLabelPrefixText = JLabel().apply {
         text = message("codewhisperer.popup.reference.license_info.prefix", POPUP_REF_NOTICE_HEX)
         foreground = POPUP_REF_INFO
@@ -104,13 +112,13 @@ class CodeWhispererPopupComponents {
         BrowserUtil.browse(CodeWhispererLicenseInfoManager.getInstance().getLicenseLink(license))
     }
 
-    val codeReferencePanel = JPanel(GridBagLayout()).apply {
-        border = BorderFactory.createEmptyBorder(2, 6, 2, 5)
+    val codeReferencePanel = CodeWhispererPopupInfoPanel {
         add(licenseCodePanel, horizontalPanelConstraints)
     }
     val panel = JPanel(GridBagLayout()).apply {
         add(buttonsPanel, horizontalPanelConstraints)
         add(recommendationInfoPanel, horizontalPanelConstraints)
+        add(importPanel, horizontalPanelConstraints)
         add(codeReferencePanel, horizontalPanelConstraints)
     }
 
@@ -134,5 +142,15 @@ class CodeWhispererPopupComponents {
                 foreground = UIUtil.getLabelForeground()
             }
         })
+    }
+
+    class CodeWhispererPopupInfoPanel(function: CodeWhispererPopupInfoPanel.() -> Unit) : JPanel(GridBagLayout()) {
+        init {
+            border = BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, POPUP_PANEL_SEPARATOR),
+                BorderFactory.createEmptyBorder(2, 5, 2, 5)
+            )
+            function()
+        }
     }
 }

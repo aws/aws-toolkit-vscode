@@ -12,11 +12,13 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdderListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager.Companion.CODEWHISPERER_USER_ACTION_PERFORMED
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
 import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyWarnAccountless
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Timer
@@ -38,10 +40,11 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         if (!isCodeWhispererEnabled(project)) return
         if (runOnce) return
 
-        promptReAuth(project)
+        CodeWhispererAutoTriggerService.getInstance().determineUserGroupIfNeeded()
 
         // install intellsense autotrigger listener, this only need to be executed 1 time
-        project.messageBus.connect().subscribe(LookupManagerListener.TOPIC, CodeWhispererIntlliSenseAutoTriggerListener)
+        project.messageBus.connect().subscribe(LookupManagerListener.TOPIC, CodeWhispererIntelliSenseAutoTriggerListener)
+        project.messageBus.connect().subscribe(CODEWHISPERER_USER_ACTION_PERFORMED, CodeWhispererImportAdderListener)
 
         // show notification to accountless users
         showAccountlessNotificationIfNeeded(project)

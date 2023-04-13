@@ -82,7 +82,7 @@ class InteractiveBearerTokenProvider(
     scopes: List<String>,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
-    override val id = ToolkitBearerTokenProvider.ssoIdentifier(startUrl)
+    override val id = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
     override val displayName = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)
@@ -206,7 +206,6 @@ class ProfileSdkTokenProviderWrapper(private val sessionName: String, region: St
     }
 }
 
-internal const val DEFAULT_SSO_REGION = "us-east-1"
 internal val DEFAULT_STALE_DURATION = Duration.ofMinutes(15)
 internal val DEFAULT_PREFETCH_DURATION = Duration.ofMinutes(20)
 

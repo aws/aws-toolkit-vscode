@@ -73,7 +73,7 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     @Test
     fun `CodeWhispererWhatIsAction update should be enabled and visible when terms of service have been accepted`() {
         val action = CodeWhispererWhatIsAction()
-        CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(true)
+        mockCodeWhispererEnabledStatus(true)
         action.update(event)
         assertThat(event.presentation.isEnabledAndVisible).isTrue
     }
@@ -81,7 +81,7 @@ class CodeWhispererActionTest : CodeWhispererTestBase() {
     @Test
     fun `CodeWhispererWhatIsAction update should be disabled and invisible when terms of service have not been accepted`() {
         val action = CodeWhispererWhatIsAction()
-        CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(false)
+        mockCodeWhispererEnabledStatus(false)
         action.update(event)
         assertThat(event.presentation.isEnabledAndVisible).isFalse
     }

@@ -72,7 +72,8 @@ class DiskCache(
     }
 
     override fun loadClientRegistration(cacheKey: ClientRegistrationCacheKey): ClientRegistration? {
-        val inputStream = clientRegistrationCache(cacheKey).inputStreamIfExists() ?: return null
+        val inputStream = clientRegistrationCache(cacheKey).inputStreamIfExists()
+            ?: clientRegistrationCacheBackwardCompatible(cacheKey).inputStreamIfExists() ?: return null
         return loadClientRegistration(inputStream)
     }
 
@@ -84,7 +85,8 @@ class DiskCache(
     }
 
     override fun invalidateClientRegistration(cacheKey: ClientRegistrationCacheKey) {
-        clientRegistrationCache(cacheKey).deleteIfExists()
+        if (clientRegistrationCache(cacheKey).deleteIfExists()) return
+        clientRegistrationCacheBackwardCompatible(cacheKey).deleteIfExists()
     }
 
     override fun loadAccessToken(ssoUrl: String): AccessToken? {
@@ -132,6 +134,19 @@ class DiskCache(
         }.let {
             val sha = sha1(cacheNameMapper.writeValueAsString(it))
 
+            cacheDir.resolve("$sha.json")
+        }
+
+    // Can be removed when 2022.3 is no longer supported
+    private fun clientRegistrationCacheBackwardCompatible(cacheKey: ClientRegistrationCacheKey): Path =
+        cacheNameMapper.valueToTree<ObjectNode>(cacheKey).apply {
+            // session is omitted to keep the key deterministic since we attach an epoch
+            put("tool", "aws-toolkit-jetbrains")
+
+            // remove the region field to generate a key for the old key schema
+            remove("region")
+        }.let {
+            val sha = sha1(cacheNameMapper.writeValueAsString(it))
             cacheDir.resolve("$sha.json")
         }
 

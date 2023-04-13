@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenPr
 @State(name = "connectionManager", storages = [Storage("aws.xml")])
 class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStateComponent<ToolkitConnectionManagerState> {
     init {
-        ApplicationManager.getApplication().messageBus.connect().subscribe(
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
                 override fun invalidate(providerId: String) {
@@ -85,7 +85,14 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
 
     override fun loadState(state: ToolkitConnectionManagerState) {
         state.activeConnectionId?.let {
-            connection = ToolkitAuthManager.getInstance().getConnection(it)
+            val idSegments = it.split(";")
+            val activeConnectionIdWithRegion =
+                if (idSegments.size == 2) {
+                    "${idSegments[0]};us-east-1;${idSegments[1]}"
+                } else {
+                    it
+                }
+            connection = ToolkitAuthManager.getInstance().getConnection(activeConnectionIdWithRegion)
         }
     }
 

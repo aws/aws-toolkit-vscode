@@ -34,8 +34,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.http.SdkHttpResponse
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
@@ -43,12 +43,13 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.listOfEmptyRecommendationResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.listOfMixedEmptyAndNonEmptyRecommendationResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
-import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponseWithToken
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponseWithNonEmptyToken
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testCodeWhispererException
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testRequestId
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testRequestIdForCodeWhispererException
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.testSessionId
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.PauseCodeWhispererNode
@@ -154,9 +155,10 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         withCodeWhispererServiceInvokedAndWait {
             popupManagerSpy.popupComponents.acceptButton.doClick()
-            trackerSpy.dispose()
         }
-        val count = pythonResponse.recommendations().size
+
+        trackerSpy.dispose()
+        val count = pythonResponse.completions().size
         argumentCaptor<MetricEvent>().apply {
             // 1 serviceInvocation + 1 userModification + 1 userDecision for accepted +
             // (count - 1) userDecisions for ignored
@@ -188,7 +190,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         withCodeWhispererServiceInvokedAndWait { states ->
             popupManagerSpy.cancelPopup(states.popup)
 
-            val count = pythonResponse.recommendations().size
+            val count = pythonResponse.completions().size
             argumentCaptor<MetricEvent>().apply {
                 verify(batcher, atLeast(1 + count)).enqueue(capture())
                 assertEventsContainsFieldsAndCount(
@@ -242,7 +244,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         invokeCodeWhispererService()
 
-        val count = pythonResponse.recommendations().size
+        val count = pythonResponse.completions().size
         runInEdtAndWait {
             argumentCaptor<MetricEvent>().apply {
                 verify(batcher, atLeast(1 + count)).enqueue(capture())
@@ -281,7 +283,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         ApplicationManager.getApplication().replaceService(CodeWhispererEditorManager::class.java, editorManagerSpy, disposableRule.disposable)
 
         withCodeWhispererServiceInvokedAndWait { }
-        val prefixNotMatchCount = pythonResponse.recommendations().filter {
+        val prefixNotMatchCount = pythonResponse.completions().filter {
             !it.content().startsWith(typeahead)
         }.size
         argumentCaptor<MetricEvent>().apply {
@@ -305,7 +307,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test getting non-CodeWhisperer Exception will return empty request id`() {
         mockClient.stub {
             on {
-                this.listRecommendations(any<ListRecommendationsRequest>())
+                this.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 throw Exception("wrong path")
             }
@@ -329,7 +331,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test getting CodeWhispererException will capture request id`() {
         mockClient.stub {
             on {
-                this.listRecommendations(any<ListRecommendationsRequest>())
+                this.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 throw testCodeWhispererException
             }
@@ -354,7 +356,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         withCodeWhispererServiceInvokedAndWait {}
         argumentCaptor<MetricEvent>().apply {
             verify(batcher, atLeastOnce()).enqueue(capture())
-            pythonResponse.recommendations().forEach {
+            pythonResponse.completions().forEach {
                 assertEventsContainsFieldsAndCount(
                     allValues,
                     userDecision,
@@ -425,7 +427,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             assertEventsContainsFieldsAndCount(
                 metricCaptor.allValues,
                 userDecision,
-                pythonResponse.recommendations().size,
+                pythonResponse.completions().size,
                 codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString(),
             )
         }
@@ -434,7 +436,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     @Test
     fun `test codePercentage tracker will not be activated if CWSPR terms of service is not accepted`() {
         val exploreManagerMock = mock<CodeWhispererExplorerActionManager> {
-            on { hasAcceptedTermsOfService() } doReturn false
+            on { checkActiveCodeWhispererConnectionType(projectRule.project) } doReturn CodeWhispererLoginType.Logout
         }
         ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreManagerMock, disposableRule.disposable)
         val project = projectRule.project
@@ -485,6 +487,9 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         val deletedTokenByUser = 4
         withCodeWhispererServiceInvokedAndWait {
             popupManagerSpy.popupComponents.acceptButton.doClick()
+        }
+
+        runInEdtAndWait {
             val offset = fixture.caretOffset
             WriteCommandAction.runWriteCommandAction(project) {
                 fixture.editor.document.deleteString(offset - deletedTokenByUser, offset)
@@ -494,8 +499,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
 
-        val acceptedTokensSize = pythonResponse.recommendations()[0].content().length - deletedTokenByUser
-        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.recommendations()[0].content().length - deletedTokenByUser
+        val acceptedTokensSize = pythonResponse.completions()[0].content().length - deletedTokenByUser
+        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length - deletedTokenByUser
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -527,6 +532,9 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         val anotherCodeSnippet = "\ndef functionWritenByMyself():\n\tpass()"
         withCodeWhispererServiceInvokedAndWait {
             popupManagerSpy.popupComponents.acceptButton.doClick()
+        }
+
+        runInEdtAndWait {
             WriteCommandAction.runWriteCommandAction(project) {
                 fixture.editor.appendString(anotherCodeSnippet)
                 val currentOffset = fixture.editor.caretModel.offset
@@ -537,8 +545,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
         }
 
-        val acceptedTokensSize = pythonResponse.recommendations()[0].content().length
-        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.recommendations()[0].content().length + anotherCodeSnippet.length - 1
+        val acceptedTokensSize = pythonResponse.completions()[0].content().length
+        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length + anotherCodeSnippet.length - 1
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -588,8 +596,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             metricCaptor.allValues,
             codePercentage,
             1,
-            "codewhispererAcceptedTokens" to pythonResponse.recommendations()[0].content().length.toString(),
-            "codewhispererTotalTokens" to pythonResponse.recommendations()[0].content().length.toString(),
+            "codewhispererAcceptedTokens" to pythonResponse.completions()[0].content().length.toString(),
+            "codewhispererTotalTokens" to pythonResponse.completions()[0].content().length.toString(),
             "codewhispererPercentage" to "100"
         )
     }
@@ -601,16 +609,16 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         val emptyFile = fixture.addFileToProject("/anotherFile.py", "")
         // simulate users typing behavior of the following
         // def addTwoNumbers(
-        whenever(mockClient.listRecommendations(any<ListRecommendationsRequest>())).thenReturn(
-            ListRecommendationsResponse.builder()
-                .recommendations(
-                    CodeWhispererTestUtil.generateMockRecommendationDetail("x, y):\n    return x + y"),
-                    CodeWhispererTestUtil.generateMockRecommendationDetail("a, b):\n    return a + b"),
+        whenever(mockClient.generateCompletions(any<GenerateCompletionsRequest>())).thenReturn(
+            GenerateCompletionsResponse.builder()
+                .completions(
+                    CodeWhispererTestUtil.generateMockCompletionDetail("x, y):\n    return x + y"),
+                    CodeWhispererTestUtil.generateMockCompletionDetail("a, b):\n    return a + b"),
                 )
                 .nextToken("")
                 .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
                 .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
-                .build() as ListRecommendationsResponse
+                .build() as GenerateCompletionsResponse
         )
 
         runInEdtAndWait {
@@ -645,7 +653,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test empty list of recommendations should sent 1 empty userDecision event and no popup shown`() {
         mockClient.stub {
             on {
-                mockClient.listRecommendations(any<ListRecommendationsRequest>())
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 emptyListResponse
             }
@@ -669,8 +677,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     fun `test getting some recommendations and a final empty list of recommendations at session end should not sent empty userDecision events`() {
         mockClient.stub {
             on {
-                mockClient.listRecommendations(any<ListRecommendationsRequest>())
-            } doReturnConsecutively(listOf(pythonResponseWithToken, emptyListResponse))
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
+            } doReturnConsecutively(listOf(pythonResponseWithNonEmptyToken, emptyListResponse))
         }
 
         withCodeWhispererServiceInvokedAndWait { }
@@ -678,7 +686,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         runInEdtAndWait {
             val metricCaptor = argumentCaptor<MetricEvent>()
             // 2 serviceInvocation + 5 userDecision
-            verify(batcher, atLeast(pythonResponseWithToken.recommendations().size + 2)).enqueue(metricCaptor.capture())
+            verify(batcher, atLeast(pythonResponseWithNonEmptyToken.completions().size + 2)).enqueue(metricCaptor.capture())
             assertEventsContainsFieldsAndCount(
                 metricCaptor.allValues,
                 userDecision,
@@ -739,10 +747,10 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         )
     }
 
-    private fun testSendEmptyUserDecisionEventForEmptyRecommendations(response: ListRecommendationsResponse) {
+    private fun testSendEmptyUserDecisionEventForEmptyRecommendations(response: GenerateCompletionsResponse) {
         mockClient.stub {
             on {
-                mockClient.listRecommendations(any<ListRecommendationsRequest>())
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 response
             }
@@ -750,8 +758,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
         invokeCodeWhispererService()
 
-        val numOfEmptyRecommendations = response.recommendations().filter { it.content().isEmpty() }.size
-        if (numOfEmptyRecommendations == response.recommendations().size) {
+        val numOfEmptyRecommendations = response.completions().filter { it.content().isEmpty() }.size
+        if (numOfEmptyRecommendations == response.completions().size) {
             verify(popupManagerSpy, never()).showPopup(any(), any(), any(), any(), any())
         } else {
             val popupCaptor = argumentCaptor<JBPopup>()
@@ -789,11 +797,12 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     }
 
     companion object {
+        // TODO: move this to util and tweak it to show what telemetry field not matching assertions
         fun assertEventsContainsFieldsAndCount(
             events: Collection<MetricEvent>,
             name: String,
             count: Int,
-            vararg keyValues: Pair<String, String>,
+            vararg keyValues: Pair<String, Any?>,
             atLeast: Boolean = false
         ) {
             assertThat(events).filteredOn { event ->
@@ -809,10 +818,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             }
         }
 
-        private fun isThisMapContains(map: Map<String, String>, vararg keyValues: Pair<String, String>): Boolean {
-            keyValues.forEach {
-                val flag = (map.containsKey(it.first) && map[it.first] == it.second)
-                if (!flag) return false
+        private fun isThisMapContains(map: Map<String, String>, vararg keyValues: Pair<String, Any?>): Boolean {
+            keyValues.forEach { pair ->
+                val fieldName = pair.first
+                val expectedValue = pair.second
+                expectedValue?.let {
+                    if (it.toString() != map[fieldName]) {
+                        return false
+                    }
+                }
             }
             return true
         }

@@ -34,6 +34,7 @@ import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
+import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
 class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCodeInsightTestFixtureRule()) {
@@ -49,23 +50,25 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     override fun setup() {
         super.setup()
         setupJavaProject()
-        setupResponse()
         sessionConfigSpy = spy(CodeScanSessionConfig.create(utilsJava, project) as JavaCodeScanSessionConfig)
+        setupResponse(utilsJava.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         mockClient.stub {
-            onGeneric { createUploadUrl(any(), any()) }.thenReturn(fakeCreateUploadUrlResponse)
+            onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
             onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
         }
     }
 
-    override fun setupCodeScanFindings(): String = defaultCodeScanFindings(utilsJava)
-
     @Test
     fun `test createPayload`() {
         val payload = sessionConfigSpy.createPayload()
         assertThat(payload.context.totalFiles).isEqualTo(3)
+
+        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
+        assertThat(payload.context.scannedFiles).containsExactly(utilsJava, test1Java, test2Java)
+
         assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Java)
         assertThat(payload.context.totalLines).isEqualTo(totalLines)
@@ -77,15 +80,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         while (zis.nextEntry != null) {
             filesInZip += 1
         }
-        assertThat(filesInZip).isEqualTo(3)
-        filesInZip = 0
-        val buildZip = payload.buildZip
-        assertNotNull(buildZip)
-        val buildZis = ZipInputStream(BufferedInputStream(buildZip.inputStream()))
-        while (buildZis.nextEntry != null) {
-            filesInZip += 1
-        }
-        assertThat(filesInZip).isEqualTo(3)
+        assertThat(filesInZip).isEqualTo(6)
     }
 
     @Test
@@ -106,6 +101,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
     fun `test includeDependencies()`() {
         val payloadMetadata = sessionConfigSpy.includeDependencies()
         assertNotNull(payloadMetadata)
+        assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
         val (includedSourceFiles, srcPayloadSize, totalLines, buildPaths) = payloadMetadata
         assertThat(includedSourceFiles).hasSize(3)
         assertThat(srcPayloadSize).isEqualTo(totalSize)
@@ -137,7 +133,12 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         }
         val payload = sessionConfigSpy.createPayload()
         assertNotNull(payload)
+        assertThat(sessionConfigSpy.isProjectTruncated()).isTrue
         assertThat(payload.context.totalFiles).isEqualTo(2)
+
+        assertThat(payload.context.scannedFiles.size).isEqualTo(2)
+        assertThat(payload.context.scannedFiles).containsExactly(utilsJava, test2Java)
+
         assertThat(payload.context.srcPayloadSize).isEqualTo(612)
         assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Java)
         assertThat(payload.context.totalLines).isEqualTo(30)
@@ -149,16 +150,7 @@ class CodeWhispererJavaCodeScanTest : CodeWhispererCodeScanTestBase(HeavyJavaCod
         while (zis.nextEntry != null) {
             filesInZip += 1
         }
-        assertThat(filesInZip).isEqualTo(2)
-
-        filesInZip = 0
-        val buildZip = payload.buildZip
-        assertNotNull(buildZip)
-        val buildZis = ZipInputStream(BufferedInputStream(buildZip.inputStream()))
-        while (buildZis.nextEntry != null) {
-            filesInZip += 1
-        }
-        assertThat(filesInZip).isEqualTo(2)
+        assertThat(filesInZip).isEqualTo(4)
     }
 
     @Test

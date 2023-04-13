@@ -12,6 +12,7 @@ import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.core.interceptor.Context
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor
+import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClientBuilder
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClientBuilder
@@ -37,6 +38,7 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
             builder
                 .endpointOverride(URI.create(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT))
                 .region(CodeWhispererConstants.Config.BearerClientRegion)
+            clientOverrideConfiguration.retryPolicy(RetryPolicy.none())
             clientOverrideConfiguration.addExecutionInterceptor(
                 object : ExecutionInterceptor {
                     override fun modifyHttpRequest(context: Context.ModifyHttpRequest, executionAttributes: ExecutionAttributes): SdkHttpRequest {

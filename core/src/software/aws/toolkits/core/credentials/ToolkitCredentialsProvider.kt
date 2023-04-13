@@ -117,7 +117,7 @@ interface ToolkitBearerTokenProviderDelegate : SdkTokenProvider, ToolkitAuthenti
 class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegate) : SdkTokenProvider by delegate, ToolkitAuthenticationProvider by delegate {
     companion object {
         // TODO: is there a better place for this
-        fun ssoIdentifier(startUrl: String) = "sso;$startUrl"
+        fun ssoIdentifier(startUrl: String, region: String = DEFAULT_SSO_REGION) = "sso;$region;$startUrl"
 
         // TODO: For AWS Builder ID, we only have startUrl for now instead of each users' metadata data i.e. Email address
         fun ssoDisplayName(startUrl: String) = if (startUrl == SONO_URL) {
@@ -132,5 +132,7 @@ class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegat
 }
 
 private const val SONO_URL = "https://view.awsapps.com/start"
+
+const val DEFAULT_SSO_REGION = "us-east-1"
 
 private fun extractOrgID(startUrl: String) = startUrl.removePrefix("https://").removeSuffix(".awsapps.com/start")

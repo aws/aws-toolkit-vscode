@@ -22,6 +22,14 @@ class CodeWhispererSettings : PersistentStateComponent<CodeWhispererConfiguratio
         CodeWhispererConfigurationType.IsIncludeCodeWithReference, false
     )
 
+    fun toggleImportAdder(value: Boolean) {
+        state.value[CodeWhispererConfigurationType.IsImportAdderEnabled] = value
+    }
+
+    fun isImportAdderEnabled() = state.value.getOrDefault(
+        CodeWhispererConfigurationType.IsImportAdderEnabled, true
+    )
+
     fun toggleMetricOptIn(value: Boolean) {
         state.value[CodeWhispererConfigurationType.OptInSendingMetric] = value
     }
@@ -49,5 +57,6 @@ class CodeWhispererConfiguration : BaseState() {
 
 enum class CodeWhispererConfigurationType {
     IsIncludeCodeWithReference,
-    OptInSendingMetric
+    OptInSendingMetric,
+    IsImportAdderEnabled
 }

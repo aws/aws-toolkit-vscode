@@ -41,7 +41,8 @@ class SsoAccessTokenProvider(
     private val clientRegistrationCacheKey by lazy {
         ClientRegistrationCacheKey(
             startUrl = ssoUrl,
-            scopes = scopes
+            scopes = scopes,
+            region = ssoRegion
         )
     }
     internal val accessTokenCacheKey by lazy {

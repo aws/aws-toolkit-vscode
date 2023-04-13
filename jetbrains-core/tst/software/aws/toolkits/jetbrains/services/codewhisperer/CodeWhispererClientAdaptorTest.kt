@@ -26,30 +26,25 @@ import software.amazon.awssdk.services.codewhisperer.model.ArtifactType
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanFindingsSchema
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlRequest
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanUploadUrlRequest
+import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanUploadUrlResponse
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ProgrammingLanguage
-import software.amazon.awssdk.services.codewhisperer.paginators.ListRecommendationsIterable
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisStatus
-import software.amazon.awssdk.services.codewhispererruntime.model.Completion
-import software.amazon.awssdk.services.codewhispererruntime.model.CreateArtifactUploadUrlRequest
-import software.amazon.awssdk.services.codewhispererruntime.model.CreateArtifactUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
-import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsResponse
-import software.amazon.awssdk.services.codewhispererruntime.model.Reference
-import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisResponse
+import software.amazon.awssdk.services.codewhispererruntime.paginators.GenerateCompletionsIterable
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.test.aString
@@ -63,7 +58,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.metadata
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonRequest
-import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponseWithToken
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl
@@ -89,18 +84,18 @@ class CodeWhispererClientAdaptorTest {
     @Before
     fun setup() {
         sut = CodeWhispererClientAdaptorImpl(projectRule.project)
-        ssoClient = mockClientManagerRule.create<SsoOidcClient>()
+        ssoClient = mockClientManagerRule.create()
 
         sigv4Client = mockClientManagerRule.create<CodeWhispererClient>().stub {
-            on { listRecommendationsPaginator(any<ListRecommendationsRequest>()) } doReturn listRecommendationsPaginatorRespone
-            on { createUploadUrl(any<CreateUploadUrlRequest>()) } doReturn createUploadUrlResponse
+            on { createCodeScanUploadUrl(any<CreateCodeScanUploadUrlRequest>()) } doReturn createCodeScanUploadUrlResponse
             on { createCodeScan(any<CreateCodeScanRequest>()) } doReturn createCodeScanResponse
             on { getCodeScan(any<GetCodeScanRequest>()) } doReturn getCodeScanResponse
             on { listCodeScanFindings(any<ListCodeScanFindingsRequest>()) } doReturn listCodeScanFindingsResponse
         }
 
         bearerClient = mockClientManagerRule.create<CodeWhispererRuntimeClient>().stub {
-            on { createArtifactUploadUrl(any<CreateArtifactUploadUrlRequest>()) } doReturn createArtifactUploadUrlResponse
+            on { generateCompletionsPaginator(any<GenerateCompletionsRequest>()) } doReturn generateCompletionsPaginatorResponse
+            on { createUploadUrl(any<CreateUploadUrlRequest>()) } doReturn createUploadUrlResponse
             on { startCodeAnalysis(any<StartCodeAnalysisRequest>()) } doReturn startCodeAnalysisResponse
             on { getCodeAnalysis(any<GetCodeAnalysisRequest>()) } doReturn getCodeAnalysisResponse
             on { listCodeAnalysisFindings(any<ListCodeAnalysisFindingsRequest>()) } doReturn listCodeAnalysisFindingsResponse
@@ -123,92 +118,47 @@ class CodeWhispererClientAdaptorTest {
     }
 
     @Test
-    fun `listRecommendationsPaginator - sigv4`() {
+    fun `generateCompletionsPaginator - bearer`() {
         val request = pythonRequest
-        val response = pythonResponse
-        sigv4Client.stub { client ->
-            on { client.listRecommendations(any<ListRecommendationsRequest>()) } doReturnConsecutively listOf(
-                response.copy { it.nextToken("second") },
-                response.copy { it.nextToken("third") },
-                response.copy { it.nextToken(("")) }
-            )
-        }
-
-        val nextTokens = listOf("second", "third", "")
-        val responses = sut.listRecommendationsPaginator(request, true)
-
-        argumentCaptor<ListRecommendationsRequest>().apply {
-            responses.forEachIndexed { i, response ->
-                assertThat(response.nextToken()).isEqualTo(nextTokens[i])
-                response.recommendations().forEachIndexed { j, recommendation ->
-                    assertThat(recommendation)
-                        .usingRecursiveComparison()
-                        .isEqualTo(pythonResponse.recommendations()[j])
-                }
-            }
-            verify(sigv4Client, times(3)).listRecommendations(capture())
-            verifyNoInteractions(bearerClient)
-            assertThat(this.firstValue.nextToken()).isEqualTo("")
-            assertThat(this.secondValue.nextToken()).isEqualTo("second")
-            assertThat(this.thirdValue.nextToken()).isEqualTo("third")
-        }
-    }
-
-    @Test
-    fun `listRecommendationsPaginator - bearer`() {
-        val request = pythonRequest
-        val response = generateCompletionsResponse
         bearerClient.stub { client ->
             on { client.generateCompletions(any<GenerateCompletionsRequest>()) } doReturnConsecutively listOf(
-                response.copy { it.nextToken("second") },
-                response.copy { it.nextToken("third") },
-                response.copy { it.nextToken(("")) }
+                pythonResponseWithToken("first"),
+                pythonResponseWithToken("second"),
+                pythonResponseWithToken(""),
             )
         }
 
-        val nextTokens = listOf("second", "third", "")
-        val responses = sut.listRecommendationsPaginator(request, false)
+        val nextTokens = listOf("first", "second", "")
+        val responses = sut.generateCompletionsPaginator(request)
 
         argumentCaptor<GenerateCompletionsRequest>().apply {
             responses.forEachIndexed { i, response ->
                 assertThat(response.nextToken()).isEqualTo(nextTokens[i])
-                response.recommendations().forEachIndexed { j, recommendation ->
+                response.completions().forEachIndexed { j, recommendation ->
                     assertThat(recommendation)
                         .usingRecursiveComparison()
-                        .isEqualTo(response.recommendations()[j])
+                        .isEqualTo(response.completions()[j])
                 }
             }
             verify(bearerClient, times(3)).generateCompletions(capture())
             verifyNoInteractions(sigv4Client)
             assertThat(this.firstValue.nextToken()).isEqualTo("")
-            assertThat(this.secondValue.nextToken()).isEqualTo("second")
-            assertThat(this.thirdValue.nextToken()).isEqualTo("third")
-        }
-    }
-
-    @Test
-    fun `createUploadUrl - sigv4`() {
-        val actual = sut.createUploadUrl(createUploadUrlRequest, true)
-
-        argumentCaptor<CreateUploadUrlRequest>().apply {
-            verify(sigv4Client).createUploadUrl(capture())
-            verifyNoInteractions(bearerClient)
-            assertThat(firstValue).isEqualTo(createUploadUrlRequest)
-            assertThat(actual).isSameAs(createUploadUrlResponse)
+            assertThat(this.secondValue.nextToken()).isEqualTo("first")
+            assertThat(this.thirdValue.nextToken()).isEqualTo("second")
         }
     }
 
     @Test
     fun `createUploadUrl - bearer`() {
-        val actual = sut.createUploadUrl(createUploadUrlRequest, false)
+        val actual = sut.createUploadUrl(createUploadUrlRequest)
 
-        argumentCaptor<CreateArtifactUploadUrlRequest>().apply {
-            verify(bearerClient).createArtifactUploadUrl(capture())
+        argumentCaptor<CreateUploadUrlRequest>().apply {
+            verify(bearerClient).createUploadUrl(capture())
             verifyNoInteractions(sigv4Client)
             assertThat(actual).isInstanceOf(CreateUploadUrlResponse::class.java)
             assertThat(actual).usingRecursiveComparison()
                 .comparingOnlyFields("uploadUrl", "uploadId")
-                .isEqualTo(createArtifactUploadUrlResponse)
+                .isEqualTo(createUploadUrlResponse)
         }
     }
 
@@ -290,29 +240,6 @@ class CodeWhispererClientAdaptorTest {
     }
 
     private companion object {
-        val generateCompletionsResponse = GenerateCompletionsResponse.builder()
-            .nextToken("")
-            .completions(
-                Completion.builder()
-                    .content("foo")
-                    .references(
-                        Reference.builder()
-                            .licenseName("123")
-                            .url("456")
-                            .recommendationContentSpan(
-                                Span.builder()
-                                    .start(0)
-                                    .end(1)
-                                    .build()
-                            )
-                            .build()
-                    )
-                    .build()
-            )
-            .responseMetadata(metadata)
-            .sdkHttpResponse(sdkHttpResponse)
-            .build() as GenerateCompletionsResponse
-
         val createCodeScanRequest = CreateCodeScanRequest.builder()
             .artifacts(mapOf(ArtifactType.SOURCE_CODE to "foo"))
             .clientToken("token")
@@ -325,7 +252,7 @@ class CodeWhispererClientAdaptorTest {
 
         val createUploadUrlRequest = CreateUploadUrlRequest.builder()
             .contentMd5("foo")
-            .artifactType(ArtifactType.SOURCE_CODE)
+            .artifactType(software.amazon.awssdk.services.codewhispererruntime.model.ArtifactType.SOURCE_CODE)
             .build()
 
         val getCodeScanRequest = GetCodeScanRequest.builder()
@@ -338,12 +265,12 @@ class CodeWhispererClientAdaptorTest {
             .nextToken("nextToken")
             .build()
 
-        val createArtifactUploadUrlResponse: CreateArtifactUploadUrlResponse = CreateArtifactUploadUrlResponse.builder()
+        val createUploadUrlResponse: CreateUploadUrlResponse = CreateUploadUrlResponse.builder()
             .uploadUrl("url")
             .uploadId("id")
             .responseMetadata(metadata)
             .sdkHttpResponse(sdkHttpResponse)
-            .build() as CreateArtifactUploadUrlResponse
+            .build() as CreateUploadUrlResponse
 
         val startCodeAnalysisResponse = StartCodeAnalysisResponse.builder()
             .jobId("create-code-scan-user")
@@ -367,9 +294,9 @@ class CodeWhispererClientAdaptorTest {
             .sdkHttpResponse(sdkHttpResponse)
             .build() as ListCodeAnalysisFindingsResponse
 
-        private val listRecommendationsPaginatorRespone: ListRecommendationsIterable = mock()
+        private val generateCompletionsPaginatorResponse: GenerateCompletionsIterable = mock()
 
-        private val createUploadUrlResponse: CreateUploadUrlResponse = mock()
+        private val createCodeScanUploadUrlResponse: CreateCodeScanUploadUrlResponse = mock()
 
         private val createCodeScanResponse: CreateCodeScanResponse = mock()
 

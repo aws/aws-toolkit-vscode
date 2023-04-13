@@ -90,7 +90,10 @@ with what features/services are supported.
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
     <depends optional="true" config-file="ext-json.xml">com.intellij.modules.json</depends>
     <depends optional="true" config-file="ext-gateway.xml">com.jetbrains.gateway</depends>
-
+    <depends optional="true" config-file="ext-scala.xml">org.intellij.scala</depends>
+    <depends optional="true" config-file="ext-kotlin.xml">org.jetbrains.kotlin</depends>
+    <depends optional="true" config-file="ext-shell.xml">com.jetbrains.sh</depends>
+    <depends optional="true" config-file="ext-rust.xml">org.rust.lang</depends>
     <xi:include href="services/caws.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
     </xi:include>
@@ -120,10 +123,10 @@ with what features/services are supported.
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.UpdateOnExperimentState"
                   topic="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentStateChangedListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererStartupSettingsListener"
-                  topic="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener"/>
-        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererStartupSettingsListener"
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
                   topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+        <listener class="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupSettingsListener"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener"/>
     </projectListeners>
 
     <applicationListeners>
@@ -174,6 +177,7 @@ with what features/services are supported.
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
         <extensionPoint name="codewhisperer.programmingLanguage" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage" dynamic="true"/>
+        <extensionPoint name="codewhisperer.importAdder" interface="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdder" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -280,9 +284,12 @@ with what features/services are supported.
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.inlay.CodeWhispererInlayManager"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererLicenseInfoManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"
-            serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"/>
+                        serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
@@ -395,6 +402,13 @@ with what features/services are supported.
 
         <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererEndpointCustomizer"/>
         <sdk.clientCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.CawsClientCustomizer"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+        <!-- TODO: c/c++ extensions should live its own module instead of jetbrains-core -->
+        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererC"/>
+        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCpp"/>
+        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererFallbackImportAdder"/>
     </extensions>
 
     <actions>
@@ -696,6 +710,9 @@ with what features/services are supported.
             <action
                 id="codewhisperer.toolbar.security.scan"
                 class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererCodeScanRunAction"/>
+            <action
+                id="codewhisperer.toolbar.security.stopscan"
+                class="software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererStopCodeScanAction"/>
         </group>
 
         <action id="aws.toolkit.connection.pinning.unpin" class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>

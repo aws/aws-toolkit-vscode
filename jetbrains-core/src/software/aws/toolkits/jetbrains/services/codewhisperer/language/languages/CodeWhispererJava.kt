@@ -15,6 +15,8 @@ class CodeWhispererJava private constructor() : CodeWhispererProgrammingLanguage
 
     override fun isCodeScanSupported(): Boolean = true
 
+    override fun isImportAdderSupported(): Boolean = true
+
     companion object {
         const val ID = "java"
 

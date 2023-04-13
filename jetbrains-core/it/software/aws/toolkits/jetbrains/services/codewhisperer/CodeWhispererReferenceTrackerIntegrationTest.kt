@@ -51,9 +51,9 @@ InAuto.GetContent(
                     listOf(requestId)
                 )[0]
                 assertThat(sessionId).isNotNull
-                assertThat(response.hasRecommendations()).isTrue
-                assertThat(response.recommendations()).isNotEmpty
-                assertThat(response.recommendations()[0].hasReferences()).isTrue
+                assertThat(response.hasCompletions()).isTrue
+                assertThat(response.completions()).isNotEmpty
+                assertThat(response.completions()[0].hasReferences()).isTrue
             }
         }
     }

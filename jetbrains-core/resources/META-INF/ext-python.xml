@@ -26,5 +26,6 @@
     </extensions>
     <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython"/>
+        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererPythonImportAdder"/>
     </extensions>
 </idea-plugin>

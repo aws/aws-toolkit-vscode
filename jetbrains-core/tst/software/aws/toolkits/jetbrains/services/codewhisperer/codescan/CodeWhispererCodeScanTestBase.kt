@@ -8,12 +8,12 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.intellij.analysis.problemsView.toolWindow.ProblemsView
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.replaceService
+import com.intellij.util.io.systemIndependentPath
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata
@@ -22,15 +22,16 @@ import org.junit.Rule
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanStatus
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
-import software.amazon.awssdk.services.codewhisperer.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
@@ -39,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import java.nio.file.Path
 import kotlin.test.assertNotNull
 
 open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule) {
@@ -103,22 +105,20 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         )
     }
 
-    open fun setupCodeScanFindings() = defaultCodeScanFindings()
-
-    protected fun defaultCodeScanFindings(file: VirtualFile? = null) = """
+    private fun setupCodeScanFindings(filePath: Path) = """
         [
             {
-                "filePath": "${file?.path}",
+                "filePath": "${filePath.systemIndependentPath}",
                 "startLine": 1,
                 "endLine": 2,
                 "title": "test",
                 "description": {
                     "text": "global variable",
                     "markdown": "### global variable"
-                }                    
+                }
             },
             {
-                "filePath": "${file?.path}",
+                "filePath": "${filePath.systemIndependentPath}",
                 "startLine": 1,
                 "endLine": 2,
                 "title": "test",
@@ -130,7 +130,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         ]
     """
 
-    protected fun setupResponse() {
+    protected fun setupResponse(filePath: Path) {
         fakeCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
             .uploadId(UPLOAD_ID)
             .uploadUrl(s3endpoint)
@@ -156,7 +156,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             .build() as CreateCodeScanResponse
 
         fakeListCodeScanFindingsResponse = ListCodeScanFindingsResponse.builder()
-            .codeScanFindings(setupCodeScanFindings())
+            .codeScanFindings(setupCodeScanFindings(filePath))
             .responseMetadata(metadata)
             .build() as ListCodeScanFindingsResponse
 
@@ -201,8 +201,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
     ) {
         val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy)
         val sessionMock = spy(CodeWhispererCodeScanSession(codeScanContext))
-
-        doNothing().`when`(sessionMock).uploadArtifactTOS3(any(), any(), any())
+        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any(), isNull())
         doNothing().`when`(sessionMock).sleepThread()
 
         ToolWindowManager.getInstance(project).registerToolWindow(
@@ -220,7 +219,11 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             assertThat(payloadContext.totalLines).isEqualTo(expectedTotalLines)
             assertThat(payloadContext.totalFiles).isEqualTo(expectedTotalFiles)
             assertThat(payloadContext.srcPayloadSize).isEqualTo(expectedTotalSize)
-            scanManagerSpy.testRenderResponseOnUIThread(codeScanResponse.issues)
+            scanManagerSpy.testRenderResponseOnUIThread(
+                codeScanResponse.issues,
+                codeScanResponse.responseContext.payloadContext.scannedFiles,
+                sessionConfigSpy.isProjectTruncated()
+            )
             assertNotNull(scanManagerSpy.getScanTree().model)
             val treeModel = scanManagerSpy.getScanTree().model as? CodeWhispererCodeScanTreeModel
             assertNotNull(treeModel)

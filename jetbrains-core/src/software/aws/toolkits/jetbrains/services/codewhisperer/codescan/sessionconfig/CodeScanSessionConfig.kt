@@ -27,14 +27,17 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import kotlin.io.path.relativeTo
 
 sealed class CodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project
 ) {
-    protected val projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
+    val projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
 
     abstract val sourceExt: String
+
+    private var isProjectTruncated = false
 
     /**
      * Timeout for the overall job - "Run Security Scan".
@@ -42,6 +45,12 @@ sealed class CodeScanSessionConfig(
     abstract fun overallJobTimeoutInSeconds(): Long
 
     abstract fun getPayloadLimitInBytes(): Int
+
+    protected fun willExceedPayloadLimit(currentTotalFileSize: Long, currentFileSize: Long): Boolean {
+        val exceedsLimit = currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize
+        isProjectTruncated = isProjectTruncated || exceedsLimit
+        return exceedsLimit
+    }
 
     open fun getImportedFiles(file: VirtualFile, includedSourceFiles: Set<String>): List<String> = listOf()
 
@@ -64,6 +73,7 @@ sealed class CodeScanSessionConfig(
             totalLines,
             includedSourceFiles.size,
             Instant.now().toEpochMilli() - start,
+            includedSourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
             payloadSize,
             srcZip.length()
         )
@@ -90,12 +100,12 @@ sealed class CodeScanSessionConfig(
 
                 val currentFilePath = queue.removeFirst()
                 val currentFile = File(currentFilePath).toVirtualFile()
-                if (includedSourceFiles.contains(currentFilePath) || currentFile == null) continue
+                if (includedSourceFiles.contains(currentFilePath) ||
+                    currentFile == null ||
+                    willExceedPayloadLimit(currentTotalFileSize, currentFile.length)
+                ) continue
 
                 val currentFileSize = currentFile.length
-
-                // Ignore file if including it exceeds the payload limit.
-                if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue
 
                 currentTotalFileSize += currentFileSize
                 currentTotalLines += Files.lines(currentFile.toNioPath()).count()
@@ -139,8 +149,9 @@ sealed class CodeScanSessionConfig(
 
     protected fun zipFiles(files: List<Path>): File = createTemporaryZipFile {
         files.forEach { file ->
+            val relativePath = file.relativeTo(projectRoot.toNioPath())
             LOG.debug { "Selected file for truncation: $file" }
-            it.putNextEntry(file.toString(), file)
+            it.putNextEntry(relativePath.toString(), file)
         }
     }.toFile()
 
@@ -160,6 +171,8 @@ sealed class CodeScanSessionConfig(
         }
         return files
     }
+
+    open fun isProjectTruncated() = isProjectTruncated
 
     protected fun getPath(root: String, relativePath: String = ""): Path? = try {
         Path.of(root, relativePath).normalize()
@@ -185,8 +198,7 @@ sealed class CodeScanSessionConfig(
 
 data class Payload(
     val context: PayloadContext,
-    val srcZip: File,
-    val buildZip: File? = null
+    val srcZip: File
 )
 
 data class PayloadContext(
@@ -194,10 +206,10 @@ data class PayloadContext(
     val totalLines: Long,
     val totalFiles: Int,
     val totalTimeInMilliseconds: Long,
+    val scannedFiles: List<VirtualFile>,
     val srcPayloadSize: Long,
     val srcZipFileSize: Long,
-    val buildPayloadSize: Long? = null,
-    val buildZipFileSize: Long? = null
+    val buildPayloadSize: Long? = null
 )
 
 data class PayloadMetadata(

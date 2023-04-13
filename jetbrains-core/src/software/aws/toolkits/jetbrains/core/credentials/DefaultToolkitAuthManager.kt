@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
@@ -12,6 +13,7 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 
 // TODO: unify with CredentialManager
 @State(name = "authManager", storages = [Storage("aws.xml")])
@@ -52,6 +54,8 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         connections.removeAll { connection ->
             predicate(connection).also {
                 if (it && connection is Disposable) {
+                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                        .invalidate(connection.id)
                     Disposer.dispose(connection)
                 }
             }

@@ -3,14 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.replaceService
 import com.intellij.ui.dsl.builder.components.DslLabel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.doNothing
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable
 import software.aws.toolkits.resources.message
 import javax.swing.JCheckBox
@@ -26,22 +27,30 @@ class CodeWhispererConfigurableTest : CodeWhispererTestBase() {
         doNothing().`when`(codeScanManagerSpy).removeCodeScanUI()
         projectRule.project.replaceService(CodeWhispererCodeScanManager::class.java, codeScanManagerSpy, disposableRule.disposable)
         val configurable = CodeWhispererConfigurable(projectRule.project)
+
+        // A workaround to initialize disposable in the DslConfigurableBase since somehow the disposable is
+        // not configured in the tests if we don't do this
+        configurable.reset()
+
         assertThat(configurable.id).isEqualTo("aws.codewhisperer")
         val panel = configurable.createPanel()
-        CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(false)
+        mockCodeWhispererEnabledStatus(false)
 
         val checkboxes = panel.components.filterIsInstance<JCheckBox>()
 
-        assertThat(checkboxes.size).isEqualTo(2)
+        assertThat(checkboxes.size).isEqualTo(3)
         assertThat(checkboxes.map { it.text }).containsExactlyInAnyOrder(
             message("aws.settings.codewhisperer.include_code_with_reference"),
-            message("aws.settings.codewhisperer.configurable.opt_out.title")
+            message("aws.settings.codewhisperer.configurable.opt_out.title"),
+            message("aws.settings.codewhisperer.automatic_import_adder")
         )
 
         val comments = panel.components.filterIsInstance<DslLabel>()
-        assertThat(comments.size).isEqualTo(3)
+        assertThat(comments.size).isEqualTo(4)
 
-        CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(false)
+        mockCodeWhispererEnabledStatus(false)
+        ApplicationManager.getApplication().messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC)
+            .activeConnectionChanged(null)
         checkboxes.forEach {
             assertThat(it.isEnabled).isFalse
         }
@@ -51,7 +60,9 @@ class CodeWhispererConfigurableTest : CodeWhispererTestBase() {
         assertThat(firstMessage).isNotNull
         assertThat((firstMessage as JComponent).isVisible).isTrue
 
-        CodeWhispererExplorerActionManager.getInstance().setHasAcceptedTermsOfService(true)
+        mockCodeWhispererEnabledStatus(true)
+        ApplicationManager.getApplication().messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC)
+            .activeConnectionChanged(null)
         checkboxes.forEach {
             assertThat(it.isEnabled).isTrue
         }

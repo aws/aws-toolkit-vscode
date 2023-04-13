@@ -95,8 +95,7 @@ class CodeWhispererStatusBarManagerTest {
         } ?: fail("factory should not be null")
     }
 
-    private fun configureConnection(loginType: CodeWhispererLoginType, hasAcceptToS: Boolean = true) {
+    private fun configureConnection(loginType: CodeWhispererLoginType) {
         whenever(explorerActionManager.checkActiveCodeWhispererConnectionType(any())).thenReturn(loginType)
-        whenever(explorerActionManager.hasAcceptedTermsOfService()).thenReturn(hasAcceptToS)
     }
 }

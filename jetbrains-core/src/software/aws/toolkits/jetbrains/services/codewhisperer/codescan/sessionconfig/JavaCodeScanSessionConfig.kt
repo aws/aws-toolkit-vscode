@@ -57,9 +57,6 @@ internal class JavaCodeScanSessionConfig(
         // Include all the dependencies using BFS
         val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()
 
-        // Copy all the included source files to the source zip
-        val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) })
-
         var noClassFilesFound = true
         val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
         var totalBuildPayloadSize = 0L
@@ -76,20 +73,20 @@ internal class JavaCodeScanSessionConfig(
         LOG.debug { "Total build files sent in payload: ${buildFiles.size}" }
         if (noClassFilesFound) cannotFindBuildArtifacts()
 
-        // Copy all the corresponding build files to the build zip
-        val buildZip = zipFiles(buildFiles)
+        // Copy all the included source and build files to the source zip
+        val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) } + buildFiles)
 
         val payloadContext = PayloadContext(
             CodewhispererLanguage.Java,
             totalLines,
             sourceFiles.size,
             Instant.now().toEpochMilli() - start,
+            sourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
             srcPayloadSize,
             srcZip.length(),
-            totalBuildPayloadSize,
-            buildZip.length()
+            totalBuildPayloadSize
         )
-        return Payload(payloadContext, srcZip, buildZip)
+        return Payload(payloadContext, srcZip)
     }
 
     private fun findClassFile(relativePath: String, outputPaths: Array<String>): Path? {
@@ -174,16 +171,17 @@ internal class JavaCodeScanSessionConfig(
                 }
 
                 val currentFile = queue.removeFirst()
-                if (!currentFile.path.startsWith(projectRoot.path)) {
-                    LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" }
+                if (!currentFile.path.startsWith(projectRoot.path) ||
+                    sourceFiles.contains(currentFile) ||
+                    willExceedPayloadLimit(currentTotalFileSize, currentFile.length)
+                ) {
+                    if (!currentFile.path.startsWith(projectRoot.path)) {
+                        LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" }
+                    }
                     continue
                 }
-                if (sourceFiles.contains(currentFile)) continue
 
                 val currentFileSize = currentFile.length
-
-                // Ignore file if including it exceeds the payload limit.
-                if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue
 
                 currentTotalFileSize += currentFileSize
                 currentTotalLines += Files.lines(currentFile.toNioPath()).count()

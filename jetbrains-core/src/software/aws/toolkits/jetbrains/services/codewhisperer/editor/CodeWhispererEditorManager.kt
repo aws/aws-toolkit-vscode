@@ -7,20 +7,16 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.ui.popup.JBPopup
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PAIRED_BRACKETS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PAIRED_QUOTES
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererMetadata
 import java.time.Instant
 import java.util.Stack
 
@@ -32,36 +28,43 @@ class CodeWhispererEditorManager {
         val primaryCaret = editor.caretModel.primaryCaret
         val selectedIndex = sessionContext.selectedIndex
         val typeahead = sessionContext.typeahead
+        val detail = recommendationContext.details[selectedIndex]
         val reformatted = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            recommendationContext.details[selectedIndex], recommendationContext.userInputSinceInvocation
+            detail, recommendationContext.userInputSinceInvocation
         )
         val remainingRecommendation = reformatted.substring(typeahead.length)
         val originalOffset = primaryCaret.offset - typeahead.length
 
         val endOffset = primaryCaret.offset + remainingRecommendation.length
 
-        val codewhispererMetadata = editor.getUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA)
-        val endOffsetToReplace = codewhispererMetadata?.insertEnd ?: primaryCaret.offset
+        val insertEndOffset = sessionContext.insertEndOffset
+        val endOffsetToReplace = if (insertEndOffset != -1) insertEndOffset else primaryCaret.offset
 
         WriteCommandAction.runWriteCommandAction(project) {
             document.replaceString(originalOffset, endOffsetToReplace, reformatted)
             PsiDocumentManager.getInstance(project).commitDocument(document)
-            val rangeMarker = document.createRangeMarker(originalOffset, endOffset, true)
-            primaryCaret.moveToOffset(endOffset)
+            primaryCaret.moveToOffset(endOffset + detail.rightOverlap.length)
+        }
 
-            CodeWhispererTelemetryService.getInstance().enqueueAcceptedSuggestionEntry(
-                recommendationContext.details[selectedIndex].requestId,
-                requestContext,
-                responseContext,
-                Instant.now(),
-                PsiDocumentManager.getInstance(project).getPsiFile(document)?.virtualFile,
-                rangeMarker,
-                remainingRecommendation,
-                selectedIndex
-            )
-            ApplicationManager.getApplication().messageBus.syncPublisher(
-                CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,
-            ).afterAccept(states, sessionContext, rangeMarker)
+        ApplicationManager.getApplication().invokeLater {
+            WriteCommandAction.runWriteCommandAction(project) {
+                val rangeMarker = document.createRangeMarker(originalOffset, endOffset, true)
+
+                CodeWhispererTelemetryService.getInstance().enqueueAcceptedSuggestionEntry(
+                    detail.requestId,
+                    requestContext,
+                    responseContext,
+                    Instant.now(),
+                    PsiDocumentManager.getInstance(project).getPsiFile(document)?.virtualFile,
+                    rangeMarker,
+                    remainingRecommendation,
+                    selectedIndex
+                )
+
+                ApplicationManager.getApplication().messageBus.syncPublisher(
+                    CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,
+                ).afterAccept(states, sessionContext, rangeMarker)
+            }
         }
     }
 
@@ -87,8 +90,9 @@ class CodeWhispererEditorManager {
     fun getMatchingSymbolsFromRecommendation(
         editor: Editor,
         recommendation: String,
-        isTruncatedOnRight: Boolean
-    ): Pair<List<Pair<Int, Int>>, Boolean> {
+        isTruncatedOnRight: Boolean,
+        sessionContext: SessionContext
+    ): List<Pair<Int, Int>> {
         val result = mutableListOf<Pair<Int, Int>>()
         val bracketsStack = Stack<Char>()
         val quotesStack = Stack<Pair<Char, Pair<Int, Int>>>()
@@ -103,14 +107,25 @@ class CodeWhispererEditorManager {
         result.add(0 to caretOffset)
         result.add(recommendation.length + 1 to lineEndOffset)
 
-        if (isTruncatedOnRight) return result to true
+        if (isTruncatedOnRight) return result
 
         while (current < recommendation.length &&
             totalDocLengthChecked < lineText.length &&
             totalDocLengthChecked < recommendation.length
         ) {
             val currentDocChar = lineText[totalDocLengthChecked]
-            if (!isMatchingSymbol(currentDocChar)) break
+            if (!isMatchingSymbol(currentDocChar)) {
+                // currentDocChar is not a matching symbol, so we try to compare the remaining strings as a last step to match
+                val recommendationRemaining = recommendation.substring(current)
+                val rightContextRemaining = lineText.subSequence(totalDocLengthChecked, lineText.length).toString()
+                if (recommendationRemaining == rightContextRemaining) {
+                    for (i in 1..recommendation.length - current) {
+                        result.add(current + i to caretOffset + totalDocLengthChecked + i)
+                    }
+                    result.sortBy { it.first }
+                }
+                break
+            }
             totalDocLengthChecked++
 
             // find symbol in the recommendation that will match this
@@ -160,9 +175,9 @@ class CodeWhispererEditorManager {
         quotesStack.forEach { result.add(it.second) }
         result.sortBy { it.first }
 
-        val isFirstLineFullMatching = result.last().second == lineEndOffset || caretOffset == lineEndOffset
+        sessionContext.insertEndOffset = result[result.size - 2].second
 
-        return result to isFirstLineFullMatching
+        return result
     }
 
     // example:         recommendation:         document
@@ -175,23 +190,24 @@ class CodeWhispererEditorManager {
     fun findOverLappingLines(
         editor: Editor,
         recommendationLines: List<String>,
-        isFirstLineFullMatching: Boolean,
         isTruncatedOnRight: Boolean,
-        popup: JBPopup,
+        sessionContext: SessionContext
     ): Int {
+        val caretOffset = editor.caretModel.offset
         if (isTruncatedOnRight) {
-            // insertEnd value only makes sense when there are matching closing brackets, if there's right context
-            // resolution applied, set this value to null
-            editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, null)
+            // insertEndOffset value only makes sense when there are matching closing brackets, if there's right context
+            // resolution applied, set this value to the current caret offset
+            sessionContext.insertEndOffset = caretOffset
             return 0
         }
+
         val text = editor.document.charsSequence
-        val caretOffset = editor.caretModel.offset
         val document = editor.document
         val textLines = mutableListOf<Pair<String, Int>>()
         val caretLine = document.getLineNumber(caretOffset)
         var currentLineNum = caretLine + 1
-        while (isFirstLineFullMatching && currentLineNum < document.lineCount && textLines.size < recommendationLines.size) {
+        val recommendationLinesNotBlank = recommendationLines.filter { it.isNotBlank() }
+        while (currentLineNum < document.lineCount && textLines.size < recommendationLinesNotBlank.size) {
             val currentLine = text.subSequence(
                 document.getLineStartOffset(currentLineNum),
                 document.getLineEndOffset(currentLineNum)
@@ -202,23 +218,34 @@ class CodeWhispererEditorManager {
             currentLineNum++
         }
 
-        val numOfLinesMatching = countLinesMatching(recommendationLines, textLines)
-
-        val metadata = CodeWhispererMetadata()
-        metadata.insertEnd =
-            if (numOfLinesMatching > 0) {
-                textLines[numOfLinesMatching - 1].second
-            } else {
-                document.getLineEndOffset(caretLine)
-            }
-        editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, metadata)
-        Disposer.register(popup) {
-            editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, null)
+        val numOfNonEmptyLinesMatching = countNonEmptyLinesMatching(recommendationLinesNotBlank, textLines)
+        val numOfLinesMatching = countLinesMatching(recommendationLines, numOfNonEmptyLinesMatching)
+        if (numOfNonEmptyLinesMatching > 0) {
+            sessionContext.insertEndOffset = textLines[numOfNonEmptyLinesMatching - 1].second
+        } else if (recommendationLines.isNotEmpty()) {
+            sessionContext.insertEndOffset = document.getLineEndOffset(caretLine)
         }
+
         return numOfLinesMatching
     }
 
-    private fun countLinesMatching(recommendationLines: List<String>, textLines: List<Pair<String, Int>>): Int {
+    private fun countLinesMatching(lines: List<String>, targetNonEmptyLines: Int): Int {
+        var count = 0
+        var nonEmptyCount = 0
+
+        for (line in lines.asReversed()) {
+            if (nonEmptyCount == targetNonEmptyLines) {
+                break
+            }
+            if (line.isNotBlank()) {
+                nonEmptyCount++
+            }
+            count++
+        }
+        return count
+    }
+
+    private fun countNonEmptyLinesMatching(recommendationLines: List<String>, textLines: List<Pair<String, Int>>): Int {
         // i lines we want to match
         for (i in textLines.size downTo 1) {
             val recommendationStart = recommendationLines.size - i

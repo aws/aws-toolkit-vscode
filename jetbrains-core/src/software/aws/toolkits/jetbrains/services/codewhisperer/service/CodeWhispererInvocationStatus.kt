@@ -16,9 +16,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CodeWhispererInvocationStatus {
     private val isInvokingCodeWhisperer: AtomicBoolean = AtomicBoolean(false)
     private var timeAtLastInvocationComplete: Instant? = null
-    private var timeAtLastDocumentChanged: Instant = Instant.now()
+    var timeAtLastDocumentChanged: Instant = Instant.now()
+        private set
     private var isPopupActive: Boolean = false
     private var timeAtLastInvocationStart: Instant? = null
+    var popupStartTimestamp: Instant? = null
+        private set
 
     fun checkExistingInvocationAndSet(): Boolean =
         if (isInvokingCodeWhisperer.getAndSet(true)) {
@@ -45,6 +48,10 @@ class CodeWhispererInvocationStatus {
 
     fun documentChanged() {
         timeAtLastDocumentChanged = Instant.now()
+    }
+
+    fun setPopupStartTimestamp() {
+        popupStartTimestamp = Instant.now()
     }
 
     fun getTimeSinceDocumentChanged(): Double {

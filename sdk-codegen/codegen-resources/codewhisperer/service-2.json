@@ -31,8 +31,8 @@
             ],
             "idempotent":true
         },
-        "CreateUploadUrl":{
-            "name":"CreateUploadUrl",
+        "CreateCodeScanUploadUrl":{
+            "name":"CreateCodeScanUploadUrl",
             "http":{
                 "method":"POST",
                 "requestUri":"/"
@@ -206,10 +206,7 @@
         },
         "CreateUploadUrlRequest":{
             "type":"structure",
-            "required":[
-                "contentMd5",
-                "artifactType"
-            ],
+            "required":["contentMd5"],
             "members":{
                 "contentMd5":{"shape":"CreateUploadUrlRequestContentMd5String"},
                 "artifactType":{"shape":"ArtifactType"}
@@ -228,7 +225,8 @@
             ],
             "members":{
                 "uploadId":{"shape":"UploadId"},
-                "uploadUrl":{"shape":"PreSignedUrl"}
+                "uploadUrl":{"shape":"PreSignedUrl"},
+                "kmsKeyArn":{"shape":"ResourceArn"}
             }
         },
         "FileContext":{
@@ -477,6 +475,11 @@
             "type":"list",
             "member":{"shape":"Reference"},
             "max":10,
+            "min":0
+        },
+        "ResourceArn":{
+            "type":"string",
+            "max":1224,
             "min":0
         },
         "ResourceNotFoundException":{

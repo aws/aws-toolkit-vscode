@@ -8,9 +8,9 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.stub
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
-import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.generateMockRecommendationDetail
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.generateMockCompletionDetail
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.getReferenceInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.metadata
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
@@ -39,18 +39,18 @@ class CodeWhispererReferencesTest : CodeWhispererTestBase() {
 
     private fun testReferencesRangeValidity(content: String, start: Int, end: Int, invalid: Boolean) {
         val referenceInfo = getReferenceInfo()
-        val invalidReferencesResponse = ListRecommendationsResponse.builder()
-            .recommendations(
-                generateMockRecommendationDetail(content, referenceInfo.first, referenceInfo.second, start, end),
+        val invalidReferencesResponse = GenerateCompletionsResponse.builder()
+            .completions(
+                generateMockCompletionDetail(content, referenceInfo.first, referenceInfo.second, start, end),
             )
             .nextToken("")
             .responseMetadata(metadata)
             .sdkHttpResponse(sdkHttpResponse)
-            .build() as ListRecommendationsResponse
+            .build() as GenerateCompletionsResponse
 
         mockClient.stub {
             on {
-                mockClient.listRecommendations(any<ListRecommendationsRequest>())
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 invalidReferencesResponse
             }

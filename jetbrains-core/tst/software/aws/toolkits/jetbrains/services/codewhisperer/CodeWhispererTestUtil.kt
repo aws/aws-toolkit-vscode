@@ -7,15 +7,15 @@ import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata.AWS_REQUEST_ID
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.http.SdkHttpResponse
-import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
-import software.amazon.awssdk.services.codewhisperer.model.FileContext
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
-import software.amazon.awssdk.services.codewhisperer.model.ProgrammingLanguage
-import software.amazon.awssdk.services.codewhisperer.model.Recommendation
-import software.amazon.awssdk.services.codewhisperer.model.RecommendationsWithReferencesPreference
-import software.amazon.awssdk.services.codewhisperer.model.Reference
-import software.amazon.awssdk.services.codewhisperer.model.Span
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
+import software.amazon.awssdk.services.codewhispererruntime.model.Completion
+import software.amazon.awssdk.services.codewhispererruntime.model.FileContext
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.ProgrammingLanguage
+import software.amazon.awssdk.services.codewhispererruntime.model.RecommendationsWithReferencesPreference
+import software.amazon.awssdk.services.codewhispererruntime.model.Reference
+import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import kotlin.random.Random
 
@@ -43,12 +43,12 @@ object CodeWhispererTestUtil {
         .errorMessage("something went wrong")
         .sdkHttpResponse(sdkHttpResponse)
         .build()
-    val testCodeWhispererException = CodeWhispererException.builder()
+    val testCodeWhispererException = CodeWhispererRuntimeException.builder()
         .requestId(testRequestIdForCodeWhispererException)
         .awsErrorDetails(errorDetail)
-        .build() as CodeWhispererException
+        .build() as CodeWhispererRuntimeException
 
-    val pythonRequest: ListRecommendationsRequest = ListRecommendationsRequest.builder()
+    val pythonRequest: GenerateCompletionsRequest = GenerateCompletionsRequest.builder()
         .fileContext(
             FileContext.builder()
                 .filename("test.py")
@@ -64,59 +64,59 @@ object CodeWhispererTestUtil {
         .maxResults(5)
         .build()
 
-    val pythonResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
-        .recommendations(
-            generateMockRecommendationDetail("(x, y):\n    return x + y"),
-            generateMockRecommendationDetail("(a, b):\n    return a + b"),
-            generateMockRecommendationDetail("test recommendation 3"),
-            generateMockRecommendationDetail("test recommendation 4"),
-            generateMockRecommendationDetail("test recommendation 5")
+    val pythonResponse: GenerateCompletionsResponse = GenerateCompletionsResponse.builder()
+        .completions(
+            generateMockCompletionDetail("(x, y):\n    return x + y"),
+            generateMockCompletionDetail("(a, b):\n    return a + b"),
+            generateMockCompletionDetail("test recommendation 3"),
+            generateMockCompletionDetail("test recommendation 4"),
+            generateMockCompletionDetail("test recommendation 5")
         )
         .nextToken("")
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
-        .build() as ListRecommendationsResponse
-    val pythonResponseWithToken: ListRecommendationsResponse = pythonResponse.toBuilder().nextToken(testNextToken).build()
-    val javaResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
-        .recommendations(
-            generateMockRecommendationDetail("(x, y) {\n        return x + y\n    }"),
-            generateMockRecommendationDetail("(a, b) {\n        return a + b\n    }"),
-            generateMockRecommendationDetail("test recommendation 3"),
-            generateMockRecommendationDetail("test recommendation 4"),
-            generateMockRecommendationDetail("test recommendation 5")
+        .build() as GenerateCompletionsResponse
+    val pythonResponseWithNonEmptyToken = pythonResponseWithToken(testNextToken)
+    val javaResponse: GenerateCompletionsResponse = GenerateCompletionsResponse.builder()
+        .completions(
+            generateMockCompletionDetail("(x, y) {\n        return x + y\n    }"),
+            generateMockCompletionDetail("(a, b) {\n        return a + b\n    }"),
+            generateMockCompletionDetail("test recommendation 3"),
+            generateMockCompletionDetail("test recommendation 4"),
+            generateMockCompletionDetail("test recommendation 5")
         )
         .nextToken("")
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
-        .build() as ListRecommendationsResponse
-    val emptyListResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
-        .recommendations(listOf())
+        .build() as GenerateCompletionsResponse
+    val emptyListResponse: GenerateCompletionsResponse = GenerateCompletionsResponse.builder()
+        .completions(listOf())
         .nextToken("")
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
-        .build() as ListRecommendationsResponse
-    val listOfEmptyRecommendationResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
-        .recommendations(
-            generateMockRecommendationDetail(""),
-            generateMockRecommendationDetail(""),
-            generateMockRecommendationDetail(""),
+        .build() as GenerateCompletionsResponse
+    val listOfEmptyRecommendationResponse: GenerateCompletionsResponse = GenerateCompletionsResponse.builder()
+        .completions(
+            generateMockCompletionDetail(""),
+            generateMockCompletionDetail(""),
+            generateMockCompletionDetail(""),
         )
         .nextToken("")
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
-        .build() as ListRecommendationsResponse
-    val listOfMixedEmptyAndNonEmptyRecommendationResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
-        .recommendations(
-            generateMockRecommendationDetail(""),
-            generateMockRecommendationDetail("test recommendation 3"),
-            generateMockRecommendationDetail(""),
-            generateMockRecommendationDetail("test recommendation 4"),
-            generateMockRecommendationDetail("test recommendation 5")
+        .build() as GenerateCompletionsResponse
+    val listOfMixedEmptyAndNonEmptyRecommendationResponse: GenerateCompletionsResponse = GenerateCompletionsResponse.builder()
+        .completions(
+            generateMockCompletionDetail(""),
+            generateMockCompletionDetail("test recommendation 3"),
+            generateMockCompletionDetail(""),
+            generateMockCompletionDetail("test recommendation 4"),
+            generateMockCompletionDetail("test recommendation 5")
         )
         .nextToken("")
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
-        .build() as ListRecommendationsResponse
+        .build() as GenerateCompletionsResponse
 
     const val pythonFileName = "test.py"
     const val javaFileName = "test.java"
@@ -126,9 +126,12 @@ object CodeWhispererTestUtil {
     const val cppTestLeftContext = "int addTwoNumbers"
     const val javaTestContext = "public class Test {\n    public static void main\n}"
 
-    internal fun generateMockRecommendationDetail(content: String): Recommendation {
+    internal fun pythonResponseWithToken(token: String): GenerateCompletionsResponse =
+        pythonResponse.toBuilder().nextToken(token).build()
+
+    internal fun generateMockCompletionDetail(content: String): Completion {
         val referenceInfo = getReferenceInfo()
-        return Recommendation.builder().content(content)
+        return Completion.builder().content(content)
             .references(
                 generateMockReferences(referenceInfo.first, referenceInfo.second, 0, content.length)
             )
@@ -137,14 +140,14 @@ object CodeWhispererTestUtil {
 
     internal fun getReferenceInfo() = testReferenceInfoPair[Random.nextInt(testReferenceInfoPair.size)]
 
-    internal fun generateMockRecommendationDetail(
+    internal fun generateMockCompletionDetail(
         content: String,
         licenseName: String,
         repository: String,
         start: Int,
         end: Int
-    ): Recommendation =
-        Recommendation.builder()
+    ): Completion =
+        Completion.builder()
             .content(content)
             .references(generateMockReferences(licenseName, repository, start, end))
             .build()

@@ -9,9 +9,9 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 
 class CodeWhispererRecommendationAction : AnAction(message("codewhisperer.trigger.service")), DumbAware {
@@ -27,7 +27,8 @@ class CodeWhispererRecommendationAction : AnAction(message("codewhisperer.trigge
         if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.OnDemand)) {
             return
         }
-        val triggerType = TriggerTypeInfo(CodewhispererTriggerType.OnDemand, CodewhispererAutomatedTriggerType.Unknown)
+
+        val triggerType = TriggerTypeInfo(CodewhispererTriggerType.OnDemand, CodeWhispererAutomatedTriggerType.Unknown)
         CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerType, latencyContext)
     }
 }

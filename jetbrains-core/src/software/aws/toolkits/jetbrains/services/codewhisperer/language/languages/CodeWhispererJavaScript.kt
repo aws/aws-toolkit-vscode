@@ -13,6 +13,8 @@ class CodeWhispererJavaScript private constructor() : CodeWhispererProgrammingLa
 
     override fun isCodeCompletionSupported(): Boolean = true
 
+    override fun isImportAdderSupported(): Boolean = true
+
     companion object {
         const val ID = "javascript"
 

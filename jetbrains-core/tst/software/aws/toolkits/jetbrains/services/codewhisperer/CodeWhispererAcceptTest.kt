@@ -20,11 +20,14 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.stub
-import org.mockito.kotlin.times
-import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.generateMockCompletionDetail
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaTestContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.metadata
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter
 import kotlin.test.fail
 
@@ -38,7 +41,7 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
         projectRule.fixture.configureByText(javaFileName, javaTestContext)
         mockClient.stub {
             on {
-                mockClient.listRecommendations(any<ListRecommendationsRequest>())
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
             } doAnswer {
                 javaResponse
             }
@@ -49,42 +52,75 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
     }
 
     @Test
-    fun `test accept recommendation with no typeahead no right context`() {
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "")
+    fun `test accept recommendation with no typeahead no matching brackets on the right`() {
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "")
     }
 
     @Test
-    fun `test accept recommendation with no typeahead no right context using keyboard`() {
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "", true)
+    fun `test accept recommendation with no typeahead no matching brackets on the right using keyboard`() {
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "", useKeyboard = true)
     }
 
     @Test
-    fun `test accept recommendation with no typeahead with matching right context`() {
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "(")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "()")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "() {")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "{")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "(){")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "() {")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "() {\n    }")
-        testAcceptRecommendationWithTypingAndMatchingRightContext("", "() {\n    }     ")
+    fun `test accept recommendation with no typeahead with matching brackets on the right`() {
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "(")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "()")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "{")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "(){")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {\n    }")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {\n    }     ")
     }
 
     @Test
-    fun `test accept recommendation with typeahead with matching right context`() {
-        val lastIndexOfNewLine = javaResponse.recommendations()[0].content().lastIndexOf("\n")
-        val recommendation = javaResponse.recommendations()[0].content().substring(0, lastIndexOfNewLine)
+    fun `test accept recommendation with typeahead with matching brackets on the right`() {
+        val lastIndexOfNewLine = javaResponse.completions()[0].content().lastIndexOf("\n")
+        val recommendation = javaResponse.completions()[0].content().substring(0, lastIndexOfNewLine)
         recommendation.indices.forEach {
             val typeahead = recommendation.substring(0, it + 1)
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "(")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "()")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "() {")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "{")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "(){")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "() {")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "() {\n    }")
-            testAcceptRecommendationWithTypingAndMatchingRightContext(typeahead, "() {\n    }     ")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "(")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "()")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "() {")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "{")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "(){")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "() {")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "() {\n    }")
+            testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(typeahead, "() {\n    }     ")
         }
+    }
+
+    @Test
+    fun `test accept single-line recommendation with no typeahead with partial matching brackets on the right`() {
+        mockClient.stub {
+            on {
+                mockClient.generateCompletions(any<GenerateCompletionsRequest>())
+            } doAnswer {
+                GenerateCompletionsResponse.builder()
+                    .completions(
+                        generateMockCompletionDetail("(x, y) {"),
+                    )
+                    .nextToken("")
+                    .responseMetadata(metadata)
+                    .sdkHttpResponse(sdkHttpResponse)
+                    .build() as GenerateCompletionsResponse
+            }
+        }
+
+        // any non-matching first-line right context should remain
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "(", "test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "()", "test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {", "test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "({", "test")
+    }
+
+    @Test
+    fun `test accept multi-line recommendation with no typeahead with partial matching brackets on the right`() {
+        // any first-line right context should be overwritten
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "(test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "()test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "() {test")
+        testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight("", "({test")
     }
 
     @Test
@@ -95,6 +131,7 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
     }
 
     private fun testCodeWhispererKeyboardShortcutShouldBePrioritized(actionId: String) {
+        projectRule.fixture.configureByText(javaFileName, javaTestContext)
         val wrongAction = object : AnAction() {
             override fun actionPerformed(e: AnActionEvent) {
                 fail("the other action should not get executed first")
@@ -112,15 +149,21 @@ class CodeWhispererAcceptTest : CodeWhispererTestBase() {
         }
     }
 
-    private fun testAcceptRecommendationWithTypingAndMatchingRightContext(typing: String, rightContext: String, useKeyboard: Boolean = false) {
-        projectRule.fixture.configureByText(javaFileName, buildContextWithRecommendation(rightContext))
+    private fun testAcceptRecommendationWithTypingAndMatchingBracketsOnTheRight(
+        typing: String,
+        brackets: String,
+        remaining: String = "",
+        useKeyboard: Boolean = false
+    ) {
+        projectRule.fixture.configureByText(javaFileName, buildContextWithRecommendation(brackets + remaining))
         runInEdtAndWait {
-            projectRule.fixture.editor.caretModel.moveToOffset(javaTestContext.length - 2)
+            // move the cursor to the correct trigger point (...void main<trigger>)
+            projectRule.fixture.editor.caretModel.moveToOffset(47)
         }
         withCodeWhispererServiceInvokedAndWait { states ->
             val recommendation = states.recommendationContext.details[0].reformatted.content()
             val editor = projectRule.fixture.editor
-            val expectedContext = buildContextWithRecommendation(recommendation)
+            val expectedContext = buildContextWithRecommendation(recommendation + remaining)
             val startOffset = editor.caretModel.offset
             typing.forEachIndexed { index, char ->
                 if (index < editor.caretModel.offset - startOffset) return@forEachIndexed

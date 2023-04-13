@@ -7,5 +7,6 @@ enum class CodeWhispererLoginType(val displayName: String) {
     SSO("IAM Identity Center"),
     Sono("Builder ID"),
     Accountless("Access Code"),
-    Logout("Logout")
+    Logout("Logout"),
+    Expired("Expired")
 }

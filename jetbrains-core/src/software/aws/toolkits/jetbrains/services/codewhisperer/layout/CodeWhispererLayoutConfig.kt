@@ -18,11 +18,10 @@ object CodeWhispererLayoutConfig {
         fill = HORIZONTAL
     }
     val navigationButtonConstraints = GridBagConstraints().apply {
-        insets = JBInsets.create(0, 2)
         ipady = 6
     }
     val middleButtonConstraints = GridBagConstraints().apply {
-        insets = JBInsets.create(0, 4)
+        insets = JBInsets.create(0, 6)
         ipady = 6
     }
     val inlineLabelConstraints = GridBagConstraints().apply {

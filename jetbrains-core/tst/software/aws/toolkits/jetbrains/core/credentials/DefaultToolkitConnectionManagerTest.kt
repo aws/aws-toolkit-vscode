@@ -72,6 +72,27 @@ class DefaultToolkitConnectionManagerTest {
     }
 
     @Test
+    fun `loads a us-east-1 connection from state that does not contain the region string`() {
+        credManager.clear()
+        assertThat(sut.activeConnection()).isEqualTo(null)
+
+        val connection = authManager.createConnection(ManagedSsoProfile("us-east-1", aString(), emptyList()))
+        sut.loadState(ToolkitConnectionManagerState("sso;https://view.awsapps.com/start"))
+
+        assertThat(sut.activeConnection()).isEqualTo(connection)
+    }
+
+    @Test
+    fun `loads null connection from state which has an invalid format`() {
+        credManager.clear()
+        assertThat(sut.activeConnection()).isEqualTo(null)
+
+        sut.loadState(ToolkitConnectionManagerState("An invalid active connection id"))
+
+        assertThat(sut.activeConnection()).isEqualTo(null)
+    }
+
+    @Test
     fun `switch connection to null will fall back to IAM credential if applicable`() {
         val bearerConnection = ManagedBearerSsoConnection(aString(), "us-east-1", emptyList())
         configureSut(sut, bearerConnection)

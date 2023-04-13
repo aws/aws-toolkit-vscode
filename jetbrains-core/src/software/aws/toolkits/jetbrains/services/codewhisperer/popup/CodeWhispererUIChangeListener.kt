@@ -3,6 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.popup
 
+import com.intellij.openapi.editor.markup.EffectType
+import com.intellij.openapi.editor.markup.HighlighterLayer
+import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.openapi.util.Disposer
+import com.intellij.xdebugger.ui.DebuggerColors
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.inlay.CodeWhispererInlayManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
@@ -17,6 +23,9 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val selectedIndex = sessionContext.selectedIndex
         val typeahead = sessionContext.typeahead
         val detail = states.recommendationContext.details[selectedIndex]
+        val caretOffset = editor.caretModel.primaryCaret.offset
+        val document = editor.document
+        val lineEndOffset = document.getLineEndOffset(document.getLineNumber(caretOffset))
 
         // get matching brackets from recommendations to the brackets after caret position
         val remaining = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
@@ -28,9 +37,32 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val otherLinesOfRemaining = remainingLines.drop(1)
 
         // process first line inlays, where we do subsequence matching as much as possible
-        val (matchingSymbols, isFirstLineFullMatching) = editorManager.getMatchingSymbolsFromRecommendation(
-            editor, firstLineOfRemaining, detail.isTruncatedOnRight
+        val matchingSymbols = editorManager.getMatchingSymbolsFromRecommendation(
+            editor, firstLineOfRemaining, detail.isTruncatedOnRight, sessionContext
         )
+
+        sessionContext.toBeRemovedHighlighter?.let {
+            editor.markupModel.removeHighlighter(it)
+        }
+
+        // Add the strike-though hint for the remaining non-matching first-line right context for multi-line completions
+        if (!detail.isTruncatedOnRight && otherLinesOfRemaining.isNotEmpty()) {
+            val rangeHighlighter = editor.markupModel.addRangeHighlighter(
+                matchingSymbols[matchingSymbols.size - 2].second,
+                lineEndOffset,
+                HighlighterLayer.LAST + 1,
+                TextAttributes().apply {
+                    effectType = EffectType.STRIKEOUT
+                    effectColor = editor.colorsScheme.getAttributes(DebuggerColors.INLINED_VALUES_EXECUTION_LINE).foregroundColor
+                },
+                HighlighterTargetArea.EXACT_RANGE
+            )
+            Disposer.register(states.popup) {
+                editor.markupModel.removeHighlighter(rangeHighlighter)
+            }
+            sessionContext.toBeRemovedHighlighter = rangeHighlighter
+        }
+
         val chunks = CodeWhispererRecommendationManager.getInstance().buildRecommendationChunks(
             firstLineOfRemaining,
             matchingSymbols
@@ -40,9 +72,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val overlappingLinesCount = editorManager.findOverLappingLines(
             editor,
             otherLinesOfRemaining,
-            isFirstLineFullMatching,
             detail.isTruncatedOnRight,
-            states.popup,
+            sessionContext
         )
 
         var otherLinesInlayText = ""
@@ -76,21 +107,14 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         ).substring(typeahead.length)
 
         val remainingLines = remaining.split("\n")
-        val firstLineOfRemaining = remainingLines.first()
         val otherLinesOfRemaining = remainingLines.drop(1)
-
-        // process first line inlays, where we do subsequence matching as much as possible
-        val (_, isFirstLineFullMatching) = editorManager.getMatchingSymbolsFromRecommendation(
-            editor, firstLineOfRemaining, detail.isTruncatedOnRight
-        )
 
         // process other lines inlays, where we do tail-head matching as much as possible
         val overlappingLinesCount = editorManager.findOverLappingLines(
             editor,
             otherLinesOfRemaining,
-            isFirstLineFullMatching,
             detail.isTruncatedOnRight,
-            states.popup
+            sessionContext
         )
 
         CodeWhispererPopupManager.getInstance().render(

@@ -50,7 +50,7 @@ class CodeWhispererExplorerActionManagerTest {
     @Rule
     val mockClientManager = MockClientManagerRule()
 
-    private lateinit var sut: CodeWhispererExplorerActionManager
+    private lateinit var mockManager: CodeWhispererExplorerActionManager
     private lateinit var project: Project
     private lateinit var connectionManager: ToolkitConnectionManager
 
@@ -67,37 +67,25 @@ class CodeWhispererExplorerActionManagerTest {
      * CheckActiveCodeWhispererConnectionType()
      */
     @Test
-    fun `when hasAcceptedTermsOfService is false should return logout`() {
-        sut = spy()
-        whenever(sut.hasAcceptedTermsOfService()).thenReturn(false)
-
-        val actual = sut.checkActiveCodeWhispererConnectionType(project)
-        assertThat(actual).isEqualTo(CodeWhispererLoginType.Logout)
-    }
-
-    @Test
     fun `when there is no connection, should return logout`() {
-        sut = spy()
-        whenever(sut.hasAcceptedTermsOfService()).thenReturn(true)
+        mockManager = spy()
         whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(null)
 
-        val actual = sut.checkActiveCodeWhispererConnectionType(project)
+        val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
         assertThat(actual).isEqualTo(CodeWhispererLoginType.Logout)
     }
 
     @Test
     fun `when ToS accepted and there is an accountless token, should return accountless`() {
-        sut = spy()
-        whenever(sut.hasAcceptedTermsOfService()).thenReturn(true)
-
-        sut.loadState(
+        mockManager = spy()
+        mockManager.loadState(
             // set up accountless token
             CodeWhispererExploreActionState().apply {
                 this.token = "foo"
             }
         )
 
-        val actual = sut.checkActiveCodeWhispererConnectionType(project)
+        val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
         assertThat(actual).isEqualTo(CodeWhispererLoginType.Accountless)
     }
 
@@ -113,16 +101,16 @@ class CodeWhispererExplorerActionManagerTest {
 
     @Test
     fun `test nullifyAccountlessCredentialIfNeeded`() {
-        sut = CodeWhispererExplorerActionManager()
-        sut.loadState(CodeWhispererExploreActionState().apply { this.token = "foo" })
+        mockManager = CodeWhispererExplorerActionManager()
+        mockManager.loadState(CodeWhispererExploreActionState().apply { this.token = "foo" })
 
-        assertThat(sut.state.token)
+        assertThat(mockManager.state.token)
             .isNotNull
             .isEqualTo("foo")
 
-        sut.nullifyAccountlessCredentialIfNeeded()
+        mockManager.nullifyAccountlessCredentialIfNeeded()
 
-        assertThat(sut.state.token)
+        assertThat(mockManager.state.token)
             .isNull()
     }
 
@@ -133,34 +121,30 @@ class CodeWhispererExplorerActionManagerTest {
      */
     @Test
     fun `test isCodeWhispererEnabled`() {
-        sut = spy()
-        ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, sut, disposableRule.disposable)
+        mockManager = mock()
+        ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, mockManager, disposableRule.disposable)
 
-        whenever(sut.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Logout)
+        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Logout)
         assertThat(isCodeWhispererEnabled(project)).isFalse
 
-        whenever(sut.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Accountless)
+        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Accountless)
         assertThat(isCodeWhispererEnabled(project)).isTrue
 
-        whenever(sut.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Sono)
+        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Sono)
         assertThat(isCodeWhispererEnabled(project)).isTrue
 
-        whenever(sut.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.SSO)
+        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.SSO)
         assertThat(isCodeWhispererEnabled(project)).isTrue
     }
 
     private fun assertLoginType(startUrl: String, expectedType: CodeWhispererLoginType) {
-        sut = spy()
-        whenever(sut.hasAcceptedTermsOfService()).thenReturn(true)
-        whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(
-            ManagedBearerSsoConnection(
-                startUrl = startUrl,
-                region = "us-east-1",
-                emptyList()
-            )
-        )
+        mockManager = spy()
+        val conn: ManagedBearerSsoConnection = mock()
+        whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(conn)
+        whenever(conn.startUrl).thenReturn(startUrl)
+        whenever(conn.getConnectionSettings()).thenReturn(null)
 
-        val actual = sut.checkActiveCodeWhispererConnectionType(project)
+        val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
         assertThat(actual).isEqualTo(expectedType)
     }
 }
