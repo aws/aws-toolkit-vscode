@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { awsIdSignIn, showConnectionPrompt} from "../../../codewhisperer/util/showSsoPrompt"
+import { awsIdSignIn, showConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
 import { getTestLogger } from '../../globalSetup.test'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -29,12 +29,12 @@ describe('showConnectionPrompt', function () {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
         })
-        
+
         await showConnectionPrompt()
 
         assert.ok(authUtilSpy.called)
         const assertTelemetry = assertTelemetryCurried('ui_click')
-        assertTelemetry({elementId: 'connection_optionBuilderID'})
+        assertTelemetry({ elementId: 'connection_optionBuilderID' })
     })
 
     it('connectToAwsBuilderId logs that AWS ID sign in was selected', async function () {
@@ -42,7 +42,7 @@ describe('showConnectionPrompt', function () {
         sinon.stub(vscode.commands, 'executeCommand')
 
         await awsIdSignIn()
-        
+
         const loggedEntries = getTestLogger().getLoggedEntries()
         assert.ok(loggedEntries.find(entry => entry === 'selected AWS ID sign in'))
     })
