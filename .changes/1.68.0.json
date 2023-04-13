@@ -1,0 +1,34 @@
+{
+	"date": "2023-04-13",
+	"version": "1.68.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Dev Env Space quick pick shows all Spaces + Projects"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: Toolkit attempts reconnect to non-vscode Dev Environment"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "The AWS status bar item is colored despite there not being anything that needs user attention"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Now also provides import recommendations"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: new code scan features: \n1. highlighting scanned files \n2. stop security scan"
+		},
+		{
+			"type": "Feature",
+			"description": "auth: support `sso_session` for profiles in AWS shared ini files"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: new supported programming languages: c, cpp, go, kotlin, php, ruby, rust, scala, shell, sql. "
+		}
+	]
+}

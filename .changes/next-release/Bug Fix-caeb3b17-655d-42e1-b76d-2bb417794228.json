@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "The AWS status bar item is colored despite there not being anything that needs user attention"
-}
