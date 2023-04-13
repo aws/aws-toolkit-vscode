@@ -29,6 +29,7 @@ describe('StateMachineGraphCache', function () {
     describe('updateCachedFile', function () {
         it('downloads a file when it is not in cache and stores it', async function () {
             const globalStorage = {
+                keys: () => [],
                 update: sinon.spy(),
                 get: sinon.stub().returns(undefined),
             }
@@ -60,6 +61,7 @@ describe('StateMachineGraphCache', function () {
 
         it('downloads and stores a file when cached file exists but url has been updated', async function () {
             const globalStorage = {
+                keys: () => [],
                 update: sinon.spy(),
                 get: sinon.stub().returns('https://old-url'),
             }
@@ -91,6 +93,7 @@ describe('StateMachineGraphCache', function () {
 
         it('it does not store data when file exists and url for it is same', async function () {
             const globalStorage = {
+                keys: () => [],
                 update: sinon.spy(),
                 get: sinon.stub().returns(assetUrl),
             }
@@ -122,6 +125,7 @@ describe('StateMachineGraphCache', function () {
 
         it('creates assets directory when it does not exist', async function () {
             const globalStorage = {
+                keys: () => [],
                 update: sinon.spy(),
                 get: sinon.stub().returns(undefined),
             }

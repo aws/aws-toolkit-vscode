@@ -3,6 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export function stringOrProp(obj: any, prop: string): string {
+    if (obj === undefined || typeof obj === 'string') {
+        return obj ?? ''
+    }
+    return obj[prop] ?? ''
+}
+
 export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
     return props.filter(prop => obj[prop] === undefined)
 }

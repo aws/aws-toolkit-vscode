@@ -14,6 +14,7 @@ export function partition(memento: vscode.Memento, key: string): vscode.Memento 
     const update = (k: string, v: unknown) => memento.update(key, { ...get(), [k]: v })
 
     return {
+        keys: () => [], // TODO(jmkeyes): implement this?
         get: (key, defaultValue?) => (get()?.[key] as any) ?? defaultValue,
         update,
     }

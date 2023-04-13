@@ -24,14 +24,14 @@ describe('tech debt', function () {
         )
 
         assert.ok(
-            semver.lt(minVscode, '1.51.0'),
-            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
+            semver.lt(minVscode, '1.75.0'),
+            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
         )
 
         assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
 
         assert.ok(
-            semver.lt(minVscode, '1.56.0'),
+            semver.lt(minVscode, '1.75.0'),
             'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
         )
     })
