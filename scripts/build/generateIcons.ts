@@ -102,7 +102,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
         files: iconSources,
         fontName: fontId,
         formats: ['woff'],
-        startUnicode: 0xe000,
+        startUnicode: 0xf000,
         verbose: true,
         normalize: true,
         sort: true,
@@ -201,11 +201,10 @@ async function loadCodiconMappings(): Promise<Record<string, number | undefined>
     const codicons = path.join(projectDir, 'node_modules', '@vscode', 'codicons', 'src')
     const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
     const mappings: Record<string, number | undefined> = {}
-    let counter = 0xf000
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
-            mappings[`vscode-${k}`] = counter
-            counter += 1
+            // Assumption in the 0XE000 range, verify in mapping.json if needed
+            mappings[`vscode-${k}`] = v
         }
     }
 
