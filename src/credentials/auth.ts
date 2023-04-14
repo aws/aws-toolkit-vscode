@@ -464,7 +464,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error('Updating IAM connections is not supported')
         }
 
-        await this.invalidateConnection(connection.id)
+        await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
 
         const newProfile = await this.store.updateProfile(connection.id, profile)
         const updatedConn = this.getSsoConnection(connection.id, newProfile as StoredProfile<SsoProfile>)
@@ -491,18 +491,19 @@ export class Auth implements AuthService, ConnectionManager {
      * For SSO, this involves an API call to clear server-side state. The call happens
      * before the local token(s) are cleared as they are needed in the request.
      */
-    private async invalidateConnection(id: Connection['id']) {
+    private async invalidateConnection(id: Connection['id'], opt?: { skipGlobalLogout?: boolean }) {
         const profile = this.store.getProfileOrThrow(id)
 
         if (profile.type === 'sso') {
             const provider = this.getTokenProvider(id, profile)
             const client = this.createSsoClient(profile.ssoRegion, provider)
 
-            // TODO: this seems to fail on the backend for scoped tokens
-            await client.logout().catch(err => {
-                const name = profile.metadata.label ?? id
-                getLogger().warn(`auth: failed to logout of connection "${name}": %s`, err)
-            })
+            if (opt?.skipGlobalLogout !== true) {
+                await client.logout().catch(err => {
+                    const name = profile.metadata.label ?? id
+                    getLogger().warn(`auth: failed to logout of connection "${name}": %s`, err)
+                })
+            }
 
             await provider.invalidate()
         } else if (profile.type === 'iam') {
