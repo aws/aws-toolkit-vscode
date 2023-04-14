@@ -13,7 +13,7 @@ import {
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
 import { prepareDevEnvConnection } from '../../codecatalyst/model'
-import { Auth, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
+import { Auth, codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
@@ -373,7 +373,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function useCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
         const builderIdSsoConnection = (await auth.listConnections()).find(isValidCodeCatalystConnection)
-        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile()))
+        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(codecatalystScopes)))
 
         return auth.useConnection(conn)
     }
