@@ -201,9 +201,11 @@ async function loadCodiconMappings(): Promise<Record<string, number | undefined>
     const codicons = path.join(projectDir, 'node_modules', '@vscode', 'codicons', 'src')
     const data = JSON.parse(await fs.readFile(path.join(codicons, 'template', 'mapping.json'), 'utf-8'))
     const mappings: Record<string, number | undefined> = {}
+    let counter = 0xf000
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
-            mappings[`vscode-${k}`] = v - 0xd000
+            mappings[`vscode-${k}`] = counter
+            counter += 1
         }
     }
 
