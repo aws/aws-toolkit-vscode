@@ -750,13 +750,11 @@ export class Auth implements AuthService, ConnectionManager {
         // Use the environment token if available
         // This token only has CC permissions currently!
         if (getCodeCatalystDevEnvId() !== undefined) {
-            const profile = createBuilderIdProfile(codecatalystScopes)
-            const codecatalystConn = (await this.listConnections())
-                .filter(isBuilderIdConnection)
-                .find(conn => !codecatalystScopes.some(s => conn.scopes?.includes(s)))
-            if (!codecatalystConn) {
+            const connections = (await this.listConnections()).filter(isBuilderIdConnection)
+
+            if (connections.length === 0) {
                 const key = uuid.v4()
-                await this.store.addProfile(key, profile)
+                await this.store.addProfile(key, createBuilderIdProfile(codecatalystScopes))
                 await this.store.setCurrentProfileId(key)
             }
         }
