@@ -4,18 +4,14 @@
  */
 
 import * as assert from 'assert'
-import { SsoProfile, codewhispererScopes, isSsoConnection } from '../../../credentials/auth'
-import { AuthUtil, isUpgradeableConnection } from '../../../codewhisperer/util/authUtil'
+import { codewhispererScopes, isSsoConnection } from '../../../credentials/auth'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
 import { captureEventOnce } from '../../testUtil'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
-
-function createEntSsoProfile(props?: Partial<Omit<SsoProfile, 'type' | 'startUrl'>>): SsoProfile {
-    return createSsoProfile({ startUrl: enterpriseSsoStartUrl, ...props })
-}
 
 describe('AuthUtil', async function () {
     let auth: ReturnType<typeof createTestAuth>
@@ -48,20 +44,6 @@ describe('AuthUtil', async function () {
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
-    })
-
-    it('can correctly identify upgradeable and non-upgradable SSO connections', async function () {
-        const ssoProfile = createSsoProfile()
-        const awsBuilderIdProfile = createBuilderIdProfile({ scopes: codewhispererScopes })
-        const enterpriseSsoProfile = createEntSsoProfile({ scopes: codewhispererScopes })
-
-        const builderIdConn = await auth.createConnection(awsBuilderIdProfile)
-        const ssoConn = await auth.createConnection(ssoProfile)
-        const entSsoConn = await auth.createConnection(enterpriseSsoProfile)
-
-        assert.ok(isUpgradeableConnection(ssoConn))
-        assert.ok(!isUpgradeableConnection(builderIdConn))
-        assert.ok(!isUpgradeableConnection(entSsoConn))
     })
 
     it('should show reauthenticate prompt', async function () {

@@ -115,7 +115,7 @@ export class AuthUtil {
             return existingConn
         }
 
-        return this.secondaryAuth.addScopes(existingConn, codewhispererScopes)
+        return this.secondaryAuth.addScopes(existingConn, defaultScopes)
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
@@ -130,7 +130,7 @@ export class AuthUtil {
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.secondaryAuth.addScopes(existingConn, codewhispererScopes)
+            return this.secondaryAuth.addScopes(existingConn, defaultScopes)
         }
     }
 
@@ -238,6 +238,3 @@ export class AuthUtil {
         return !!globals.context.globalState.get(CodeWhispererConstants.accessToken)
     }
 }
-
-export const isUpgradeableConnection = (conn?: Connection): conn is SsoConnection =>
-    !!conn && !isValidCodeWhispererConnection(conn) && isSsoConnection(conn)

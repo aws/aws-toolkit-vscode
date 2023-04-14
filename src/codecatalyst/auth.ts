@@ -138,7 +138,7 @@ export class CodeCatalystAuthenticationProvider {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: 'Upgrade' } as ConnectionFlowEvent)
 
-            return this.secondaryAuth.addScopes(conn, codecatalystScopes)
+            return this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
         if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
