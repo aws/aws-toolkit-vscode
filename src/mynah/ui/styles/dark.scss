@@ -1,6 +1,6 @@
-body.vscode-dark {
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
     --mynah-color-light: rgba(255, 255, 255, 0.05);
-    --mynah-color-border-default: rgba(255, 255, 255, 0.1);
 
     --mynah-color-context-reverse: rgba(255, 255, 255, 0.5);
     --mynah-color-context-filter: 200%;
