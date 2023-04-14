@@ -62,7 +62,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 
     const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse(err => {
-        getLogger().warn('codecatalyst: failed to get current dev enviroment: %s', err)
+        getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
         return undefined
     })
 

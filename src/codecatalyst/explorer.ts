@@ -127,7 +127,7 @@ export class CodeCatalystRootNode implements RootNode {
 
     public async getTreeItem() {
         this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
-            getLogger().warn('codecatalyst: failed to get current dev enviroment: %s', err)
+            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
             return undefined
         })
 
