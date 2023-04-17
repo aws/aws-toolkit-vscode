@@ -12,7 +12,7 @@ import {
     createClient as createCodeCatalystClient,
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
-import { prepareDevEnvConnection } from '../../codecatalyst/model'
+import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
@@ -128,6 +128,29 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             getTestWindow().onDidShowMessage(m => {
                 const updateSshConfigItem = m.items.find(i => i.title === 'Update SSH config')
                 updateSshConfigItem?.select()
+            })
+        })
+
+        describe('getThisDevEnv', function () {
+            const ccAuth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
+
+            it('returns `undefined` if not in a dev environment', async function () {
+                const result = await getThisDevEnv(ccAuth)
+                assert.strictEqual(result, undefined)
+            })
+
+            it('returns an error if in a dev environment but the API calls fail', async function () {
+                const oldEnv = { ...process.env }
+                process.env['__DEV_ENVIRONMENT_ID'] = defaultDevEnv.id
+                process.env['__DEV_ENVIRONMENT_SPACE_NAME'] = defaultDevEnv.org.name
+                process.env['__DEV_ENVIRONMENT_PROJECT_NAME'] = 'wrong-project-name'
+
+                try {
+                    const result = await getThisDevEnv(ccAuth)
+                    assert.ok(result?.isErr(), 'Expected an error to be returned')
+                } finally {
+                    process.env = oldEnv
+                }
             })
         })
 
