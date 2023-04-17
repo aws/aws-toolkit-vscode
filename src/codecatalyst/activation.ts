@@ -14,7 +14,6 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
 import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
-import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -62,9 +61,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
     }
 
-    const settings = PromptSettings.instance
-    if (getCodeCatalystDevEnvId()) {
-        const thisDevenv = await getThisDevEnv(authProvider)
+    const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse(err => {
+        getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
+        return undefined
+    })
+
+    if (thisDevenv) {
         getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
         if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
@@ -73,6 +75,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             return
         }
 
+        const settings = PromptSettings.instance
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',

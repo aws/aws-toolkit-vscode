@@ -16,6 +16,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
 import { isDevenvVscode, recordSource } from './utils'
+import { SsoConnection } from '../credentials/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,14 +31,13 @@ export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCataly
         }
         getLogger().info(`codecatalyst: reconnect: onDidChangeActiveConnection: startUrl=${conn.startUrl}`)
 
-        const client = await createClient(conn)
         const envId = getCodeCatalystDevEnvId()
-        handleRestart(client, ctx, envId)
+        handleRestart(conn, ctx, envId)
         restartHandled = true
     })
 }
 
-function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: string | undefined) {
+function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | undefined) {
     if (envId !== undefined) {
         const memento = ctx.extensionContext.globalState
         const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
@@ -55,7 +55,7 @@ function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: strin
         getLogger().info('codecatalyst: attempting to poll dev environments')
 
         // Reconnect devenvs (if coming from a restart)
-        reconnectDevEnvs(client, ctx).catch(err => {
+        reconnectDevEnvs(conn, ctx).catch(err => {
             getLogger().error(`codecatalyst: error while resuming devenvs: ${err}`)
         })
     }
@@ -63,10 +63,10 @@ function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: strin
 
 /**
  * Attempt to poll for connection in all valid devenvs
- * @param client a connected client
+ * @param conn a connection that may be used for CodeCatalyst
  * @param ctx the extension context
  */
-async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Promise<void> {
+async function reconnectDevEnvs(conn: SsoConnection, ctx: ExtContext): Promise<void> {
     const memento = ctx.extensionContext.globalState
     const pendingDevEnvs = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     const validDevEnvs = filterInvalidDevEnvs(pendingDevEnvs)
@@ -85,12 +85,14 @@ async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Pr
         'Dev Environments restarting: {0}',
         polledDevEnvs
     )
-    vscode.window.withProgress(
+    await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
         },
-        (progress, token) => {
+        async (progress, token) => {
             progress.report({ message: progressTitle })
+            const client = await createClient(conn)
+
             return pollDevEnvs(client, progress, token, memento, validDevEnvs)
         }
     )
