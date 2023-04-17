@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
-import { EndpointsProvider } from '../../shared/regions/endpointsProvider'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { FakeExtensionContext, FakeMemento } from '../fakeExtensionContext'
 import {
@@ -16,7 +15,6 @@ import {
     DEFAULT_TEST_REGION_NAME,
 } from '../shared/regions/testUtil'
 import { makeFakeAwsContextWithPlaceholderIds } from '../utilities/fakeAwsContext'
-import { stub } from '../utilities/stubber'
 
 describe('AwsExplorer', function () {
     let sandbox: sinon.SinonSandbox
@@ -52,15 +50,14 @@ describe('AwsExplorer', function () {
 
     it('refreshes when the Region Provider is updated', async function () {
         const fakeContext = await FakeExtensionContext.create()
-        const endpointsProvider = stub(EndpointsProvider)
-        endpointsProvider.load.resolves({ partitions: [] })
-
-        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
+        const endpoints = Promise.resolve({ partitions: [] })
+        const regionProvider = RegionProvider.fromEndpointsProvider({
+            local: () => endpoints,
+            remote: () => endpoints,
+        })
         const awsExplorer = new AwsExplorer(fakeContext, regionProvider)
-
         const refreshStub = sandbox.stub(awsExplorer, 'refresh')
-        await endpointsProvider.load()
-
+        await endpoints
         assert.ok(refreshStub.calledOnce, 'expected AWS Explorer to refresh itself')
     })
 })
