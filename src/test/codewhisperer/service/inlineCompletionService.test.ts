@@ -6,7 +6,10 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { InlineCompletionService, CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionService'
+import {
+    InlineCompletionService,
+    CWInlineCompletionItemProvider,
+} from '../../../codewhisperer/service/inlineCompletionService'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
@@ -219,16 +222,11 @@ describe('CWInlineCompletionProvider', function () {
             RecommendationHandler.instance.startPos = new vscode.Position(1, 1)
             const position = new vscode.Position(0, 0)
             const document = createMockDocument()
-            const fakeContext = {triggerKind: 0, selectedCompletionInfo: undefined}
+            const fakeContext = { triggerKind: 0, selectedCompletionInfo: undefined }
             const token = new vscode.CancellationTokenSource().token
             const provider = new CWInlineCompletionItemProvider(0, 0)
-            const result = await provider.provideInlineCompletionItems(
-                document,
-                position,
-                fakeContext,
-                token
-            )
-          
+            const result = await provider.provideInlineCompletionItems(document, position, fakeContext, token)
+
             assert.ok(result === undefined)
         })
     })

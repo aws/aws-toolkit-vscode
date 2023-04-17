@@ -85,6 +85,16 @@ export const supportedLanguages = [
     'typescript',
     'typescriptreact',
     'csharp',
+    'c',
+    'cpp',
+    'go',
+    'kotlin',
+    'php',
+    'ruby',
+    'rust',
+    'scala',
+    'shellscript',
+    'sql',
 ] as const
 
 export type SupportedLanguage = typeof supportedLanguages[number]
@@ -94,7 +104,7 @@ export type SupportedLanguage = typeof supportedLanguages[number]
  */
 export const pendingResponse = 'Waiting for CodeWhisperer...'
 
-export const runningSecurityScan = 'Running security scan...'
+export const runningSecurityScan = 'Scanning active file and its dependencies...'
 
 export const noSuggestions = 'No suggestions from CodeWhisperer'
 
@@ -132,8 +142,6 @@ export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
-export const termsAcceptedKey = 'CODEWHISPERER_TERMS_ACCEPTED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
@@ -141,6 +149,8 @@ export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
+
+export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html'
 
 export const accessTokenMigrationLearnMoreUri =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer-auth.html'
@@ -203,8 +213,6 @@ export const codeScanJobPollingIntervalSeconds = 5
 
 export const artifactTypeSource = 'SourceCode'
 
-export const artifactTypeBuild = 'BuiltJars'
-
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
@@ -216,6 +224,8 @@ export const reloadWindowPrompt =
     'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
+
+export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, since you are in Professional tier`
 
 export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
@@ -231,8 +241,9 @@ export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
 
 export const connectWithAWSBuilderId = `Connect with AWS`
 
-export const freeTierLimitReached =
-    'Free tier limit for Amazon CodeWhisperer has been met. Features will be disabled until next billing cycle begins.'
+export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
+
+export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
 export const throttlingLearnMore = `Learn More`
 
@@ -244,13 +255,11 @@ export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
 
-export const connectionExpired = `AWS Toolkit: Connection expired. Reauthenticate to continue.`
+export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
 export const accessTokenMigrationLearnMore = `Learn More`
 
-export const accessTokenMigrationDoNotShowAgain = `Don\'t Show Again`
-
-export const accessTokenMigrationDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN'
+export const DoNotShowAgain = `Don\'t Show Again`
 
 export const accessTokenExpiredDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN'
 
@@ -263,3 +272,13 @@ export const accessTokenExpiredDoNotShowLastShown =
     'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN_LAST_SHOWN_TIME'
 
 export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`
+
+export const codeScanLogsOutputChannelId =
+    'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#2-CodeWhisperer Security Scan Logs'
+
+export const stopScanMessage =
+    'Stop security scan? This scan will be counted as one complete scan towards your monthly security scan limits.'
+
+export const showScannedFilesMessage = 'Show Scanned Files'
+
+export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'

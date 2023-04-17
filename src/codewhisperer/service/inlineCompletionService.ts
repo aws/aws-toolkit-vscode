@@ -22,6 +22,9 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
+import { ImportAdderProvider } from './importAdderProvider'
+
+const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -37,6 +40,10 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
 
     get getActiveItemIndex() {
         return this.activeItemIndex
+    }
+
+    public clearActiveItemIndex() {
+        this.activeItemIndex = undefined
     }
 
     private getGhostText(prefix: string, suggestion: string): string {
@@ -153,6 +160,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(RecommendationHandler.instance.startPos)) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             this.activeItemIndex = undefined
             return
         }
@@ -176,6 +184,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 r.content,
                 r.references
             )
+            ImportAdderProvider.instance.onShowRecommendation(document, RecommendationHandler.instance.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
             TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
@@ -190,6 +199,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             return [item]
         }
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
         this.activeItemIndex = undefined
         return []
     }
@@ -302,16 +312,26 @@ export class InlineCompletionService {
     async onEditorChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
+        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
     }
 
     async onFocusChange() {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
+        // e.kind will be 1 for keyboard cursor change events
+        // we do not want to reset the states for keyboard events because they can be typeahead
         if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
+            // when cursor change due to mouse movement we need to reset the active item index for inline
+            if (e.kind === 2) {
+                this.inlineCompletionProvider?.clearActiveItemIndex()
+            }
         }
     }
 
@@ -319,11 +339,12 @@ export class InlineCompletionService {
         try {
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
+            ImportAdderProvider.instance.clear()
             RecommendationHandler.instance.cancelPaginatedRequest()
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
             this.disposeInlineCompletion()
-            this.setCodeWhispererStatusBarOk()
+            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             this.disposeCommandOverrides()
         } finally {
             this.clearRejectionTimer()
@@ -369,6 +390,12 @@ export class InlineCompletionService {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
         }
+        const isAutoTrigger = triggerType === 'AutoTrigger'
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
+            return
+        }
+        TelemetryHelper.instance.setInvocationStartTime(performance.now())
         await this.clearInlineCompletionStates(editor)
         this.setCodeWhispererStatusBarLoading()
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -388,7 +415,8 @@ export class InlineCompletionService {
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
-                    this.setCodeWhispererStatusBarOk()
+                    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+                    TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) {
@@ -396,10 +424,11 @@ export class InlineCompletionService {
                 }
                 page++
             }
+            TelemetryHelper.instance.setNumberOfRequestsInSession(page + 1)
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
-        this.setCodeWhispererStatusBarOk()
+        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         if (triggerType === 'OnDemand' && RecommendationHandler.instance.recommendations.length === 0) {
             if (RecommendationHandler.instance.errorMessagePrompt !== '') {
                 showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
@@ -447,12 +476,24 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
         this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
         this.statusBar.text = ` $(check)CodeWhisperer`
+        this.statusBar.command = undefined
+        ;(this.statusBar as any).backgroundColor = undefined
+        this.statusBar.show()
+    }
+
+    setCodeWhispererStatusBarDisconnected() {
+        this._isPaginationRunning = false
+        this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        this.statusBar.command = 'aws.codeWhisperer.reconnect'
+        ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
 
@@ -491,11 +532,3 @@ export class InlineCompletionService {
         }, 5 * 1000)
     }
 }
-
-export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (!AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.hideCodeWhispererStatusBar()
-    } else {
-        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-    }
-})

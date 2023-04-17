@@ -92,6 +92,7 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(handler, 'isCancellationRequested').returns(false)
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(handler.sessionId, 'test_request')
@@ -123,6 +124,7 @@ describe('recommendationHandler', function () {
                 codewhispererLastSuggestionIndex: -1,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererAutomatedTriggerType: 'Enter',
+                codewhispererImportRecommendationEnabled: true,
                 codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
                 codewhispererLineNumber: 1,
