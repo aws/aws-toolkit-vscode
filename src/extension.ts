@@ -32,8 +32,7 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { RegionProvider } from './shared/regions/regionProvider'
-import { EndpointsProvider } from './shared/regions/endpointsProvider'
+import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
@@ -299,13 +298,14 @@ function initializeCredentialsProviderManager() {
     manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
-function makeEndpointsProvider(): EndpointsProvider {
+function makeEndpointsProvider() {
     const localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
-    const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
-
-    return provider
+    return {
+        local: () => getEndpointsFromFetcher(localManifestFetcher),
+        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
+    }
 }
 
 function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
