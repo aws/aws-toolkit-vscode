@@ -344,7 +344,6 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 }
 
 .edit-icon {
-    margin-left: 10px;
     color: #0078d7;
 }
 </style>
