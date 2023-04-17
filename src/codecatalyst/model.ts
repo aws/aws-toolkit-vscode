@@ -17,7 +17,7 @@ import {
 import { DevEnvClient } from '../shared/clients/devenvClient'
 import { getLogger } from '../shared/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
-import { getCodeCatalystSpaceName, getCodeCatalystProjectName } from '../shared/vscode/env'
+import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -28,7 +28,8 @@ import { Commands } from '../shared/vscode/commands2'
 import { areEqual } from '../shared/utilities/pathUtils'
 import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { UnknownError } from '../shared/errors'
+import { ToolkitError } from '../shared/errors'
+import { Result } from '../shared/utilities/result'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -154,10 +155,10 @@ export interface ConnectedDevEnv {
 export async function getConnectedDevEnv(
     codeCatalystClient: CodeCatalystClient,
     devenvClient = DevEnvClient.instance
-): Promise<ConnectedDevEnv | undefined> {
+): Promise<ConnectedDevEnv> {
     const devEnvId = devenvClient.id
-    if (!devEnvId || !devenvClient.isCodeCatalystDevEnv()) {
-        return
+    if (!devEnvId) {
+        throw new ToolkitError('Not connected to a dev environment', { code: 'NotConnectedToDevEnv' })
     }
 
     const projectName = getCodeCatalystProjectName()
@@ -180,17 +181,20 @@ export async function getConnectedDevEnv(
  * Gets the current devenv that Toolkit is running in, if any.
  */
 export async function getThisDevEnv(authProvider: CodeCatalystAuthenticationProvider) {
+    if (!getCodeCatalystDevEnvId()) {
+        return
+    }
+
     try {
         await authProvider.restore()
         const conn = authProvider.activeConnection
         if (conn !== undefined && authProvider.auth.getConnectionState(conn) === 'valid') {
             const client = await createClient(conn)
-            return await getConnectedDevEnv(client)
+            return Result.ok(await getConnectedDevEnv(client))
         }
     } catch (err) {
-        getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
+        return Result.err(err)
     }
-    return undefined
 }
 
 /**

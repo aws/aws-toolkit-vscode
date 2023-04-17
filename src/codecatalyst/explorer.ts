@@ -15,6 +15,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
+import { getLogger } from '../shared/logger'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
@@ -125,7 +126,10 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
-        this.devenv = await getThisDevEnv(this.authProvider)
+        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
+            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
+            return undefined
+        })
 
         const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         item.contextValue = this.authProvider.isUsingSavedConnection
