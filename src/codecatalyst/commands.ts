@@ -184,11 +184,11 @@ interface CodeCatalystCommand<T extends any[], U> {
 }
 
 interface ClientInjector {
-    <T extends any[], U>(command: CodeCatalystCommand<T, U>, ...args: T): Promise<U | undefined>
+    <T extends any[], U>(command: CodeCatalystCommand<T, U>, ...args: T): Promise<U>
 }
 
 interface CommandDecorator {
-    <T extends any[], U>(command: CodeCatalystCommand<T, U>): (...args: T) => Promise<U | undefined>
+    <T extends any[], U>(command: CodeCatalystCommand<T, U>): (...args: T) => Promise<U>
 }
 
 type Inject<T, U> = T extends (...args: infer P) => infer R
@@ -280,10 +280,6 @@ export class CodeCatalystCommands {
 
     public async openDevEnvSettings(): Promise<void> {
         const devenv = await this.withClient(getConnectedDevEnv)
-
-        if (!devenv) {
-            throw new Error('No devenv available')
-        }
 
         return this.withClient(showConfigureDevEnv, globals.context, devenv, CodeCatalystCommands.declared)
     }
