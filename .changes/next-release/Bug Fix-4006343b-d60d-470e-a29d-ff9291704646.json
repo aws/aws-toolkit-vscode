@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "endpoints: local file never loads if remote call hangs"
+}

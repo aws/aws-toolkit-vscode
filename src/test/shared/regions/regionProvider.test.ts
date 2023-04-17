@@ -53,6 +53,24 @@ const endpoints = {
 }
 
 describe('RegionProvider', async function () {
+    describe('fromEndpointsProvider', function () {
+        it('pulls from the local source first and remote source later', async function () {
+            const localEndpoints = Promise.resolve({ partitions: endpoints.partitions.slice(0, 1) })
+            const remoteEndpoints = Promise.resolve(endpoints)
+            const regionProvider = RegionProvider.fromEndpointsProvider({
+                local: () => localEndpoints,
+                remote: () => remoteEndpoints,
+            })
+
+            await localEndpoints
+            assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
+            assert.strictEqual(regionProvider.getPartitionId('awscnregion1'), undefined)
+            await remoteEndpoints
+            assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
+            assert.strictEqual(regionProvider.getPartitionId('awscnregion1'), 'aws-cn')
+        })
+    })
+
     describe('isServiceInRegion', async function () {
         it('indicates when a service is in a region', async function () {
             const regionProvider = new RegionProvider(endpoints)
