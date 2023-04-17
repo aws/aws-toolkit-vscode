@@ -203,7 +203,10 @@ async function loadCodiconMappings(): Promise<Record<string, number | undefined>
     const mappings: Record<string, number | undefined> = {}
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
-            // Assumption in the 0XE000 range, verify in mapping.json if needed
+            if (v < 0xe000 || v >= 0xf000) {
+                // Will warn us if the codepoint moves outside the expected range
+                throw new Error(`Codicon "${k}" has unexpected codepoint: ${v}`)
+            }
             mappings[`vscode-${k}`] = v
         }
     }
