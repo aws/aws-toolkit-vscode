@@ -233,6 +233,7 @@ with what features/services are supported.
 
         <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
         <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory"/>
+        <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.services.caws.CawsStatusBarInstaller"/>
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
