@@ -40,7 +40,6 @@ import software.aws.toolkits.jetbrains.gateway.welcomescreen.PANEL_TOP_INSET
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.recursivelySetBackground
 import software.aws.toolkits.jetbrains.services.caws.CawsLetterBadge
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
-import software.aws.toolkits.jetbrains.settings.CawsSpaceTracker
 import software.aws.toolkits.jetbrains.ui.connection.SonoLoginOverlay
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
@@ -144,9 +143,7 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
         callback(
             cawsWizard(
                 lifetime,
-                CawsSettings().also {
-                    it.initialSpace = CawsSpaceTracker.getInstance().lastSpaceName()
-                }
+                CawsSettings()
             )
         )
     }

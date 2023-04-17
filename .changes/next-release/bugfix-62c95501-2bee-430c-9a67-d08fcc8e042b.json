@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where nothing happens when trying to create an empty Dev Environment"
+}

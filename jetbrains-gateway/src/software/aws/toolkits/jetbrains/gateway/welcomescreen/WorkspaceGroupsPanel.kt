@@ -171,7 +171,7 @@ class WorkspaceGroupsPanel(
                             lifetime,
                             CawsSettings().also {
                                 it.project = project
-                                it.linkedRepoName = workspaceGroup.repoName ?: ""
+                                it.linkedRepoName = workspaceGroup.repoName
                             }
                         )
                     )
