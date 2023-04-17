@@ -9,7 +9,8 @@ import { Settings } from '../shared/settings'
 import { Auth } from './auth'
 import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
-import { AuthCommandDeclarations } from './commands'
+import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
+import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -28,6 +29,9 @@ export async function initialize(
 
     // TODO: To enable this in prod we need to remove the 'when' clause
     // for: '"command": "aws.auth.showConnectionsPage"' in package.json
-    const authCommands = new AuthCommandDeclarations(extensionContext)
-    authCommands.registerCommandsWithVSCode()
+    registerCommandsWithVSCode(
+        extensionContext,
+        new AuthCommandDeclarations(),
+        new AuthCommandBackend(extensionContext)
+    )
 }

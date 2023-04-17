@@ -70,25 +70,24 @@ interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any[]
  *
  * @param T The class that declares the commands
  */
-interface CommandDeclarations<T> {
-    readonly backend: T
-
+export interface CommandDeclarations<T> {
     readonly declared: { [K in FunctionKeys<T>]: DeclaredCommand<Functions<T>[K], [T]> }
 }
 
-export abstract class BaseCommandDeclarations<T> implements CommandDeclarations<T> {
-    public readonly declared: { [K in FunctionKeys<T>]: DeclaredCommand<Functions<T>[K], [T]> } = {} as any
-
-    public constructor(readonly extContext: vscode.ExtensionContext, readonly backend: T) {}
-
-    /**
-     * Registers all declared commands with VS Code commands api.
-     */
-    public registerCommandsWithVSCode(): void {
-        this.extContext.subscriptions.push(
-            ...Object.values<DeclaredCommand>(this.declared).map(c => c.register(this.backend))
-        )
-    }
+/**
+ * Using the given inputs will register the given commands with VS Code.
+ *
+ * @param declarations Has the mapping of command names to the backend logic
+ * @param backend The backend logic of the commands
+ */
+export function registerCommandsWithVSCode<T>(
+    extContext: vscode.ExtensionContext,
+    declarations: CommandDeclarations<T>,
+    backend: T
+): void {
+    extContext.subscriptions.push(
+        ...Object.values<DeclaredCommand>(declarations.declared).map(c => c.register(backend))
+    )
 }
 
 /**
