@@ -1,7 +1,8 @@
 [versions]
 apacheCommons = "2.8.0"
 assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.com/issue/KT-17765
-awsSdk = "2.18.20"
+# match with <root>/settings.gradle.kts
+awsSdk = "2.20.48"
 commonmark = "0.17.1"
 detekt = "1.21.0"
 intellijGradle = "1.13.2"
@@ -31,6 +32,7 @@ zjsonpatch = "0.4.11"
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 aws-apacheClient = { module = "software.amazon.awssdk:apache-client", version.ref = "awsSdk" }
 aws-apprunner = { module = "software.amazon.awssdk:apprunner", version.ref = "awsSdk" }
+aws-bom = { module = "software.amazon.awssdk:bom", version.ref = "awsSdk" }
 aws-cloudcontrol = { module = "software.amazon.awssdk:cloudcontrol", version.ref = "awsSdk" }
 aws-cloudformation = { module = "software.amazon.awssdk:cloudformation", version.ref = "awsSdk" }
 aws-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "awsSdk" }
