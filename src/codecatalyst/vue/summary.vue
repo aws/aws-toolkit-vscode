@@ -157,7 +157,7 @@ export default defineComponent({
 
 #stop-icon {
     color: var(--vscode-debugIcon-stopForeground);
-    padding: 4px;
+    margin-right: 5px;
     vertical-align: -0.2em;
 }
 </style>
