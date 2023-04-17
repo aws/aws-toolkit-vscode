@@ -100,6 +100,7 @@ class CodeWhispererLanguageManagerTest {
         testGetProgrammingLanguageUtil(listOf("c++"), languageExtensionsMap[CodeWhispererC.INSTANCE], CodeWhispererC::class.java)
         testGetProgrammingLanguageUtil(listOf("Shell Script"), languageExtensionsMap[CodeWhispererShell.INSTANCE], CodeWhispererShell::class.java)
         testGetProgrammingLanguageUtil(listOf("Rust"), languageExtensionsMap[CodeWhispererRust.INSTANCE], CodeWhispererRust::class.java)
+        testGetProgrammingLanguageUtil(listOf("Python Console"), listOf(null), CodeWhispererPython::class.java)
     }
 
     @Test
@@ -113,7 +114,7 @@ class CodeWhispererLanguageManagerTest {
 
     private fun <T : CodeWhispererProgrammingLanguage> testGetProgrammingLanguageUtil(
         fileTypeNames: List<String>,
-        fileExtensions: List<String>?,
+        fileExtensions: List<String?>?,
         expectedLanguage: Class<T>
     ) {
         fileExtensions?.forEach { fileExtension ->

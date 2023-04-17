@@ -33,7 +33,12 @@ class CodeWhispererLanguageManager {
     // plugin features when developing CodeWhisperer features.
     fun getLanguage(vFile: VirtualFile): CodeWhispererProgrammingLanguage {
         val fileTypeName = vFile.fileType.name.lowercase()
-        val fileExtension = vFile.extension?.lowercase() ?: return CodeWhispererUnknownLanguage.INSTANCE
+        val fileExtension = vFile.extension?.lowercase()
+
+        // We want to support Python Console which does not have a file extension
+        if (fileExtension == null && !fileTypeName.contains("python")) {
+            return CodeWhispererUnknownLanguage.INSTANCE
+        }
         return when {
             fileTypeName.contains("python") -> CodeWhispererPython.INSTANCE
             fileTypeName.contains("javascript") -> CodeWhispererJavaScript.INSTANCE
