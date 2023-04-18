@@ -100,6 +100,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {
+    if (isCloud9()) {
+        return
+    }
+
     getLogger().info('codecatalyst: showReadmeFileOnFirstLoad()')
     // Check dev env state to see if this is the first time the user has connected to a dev env
     const isFirstLoad = workspaceState.get('aws.codecatalyst.devEnv.isFirstLoad', true)
