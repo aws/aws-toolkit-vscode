@@ -66,7 +66,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         return undefined
     })
 
-    if (thisDevenv) {
+    if (!thisDevenv) {
+        getLogger().verbose('codecatalyst: not a devenv, getThisDevEnv() returned empty')
+    } else {
         getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
         if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
