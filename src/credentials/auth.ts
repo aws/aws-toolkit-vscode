@@ -912,9 +912,8 @@ export const isSsoConnection = (conn?: Connection): conn is SsoConnection => con
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
 
-export async function createStartUrlPrompter(title: string, ignoreScopes = true) {
+export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
     const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
-    const requiredScopes = createSsoProfile('').scopes
 
     function validateSsoUrl(url: string) {
         if (!url.match(/^(http|https):\/\//i)) {
@@ -927,7 +926,7 @@ export async function createStartUrlPrompter(title: string, ignoreScopes = true)
                 a.authority.toLowerCase() === b.authority.toLowerCase()
             const oldConn = existingConnections.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
 
-            if (oldConn && (ignoreScopes || hasScopes(oldConn, requiredScopes))) {
+            if (oldConn && (!requiredScopes || hasScopes(oldConn, requiredScopes))) {
                 return 'A connection for this start URL already exists. Sign out before creating a new one.'
             }
         } catch (err) {
