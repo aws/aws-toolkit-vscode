@@ -13,17 +13,12 @@ describe('tech debt', function () {
     it('vscode minimum version', async function () {
         const minVscode = env.getMinVscodeVersion()
 
-        assert.ok(
-            semver.lt(minVscode, '1.53.0'),
-            'remove `SecretMemento` from src/codecatalyst/auth.ts added in https://github.com/aws/aws-toolkit-vscode-staging/pull/466'
-        )
+        assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
 
         assert.ok(
             semver.lt(minVscode, '1.75.0'),
             'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
         )
-
-        assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
 
         assert.ok(
             semver.lt(minVscode, '1.75.0'),
