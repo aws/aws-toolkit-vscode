@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeCatalyst: improved efficiency by reducing unnecessary service calls #3333"
-}
