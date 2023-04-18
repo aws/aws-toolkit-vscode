@@ -1,3 +1,10 @@
+## 1.69.0 2023-04-18
+
+- **Bug Fix** endpoints: local file never loads if remote call hangs
+- **Bug Fix** CodeCatalyst: improved efficiency by reducing unnecessary service calls #3333
+- **Bug Fix** Incorrect offset icons in webviews
+- **Feature** CodeCatalyst: show readme on first load of a Dev Environment
+
 ## 1.68.0 2023-04-13
 
 - **Bug Fix** Dev Env Space quick pick shows all Spaces + Projects
