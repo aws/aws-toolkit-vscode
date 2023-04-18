@@ -75,6 +75,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
             return
         }
 
+        await showReadmeFileOnFirstLoad(ctx.extensionContext.workspaceState)
+
         const settings = PromptSettings.instance
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
@@ -95,4 +97,40 @@ export async function activate(ctx: ExtContext): Promise<void> {
     Commands.register('aws.codecatalyst.removeConnection', () => {
         authProvider.removeSavedConnection()
     })
+}
+
+async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {
+    if (isCloud9()) {
+        return
+    }
+
+    getLogger().info('codecatalyst: showReadmeFileOnFirstLoad()')
+    // Check dev env state to see if this is the first time the user has connected to a dev env
+    const isFirstLoad = workspaceState.get('aws.codecatalyst.devEnv.isFirstLoad', true)
+
+    if (!isFirstLoad) {
+        getLogger().info('codecatalyst: is not first load, skipping showing README.md')
+        return
+    }
+
+    // Determine expected readme file location
+    const readmePath = `README.md`
+
+    // Find readme file in workspace
+    const readmeUri = await vscode.workspace.findFiles(readmePath).then(files => {
+        if (files.length === 0) {
+            return undefined
+        }
+        return files[0]
+    })
+
+    if (readmeUri === undefined) {
+        getLogger().info(`codecatalyst: README.md not found in path '${readmePath}'`)
+        return
+    }
+
+    // Show rendered readme file to user
+    await vscode.commands.executeCommand('markdown.showPreview', readmeUri)
+
+    await workspaceState.update('aws.codecatalyst.devEnv.isFirstLoad', false)
 }
