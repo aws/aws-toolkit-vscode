@@ -16,7 +16,7 @@ import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { getThisDevEnv } from './model'
@@ -66,9 +66,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
         return undefined
     })
 
-    if (thisDevenv) {
+    if (!thisDevenv) {
+        getLogger().verbose('codecatalyst: not a devenv, getThisDevEnv() returned empty')
+    } else {
         getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
-        if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
+        if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
             // Can happen if devenv is switched to ides="cloud9", etc.
             vscode.commands.executeCommand('workbench.action.remote.close')
@@ -81,7 +83,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
         if (await settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
-                'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings (AWS Extension > CodeCatalyst).'
+                'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings ({0} Extension > CodeCatalyst).',
+                getIdeProperties().company
             )
             const openDevEnvSettings = localize('AWS.codecatalyst.openDevEnvSettings', 'Open Dev Environment Settings')
             vscode.window.showInformationMessage(message, dontShow, openDevEnvSettings).then(selection => {
