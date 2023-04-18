@@ -33,4 +33,10 @@ class PythonHandlerCompletionProviderTest {
         val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.PYTHON3_9)
         assertFalse(provider.isCompletionSupported)
     }
+
+    @Test
+    fun completionIsNotSupportedPython310() {
+        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.PYTHON3_10)
+        assertFalse(provider.isCompletionSupported)
+    }
 }

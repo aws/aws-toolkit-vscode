@@ -22,10 +22,12 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
     override val supportedRuntimes = listOf(
         LambdaRuntime.PYTHON3_7,
         LambdaRuntime.PYTHON3_8,
-        LambdaRuntime.PYTHON3_9
+        LambdaRuntime.PYTHON3_9,
+        LambdaRuntime.PYTHON3_10
     )
 
     override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = when {
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON310) -> LambdaRuntime.PYTHON3_10
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON39) -> LambdaRuntime.PYTHON3_9
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> LambdaRuntime.PYTHON3_8
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON37) -> LambdaRuntime.PYTHON3_7
