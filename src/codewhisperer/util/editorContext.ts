@@ -63,7 +63,7 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
             return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)
         }
     }
-    return fileName
+    return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
 export function buildListRecommendationRequest(

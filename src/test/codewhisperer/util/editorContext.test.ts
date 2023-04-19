@@ -66,7 +66,6 @@ describe('editorContext', function () {
 
     describe('getfileNameForRequest', function () {
         it('Should return a new filename with correct extension given a .ipynb file', function () {
-            // give me a map from a language string to the extension
             const languageToExtension = new Map<string, string>([
                 ['python', 'py'],
                 ['rust', 'rs'],
