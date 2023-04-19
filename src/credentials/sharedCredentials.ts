@@ -35,7 +35,7 @@ interface AssignmentNode {
 
 export interface BaseSection {
     readonly type: string
-    readonly name: string
+    readonly name: ProfileName
     readonly source: vscode.Uri
     readonly startLines: number[]
     readonly assignments: AssignmentNode[]
@@ -99,7 +99,7 @@ export function getRequiredFields<T extends string>(section: Section, ...keys: T
 
 export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     sections: Section[],
-    name: string,
+    name: ProfileName,
     type: T
 ): Section & { type: T } {
     const section = sections.find(s => s.name === name && s.type === type) as (Section & { type: T }) | undefined
@@ -111,7 +111,7 @@ export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     return section
 }
 
-export function getSectionDataOrThrow(sections: Section[], name: string, type: Section['type']) {
+export function getSectionDataOrThrow(sections: Section[], name: ProfileName, type: Section['type']) {
     const section = getSectionOrThrow(sections, name, type)
     if (section.type !== type) {
         throw ParseError.fromSection(section, `Expected section to be type "${type}", got: ${section.type}`)
@@ -233,6 +233,13 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
 
     return parseIni(await SystemUtilities.readFile(credentialsUri), credentialsUri)
 }
+
+/**
+ * The name of a section in a credentials/config file
+ *
+ * The is the value of `{A}` in `[ {A} ]` or `[ {B} {A} ]`.
+ */
+export type ProfileName = string
 
 export interface Profile {
     [key: string]: string | undefined
