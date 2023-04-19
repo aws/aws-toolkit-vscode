@@ -315,21 +315,6 @@ describe('Auth', function () {
             assert.deepStrictEqual(await auth.listAndTraverseConnections().promise(), [])
         })
 
-        // Equivalent profiles from multiple sources is a fairly rare situation right now
-        // Ideally they would be de-duped although the implementation can be tricky
-        it('can handle multiple SSO connection and does not de-dupe', async function () {
-            const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
-            await auth.createConnection(linkedSsoProfile)
-            await auth.createConnection(otherProfile)
-
-            const connections = await auth.listAndTraverseConnections().promise()
-            assert.deepStrictEqual(
-                connections.map(c => c.type),
-                ['sso', 'sso', 'iam', 'iam', 'iam', 'iam', 'iam', 'iam'],
-                'Expected two SSO connections and 3 IAM connections for each SSO connection'
-            )
-        })
-
         it('prompts the user to reauthenticate if the source connection becomes invalid', async function () {
             const source = await auth.createConnection(linkedSsoProfile)
             const conn = await auth.listAndTraverseConnections().find(c => isIamConnection(c) && c.id.includes('sso'))
@@ -342,6 +327,36 @@ describe('Auth', function () {
             await runExpiredConnectionFlow(conn, /login/i)
             assert.strictEqual(auth.getConnectionState(source), 'valid')
             assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
+
+        describe('Multiple Connections', function () {
+            const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+
+            // Equivalent profiles from multiple sources is a fairly rare situation right now
+            // Ideally they would be de-duped although the implementation can be tricky
+            it('can handle multiple SSO connection and does not de-dupe', async function () {
+                await auth.createConnection(linkedSsoProfile)
+                await auth.createConnection(otherProfile)
+
+                const connections = await auth.listAndTraverseConnections().promise()
+                assert.deepStrictEqual(
+                    connections.map(c => c.type),
+                    ['sso', 'sso', 'iam', 'iam', 'iam', 'iam', 'iam', 'iam'],
+                    'Expected two SSO connections and 3 IAM connections for each SSO connection'
+                )
+            })
+
+            it('does not stop discovery if one connection fails', async function () {
+                const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+                await auth.createConnection(linkedSsoProfile)
+                await auth.createConnection(otherProfile)
+                auth.ssoClient.listAccounts.onFirstCall().rejects(new Error('No access'))
+                const connections = await auth.listAndTraverseConnections().promise()
+                assert.deepStrictEqual(
+                    connections.map(c => c.type),
+                    ['sso', 'sso', 'iam', 'iam', 'iam']
+                )
+            })
         })
     })
 
