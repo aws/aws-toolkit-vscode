@@ -64,6 +64,26 @@ describe('editorContext', function () {
         })
     })
 
+    describe('getfileNameForRequest', function () {
+        it('Should return a new filename with correct extension given a .ipynb file', function () {
+            // give me a map from a language string to the extension
+            const languageToExtension = new Map<string, string>([
+                ['python', 'py'],
+                ['rust', 'rs'],
+                ['javascript', 'js'],
+                ['typescript', 'ts'],
+                ['c', 'c'],
+            ])
+
+            languageToExtension.forEach((extension, language) => {
+                const editor = createMockTextEditor('', 'test.ipynb', language, 1, 17)
+                const actual = EditorContext.getFileNameForRequest(editor)
+                const expected = 'test.' + extension
+                assert.strictEqual(actual, expected)
+            })
+        })
+    })
+
     describe('validateRequest', function () {
         it('Should return false if request filename.length is invalid', function () {
             const req = createMockClientRequest()
