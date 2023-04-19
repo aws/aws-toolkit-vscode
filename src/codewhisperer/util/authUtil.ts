@@ -15,6 +15,7 @@ import {
     createSsoProfile,
     isSsoConnection,
     hasScopes,
+    ssoAccountAccessScopes,
     isIamConnection,
 } from '../../credentials/auth'
 import { Connection, SsoConnection } from '../../credentials/auth'
@@ -26,7 +27,8 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
 
-export const awsBuilderIdSsoProfile = createBuilderIdProfile()
+const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
+export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)
 
 export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
     if (isCloud9('classic')) {
@@ -48,7 +50,7 @@ export class AuthUtil {
     private readonly clearAccessToken = once(() =>
         globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
     )
-    private readonly secondaryAuth = getSecondaryAuth(
+    public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
         'codewhisperer',
         'CodeWhisperer',
@@ -80,8 +82,6 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
         })
-
-        Commands.register('aws.codeWhisperer.removeConnection', () => this.secondaryAuth.removeConnection())
     }
 
     // current active cwspr connection
@@ -115,7 +115,7 @@ export class AuthUtil {
             return existingConn
         }
 
-        return this.rescopeConnection(existingConn)
+        return this.secondaryAuth.addScopes(existingConn, defaultScopes)
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
@@ -125,17 +125,24 @@ export class AuthUtil {
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultScopes))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.rescopeConnection(existingConn)
+            return this.secondaryAuth.addScopes(existingConn, defaultScopes)
         }
     }
 
     public static get instance() {
-        return (this.#instance ??= new this())
+        if (this.#instance !== undefined) {
+            return this.#instance
+        }
+
+        const self = (this.#instance = new this())
+        Commands.register('aws.codeWhisperer.removeConnection', () => self.secondaryAuth.removeConnection())
+
+        return self
     }
 
     public async getBearerToken(): Promise<string> {
@@ -227,23 +234,7 @@ export class AuthUtil {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
 
-    public async rescopeConnection(existingConn: SsoConnection) {
-        const upgradedConn = await this.auth.createConnection(createSsoProfile(existingConn.startUrl))
-        await this.auth.deleteConnection(existingConn)
-
-        if (this.auth.activeConnection?.id === (existingConn as SsoConnection).id) {
-            await this.auth.useConnection(upgradedConn)
-        } else {
-            await this.secondaryAuth.useNewConnection(upgradedConn)
-        }
-
-        return upgradedConn
-    }
-
     public hasAccessToken() {
         return !!globals.context.globalState.get(CodeWhispererConstants.accessToken)
     }
 }
-
-export const isUpgradeableConnection = (conn?: Connection): conn is SsoConnection =>
-    !!conn && !isValidCodeWhispererConnection(conn) && isSsoConnection(conn)
