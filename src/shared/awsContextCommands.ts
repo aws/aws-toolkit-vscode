@@ -22,7 +22,7 @@ import { SharedCredentialsProvider } from '../credentials/providers/sharedCreden
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
-import { extractData, loadSharedCredentialsSections, Profile } from '../credentials/sharedCredentials'
+import { extractDataFromSection, loadSharedCredentialsSections, Profile } from '../credentials/sharedCredentials'
 
 /**
  * @deprecated
@@ -118,7 +118,7 @@ export class AwsContextCommands {
         const profiles = {} as Record<string, Profile>
         for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
             if (v.type === 'profile') {
-                profiles[k] = extractData(v)
+                profiles[k] = extractDataFromSection(v)
             }
         }
 

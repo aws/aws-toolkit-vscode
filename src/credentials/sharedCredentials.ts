@@ -75,7 +75,7 @@ export class ParseError extends Error {
 export const isProfileSection = (section: Section): section is ProfileSection => section.type === 'profile'
 export const isSsoSessionSection = (section: Section): section is SsoSessionSection => section.type === 'sso-session'
 
-export function extractData(section: BaseSection): Record<string, string> {
+export function extractDataFromSection(section: BaseSection): Record<string, string> {
     const data: Record<string, string> = {}
     for (const assignment of section.assignments) {
         data[assignment.key] = assignment.value
@@ -86,7 +86,7 @@ export function extractData(section: BaseSection): Record<string, string> {
 
 export function getRequiredFields<T extends string>(section: Section, ...keys: T[]): { [P in T]: string } {
     try {
-        const data = extractData(section)
+        const data = extractDataFromSection(section)
         assertHasProps(data, ...keys)
 
         return data
@@ -117,7 +117,7 @@ export function getSectionDataOrThrow(sections: Section[], name: string, type: S
         throw ParseError.fromSection(section, `Expected section to be type "${type}", got: ${section.type}`)
     }
 
-    return extractData(section)
+    return extractDataFromSection(section)
 }
 
 const sectionTypes = ['profile', 'sso-session'] as const

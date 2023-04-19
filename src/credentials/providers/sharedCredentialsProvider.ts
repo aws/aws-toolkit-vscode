@@ -22,7 +22,7 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
 import { toRecord } from '../../shared/utilities/collectionUtils'
 import {
-    extractData,
+    extractDataFromSection,
     getRequiredFields,
     getSectionDataOrThrow,
     getSectionOrThrow,
@@ -80,7 +80,7 @@ function isSsoProfile(profile: Profile): boolean {
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
     private readonly section = getSectionOrThrow(this.sections, this.profileName, 'profile')
-    private readonly profile = extractData(this.section)
+    private readonly profile = extractDataFromSection(this.section)
 
     public constructor(private readonly profileName: string, private readonly sections: Section[]) {}
 
