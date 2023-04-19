@@ -23,7 +23,7 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
 
     // The timeout duration is stored within the function itself, allowing
     // us to know if we've already added a timeout
-    if (!hasKey(test.fn, runnableTimeout)) {
+    if (!hasKey(testFn, runnableTimeout)) {
         const fn = function (this: Mocha.Context, done: Mocha.Done) {
             const maxTestDuration = (fn as any)[runnableTimeout] as number
 
