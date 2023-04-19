@@ -1,0 +1,17 @@
+{
+  "date" : "2023-04-19",
+  "version" : "1.66",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Display current space and project name on status bar while working in a CodeCatalyst Dev Environment"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Lambda runtime Python 3.10"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix `java.lang.Throwable: Invalid html: tag <html> inserted automatically and shouldn't be used` (#3608)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where nothing happens when trying to create an empty Dev Environment"
+  } ]
+}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix `java.lang.Throwable: Invalid html: tag <html> inserted automatically and shouldn't be used` (#3608)"
-}

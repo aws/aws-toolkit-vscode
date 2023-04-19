@@ -1,3 +1,16 @@
+# _1.65_ (2023-04-13)
+- **(Feature)** [CodeWhisperer]: Introducing "Stop code scan" feature where users will be able to stop the ongoing code scan and immediately start a new one.
+- **(Feature)** [CodeWhisperer]: Automatic import recommendations
+- **(Feature)** [CodeWhisperer]: Now supports cross region calls.
+- **(Feature)** Attempt to download IDE thin client earlier in the CodeCatalyst Dev Environment connection process
+- **(Feature)** [CodeWhisperer]: New supported programming languages: C, C++, Go, Kotlin, Php, Ruby, Rust, Scala, Shell, Sql.
+- **(Bug Fix)** Include more information in the Dev Environment status tooltip
+- **(Bug Fix)** Provide consistent UX in all Dev Environment wizard variants
+- **(Bug Fix)** Fix 'MissingResourceException: Registry key is not defined'
+- **(Bug Fix)** [CodeWhisperer]: Multiple bug fixes to improve user experience
+- **(Removal)** Drop support for the Node.js 12.x Lambda runtime
+- **(Removal)** Drop support for the .NET Core 3.1 Lambda runtime
+
 # _1.64_ (2023-03-29)
 - **(Breaking Change)** Required SAM CLI upgrade to v1.78.0 to for using Sync Serverless Application option.
 - **(Feature)** Support for RDS MariaDB instances ([#3530](https://github.com/aws/aws-toolkit-jetbrains/issues/3530))
