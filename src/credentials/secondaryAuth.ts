@@ -67,11 +67,11 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
 async function promptForRescope(conn: SsoConnection, toolLabel: string) {
     const message = localize(
         'aws.auth.rescopeConnection.message',
-        '{0} requires access to your {1} connection. Continue to login to grant {0} access?',
+        '{0} requires access to your {1} connection. Proceed to login to grant {0} access?',
         toolLabel,
         conn.startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenter
     )
-    const resp = await vscode.window.showInformationMessage(message, { modal: true }, localizedText.continue)
+    const resp = await vscode.window.showInformationMessage(message, { modal: true }, localizedText.proceed)
     if (resp !== localizedText.proceed) {
         telemetry.ui_click.emit({ elementId: 'connection_rescope_cancel' })
         throw new CancellationError('user')
