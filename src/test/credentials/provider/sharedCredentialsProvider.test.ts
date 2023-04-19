@@ -409,7 +409,7 @@ describe('SharedCredentialsProvider', async function () {
         ): Promise<void> {
             const makeIni = sandbox.stub(sut as any, 'makeSharedIniFileCredentialsProvider').callsFake(profile => {
                 // The SDK does not care if fields are undefined, but we need to remove them to test
-                stripUndefined(profile)
+                stripUndefined(profile as any)
                 assert.deepStrictEqual(profile, resolvedProfile)
                 return () => Promise.resolve({})
             })

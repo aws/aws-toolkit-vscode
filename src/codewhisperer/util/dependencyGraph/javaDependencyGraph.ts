@@ -93,7 +93,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         return packagePath
     }
 
-    private generateBuildFileRelativePath(uri: vscode.Uri, projectPath: string, pacakges: RegExpMatchArray) {
+    private generateBuildFileRelativePath(uri: vscode.Uri, projectPath: string, pacakges: string[]) {
         const packagePath = pacakges.length > 0 ? this.generatePackagePath(pacakges[0]) : ''
         const sourceFilePath = uri.fsPath
         if (!sourceFilePath.startsWith(projectPath)) {

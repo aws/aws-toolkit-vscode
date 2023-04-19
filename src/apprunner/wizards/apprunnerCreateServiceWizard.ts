@@ -39,7 +39,7 @@ const validateName = (name: string) => {
         )
     }
 
-    let matches = name.match(badNameRegExp)
+    let matches: string[] | undefined = name.match(badNameRegExp) ?? undefined
     if (name[0] === '_' || name[0] === '-') {
         matches = matches ? [name[0]].concat(matches) : [name[0]]
     }
