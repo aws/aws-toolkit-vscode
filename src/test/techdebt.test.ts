@@ -38,5 +38,10 @@ describe('tech debt', function () {
             semver.lt(minNodejs, '16.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
+
+        assert.ok(
+            semver.lt(minNodejs, '16.0.0'),
+            'with node16+, we can use crypto.randomUUID and remove the "uuid" dependency'
+        )
     })
 })
