@@ -440,9 +440,6 @@ export class InlineCompletionService {
     }
 
     async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
-        if (vscode.window.activeTextEditor) {
-            vscode.window.showTextDocument(vscode.window.activeTextEditor.document)
-        }
         this.inlineCompletionProvider = new CWInlineCompletionItemProvider(
             this.inlineCompletionProvider?.getActiveItemIndex,
             indexShift
