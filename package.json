@@ -1105,6 +1105,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.auth.showConnectionsPage",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 },
@@ -2001,6 +2005,12 @@
                 "command": "aws.auth.addConnection",
                 "title": "%AWS.command.auth.addConnection%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.auth.showConnectionsPage",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%",
+                "enablement": "aws.isDevMode"
             },
             {
                 "command": "aws.auth.switchConnections",
