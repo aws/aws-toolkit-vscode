@@ -27,7 +27,6 @@ import software.amazon.awssdk.services.ssooidc.model.CreateTokenResponse
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.SsoPrompt
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.credentials.sso.ClientRegistration
@@ -188,7 +187,6 @@ class InteractiveBearerTokenProviderTest {
     private fun buildSut() = InteractiveBearerTokenProvider(
         startUrl = startUrl,
         region = region,
-        loginPrompt = mock<SsoPrompt>(),
         scopes = scopes,
         cache = diskCache
     )

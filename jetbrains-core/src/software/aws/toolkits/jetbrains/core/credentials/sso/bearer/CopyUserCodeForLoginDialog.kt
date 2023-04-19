@@ -10,7 +10,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.openapi.ide.CopyPasteManager
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.panel
@@ -24,11 +23,10 @@ import java.awt.datatransfer.StringSelection
 import javax.swing.JComponent
 
 class CopyUserCodeForLoginDialog(
-    project: Project,
     private val authCode: String,
-    private val dialogTitle: String = message("credentials.sono.login"),
+    private val dialogTitle: String,
     private val credentialType: CredentialType
-) : DialogWrapper(project) {
+) : DialogWrapper(null) {
 
     private val pane = panel {
         row {

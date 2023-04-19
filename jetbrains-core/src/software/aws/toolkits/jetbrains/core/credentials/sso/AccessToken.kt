@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import software.amazon.awssdk.auth.token.credentials.SdkToken
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
+import software.aws.toolkits.core.utils.SensitiveField
+import software.aws.toolkits.core.utils.redactedString
 import java.time.Instant
 import java.util.Optional
 
@@ -16,7 +18,9 @@ import java.util.Optional
 data class AccessToken(
     val startUrl: String,
     val region: String,
+    @SensitiveField
     val accessToken: String,
+    @SensitiveField
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val refreshToken: String? = null,
     val expiresAt: Instant,
@@ -25,6 +29,8 @@ data class AccessToken(
     override fun token() = accessToken
 
     override fun expirationTime() = Optional.of(expiresAt)
+
+    override fun toString() = redactedString(this)
 }
 
 // diverging from SDK/CLI impl here since they do: sha1sum(sessionName ?: startUrl)

@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.sono
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 
-internal const val SONO_REGION = "us-east-1"
+const val SONO_REGION = "us-east-1"
 const val SONO_URL = "https://view.awsapps.com/start"
 internal val CODEWHISPERER_SCOPES = listOf(
     "codewhisperer:completions",

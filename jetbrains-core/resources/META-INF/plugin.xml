@@ -198,6 +198,9 @@ with what features/services are supported.
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
                             testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings" />
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallbackProvider"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.sso.DefaultSsoLoginCallbackProvider"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.sso.MockSsoLoginCallbackProvider" />
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamDisplayDevModeWarningSettings"/>

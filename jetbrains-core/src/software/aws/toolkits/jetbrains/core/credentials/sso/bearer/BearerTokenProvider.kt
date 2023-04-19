@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
-import software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallback
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
@@ -78,7 +77,6 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
 class InteractiveBearerTokenProvider(
     startUrl: String,
     region: String,
-    loginPrompt: SsoLoginCallback,
     scopes: List<String>,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
@@ -90,7 +88,6 @@ class InteractiveBearerTokenProvider(
         SsoAccessTokenProvider(
             startUrl,
             region,
-            loginPrompt,
             cache,
             ssoOidcClient,
             scopes = scopes

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressManager
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
@@ -28,7 +29,6 @@ import java.time.Instant
 class SsoAccessTokenProvider(
     private val ssoUrl: String,
     private val ssoRegion: String,
-    private val onPendingToken: SsoLoginCallback,
     private val cache: SsoCache,
     private val client: SsoOidcClient,
     private val scopes: List<String> = emptyList(),
@@ -118,6 +118,7 @@ class SsoAccessTokenProvider(
     }
 
     private fun pollForToken(): AccessToken {
+        val onPendingToken = service<SsoLoginCallbackProvider>().getProvider(ssoUrl)
         val progressIndicator = ProgressManager.getInstance().progressIndicator
         val registration = registerClient()
         val authorization = authorizeClient(registration)
