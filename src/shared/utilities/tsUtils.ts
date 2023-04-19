@@ -42,11 +42,11 @@ export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
     return obj !== undefined && obj !== null
 }
 
-export function isKeyOf<T>(key: PropertyKey, obj: T): key is keyof T {
+export function isKeyOf<T extends object>(key: PropertyKey, obj: T): key is keyof T {
     return key in obj
 }
 
-export function hasKey<T, K extends PropertyKey>(obj: T, key: K): obj is T & { [P in K]: unknown } {
+export function hasKey<T extends object, K extends PropertyKey>(obj: T, key: K): obj is T & { [P in K]: unknown } {
     return isKeyOf(key, obj)
 }
 
