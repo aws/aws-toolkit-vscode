@@ -321,9 +321,12 @@ async function* loadLinkedProfilesIntoStore(store: ProfileStore, source: SsoConn
         .map(resp => client.listAccountRoles({ accountId: resp.accountId }).flatten())
         .flatten()
 
+    const found = new Set<Connection['id']>()
     for await (const info of stream) {
         const name = `${info.roleName}-${info.accountId}`
         const id = `sso:${source}#${name}`
+        found.add(id)
+
         if (store.getProfile(id) !== undefined) {
             continue
         }
@@ -338,6 +341,13 @@ async function* loadLinkedProfilesIntoStore(store: ProfileStore, source: SsoConn
         })
 
         yield [id, profile] as const
+    }
+
+    // Clean-up stale references in case the user no longer has access
+    for (const [id, profile] of store.listProfiles()) {
+        if (profile.type === 'iam' && profile.subtype === 'linked' && profile.ssoSession === source && !found.has(id)) {
+            await store.deleteProfile(id)
+        }
     }
 }
 
