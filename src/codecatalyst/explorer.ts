@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
+import { Connection, isBuilderIdConnection } from '../credentials/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
@@ -19,10 +19,7 @@ import { getLogger } from '../shared/logger'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const conn = await createBuilderIdConnection(authProvider.auth)
-        await authProvider.secondaryAuth.useNewConnection(conn)
-    }
+    (authProvider: CodeCatalystAuthenticationProvider) => authProvider.promptNotConnected()
 )
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
@@ -126,6 +123,8 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
+        await this.authProvider.restore()
+
         this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
             getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
             return undefined
