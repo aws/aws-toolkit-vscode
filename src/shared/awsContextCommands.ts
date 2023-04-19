@@ -22,7 +22,7 @@ import { SharedCredentialsProvider } from '../credentials/providers/sharedCreden
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
-import { extractDataFromSection, loadSharedCredentialsSections, Profile } from '../credentials/sharedCredentials'
+import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
 
 /**
  * @deprecated
@@ -115,14 +115,8 @@ export class AwsContextCommands {
      * @returns The profile name, or undefined if user cancelled
      */
     public async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
-        const profiles = {} as Record<string, Profile>
-        for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
-            if (v.type === 'profile') {
-                profiles[k] = extractDataFromSection(v)
-            }
-        }
-
-        const wizard = new CreateProfileWizard(profiles, staticCredentialsTemplate)
+        const existingProfiles = await loadSharedCredentialsProfiles()
+        const wizard = new CreateProfileWizard(existingProfiles, staticCredentialsTemplate)
         const resp = await wizard.run()
         if (!resp) {
             return

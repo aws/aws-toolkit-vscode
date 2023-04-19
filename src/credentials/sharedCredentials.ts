@@ -130,6 +130,19 @@ function validateSection(section: BaseSection): asserts section is Section {
     }
 }
 
+/**
+ * Loads existing merged (credentials + config) profiles from the filesystem
+ */
+export async function loadSharedCredentialsProfiles(): Promise<Record<ProfileName, Profile>> {
+    const profiles = {} as Record<ProfileName, Profile>
+    for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
+        if (v.type === 'profile') {
+            profiles[k] = extractDataFromSection(v)
+        }
+    }
+    return profiles
+}
+
 export async function loadSharedCredentialsSections(): Promise<ParseResult> {
     // These should eventually be changed to use `parse` to allow for credentials from other file systems
     const data = await loadSharedConfigFiles({
