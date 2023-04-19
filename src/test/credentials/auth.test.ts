@@ -297,6 +297,16 @@ describe('Auth', function () {
             )
         })
 
+        it('gracefully handles source connections becoming invalid when discovering linked accounts', async function () {
+            await auth.createConnection(linkedSsoProfile)
+            auth.ssoClient.listAccounts.rejects(new Error('No access'))
+            const connections = await auth.listAndTraverseConnections().promise()
+            assert.deepStrictEqual(
+                connections.map(c => c.type),
+                ['sso']
+            )
+        })
+
         it('removes linked connections when the source connection is deleted', async function () {
             const conn = await auth.createConnection(linkedSsoProfile)
             await auth.listAndTraverseConnections().promise()
