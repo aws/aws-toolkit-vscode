@@ -5,15 +5,21 @@
 
 import globals from '../shared/extensionGlobals'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
+import * as localizedText from '../shared/localizedText'
 import { getLogger } from '../shared/logger'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth, Connection, StatefulConnection } from './auth'
+import { Auth, Connection, SsoConnection, StatefulConnection } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { isNonNullable } from '../shared/utilities/tsUtils'
+import { builderIdStartUrl } from './sso/model'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?
@@ -39,7 +45,7 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     }
 
     const resp = await showQuickPick([saveConnectionItem, useConnectionItem], {
-        title: `Some tools you've been using don't work with ${newConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
+        title: `Some tools you've been using don't work with ${oldConn.label}. Keep using ${newConn.label} in the background while using ${oldConn.label}?`,
         placeholder: 'Confirm choice',
         buttons: [helpButton, createExitButton()],
     })
@@ -58,10 +64,27 @@ async function promptUseNewConnection(newConn: Connection, oldConn: Connection, 
     return resp
 }
 
+async function promptForRescope(conn: SsoConnection, toolLabel: string) {
+    const message = localize(
+        'aws.auth.rescopeConnection.message',
+        '{0} requires access to your {1} connection. Proceed to login to grant {0} access?',
+        toolLabel,
+        conn.startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenter
+    )
+    const resp = await vscode.window.showInformationMessage(message, { modal: true }, localizedText.proceed)
+    if (resp !== localizedText.proceed) {
+        telemetry.ui_click.emit({ elementId: 'connection_rescope_cancel' })
+        throw new CancellationError('user')
+    }
+
+    telemetry.ui_click.emit({ elementId: 'connection_rescope_proceed' })
+}
+
 let oldConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
+const multiConnectionListeners = new WeakMap<Auth, vscode.Disposable>()
 const registerAuthListener = (auth: Auth) => {
-    auth.onDidChangeActiveConnection(async conn => {
+    return auth.onDidChangeActiveConnection(async conn => {
         const potentialConn = oldConn
         if (conn !== undefined && potentialConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
@@ -86,14 +109,13 @@ export function getSecondaryAuth<T extends Connection>(
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
-    if (auths.has(toolId)) {
-        return auths.get(toolId) as SecondaryAuth<T>
-    }
-
     const secondary = new SecondaryAuth(toolId, toolLabel, isValid, auth)
     auths.set(toolId, secondary)
-    registerAuthListener(auth)
     secondary.onDidChangeActiveConnection(() => onDidChangeConnectionsEmitter.fire())
+
+    if (!multiConnectionListeners.has(auth)) {
+        multiConnectionListeners.set(auth, registerAuthListener(auth))
+    }
 
     return secondary
 }
@@ -136,8 +158,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
     #savedConnection: T | undefined
 
     private readonly key = `${this.toolId}.savedConnectionId`
-    private readonly onDidChangeActiveConnectionEmitter = new vscode.EventEmitter<T | undefined>()
-    public readonly onDidChangeActiveConnection = this.onDidChangeActiveConnectionEmitter.event
+    readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
+    public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
 
     public constructor(
         public readonly toolId: string,
@@ -155,9 +177,16 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 await this.removeConnection()
             } else {
                 this.#activeConnection = conn
-                this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         }
+
+        this.auth.onDidUpdateConnection(conn => {
+            if (this.#savedConnection?.id === conn.id) {
+                this.#savedConnection = conn as unknown as T
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+            }
+        })
 
         // Register listener and handle connection immediately in case we were instantiated late
         handleConnectionChanged(this.auth.activeConnection)
@@ -182,13 +211,13 @@ export class SecondaryAuth<T extends Connection = Connection> {
     public async saveConnection(conn: T) {
         await this.memento.update(this.key, conn.id)
         this.#savedConnection = conn
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+        this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
     public async removeConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
-        this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+        this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
     public async useNewConnection(conn: T) {
@@ -203,13 +232,26 @@ export class SecondaryAuth<T extends Connection = Connection> {
         }
     }
 
+    public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
+        await promptForRescope(conn, this.toolLabel)
+        const scopes = Array.from(new Set([...(conn.scopes ?? []), ...extraScopes]))
+        const updatedConn = await this.auth.updateConnection(conn, {
+            type: 'sso',
+            scopes,
+            startUrl: conn.startUrl,
+            ssoRegion: conn.ssoRegion,
+        })
+
+        return this.auth.reauthenticate(updatedConn)
+    }
+
     // Used to lazily restore persisted connections.
     // Kind of clunky. We need an async module loader layer to make things ergonomic.
     public readonly restoreConnection: () => Promise<T | undefined> = once(async () => {
         try {
             await this.auth.tryAutoConnect()
             this.#savedConnection = await this.loadSavedConnection()
-            this.onDidChangeActiveConnectionEmitter.fire(this.activeConnection)
+            this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
             return this.#savedConnection
         } catch (err) {

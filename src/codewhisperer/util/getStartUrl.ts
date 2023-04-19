@@ -9,11 +9,11 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
+import { codewhispererScopes, createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {
-    const inputBox = await createStartUrlPrompter('IAM Identity Center', false)
+    const inputBox = await createStartUrlPrompter('IAM Identity Center', codewhispererScopes)
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {
         telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
