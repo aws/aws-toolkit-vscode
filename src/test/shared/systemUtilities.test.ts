@@ -8,6 +8,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
+import * as utils from 'util'
 
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -128,8 +129,7 @@ describe('SystemUtilities', function () {
         function assertError<T>(err: unknown, ctor: new (...args: any[]) => T): asserts err is T {
             if (!(err instanceof ctor)) {
                 throw new assert.AssertionError({
-                    message: `Error was not an instance of ${ctor.name}`,
-                    actual: err,
+                    message: `Error was not an instance of ${ctor.name}: ${utils.inspect(err)}`,
                 })
             }
         }
