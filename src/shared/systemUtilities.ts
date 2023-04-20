@@ -129,6 +129,8 @@ export class SystemUtilities {
                         throw new PermissionsError(dirUri, stats, userInfo, '*wx')
                     }
                 }
+
+                throw err
             })
         }
     }
