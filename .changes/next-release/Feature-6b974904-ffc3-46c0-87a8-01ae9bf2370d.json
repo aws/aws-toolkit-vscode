@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "auth: AWS accounts and roles from IAM Identity Center are automatically discovered by the Toolkit when selecting a connection."
+}

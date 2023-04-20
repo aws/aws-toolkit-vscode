@@ -304,7 +304,7 @@ describe('SharedCredentialsProvider', async function () {
         `
 
         beforeEach(function () {
-            const client = stub(SsoClient)
+            const client = stub(SsoClient, { region: 'foo' })
             client.getRoleCredentials.callsFake(async request => {
                 assert.strictEqual(request.accountId, '012345678910')
                 assert.strictEqual(request.roleName, 'MyRole')

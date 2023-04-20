@@ -12,6 +12,8 @@ import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProv
 import { FakeMemento } from '../fakeExtensionContext'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
+import globals from '../../shared/extensionGlobals'
+import { fromString } from '../../credentials/providers/credentials'
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
@@ -40,7 +42,9 @@ function createTestTokenProvider() {
 }
 
 type TestAuth = Auth & {
+    readonly ssoClient: ReturnType<typeof stub<SsoClient>>
     readonly profileStore: ProfileStore
+    readonly credentialsManager: CredentialsProviderManager
     readonly updateConnectionEvents: EventCapturer<Connection>
     readonly activeConnectionEvents: EventCapturer<Connection | undefined>
     createInvalidSsoConnection(profile: SsoProfile): Promise<SsoConnection>
@@ -65,19 +69,20 @@ export function createTestAuth(): TestAuth {
     }
 
     async function invalidateCachedCredentials(conn: Connection) {
-        const provider = tokenProviders.get(conn.id)
-        await provider?.invalidate()
+        if (conn.type === 'sso') {
+            const provider = tokenProviders.get(conn.id)
+            await provider?.invalidate()
+        } else {
+            globals.loginManager.store.invalidateCredentials(fromString(conn.id))
+        }
     }
 
-    function createSsoClient() {
-        const client = stub(SsoClient)
-        client.logout.resolves()
-
-        return client
-    }
+    const ssoClient = stub(SsoClient, { region: 'not set' })
+    ssoClient.logout.resolves()
 
     const store = new ProfileStore(new FakeMemento())
-    const auth = new Auth(store, new CredentialsProviderManager(), createSsoClient, getTokenProvider)
+    const credentialsManager = new CredentialsProviderManager()
+    const auth = new Auth(store, credentialsManager, () => ssoClient, getTokenProvider)
 
     function getTestTokenProvider(conn: Pick<Connection, 'id'>) {
         const provider = tokenProviders.get(conn.id)
@@ -94,6 +99,8 @@ export function createTestAuth(): TestAuth {
     }
 
     return Object.assign(auth, {
+        ssoClient,
+        credentialsManager,
         profileStore: store,
         getTestTokenProvider,
         createInvalidSsoConnection,
