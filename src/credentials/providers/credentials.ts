@@ -86,6 +86,8 @@ export function credentialsProviderToTelemetryType(o: CredentialsProviderType): 
             return 'envVars'
         case 'profile':
             return 'sharedCredentials'
+        case 'sso':
+            return 'iamIdentityCenter'
         default:
             return 'other'
     }
