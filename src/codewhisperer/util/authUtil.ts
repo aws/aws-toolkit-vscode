@@ -230,7 +230,6 @@ export class AuthUtil {
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
-        await this.refreshCodeWhisperer()
         this.showReauthenticatePrompt(isAutoTrigger)
     }
 
