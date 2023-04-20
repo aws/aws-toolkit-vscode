@@ -19,6 +19,7 @@ import { getRequestId, getTelemetryReason, getTelemetryResult, isClientFault, To
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DevSettings } from '../../shared/settings'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 const clientRegistrationType = 'public'
 const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -179,8 +180,9 @@ export class SsoAccessTokenProvider {
     }
 
     private async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: `AWS Toolkit for VSCode`,
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
             clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })
