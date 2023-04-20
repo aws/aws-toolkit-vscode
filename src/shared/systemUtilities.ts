@@ -15,7 +15,7 @@ import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
 
-function createPermissionsErrorHandler(
+export function createPermissionsErrorHandler(
     uri: vscode.Uri,
     perms: PermissionsTriplet
 ): (err: unknown, depth?: number) => Promise<never> {

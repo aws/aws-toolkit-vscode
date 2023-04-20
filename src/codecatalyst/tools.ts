@@ -253,8 +253,9 @@ async function verifySSHHost({
 
         const sshConfigPath = getSshConfigPath()
         try {
-            await fs.mkdirp(path.dirname(sshConfigPath))
-            await fs.appendFile(sshConfigPath, section)
+            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)))
+            await fs.mkdir(path.dirname(sshConfigPath), 0o700)
+            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
         } catch (e) {
             const message = localize(
                 'AWS.codecatalyst.error.writeFail',
