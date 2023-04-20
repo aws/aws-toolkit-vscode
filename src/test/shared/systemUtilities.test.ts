@@ -126,6 +126,12 @@ describe('SystemUtilities', function () {
     })
 
     describe('permissions', function () {
+        beforeEach(function () {
+            if (process.platform === 'win32') {
+                this.currentTest?.skip()
+            }
+        })
+
         function assertError<T>(err: unknown, ctor: new (...args: any[]) => T): asserts err is T {
             if (!(err instanceof ctor)) {
                 throw new assert.AssertionError({
@@ -133,6 +139,7 @@ describe('SystemUtilities', function () {
                 })
             }
         }
+
         describe('owned by user', function () {
             it('writing a new file to a directory without `u+x` fails', async function () {
                 const dirPath = path.join(tempFolder, 'dir1')
