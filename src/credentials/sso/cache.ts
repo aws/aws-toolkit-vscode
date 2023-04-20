@@ -12,6 +12,7 @@ import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { DevSettings } from '../../shared/settings'
+import { statSync, Stats, readdirSync, unlinkSync } from 'fs'
 
 interface RegistrationKey {
     readonly region: string
@@ -33,11 +34,44 @@ export interface SsoCache {
 const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
 export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir)
 
-export function getCache(directory = getCacheDir()): SsoCache {
+export function getCache(directory = getCacheDir(), statFunc = getFileStats): SsoCache {
+    try {
+        deleteOldFiles(directory, statFunc)
+    } catch (e) {
+        getLogger().warn('auth: error deleting old files in sso cache: %s', e)
+    }
+
     return {
         token: getTokenCache(directory),
         registration: getRegistrationCache(directory),
     }
+}
+
+function deleteOldFiles(directory: string, statFunc: typeof getFileStats) {
+    if (!isDirSafeToDeleteFrom(directory)) {
+        getLogger().warn(`Skipped deleting files in directory: ${path.resolve(directory)}`)
+        return
+    }
+
+    const fileNames = readdirSync(directory)
+    fileNames.forEach(fileName => {
+        const filePath = path.join(directory, fileName)
+        if (path.extname(filePath) === '.json' && isOldFile(filePath, statFunc)) {
+            unlinkSync(filePath)
+            getLogger().warn(`auth: removed old cache file: ${filePath}`)
+        }
+    })
+}
+
+export function isDirSafeToDeleteFrom(dirPath: string): boolean {
+    const resolvedPath = path.resolve(dirPath)
+    const isRoot = resolvedPath === path.resolve('/')
+    const isCwd = resolvedPath === path.resolve('.')
+    const isAbsolute = path.isAbsolute(dirPath)
+    const pathDepth = resolvedPath.split(path.sep).length
+
+    const isSafe = !isRoot && !isCwd && isAbsolute && pathDepth >= 5
+    return isSafe
 }
 
 export function getRegistrationCache(directory = getCacheDir()): KeyedCache<ClientRegistration, RegistrationKey> {
@@ -110,7 +144,30 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
     return mapCache(cache, read, write)
 }
 
-function getTokenCacheFile(ssoCacheDir: string, ssoUrl: string) {
+function getFileStats(file: string): Stats {
+    return statSync(file)
+}
+
+const firstValidDate = new Date(2023, 3, 14) // April 14, 2023
+
+/**
+ * @returns true if file is older than the first valid date
+ */
+function isOldFile(file: string, statFunc: typeof getFileStats): boolean {
+    try {
+        const statResult = statFunc(file)
+        // Depending on the Windows filesystem, birthtime may be 0, so we fall back to ctime (last time metadata was changed)
+        // https://nodejs.org/api/fs.html#stat-time-values
+        return statResult.birthtimeMs !== 0
+            ? statResult.birthtimeMs < firstValidDate.getTime()
+            : statResult.ctime < firstValidDate
+    } catch (err) {
+        getLogger().debug(`SSO cache file age not be verified: ${file}: ${err}`)
+        return false // Assume it is no old since we cannot validate
+    }
+}
+
+export function getTokenCacheFile(ssoCacheDir: string, ssoUrl: string): string {
     const encoded = encodeURI(ssoUrl)
     // Per the spec: 'SSO Login Token Flow' the access token must be
     // cached as the SHA1 hash of the bytes of the UTF-8 encoded
@@ -126,7 +183,7 @@ function getTokenCacheFile(ssoCacheDir: string, ssoUrl: string) {
     return path.join(ssoCacheDir, `${hashedUrl}.json`)
 }
 
-const getRegistrationCacheFile = (ssoCacheDir: string, key: RegistrationKey) => {
+export function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
     const hashScopes = (scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         scopes.forEach(s => shasum.update(s))
