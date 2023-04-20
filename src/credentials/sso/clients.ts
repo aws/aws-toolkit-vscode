@@ -95,6 +95,12 @@ type PromisifyClient<T> = {
 }
 
 export class SsoClient {
+    public get region() {
+        const region = this.client.config.region
+
+        return typeof region === 'string' ? (region as string) : undefined
+    }
+
     public constructor(
         private readonly client: PromisifyClient<SSO>,
         private readonly provider: SsoAccessTokenProvider

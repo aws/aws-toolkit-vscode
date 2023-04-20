@@ -32,6 +32,15 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     find<U extends T>(predicate: (item: T) => boolean): Promise<U | undefined>
 
     /**
+     * Catches all errors from the underlying iterable(s).
+     *
+     * Note that currently the contiuation behavior is highly dependent on the
+     * underlying implementations. For example, a `for await` loop cannot be
+     * continued if any of the resulting values are rejected.
+     */
+    catch<U>(handler: (error: unknown) => Promise<U> | U): AsyncCollection<T | U>
+
+    /**
      * Uses only the first 'count' number of values returned by the generator.
      */
     limit(count: number): AsyncCollection<T>
@@ -86,6 +95,8 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
         filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
+        catch: <U>(fn: (error: unknown) => Promise<U> | U) =>
+            toCollection<T | U>(() => catchGenerator(generator(), fn)),
         map: <U>(fn: (item: T) => Promise<U> | U) => toCollection<U>(() => mapGenerator(generator(), fn)),
         limit: (count: number) => toCollection(() => delegateGenerator(generator(), takeFrom(count))),
         promise: () => promise(iterable),
@@ -241,6 +252,26 @@ async function find<T, U extends T>(iterable: AsyncIterable<T>, predicate: (item
     for await (const item of iterable) {
         if (predicate(item)) {
             return item
+        }
+    }
+}
+
+async function* catchGenerator<T, U, R = T>(
+    generator: AsyncGenerator<T, R | undefined | void>,
+    fn: (error: unknown) => Promise<U> | U
+): AsyncGenerator<T | U, R | U | undefined | void> {
+    while (true) {
+        try {
+            const { value, done } = await generator.next()
+            if (done) {
+                return value
+            }
+            yield value
+        } catch (err) {
+            // Catching an error when the generator would normally
+            // report 'done' means that the 'done' value would be
+            // replaced by `undefined`.
+            yield fn(err)
         }
     }
 }
