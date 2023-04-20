@@ -34,10 +34,6 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
-        if (!isCloud9()) {
-            AuthUtil.instance.restore()
-        }
-
         const item = new vscode.TreeItem('CodeWhisperer')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
