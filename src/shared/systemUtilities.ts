@@ -95,7 +95,8 @@ export class SystemUtilities {
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
         const uri = typeof fileOrDir === 'string' ? vscode.Uri.file(fileOrDir) : fileOrDir
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
+        const dirUri = vscode.Uri.joinPath(uri, '..')
+        const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
 
         if (isCloud9()) {
             const stat = await fs.stat(uri.fsPath)
@@ -114,7 +115,21 @@ export class SystemUtilities {
         } else {
             // Attempting to delete a file in a directory without `x` results in ENOENT.
             // But this might not be true. The file could exist, we just don't know about it.
-            return vscode.workspace.fs.delete(uri, opt).then(undefined, err => errorHandler(err, 1))
+            return vscode.workspace.fs.delete(uri, opt).then(undefined, async err => {
+                if (isNoPermissionsError(err)) {
+                    throw await errorHandler(err)
+                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err)) {
+                    throw err
+                } else {
+                    const stats = await fs.stat(dirUri.fsPath).catch(() => {
+                        throw err
+                    })
+                    if ((stats.mode & fs.constants.S_IXUSR) === 0) {
+                        const userInfo = os.userInfo({ encoding: 'utf-8' })
+                        throw new PermissionsError(dirUri, stats, userInfo, '*wx')
+                    }
+                }
+            })
         }
     }
 
