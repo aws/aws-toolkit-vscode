@@ -60,7 +60,7 @@ describe('prepareSyncParams', function () {
     })
 
     afterEach(async function () {
-        await SystemUtilities.remove(tempDir)
+        await SystemUtilities.delete(tempDir)
     })
 
     it('uses region if given a tree node', async function () {

@@ -13,6 +13,7 @@ import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import * as testutil from '../testUtil'
+import { PermissionsError } from '../../shared/errors'
 
 describe('SystemUtilities', function () {
     let tempFolder: string
@@ -121,5 +122,52 @@ describe('SystemUtilities', function () {
         assert(vscPath)
         const regex = /bin[\\\/](code|code-insiders)$/
         assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
+    })
+
+    describe('permissions', function () {
+        describe('owned by user', function () {
+            it('writing a new file to a directory without `u+x` fails', async function () {
+                const dirPath = path.join(tempFolder, 'dir1')
+                await fs.mkdir(dirPath, { mode: 0o677 })
+                const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                assert.ok(err instanceof PermissionsError)
+                assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                assert.strictEqual(err.expected, '*wx')
+                assert.strictEqual(err.actual, 'rw-')
+            })
+
+            it('writing a new file to a directory without `u+w` fails', async function () {
+                const dirPath = path.join(tempFolder, 'dir2')
+                await fs.mkdir(dirPath, { mode: 0o577 })
+                const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                assert.ok(err instanceof PermissionsError)
+                assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                assert.strictEqual(err.expected, '*wx')
+                assert.strictEqual(err.actual, 'r-x')
+            })
+
+            it('writing an existing file without `u+w` fails', async function () {
+                const filePath = path.join(tempFolder, 'read-only')
+                await fs.writeFile(filePath, 'foo', { mode: 0o400 })
+                const err = await SystemUtilities.writeFile(filePath, 'foo2').catch(e => e)
+                assert.ok(err instanceof PermissionsError)
+                assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
+                assert.strictEqual(err.expected, '*w*')
+                assert.strictEqual(err.actual, 'r--')
+            })
+
+            it('reading an existing file without `u+r` fails', async function () {
+                const filePath = path.join(tempFolder, 'write-only')
+                await fs.writeFile(filePath, 'foo', { mode: 0o200 })
+                const err = await SystemUtilities.readFile(filePath).catch(e => e)
+                assert.ok(err instanceof PermissionsError)
+                assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
+                assert.strictEqual(err.expected, 'r**')
+                assert.strictEqual(err.actual, '-w-')
+            })
+        })
+
+        // TODO: need to use sticky bit to easily write tests for group-owned directories
+        // Or potentially spawn new process with different uid...?
     })
 })

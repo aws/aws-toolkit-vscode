@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Uri } from 'vscode'
+import * as vscode from 'vscode'
 import { AWSError } from 'aws-sdk'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
+import type * as fs from 'fs'
+import type * as os from 'os'
 
 export const errorCode = {
     invalidConnection: 'InvalidConnection',
@@ -81,7 +83,7 @@ export interface ErrorInformation {
      *
      * TODO: implement this
      */
-    readonly documentationUri?: Uri
+    readonly documentationUri?: vscode.Uri
 }
 
 /**
@@ -395,5 +397,76 @@ export function getRequestId(error: unknown): string | undefined {
 
     if (error instanceof ServiceException) {
         return error.$metadata.requestId
+    }
+}
+
+export function isFileNotFoundError(err: unknown): boolean {
+    if (err instanceof vscode.FileSystemError) {
+        return err.code === vscode.FileSystemError.FileNotFound().code
+    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+        return err.code === 'ENOENT'
+    }
+
+    return false
+}
+
+export function isNoPermissionsError(err: unknown): boolean {
+    if (err instanceof vscode.FileSystemError) {
+        return (
+            err.code === vscode.FileSystemError.NoPermissions().code ||
+            // The code _should_ be `NoPermissions`, maybe this is a bug?
+            (err.code === 'Unknown' && err.message.includes('EACCES: permission denied'))
+        )
+    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+        return err.code === 'EACCES'
+    }
+
+    return false
+}
+
+const modeToString = (mode: number) =>
+    Array.from('drwxrwxrwx')
+        .map((c, i, a) => ((mode >> (a.length - i - 1)) & 1 ? c : '-'))
+        .join('')
+
+function getEffectivePerms(uid: number, gid: number, stats: fs.Stats) {
+    const mode = stats.mode
+    const isOwner = uid === stats.uid
+    const isGroup = gid === stats.gid && !isOwner
+    const ownerMask = isOwner ? 0o700 : 0
+    const groupMask = isGroup ? 0o070 : 0
+    const otherMask = !isOwner && !isGroup ? 0o007 : 0
+
+    return (mode & otherMask) | ((mode & groupMask) >> 3) | ((mode & ownerMask) >> 6)
+}
+
+// The wildcard (`*`) symbol is non-standard. It's used to represent "don't cares" and takes
+// on the actual flag once known.
+export type PermissionsTriplet = `${'r' | '-' | '*'}${'w' | '-' | '*'}${'x' | '-' | '*'}`
+export class PermissionsError extends ToolkitError {
+    public readonly actual: string // This is a resolved triplet, _not_ the full bits
+
+    public constructor(
+        public readonly uri: vscode.Uri,
+        public readonly stats: fs.Stats,
+        public readonly userInfo: os.UserInfo<string>,
+        public readonly expected: PermissionsTriplet
+    ) {
+        const mode = modeToString(stats.mode)
+        const owner = stats.uid === userInfo.uid ? userInfo.username : stats.uid
+        const actual = modeToString(getEffectivePerms(userInfo.uid, userInfo.gid, stats)).slice(-3)
+        const resolvedExpected = Array.from(expected)
+            .map((c, i) => (c === '*' ? actual[i] : c))
+            .join('')
+
+        super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actual}.`, {
+            code: 'InvalidPermissions',
+            details: {
+                isOwner: stats.uid === -1 ? 'unknown' : userInfo.uid == stats.uid,
+                mode: `${mode}${stats.uid === -1 ? '' : ` ${owner}`}${stats.gid === -1 ? '' : ` ${stats.gid}`}`,
+            },
+        })
+
+        this.actual = actual
     }
 }
