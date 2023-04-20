@@ -41,24 +41,16 @@ export function getCache(directory = getCacheDir()): SsoCache {
 }
 
 export function getRegistrationCache(directory = getCacheDir()): KeyedCache<ClientRegistration, RegistrationKey> {
-    const hashScopes = (scopes: string[]) => {
-        const shasum = crypto.createHash('sha256')
-        scopes.forEach(s => shasum.update(s))
-        return shasum.digest('hex')
-    }
-
-    const getTarget = (key: RegistrationKey) => {
-        const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hashScopes(key.scopes)}` : ''}`
-        return path.join(directory, `aws-toolkit-vscode-client-id-${suffix}.json`)
-    }
-
     // Compatability for older Toolkit versions (format on disk is unchanged)
     type StoredRegistration = Omit<ClientRegistration, 'expiresAt'> & { readonly expiresAt: string }
     const read = (data: StoredRegistration) => ({ ...data, expiresAt: new Date(data.expiresAt) })
     const write = (data: ClientRegistration) => ({ ...data, expiresAt: data.expiresAt.toISOString() })
 
     const logger = (message: string) => getLogger().debug(`SSO registration cache: ${message}`)
-    const cache: KeyedCache<StoredRegistration, RegistrationKey> = createDiskCache(getTarget, logger)
+    const cache: KeyedCache<StoredRegistration, RegistrationKey> = createDiskCache(
+        (registrationKey: RegistrationKey) => getRegistrationCacheFile(directory, registrationKey),
+        logger
+    )
 
     return mapCache(cache, read, write)
 }
@@ -112,24 +104,35 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
     }
 
-    const getTarget = (ssoUrl: string) => {
-        const encoded = encodeURI(ssoUrl)
-        // Per the spec: 'SSO Login Token Flow' the access token must be
-        // cached as the SHA1 hash of the bytes of the UTF-8 encoded
-        // startUrl value with ".json" appended to the end.
-
-        const shasum = crypto.createHash('sha1')
-        // Suppress warning because:
-        //   1. SHA1 is prescribed by the AWS SSO spec
-        //   2. the hashed startUrl value is not a secret
-        shasum.update(encoded) // lgtm[js/weak-cryptographic-algorithm]
-        const hashedUrl = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
-
-        return path.join(directory, `${hashedUrl}.json`)
-    }
-
     const logger = (message: string) => getLogger().debug(`SSO token cache: ${message}`)
-    const cache = createDiskCache<StoredToken, string>(getTarget, logger)
+    const cache = createDiskCache<StoredToken, string>((ssoUrl: string) => getTokenCacheFile(directory, ssoUrl), logger)
 
     return mapCache(cache, read, write)
+}
+
+function getTokenCacheFile(ssoCacheDir: string, ssoUrl: string) {
+    const encoded = encodeURI(ssoUrl)
+    // Per the spec: 'SSO Login Token Flow' the access token must be
+    // cached as the SHA1 hash of the bytes of the UTF-8 encoded
+    // startUrl value with ".json" appended to the end.
+
+    const shasum = crypto.createHash('sha1')
+    // Suppress warning because:
+    //   1. SHA1 is prescribed by the AWS SSO spec
+    //   2. the hashed startUrl value is not a secret
+    shasum.update(encoded) // lgtm[js/weak-cryptographic-algorithm]
+    const hashedUrl = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
+
+    return path.join(ssoCacheDir, `${hashedUrl}.json`)
+}
+
+const getRegistrationCacheFile = (ssoCacheDir: string, key: RegistrationKey) => {
+    const hashScopes = (scopes: string[]) => {
+        const shasum = crypto.createHash('sha256')
+        scopes.forEach(s => shasum.update(s))
+        return shasum.digest('hex')
+    }
+
+    const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hashScopes(key.scopes)}` : ''}`
+    return path.join(ssoCacheDir, `aws-toolkit-vscode-client-id-${suffix}.json`)
 }
