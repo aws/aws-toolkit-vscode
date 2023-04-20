@@ -253,7 +253,7 @@ async function verifySSHHost({
 
         const sshConfigPath = getSshConfigPath()
         try {
-            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)))
+            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
             await fs.mkdir(path.dirname(sshConfigPath), 0o700)
             await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
         } catch (e) {
