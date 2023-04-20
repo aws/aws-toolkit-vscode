@@ -87,7 +87,7 @@ async function checkBetaUrl(vsixUrl: string): Promise<void> {
         try {
             await promptInstallToolkit(betaPath, latestBetaInfo.version, vsixUrl)
         } finally {
-            await SystemUtilities.delete(tmpFolder)
+            await SystemUtilities.delete(tmpFolder, { recursive: true })
         }
     } else {
         await updateBetaToolkitData(vsixUrl, {

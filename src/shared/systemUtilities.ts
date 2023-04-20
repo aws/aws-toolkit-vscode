@@ -17,10 +17,9 @@ import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissi
 
 function createPermissionsErrorHandler(
     uri: vscode.Uri,
-    perms: PermissionsTriplet,
-    depth = 0
-): (err: unknown) => Promise<never> {
-    return async function (err: unknown) {
+    perms: PermissionsTriplet
+): (err: unknown, depth?: number) => Promise<never> {
+    return async function (err: unknown, depth = 0) {
         if (uri.scheme !== 'file') {
             throw err
         }
@@ -34,7 +33,7 @@ function createPermissionsErrorHandler(
                 throw err
             }
 
-            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx', depth + 1)(err2)
+            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
         })
 
         throw new PermissionsError(uri, stats, userInfo, perms)
@@ -94,7 +93,7 @@ export class SystemUtilities {
         return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
     }
 
-    public static async delete(fileOrDir: string | vscode.Uri): Promise<void> {
+    public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
         const uri = typeof fileOrDir === 'string' ? vscode.Uri.file(fileOrDir) : fileOrDir
         const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
@@ -107,7 +106,16 @@ export class SystemUtilities {
             }
         }
 
-        return vscode.workspace.fs.delete(uri, { recursive: true }).then(undefined, errorHandler)
+        if (opt?.recursive) {
+            // We shouldn't catch any errors if using the `recursive` option, otherwise the
+            // error messages may be misleading. Need to implement our own recursive delete
+            // if we want detailed info.
+            return vscode.workspace.fs.delete(uri, opt)
+        } else {
+            // Attempting to delete a file in a directory without `x` results in ENOENT.
+            // But this might not be true. The file could exist, we just don't know about it.
+            return vscode.workspace.fs.delete(uri, opt).then(undefined, err => errorHandler(err, 1))
+        }
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
