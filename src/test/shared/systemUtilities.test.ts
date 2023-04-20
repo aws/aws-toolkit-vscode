@@ -125,12 +125,20 @@ describe('SystemUtilities', function () {
     })
 
     describe('permissions', function () {
+        function assertError<T>(err: unknown, ctor: new (...args: any[]) => T): asserts err is T {
+            if (!(err instanceof ctor)) {
+                throw new assert.AssertionError({
+                    message: `Error was not an instance of ${ctor.name}`,
+                    actual: err,
+                })
+            }
+        }
         describe('owned by user', function () {
             it('writing a new file to a directory without `u+x` fails', async function () {
                 const dirPath = path.join(tempFolder, 'dir1')
                 await fs.mkdir(dirPath, { mode: 0o677 })
                 const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
-                assert.ok(err instanceof PermissionsError)
+                assertError(err, PermissionsError)
                 assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                 assert.strictEqual(err.expected, '*wx')
                 assert.strictEqual(err.actual, 'rw-')
@@ -140,7 +148,7 @@ describe('SystemUtilities', function () {
                 const dirPath = path.join(tempFolder, 'dir2')
                 await fs.mkdir(dirPath, { mode: 0o577 })
                 const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
-                assert.ok(err instanceof PermissionsError)
+                assertError(err, PermissionsError)
                 assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                 assert.strictEqual(err.expected, '*wx')
                 assert.strictEqual(err.actual, 'r-x')
@@ -150,7 +158,7 @@ describe('SystemUtilities', function () {
                 const filePath = path.join(tempFolder, 'read-only')
                 await fs.writeFile(filePath, 'foo', { mode: 0o400 })
                 const err = await SystemUtilities.writeFile(filePath, 'foo2').catch(e => e)
-                assert.ok(err instanceof PermissionsError)
+                assertError(err, PermissionsError)
                 assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
                 assert.strictEqual(err.expected, '*w*')
                 assert.strictEqual(err.actual, 'r--')
@@ -160,7 +168,7 @@ describe('SystemUtilities', function () {
                 const filePath = path.join(tempFolder, 'write-only')
                 await fs.writeFile(filePath, 'foo', { mode: 0o200 })
                 const err = await SystemUtilities.readFile(filePath).catch(e => e)
-                assert.ok(err instanceof PermissionsError)
+                assertError(err, PermissionsError)
                 assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
                 assert.strictEqual(err.expected, 'r**')
                 assert.strictEqual(err.actual, '-w-')
