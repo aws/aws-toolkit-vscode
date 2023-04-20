@@ -20,7 +20,7 @@ export function createPermissionsErrorHandler(
     perms: PermissionsTriplet
 ): (err: unknown, depth?: number) => Promise<never> {
     return async function (err: unknown, depth = 0) {
-        if (uri.scheme !== 'file') {
+        if (uri.scheme !== 'file' || process.platform === 'win32') {
             throw err
         }
         if (!isNoPermissionsError(err) && !(isFileNotFoundError(err) && depth > 0)) {
@@ -118,7 +118,7 @@ export class SystemUtilities {
             return vscode.workspace.fs.delete(uri, opt).then(undefined, async err => {
                 if (isNoPermissionsError(err)) {
                     throw await errorHandler(err)
-                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err)) {
+                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err) || process.platform === 'win32') {
                     throw err
                 } else {
                     const stats = await fs.stat(dirUri.fsPath).catch(() => {

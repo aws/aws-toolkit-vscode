@@ -200,14 +200,20 @@ describe('SystemUtilities', function () {
                 let filePath: string
 
                 beforeEach(async function () {
-                    dirPath = path.join(tempFolder, `dir${runCounter}`)
-                    await fs.mkdir(dirPath)
-                    filePath = path.join(dirPath, 'file')
-                    await fs.writeFile(filePath, 'foo')
+                    if (process.platform === 'win32') {
+                        this.currentTest?.skip()
+                    } else {
+                        dirPath = path.join(tempFolder, `dir${runCounter}`)
+                        await fs.mkdir(dirPath)
+                        filePath = path.join(dirPath, 'file')
+                        await fs.writeFile(filePath, 'foo')
+                    }
                 })
 
                 afterEach(async function () {
-                    await fs.chmod(dirPath, 0o777)
+                    if (dirPath) {
+                        await fs.chmod(dirPath, 0o777)
+                    }
                 })
 
                 it('fails to delete without `u+w` on the parent', async function () {
