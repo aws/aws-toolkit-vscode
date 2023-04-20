@@ -17,8 +17,11 @@ import { credentialHelpUrl } from './constants'
 import { PromptSettings } from './settings'
 import { isNonNullable } from './utilities/tsUtils'
 import { CreateProfileWizard } from '../credentials/wizards/createProfile'
-import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/templates'
-import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
+import { staticCredentialsTemplate } from '../credentials/wizards/templates'
+import {
+    sharedCredentialProperties,
+    SharedCredentialsProvider,
+} from '../credentials/providers/sharedCredentialsProvider'
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
@@ -124,8 +127,8 @@ export class AwsContextCommands {
 
         await UserCredentialsUtils.generateCredentialsFile({
             profileName: resp.name,
-            accessKey: resp.profile[ProfileKey.AccessKeyId]!,
-            secretKey: resp.profile[ProfileKey.SecretKey]!,
+            accessKey: resp.profile[sharedCredentialProperties.AWS_ACCESS_KEY_ID]!,
+            secretKey: resp.profile[sharedCredentialProperties.AWS_SECRET_ACCESS_KEY]!,
         })
 
         const sharedProviderId: CredentialsId = {
