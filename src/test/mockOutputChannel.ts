@@ -18,6 +18,11 @@ export class MockOutputChannel implements vscode.OutputChannel {
         return this.onDidAppendTextEmitter.event
     }
 
+    public replace(value: string): void {
+        this._value = value
+        this.onDidAppendTextEmitter.fire(value)
+    }
+
     public append(value: string): void {
         this._value += value
         this.onDidAppendTextEmitter.fire(value)

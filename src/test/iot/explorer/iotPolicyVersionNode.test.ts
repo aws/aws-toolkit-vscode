@@ -10,6 +10,7 @@ import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import * as moment from 'moment'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
+import { stringOrProp } from '../../../shared/utilities/tsUtils'
 
 describe('IotPolicyVersionNode', function () {
     const policyName = 'policy'
@@ -29,7 +30,9 @@ describe('IotPolicyVersionNode', function () {
         )
 
         assert.ok(
-            node.tooltip?.startsWith(`Policy: ${policyName}\nVersion: V1\nDEFAULT\nCreated: ${createDateFormatted}`)
+            stringOrProp(node.tooltip, 'tooltip').startsWith(
+                `Policy: ${policyName}\nVersion: V1\nDEFAULT\nCreated: ${createDateFormatted}`
+            )
         )
         assert.strictEqual(node.label, 'Version V1*')
     })
@@ -43,7 +46,11 @@ describe('IotPolicyVersionNode', function () {
             {} as IotClient
         )
 
-        assert.ok(node.tooltip?.startsWith(`Policy: ${policyName}\nVersion: V2\nCreated: ${createDateFormatted}`))
+        assert.ok(
+            stringOrProp(node.tooltip, 'tooltip').startsWith(
+                `Policy: ${policyName}\nVersion: V2\nCreated: ${createDateFormatted}`
+            )
+        )
         assert.strictEqual(node.label, 'Version V2')
     })
 })

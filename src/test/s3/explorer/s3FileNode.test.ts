@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as moment from 'moment'
+import { stringOrProp } from '../../../shared/utilities/tsUtils'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { s3DateFormat, S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'
@@ -27,7 +28,11 @@ describe('S3FileNode', function () {
             now
         )
 
-        assert.ok(node.tooltip?.startsWith(`path/to/file.jpg\nSize: 1 KB\nLast Modified: ${lastModifiedReadable}`))
+        assert.ok(
+            stringOrProp(node.tooltip, 'tooltip').startsWith(
+                `path/to/file.jpg\nSize: 1 KB\nLast Modified: ${lastModifiedReadable}`
+            )
+        )
         assert.ok((node.description as string).startsWith('1 KB, a month ago'))
     })
 })

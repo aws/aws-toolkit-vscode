@@ -64,6 +64,7 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
 
     public getSection(section: string, scope?: vscode.ConfigurationScope): ResetableMemento {
         return {
+            keys: () => [],
             get: (key, defaultValue?) => this.get(`${section}.${key}`) ?? defaultValue,
             reset: async () => {
                 delete this.data[section]

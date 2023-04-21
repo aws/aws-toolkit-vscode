@@ -213,8 +213,11 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
 
         if (Array.isArray(items)) {
             setItems(items)
-        } else {
+        } else if (items instanceof Promise) {
             items.then(setItems)
+        } else {
+            // Not sure what this type is
+            throw new Error('Not implemented')
         }
 
         picker.canSelectMany = options?.canPickMany ?? false
