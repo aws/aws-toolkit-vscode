@@ -22,8 +22,8 @@ describe('symbolUtilities', async function () {
     describe('loadSymbols', async function () {
         it('returns symbols if available', async function () {
             const context: LoadSymbolsContext = {
-                async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
-                    return ([makeSymbol('MyName')] as unknown) as T
+                async executeCommand<T>(command: string, ...args: any[]): Promise<T> {
+                    return [makeSymbol('MyName')] as unknown as T
                 },
             }
 
@@ -41,11 +41,11 @@ describe('symbolUtilities', async function () {
         it('does not retry if maxRetries is 0', async function () {
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
-                async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
+                async executeCommand<T>(command: string, ...args: any[]): Promise<T> {
                     assert.strictEqual(args.length, 1)
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
-                    return undefined
+                    return undefined as T
                 },
             }
 
@@ -65,11 +65,11 @@ describe('symbolUtilities', async function () {
             const executeReturnValues = [undefined, undefined, [makeSymbol('MyName')]].reverse()
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
-                async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
+                async executeCommand<T>(command: string, ...args: any[]): Promise<T> {
                     assert.strictEqual(args.length, 1)
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
-                    return executeReturnValues.pop() as T | undefined
+                    return executeReturnValues.pop() as T
                 },
             }
 
@@ -92,11 +92,11 @@ describe('symbolUtilities', async function () {
         it('returns undefined if all retries fail', async function () {
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
-                async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
+                async executeCommand<T>(command: string, ...args: any[]): Promise<T> {
                     assert.strictEqual(args.length, 1)
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
-                    return undefined
+                    return undefined as T
                 },
             }
 

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
 import { TestAWSTreeNode } from './nodes/testAWSTreeNode'
 
@@ -59,7 +59,7 @@ describe('makeChildrenNodes', async function () {
     it('sorts the child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
-            sort: (a, b) => a.label!.localeCompare(b.label!),
+            sort: (a, b) => compareTreeItems(a, b),
         })
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')

@@ -101,6 +101,7 @@ export class Settings {
         const [targetKey, parentSection] = splitKey(section)
 
         return {
+            keys: () => [], // TODO(jmkeyes): implement this?
             get: (key, defaultValue?) => this.getConfig(section).get(key, defaultValue),
             reset: async () => this.getConfig().update(section, undefined, this.updateTarget),
             update: async (key, value) => {
@@ -216,6 +217,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
         public get onDidChange() {
             return this.getChangedEmitter().event
+        }
+
+        public keys(): readonly string[] {
+            return this.config.keys()
         }
 
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {

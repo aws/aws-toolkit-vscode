@@ -227,6 +227,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 assert.fail()
             }
             tracker.countTotalTokens({
+                reason: undefined,
                 document: createMockDocument(),
                 contentChanges: [
                     {
@@ -248,6 +249,7 @@ describe('codewhispererCodecoverageTracker', function () {
             }
             vsCodeState.isCodeWhispererEditing = true
             tracker.countTotalTokens({
+                reason: undefined,
                 document: createMockDocument(),
                 contentChanges: [
                     {
@@ -268,6 +270,7 @@ describe('codewhispererCodecoverageTracker', function () {
             }
             const doc = createMockDocument('import math', 'test.py', 'python')
             tracker.countTotalTokens({
+                reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
@@ -279,6 +282,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 ],
             })
             tracker.countTotalTokens({
+                reason: undefined,
                 document: doc,
                 contentChanges: [
                     {
@@ -298,6 +302,7 @@ describe('codewhispererCodecoverageTracker', function () {
             }
             const doc = createMockDocument('import math', 'test.py', 'python')
             tracker.countTotalTokens({
+                reason: undefined,
                 document: doc,
                 contentChanges: [
                     {

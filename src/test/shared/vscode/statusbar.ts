@@ -95,8 +95,25 @@ export class TestStatusBar implements Pick<typeof vscode.window, 'setStatusBarMe
         return item
     }
 
-    public createStatusBarItem(...args: Parameters<typeof vscode.window['createStatusBarItem']>): TestStatusBarItem {
-        const item = createTestStatusBarItem(this.window.createStatusBarItem(...args))
+    public createStatusBarItem(
+        alignmentOrId?: vscode.StatusBarAlignment | string,
+        priorityOrAlignment?: number | vscode.StatusBarAlignment,
+        priorityArg?: number
+    ): TestStatusBarItem {
+        // let id: string | undefined
+        let alignment: number | undefined
+        let priority: number | undefined
+
+        if (typeof alignmentOrId === 'string') {
+            // id = alignmentOrId
+            alignment = priorityOrAlignment
+            priority = priorityArg
+        } else {
+            alignment = alignmentOrId
+            priority = priorityOrAlignment
+        }
+
+        const item = createTestStatusBarItem(this.window.createStatusBarItem(alignment, priority))
         this.#items.push(item)
         this.#items.sort((a, b) => {
             if (a.alignment === b.alignment) {
