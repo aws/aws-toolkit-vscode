@@ -605,7 +605,10 @@ export class Auth implements AuthService, ConnectionManager {
                 })
             }
 
-            await provider.invalidate()
+            // XXX: never drop tokens in a dev environment
+            if (getCodeCatalystDevEnvId() === undefined) {
+                await provider.invalidate()
+            }
         } else if (profile.type === 'iam') {
             globals.loginManager.store.invalidateCredentials(fromString(id))
         }
