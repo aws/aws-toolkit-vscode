@@ -132,7 +132,11 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         describe('getThisDevEnv', function () {
-            const ccAuth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
+            let ccAuth: CodeCatalystAuthenticationProvider
+
+            before(function () {
+                ccAuth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
+            })
 
             it('returns `undefined` if not in a dev environment', async function () {
                 const result = await getThisDevEnv(ccAuth)
@@ -260,6 +264,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.notStrictEqual(defaultDevEnv.alias, newDevEnvSettings.alias)
             assert.notStrictEqual(defaultDevEnv.instanceType, newDevEnvSettings.instanceType)
 
+            // Sanity Check due to: https://issues.amazon.com/Velox-Bug-42
+            assert.ok(defaultDevEnv.id, 'Dev Env ID should not be empty.')
+
             // Update dev env
             const updatedDevEnv = await commands.updateDevEnv(defaultDevEnv, newDevEnvSettings)
 
@@ -334,6 +341,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
                 instanceType,
                 persistentStorage,
                 alias: createAlias(),
+                inactivityTimeoutMinutes: 15,
             }
         }
 
