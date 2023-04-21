@@ -16,6 +16,7 @@ import { Commands } from '../vscode/commands2'
 import globals from '../extensionGlobals'
 import { SamCliSettings } from '../sam/cli/samCliSettings'
 import { Timeout } from '../utilities/timeoutUtils'
+import { timed } from '../profiling'
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
@@ -70,7 +71,7 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
         return registry
     }
 
-    const asyncRegistry = new AsyncCloudFormationTemplateRegistry(registry, registrySetupFunc)
+    const asyncRegistry = timed('AsyncCloudFormationTemplateRegistry', () => new AsyncCloudFormationTemplateRegistry(registry, registrySetupFunc))
 
     Object.defineProperty(globals, 'templateRegistry', {
         set(newInstance: CloudFormationTemplateRegistry) {

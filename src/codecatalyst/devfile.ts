@@ -14,6 +14,7 @@ import { getLogger } from '../shared/logger'
 import { Commands } from '../shared/vscode/commands2'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../shared/errors'
+import { timed } from '../shared/profiling'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
     const client = DevEnvClient.instance
@@ -109,7 +110,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 
 export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Disposable {
     const registry = new DevfileRegistry()
-    const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
+    const codelensProvider = timed('DevfileCodeLensProvider', () => new DevfileCodeLensProvider(registry, devenvClient))
     registry.addWatchPatterns([devfileGlobPattern])
     registry.rebuild()
 

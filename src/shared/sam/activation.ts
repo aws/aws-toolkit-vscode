@@ -40,6 +40,7 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
+import { timed } from '../profiling'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -52,8 +53,8 @@ const supportedLanguages: {
  */
 export async function activate(ctx: ExtContext): Promise<void> {
     let didActivateCodeLensProviders = false
-    await createYamlExtensionPrompt()
-    const config = SamCliSettings.instance
+    await timed('createYamlExtensionPrompt', createYamlExtensionPrompt)
+    const config = timed('SamCliSettings.instance', () => SamCliSettings.instance)
 
     // Do this "on-demand" because it is slow.
     async function activateSlowCodeLensesOnce(): Promise<void> {
@@ -68,7 +69,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         activateSlowCodeLensesOnce()
     }
 
-    await registerCommands(ctx, config)
+    await timed('registerCommands', registerCommands, ctx, config)
     Commands.register('aws.addSamDebugConfig', async () => {
         if (!didActivateCodeLensProviders) {
             await activateSlowCodeLensesOnce()
@@ -115,7 +116,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await resumeCreateNewSamApp(ctx)
     }
 
-    registerSync()
+    timed('registerSync', registerSync)
 }
 
 async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
@@ -163,7 +164,7 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
 
 async function activateCodeLensRegistry(context: ExtContext) {
     try {
-        const registry = new CodelensRootRegistry()
+        const registry = timed('CodelensRootRegistry', () => new CodelensRootRegistry())
         globals.codelensRootRegistry = registry
 
         //
@@ -268,7 +269,7 @@ async function activateCodefileOverlays(
 
     // Ideally we should not need to `await` this Promise, but CodeLens providers are currently not implementing
     // the event to notify on when their results change.
-    await activateCodeLensRegistry(context)
+    await timed('activateCodeLensRegistry', activateCodeLensRegistry, context)
 
     supportedLanguages[jsLensProvider.javascriptLanguage] = tsCodeLensProvider
     supportedLanguages[pyLensProvider.pythonLanguage] = pyCodeLensProvider
