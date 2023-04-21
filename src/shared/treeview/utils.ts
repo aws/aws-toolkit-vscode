@@ -16,6 +16,17 @@ import { assign } from '../utilities/collectionUtils'
 import { addColor, getIcon } from '../icons'
 import { cast, TypeConstructor } from '../utilities/typeConstructors'
 
+export function getLabel(node: vscode.TreeItem | undefined): string {
+    if (typeof node?.label === 'undefined' || typeof node.label === 'string') {
+        return node?.label ?? ''
+    }
+    return node.label.label
+}
+
+export function compareTreeItems(nodeA: vscode.TreeItem, nodeB: vscode.TreeItem): number {
+    return getLabel(nodeA).localeCompare(getLabel(nodeB))
+}
+
 /**
  * Produces a list of child nodes using handlers to consistently populate the
  * list when errors occur or if the list would otherwise be empty.

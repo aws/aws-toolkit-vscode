@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
-import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import {
     Auth,
     isBuilderIdConnection,
@@ -174,41 +174,6 @@ export class CodeCatalystAuthenticationProvider {
     private static instance: CodeCatalystAuthenticationProvider
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        const secrets = isCloud9() ? new SecretMemento(ctx.globalState) : ctx.secrets
-
-        return (this.instance ??= new this(new CodeCatalystAuthStorage(secrets), ctx.globalState))
-    }
-}
-
-/**
- * `secrets` API polyfill for C9.
- *
- * For development only. Do NOT use this for anything else.
- */
-class SecretMemento implements vscode.SecretStorage {
-    private readonly onDidChangeEmitter = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
-    public readonly onDidChange = this.onDidChangeEmitter.event
-
-    public constructor(private readonly memento: vscode.Memento) {}
-
-    public async get(key: string): Promise<string | undefined> {
-        return this.getSecrets()[key]
-    }
-
-    public async store(key: string, value: string): Promise<void> {
-        const current = this.getSecrets()
-        await this.memento.update('__secrets', { ...current, [key]: value })
-        this.onDidChangeEmitter.fire({ key })
-    }
-
-    public async delete(key: string): Promise<void> {
-        const current = this.getSecrets()
-        delete current[key]
-        await this.memento.update('__secrets', current)
-        this.onDidChangeEmitter.fire({ key })
-    }
-
-    private getSecrets(): Record<string, string | undefined> {
-        return this.memento.get('__secrets', {})
+        return (this.instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
     }
 }

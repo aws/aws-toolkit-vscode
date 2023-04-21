@@ -41,6 +41,9 @@ const endpoints = {
     ],
 }
 
-export function createTestRegionProvider(opts?: { globalState?: Memento; awsContext?: AwsContext }): RegionProvider {
+export function createTestRegionProvider(opts?: {
+    globalState?: Memento & { setKeysForSync(keys: readonly string[]): void }
+    awsContext?: AwsContext
+}): RegionProvider {
     return new RegionProvider(endpoints, opts?.globalState, opts?.awsContext)
 }

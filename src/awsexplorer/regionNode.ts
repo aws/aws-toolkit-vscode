@@ -25,7 +25,7 @@ import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../ecs/model'
-import { TreeShim } from '../shared/treeview/utils'
+import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
 
 const serviceCandidates = [
     {
@@ -122,11 +122,7 @@ export class RegionNode extends AWSTreeNodeBase {
     private sortNodes(nodes: AWSTreeNodeBase[]) {
         return nodes.sort((a, b) => {
             // Always sort `ResourcesNode` at the bottom
-            return a instanceof ResourcesNode
-                ? 1
-                : b instanceof ResourcesNode
-                ? -1
-                : (a.label ?? '').localeCompare(b.label ?? '')
+            return a instanceof ResourcesNode ? 1 : b instanceof ResourcesNode ? -1 : compareTreeItems(a, b)
         })
     }
     public update(region: Region): void {
