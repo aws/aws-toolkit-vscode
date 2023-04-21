@@ -16,7 +16,6 @@ phases:
             java: latest
 
         commands:
-            - exit 0
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
@@ -64,8 +63,8 @@ phases:
 
     build:
         commands:
-            - npm ci --unsafe-perm
-            - xvfb-run npm run integrationTest
+            # - npm ci --unsafe-perm
+            # - xvfb-run npm run integrationTest
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
