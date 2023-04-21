@@ -121,6 +121,7 @@ describe('getClientId', function () {
 
     it('returns the nil UUID if it fails to save generated UUID', async function () {
         const mememto: Memento = {
+            keys: () => [],
             get(key) {
                 return undefined
             },
@@ -134,6 +135,7 @@ describe('getClientId', function () {
 
     it('returns the nil UUID if fails to retrive a saved UUID.', async function () {
         const mememto: Memento = {
+            keys: () => [],
             get(key) {
                 throw new Error()
             },

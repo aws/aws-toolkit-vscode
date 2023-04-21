@@ -2,7 +2,7 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
@@ -38,7 +38,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.apprunner.noServices', '[No App Runner services found]')
                 ),
-            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => compareTreeItems(nodeA, nodeB),
         })
     }
 

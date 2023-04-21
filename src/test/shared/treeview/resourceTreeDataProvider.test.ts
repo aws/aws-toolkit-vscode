@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { EventEmitter, TreeItem } from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { stringOrProp } from '../../../shared/utilities/tsUtils'
 
 interface Tree {
     readonly [id: string]: Tree
@@ -47,7 +48,7 @@ function getRoot(tree: Tree) {
 }
 
 function getLabels(nodes: TreeNode[]): Promise<string[]> {
-    return Promise.all(nodes.map(async n => (await n.getTreeItem()).label ?? 'not set'))
+    return Promise.all(nodes.map(async n => stringOrProp((await n.getTreeItem()).label, 'label') ?? 'not set'))
 }
 
 function toTestNode(node: TreeNode): TestNode | never {

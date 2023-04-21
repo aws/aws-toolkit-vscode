@@ -14,7 +14,6 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
-import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 
 const testTempDirs: string[] = []
@@ -249,17 +248,9 @@ export async function assertTextEditorContains(contents: string): Promise<void |
  * editors were closed after waiting.
  */
 export async function closeAllEditors(): Promise<void> {
-    const hasCloseAll = (await vscode.commands.getCommands()).includes('openEditors.closeAll')
     // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-    // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
-    const closeAllCmd = hasCloseAll ? 'openEditors.closeAll' : 'workbench.action.closeAllEditors'
-    if (hasCloseAll) {
-        if (isMinimumVersion() && !isReleaseVersion()) {
-            throw Error(
-                '"openEditors.closeAll" is available in min version, remove use of "workbench.action.closeAllEditors"!'
-            )
-        }
-    }
+    // Note: `workbench.action.closeAllEditors` is unreliable.
+    const closeAllCmd = 'openEditors.closeAll'
 
     // Output channels are named with the prefix 'extension-output'
     // Maybe we can close these with a command?

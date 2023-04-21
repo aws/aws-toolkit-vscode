@@ -22,7 +22,9 @@ import { getTestWindow } from '../../shared/vscode/window'
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
 
-const mockGlobalStorage: vscode.Memento = {
+const mockGlobalStorage: vscode.Memento & { setKeysForSync(keys: readonly string[]): void } = {
+    keys: () => [],
+    setKeysForSync: (keys: readonly string[]) => undefined,
     update: sinon.spy(),
     get: sinon.stub().returns(undefined),
 }

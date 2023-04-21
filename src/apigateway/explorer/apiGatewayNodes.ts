@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
@@ -43,7 +43,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.apigateway.noApis', '[No API Gateway REST APIs found]')
                 ),
-            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => compareTreeItems(nodeA, nodeB),
         })
     }
 
