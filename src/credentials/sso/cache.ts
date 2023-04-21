@@ -31,7 +31,15 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const ParsedPath = addTypeName('Path', s => path.format(path.parse(cast(s, String))))
+const ParsedPath = addTypeName('Path', val => {
+    const str = cast(val, String)
+    if (!str.trim()) {
+        throw new Error('Expected a non-empty path')
+    }
+
+    return path.format(path.parse(str))
+})
+
 const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
 const settings = new (class extends fromExtensionManifest('aws.auth', { ssoCacheDirectory: ParsedPath }) {})()
 export const getCacheDir = () => settings.get('ssoCacheDirectory', defaultCacheDir)
