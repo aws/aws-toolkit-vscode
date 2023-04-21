@@ -24,9 +24,7 @@ export function getLabel(node: vscode.TreeItem | undefined): string {
 }
 
 export function compareTreeItems(nodeA: vscode.TreeItem, nodeB: vscode.TreeItem): number {
-    const a = (typeof nodeA.label === 'string' ? nodeA.label : nodeA.label?.label) ?? ''
-    const b = (typeof nodeB.label === 'string' ? nodeB.label : nodeB.label?.label) ?? ''
-    return a.localeCompare(b)
+    return getLabel(nodeA).localeCompare(getLabel(nodeB))
 }
 
 /**
