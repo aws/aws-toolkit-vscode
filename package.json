@@ -69,7 +69,8 @@
                 },
                 "aws.auth.ssoCacheDirectory": {
                     "type": "string",
-                    "description": "%AWS.configuration.description.auth.ssoCacheDirectory%"
+                    "description": "%AWS.configuration.description.auth.ssoCacheDirectory%",
+                    "default": null
                 },
                 "aws.ecs.openTerminalCommand": {
                     "type": "string",
