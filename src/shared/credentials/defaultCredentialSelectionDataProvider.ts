@@ -12,7 +12,6 @@
 // Based on the multiStepInput code in the QuickInput VSCode extension sample.
 
 import * as vscode from 'vscode'
-import * as semver from 'semver'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -51,28 +50,16 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         actions: vscode.QuickPickItem[],
         state: Partial<CredentialSelectionState>
     ): Promise<vscode.QuickPickItem> {
-        // Remove this stub after we bump minimum to vscode 1.64
-        const QuickPickItemKind = semver.gte(vscode.version, '1.64.0') ? (vscode as any).QuickPickItemKind : undefined
         const menuTop: vscode.QuickPickItem[] = [
-            // vscode 1.64 supports QuickPickItemKind.Separator.
-            // https://github.com/microsoft/vscode/commit/eb416b4f9ebfda1c798aa7c8b2f4e81c6ce1984f
-            ...(!QuickPickItemKind
-                ? []
-                : [
-                      {
-                          label: localize('AWS.menu.actions', 'Actions'),
-                          kind: QuickPickItemKind.Separator,
-                      } as vscode.QuickPickItem,
-                  ]),
+            {
+                label: localize('AWS.menu.actions', 'Actions'),
+                kind: vscode.QuickPickItemKind.Separator,
+            } as vscode.QuickPickItem,
             ...actions,
-            ...(!QuickPickItemKind
-                ? []
-                : [
-                      {
-                          label: localize('AWS.menu.profiles', 'Profiles'),
-                          kind: QuickPickItemKind.Separator,
-                      } as vscode.QuickPickItem,
-                  ]),
+            {
+                label: localize('AWS.menu.profiles', 'Profiles'),
+                kind: vscode.QuickPickItemKind.Separator,
+            } as vscode.QuickPickItem,
         ]
 
         return await input.showQuickPick({
