@@ -1,3 +1,9 @@
+## 1.70.0 2023-04-22
+
+- **Deprecation** Minimum required VS Code version is now 1.65
+- **Feature** auth: AWS accounts and roles from IAM Identity Center are automatically discovered by the Toolkit when selecting a connection.
+- **Feature** feat(auth): IAM Identity Center connections now request the least permissive set of scopes for features. Using the same connection for multiple features will request additional scopes to be used.
+
 ## 1.69.0 2023-04-18
 
 - **Bug Fix** endpoints: local file never loads if remote call hangs
