@@ -1,0 +1,18 @@
+{
+	"date": "2023-04-22",
+	"version": "1.70.0",
+	"entries": [
+		{
+			"type": "Deprecation",
+			"description": "Minimum required VS Code version is now 1.65"
+		},
+		{
+			"type": "Feature",
+			"description": "auth: AWS accounts and roles from IAM Identity Center are automatically discovered by the Toolkit when selecting a connection."
+		},
+		{
+			"type": "Feature",
+			"description": "feat(auth): IAM Identity Center connections now request the least permissive set of scopes for features. Using the same connection for multiple features will request additional scopes to be used."
+		}
+	]
+}
