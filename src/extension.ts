@@ -50,6 +50,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateMynah } from './mynah/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
@@ -230,6 +231,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateEcs(extContext)
 
         await activateSchemas(extContext)
+
+        await activateMynah(extContext.extensionContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
