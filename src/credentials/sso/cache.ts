@@ -11,8 +11,7 @@ import { stripUndefined } from '../../shared/utilities/collectionUtils'
 import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { fromExtensionManifest } from '../../shared/settings'
-import { addTypeName, cast } from '../../shared/utilities/typeConstructors'
+import { DevSettings } from '../../shared/settings'
 
 interface RegistrationKey {
     readonly region: string
@@ -31,18 +30,8 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const ParsedPath = addTypeName('Path', val => {
-    const str = cast(val, String)
-    if (!str.trim()) {
-        throw new Error('Expected a non-empty path')
-    }
-
-    return path.format(path.parse(str))
-})
-
 const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
-export const settings = new (class extends fromExtensionManifest('aws.auth', { ssoCacheDirectory: ParsedPath }) {})()
-export const getCacheDir = () => settings.get('ssoCacheDirectory', defaultCacheDir)
+export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir)
 
 export function getCache(directory = getCacheDir()): SsoCache {
     return {

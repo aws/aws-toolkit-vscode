@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "auth: The `aws.auth.ssoCacheDirectory` setting can be used to change where the Toolkit stores bearer tokens"
-}
