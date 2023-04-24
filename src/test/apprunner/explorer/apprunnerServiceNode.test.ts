@@ -14,6 +14,7 @@ import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchL
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { stub } from '../../utilities/stubber'
+import { getLabel } from '../../../shared/treeview/utils'
 
 describe('AppRunnerServiceNode', function () {
     let mockApprunnerClient: ReturnType<typeof stub<DefaultAppRunnerClient>>
@@ -55,27 +56,27 @@ describe('AppRunnerServiceNode', function () {
     it('can pause', async function () {
         mockApprunnerClient.pauseService.resolves({ Service: { ...exampleInfo, Status: 'PAUSED' } })
         await node.pause()
-        assert.ok(node.label?.includes('Paused'))
+        assert.ok(getLabel(node).includes('Paused'))
     })
 
     it('can resume', async function () {
         node.update({ ...exampleInfo, Status: 'PAUSED' })
         mockApprunnerClient.resumeService.resolves({ Service: { ...exampleInfo, Status: 'RUNNING' } })
         await node.resume()
-        assert.ok(node.label?.includes('Running'))
+        assert.ok(getLabel(node).includes('Running'))
     })
 
     it('can deploy', async function () {
         mockApprunnerClient.startDeployment.resolves({ OperationId: '123' })
         node.update({ ...exampleInfo, Status: 'OPERATION_IN_PROGRESS' })
         await node.deploy()
-        assert.ok(node.label?.includes('Deploying'))
+        assert.ok(getLabel(node).includes('Deploying'))
     })
 
     it('can describe', async function () {
         mockApprunnerClient.describeService.resolves({ Service: { ...exampleInfo, Status: 'CREATE_FAILED' } })
         assert.strictEqual((await node.describe()).Status, 'CREATE_FAILED')
-        assert.ok(node.label?.includes('Create failed'))
+        assert.ok(getLabel(node).includes('Create failed'))
     })
 
     it('can update', async function () {
@@ -84,7 +85,7 @@ describe('AppRunnerServiceNode', function () {
             OperationId: '123',
         })
         await node.updateService({} as any)
-        assert.ok(node.label?.includes('Updating'))
+        assert.ok(getLabel(node).includes('Updating'))
     })
 
     it('can delete', async function () {

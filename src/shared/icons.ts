@@ -60,8 +60,8 @@ export function codicon(parts: TemplateStringsArray, ...components: (string | Ic
  * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
-    public constructor(public readonly id: string, public readonly source?: Uri, public readonly color?: ThemeColor) {
-        super(id)
+    public constructor(id: string, public readonly source?: Uri, color?: ThemeColor) {
+        super(id, color)
     }
 
     public override toString() {

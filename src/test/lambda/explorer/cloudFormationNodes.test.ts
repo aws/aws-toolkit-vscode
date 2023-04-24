@@ -22,6 +22,7 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { stub } from '../../utilities/stubber'
+import { getLabel } from '../../../shared/treeview/utils'
 
 const regionCode = 'someregioncode'
 
@@ -141,7 +142,7 @@ describe('CloudFormationStackNode', function () {
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
 
         assert.deepStrictEqual(
-            new Set<string>(childNodes.map(node => node.label!)),
+            new Set<string>(childNodes.map(node => getLabel(node))),
             new Set<string>(['lambda1', 'lambda3']),
             'Unexpected child sort order'
         )

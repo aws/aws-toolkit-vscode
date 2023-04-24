@@ -4,12 +4,22 @@
  */
 
 import * as assert from 'assert'
-import { AuthNode, isSsoConnection, promptForConnection, SsoConnection } from '../../credentials/auth'
+import * as sinon from 'sinon'
+import {
+    AuthNode,
+    Connection,
+    isIamConnection,
+    isSsoConnection,
+    promptForConnection,
+    ssoAccountAccessScopes,
+} from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
 import { captureEventOnce } from '../testUtil'
-import { createSsoProfile, createTestAuth } from './testUtil'
+import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
+import { toCollection } from '../../shared/utilities/asyncCollection'
+import globals from '../../shared/extensionGlobals'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -181,15 +191,15 @@ describe('Auth', function () {
         assert.ok(await conn.getToken())
     })
 
+    async function runExpiredConnectionFlow(conn: Connection, selection: string | RegExp) {
+        const creds = conn.type === 'sso' ? conn.getToken() : conn.getCredentials()
+        const message = await getTestWindow().waitForMessage(expiredConnPattern)
+        message.selectItem(selection)
+
+        return creds
+    }
+
     describe('SSO Connections', function () {
-        async function runExpiredGetTokenFlow(conn: SsoConnection, selection: string | RegExp) {
-            const token = conn.getToken()
-            const message = await getTestWindow().waitForMessage(expiredConnPattern)
-            message.selectItem(selection)
-
-            return token
-        }
-
         it('creates a new token if one does not exist', async function () {
             const conn = await auth.createConnection(ssoProfile)
             const provider = auth.getTestTokenProvider(conn)
@@ -198,7 +208,7 @@ describe('Auth', function () {
 
         it('prompts the user if the token is invalid or expired', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
-            const token = await runExpiredGetTokenFlow(conn, /login/i)
+            const token = await runExpiredConnectionFlow(conn, /login/i)
             assert.notStrictEqual(token, undefined)
         })
 
@@ -207,7 +217,7 @@ describe('Auth', function () {
             await auth.useConnection(conn)
             await auth.invalidateCachedCredentials(conn)
 
-            const token = runExpiredGetTokenFlow(conn, /no/i)
+            const token = runExpiredConnectionFlow(conn, /no/i)
             await assert.rejects(token, ToolkitError)
 
             assert.strictEqual(auth.activeConnection?.state, 'invalid')
@@ -217,9 +227,136 @@ describe('Auth', function () {
             const err1 = new ToolkitError('test', { code: 'test' })
             const conn = await auth.createConnection(ssoProfile)
             auth.getTestTokenProvider(conn)?.getToken.rejects(err1)
-            const err2 = await runExpiredGetTokenFlow(conn, /no/i).catch(e => e)
+            const err2 = await runExpiredConnectionFlow(conn, /no/i).catch(e => e)
             assert.ok(err2 instanceof ToolkitError)
             assert.strictEqual(err2.cause, err1)
+        })
+    })
+
+    describe('Linked Connections', function () {
+        const linkedSsoProfile = createSsoProfile({ scopes: ssoAccountAccessScopes })
+        const accountRoles = [
+            { accountId: '1245678910', roleName: 'foo' },
+            { accountId: '9876543210', roleName: 'foo' },
+            { accountId: '9876543210', roleName: 'bar' },
+        ]
+
+        beforeEach(function () {
+            auth.ssoClient.listAccounts.returns(
+                toCollection(async function* () {
+                    yield [{ accountId: '1245678910' }, { accountId: '9876543210' }]
+                })
+            )
+
+            auth.ssoClient.listAccountRoles.callsFake(req =>
+                toCollection(async function* () {
+                    yield accountRoles.filter(i => i.accountId === req.accountId)
+                })
+            )
+
+            auth.ssoClient.getRoleCredentials.resolves({
+                accessKeyId: 'xxx',
+                secretAccessKey: 'xxx',
+                expiration: new Date(Date.now() + 1000000),
+            })
+
+            sinon.stub(globals.loginManager, 'validateCredentials').resolves('')
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('lists linked conections for SSO connections', async function () {
+            await auth.createConnection(linkedSsoProfile)
+            const connections = await auth.listAndTraverseConnections().promise()
+            assert.deepStrictEqual(
+                connections.map(c => c.type),
+                ['sso', 'iam', 'iam', 'iam']
+            )
+        })
+
+        it('does not gather linked accounts when calling `listConnections`', async function () {
+            await auth.createConnection(linkedSsoProfile)
+            const connections = await auth.listConnections()
+            assert.deepStrictEqual(
+                connections.map(c => c.type),
+                ['sso']
+            )
+        })
+
+        it('caches linked conections when the source connection becomes invalid', async function () {
+            const conn = await auth.createConnection(linkedSsoProfile)
+            await auth.listAndTraverseConnections().promise()
+            await auth.invalidateCachedCredentials(conn)
+
+            const connections = await auth.listConnections()
+            assert.deepStrictEqual(
+                connections.map(c => c.type),
+                ['sso', 'iam', 'iam', 'iam']
+            )
+        })
+
+        it('gracefully handles source connections becoming invalid when discovering linked accounts', async function () {
+            await auth.createConnection(linkedSsoProfile)
+            auth.ssoClient.listAccounts.rejects(new Error('No access'))
+            const connections = await auth.listAndTraverseConnections().promise()
+            assert.deepStrictEqual(
+                connections.map(c => c.type),
+                ['sso']
+            )
+        })
+
+        it('removes linked connections when the source connection is deleted', async function () {
+            const conn = await auth.createConnection(linkedSsoProfile)
+            await auth.listAndTraverseConnections().promise()
+            await auth.deleteConnection(conn)
+
+            assert.deepStrictEqual(await auth.listAndTraverseConnections().promise(), [])
+        })
+
+        it('prompts the user to reauthenticate if the source connection becomes invalid', async function () {
+            const source = await auth.createConnection(linkedSsoProfile)
+            const conn = await auth.listAndTraverseConnections().find(c => isIamConnection(c) && c.id.includes('sso'))
+            assert.ok(conn)
+            await auth.useConnection(conn)
+            await auth.reauthenticate(conn)
+            await auth.invalidateCachedCredentials(conn)
+            await auth.invalidateCachedCredentials(source)
+
+            await runExpiredConnectionFlow(conn, /login/i)
+            assert.strictEqual(auth.getConnectionState(source), 'valid')
+            assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
+
+        describe('Multiple Connections', function () {
+            const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+
+            // Equivalent profiles from multiple sources is a fairly rare situation right now
+            // Ideally they would be de-duped although the implementation can be tricky
+            it('can handle multiple SSO connection and does not de-dupe', async function () {
+                await auth.createConnection(linkedSsoProfile)
+                await auth.createConnection(otherProfile)
+
+                const connections = await auth.listAndTraverseConnections().promise()
+                assert.deepStrictEqual(
+                    connections.map(c => c.type),
+                    ['sso', 'sso', 'iam', 'iam', 'iam', 'iam', 'iam', 'iam'],
+                    'Expected two SSO connections and 3 IAM connections for each SSO connection'
+                )
+            })
+
+            it('does not stop discovery if one connection fails', async function () {
+                const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+                await auth.createConnection(linkedSsoProfile)
+                await auth.createConnection(otherProfile)
+                auth.ssoClient.listAccounts.onFirstCall().rejects(new Error('No access'))
+                const connections = await auth.listAndTraverseConnections().promise()
+                assert.deepStrictEqual(
+                    connections.map(c => c.type),
+                    ['sso', 'sso', 'iam', 'iam', 'iam']
+                )
+            })
         })
     })
 

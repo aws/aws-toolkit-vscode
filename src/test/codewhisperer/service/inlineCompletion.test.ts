@@ -299,6 +299,7 @@ describe('inlineCompletion', function () {
 
 export function createTextDocumentChangeEvent(document: vscode.TextDocument, range: vscode.Range, text: string) {
     return {
+        reason: undefined,
         document: document,
         contentChanges: [
             {

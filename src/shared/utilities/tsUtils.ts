@@ -3,6 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export function stringOrProp(obj: any, prop: string): string {
+    if (obj === undefined || typeof obj === 'string') {
+        return obj ?? ''
+    }
+    return obj[prop] ?? ''
+}
+
 export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
     return props.filter(prop => obj[prop] === undefined)
 }
@@ -37,7 +44,7 @@ export function selectFrom<T, K extends keyof T>(obj: T, ...props: K[]): { [P in
     return props.map(p => [p, obj[p]] as const).reduce((a, [k, v]) => ((a[k] = v), a), {} as { [P in K]: T[P] })
 }
 
-export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
+export function isNonNullable<T>(obj: T | void): obj is NonNullable<T> {
     // eslint-disable-next-line no-null/no-null
     return obj !== undefined && obj !== null
 }

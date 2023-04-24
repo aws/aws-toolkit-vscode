@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "feat(auth): IAM Identity Center connections now request the least permissive set of scopes for features. Using the same connection for multiple features will request additional scopes to be used."
-}
