@@ -41,7 +41,7 @@ const ParsedPath = addTypeName('Path', val => {
 })
 
 const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
-const settings = new (class extends fromExtensionManifest('aws.auth', { ssoCacheDirectory: ParsedPath }) {})()
+export const settings = new (class extends fromExtensionManifest('aws.auth', { ssoCacheDirectory: ParsedPath }) {})()
 export const getCacheDir = () => settings.get('ssoCacheDirectory', defaultCacheDir)
 
 export function getCache(directory = getCacheDir()): SsoCache {

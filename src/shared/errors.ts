@@ -425,19 +425,33 @@ export function isNoPermissionsError(err: unknown): boolean {
 }
 
 const modeToString = (mode: number) =>
-    Array.from('drwxrwxrwx')
-        .map((c, i, a) => ((mode >> (a.length - i - 1)) & 1 ? c : '-'))
+    Array.from('rwxrwxrwx')
+        .map((c, i, a) => ((mode >> (a.length - (i + 1))) & 1 ? c : '-'))
         .join('')
 
 function getEffectivePerms(uid: number, gid: number, stats: fs.Stats) {
     const mode = stats.mode
     const isOwner = uid === stats.uid
     const isGroup = gid === stats.gid && !isOwner
+
+    // Many unix systems support multiple groups but we only know the primary
+    // The user can still have group permissions despite not having the same `gid`
+    // These situations are ambiguous, so the effective permissions are the
+    // intersection of the two bitfields
+    if (!isOwner && !isGroup) {
+        return {
+            isAmbiguous: true,
+            effective: mode & 0o007 & ((mode & 0o070) >> 3),
+        }
+    }
+
     const ownerMask = isOwner ? 0o700 : 0
     const groupMask = isGroup ? 0o070 : 0
-    const otherMask = !isOwner && !isGroup ? 0o007 : 0
 
-    return (mode & otherMask) | ((mode & groupMask) >> 3) | ((mode & ownerMask) >> 6)
+    return {
+        isAmbiguous: false,
+        effective: ((mode & groupMask) >> 3) | ((mode & ownerMask) >> 6),
+    }
 }
 
 // The wildcard (`*`) symbol is non-standard. It's used to represent "don't cares" and takes
@@ -452,14 +466,16 @@ export class PermissionsError extends ToolkitError {
         public readonly userInfo: os.UserInfo<string>,
         public readonly expected: PermissionsTriplet
     ) {
-        const mode = modeToString(stats.mode)
+        const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
         const owner = stats.uid === userInfo.uid ? userInfo.username : stats.uid
-        const actual = modeToString(getEffectivePerms(userInfo.uid, userInfo.gid, stats)).slice(-3)
+        const { effective, isAmbiguous } = getEffectivePerms(userInfo.uid, userInfo.gid, stats)
+        const actual = modeToString(effective).slice(-3)
         const resolvedExpected = Array.from(expected)
             .map((c, i) => (c === '*' ? actual[i] : c))
             .join('')
+        const actualText = !isAmbiguous ? actual : `${mode.slice(-6, -3)} & ${mode.slice(-3)} (ambiguous)`
 
-        super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actual}.`, {
+        super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actualText}.`, {
             code: 'InvalidPermissions',
             details: {
                 isOwner: stats.uid === -1 ? 'unknown' : userInfo.uid == stats.uid,

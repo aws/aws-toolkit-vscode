@@ -5,17 +5,17 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { Settings } from '../shared/settings'
 import { Auth } from './auth'
 import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
-import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { settings } from './sso/cache'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
-    settings: Settings,
     loginManager: LoginManager
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(conn => {
@@ -27,6 +27,11 @@ export async function initialize(
         }
     })
 
+    // Skip showing a notification on C9 because settings may behave differently
+    if (!isCloud9()) {
+        extensionContext.subscriptions.push(registerCacheDirSettingListener())
+    }
+
     // TODO: To enable this in prod we need to remove the 'when' clause
     // for: '"command": "aws.auth.showConnectionsPage"' in package.json
     registerCommandsWithVSCode(
@@ -34,4 +39,21 @@ export async function initialize(
         new AuthCommandDeclarations(),
         new AuthCommandBackend(extensionContext)
     )
+}
+
+// Future work: update `Auth` so a reload isn't needed
+// Having a notfication is still nice though because it provides immediate feedback
+function registerCacheDirSettingListener() {
+    return settings.onDidChange(async ({ key }) => {
+        if (key === 'ssoCacheDirectory') {
+            const resp = await vscode.window.showInformationMessage(
+                'SSO cache directory changed. A reload is required for this to take effect.',
+                'Reload'
+            )
+            if (resp === 'Reload') {
+                const reloadCommand = await Commands.get('workbench.action.reloadWindow')
+                await reloadCommand?.execute()
+            }
+        }
+    })
 }
