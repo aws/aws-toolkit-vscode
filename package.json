@@ -67,11 +67,6 @@
                     "deprecationMessage": "The current profile is now stored internally by the Toolkit.",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.auth.ssoCacheDirectory": {
-                    "type": "string",
-                    "description": "%AWS.configuration.description.auth.ssoCacheDirectory%",
-                    "default": null
-                },
                 "aws.ecs.openTerminalCommand": {
                     "type": "string",
                     "default": "/bin/sh",
