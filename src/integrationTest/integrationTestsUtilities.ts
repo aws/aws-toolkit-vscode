@@ -41,37 +41,6 @@ export async function configurePythonExtension(): Promise<void> {
     await configPy.update('linting.enabled', false, false)
 }
 
-// Installs tools that the Go extension wants (it complains a lot if we don't)
-// Had to dig around for the commands used by the Go extension.
-// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goTools.ts#L211
-export async function configureGoExtension(): Promise<void> {
-    console.log('Setting up Go...')
-
-    const gopls = {
-        name: 'gopls',
-        importPath: 'golang.org/x/tools/gopls',
-        replacedByGopls: false,
-        isImportant: true,
-        description: 'Language Server from Google',
-        minimumGoVersion: '1.12',
-        latestVersion: '0.6.4',
-        latestVersionTimestamp: '2021-01-19',
-        latestPrereleaseVersion: '0.6.4',
-        latestPrereleaseVersionTimestamp: '2021-01-19',
-    }
-
-    const dlv = {
-        name: 'dlv',
-        importPath: 'github.com/go-delve/delve/cmd/dlv',
-        modulePath: 'github.com/go-delve/delve',
-        replacedByGopls: false,
-        isImportant: true,
-        description: 'Debugging',
-    }
-
-    await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
-}
-
 export async function getAddConfigCodeLens(
     documentUri: vscode.Uri,
     timeout: number,

@@ -398,7 +398,6 @@ describe('SAM Integration Tests', async function () {
         await activateExtensions()
         await testUtils.configureAwsToolkitExtension()
         await testUtils.configurePythonExtension()
-        await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)

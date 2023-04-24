@@ -38,6 +38,8 @@ phases:
             - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && 2>/dev/null goenv install $VERSION'
             - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
             - go version
+            - go install golang.org/x/tools/gopls@latest
+            - go install github.com/go-delve/delve/cmd/dlv@latest
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
