@@ -187,12 +187,10 @@ export class AuthUtil {
     }
 
     public async reauthenticate() {
-        if (this.isConnectionExpired()) {
-            try {
-                await this.auth.reauthenticate(this.conn!)
-            } catch (err) {
-                throw ToolkitError.chain(err, 'Unable to authenticate connection')
-            }
+        try {
+            await this.auth.reauthenticate(this.conn!)
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Unable to authenticate connection')
         }
     }
 

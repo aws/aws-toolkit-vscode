@@ -7,6 +7,7 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'
+import * as crypto from 'crypto'
 
 const directory = join(process.cwd(), '.changes', 'next-release')
 const changeTypes = ['Breaking Change', 'Feature', 'Bug Fix', 'Deprecation', 'Removal', 'Test']
