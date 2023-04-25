@@ -62,7 +62,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.checkCompletionType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.checkEmptyRecommendations
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.isConnectionExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.resources.message
@@ -81,15 +80,9 @@ class CodeWhispererService {
         if (!isCodeWhispererEnabled(project)) return
 
         latencyContext.credentialFetchingStart = System.nanoTime()
-        if (isConnectionExpired(project)) {
-            if (triggerTypeInfo.triggerType == CodewhispererTriggerType.AutoTrigger) {
-                if (reAuthPromptShown) return
-                promptReAuth(project, ::markReAuthPromptShown)
-            } else {
-                promptReAuth(project)
-            }
-            return
-        }
+
+        if (promptReAuth(project)) return
+
         latencyContext.credentialFetchingEnd = System.nanoTime()
         val psiFile = runReadAction { PsiDocumentManager.getInstance(project).getPsiFile(editor.document) }
 
@@ -621,9 +614,11 @@ class CodeWhispererService {
         const val KET_SESSION_ID = "x-amzn-SessionId"
         private var reAuthPromptShown = false
 
-        private fun markReAuthPromptShown() {
+        fun markReAuthPromptShown() {
             reAuthPromptShown = true
         }
+
+        fun hasReAuthPromptBeenShown() = reAuthPromptShown
 
         fun buildCodeWhispererRequest(
             fileContextInfo: FileContextInfo

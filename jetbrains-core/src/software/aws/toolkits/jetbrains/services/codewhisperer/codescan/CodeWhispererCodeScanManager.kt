@@ -58,6 +58,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
@@ -126,14 +127,15 @@ class CodeWhispererCodeScanManager(val project: Project) {
      * Triggers a code scan and displays results in the new tab in problems view panel.
      */
     fun runCodeScan() {
+        if (!isCodeWhispererEnabled(project)) return
+
         // Return if a scan is already in progress.
         if (isCodeScanInProgress.getAndSet(true)) return
-        if (CodeWhispererUtil.isConnectionExpired(project)) {
-            promptReAuth(project) {
-                isCodeScanInProgress.set(false)
-            }
+        if (promptReAuth(project)) {
+            isCodeScanInProgress.set(false)
             return
         }
+
         // Prepare for a code scan
         beforeCodeScan()
         // launch code scan coroutine

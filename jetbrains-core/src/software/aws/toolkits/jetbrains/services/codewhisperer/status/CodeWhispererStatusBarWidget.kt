@@ -13,16 +13,11 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
 import com.intellij.ui.AnimatedIcon
 import com.intellij.util.Consumer
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.loginSso
-import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStateChangeListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.reconnectCodeWhisperer
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import javax.swing.Icon
@@ -59,39 +54,23 @@ class CodeWhispererStatusBarWidget(project: Project) :
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
 
-    override fun getPopupStep(): ListPopup? {
-        val connectionType = CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)
-        return if (connectionType == CodeWhispererLoginType.Expired) {
-            JBPopupFactory.getInstance().createConfirmation(message("codewhisperer.statusbar.popup.title"), ::reconnect, 0)
+    override fun getPopupStep(): ListPopup? =
+        if (isCodeWhispererExpired(project)) {
+            JBPopupFactory.getInstance().createConfirmation(message("codewhisperer.statusbar.popup.title"), { reconnectCodeWhisperer(project) }, 0)
         } else {
             null
         }
-    }
-
-    private fun reconnect() {
-        val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-        if (connection !is BearerSsoConnection) {
-            return
-        }
-        ApplicationManager.getApplication().executeOnPooledThread {
-            CodeWhispererUtil.getConnectionStartUrl(connection)?.let { startUrl ->
-                loginSso(project, startUrl, scopes = connection.scopes)
-            }
-        }
-    }
 
     override fun getSelectedValue(): String = message("codewhisperer.statusbar.display_name")
 
-    override fun getIcon(): Icon {
-        val connectionType = CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)
-        return if (connectionType == CodeWhispererLoginType.Expired) {
+    override fun getIcon(): Icon =
+        if (isCodeWhispererExpired(project)) {
             AllIcons.General.BalloonWarning
         } else if (CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) {
             AnimatedIcon.Default()
         } else {
             AllIcons.Actions.Commit
         }
-    }
 
     companion object {
         const val ID = "aws.codewhisperer.statusWidget"

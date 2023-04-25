@@ -19,6 +19,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorAccountless
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyWarnAccountless
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Timer
@@ -39,6 +40,9 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         }
         if (!isCodeWhispererEnabled(project)) return
         if (runOnce) return
+
+        // Reconnect CodeWhisperer on startup
+        promptReAuth(project)
 
         CodeWhispererAutoTriggerService.getInstance().determineUserGroupIfNeeded()
 

@@ -224,26 +224,30 @@ fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider
     return tokenProvider
 }
 
-fun maybeReauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider, onReauthRequired: (SsoOidcException?) -> Any) {
+// Return true if need to re-auth, false otherwise
+fun maybeReauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider, onReauthRequired: (SsoOidcException?) -> Any): Boolean {
     val state = tokenProvider.state()
     when (state) {
         BearerTokenAuthState.NOT_AUTHENTICATED -> {
             getLogger<ToolkitAuthManager>().info { "Token provider NOT_AUTHENTICATED, requesting login" }
             onReauthRequired(null)
+            return true
         }
 
         BearerTokenAuthState.NEEDS_REFRESH -> {
             try {
-                runUnderProgressIfNeeded(project, message("credentials.sono.login.refreshing"), true) {
+                return runUnderProgressIfNeeded(project, message("credentials.sono.login.refreshing"), true) {
                     tokenProvider.resolveToken()
                     BearerTokenProviderListener.notifyCredUpdate(tokenProvider.id)
+                    return@runUnderProgressIfNeeded false
                 }
             } catch (e: SsoOidcException) {
                 getLogger<ToolkitAuthManager>().warn(e) { "Redriving AWS Builder ID login flow since token could not be refreshed" }
                 onReauthRequired(e)
+                return true
             }
         }
 
-        BearerTokenAuthState.AUTHORIZED -> {}
+        BearerTokenAuthState.AUTHORIZED -> { return false }
     }
 }
