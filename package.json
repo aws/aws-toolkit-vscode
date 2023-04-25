@@ -3562,7 +3562,7 @@
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
-        "prettier": "^2.7.1",
+        "prettier": "^2.8.8",
         "prettier-plugin-sh": "^0.8.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
