@@ -8,6 +8,8 @@ import { SystemUtilities } from '../shared/systemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { assertHasProps } from '../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
+import { StaticCredentialsProfileData } from './types'
+import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
     const configFileExists = await SystemUtilities.fileExists(getConfigFilename())
@@ -232,6 +234,32 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
     }
 
     return parseIni(await SystemUtilities.readFile(credentialsUri), credentialsUri)
+}
+
+/**
+ * Saves the given profile data to the credentials file.
+ */
+export async function saveProfileToCredentials(
+    profileName: ProfileName,
+    profileData: StaticCredentialsProfileData
+): Promise<void> {
+    if (await profileExists(profileName)) {
+        throw new Error(`Cannot save profile, ${profileName}, because it already exists.`)
+    }
+
+    return UserCredentialsUtils.generateCredentialsFile({
+        profileName,
+        accessKey: profileData.aws_access_key_id,
+        secretKey: profileData.aws_secret_access_key,
+    })
+}
+
+/**
+ * Checks if a profile exists in a shared credentials file.
+ */
+async function profileExists(profileName: ProfileName): Promise<boolean> {
+    const existingProfiles = await loadSharedCredentialsProfiles()
+    return Object.keys(existingProfiles).includes(profileName)
 }
 
 /**
