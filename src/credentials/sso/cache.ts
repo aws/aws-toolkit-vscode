@@ -4,13 +4,14 @@
  */
 
 import * as crypto from 'crypto'
-import { homedir } from 'os'
-import { join } from 'path'
+import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import { createDiskCache, KeyedCache, mapCache } from '../../shared/utilities/cacheUtils'
 import { stripUndefined } from '../../shared/utilities/collectionUtils'
 import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
+import { SystemUtilities } from '../../shared/systemUtilities'
+import { DevSettings } from '../../shared/settings'
 
 interface RegistrationKey {
     readonly region: string
@@ -29,16 +30,17 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const cacheDir = join(homedir(), '.aws', 'sso', 'cache')
+const defaultCacheDir = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
+export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir)
 
-export function getCache(directory = cacheDir): SsoCache {
+export function getCache(directory = getCacheDir()): SsoCache {
     return {
         token: getTokenCache(directory),
         registration: getRegistrationCache(directory),
     }
 }
 
-export function getRegistrationCache(directory = cacheDir): KeyedCache<ClientRegistration, RegistrationKey> {
+export function getRegistrationCache(directory = getCacheDir()): KeyedCache<ClientRegistration, RegistrationKey> {
     const hashScopes = (scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         scopes.forEach(s => shasum.update(s))
@@ -47,7 +49,7 @@ export function getRegistrationCache(directory = cacheDir): KeyedCache<ClientReg
 
     const getTarget = (key: RegistrationKey) => {
         const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hashScopes(key.scopes)}` : ''}`
-        return join(directory, `aws-toolkit-vscode-client-id-${suffix}.json`)
+        return path.join(directory, `aws-toolkit-vscode-client-id-${suffix}.json`)
     }
 
     // Compatability for older Toolkit versions (format on disk is unchanged)
@@ -61,7 +63,7 @@ export function getRegistrationCache(directory = cacheDir): KeyedCache<ClientReg
     return mapCache(cache, read, write)
 }
 
-export function getTokenCache(directory = cacheDir): KeyedCache<SsoAccess> {
+export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> {
     // Older specs do not store the registration
     type MaybeRegistration = Partial<Omit<ClientRegistration, 'expiresAt'> & { readonly registrationExpiresAt: string }>
 
@@ -123,7 +125,7 @@ export function getTokenCache(directory = cacheDir): KeyedCache<SsoAccess> {
         shasum.update(encoded) // lgtm[js/weak-cryptographic-algorithm]
         const hashedUrl = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
 
-        return join(directory, `${hashedUrl}.json`)
+        return path.join(directory, `${hashedUrl}.json`)
     }
 
     const logger = (message: string) => getLogger().debug(`SSO token cache: ${message}`)
