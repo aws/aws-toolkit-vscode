@@ -1,6 +1,8 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import net.bytebuddy.utility.RandomString
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 
 plugins {
@@ -9,6 +11,10 @@ plugins {
     id("toolkit-testing")
     id("toolkit-integration-testing")
     id("toolkit-intellij-subplugin")
+}
+
+intellij {
+    type.set("GW")
 }
 
 intellijToolkit {
@@ -29,12 +35,14 @@ dependencies {
     testCompileOnly(project(":jetbrains-core"))
     testRuntimeOnly(project(":jetbrains-core", "gatewayArtifacts"))
     testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
+    testImplementation(libs.kotlin.coroutinesTest)
+    testImplementation(libs.kotlin.coroutinesDebug)
     testImplementation(libs.wiremock)
     testImplementation(libs.bundles.sshd)
 }
 
-configurations {
-    all {
+listOf("compileClasspath", "runtimeClasspath").forEach { configuration ->
+    configurations.named(configuration) {
         // definitely won't be used in Gateway
         setOf(
             libs.aws.apprunner,
@@ -83,11 +91,14 @@ artifacts {
     add(gatewayResources.name, gatewayResourcesDir)
 }
 
-tasks.prepareSandbox {
-    runtimeClasspathFiles.set(gatewayRunOnly)
+tasks.withType<PrepareSandboxTask>().all {
     from(gatewayResourcesDir) {
         into("aws-toolkit-jetbrains/gateway-resources")
     }
+}
+
+tasks.prepareSandbox {
+    runtimeClasspathFiles.set(gatewayRunOnly)
 }
 
 tasks.buildPlugin {
@@ -105,4 +116,9 @@ val publishChannel: String by project
 tasks.publishPlugin {
     token.set(publishToken)
     channels.set(publishChannel.split(",").map { it.trim() })
+}
+
+tasks.integrationTest {
+    val testToken = RandomString.make(32)
+    environment("CWM_HOST_STATUS_OVER_HTTP_TOKEN", testToken)
 }

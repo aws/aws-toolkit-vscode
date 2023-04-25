@@ -24,6 +24,8 @@ phases:
       - export PATH="${PATH}:${DOTNET_ROOT}"
       - export PATH="$PATH:$HOME/.dotnet/tools"
       - dotnet codeartifact-creds install
+      # should probably be managed as an extension/rule in any tests that need a screen available
+      - /usr/bin/Xvfb :22 -screen 0 1920x1080x24 &
 
   build:
     commands:
@@ -41,7 +43,7 @@ phases:
         credential_source=EcsContainer"
 
       - chmod +x gradlew
-      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport --info --console plain
+      - DISPLAY=:22 ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport --info --console plain
       - |
         if [ $(docker ps -q | wc -l) -gt 0 ]; then
             echo 'Docker containers were not completely cleaned up!';

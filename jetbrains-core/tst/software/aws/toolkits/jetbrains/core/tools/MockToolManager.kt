@@ -3,9 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core.tools
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.replaceService
 import java.nio.file.Path
 
 @Suppress("UNCHECKED_CAST")
@@ -16,7 +19,7 @@ internal class MockToolManager : ToolManager {
     override fun <V : Version> getTool(type: ToolType<V>): Tool<ToolType<V>>? = tools[type]?.let { it as Tool<ToolType<V>> }
 
     override fun <V : Version> getOrInstallTool(type: ManagedToolType<V>, project: Project?): Tool<ToolType<V>> =
-        getTool(type) ?: throw IllegalStateException("Must register ManagedToolType via a MockMockToolManagerRule before using it in a test")
+        getTool(type) ?: error("Must register ManagedToolType via a MockToolManagerRule before using it in a test")
 
     override fun <V : Version> getToolForPath(type: ToolType<V>, toolExecutablePath: Path): Tool<ToolType<V>> {
         TODO("Not yet implemented")
@@ -41,5 +44,12 @@ class MockToolManagerRule : ApplicationRule() {
 
     override fun after() {
         getMockInstance().tools.clear()
+    }
+
+    companion object {
+        fun useRealTools(disposable: Disposable) {
+            val toolManager = DefaultToolManager()
+            ApplicationManager.getApplication().replaceService(ToolManager::class.java, toolManager, disposable)
+        }
     }
 }

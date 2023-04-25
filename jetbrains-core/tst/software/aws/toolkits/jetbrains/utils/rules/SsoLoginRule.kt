@@ -4,10 +4,13 @@
 package software.aws.toolkits.jetbrains.utils.rules
 
 import com.intellij.testFramework.DisposableRule
+import org.junit.rules.ExternalResource
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import software.aws.toolkits.jetbrains.core.MockClientManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.MockSsoLoginCallbackProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.NoOpSsoLoginCallback
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallback
 import software.aws.toolkits.jetbrains.core.credentials.sso.TestSsoPrompt
 import software.aws.toolkits.jetbrains.utils.extensions.SsoLogin
 
@@ -30,5 +33,19 @@ class SsoLoginRule : DisposableRule() {
                 }
             }
         }
+    }
+}
+
+class SsoLoginCallbackProviderRule : ExternalResource() {
+    override fun before() {
+        setCallback(NoOpSsoLoginCallback)
+    }
+
+    fun setCallback(callback: SsoLoginCallback?) {
+        MockSsoLoginCallbackProvider.getInstance().provider = callback
+    }
+
+    override fun after() {
+        setCallback(null)
     }
 }

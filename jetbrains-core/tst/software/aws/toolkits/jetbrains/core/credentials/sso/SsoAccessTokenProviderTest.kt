@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.RuleChain
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -32,6 +33,7 @@ import software.amazon.awssdk.services.ssooidc.model.StartDeviceAuthorizationRes
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.utils.rules.SsoLoginCallbackProviderRule
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -50,9 +52,12 @@ class SsoAccessTokenProviderTest {
     private lateinit var sut: SsoAccessTokenProvider
     private lateinit var ssoCache: SsoCache
 
+    private val applicationRule = ApplicationRule()
+    private val ssoCallbackRule = SsoLoginCallbackProviderRule()
+
     @JvmField
     @Rule
-    val applicationRule = ApplicationRule()
+    val ruleChain = RuleChain(applicationRule, ssoCallbackRule)
 
     @Before
     fun setUp() {

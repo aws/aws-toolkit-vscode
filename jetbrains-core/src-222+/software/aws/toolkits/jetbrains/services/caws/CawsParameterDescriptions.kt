@@ -44,21 +44,19 @@ data class Ram(
 )
 
 fun isSubscriptionFreeTier(
-    existingProject: CawsProject?,
     client: CodeCatalystClient,
     space: String?
 ): Boolean {
     val subscriptionTier = if (space != null) {
-        checkIfSubscriptionIsFreeTier(client, space)
+        client.getSubscription {
+            it.spaceName(space)
+        }.subscriptionType()
     } else {
         return true
     }
 
     return subscriptionTier == "FREE"
 }
-fun checkIfSubscriptionIsFreeTier(client: CodeCatalystClient, org: String): String = client.getSubscription {
-    it.spaceName(org)
-}.subscriptionType()
 
 fun InstanceType.isSupportedInFreeTier() =
     when (this) {

@@ -7,6 +7,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DefaultProjectFactory
@@ -40,7 +41,9 @@ class TabbedWorkflowEmitter(private val tabComponent: JTabbedPane, private val d
     private inner class TabStepEmitter(val contentPanel: BorderLayoutPanel) : StepEmitter {
         private var content: ConsoleView? = null
 
-        private fun ensureContent(handler: ProcessHandler?): ConsoleView {
+        private fun ensureContent(handler: ProcessHandler?): ConsoleView? {
+            if (ApplicationManager.getApplication().isUnitTestMode) return null
+
             // return existing content if it exists, otherwise create an appropriate one for the context
             content?.let { return it }
 
@@ -64,7 +67,7 @@ class TabbedWorkflowEmitter(private val tabComponent: JTabbedPane, private val d
             val content = ensureContent(handler)
 
             runInEdt(ModalityState.any()) {
-                content.attachToProcess(handler)
+                content?.attachToProcess(handler)
             }
         }
 
@@ -76,7 +79,7 @@ class TabbedWorkflowEmitter(private val tabComponent: JTabbedPane, private val d
             }
 
             runInEdt(ModalityState.any()) {
-                content.print(message, contentType)
+                content?.print(message, contentType)
             }
         }
 

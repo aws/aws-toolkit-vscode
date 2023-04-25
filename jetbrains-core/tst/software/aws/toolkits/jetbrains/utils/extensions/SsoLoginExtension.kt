@@ -7,6 +7,7 @@ import com.intellij.testFramework.DisposableRule
 import org.jetbrains.annotations.TestOnly
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
 import software.aws.toolkits.jetbrains.core.MockClientManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.MockSsoLoginCallbackProvider
@@ -43,4 +44,5 @@ class SsoLoginExtension : DisposableRule(), BeforeEachCallback, AfterEachCallbac
 
 @TestOnly
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@ExtendWith(SsoLoginExtension::class)
 annotation class SsoLogin(val secretName: String)

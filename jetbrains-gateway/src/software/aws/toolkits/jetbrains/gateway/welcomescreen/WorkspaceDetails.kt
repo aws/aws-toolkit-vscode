@@ -270,7 +270,7 @@ class ConfigureAction(private val ws: Workspace, private val workspaceList: Work
                     error(message("caws.configure_workspace_not_running"))
                 }
 
-                isSubscriptionFreeTier(ws.identifier.project, cawsClient, ws.identifier.project.space)
+                isSubscriptionFreeTier(cawsClient, ws.identifier.project.space)
             }
 
             launchChildOnUi {

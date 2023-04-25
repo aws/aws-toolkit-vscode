@@ -81,7 +81,7 @@ class UpdateWorkspaceSettingsTab : GatewayControlCenterTabProvider {
                     it.projectName(projectName)
                 }
 
-                val isFree = isSubscriptionFreeTier(existingProject = null, client, org)
+                val isFree = isSubscriptionFreeTier(client, org)
 
                 val alias = textBox(lifetime, false, "caws.development.workspace.alias", UpdateSourceTrigger.TextChanged)
                 initialEnv.alias()?.let { alias.text.set(it) }

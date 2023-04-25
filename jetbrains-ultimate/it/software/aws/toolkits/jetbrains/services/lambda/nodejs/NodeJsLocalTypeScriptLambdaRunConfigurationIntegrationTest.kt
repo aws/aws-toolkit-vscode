@@ -23,7 +23,7 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.utils.UltimateTestUtils.ensureBuiltInServerStarted
+import software.aws.toolkits.jetbrains.utils.FrameworkTestUtils.ensureBuiltInServerStarted
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule

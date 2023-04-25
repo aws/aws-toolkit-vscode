@@ -20,7 +20,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRul
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.utils.UltimateTestUtils
+import software.aws.toolkits.jetbrains.utils.FrameworkTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
@@ -75,7 +75,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         }
 
         mockCredentialsId = credentialsManager.createCredentialProvider().id
-        UltimateTestUtils.ensureBuiltInServerStarted()
+        FrameworkTestUtils.ensureBuiltInServerStarted()
     }
 
     @Test

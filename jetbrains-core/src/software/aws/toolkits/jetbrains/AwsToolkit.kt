@@ -4,9 +4,11 @@
 package software.aws.toolkits.jetbrains
 
 import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.PluginDescriptor
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.util.registry.Registry
+import java.nio.file.Paths
 
 object AwsToolkit {
     const val PLUGIN_ID = "aws.toolkit"
@@ -21,7 +23,11 @@ object AwsToolkit {
         PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))
     }
 
-    fun pluginPath() = DESCRIPTOR?.pluginPath ?: throw RuntimeException("Toolkit root not available")
+    fun pluginPath() = if (ApplicationManager.getApplication().isUnitTestMode) {
+        Paths.get(System.getProperty("plugin.path"))
+    } else {
+        DESCRIPTOR?.pluginPath ?: throw RuntimeException("Toolkit root not available")
+    }
 
     fun isDeveloperMode() = Registry.`is`("aws.toolkit.developerMode", false)
 }

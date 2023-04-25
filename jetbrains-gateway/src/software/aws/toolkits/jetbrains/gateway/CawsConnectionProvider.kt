@@ -516,7 +516,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
     }
 }
 
-internal data class CawsConnectionParameters(
+data class CawsConnectionParameters(
     val space: String,
     val project: String,
     val envId: String,

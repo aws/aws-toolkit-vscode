@@ -468,7 +468,7 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                                 add(wrapper, BorderLayout.CENTER)
                             }
                             val content = { space: String? ->
-                                envConfigPanel(space?.let { isSubscriptionFreeTier(existingProject, client, it) } ?: false)
+                                envConfigPanel(space?.let { isSubscriptionFreeTier(client, it) } ?: false)
                             }
 
                             wrapper.setContent(content(projectProperty.get()?.space))

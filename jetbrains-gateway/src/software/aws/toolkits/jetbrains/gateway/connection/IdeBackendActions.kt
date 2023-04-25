@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.gateway.connection
 
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.remoteDev.hostStatus.UnattendedHostConstants
 import com.intellij.remoteDev.hostStatus.UnattendedHostStatus
 import com.intellij.util.net.NetUtils
@@ -16,6 +17,7 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.gateway.BranchCloneType
 import software.aws.toolkits.jetbrains.gateway.CawsSettings
@@ -51,7 +53,21 @@ class IdeBackendActions(
     }
 
     fun startBackend(): ProcessHandler = remoteCommandExecutor.executeLongLivedSshCommandLine {
-        it.addToRemoteCommand("$remoteScriptPath/start-ide.sh $REMOTE_SERVER_CMD $projectPath")
+        val cmd = buildString {
+            val token = if (ApplicationManager.getApplication().isUnitTestMode) {
+                System.getenv("CWM_HOST_STATUS_OVER_HTTP_TOKEN")
+            } else if (AwsToolkit.isDeveloperMode()) {
+                System.getProperty("user.name")
+            } else {
+                null
+            }
+
+            token?.let { append("CWM_HOST_STATUS_OVER_HTTP_TOKEN=$it ") }
+
+            append("$remoteScriptPath/start-ide.sh $REMOTE_SERVER_CMD $projectPath")
+        }
+
+        it.addToRemoteCommand(cmd)
     }
 
     fun remoteScriptsExist() = remoteCommandExecutor.remoteDirectoryExistsUnsafe(remoteScriptPath)

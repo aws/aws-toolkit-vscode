@@ -27,6 +27,10 @@ class ThinClientTrackerService {
         }
     }
 
+    fun closeThinClient(envId: String) = synchronized(handles) {
+        handles[envId]?.second?.get()?.close()
+    }
+
     companion object {
         fun getInstance() = ApplicationManager.getApplication().getService(ThinClientTrackerService::class.java)
     }
