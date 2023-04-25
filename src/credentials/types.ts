@@ -23,3 +23,13 @@ export const SharedCredentialsKeys = {
     SSO_SESSION: 'sso_session',
     SSO_REGISTRATION_SCOPES: 'sso_registration_scopes',
 } as const
+
+/**
+ * The required keys for a static credentials profile
+ *
+ * https://docs.aws.amazon.com/sdkref/latest/guide/feature-static-credentials.html
+ */
+export interface StaticCredentialsProfileData {
+    [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: string
+    [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: string
+}

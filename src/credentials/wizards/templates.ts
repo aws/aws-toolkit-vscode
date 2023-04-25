@@ -11,8 +11,7 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { BaseCredentialsProfileData } from '../sharedCredentials'
-import { SharedCredentialsKeys } from '../types'
+import { SharedCredentialsKeys, StaticCredentialsProfileData } from '../types'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
@@ -20,7 +19,7 @@ function getTitle(profileName: string): string {
 
 const accessKeyPattern = /[\w]{16,128}/
 
-export const staticCredentialsTemplate: ProfileTemplateProvider<BaseCredentialsProfileData> = {
+export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileData> = {
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
