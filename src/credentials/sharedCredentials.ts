@@ -8,7 +8,7 @@ import { SystemUtilities } from '../shared/systemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { assertHasProps } from '../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
-import { StaticCredentialsProfileData } from './types'
+import { SectionName, StaticCredentialsProfileData } from './types'
 import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
@@ -240,7 +240,7 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
  * Saves the given profile data to the credentials file.
  */
 export async function saveProfileToCredentials(
-    profileName: ProfileName,
+    profileName: SectionName,
     profileData: StaticCredentialsProfileData
 ): Promise<void> {
     if (await profileExists(profileName)) {
@@ -257,17 +257,10 @@ export async function saveProfileToCredentials(
 /**
  * Checks if a profile exists in a shared credentials file.
  */
-async function profileExists(profileName: ProfileName): Promise<boolean> {
+async function profileExists(profileName: SectionName): Promise<boolean> {
     const existingProfiles = await loadSharedCredentialsProfiles()
     return Object.keys(existingProfiles).includes(profileName)
 }
-
-/**
- * The name of a section in a credentials/config file
- *
- * The is the value of `{A}` in `[ {A} ]` or `[ {B} {A} ]`.
- */
-export type SectionName = string
 
 export interface Profile {
     [key: string]: string | undefined
