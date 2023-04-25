@@ -3545,7 +3545,7 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "portfinder": "^1.0.25",
-        "semver": "^7.3.5",
+        "semver": "^7.5.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^5.0.4",
