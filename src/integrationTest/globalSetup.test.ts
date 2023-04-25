@@ -26,6 +26,11 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
     this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
     this.on('test', test => setRunnableTimeout(test, maxTestDuration))
 
+    // Mocha won't show the full error chain
+    this.on('fail', (test, err) => {
+        getLogger().error(`test "${test.title}" failed: %s`, err)
+    })
+
     // Set up a listener for proxying login requests
     patchWindow()
 

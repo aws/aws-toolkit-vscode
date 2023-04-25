@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { Settings } from '../shared/settings'
 import { Auth } from './auth'
 import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
@@ -15,7 +14,6 @@ import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
-    settings: Settings,
     loginManager: LoginManager
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(conn => {
