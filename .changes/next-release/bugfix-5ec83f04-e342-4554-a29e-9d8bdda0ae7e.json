@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix thread access during validation of SAM templates"
+}
