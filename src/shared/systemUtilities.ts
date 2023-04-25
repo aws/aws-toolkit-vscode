@@ -13,6 +13,32 @@ import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
+import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
+
+export function createPermissionsErrorHandler(
+    uri: vscode.Uri,
+    perms: PermissionsTriplet
+): (err: unknown, depth?: number) => Promise<never> {
+    return async function (err: unknown, depth = 0) {
+        if (uri.scheme !== 'file' || process.platform === 'win32') {
+            throw err
+        }
+        if (!isNoPermissionsError(err) && !(isFileNotFoundError(err) && depth > 0)) {
+            throw err
+        }
+
+        const userInfo = os.userInfo({ encoding: 'utf-8' })
+        const stats = await fs.stat(uri.fsPath).catch(async err2 => {
+            if (!isNoPermissionsError(err2) && !(isFileNotFoundError(err2) && perms[1] === 'w')) {
+                throw err
+            }
+
+            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
+        })
+
+        throw new PermissionsError(uri, stats, userInfo, perms)
+    }
+}
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
@@ -20,7 +46,6 @@ export class SystemUtilities {
     private static sshPath: string
     private static gitPath: string
     private static bashPath: string
-    private static fileNotFound = vscode.FileSystemError.FileNotFound().code
 
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
@@ -42,58 +67,121 @@ export class SystemUtilities {
 
     public static async readFile(file: string | vscode.Uri): Promise<string> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const errorHandler = createPermissionsErrorHandler(uri, 'r**')
         const decoder = new TextDecoder()
 
         if (isCloud9()) {
-            return decoder.decode(await fs.readFile(uri.fsPath))
+            return decoder.decode(await fs.readFile(uri.fsPath).catch(errorHandler))
         }
 
-        return decoder.decode(await vscode.workspace.fs.readFile(uri))
+        return decoder.decode(await vscode.workspace.fs.readFile(uri).then(undefined, errorHandler))
     }
 
-    public static async writeFile(file: string | vscode.Uri, data: string | Buffer): Promise<void> {
+    public static async writeFile(
+        file: string | vscode.Uri,
+        data: string | Buffer,
+        opt?: fs.WriteFileOptions
+    ): Promise<void> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const errorHandler = createPermissionsErrorHandler(uri, '*w*')
         const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
 
         if (isCloud9()) {
-            return fs.writeFile(uri.fsPath, content)
+            return fs.writeFile(uri.fsPath, content, opt).catch(errorHandler)
         }
 
-        return vscode.workspace.fs.writeFile(uri, content)
+        return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
     }
 
-    public static async remove(dir: string | vscode.Uri): Promise<void> {
-        const uri = typeof dir === 'string' ? vscode.Uri.file(dir) : dir
+    public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
+        const uri = typeof fileOrDir === 'string' ? vscode.Uri.file(fileOrDir) : fileOrDir
+        const dirUri = vscode.Uri.joinPath(uri, '..')
+        const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
 
         if (isCloud9()) {
-            return fs.remove(uri.fsPath)
+            const stat = await fs.stat(uri.fsPath)
+            if (stat.isDirectory()) {
+                return fs.remove(uri.fsPath).catch(errorHandler)
+            } else {
+                return fs.unlink(uri.fsPath).catch(errorHandler)
+            }
         }
 
-        return vscode.workspace.fs.delete(uri, { recursive: true })
+        if (opt?.recursive) {
+            // We shouldn't catch any errors if using the `recursive` option, otherwise the
+            // error messages may be misleading. Need to implement our own recursive delete
+            // if we want detailed info.
+            return vscode.workspace.fs.delete(uri, opt)
+        } else {
+            // Attempting to delete a file in a directory without `x` results in ENOENT.
+            // But this might not be true. The file could exist, we just don't know about it.
+            return vscode.workspace.fs.delete(uri, opt).then(undefined, async err => {
+                if (isNoPermissionsError(err)) {
+                    throw await errorHandler(err)
+                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err) || process.platform === 'win32') {
+                    throw err
+                } else {
+                    const stats = await fs.stat(dirUri.fsPath).catch(() => {
+                        throw err
+                    })
+                    if ((stats.mode & fs.constants.S_IXUSR) === 0) {
+                        const userInfo = os.userInfo({ encoding: 'utf-8' })
+                        throw new PermissionsError(dirUri, stats, userInfo, '*wx')
+                    }
+                }
+
+                throw err
+            })
+        }
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 
         if (isCloud9()) {
-            return new Promise<boolean>(resolve => fs.access(uri.fsPath, err => resolve(!err)))
+            return new Promise<boolean>(resolve => fs.access(uri.fsPath, fs.constants.F_OK, err => resolve(!err)))
         }
 
         return vscode.workspace.fs.stat(uri).then(
             () => true,
-            err => !(err instanceof vscode.FileSystemError && err.code === this.fileNotFound)
+            err => !isFileNotFoundError(err)
         )
     }
 
     public static async createDirectory(file: string | vscode.Uri): Promise<void> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
         if (isCloud9()) {
-            return fs.ensureDir(uri.fsPath)
+            return fs.ensureDir(uri.fsPath).catch(errorHandler)
         }
 
-        return vscode.workspace.fs.createDirectory(uri)
+        return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
     }
+
+    private static readonly modeMap = {
+        '*': 0,
+        r: fs.constants.R_OK,
+        w: fs.constants.W_OK,
+        x: fs.constants.X_OK,
+    }
+
+    /**
+     * Checks if the current user has _at least_ the specified permissions.
+     *
+     * This throws {@link PermissionsError} when permissions are insufficient.
+     */
+    public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet) {
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const errorHandler = createPermissionsErrorHandler(uri, perms)
+        const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
+        const mode = flags.reduce((m, f) => m | this.modeMap[f], fs.constants.F_OK)
+
+        return fs.access(uri.fsPath, mode).catch(errorHandler)
+    }
+
+    // TODO: implement this by checking the file mode
+    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
 
     /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import { dirname } from 'path'
+import { ToolkitError, isFileNotFoundError } from '../errors'
+import { SystemUtilities } from '../systemUtilities'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
 // It's pretty clear that this interface (and VSC's `Memento`) reduce down to what is essentially
@@ -28,19 +29,15 @@ export interface KeyedCache<T, K = string> {
      *
      * @param key Target key to write to.
      * @param data Data to write.
-     *
-     * @returns `true` on success, `false` otherwise.
      */
-    save(key: K, data: T): Promise<boolean>
+    save(key: K, data: T): Promise<void>
 
     /**
      * Removes the data stored at {@link key}, if any.
      *
      * @param key Target key to clear.
-     *
-     * @returns `true` on success, `false` otherwise.
      */
-    clear(key: K): Promise<boolean>
+    clear(key: K): Promise<void>
 }
 
 /**
@@ -94,66 +91,65 @@ export function createDiskCache<T, K>(
     mapKey: (key: K) => string,
     logger?: (message: string) => void
 ): KeyedCache<T, K> {
-    function logSuccess(prefix: string, key: K): void {
+    function log(prefix: string, key: K): void {
         if (logger) {
             const keyMessage = typeof key === 'object' ? JSON.stringify(key) : key
             logger(`${prefix} for key '${keyMessage}'`)
         }
     }
 
-    function logFailure(prefix: string, key: K, error: unknown): void {
-        if (logger) {
-            const errorMessage = error instanceof Error ? error.message : error
-            const keyMessage = typeof key === 'object' ? JSON.stringify(key) : key
-            logger(`${prefix} for key '${keyMessage}': ${errorMessage}`)
-        }
-    }
-
     return {
         load: async key => {
-            try {
-                const target = mapKey(key)
+            const target = mapKey(key)
 
-                if (
-                    !(await fs.access(target).then(
-                        () => true,
-                        () => false
-                    ))
-                ) {
-                    logSuccess('load missed', key)
+            try {
+                const result = JSON.parse(await SystemUtilities.readFile(target))
+                log('load succeeded', key)
+                return result
+            } catch (error) {
+                if (isFileNotFoundError(error)) {
+                    log('load missed', key)
                     return
                 }
 
-                const result = JSON.parse(await fs.readFile(target, 'utf-8'))
-                logSuccess('load succeeded', key)
-                return result
-            } catch (error) {
-                logFailure('load failed', key, error)
+                throw ToolkitError.chain(error, `Failed to read from "${target}"`, {
+                    code: 'FSReadFailed',
+                    details: { key },
+                })
             }
         },
         save: async (key, data) => {
+            const target = mapKey(key)
+
             try {
-                const target = mapKey(key)
-                await fs.mkdirp(dirname(target))
-                await fs.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                await SystemUtilities.createDirectory(dirname(target))
+                await SystemUtilities.writeFile(target, JSON.stringify(data), { mode: 0o600 })
             } catch (error) {
-                logFailure('save failed', key, error)
-                return false
+                throw ToolkitError.chain(error, `Failed to save "${target}"`, {
+                    code: 'FSWriteFailed',
+                    details: { key },
+                })
             }
 
-            logSuccess('save succeeded', key)
-            return true
+            log('save succeeded', key)
         },
         clear: async key => {
+            const target = mapKey(key)
+
             try {
-                await fs.unlink(mapKey(key))
+                await SystemUtilities.delete(target)
             } catch (error) {
-                logFailure('clear failed', key, error)
-                return false
+                if (isFileNotFoundError(error)) {
+                    return log('clear succeeded, file does not exist', key)
+                }
+
+                throw ToolkitError.chain(error, `Failed to delete "${target}"`, {
+                    code: 'FSDeleteFailed',
+                    details: { key },
+                })
             }
 
-            logSuccess('clear succeeded', key)
-            return true
+            log('clear succeeded', key)
         },
     }
 }
@@ -162,16 +158,9 @@ export function createSecretsCache(
     secrets: vscode.SecretStorage,
     logger?: (message: string) => void
 ): KeyedCache<string> {
-    function logSuccess(prefix: string, key: string): void {
+    function log(prefix: string, key: string): void {
         if (logger) {
             logger(`${prefix} for key '${key}'`)
-        }
-    }
-
-    function logFailure(prefix: string, key: string, error: unknown): void {
-        if (logger) {
-            const errorMessage = error instanceof Error ? error.message : error
-            logger(`${prefix} for key '${key}': ${errorMessage}`)
         }
     }
 
@@ -181,37 +170,42 @@ export function createSecretsCache(
                 const value = await secrets.get(key)
 
                 if (value === undefined) {
-                    logSuccess('load missed', key)
+                    log('load missed', key)
                     return
                 }
 
-                logSuccess('load succeeded', key)
+                log('load succeeded', key)
                 return value
             } catch (error) {
-                logFailure('load failed', key, error)
+                throw ToolkitError.chain(error, 'Failed to get value from secrets storage', {
+                    code: 'SecretsGetFailed',
+                    details: { key },
+                })
             }
         },
         save: async (key, data) => {
             try {
                 await secrets.store(key, data)
             } catch (error) {
-                logFailure('save failed', key, error)
-                return false
+                throw ToolkitError.chain(error, 'Failed to save to secrets storage ', {
+                    code: 'SecretsSaveFailed',
+                    details: { key },
+                })
             }
 
-            logSuccess('save succeeded', key)
-            return true
+            log('save succeeded', key)
         },
         clear: async key => {
             try {
                 await secrets.delete(key)
             } catch (error) {
-                logFailure('clear failed', key, error)
-                return false
+                throw ToolkitError.chain(error, 'Failed to delete key from secrets storage', {
+                    code: 'SecretsDeleteFailed',
+                    details: { key },
+                })
             }
 
-            logSuccess('clear succeeded', key)
-            return true
+            log('clear succeeded', key)
         },
     }
 }
