@@ -244,7 +244,9 @@ export async function saveProfileToCredentials(
     profileData: StaticCredentialsProfileData
 ): Promise<void> {
     if (await profileExists(profileName)) {
-        throw new Error(`Cannot save profile, ${profileName}, because it already exists.`)
+        throw new ToolkitError(`Cannot save profile "${profileName}" because it already exists.`, {
+            code: 'ProfileAlreadyExists',
+        })
     }
 
     return UserCredentialsUtils.generateCredentialsFile({
@@ -257,7 +259,7 @@ export async function saveProfileToCredentials(
 /**
  * Checks if a profile exists in a shared credentials file.
  */
-async function profileExists(profileName: SectionName): Promise<boolean> {
+export async function profileExists(profileName: SectionName): Promise<boolean> {
     const existingProfiles = await loadSharedCredentialsProfiles()
     return Object.keys(existingProfiles).includes(profileName)
 }

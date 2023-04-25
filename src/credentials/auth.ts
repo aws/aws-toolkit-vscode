@@ -45,6 +45,9 @@ import { SsoCredentialsProvider } from './providers/ssoCredentialsProvider'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
+import { saveProfileToCredentials } from './sharedCredentials'
+import { SectionName, StaticCredentialsProfileData } from './types'
+import { validateCredentialsProfile } from './sharedCredentialsValidation'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -1198,6 +1201,25 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         }
     }
 })
+
+export async function tryAddCredentials(
+    profileName: SectionName,
+    profileData: StaticCredentialsProfileData,
+    tryConnect = true
+): Promise<boolean> {
+    await validateCredentialsProfile(profileName, profileData)
+    await saveProfileToCredentials(profileName, profileData)
+    if (tryConnect) {
+        const auth = Auth.instance
+        const conn = await auth.getConnection({ id: profileName })
+        if (conn === undefined) {
+            throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+        }
+
+        await auth.useConnection(conn)
+    }
+    return true
+}
 
 const getConnectionIcon = (conn: Connection) =>
     conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')
