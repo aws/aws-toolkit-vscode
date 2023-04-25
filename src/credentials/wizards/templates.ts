@@ -12,7 +12,7 @@ import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
 import { BaseCredentialsProfileData } from '../sharedCredentials'
-import { sharedCredentialProperties } from '../providers/sharedCredentialsProvider'
+import { SharedCredentialsKeys } from '../types'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
@@ -24,7 +24,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<BaseCredentialsP
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
-        [sharedCredentialProperties.AWS_ACCESS_KEY_ID]: name =>
+        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -47,7 +47,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<BaseCredentialsP
                     }
                 },
             }),
-        [sharedCredentialProperties.AWS_SECRET_ACCESS_KEY]: name =>
+        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -69,14 +69,14 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<BaseCredentialsP
 }
 
 interface CredentialsProcessProfile {
-    [sharedCredentialProperties.CREDENTIAL_PROCESS]: string
+    [SharedCredentialsKeys.CREDENTIAL_PROCESS]: string
 }
 
 export const processCredentialsTemplate: ProfileTemplateProvider<CredentialsProcessProfile> = {
     label: 'External Process',
     description: 'Creates a new profile that fetches credentials from a process',
     prompts: {
-        [sharedCredentialProperties.CREDENTIAL_PROCESS]: name =>
+        [SharedCredentialsKeys.CREDENTIAL_PROCESS]: name =>
             createInputBox({
                 title: getTitle(name),
                 prompt: 'Enter a command to run',

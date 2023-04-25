@@ -15,7 +15,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
 import { showLoginFailedMessage } from '../credentialsUtilities'
 import { ParsedIniData, Profile } from '../sharedCredentials'
-import { sharedCredentialProperties } from '../providers/sharedCredentialsProvider'
+import { SharedCredentialsKeys } from '../types'
 
 function createProfileNamePrompter(profiles: ParsedIniData) {
     return createInputBox({
@@ -82,8 +82,8 @@ class ProfileChecker<T extends Profile> extends Prompter<string> {
         try {
             const region = this.profile['region'] ?? 'us-east-1' // De-dupe this pattern
             const stsClient = new DefaultStsClient(region, {
-                accessKeyId: this.profile[sharedCredentialProperties.AWS_ACCESS_KEY_ID]!,
-                secretAccessKey: this.profile[sharedCredentialProperties.AWS_SECRET_ACCESS_KEY]!,
+                accessKeyId: this.profile[SharedCredentialsKeys.AWS_ACCESS_KEY_ID]!,
+                secretAccessKey: this.profile[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]!,
             })
 
             return (await stsClient.getCallerIdentity()).Account

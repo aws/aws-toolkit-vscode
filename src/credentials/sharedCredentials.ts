@@ -9,7 +9,7 @@ import { EnvironmentVariables } from '../shared/environmentVariables'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { assertHasProps } from '../shared/utilities/tsUtils'
-import { sharedCredentialProperties } from './providers/sharedCredentialsProvider'
+import { SharedCredentialsKeys } from './types'
 
 export function getCredentialsFilename(): string {
     const env = process.env as EnvironmentVariables
@@ -249,8 +249,8 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
 }
 
 export interface BaseCredentialsProfileData {
-    [sharedCredentialProperties.AWS_ACCESS_KEY_ID]: string
-    [sharedCredentialProperties.AWS_SECRET_ACCESS_KEY]: string
+    [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: string
+    [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: string
 }
 
 /**

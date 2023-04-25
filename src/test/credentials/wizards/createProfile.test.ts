@@ -10,7 +10,7 @@ import { processCredentialsTemplate, staticCredentialsTemplate } from '../../../
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
 import { StepEstimator } from '../../../shared/wizards/wizard'
 import { Profile } from '../../../credentials/sharedCredentials'
-import { sharedCredentialProperties } from '../../../credentials/providers/sharedCredentialsProvider'
+import { SharedCredentialsKeys } from '../../../credentials/types'
 
 class TestPrompter extends Prompter<string | undefined> {
     public constructor(private readonly name: string, private readonly profile: Profile) {
@@ -33,15 +33,15 @@ describe('CreateProfileWizard', function () {
     it('prompts for profile name, access key, secret, and then validates (static)', function () {
         const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, staticCredentialsTemplate))
         tester.name.assertShowFirst()
-        tester.profile[sharedCredentialProperties.AWS_ACCESS_KEY_ID].assertShowSecond()
-        tester.profile[sharedCredentialProperties.AWS_SECRET_ACCESS_KEY].assertShowThird()
+        tester.profile[SharedCredentialsKeys.AWS_ACCESS_KEY_ID].assertShowSecond()
+        tester.profile[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY].assertShowThird()
         tester.accountId.assertShow(4)
     })
 
     it('prompts for profile name, command, and then validates (credential_process)', function () {
         const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, processCredentialsTemplate))
         tester.name.assertShowFirst()
-        tester.profile[sharedCredentialProperties.CREDENTIAL_PROCESS].assertShowSecond()
+        tester.profile[SharedCredentialsKeys.CREDENTIAL_PROCESS].assertShowSecond()
         tester.accountId.assertShowThird()
     })
 
