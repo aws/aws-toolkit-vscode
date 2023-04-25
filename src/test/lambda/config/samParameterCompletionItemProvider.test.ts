@@ -85,7 +85,7 @@ class MockSamParamComplItemProviderContext implements SamParameterCompletionItem
             },
         },
         getWorkspaceFolder = uri => undefined,
-        executeCommand = async (command, ...rest) => undefined,
+        executeCommand = async (command, ...rest) => undefined as any,
         loadTemplate = async () => ({}),
     }: Partial<SamParameterCompletionItemProviderContext>) {
         this.logger = logger
@@ -132,7 +132,7 @@ describe('SamParameterCompletionItemProvider', async function () {
     it('does not provide suggestions if document symbols could not be loaded', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
-                executeCommand: async () => undefined,
+                executeCommand: async () => undefined as any,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
             })
         )
@@ -263,7 +263,7 @@ describe('SamParameterCompletionItemProvider', async function () {
     it('recovers gracefully if templates.json is empty or invalid', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
-                executeCommand: async <T>() => undefined,
+                executeCommand: async <T>() => undefined as any,
                 getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
             })
         )

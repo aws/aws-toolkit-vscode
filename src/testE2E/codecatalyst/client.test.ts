@@ -13,7 +13,7 @@ import {
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
-import { Auth, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
+import { Auth, codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
@@ -132,7 +132,11 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         describe('getThisDevEnv', function () {
-            const ccAuth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
+            let ccAuth: CodeCatalystAuthenticationProvider
+
+            before(function () {
+                ccAuth = CodeCatalystAuthenticationProvider.fromContext(globals.context)
+            })
 
             it('returns `undefined` if not in a dev environment', async function () {
                 const result = await getThisDevEnv(ccAuth)
@@ -260,6 +264,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.notStrictEqual(defaultDevEnv.alias, newDevEnvSettings.alias)
             assert.notStrictEqual(defaultDevEnv.instanceType, newDevEnvSettings.instanceType)
 
+            // Sanity Check due to: https://issues.amazon.com/Velox-Bug-42
+            assert.ok(defaultDevEnv.id, 'Dev Env ID should not be empty.')
+
             // Update dev env
             const updatedDevEnv = await commands.updateDevEnv(defaultDevEnv, newDevEnvSettings)
 
@@ -334,6 +341,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
                 instanceType,
                 persistentStorage,
                 alias: createAlias(),
+                inactivityTimeoutMinutes: 15,
             }
         }
 
@@ -396,7 +404,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function useCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
         const builderIdSsoConnection = (await auth.listConnections()).find(isValidCodeCatalystConnection)
-        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile()))
+        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(codecatalystScopes)))
 
         return auth.useConnection(conn)
     }

@@ -87,7 +87,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.lock.acquire(this._info.ServiceId, done => {
             const lastLabel = this.label
             this.updateInfo(info)
-            this.updateStatus(lastLabel)
+            this.updateStatus(typeof lastLabel === 'string' ? lastLabel : lastLabel?.label)
             done()
         })
     }

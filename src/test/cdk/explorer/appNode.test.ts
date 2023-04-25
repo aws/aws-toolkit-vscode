@@ -13,6 +13,7 @@ import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
 import { getIcon } from '../../../shared/icons'
 import * as treeUtils from '../treeTestUtils'
+import { getLabel } from '../../../shared/treeview/utils'
 
 describe('AppNode', function () {
     afterEach(function () {
@@ -48,7 +49,7 @@ describe('AppNode', function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.ok((await childNodes[0].getTreeItem()).label?.includes('No stacks'))
+        assert.ok(getLabel(await childNodes[0].getTreeItem()).includes('No stacks'))
     })
 
     it('returns construct node when app has stacks', async function () {
@@ -71,7 +72,7 @@ describe('AppNode', function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.ok((await childNodes[0].getTreeItem()).label?.includes('Unable to load construct tree'))
+        assert.ok(getLabel(await childNodes[0].getTreeItem()).includes('Unable to load construct tree'))
     })
 
     function getTestNode(): appNode.AppNode {

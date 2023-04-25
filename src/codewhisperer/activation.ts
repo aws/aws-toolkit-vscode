@@ -202,10 +202,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     )
 
-    if (!isCloud9() && !auth.isConnectionValid()) {
-        // this is to proactively check and reflect the state if user's connection is expired
-        auth.refreshCodeWhisperer()
-    }
+    await auth.restore()
 
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(

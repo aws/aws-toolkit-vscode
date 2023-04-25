@@ -196,6 +196,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
+        await activateCodeWhisperer(extContext)
+
         await activateAwsExplorer({
             context: extContext,
             regionProvider,
@@ -217,8 +219,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSam(extContext)
 
         await activateS3(extContext)
-
-        await activateCodeWhisperer(extContext)
 
         await activateEcr(context)
 

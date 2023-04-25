@@ -320,6 +320,7 @@ export class InlineCompletionService {
         vsCodeState.isCodeWhispererEditing = false
         ReferenceInlineProvider.instance.removeInlineReference()
         ImportAdderProvider.instance.clear()
+        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
@@ -440,9 +441,6 @@ export class InlineCompletionService {
     }
 
     async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
-        if (vscode.window.activeTextEditor) {
-            vscode.window.showTextDocument(vscode.window.activeTextEditor.document)
-        }
         this.inlineCompletionProvider = new CWInlineCompletionItemProvider(
             this.inlineCompletionProvider?.getActiveItemIndex,
             indexShift

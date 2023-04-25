@@ -87,6 +87,7 @@ export class CredentialsProviderManager {
     }
 
     public addProvider(provider: CredentialsProvider) {
+        this.removeProvider(provider.getCredentialsId())
         this.providers.push(provider)
     }
 
@@ -100,6 +101,13 @@ export class CredentialsProviderManager {
 
     public addProviderFactories(...factory: CredentialsProviderFactory[]) {
         this.providerFactories.push(...factory)
+    }
+
+    public removeProvider(id: CredentialsId) {
+        const idx = this.providers.findIndex(p => isEqual(id, p.getCredentialsId()))
+        if (idx !== -1) {
+            this.providers.splice(idx, 1)
+        }
     }
 
     public static getInstance(): CredentialsProviderManager {

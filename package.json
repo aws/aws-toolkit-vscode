@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit (Mynah Beta)",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.70.0-SNAPSHOT",
+    "version": "1.71.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -13,7 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.50.1"
+        "vscode": "^1.65.0"
     },
     "icon": "resources/marketplace/aws-icon-256x256.png",
     "bugs": {
@@ -3539,11 +3539,11 @@
         "@types/sinonjs__fake-timers": "^8.1.2",
         "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
-        "@types/vscode": "1.50.0",
+        "@types/vscode": "1.65.0",
         "@types/vscode-webview": "^1.57.1",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.38.0",
-        "@typescript-eslint/parser": "^5.38.0",
+        "@typescript-eslint/eslint-plugin": "^5.59.0",
+        "@typescript-eslint/parser": "^5.59.0",
         "@vscode/codicons": "^0.0.32",
         "@vscode/test-electron": "^2.2.3",
         "@vue/compiler-sfc": "^3.2.40",
@@ -3616,7 +3616,7 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.8.4",
+        "typescript": "^5.0.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",

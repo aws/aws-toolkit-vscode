@@ -31,9 +31,9 @@ describe('SamTemplateCodeLensProvider', async function () {
     })
 
     it('provides a CodeLens for a file with a new resource', async function () {
-        // redhat.vscode-yaml requires vscode 1.52
-        // https://github.com/redhat-developer/vscode-yaml/blob/main/package.json
-        if (semver.lt(vscode.version, '1.52.0')) {
+        // - redhat.vscode-yaml requires vscode 1.63: https://github.com/redhat-developer/vscode-yaml/blob/main/package.json
+        // - the codelens behavior changed with the vscode 1.66 release
+        if (semver.lt(vscode.version, '1.66.0')) {
             this.skip()
         }
         await activateExtension(VSCODE_EXTENSION_ID.yaml, false)
