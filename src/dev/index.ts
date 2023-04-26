@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as config from './config'
-import type { extcontext } from '../modules.gen'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { DevSettings } from '../shared/settings'
@@ -23,7 +22,7 @@ interface MenuOption {
     readonly label: string
     readonly description?: string
     readonly detail?: string
-    readonly executor: (ctx: extcontext) => Promise<unknown> | unknown
+    readonly executor: (ctx: vscode.ExtensionContext) => Promise<unknown> | unknown
 }
 
 /**

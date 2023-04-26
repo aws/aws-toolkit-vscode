@@ -6,15 +6,13 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/statusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { DefaultAwsContext } from './shared/awsContext'
+import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     aboutToolkit,
@@ -27,14 +25,10 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
-import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import { shutdown as codewhispererShutdown } from './codewhisperer'
-import { CredentialsStore } from './credentials/credentialsStore'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -47,7 +41,6 @@ import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { Logging } from './shared/logger/commands'
-import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './credentials/auth'
 import { activateModules, extcontextModule } from './modules.gen'
@@ -55,19 +48,16 @@ import { activateModules, extcontextModule } from './modules.gen'
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
-    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
     initialize(context)
     initializeManifestPaths(context)
+    await initializeComputeRegion()
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
     )
     await activateLogger(context, toolkitOutputChannel)
-    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
-    )
     globals.outputChannel = toolkitOutputChannel
 
     registerErrorHandler((info, error) => {
@@ -80,15 +70,16 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        const settings = Settings.instance
+        const experiments = Experiments.instance
+
+        await activateTelemetry(context, settings)
+        const extContext = await extcontextModule.activate(context)
         initializeCredentialsProviderManager()
 
-        const endpointsProvider = makeEndpointsProvider()
-
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
-        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
-        const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
+        const awsContext = extContext.awsContext
+        const credentialsStore = extContext.credentialsStore
+        const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -98,18 +89,11 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        globals.regionProvider = regionProvider
         globals.loginManager = loginManager
-        globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
+        globals.awsContextCommands = new AwsContextCommands(extContext.regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
-
-        const settings = Settings.instance
-        const experiments = Experiments.instance
-
-        await initializeCredentials(context, awsContext, loginManager)
-        await activateTelemetry(context, awsContext, settings)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -121,11 +105,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        globals.uriHandler = new UriHandler()
-        context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
-
-        const extContext = await extcontextModule.activate(context)
 
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
@@ -228,16 +207,6 @@ function initializeCredentialsProviderManager() {
     const manager = CredentialsProviderManager.getInstance()
     manager.addProviderFactory(new SharedCredentialsProviderFactory())
     manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
-}
-
-function makeEndpointsProvider() {
-    const localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
-    const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
-
-    return {
-        local: () => getEndpointsFromFetcher(localManifestFetcher),
-        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
-    }
 }
 
 function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {

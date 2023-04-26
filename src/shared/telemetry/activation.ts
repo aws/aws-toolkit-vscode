@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
@@ -33,9 +32,9 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-es
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
-export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+export async function activate(extensionContext: vscode.ExtensionContext, settings: Settings) {
     const config = new TelemetryConfig(settings)
-    globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
+    globals.telemetry = new DefaultTelemetryService(extensionContext, getComputeRegion())
 
     try {
         globals.telemetry.telemetryEnabled = config.isEnabled()

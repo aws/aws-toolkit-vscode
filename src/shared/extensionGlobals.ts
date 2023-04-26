@@ -7,7 +7,7 @@ import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
-import { AwsContext } from './awsContext'
+import { AwsContext, DefaultAwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
 import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
@@ -43,6 +43,7 @@ export function initialize(context: ExtensionContext): ToolkitGlobals {
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
+        awsContext: new DefaultAwsContext(),
     })
 
     return globals

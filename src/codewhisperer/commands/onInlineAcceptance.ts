@@ -16,7 +16,6 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
-import type { extcontext } from '../../modules.gen'
 import { onAcceptance } from './onAcceptance'
 import * as codewhispererClient from '../client/codewhisperer'
 import {
@@ -30,7 +29,7 @@ import { ImportAdderProvider } from '../service/importAdderProvider'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
-    (context: extcontext) =>
+    (context: vscode.ExtensionContext) =>
         async (
             range: vscode.Range,
             acceptIndex: number,
@@ -57,7 +56,7 @@ export const acceptSuggestion = Commands.declare(
                     language,
                     references,
                 },
-                context.extensionContext.globalState
+                context.globalState
             ).finally(async () => {
                 if (isInlineCompletionEnabled()) {
                     // at the end of recommendation acceptance, clear recommendations.

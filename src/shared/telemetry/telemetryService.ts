@@ -48,7 +48,6 @@ export class DefaultTelemetryService {
 
     public constructor(
         private readonly context: ExtensionContext,
-        private readonly awsContext: AwsContext,
         private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
@@ -136,10 +135,9 @@ export class DefaultTelemetryService {
         return this.publisher.postFeedback(feedback)
     }
 
-    public record(event: MetricDatum, awsContext?: AwsContext): void {
+    public record(event: MetricDatum, awsContext: AwsContext = globals.awsContext): void {
         if (this.telemetryEnabled) {
-            const actualAwsContext = awsContext || this.awsContext
-            const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
+            const eventWithCommonMetadata = this.injectCommonMetadata(event, awsContext)
             this._eventQueue.push(eventWithCommonMetadata)
             this._telemetryLogger.log(eventWithCommonMetadata)
         }
@@ -242,7 +240,8 @@ export class DefaultTelemetryService {
             commonMetadata.push({ Key: computeRegionKey, Value: this.computeRegion })
         }
         if (!event?.Metadata?.some((m: any) => m?.Key == regionKey)) {
-            commonMetadata.push({ Key: regionKey, Value: globals.regionProvider.guessDefaultRegion() })
+            // Careful: `regionProvider` may not be initialized immediately
+            commonMetadata.push({ Key: regionKey, Value: globals.regionProvider?.guessDefaultRegion() })
         }
 
         if (event.Metadata) {

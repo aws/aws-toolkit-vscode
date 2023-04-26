@@ -52,14 +52,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<extcon
     const endpointsProvider = makeEndpointsProvider()
     const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
     const credentialsStore = new CredentialsStore()
+    const uriHandler = new UriHandler()
+    context.subscriptions.push(vscode.window.registerUriHandler(uriHandler))
 
     return {
+        uriHandler,
+        credentialsStore,
         extensionContext: context,
-        awsContext: globals.awsContext,
         samCliContext: getSamCliContext,
         regionProvider: regionProvider,
+        awsContext: globals.awsContext,
         outputChannel: toolkitOutputChannel,
-        uriHandler: globals.uriHandler,
-        credentialsStore,
     }
 }
