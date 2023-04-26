@@ -11,7 +11,7 @@ import * as sinon from 'sinon'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { closeAllEditors } from '../../test/testUtil'
-import { previewStateMachineCommand } from '../../stepFunctions/activation'
+import { previewStateMachineCommand } from '../../stepFunctions/index'
 
 const sampleStateMachine = `
 	 {

@@ -9,7 +9,7 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { ExtContext } from '../shared/extensions'
+import type { extcontext } from '../modules.gen'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
@@ -19,7 +19,7 @@ import { copyLambdaUrl } from './commands/copyLambdaUrl'
 /**
  * Activates Lambda components.
  */
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(_: vscode.ExtensionContext, context: extcontext): Promise<void> {
     context.extensionContext.subscriptions.push(
         Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode) => {
             await deleteLambda(node.configuration, new DefaultLambdaClient(node.regionCode))

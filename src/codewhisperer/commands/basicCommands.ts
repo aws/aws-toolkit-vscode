@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
@@ -37,7 +37,7 @@ export const toggleCodeSuggestions = Commands.declare(
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
-    (context: ExtContext) => async () => {
+    (context: extcontext) => async () => {
         await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
@@ -56,12 +56,9 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
-export const showReferenceLog = Commands.declare(
-    'aws.codeWhisperer.openReferencePanel',
-    (context: ExtContext) => async () => {
-        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
-    }
-)
+export const showReferenceLog = Commands.declare('aws.codeWhisperer.openReferencePanel', () => async () => {
+    await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
+})
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
@@ -69,7 +66,7 @@ export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction
 
 export const showSecurityScan = Commands.declare(
     'aws.codeWhisperer.security.scan',
-    (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
+    (context: extcontext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
         async () => {
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
@@ -136,7 +133,7 @@ export const updateReferenceLog = Commands.declare('aws.codeWhisperer.updateRefe
     ReferenceLogViewProvider.instance.update()
 })
 
-async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
+async function showCodeWhispererWelcomeMessage(context: extcontext): Promise<void> {
     const filePath = isCloud9()
         ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
         : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)

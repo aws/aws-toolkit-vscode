@@ -32,7 +32,6 @@ import * as javaDebug from './javaSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
 import * as goDebug from './goSamDebug'
-import { ExtContext } from '../../extensions'
 import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import { getStartPort } from '../../utilities/debuggerUtils'
@@ -66,6 +65,7 @@ import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl } from '../../constants'
 import { Auth } from '../../../credentials/auth'
+import type { extcontext } from '../../../modules.gen'
 
 const localize = nls.loadMessageBundle()
 
@@ -229,7 +229,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
  * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
  */
 export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider {
-    public constructor(readonly ctx: ExtContext) {}
+    public constructor(readonly ctx: extcontext) {}
 
     /**
      * @param folder  Workspace folder

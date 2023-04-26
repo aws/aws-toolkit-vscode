@@ -12,7 +12,7 @@ import { Resource } from 'aws-sdk/clients/apigateway'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Result } from '../../shared/telemetry/telemetry'
 import { VueWebview } from '../../webviews/main'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -108,7 +108,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(RemoteRestInvokeWebview)
 
 export async function invokeRemoteRestApi(
-    context: ExtContext,
+    context: extcontext,
     params: { outputChannel: vscode.OutputChannel; apiNode: RestApiNode }
 ): Promise<void> {
     const logger: Logger = getLogger()

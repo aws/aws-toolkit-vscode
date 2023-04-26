@@ -8,10 +8,7 @@ import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
-import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { Commands } from '../shared/vscode/commands2'
@@ -25,24 +22,15 @@ import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
-import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
-import { once } from '../shared/utilities/functionUtils'
 import { Auth, AuthNode } from '../credentials/auth'
-import { CodeCatalystRootNode } from '../codecatalyst/explorer'
-import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
+import type { extcontext } from '../modules.gen'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
  */
-export async function activate(args: {
-    context: ExtContext
-    regionProvider: RegionProvider
-    toolkitOutputChannel: vscode.OutputChannel
-    remoteInvokeOutputChannel: vscode.OutputChannel
-}): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.regionProvider)
+export async function activate(_: vscode.ExtensionContext, ctx: extcontext) {
+    const awsExplorer = new AwsExplorer(globals.context, ctx.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -58,48 +46,36 @@ export async function activate(args: {
     })
     globals.context.subscriptions.push(view)
 
-    await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAwsExplorerCommands(ctx, awsExplorer, ctx.outputChannel)
 
-    telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
+    telemetry.vscode_activeRegions.emit({ value: ctx.regionProvider.getExplorerRegions().length })
 
-    args.context.extensionContext.subscriptions.push(
-        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
+    ctx.extensionContext.subscriptions.push(
+        ctx.awsContext.onDidChangeContext(async credentialsChangedEvent => {
             getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
             awsExplorer.refresh()
 
             if (credentialsChangedEvent.profileName) {
                 await checkExplorerForDefaultRegion(
                     credentialsChangedEvent.profileName,
-                    args.regionProvider,
+                    ctx.regionProvider,
                     awsExplorer
                 )
             }
         })
     )
 
-    const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
-    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
-    const developerTools = createLocalExplorerView(nodes)
-    args.context.extensionContext.subscriptions.push(developerTools)
+    const developerTools = createLocalExplorerView()
+    ctx.extensionContext.subscriptions.push(
+        developerTools.view,
+        developerTools.registerNode(new AuthNode(Auth.instance))
+    )
 
-    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
-    developerTools.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
-
-    // Legacy CDK metric, remove this when we add something generic
-    const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
-    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
-    developerTools.onDidExpandElement(e => {
-        if (e.element.resource instanceof CdkRootNode) {
-            recordExpandCdkOnce()
-        } else if (e.element.resource instanceof CodeWhispererNode) {
-            onDidExpandCodeWhisperer()
-        }
-    })
+    return { developerTools }
 }
 
 async function registerAwsExplorerCommands(
-    context: ExtContext,
+    context: extcontext,
     awsExplorer: AwsExplorer,
     toolkitOutputChannel: vscode.OutputChannel
 ): Promise<void> {

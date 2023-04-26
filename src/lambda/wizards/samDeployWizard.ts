@@ -32,7 +32,7 @@ import { DefaultEcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
 import { minSamCliVersionForImageSupport } from '../../shared/sam/cli/samCliValidator'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { validateBucketName } from '../../s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
@@ -63,7 +63,7 @@ export const enum ParameterPromptResult {
 }
 
 export interface SamDeployWizardContext {
-    readonly extContext: ExtContext
+    readonly extContext: extcontext
     readonly workspaceFolders: vscode.Uri[] | undefined
     additionalSteps: number
 
@@ -203,7 +203,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public additionalSteps: number = 0
     public newBucketCalled = false
 
-    public constructor(readonly extContext: ExtContext) {}
+    public constructor(readonly extContext: extcontext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)

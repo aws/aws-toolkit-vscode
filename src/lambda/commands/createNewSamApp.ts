@@ -34,7 +34,7 @@ import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardForm } from '../wizards/samInitWizard'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
@@ -54,7 +54,7 @@ export const samInitReadmeFile: string = 'README.TOOLKIT.md'
 export const samInitReadmeSource: string = 'resources/markdown/samReadme.md'
 
 export async function resumeCreateNewSamApp(
-    extContext: ExtContext,
+    extContext: extcontext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
     let createResult: Result = 'Succeeded'
@@ -126,7 +126,7 @@ export interface CreateNewSamApplicationResults {
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
 export async function createNewSamApplication(
-    extContext: ExtContext,
+    extContext: extcontext,
     samCliContext: SamCliContext = getSamCliContext(),
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
@@ -382,7 +382,7 @@ export async function getProjectUri(
  * The template file must be within the same root directory as the target file.
  */
 export async function addInitialLaunchConfiguration(
-    extContext: ExtContext,
+    extContext: extcontext,
     folder: vscode.WorkspaceFolder,
     targetUri: vscode.Uri,
     runtime?: Runtime,

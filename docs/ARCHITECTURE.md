@@ -169,7 +169,7 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     // Create panel bindings using our class
     const Panel = VueWebview.compilePanel(MyVueWebview)
 
-    // `context` is `ExtContext` provided on activation
+    // `context` is `extcontext` provided on activation
     const view = new Panel(context, 'hello')
     view.show({ title: 'My title' })
     view.server.onFoo.fire(1)

@@ -15,7 +15,6 @@ import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
-import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
@@ -52,10 +51,14 @@ import { Auth } from '../credentials/auth'
 import globals from '../shared/extensionGlobals'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { awsexplorer } from '../modules.gen'
+import { once } from '../shared/utilities/functionUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { CodeWhispererNode } from './explorer/codewhispererNode'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext, explorer: awsexplorer): Promise<void> {
     const codewhispererSettings = CodeWhispererSettings.instance
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
@@ -68,10 +71,20 @@ export async function activate(context: ExtContext): Promise<void> {
     } else {
         determineIsClassifierEnabled()
     }
+
+    const onDidExpandCodeWhisperer = once(() => telemetry.ui_click.emit({ elementId: 'cw_parentNode' }))
+    explorer.developerTools.view.onDidExpandElement(e => {
+        if (e.element.resource instanceof CodeWhispererNode) {
+            onDidExpandCodeWhisperer()
+        }
+    })
+
+    ctx.subscriptions.push(explorer.developerTools.registerNode(new CodeWhispererNode()))
+
     /**
      * CodeWhisperer security panel
      */
-    const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
+    const securityPanelViewProvider = new SecurityPanelViewProvider(ctx)
     activateSecurityScan()
 
     /**
@@ -79,7 +92,7 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
-    context.extensionContext.subscriptions.push(
+    ctx.subscriptions.push(
         /**
          * Configuration change
          */
@@ -150,11 +163,11 @@ export async function activate(context: ExtContext): Promise<void> {
         // show introduction
         showIntroduction.register(),
         // toggle code suggestions
-        toggleCodeSuggestions.register(context.extensionContext.globalState),
+        toggleCodeSuggestions.register(ctx.globalState),
         // enable code suggestions
-        enableCodeSuggestions.register(context),
+        enableCodeSuggestions.register(ctx),
         // code scan
-        showSecurityScan.register(context, securityPanelViewProvider, client),
+        showSecurityScan.register(ctx, securityPanelViewProvider, client),
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt
@@ -176,7 +189,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * On recommendation acceptance
          */
-        acceptSuggestion.register(context),
+        acceptSuggestion.register(ctx),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
@@ -191,7 +204,7 @@ export async function activate(context: ExtContext): Promise<void> {
             ReferenceHoverProvider.instance
         ),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
-        showReferenceLog.register(context),
+        showReferenceLog.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages],
             ReferenceInlineProvider.instance
@@ -205,11 +218,11 @@ export async function activate(context: ExtContext): Promise<void> {
     await auth.restore()
 
     function activateSecurityScan() {
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
         )
 
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(editor => {
                 if (isCloud9()) {
                     if (editor) {
@@ -221,19 +234,18 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     function determineIsClassifierEnabled() {
-        const isClassifierEnabled = context.extensionContext.globalState.get<boolean | undefined>(
+        const isClassifierEnabled = ctx.globalState.get<boolean | undefined>(
             CodeWhispererConstants.isClassifierEnabledKey
         )
         if (isClassifierEnabled === undefined) {
             const result = Math.random() <= 0.4
-            context.extensionContext.globalState.update(CodeWhispererConstants.isClassifierEnabledKey, result)
+            ctx.globalState.update(CodeWhispererConstants.isClassifierEnabledKey, result)
         }
     }
 
     async function showAccessTokenMigrationDialogue() {
         // TODO: Change the color of the buttons
-        const accessTokenExpired =
-            context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.accessTokenExpriedKey) || false
+        const accessTokenExpired = ctx.globalState.get<boolean>(CodeWhispererConstants.accessTokenExpriedKey) || false
 
         if (AuthUtil.instance.hasAccessToken()) {
             await Auth.instance.tryAutoConnect()
@@ -248,13 +260,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     function maybeShowTokenMigrationError() {
         const migrationErrordoNotShowAgain =
-            context.extensionContext.globalState.get<boolean>(
-                CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey
-            ) || false
+            ctx.globalState.get<boolean>(CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey) || false
         const migrationErrorLastShown: number =
-            context.extensionContext.globalState.get<number | undefined>(
-                CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown
-            ) || 1
+            ctx.globalState.get<number | undefined>(CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown) || 1
 
         //Add 7 days to notificationLastShown to determine whether warn message should show
         if (migrationErrordoNotShowAgain || migrationErrorLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
@@ -273,22 +281,16 @@ export async function activate(context: ExtContext): Promise<void> {
                     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
                     await showSsoSignIn.execute()
                 } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    await context.extensionContext.globalState.update(
-                        CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey,
-                        true
-                    )
+                    await ctx.globalState.update(CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey, true)
                 } else if (resp === CodeWhispererConstants.accessTokenMigrationLearnMore) {
                     await vscode.commands.executeCommand('aws.codeWhisperer.accessTokenErrorLearnMore')
                 }
             })
-        context.extensionContext.globalState.update(
-            CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown,
-            Date.now()
-        )
+        ctx.globalState.update(CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown, Date.now())
     }
 
     function getAutoTriggerStatus(): boolean {
-        return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
+        return ctx.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
     }
 
     async function getConfigEntry(): Promise<ConfigurationEntry> {
@@ -323,7 +325,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Automated trigger
          */
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async editor => {
                 await InlineCompletionService.instance.onEditorChange()
             }),
@@ -383,7 +385,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Automated trigger
          */
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             vscode.workspace.onDidChangeTextDocument(async e => {
                 /**
                  * CodeWhisperer security panel dynamic handling
@@ -495,7 +497,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Manual trigger
          */
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.supportedLanguages], {
                 async provideCompletionItems(
                     document: vscode.TextDocument,

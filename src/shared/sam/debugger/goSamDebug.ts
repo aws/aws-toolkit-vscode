@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { GoDebugConfiguration, goDebuggerPath, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { ExtContext } from '../../extensions'
+import type { extcontext } from '../../../modules.gen'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction } from '../localLambdaRunner'
@@ -50,7 +50,7 @@ const localize = nls.loadMessageBundle()
  *  [1] https://github.com/aws/aws-lambda-builders/blob/b663326079c871e50f1545f36f9695f6958cfaa2/aws_lambda_builders/workflows/go_modules/builder.py
  *  [2] https://github.com/lambci/docker-lambda/blob/f6b4765a9b659ceb949c34b19390026820ddd462/go1.x/run/aws-lambda-mock.go
  */
-export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
+export async function invokeGoLambda(ctx: extcontext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.GO_DELVE])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForDelve

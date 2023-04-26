@@ -7,7 +7,6 @@ import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
-import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
     minSamCliVersion,
@@ -27,6 +26,7 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/c
 import { createTestWorkspaceFolder } from './testUtil'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestRegionProvider } from './shared/regions/testUtil'
+import type { extcontext } from '../modules.gen'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -114,9 +114,9 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 
     /**
-     * Creates a fake `ExtContext` for use in tests.
+     * Creates a fake `extcontext` for use in tests.
      */
-    public static async getFakeExtContext(): Promise<ExtContext> {
+    public static async getFakeExtContext(): Promise<extcontext> {
         const ctx = await FakeExtensionContext.create()
         const awsContext = new FakeAwsContext()
         const samCliContext = () => {
@@ -129,9 +129,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         }
         const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
         const outputChannel = new MockOutputChannel()
-        const invokeOutputChannel = new MockOutputChannel()
-        const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
 
         return {
             extensionContext: ctx,
@@ -139,8 +136,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             samCliContext,
             regionProvider,
             outputChannel,
-            invokeOutputChannel,
-            telemetryService,
             credentialsStore: new CredentialsStore(),
             uriHandler: new UriHandler(),
         }

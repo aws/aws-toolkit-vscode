@@ -18,7 +18,7 @@ import {
 } from '../../../lambda/wizards/samDeployWizard'
 import { EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
@@ -52,7 +52,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public constructor(
-        readonly extContext: ExtContext,
+        readonly extContext: extcontext,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
         private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
@@ -184,7 +184,7 @@ function normalizePath(...paths: string[]): string {
 }
 
 describe('SamDeployWizard', async function () {
-    let extContext: ExtContext
+    let extContext: extcontext
     before(async function () {
         extContext = await FakeExtensionContext.getFakeExtContext()
     })

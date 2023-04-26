@@ -12,7 +12,7 @@ import got, { OptionsOfTextResponseBody, RequestError } from 'got'
 import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { ExtContext } from '../extensions'
+import type { extcontext } from '../../modules.gen'
 import { getLogger } from '../logger'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -273,7 +273,7 @@ async function invokeLambdaHandler(
  * @param onAfterBuild  Called after `SamCliBuildInvocation.execute()`
  */
 export async function runLambdaFunction(
-    ctx: ExtContext,
+    ctx: extcontext,
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {

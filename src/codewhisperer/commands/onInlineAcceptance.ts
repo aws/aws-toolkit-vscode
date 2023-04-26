@@ -16,7 +16,7 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { onAcceptance } from './onAcceptance'
 import * as codewhispererClient from '../client/codewhisperer'
 import {
@@ -30,7 +30,7 @@ import { ImportAdderProvider } from '../service/importAdderProvider'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
-    (context: ExtContext) =>
+    (context: extcontext) =>
         async (
             range: vscode.Range,
             acceptIndex: number,

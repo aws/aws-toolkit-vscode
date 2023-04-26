@@ -20,7 +20,7 @@ import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
@@ -37,7 +37,7 @@ describe('createNewSamApp', function () {
     let tempFolder: string
     let tempTemplate: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
-    let fakeContext: ExtContext
+    let fakeContext: extcontext
     let fakeResponse: { location: vscode.Uri; name: string }
     let fakeTarget: string
     let fakeConfig: vscode.DebugConfiguration

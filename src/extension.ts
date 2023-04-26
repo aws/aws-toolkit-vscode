@@ -6,16 +6,11 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as codecatalyst from './codecatalyst/activation'
-import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/statusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
-import { activate as activateSchemas } from './eventSchemas/activation'
-import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
@@ -35,23 +30,11 @@ import { activate as activateLogger } from './shared/logger/activation'
 import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
-import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
-import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
-import { ExtContext } from './shared/extensions'
-import { activate as activateApiGateway } from './apigateway/activation'
-import { activate as activateStepFunctions } from './stepFunctions/activation'
-import { activate as activateSsmDocument } from './ssmDocument/activation'
-import { activate as activateDynamicResources } from './dynamicResources/activation'
-import { activate as activateEcs } from './ecs/activation'
-import { activate as activateAppRunner } from './apprunner/activation'
-import { activate as activateIot } from './iot/activation'
-import { activate as activateDev } from './dev/activation'
+import { shutdown as codewhispererShutdown } from './codewhisperer'
 import { CredentialsStore } from './credentials/credentialsStore'
-import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -67,6 +50,7 @@ import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './credentials/auth'
+import { activateModules, extcontextModule } from './modules.gen'
 
 let localize: nls.LocalizeFunc
 
@@ -141,23 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.uriHandler = new UriHandler()
         context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
 
-        const extContext: ExtContext = {
-            extensionContext: context,
-            awsContext: globals.awsContext,
-            samCliContext: getSamCliContext,
-            regionProvider: regionProvider,
-            outputChannel: toolkitOutputChannel,
-            invokeOutputChannel: remoteInvokeOutputChannel,
-            telemetryService: globals.telemetry,
-            uriHandler: globals.uriHandler,
-            credentialsStore,
-        }
-
-        try {
-            activateDev(extContext)
-        } catch (error) {
-            getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
-        }
+        const extContext = await extcontextModule.activate(context)
 
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
@@ -191,47 +159,11 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await codecatalyst.activate(extContext)
-
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCodeWhisperer(extContext)
-
-        await activateAwsExplorer({
-            context: extContext,
-            regionProvider,
-            toolkitOutputChannel,
-            remoteInvokeOutputChannel,
-        })
-
-        await activateAppRunner(extContext)
-
-        await activateApiGateway({
-            extContext: extContext,
-            outputChannel: remoteInvokeOutputChannel,
-        })
-
-        await activateLambda(extContext)
-
-        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
+        await activateModules(context)
 
         await activateSam(extContext)
-
-        await activateS3(extContext)
-
-        await activateEcr(context)
-
-        await activateCloudWatchLogs(context, settings)
-
-        await activateDynamicResources(context)
-
-        await activateIot(extContext)
-
-        await activateEcs(extContext)
-
-        await activateSchemas(extContext)
-
-        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         showWelcomeMessage(context)
 
@@ -324,7 +256,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
  *
  * Cloud9 does not show a progress notification.
  */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): typeof vscode.window['withProgress'] {
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
     const withProgress = vscode.window.withProgress.bind(vscode.window)
 
     return (options, task) => {

@@ -12,7 +12,7 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as systemutil from '../../../shared/systemUtilities'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { ExtContext } from '../../extensions'
+import type { extcontext } from '../../../modules.gen'
 import { getLogger } from '../../logger'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
@@ -28,7 +28,7 @@ const tsConfigInitialBaseFile = 'tsconfig.json'
  * Launches and attaches debugger to a SAM Node project.
  */
 export async function invokeTypescriptLambda(
-    ctx: ExtContext,
+    ctx: extcontext,
     config: NodejsDebugConfiguration
 ): Promise<NodejsDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.NODEJS])

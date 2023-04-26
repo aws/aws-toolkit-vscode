@@ -189,7 +189,7 @@ export abstract class VueWebview {
 
     protected getContext(): vscode.ExtensionContext {
         if (!this.context) {
-            throw new Error('Webview was not initialized with "ExtContext"')
+            throw new Error('Webview was not initialized with "extcontext"')
         }
 
         return this.context

@@ -24,10 +24,9 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { TelemetryService } from '../telemetry/telemetryService'
 import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
 import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
@@ -40,20 +39,19 @@ import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
+import type { extcontext } from '../../modules.gen'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
 /**
  * Activate SAM-related functionality.
  */
-export async function activate(ctx: ExtContext): Promise<void> {
+export async function activate(ctx: extcontext): Promise<void> {
     await createYamlExtensionPrompt()
     await migrateLegacySettings()
     const config = SamCliSettings.instance
 
-    ctx.extensionContext.subscriptions.push(
-        ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
-    )
+    ctx.extensionContext.subscriptions.push(...(await activateCodeLensProviders(ctx, config)))
 
     await registerServerlessCommands(ctx, config)
 
@@ -89,7 +87,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     registerSync()
 }
 
-async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
+async function registerServerlessCommands(ctx: extcontext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         Commands.register({ id: 'aws.samcli.detect', autoconnect: false }, () =>
@@ -128,7 +126,7 @@ async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSetti
     )
 }
 
-async function activateCodeLensRegistry(context: ExtContext) {
+async function activateCodeLensRegistry(context: extcontext) {
     try {
         const registry = new CodelensRootRegistry()
         globals.codelensRootRegistry = registry
@@ -160,10 +158,8 @@ async function activateCodeLensRegistry(context: ExtContext) {
 }
 
 async function activateCodeLensProviders(
-    context: ExtContext,
-    configuration: SamCliSettings,
-    toolkitOutputChannel: vscode.OutputChannel,
-    telemetryService: TelemetryService
+    context: extcontext,
+    configuration: SamCliSettings
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const tsCodeLensProvider = codelensUtils.makeTypescriptCodeLensProvider(configuration)

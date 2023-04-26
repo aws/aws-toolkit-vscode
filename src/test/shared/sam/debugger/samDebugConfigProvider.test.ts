@@ -42,7 +42,7 @@ import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
 import { Credentials } from '@aws-sdk/types'
-import { ExtContext } from '../../../../shared/extensions'
+import type { extcontext } from '../../../../modules.gen'
 import { mkdir, remove } from 'fs-extra'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../credentials/providers/credentials'
@@ -136,7 +136,7 @@ describe('SamDebugConfigurationProvider', async function () {
     let tempFolderSimilarName: string | undefined
     let tempFile: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
-    let fakeContext: ExtContext
+    let fakeContext: extcontext
     let sandbox: sinon.SinonSandbox
     const resourceName = 'myResource'
     const fakeCredentials: Credentials = {

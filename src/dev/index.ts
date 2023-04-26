@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as config from './config'
-import { ExtContext } from '../shared/extensions'
+import type { extcontext } from '../modules.gen'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { DevSettings } from '../shared/settings'
@@ -23,7 +23,7 @@ interface MenuOption {
     readonly label: string
     readonly description?: string
     readonly detail?: string
-    readonly executor: (ctx: ExtContext) => Promise<unknown> | unknown
+    readonly executor: (ctx: extcontext) => Promise<unknown> | unknown
 }
 
 /**
@@ -83,7 +83,7 @@ export class GlobalStateDocumentProvider implements vscode.TextDocumentContentPr
  *
  * See {@link DevSettings} for more information.
  */
-export function activate(ctx: ExtContext): void {
+export function activate(ctx: vscode.ExtensionContext): void {
     const devSettings = DevSettings.instance
 
     async function updateMode() {
@@ -91,7 +91,7 @@ export function activate(ctx: ExtContext): void {
         await vscode.commands.executeCommand('setContext', 'aws.isDevMode', enablement)
     }
 
-    ctx.extensionContext.subscriptions.push(
+    ctx.subscriptions.push(
         devSettings.onDidChangeActiveSettings(updateMode),
         vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions)),
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new GlobalStateDocumentProvider())
@@ -99,15 +99,15 @@ export function activate(ctx: ExtContext): void {
 
     updateMode()
 
-    const editor = new ObjectEditor(ctx.extensionContext)
-    ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
+    const editor = new ObjectEditor(ctx)
+    ctx.subscriptions.push(openStorageCommand.register(editor))
 
     if (!isCloud9() && !isReleaseVersion() && config.betaUrl) {
-        ctx.extensionContext.subscriptions.push(watchBetaVSIX(config.betaUrl))
+        ctx.subscriptions.push(watchBetaVSIX(config.betaUrl))
     }
 }
 
-async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
+async function openMenu(ctx: vscode.ExtensionContext, options: typeof menuOptions): Promise<void> {
     const items = entries(options).map(([_, v]) => ({
         label: v.label,
         detail: v.detail,

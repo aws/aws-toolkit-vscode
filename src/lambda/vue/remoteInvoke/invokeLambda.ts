@@ -8,7 +8,7 @@ import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 
 import { getLogger } from '../../../shared/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
@@ -115,7 +115,7 @@ export class RemoteInvokeWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 
 export async function invokeRemoteLambda(
-    context: ExtContext,
+    context: extcontext,
     params: {
         /* TODO: Instead of vague scope-leaking objects: awsContext & element, it would be cleaner if this took:
          *  {

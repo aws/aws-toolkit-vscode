@@ -18,7 +18,7 @@ import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewh
 import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -96,7 +96,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let mockExtensionContext: vscode.ExtensionContext
         let mockSecurityPanelViewProvider: SecurityPanelViewProvider
         let mockClient: DefaultCodeWhispererClient
-        let mockExtContext: ExtContext
+        let mockExtContext: extcontext
 
         beforeEach(async function () {
             resetCodeWhispererGlobalVariables()

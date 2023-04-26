@@ -22,20 +22,17 @@ import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/asl
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { extcontext } from '../modules.gen'
 
 /**
  * Activate Step Functions related functionality for the extension.
  */
-export async function activate(
-    extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    outputChannel: vscode.OutputChannel
-): Promise<void> {
-    globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
+export async function activate(ctx: vscode.ExtensionContext, { awsContext, outputChannel }: extcontext): Promise<void> {
+    globals.visualizationResourcePaths = initalizeWebviewPaths(ctx)
 
-    setImmediate(() => activateASL(extensionContext))
-    await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
-    initializeCodeLens(extensionContext)
+    setImmediate(() => activateASL(ctx))
+    await registerStepFunctionCommands(ctx, awsContext, outputChannel)
+    initializeCodeLens(ctx)
 }
 
 /*
@@ -88,7 +85,9 @@ async function registerStepFunctionCommands(
     )
 }
 
-export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof globals['visualizationResourcePaths'] {
+export function initalizeWebviewPaths(
+    context: vscode.ExtensionContext
+): (typeof globals)['visualizationResourcePaths'] {
     // Location for script in body of webview that handles input from user
     // and calls the code to render state machine graph
 

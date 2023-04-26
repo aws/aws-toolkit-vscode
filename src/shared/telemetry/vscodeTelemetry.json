@@ -31,6 +31,11 @@
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
+        },
+        {
+            "name": "module",
+            "type": "string",
+            "description": "The id of the module or subsystem"
         }
     ],
     "metrics": [
@@ -226,6 +231,12 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "vscode_activateModule",
+            "description": "Emitted whenever a registered module is activated",
+            "passive": true,
+            "metadata": [{ "type": "module" }]
         }
     ]
 }

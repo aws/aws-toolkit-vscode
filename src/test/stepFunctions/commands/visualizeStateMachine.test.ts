@@ -16,7 +16,7 @@ import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslF
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { closeAllEditors } from '../../testUtil'
 import { getLogger } from '../../../shared/logger'
-import { previewStateMachineCommand } from '../../../stepFunctions/activation'
+import { previewStateMachineCommand } from '../../../stepFunctions/index'
 import { getTestWindow } from '../../shared/vscode/window'
 
 // Top level defintions

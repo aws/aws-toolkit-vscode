@@ -15,7 +15,7 @@ import {
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import globals from '../../extensionGlobals'
-import { ExtContext } from '../../extensions'
+import type { extcontext } from '../../../modules.gen'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
@@ -220,7 +220,7 @@ export async function makePythonDebugConfig(
  * Launches and attaches debugger to a SAM Python project.
  */
 export async function invokePythonLambda(
-    ctx: ExtContext,
+    ctx: extcontext,
     config: PythonDebugConfiguration
 ): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([

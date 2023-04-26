@@ -16,16 +16,15 @@ import { deleteDocument } from './commands/deleteDocument'
 import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
 import { updateDocumentVersion } from './commands/updateDocumentVersion'
 import { Commands } from '../shared/vscode/commands2'
+import { extcontext } from '../modules.gen'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(
-    extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    regionProvider: RegionProvider,
-    outputChannel: vscode.OutputChannel
+    ctx: vscode.ExtensionContext,
+    { awsContext, regionProvider, outputChannel }: extcontext
 ): Promise<void> {
-    await registerSsmDocumentCommands(extensionContext, awsContext, regionProvider, outputChannel)
-    await activateSSMLanguageServer(extensionContext)
+    await registerSsmDocumentCommands(ctx, awsContext, regionProvider, outputChannel)
+    await activateSSMLanguageServer(ctx)
 }
 
 async function registerSsmDocumentCommands(
