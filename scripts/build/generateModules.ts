@@ -131,11 +131,24 @@ async function generate() {
 
     const getText = (source: ts.SourceFile, node: ts.BindingName) =>
         !ts.isIdentifier(node) ? node.getText(source) : node.text
-    function getReference(source: ts.SourceFile, param: ts.ParameterDeclaration) {
+
+    function getReference(source: ts.SourceFile, param: ts.ParameterDeclaration, visited: Set<ts.SourceFile>) {
+        // Typescript can detect circular references in most situations but we'll check here too
+        if (visited.has(source)) {
+            const message = Array.from(visited)
+                .map(s => path.relative(srcDir, s.fileName))
+                .join(' --> ')
+            throw new Error(`Found circular dependnecy: ${message}`)
+        }
+
         if (param.type === undefined) {
             throw new Error(`${source.fileName}: parameter has no type: ${getText(source, param.name)}`)
         }
 
+        // Using the name of the type is not really the right way to do this.
+        // The proper way requires creating a new program and loading the source
+        // files. Then we can use the type checker to get the actual return types
+        // and check them. The text is "good enough" of course.
         const id = param.type.getText(source)
         const targetModule = modules.find(m => m.id === id)
         if (targetModule === undefined) {
@@ -144,7 +157,7 @@ async function generate() {
             )
         }
 
-        const moduleIdent = resolveModuleIdentifer(targetModule)
+        const moduleIdent = resolveModuleIdentifer(targetModule, new Set([...visited, source]))
         if (moduleIdent === undefined) {
             throw new Error(
                 `${source.fileName}: parameter "${getText(
@@ -157,7 +170,7 @@ async function generate() {
         return moduleIdent
     }
 
-    function resolveModuleIdentifer(m: Module): ts.Identifier | undefined {
+    function resolveModuleIdentifer(m: Module, visited = new Set<ts.SourceFile>()): ts.Identifier | undefined {
         if (!m.activation) {
             return
         }
@@ -179,7 +192,7 @@ async function generate() {
             ])
         )
 
-        const deps = m.activation.parameters.slice(1).map(p => getReference(m.source, p))
+        const deps = m.activation.parameters.slice(1).map(p => getReference(m.source, p, visited))
         const registerExp = ts.factory.createCallExpression(ts.factory.createIdentifier('register'), undefined, [
             ts.factory.createStringLiteral(m.id, true),
             dynamicImportCb,
@@ -208,11 +221,9 @@ async function generate() {
         return moduleIdent
     }
 
-    modules.forEach(resolveModuleIdentifer)
+    modules.forEach(m => resolveModuleIdentifer(m))
 
-    // The generated file has side-effects. Some tree-shakers may be able to recognize
-    // that the `register` calls affect `modules.ts` and would avoid stripping them
-    // if a function was re-exported. But just in case we'll make things explicit.
+    // The generated file has side-effects. Export an activation function to capture them.
     const activateAllDecl = ts.factory.createFunctionDeclaration(
         [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
         undefined,

@@ -16,11 +16,9 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
-import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { createTestWorkspaceFolder } from './testUtil'

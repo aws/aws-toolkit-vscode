@@ -21,7 +21,8 @@ import { SamCliContext, getSamCliContext } from '../shared/sam/cli/samCliContext
 /**
  * Long-lived, extension-scoped, shared globals.
  *
- * @deprecated
+ * @deprecated Wrapping `vscode.ExtensionContext` with several unrelated objects makes
+ * things hard to maintain. Prefer simply using `globals` as an initializer instead.
  */
 export interface extcontext {
     extensionContext: vscode.ExtensionContext
