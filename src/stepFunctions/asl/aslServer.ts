@@ -37,7 +37,6 @@ import * as URL from 'url'
 import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
-import globals from '../../shared/extensionGlobals'
 
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
@@ -163,7 +162,7 @@ namespace LimitExceededWarnings {
     export function cancel(uri: string) {
         const warning = pendingWarnings[uri]
         if (warning && warning.timeout) {
-            globals.clock.clearTimeout(warning.timeout)
+            clearTimeout(warning.timeout)
             delete pendingWarnings[uri]
         }
     }
@@ -180,7 +179,7 @@ namespace LimitExceededWarnings {
                 warning.timeout.refresh()
             } else {
                 warning = { features: { [name]: name } }
-                warning.timeout = globals.clock.setTimeout(() => {
+                warning.timeout = setTimeout(() => {
                     connection.sendNotification(
                         ResultLimitReachedNotification.type,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
@@ -256,14 +255,14 @@ const validationDelayMs = 500
 function cleanPendingValidation(textDocument: TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
-        globals.clock.clearTimeout(request)
+        clearTimeout(request)
         delete pendingValidationRequests[textDocument.uri]
     }
 }
 
 function triggerValidation(textDocument: TextDocument): void {
     cleanPendingValidation(textDocument)
-    pendingValidationRequests[textDocument.uri] = globals.clock.setTimeout(() => {
+    pendingValidationRequests[textDocument.uri] = setTimeout(() => {
         delete pendingValidationRequests[textDocument.uri]
         validateTextDocument(textDocument)
     }, validationDelayMs)
@@ -298,7 +297,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
             diagnostics => {
-                globals.clock.setTimeout(() => {
+                setTimeout(() => {
                     const currDocument = documents.get(textDocument.uri)
                     if (currDocument && currDocument.version === version) {
                         respond(diagnostics) // Send the computed diagnostics to VSCode.

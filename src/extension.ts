@@ -44,6 +44,7 @@ import { Logging } from './shared/logger/commands'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './credentials/auth'
 import { activateModules, extcontextModule } from './modules.gen'
+import { DefaultAwsContext } from './shared/awsContext'
 
 let localize: nls.LocalizeFunc
 
@@ -52,6 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
     localize = nls.loadMessageBundle()
     initialize(context)
     initializeManifestPaths(context)
+    globals.awsContext = new DefaultAwsContext()
     await initializeComputeRegion()
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(

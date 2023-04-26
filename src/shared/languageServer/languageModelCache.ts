@@ -9,7 +9,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { TextDocument } from 'vscode-languageserver-textdocument'
-import globals from '../extensionGlobals'
 
 export interface LanguageModelCache<T> {
     get(document: TextDocument): T
@@ -27,8 +26,8 @@ export function getLanguageModelCache<T>(
 
     let cleanupInterval: NodeJS.Timer | undefined
     if (cleanupIntervalTimeInSec > 0) {
-        cleanupInterval = globals.clock.setInterval(() => {
-            const cutoffTime = globals.clock.Date.now() - cleanupIntervalTimeInSec * 1000
+        cleanupInterval = setInterval(() => {
+            const cutoffTime = Date.now() - cleanupIntervalTimeInSec * 1000
             const uris = Object.keys(languageModels)
             for (const uri of uris) {
                 const languageModelInfo = languageModels[uri]
@@ -50,12 +49,12 @@ export function getLanguageModelCache<T>(
                 languageModelInfo.version === version &&
                 languageModelInfo.languageId === languageId
             ) {
-                languageModelInfo.cTime = globals.clock.Date.now()
+                languageModelInfo.cTime = Date.now()
 
                 return languageModelInfo.languageModel
             }
             const languageModel = parse(document)
-            languageModels[document.uri] = { languageModel, version, languageId, cTime: globals.clock.Date.now() }
+            languageModels[document.uri] = { languageModel, version, languageId, cTime: Date.now() }
             if (!languageModelInfo) {
                 nModels++
             }
@@ -87,7 +86,7 @@ export function getLanguageModelCache<T>(
         },
         dispose() {
             if (typeof cleanupInterval !== 'undefined') {
-                globals.clock.clearInterval(cleanupInterval)
+                clearInterval(cleanupInterval)
                 cleanupInterval = undefined
                 languageModels = {}
                 nModels = 0
