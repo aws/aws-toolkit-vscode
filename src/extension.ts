@@ -75,6 +75,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateTelemetry(context, settings)
         const extContext = await extcontextModule.activate(context)
+        globals.regionProvider = extContext.regionProvider
+
         initializeCredentialsProviderManager()
 
         const awsContext = extContext.awsContext
