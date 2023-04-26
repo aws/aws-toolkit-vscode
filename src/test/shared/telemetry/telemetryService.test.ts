@@ -211,7 +211,9 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events created prior to signing in do not have an account attached', async function () {
-        service.record(fakeMetric({ metricName: 'name' }))
+        service.record(fakeMetric({ metricName: 'name' }), {
+            getCredentialAccountId: () => undefined,
+        } as unknown as FakeAwsContext)
         assert.strictEqual(logger.metricCount, 1)
 
         const metricData = logger.queryFull({ metricName: 'name' })
