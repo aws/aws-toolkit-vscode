@@ -4,32 +4,23 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
-import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import globals from '../shared/extensionGlobals'
 
-export async function initialize(
-    extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    loginManager: LoginManager
-): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
         if (conn?.type === 'iam' && conn.state === 'valid') {
-            loginManager.login({ passive: true, providerId: fromString(conn.id) })
+            globals.loginManager.login({ passive: true, providerId: fromString(conn.id) })
         } else {
-            loginManager.logout()
+            globals.loginManager.logout()
         }
     })
 
     // TODO: To enable this in prod we need to remove the 'when' clause
     // for: '"command": "aws.auth.showConnectionsPage"' in package.json
-    registerCommandsWithVSCode(
-        extensionContext,
-        new AuthCommandDeclarations(),
-        new AuthCommandBackend(extensionContext)
-    )
+    registerCommandsWithVSCode(ctx, new AuthCommandDeclarations(), new AuthCommandBackend(ctx))
 }

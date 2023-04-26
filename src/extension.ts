@@ -77,13 +77,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateTelemetry(context, settings)
         const extContext = await extcontextModule.activate(context)
-        globals.regionProvider = extContext.regionProvider
-
-        initializeCredentialsProviderManager()
-
         const awsContext = extContext.awsContext
         const credentialsStore = extContext.credentialsStore
-        const loginManager = new LoginManager(awsContext, credentialsStore)
+        globals.regionProvider = extContext.regionProvider
+        globals.loginManager = new LoginManager(awsContext, credentialsStore)
+
+        initializeCredentialsProviderManager()
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -93,7 +92,6 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        globals.loginManager = loginManager
         globals.awsContextCommands = new AwsContextCommands(extContext.regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
