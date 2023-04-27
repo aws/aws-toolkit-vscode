@@ -56,7 +56,8 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
 }
 
 export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reason?: string) {
-    const test = testOrCtx instanceof Mocha.Runnable ? testOrCtx : testOrCtx?.currentTest
+    const test =
+        testOrCtx?.type === 'test' ? (testOrCtx as Mocha.Test) : (testOrCtx as Mocha.Context | undefined)?.currentTest
 
     if (test) {
         test.title += ` (skipped${reason ? ` - ${reason}` : ''})`
