@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.credentials
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionDialogCustomizer
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAddConnectionDialog
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.resources.message
 
@@ -16,6 +17,7 @@ class CodeWhispererLoginDialog(project: Project) : ToolkitAddConnectionDialog(
         title = message("codewhisperer.credential.login.dialog.title"),
         header = message("codewhisperer.credential.login.dialog.prompt"),
         helpId = HelpIds.CODEWHISPERER_LOGIN_DIALOG,
-        replaceIamComment = message("codewhisperer.credential.login.dialog.iam.description")
+        replaceIamComment = message("codewhisperer.credential.login.dialog.iam.description"),
+        scopes = CODEWHISPERER_SCOPES
     )
 )

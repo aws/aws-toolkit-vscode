@@ -164,7 +164,7 @@ object CodeWhispererUtil {
         if (connection !is BearerSsoConnection) return
         ApplicationManager.getApplication().executeOnPooledThread {
             getConnectionStartUrl(connection)?.let { startUrl ->
-                loginSso(project, startUrl, scopes = connection.scopes)
+                loginSso(project, startUrl, requestedScopes = connection.scopes)
             }
         }
     }

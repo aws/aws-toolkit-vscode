@@ -103,15 +103,17 @@ interface ToolkitConnectionManager : Disposable {
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
-fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_REGION, scopes: List<String> = ALL_SONO_SCOPES): BearerTokenProvider {
-    val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
-    val manager = ToolkitAuthManager.getInstance()
 
+fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_REGION, requestedScopes: List<String> = ALL_SONO_SCOPES): BearerTokenProvider {
+    val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
+
+    val manager = ToolkitAuthManager.getInstance()
+    val allScopes = requestedScopes.toMutableList()
     return manager.getConnection(connectionId)?.let { connection ->
         val logger = getLogger<ToolkitAuthManager>()
         // requested Builder ID, but one already exists
         // TBD: do we do this for regular SSO too?
-        if (connection.isSono() && connection is BearerSsoConnection && scopes.all { it in connection.scopes }) {
+        if (connection.isSono() && connection is BearerSsoConnection && requestedScopes.all { it in connection.scopes }) {
             val signOut = computeOnEdt {
                 MessageDialogBuilder.yesNo(
                     message("toolkit.login.aws_builder_id.already_connected.title"),
@@ -133,13 +135,17 @@ fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_R
         }
 
         // There is an existing connection we can use
-        if (connection is BearerSsoConnection && !scopes.all { it in connection.scopes }) {
-            logger.info {
-                "Forcing reauth on ${connection.id} since requested scopes ($scopes) are not a complete subset of current scopes (${connection.scopes})"
-            }
+        if (connection is BearerSsoConnection && !requestedScopes.all { it in connection.scopes }) {
+            allScopes.addAll(connection.scopes)
 
+            logger.info {
+                """
+                    Forcing reauth on ${connection.id} since requested scopes ($requestedScopes)
+                    are not a complete subset of current scopes (${connection.scopes})
+                """.trimIndent()
+            }
+            logoutFromSsoConnection(project, connection as AwsBearerTokenConnection)
             // can't reuse since requested scopes are not in current connection. forcing reauth
-            manager.deleteConnection(connection)
             return@let null
         }
 
@@ -155,7 +161,7 @@ fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_R
             ManagedSsoProfile(
                 region,
                 startUrl,
-                scopes
+                allScopes.toSet().toList()
             )
         )
 

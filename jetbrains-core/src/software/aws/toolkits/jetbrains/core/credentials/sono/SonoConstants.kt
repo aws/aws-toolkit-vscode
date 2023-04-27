@@ -18,7 +18,6 @@ internal val CODECATALYST_SCOPES = listOf(
 
 // limit of 10
 // at least one scope must be provided
-internal val ALL_SSO_SCOPES = CODEWHISPERER_SCOPES
 val ALL_SONO_SCOPES = CODEWHISPERER_SCOPES + CODECATALYST_SCOPES
 
 fun ToolkitConnection?.isSono() = if (this == null) {

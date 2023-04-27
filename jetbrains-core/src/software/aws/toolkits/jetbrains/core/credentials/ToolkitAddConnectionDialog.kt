@@ -27,6 +27,7 @@ import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.selected
 import com.intellij.ui.dsl.builder.toNullableProperty
+import com.intellij.util.containers.nullize
 import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
@@ -36,8 +37,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.ToolkitPlaces
-import software.aws.toolkits.jetbrains.core.credentials.sono.ALL_SONO_SCOPES
-import software.aws.toolkits.jetbrains.core.credentials.sono.ALL_SSO_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -52,6 +51,7 @@ data class ConnectionDialogCustomizer(
     val header: String? = null,
     val helpId: HelpIds? = null,
     val replaceIamComment: String? = null,
+    val scopes: List<String>? = null,
     val startUrl: String? = null,
     val region: String? = null,
     val errorMsg: String? = null
@@ -148,11 +148,7 @@ open class ToolkitAddConnectionDialog(
                     error("User should not perform Identity Center login with AWS Builder ID url")
                 }
 
-                val scopes = if (loginType == LoginOptions.AWS_BUILDER_ID) {
-                    ALL_SONO_SCOPES
-                } else {
-                    ALL_SSO_SCOPES
-                }
+                val scopes = customizer?.scopes?.nullize() ?: listOf("sso:account:access")
 
                 LOG.info {
                     """

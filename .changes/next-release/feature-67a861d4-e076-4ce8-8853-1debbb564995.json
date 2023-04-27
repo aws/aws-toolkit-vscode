@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Using the least permissive set of scopes for features during BuilderID/SSO login. Using the same connection for multiple features will request additional scopes to be used."
+}
