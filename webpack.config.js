@@ -21,6 +21,7 @@ const { VueLoaderPlugin } = require('vue-loader')
 
 const modulePathsLocation = path.join(path.resolve(__dirname, 'dist'), 'modulePaths.json')
 const modulePaths = JSON.parse(fs.readFileSync(modulePathsLocation, 'utf-8'))
+const isProduction = process.argv[process.argv.indexOf('--mode') + 1] === 'production'
 
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
@@ -37,7 +38,7 @@ const baseConfig = {
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]',
     },
-    devtool: 'source-map',
+    devtool: isProduction ? false : 'source-map',
     externals: {
         vscode: 'commonjs vscode',
         vue: 'root Vue',
