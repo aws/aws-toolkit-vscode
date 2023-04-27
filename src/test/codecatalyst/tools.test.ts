@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 import * as path from 'path'
 import * as http from 'http'
 import * as assert from 'assert'
@@ -20,6 +21,7 @@ import {
 } from '../../codecatalyst/model'
 import { readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
+import { SystemUtilities } from '../../shared/systemUtilities'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
@@ -128,6 +130,18 @@ describe('Connect Script', function () {
             const message = `stderr:\n${output.stderr}\n\nlogs:\n${await readFile(logOutput)}`
 
             assert.fail(`Connect script should exit with a zero status:\n${message}`)
+        }
+    })
+
+    it('works if the .ssh directory is missing', async function () {
+        const tmpDir = await makeTemporaryToolkitFolder()
+        const stub = sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+
+        try {
+            ;(await ensureConnectScript(context)).unwrap
+        } finally {
+            await SystemUtilities.delete(tmpDir, { recursive: true })
+            stub.restore()
         }
     })
 })
