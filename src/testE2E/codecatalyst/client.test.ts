@@ -193,72 +193,70 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             // and then continue this test from that point.
         })
 
-        describe('connecting to a dev environment', function () {
-            it('prompts to install the ssh extension if not available', async function () {
-                if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
-                    skipTest(this, 'remote ssh already installed')
+        it('prompts to install the ssh extension if not available', async function () {
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+                skipTest(this, 'remote ssh already installed')
+            }
+
+            await assert.rejects(
+                prepareDevEnvConnection(client, { ...defaultDevEnv }),
+                /Remote SSH extension not installed/
+            )
+            const notification = await getTestWindow().waitForMessage(
+                /Connecting to Dev Environment requires the Remote SSH extension/
+            )
+
+            // Normally selecting `Install...` would open up the extensions tab
+            // But for this test we actually do want to install the extension programtically
+            const executeCommand = vscode.commands.executeCommand
+            const patchInstall = patchObject(vscode.commands, 'executeCommand', (command, ...args) => {
+                if (command === 'extension.open') {
+                    patchInstall.dispose()
+                    return executeCommand('workbench.extensions.installExtension', ...args)
+                } else {
+                    return executeCommand(command, ...args)
                 }
-
-                await assert.rejects(
-                    prepareDevEnvConnection(client, { ...defaultDevEnv }),
-                    /Remote SSH extension not installed/
-                )
-                const notification = await getTestWindow().waitForMessage(
-                    /Connecting to Dev Environment requires the Remote SSH extension/
-                )
-
-                // Normally selecting `Install...` would open up the extensions tab
-                // But for this test we actually do want to install the extension programtically
-                const executeCommand = vscode.commands.executeCommand
-                const patchInstall = patchObject(vscode.commands, 'executeCommand', (command, ...args) => {
-                    if (command === 'extension.open') {
-                        patchInstall.dispose()
-                        return executeCommand('workbench.extensions.installExtension', ...args)
-                    } else {
-                        return executeCommand(command, ...args)
-                    }
-                })
-
-                notification.selectItem('Install...')
-                await captureEventOnce(vscode.extensions.onDidChange, 30_000).catch(() => {
-                    throw new Error('Timed out waiting to install remote SSH extension')
-                })
             })
 
-            it('connects to a running Dev Environment', async function () {
-                // Get necessary objects to run the ssh command.
-                const { SessionProcess, hostname, sshPath } = await prepareDevEnvConnection(client, {
-                    ...defaultDevEnv,
-                })
+            notification.selectItem('Install...')
+            await captureEventOnce(vscode.extensions.onDidChange, 30_000).catch(() => {
+                throw new Error('Timed out waiting to install remote SSH extension')
+            })
+        })
 
-                // Through the actual ssh connection, run 'ls' command in the dev env.
-                const lsOutput = (await new SessionProcess(sshPath, [hostname, 'ls', '/projects']).run()).stdout
-
-                // Assert that a certain file exists in the dev env.
-                const expectedFile = 'devfile.yaml' // File automatically created by CC
-                assert(lsOutput.split('\n').includes(expectedFile))
+        it('connects to a running Dev Environment', async function () {
+            // Get necessary objects to run the ssh command.
+            const { SessionProcess, hostname, sshPath } = await prepareDevEnvConnection(client, {
+                ...defaultDevEnv,
             })
 
-            /**
-             * IMPORTANT: This test takes a while to run. Stopping a Dev Env takes time.
-             */
-            it('stops a running Dev Environment, then starts it up again', async function () {
-                // Ensure existing Dev Env is running
-                const devEnvData = {
-                    spaceName: defaultDevEnv.org.name,
-                    projectName: defaultDevEnv.project.name,
-                    id: defaultDevEnv.id,
-                }
-                await waitUntilDevEnvStatus(devEnvData, ['RUNNING'])
+            // Through the actual ssh connection, run 'ls' command in the dev env.
+            const lsOutput = (await new SessionProcess(sshPath, [hostname, 'ls', '/projects']).run()).stdout
 
-                // Stop Dev Env
-                await client.stopDevEnvironment(devEnvData)
-                await waitUntilDevEnvStatus(devEnvData, ['STOPPED'])
+            // Assert that a certain file exists in the dev env.
+            const expectedFile = 'devfile.yaml' // File automatically created by CC
+            assert(lsOutput.split('\n').includes(expectedFile))
+        })
 
-                // Start Dev Env
-                await prepareDevEnvConnection(client, { ...defaultDevEnv })
-                await waitUntilDevEnvStatus(devEnvData, ['RUNNING'])
-            })
+        /**
+         * IMPORTANT: This test takes a while to run. Stopping a Dev Env takes time.
+         */
+        it('stops a running Dev Environment, then starts it up again', async function () {
+            // Ensure existing Dev Env is running
+            const devEnvData = {
+                spaceName: defaultDevEnv.org.name,
+                projectName: defaultDevEnv.project.name,
+                id: defaultDevEnv.id,
+            }
+            await waitUntilDevEnvStatus(devEnvData, ['RUNNING'])
+
+            // Stop Dev Env
+            await client.stopDevEnvironment(devEnvData)
+            await waitUntilDevEnvStatus(devEnvData, ['STOPPED'])
+
+            // Start Dev Env
+            await prepareDevEnvConnection(client, { ...defaultDevEnv })
+            await waitUntilDevEnvStatus(devEnvData, ['RUNNING'])
         })
 
         it('updates the properties of an existing dev environment', async function () {
