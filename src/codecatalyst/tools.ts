@@ -48,12 +48,22 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
             vscodeExtensionMinVersion.remotessh
         )
 
-        return Result.err(
-            new ToolkitError('Remote SSH extension not installed', {
-                cancelled: true,
-                code: 'MissingExtension',
-            })
-        )
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            return Result.err(
+                new ToolkitError('Remote SSH extension version is too low', {
+                    cancelled: true,
+                    code: 'ExtensionVersionTooLow',
+                    details: { expected: vscodeExtensionMinVersion.remotessh },
+                })
+            )
+        } else {
+            return Result.err(
+                new ToolkitError('Remote SSH extension not installed', {
+                    cancelled: true,
+                    code: 'MissingExtension',
+                })
+            )
+        }
     }
 
     const tools = await ensureTools()

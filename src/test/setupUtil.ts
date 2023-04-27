@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
+import { ToolkitError } from '../shared/errors'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -52,6 +53,43 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
     Object.assign(test.fn!, { [runnableTimeout]: maxTestDuration })
 
     return test
+}
+
+export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reason?: string) {
+    const test = testOrCtx instanceof Mocha.Runnable ? testOrCtx : testOrCtx?.currentTest
+
+    if (test) {
+        test.title += ` (skipped${reason ? ` - ${reason}` : ''})`
+        test.skip()
+    }
+}
+
+export function skipSuite(suite: Mocha.Suite, reason?: string) {
+    suite.eachTest(test => skipTest(test, reason))
+}
+
+export function mapTestErrors(runner: Mocha.Runner, fn: (err: unknown, test: Mocha.Test) => any) {
+    return runner.prependListener('fail', (test, err) => {
+        test.err = fn(err, test) || err
+    })
+}
+
+/**
+ * Formats any known sub-classes of {@link Error} into a new error object.
+ *
+ * Most test reporters will only output the name + message + stack trace so any relevant
+ * info must go into those fields.
+ */
+export function normalizeError(err?: unknown) {
+    if (err instanceof ToolkitError) {
+        const newErr = new Error(err.trace)
+        newErr.name = err.name
+        newErr.stack = err.stack
+
+        return newErr
+    }
+
+    return err
 }
 
 export function patchObject<T extends Record<string, any>, U extends keyof T>(
