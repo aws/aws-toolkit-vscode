@@ -147,12 +147,12 @@ describe('Connect Script', function () {
         })
 
         it('works if the .ssh directory is missing', async function () {
-            ;(await ensureConnectScript(context)).unwrap
+            ;(await ensureConnectScript(context)).unwrap()
         })
 
         it('works if the .ssh directory exists but has different perms', async function () {
             await mkdir(path.join(tmpDir, '.ssh'), 0o777)
-            ;(await ensureConnectScript(context)).unwrap
+            ;(await ensureConnectScript(context)).unwrap()
         })
     })
 })
