@@ -116,7 +116,8 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
-        vscodeMinimum: '1.65.0',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'java8',
@@ -153,7 +154,7 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
         // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
+        vscodeMinimum: '1.67.0',
     },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -226,7 +227,8 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
-        vscodeMinimum: '1.65.0',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
     },
     {
         runtime: 'go1.x',
@@ -237,7 +239,7 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
         // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
+        vscodeMinimum: '1.67.0',
     },
     {
         runtime: 'java8',
