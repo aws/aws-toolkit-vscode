@@ -19,6 +19,9 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 const { VueLoaderPlugin } = require('vue-loader')
 
+const modulePathsLocation = path.join(path.resolve(__dirname, 'dist'), 'modulePaths.json')
+const modulePaths = JSON.parse(fs.readFileSync(modulePathsLocation, 'utf-8'))
+
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
     name: 'main',
@@ -26,6 +29,7 @@ const baseConfig = {
     entry: {
         'src/main': './src/main.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
+        ...modulePaths,
     },
     output: {
         path: path.resolve(__dirname, 'dist'),

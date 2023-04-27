@@ -19,7 +19,6 @@ const header = `
 
 interface Module {
     readonly id: string
-    readonly path: string
     readonly source: ts.SourceFile
     readonly activation?: ts.FunctionDeclaration
 }
@@ -61,7 +60,6 @@ async function getModules(cwd: string): Promise<Module[]> {
             return {
                 id,
                 source,
-                path: modulePath,
                 activation: getActivation(source),
             }
         })
@@ -259,6 +257,17 @@ async function generate() {
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
     const print = (...nodes: ts.Node[]) =>
         nodes.map(n => printer.printNode(ts.EmitHint.Unspecified, n, source)).join('\n')
+
+    // Write out all module paths into `dist` so they can be used as entry points in webpack
+    // This bundles each module directly into `dist` instead of inside `dist/src`
+    const paths: Record<string, string> = {}
+    for (const m of modules) {
+        if (m.activation) {
+            paths[m.id] = `./${path.relative(process.cwd(), m.source.fileName)}`
+        }
+    }
+    await fs.mkdirp(path.join(process.cwd(), '.', 'dist'))
+    await fs.writeFile(path.join(process.cwd(), '.', 'dist', 'modulePaths.json'), JSON.stringify(paths, undefined, 4))
 
     return [
         header,
