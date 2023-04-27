@@ -465,7 +465,7 @@ export class PermissionsError extends ToolkitError {
         public readonly stats: fs.Stats,
         public readonly userInfo: os.UserInfo<string>,
         public readonly expected: PermissionsTriplet,
-        cause?: unknown
+        source?: unknown
     ) {
         const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
         const owner = stats.uid === userInfo.uid ? userInfo.username : stats.uid
@@ -479,8 +479,8 @@ export class PermissionsError extends ToolkitError {
         // Guard against surfacing confusing error messages. If the actual perms equal the resolved
         // perms then odds are it wasn't really a permissions error. Some operating systems report EPERM
         // in situations that aren't related to permissions at all.
-        if (actual === resolvedExpected && !isAmbiguous && cause !== undefined) {
-            throw cause
+        if (actual === resolvedExpected && !isAmbiguous && source !== undefined) {
+            throw source
         }
 
         super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actualText}.`, {
