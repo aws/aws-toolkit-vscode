@@ -39,7 +39,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         fun data() = listOf(
             arrayOf(LambdaRuntime.JAVA8),
             arrayOf(LambdaRuntime.JAVA8_AL2),
-            arrayOf(LambdaRuntime.JAVA11)
+            arrayOf(LambdaRuntime.JAVA11),
+            arrayOf(LambdaRuntime.JAVA17)
         )
     }
 
@@ -73,6 +74,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         val compatibility = when (runtime) {
             LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2 -> "1.8"
             LambdaRuntime.JAVA11 -> "11"
+            LambdaRuntime.JAVA17 -> "17"
             else -> throw NotImplementedError()
         }
 

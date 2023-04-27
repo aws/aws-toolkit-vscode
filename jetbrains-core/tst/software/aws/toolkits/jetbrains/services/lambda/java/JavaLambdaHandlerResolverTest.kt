@@ -84,7 +84,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler"
             )
             assertThat(elements).hasSize(1)
@@ -116,7 +116,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::handleRequest"
             )
             assertThat(elements).hasSize(1)
@@ -148,7 +148,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::handleRequest"
             )
             assertThat(elements).hasSize(1)
@@ -166,7 +166,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler"
             )
             assertThat(elements).isEmpty()
@@ -194,7 +194,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::someMethod"
             )
             assertThat(elements).isEmpty()
@@ -237,7 +237,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.ConcreteHandler::handleRequest"
             )
             assertThat(elements).hasSize(1)
@@ -273,7 +273,7 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA17, handler) }
 
             assertThat(isHandlerValid("com.example.LambdaHandler::streamsOnly")).isTrue
             assertThat(isHandlerValid("com.example.LambdaHandler::contextAndAnything")).isTrue
@@ -304,7 +304,7 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA17, handler) }
 
             assertThat(isHandlerValid("com.example.LambdaHandler::works")).isTrue
             assertThat(isHandlerValid("com.example.LambdaHandler::alsoWorks")).isTrue
@@ -337,7 +337,7 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA17, handler) }
 
             assertThat(isHandlerValid("com.example.LambdaHandler::works")).isTrue
             assertThat(isHandlerValid("com.example.LambdaHandler::doesntWork")).isFalse
@@ -368,7 +368,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::handleRequest"
             )
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
@@ -401,7 +401,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::handleRequest"
             )
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
@@ -434,7 +434,7 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(
                 fixture.project,
-                Runtime.JAVA8,
+                Runtime.JAVA17,
                 "com.example.LambdaHandler::handleRequest"
             )
             assertThat(elements).isEmpty()
@@ -462,7 +462,7 @@ class JavaLambdaHandlerResolverTest {
             runInEdtAndWait {
                 val elements = Lambda.findPsiElementsForHandler(
                     projectRule.project,
-                    Runtime.JAVA8,
+                    Runtime.JAVA17,
                     "com.example.LambdaHandler::handleRequest"
                 )
                 assertThat(elements).isEmpty()

@@ -27,4 +27,10 @@ class JavaHandlerCompletionProviderTest {
         val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA11)
         assertFalse(provider.isCompletionSupported)
     }
+
+    @Test
+    fun completionIsNotSupportedJava17() {
+        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA17)
+        assertFalse(provider.isCompletionSupported)
+    }
 }

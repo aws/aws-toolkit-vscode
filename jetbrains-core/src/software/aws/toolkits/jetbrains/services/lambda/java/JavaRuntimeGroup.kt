@@ -23,7 +23,8 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     override val supportedRuntimes: List<LambdaRuntime> = listOf(
         LambdaRuntime.JAVA8,
         LambdaRuntime.JAVA8_AL2,
-        LambdaRuntime.JAVA11
+        LambdaRuntime.JAVA11,
+        LambdaRuntime.JAVA17
     )
 
     override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? {
@@ -35,8 +36,10 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     }
 
     private fun determineRuntimeForSdk(sdk: JavaSdkVersion) = when {
+        // TODO: is this actually the right logic?
         sdk <= JavaSdkVersion.JDK_1_8 -> LambdaRuntime.JAVA8_AL2
         sdk <= JavaSdkVersion.JDK_11 -> LambdaRuntime.JAVA11
+        sdk <= JavaSdkVersion.JDK_17 -> LambdaRuntime.JAVA17
         else -> null
     }
 

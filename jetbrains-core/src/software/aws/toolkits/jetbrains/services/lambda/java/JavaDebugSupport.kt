@@ -74,6 +74,16 @@ open class Java11ImageDebugSupport : JavaImageDebugSupport() {
     )
 }
 
+open class Java17ImageDebugSupport : JavaImageDebugSupport() {
+    override val id: String = LambdaRuntime.JAVA17.toString()
+    override fun displayName() = LambdaRuntime.JAVA17.toString().capitalize()
+    override fun containerEnvVars(debugPorts: List<Int>): Map<String, String> = mapOf(
+        "_JAVA_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=*:${debugPorts.first()} " +
+            "-XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC " +
+            "-XX:-TieredCompilation -Djava.net.preferIPv4Stack=true"
+    )
+}
+
 private val edtContext = getCoroutineUiContext()
 
 private suspend fun createDebugProcess(
