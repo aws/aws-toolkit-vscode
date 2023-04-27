@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, formatError } from '../shared/errors'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -76,18 +76,23 @@ export function mapTestErrors(runner: Mocha.Runner, fn: (err: unknown, test: Moc
 }
 
 /**
- * Formats any known sub-classes of {@link Error} into a new error object.
+ * Formats any known sub-classes of {@link Error} for better compatability with test reporters.
  *
  * Most test reporters will only output the name + message + stack trace so any relevant
  * info must go into those fields.
  */
 export function normalizeError(err?: unknown) {
     if (err instanceof ToolkitError) {
-        const newErr = new Error(err.trace)
-        newErr.name = err.name
-        newErr.stack = err.stack
+        // Error has to be mutated to show up in the report:
+        // https://github.com/michaelleeallen/mocha-junit-reporter/blob/4b17772f8da33d580fafa4d124e5c11142a70c1f/index.js#L262
+        //
+        // We'll just patch the message/stack trace even though it's arguably incorrect (and looks kind of ugly)
+        // Once `cause` is more common in the JS ecosystem we'll start to see support from test reporters
 
-        return newErr
+        return Object.assign(err, {
+            message: formatError(err).replace(`${err.name}: `, ''),
+            stack: err.stack?.replace(err.message, err.trace.replace(`${err.name}: `, '') + '\n'),
+        })
     }
 
     return err
