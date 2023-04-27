@@ -1,0 +1,23 @@
+{
+  "date" : "2023-04-27",
+  "version" : "1.67",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Using the least permissive set of scopes for features during BuilderID/SSO login. Using the same connection for multiple features will request additional scopes to be used."
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Lambda Runtime Java17"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the Add Connection Dialog box references to the correct documentation pages"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix thread access during validation of SAM templates"
+  }, {
+    "type" : "bugfix",
+    "description" : "[CodeWhisperer]: login session length should increase to it's expected length. Users will now see less frequent expired sessions."
+  }, {
+    "type" : "bugfix",
+    "description" : "Improve handling of disk errors related to SSO and align folder permissions with AWS CLI"
+  } ]
+}

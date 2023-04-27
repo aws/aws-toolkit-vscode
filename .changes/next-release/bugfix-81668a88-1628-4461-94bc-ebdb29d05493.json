@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "[CodeWhisperer]: login session length should increase to it's expected length. Users will now see less frequent expired sessions."
-}

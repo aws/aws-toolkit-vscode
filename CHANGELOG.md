@@ -1,3 +1,9 @@
+# _1.66_ (2023-04-19)
+- **(Feature)** Display current space and project name on status bar while working in a CodeCatalyst Dev Environment
+- **(Feature)** Add support for Lambda runtime Python 3.10
+- **(Bug Fix)** Fix `java.lang.Throwable: Invalid html: tag <html> inserted automatically and shouldn't be used` ([#3608](https://github.com/aws/aws-toolkit-jetbrains/issues/3608))
+- **(Bug Fix)** Fix issue where nothing happens when trying to create an empty Dev Environment
+
 # _1.65_ (2023-04-13)
 - **(Feature)** [CodeWhisperer]: Introducing "Stop code scan" feature where users will be able to stop the ongoing code scan and immediately start a new one.
 - **(Feature)** [CodeWhisperer]: Automatic import recommendations
