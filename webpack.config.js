@@ -94,10 +94,11 @@ const baseConfig = {
         ],
         splitChunks: {
             cacheGroups: {
-              commons: {
-                name: 'commons',
-                chunks: 'initial',
-                minChunks: 2,
+                commons: {
+                    name: 'commons',
+                    chunks: 'initial',
+                    minChunks: 2,
+                },
             },
         },
     },
