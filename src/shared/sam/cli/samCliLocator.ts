@@ -51,8 +51,6 @@ abstract class BaseSamCliLocator {
             location = await this.getSystemPathLocation()
         }
 
-        this.logger.info(`SAM CLI location: ${location}`)
-
         return location
     }
 
