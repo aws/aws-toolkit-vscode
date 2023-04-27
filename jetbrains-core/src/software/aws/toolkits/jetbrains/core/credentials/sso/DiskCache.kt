@@ -14,18 +14,22 @@ import com.fasterxml.jackson.databind.util.StdDateFormat
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import software.aws.toolkits.core.utils.createParentDirectories
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.deleteIfExists
-import software.aws.toolkits.core.utils.filePermissions
+import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.inputStreamIfExists
 import software.aws.toolkits.core.utils.outputStream
 import software.aws.toolkits.core.utils.toHexString
 import software.aws.toolkits.core.utils.touch
+import software.aws.toolkits.core.utils.tryDirOp
+import software.aws.toolkits.core.utils.tryFileOp
 import software.aws.toolkits.core.utils.tryOrNull
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.attribute.PosixFilePermission
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
@@ -56,11 +60,13 @@ class DiskCache(
         .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
 
     override fun loadClientRegistration(ssoRegion: String): ClientRegistration? {
-        val inputStream = clientRegistrationCache(ssoRegion).inputStreamIfExists() ?: return null
+        LOG.debug { "loadClientRegistration for $ssoRegion" }
+        val inputStream = clientRegistrationCache(ssoRegion).tryInputStreamIfExists() ?: return null
         return loadClientRegistration(inputStream)
     }
 
     override fun saveClientRegistration(ssoRegion: String, registration: ClientRegistration) {
+        LOG.debug { "saveClientRegistration for $ssoRegion" }
         val registrationCache = clientRegistrationCache(ssoRegion)
         writeKey(registrationCache) {
             objectMapper.writeValue(it, registration)
@@ -68,16 +74,21 @@ class DiskCache(
     }
 
     override fun invalidateClientRegistration(ssoRegion: String) {
-        clientRegistrationCache(ssoRegion).deleteIfExists()
+        LOG.debug { "invalidateClientRegistration for $ssoRegion" }
+        clientRegistrationCache(ssoRegion).tryDeleteIfExists()
     }
 
     override fun loadClientRegistration(cacheKey: ClientRegistrationCacheKey): ClientRegistration? {
-        val inputStream = clientRegistrationCache(cacheKey).inputStreamIfExists()
-            ?: clientRegistrationCacheBackwardCompatible(cacheKey).inputStreamIfExists() ?: return null
+        LOG.debug { "loadClientRegistration for $cacheKey" }
+        val inputStream = clientRegistrationCache(cacheKey).tryInputStreamIfExists()
+            ?: clientRegistrationCacheBackwardCompatible(cacheKey).tryInputStreamIfExists()
+            ?: return null
+
         return loadClientRegistration(inputStream)
     }
 
     override fun saveClientRegistration(cacheKey: ClientRegistrationCacheKey, registration: ClientRegistration) {
+        LOG.debug { "saveClientRegistration for $cacheKey" }
         val registrationCache = clientRegistrationCache(cacheKey)
         writeKey(registrationCache) {
             objectMapper.writeValue(it, registration)
@@ -85,18 +96,25 @@ class DiskCache(
     }
 
     override fun invalidateClientRegistration(cacheKey: ClientRegistrationCacheKey) {
-        if (clientRegistrationCache(cacheKey).deleteIfExists()) return
-        clientRegistrationCacheBackwardCompatible(cacheKey).deleteIfExists()
+        if (clientRegistrationCache(cacheKey).exists()) {
+            LOG.debug { "invalidateClientRegistration for $cacheKey" }
+            clientRegistrationCache(cacheKey).tryDeleteIfExists()
+        } else {
+            LOG.debug { "invalidateClientRegistration (backwards compat) for $cacheKey" }
+            clientRegistrationCacheBackwardCompatible(cacheKey).tryDeleteIfExists()
+        }
     }
 
     override fun loadAccessToken(ssoUrl: String): AccessToken? {
+        LOG.debug { "loadAccessToken for $ssoUrl" }
         val cacheFile = accessTokenCache(ssoUrl)
-        val inputStream = cacheFile.inputStreamIfExists() ?: return null
+        val inputStream = cacheFile.tryInputStreamIfExists() ?: return null
 
         return loadAccessToken(inputStream)
     }
 
     override fun saveAccessToken(ssoUrl: String, accessToken: AccessToken) {
+        LOG.debug { "saveAccessToken for $ssoUrl" }
         val accessTokenCache = accessTokenCache(ssoUrl)
         writeKey(accessTokenCache) {
             objectMapper.writeValue(it, accessToken)
@@ -104,17 +122,20 @@ class DiskCache(
     }
 
     override fun invalidateAccessToken(ssoUrl: String) {
-        accessTokenCache(ssoUrl).deleteIfExists()
+        LOG.debug { "invalidateAccessToken for $ssoUrl" }
+        accessTokenCache(ssoUrl).tryDeleteIfExists()
     }
 
     override fun loadAccessToken(cacheKey: AccessTokenCacheKey): AccessToken? {
+        LOG.debug { "loadAccessToken for $cacheKey" }
         val cacheFile = accessTokenCache(cacheKey)
-        val inputStream = cacheFile.inputStreamIfExists() ?: return null
+        val inputStream = cacheFile.tryInputStreamIfExists() ?: return null
 
         return loadAccessToken(inputStream)
     }
 
     override fun saveAccessToken(cacheKey: AccessTokenCacheKey, accessToken: AccessToken) {
+        LOG.debug { "saveAccessToken for $cacheKey" }
         val accessTokenCache = accessTokenCache(cacheKey)
         writeKey(accessTokenCache) {
             objectMapper.writeValue(it, accessToken)
@@ -122,7 +143,8 @@ class DiskCache(
     }
 
     override fun invalidateAccessToken(cacheKey: AccessTokenCacheKey) {
-        accessTokenCache(cacheKey).deleteIfExists()
+        LOG.debug { "invalidateAccessToken for $cacheKey" }
+        accessTokenCache(cacheKey).tryDeleteIfExists()
     }
 
     private fun clientRegistrationCache(ssoRegion: String): Path = cacheDir.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
@@ -181,16 +203,23 @@ class DiskCache(
         }
     }
 
+    private fun Path.tryDeleteIfExists(): Boolean = tryFileOp(LOG) { deleteIfExists() }
+
+    private fun Path.tryInputStreamIfExists(): InputStream? = tryFileOp(LOG) { inputStreamIfExists() }
+
     private fun sha1(string: String): String {
         val digest = MessageDigest.getInstance("SHA-1")
         return digest.digest(string.toByteArray(Charsets.UTF_8)).toHexString()
     }
 
     private fun writeKey(path: Path, consumer: (OutputStream) -> Unit) {
-        path.touch()
-        path.filePermissions(setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))
+        LOG.debug { "writing to $path" }
+        path.tryDirOp(LOG) { createParentDirectories() }
 
-        path.outputStream().use(consumer)
+        path.tryFileOp(LOG) {
+            touch(restrictToOwner = true)
+            outputStream().use(consumer)
+        }
     }
 
     // If the item is going to expire in the next 15 mins, we must treat it as already expired
@@ -215,5 +244,6 @@ class DiskCache(
 
     companion object {
         val EXPIRATION_THRESHOLD = Duration.ofMinutes(15)
+        private val LOG = getLogger<DiskCache>()
     }
 }

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Improve handling of disk errors related to SSO and align folder permissions with AWS CLI"
+}

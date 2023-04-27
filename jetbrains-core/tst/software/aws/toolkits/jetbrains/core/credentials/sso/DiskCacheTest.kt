@@ -4,28 +4,28 @@
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.openapi.util.io.NioFiles
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
+import org.junit.jupiter.api.io.TempDir
 import software.aws.toolkits.core.utils.readText
 import software.aws.toolkits.core.utils.writeText
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermissions
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlin.io.path.setPosixFilePermissions
 
 class DiskCacheTest {
-    @Rule
-    @JvmField
-    val tempFolder = TemporaryFolder()
-
     private val now = Instant.now()
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
@@ -33,12 +33,15 @@ class DiskCacheTest {
     private val ssoRegion = "us-fake-1"
     private val scopes = listOf("scope1", "scope2")
 
+    private lateinit var cacheRoot: Path
     private lateinit var cacheLocation: Path
     private lateinit var sut: DiskCache
 
-    @Before
-    fun setUp() {
-        cacheLocation = tempFolder.newFolder().toPath()
+    @BeforeEach
+    fun setUp(@TempDir tempFolder: Path) {
+        cacheRoot = tempFolder.toAbsolutePath()
+        cacheLocation = Paths.get(cacheRoot.toString(), "fakehome", ".aws", "sso", "cache")
+        Files.createDirectories(cacheLocation)
         sut = DiskCache(cacheLocation, clock)
     }
 
@@ -154,7 +157,7 @@ class DiskCacheTest {
 
         val clientRegistration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
         if (SystemInfo.isUnix) {
-            assertThat(Files.getPosixFilePermissions(clientRegistration)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
+            assertPosixPermissions(clientRegistration, "rw-------")
         }
         assertThat(clientRegistration.readText())
             .isEqualToIgnoringWhitespace(
@@ -188,7 +191,7 @@ class DiskCacheTest {
 
         val clientRegistration = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         if (SystemInfo.isUnix) {
-            assertThat(Files.getPosixFilePermissions(clientRegistration)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
+            assertPosixPermissions(clientRegistration, "rw-------")
         }
         assertThat(clientRegistration.readText())
             .isEqualToIgnoringWhitespace(
@@ -382,7 +385,7 @@ class DiskCacheTest {
 
         val accessTokenCache = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
         if (SystemInfo.isUnix) {
-            assertThat(Files.getPosixFilePermissions(accessTokenCache)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
+            assertPosixPermissions(accessTokenCache, "rw-------")
         }
 
         assertThat(accessTokenCache.readText())
@@ -416,7 +419,7 @@ class DiskCacheTest {
 
         val accessTokenCache = cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json")
         if (SystemInfo.isUnix) {
-            assertThat(Files.getPosixFilePermissions(accessTokenCache)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
+            assertPosixPermissions(accessTokenCache, "rw-------")
         }
 
         assertThat(accessTokenCache.readText())
@@ -505,5 +508,87 @@ class DiskCacheTest {
 
         assertThat(sut.loadAccessToken(key1)).isNotNull()
         assertThat(sut.loadAccessToken(key2)).isNotNull()
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    fun `handles error saving client registration when user home is not writable`() {
+        Files.newDirectoryStream(cacheRoot).forEach { NioFiles.deleteRecursively(it) }
+        cacheRoot.resolve("fakehome").apply {
+            Files.createDirectory(this)
+            setPosixFilePermissions(emptySet())
+        }
+        cacheRoot.setPosixFilePermissions(PosixFilePermissions.fromString("r-xr-xr-x"))
+
+        sut.saveClientRegistration(
+            ssoRegion,
+            ClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.now()
+            )
+        )
+
+        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        assertThat(cacheLocation).isEqualTo(Paths.get(cacheRoot.toString(), "fakehome", ".aws", "sso", "cache"))
+        assertPosixPermissions(cacheRoot, "rwxr-xr-x")
+        assertPosixPermissions(cacheRoot.resolve("fakehome"), "rwx------")
+        assertPosixPermissions(cacheRoot.resolve("fakehome").resolve(".aws"), "rwxr-xr-x")
+        assertPosixPermissions(cacheRoot.resolve("fakehome").resolve(".aws").resolve("sso"), "rwxr-xr-x")
+        assertPosixPermissions(cacheRoot.resolve("fakehome").resolve(".aws").resolve("sso").resolve("cache"), "rwxr-xr-x")
+        assertPosixPermissions(registration, "rw-------")
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    fun `handles error saving client registration when client registration is not writable`() {
+        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        sut.saveClientRegistration(
+            ssoRegion,
+            ClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.now()
+            )
+        )
+
+        registration.setPosixFilePermissions(emptySet())
+        assertPosixPermissions(registration, "---------")
+
+        sut.saveClientRegistration(
+            ssoRegion,
+            ClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.now()
+            )
+        )
+
+        assertPosixPermissions(registration, "rw-------")
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    fun `handles reading client registration when file is owned but not readable`() {
+        sut.saveClientRegistration(
+            ssoRegion,
+            ClientRegistration(
+                "DummyId",
+                "DummySecret",
+                Instant.MAX
+            )
+        )
+        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        registration.setPosixFilePermissions(emptySet())
+        assertPosixPermissions(registration, "---------")
+
+        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull()
+
+        assertPosixPermissions(registration, "rw-------")
+    }
+
+    private fun assertPosixPermissions(path: Path, expected: String) {
+        val perms = PosixFilePermissions.toString(Files.getPosixFilePermissions(path))
+        assertThat(perms).isEqualTo(expected)
     }
 }

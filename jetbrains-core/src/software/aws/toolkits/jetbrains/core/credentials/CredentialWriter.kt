@@ -18,6 +18,12 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileLocation
+import software.aws.toolkits.core.utils.createParentDirectories
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.touch
+import software.aws.toolkits.core.utils.tryDirOp
+import software.aws.toolkits.core.utils.tryFileOp
+import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.io.File
@@ -128,23 +134,14 @@ object DefaultConfigFileWriter : ConfigFileWriter {
         """.trimIndent()
 
     override fun createFile(file: File) {
-        val parent = file.parentFile
-        if (parent.mkdirs()) {
-            parent.setReadable(false, false)
-            parent.setReadable(true)
-            parent.setWritable(false, false)
-            parent.setWritable(true)
-            parent.setExecutable(false, false)
-            parent.setExecutable(true)
+        val path = file.toPath()
+        path.tryDirOp(LOG) { createParentDirectories() }
+
+        path.tryFileOp(LOG) {
+            touch(restrictToOwner = true)
+            writeText(TEMPLATE)
         }
-
-        file.writeText(TEMPLATE)
-
-        file.setReadable(false, false)
-        file.setReadable(true)
-        file.setWritable(false, false)
-        file.setWritable(true)
-        file.setExecutable(false, false)
-        file.setExecutable(false)
     }
+
+    private val LOG = getLogger<DefaultConfigFileWriter>()
 }

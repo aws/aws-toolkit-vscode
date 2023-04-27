@@ -31,7 +31,7 @@ class DefaultConfigFileWriterTest {
 
         assumeNoException<UnsupportedOperationException> {
             assertThat(Files.getPosixFilePermissions(file.toPath())).matches("rw-------")
-            assertThat(Files.getPosixFilePermissions(file.parentFile.toPath())).matches("rwx------")
+            assertThat(Files.getPosixFilePermissions(file.parentFile.toPath())).matches("rwxr-xr-x")
         }
     }
 
