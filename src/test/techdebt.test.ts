@@ -42,4 +42,12 @@ describe('tech debt', function () {
             'with node16+, we can use crypto.randomUUID and remove the "uuid" dependency'
         )
     })
+
+    it('temporary code removed', function () {
+        // Reason: https://sim.amazon.com/issues/IDE-10559
+        // At this point in time most users who would have run in to this error
+        // will have already had their old files deleted.
+        const august2023 = new Date(2023, 7, 1)
+        assert.ok(Date.now() < august2023.getTime(), 'remove `deleteOldFiles()` in `cache.ts`')
+    })
 })
