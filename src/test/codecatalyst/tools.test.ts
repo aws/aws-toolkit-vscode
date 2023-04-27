@@ -19,7 +19,7 @@ import {
     getCodeCatalystSsmEnv,
     sshLogFileLocation,
 } from '../../codecatalyst/model'
-import { readFile, writeFile } from 'fs-extra'
+import { mkdir, readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
@@ -133,15 +133,26 @@ describe('Connect Script', function () {
         }
     })
 
-    it('works if the .ssh directory is missing', async function () {
-        const tmpDir = await makeTemporaryToolkitFolder()
-        const stub = sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+    describe('~/.ssh', function () {
+        let tmpDir: string
 
-        try {
-            ;(await ensureConnectScript(context)).unwrap
-        } finally {
+        beforeEach(async function () {
+            tmpDir = await makeTemporaryToolkitFolder()
+            sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+        })
+
+        afterEach(async function () {
+            sinon.restore()
             await SystemUtilities.delete(tmpDir, { recursive: true })
-            stub.restore()
-        }
+        })
+
+        it('works if the .ssh directory is missing', async function () {
+            ;(await ensureConnectScript(context)).unwrap
+        })
+
+        it('works if the .ssh directory exists but has different perms', async function () {
+            await mkdir(path.join(tmpDir, '.ssh'), 0o777)
+            ;(await ensureConnectScript(context)).unwrap
+        })
     })
 })
