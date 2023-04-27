@@ -92,6 +92,14 @@ const baseConfig = {
                 target: 'es2018',
             }),
         ],
+        splitChunks: {
+            cacheGroups: {
+              commons: {
+                name: 'commons',
+                chunks: 'initial',
+                minChunks: 2,
+            },
+        },
     },
 }
 
