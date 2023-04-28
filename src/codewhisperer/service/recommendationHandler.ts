@@ -202,7 +202,9 @@ export class RecommendationHandler {
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
                 TelemetryHelper.instance.setSessionId(sessionId)
-                TelemetryHelper.instance.setFirstRecommendationResponseTime(performance.now())
+                if (page === 0) {
+                    TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
+                }
                 if (nextToken === '') {
                     TelemetryHelper.instance.setLastRequestId(requestId)
                     TelemetryHelper.instance.setAllPaginationEndTime()
