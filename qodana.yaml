@@ -1,0 +1,4 @@
+version: "1.0"
+linter: jetbrains/qodana-jvm:2023.1-eap
+dot-net:
+  solution: ReSharper.AWS.sln
