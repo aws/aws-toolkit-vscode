@@ -1,0 +1,14 @@
+{
+	"date": "2023-04-28",
+	"version": "1.71.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer shows \"The security token included in this request is expired\" in Cloud9"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved error messages for file system permissions issues"
+		}
+	]
+}
