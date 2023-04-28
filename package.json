@@ -3489,7 +3489,7 @@
         "@vscode/test-electron": "^2.2.3",
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
-        "css-loader": "^6.5.1",
+        "css-loader": "^6.7.3",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
