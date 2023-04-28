@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
+import { ToolkitError, formatError } from '../shared/errors'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -52,6 +53,49 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
     Object.assign(test.fn!, { [runnableTimeout]: maxTestDuration })
 
     return test
+}
+
+export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reason?: string) {
+    const test =
+        testOrCtx?.type === 'test' ? (testOrCtx as Mocha.Test) : (testOrCtx as Mocha.Context | undefined)?.currentTest
+
+    if (test) {
+        test.title += ` (skipped${reason ? ` - ${reason}` : ''})`
+        test.skip()
+    }
+}
+
+export function skipSuite(suite: Mocha.Suite, reason?: string) {
+    suite.eachTest(test => skipTest(test, reason))
+}
+
+export function mapTestErrors(runner: Mocha.Runner, fn: (err: unknown, test: Mocha.Test) => any) {
+    return runner.prependListener('fail', (test, err) => {
+        test.err = fn(err, test) || err
+    })
+}
+
+/**
+ * Formats any known sub-classes of {@link Error} for better compatability with test reporters.
+ *
+ * Most test reporters will only output the name + message + stack trace so any relevant
+ * info must go into those fields.
+ */
+export function normalizeError(err?: unknown) {
+    if (err instanceof ToolkitError) {
+        // Error has to be mutated to show up in the report:
+        // https://github.com/michaelleeallen/mocha-junit-reporter/blob/4b17772f8da33d580fafa4d124e5c11142a70c1f/index.js#L262
+        //
+        // We'll just patch the message/stack trace even though it's arguably incorrect (and looks kind of ugly)
+        // Once `cause` is more common in the JS ecosystem we'll start to see support from test reporters
+
+        return Object.assign(err, {
+            message: formatError(err).replace(`${err.name}: `, ''),
+            stack: err.stack?.replace(err.message, err.trace.replace(`${err.name}: `, '') + '\n'),
+        })
+    }
+
+    return err
 }
 
 export function patchObject<T extends Record<string, any>, U extends keyof T>(
