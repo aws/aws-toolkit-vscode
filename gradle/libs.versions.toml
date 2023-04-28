@@ -25,7 +25,7 @@ testLogger = "3.1.0"
 testRetry = "1.5.2"
 slf4j = "1.7.36"
 sshd = "2.9.2"
-wiremock = "2.33.2"
+wiremock = "2.35.0"
 zjsonpatch = "0.4.11"
 
 [libraries]
