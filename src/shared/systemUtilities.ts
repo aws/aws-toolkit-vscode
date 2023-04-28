@@ -36,7 +36,7 @@ export function createPermissionsErrorHandler(
             throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
         })
 
-        throw new PermissionsError(uri, stats, userInfo, perms)
+        throw new PermissionsError(uri, stats, userInfo, perms, err)
     }
 }
 
@@ -126,7 +126,7 @@ export class SystemUtilities {
                     })
                     if ((stats.mode & fs.constants.S_IXUSR) === 0) {
                         const userInfo = os.userInfo({ encoding: 'utf-8' })
-                        throw new PermissionsError(dirUri, stats, userInfo, '*wx')
+                        throw new PermissionsError(dirUri, stats, userInfo, '*wx', err)
                     }
                 }
 
