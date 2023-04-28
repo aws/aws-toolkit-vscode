@@ -68,7 +68,7 @@ export class TelemetryHelper {
     private timeSinceLastModification = 0
     private lastTriggerDecisionTime = 0
     private invocationTime = 0
-    private firstRecommendationTime = 0
+    private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
 
     constructor() {
@@ -263,7 +263,7 @@ export class TelemetryHelper {
             codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
                 ? performance.now() - this.lastTriggerDecisionTime
                 : undefined,
-            codewhispererTimeToFirstRecommendation: this.firstRecommendationTime - this.invocationTime,
+            codewhispererTimeToFirstRecommendation: this.timeToFirstRecommendation,
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
@@ -313,8 +313,10 @@ export class TelemetryHelper {
         this.invocationTime = invocationTime
     }
 
-    public setFirstRecommendationResponseTime(firstRecommendationTime: number) {
-        this.firstRecommendationTime = firstRecommendationTime
+    public setTimeToFirstRecommendation(timeToFirstRecommendation: number) {
+        if (this.invocationTime) {
+            this.timeToFirstRecommendation = timeToFirstRecommendation - this.invocationTime
+        }
     }
 
     private resetUserTriggerDecisionTelemetry() {
@@ -326,8 +328,7 @@ export class TelemetryHelper {
         this.numberOfRequests = 0
         this.typeAheadLength = 0
         this.timeSinceLastModification = 0
-        this.invocationTime = 0
-        this.firstRecommendationTime = 0
+        this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
     }
 
