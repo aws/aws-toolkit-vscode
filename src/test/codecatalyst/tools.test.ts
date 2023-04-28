@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 import * as path from 'path'
 import * as http from 'http'
 import * as assert from 'assert'
@@ -18,8 +19,9 @@ import {
     getCodeCatalystSsmEnv,
     sshLogFileLocation,
 } from '../../codecatalyst/model'
-import { readFile, writeFile } from 'fs-extra'
+import { mkdir, readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
+import { SystemUtilities } from '../../shared/systemUtilities'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
@@ -129,5 +131,28 @@ describe('Connect Script', function () {
 
             assert.fail(`Connect script should exit with a zero status:\n${message}`)
         }
+    })
+
+    describe('~/.ssh', function () {
+        let tmpDir: string
+
+        beforeEach(async function () {
+            tmpDir = await makeTemporaryToolkitFolder()
+            sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+        })
+
+        afterEach(async function () {
+            sinon.restore()
+            await SystemUtilities.delete(tmpDir, { recursive: true })
+        })
+
+        it('works if the .ssh directory is missing', async function () {
+            ;(await ensureConnectScript(context)).unwrap()
+        })
+
+        it('works if the .ssh directory exists but has different perms', async function () {
+            await mkdir(path.join(tmpDir, '.ssh'), 0o777)
+            ;(await ensureConnectScript(context)).unwrap()
+        })
     })
 })
