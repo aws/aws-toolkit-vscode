@@ -123,6 +123,8 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
+            const testStartUrl = 'testStartUrl'
+            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
             RecommendationHandler.instance.requestId = 'test'
             RecommendationHandler.instance.sessionId = 'test'
@@ -159,6 +161,7 @@ describe('onAcceptance', function () {
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
+                credentialStartUrl: testStartUrl,
             })
         })
     })
