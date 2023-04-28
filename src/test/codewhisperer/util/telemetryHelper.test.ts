@@ -78,7 +78,6 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
-                credentialStartUrl: 'https://view.awsapps.com/start',
             })
         })
     })

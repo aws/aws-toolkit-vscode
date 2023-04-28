@@ -34,12 +34,14 @@ describe('recommendationHandler', function () {
         const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
+        const testStartUrl = 'testStartUrl'
 
         beforeEach(function () {
             sinon.restore()
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
+            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {
@@ -130,6 +132,7 @@ describe('recommendationHandler', function () {
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
+                credentialStartUrl: testStartUrl,
             })
         })
 
@@ -163,6 +166,7 @@ describe('recommendationHandler', function () {
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
+                credentialStartUrl: testStartUrl,
             })
         })
     })
