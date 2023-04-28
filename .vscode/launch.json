@@ -137,6 +137,14 @@
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "Test Lint",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/lint/testLint.ts",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ],
     "compounds": [

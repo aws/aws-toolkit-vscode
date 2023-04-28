@@ -15,7 +15,7 @@ Ratio of unit to integ tests: 90% unit tests, 10% system/acceptance tests.
 
 ## Test categories
 
-The test suite has two categories of tests:
+The test suite has the following categories of tests:
 
 -   Unit Tests: **fast** tests
     -   Live in `src/test/`
@@ -27,6 +27,11 @@ The test suite has two categories of tests:
     -   May use the filesystem.
     -   Main property is that [the test is fast](https://pycon-2012-notes.readthedocs.io/en/latest/fast_tests_slow_tests.html).
     -   Global state is shared across tests, thus there is a risk that later tests are polluted by earlier tests.
+-   Lint Tests:
+    -   Live in `src/testLint`
+    -   Can run from CLI with `npm run lint`
+    -   Any type of test related to the format/quality/content of the code
+    -   Does not have context of the `vscode` api
 -   Integration Tests: **slow** tests
     -   Live in `src/integrationTest/`
     -   Use a full instance of VSCode with an activated instance of the extension.

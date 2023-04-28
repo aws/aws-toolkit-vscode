@@ -5,12 +5,11 @@
 
 import { describe } from 'mocha'
 
-import { SpawnSyncOptions, spawnSync } from 'child_process'
 import * as assert from 'assert'
-import { getProjectDir } from './testUtil'
 import * as path from 'path'
 import { platform } from 'os'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
+import { runCmd } from './testUtils'
 
 /**
  * NOTES:
@@ -100,7 +99,7 @@ ${mySecretAccessKey}
             this.skip()
         }
 
-        toolkitProjectDir = path.join(getProjectDir(), '..', '..')
+        toolkitProjectDir = path.resolve()
         testFixturesPath = setupTestFixturesDir(toolkitProjectDir)
         gitSecrets = setupGitSecretsExecutable(testFixturesPath)
         accessKeyFilePath = setupAccessKeyFile(testFixturesPath)
@@ -126,21 +125,3 @@ ${mySecretAccessKey}
         assert.strictEqual(result.status, 1)
     })
 })
-
-function runCmd(args: string[], options?: SpawnSyncOptions & { throws?: boolean }) {
-    const result = spawnSync(args[0], args.slice(1), options)
-
-    const throws = options?.throws ?? true
-    if (throws && result.status !== 0) {
-        throw new Error(`
------
-Error running: $ ${args.join(' ')}
-
-status: ${result.status}
-error: ${result.error?.toString()}
-stdout: ${result.stdout?.toString()}
-stderr: ${result.stderr?.toString()}
------`)
-    }
-    return result
-}
