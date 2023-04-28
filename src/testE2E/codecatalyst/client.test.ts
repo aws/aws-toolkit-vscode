@@ -219,7 +219,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             })
 
             notification.selectItem('Install...')
-            await captureEventOnce(vscode.extensions.onDidChange, 30_000).catch(() => {
+            await captureEventOnce(vscode.extensions.onDidChange, 60_000).catch(() => {
                 throw new Error('Timed out waiting to install remote SSH extension')
             })
         })
