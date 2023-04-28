@@ -40,7 +40,7 @@ describe('git-secrets', function () {
 
     /** git-secrets patterns that will not cause a failure during the scan */
     function setAllowListPatterns(gitSecrets: string) {
-        const allowListPatterns: string[] = ['^node_modules/', '^\\.[a-zA-Z]', '^dist/', '123456789012']
+        const allowListPatterns: string[] = ['"accountId": "123456789012"']
 
         allowListPatterns.forEach(pattern => {
             // Returns non-zero exit code if pattern already exists
@@ -89,7 +89,7 @@ describe('git-secrets', function () {
     })
 
     it('ensures no git secrets are found', function () {
-        const result = runCmd([gitSecrets, '--scan', '--no-index'], { cwd: toolkitProjectDir })
+        const result = runCmd([gitSecrets, '--scan'], { cwd: toolkitProjectDir })
         assert.strictEqual(result.status, 0, `Failure output: ${result.stderr.toString()}`)
     })
 
@@ -108,7 +108,7 @@ ${mySecretAccessKey}
 `.trim()
         writeFileSync(accessKeyFilePath, fileContent)
 
-        const result = runCmd([gitSecrets, '--scan', '--no-index'], { cwd: toolkitProjectDir, throws: false })
+        const result = runCmd([gitSecrets, '--scan', accessKeyFilePath], { cwd: toolkitProjectDir, throws: false })
 
         assert.strictEqual(result.status, 1)
     })
