@@ -1,3 +1,8 @@
+## 1.71.0 2023-04-28
+
+- **Bug Fix** CodeWhisperer shows "The security token included in this request is expired" in Cloud9
+- **Feature** Improved error messages for file system permissions issues
+
 ## 1.70.0 2023-04-22
 
 - **Deprecation** Minimum required VS Code version is now 1.65
