@@ -147,7 +147,9 @@ async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<voi
 export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
     if (AuthUtil.instance.isConnectionValid()) {
         InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-    } else {
+    } else if (AuthUtil.instance.isConnectionExpired()) {
         InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
+    } else {
+        InlineCompletionService.instance.hideCodeWhispererStatusBar()
     }
 })
