@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as vscode from 'vscode'
 import { Auth, Connection, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
 import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
 import { SsoClient } from '../../credentials/sso/clients'
@@ -14,6 +15,8 @@ import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
 import globals from '../../shared/extensionGlobals'
 import { fromString } from '../../credentials/providers/credentials'
+import { mergeAndValidateSections, parseIni } from '../../credentials/sharedCredentials'
+import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
@@ -26,6 +29,17 @@ export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): Sso
 
 export function createBuilderIdProfile(props?: Partial<Omit<SsoProfile, 'type' | 'startUrl'>>): SsoProfile {
     return createSsoProfile({ startUrl: builderIdStartUrl, ...props })
+}
+
+export async function createTestSections(ini: string) {
+    const doc = await vscode.workspace.openTextDocument({ content: ini })
+    const sections = parseIni(doc.getText(), doc.uri)
+
+    return mergeAndValidateSections(sections).sections
+}
+
+export async function createSharedCredentialsProvider(name: string, ini: string) {
+    return new SharedCredentialsProvider(name, await createTestSections(ini))
 }
 
 function createTestTokenProvider() {

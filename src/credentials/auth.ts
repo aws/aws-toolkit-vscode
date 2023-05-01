@@ -296,14 +296,14 @@ async function loadIamProfilesIntoStore(store: ProfileStore, manager: Credential
             continue
         }
 
-        if (providers[id] === undefined) {
-            await store.deleteProfile(id)
-        } else if (profile.subtype === 'linked') {
+        if (profile.subtype === 'linked') {
             const source = store.getProfile(profile.ssoSession)
             if (source === undefined || source.type !== 'sso') {
                 await store.deleteProfile(id)
                 manager.removeProvider(fromString(id))
             }
+        } else if (providers[id] === undefined) {
+            await store.deleteProfile(id)
         }
     }
 
@@ -430,7 +430,7 @@ export class Auth implements AuthService, ConnectionManager {
             const provider = await this.getCredentialsProvider(id, profile)
             await this.authenticate(id, () => this.createCachedCredentials(provider))
 
-            return this.getIamConnection(id, provider)
+            return this.getIamConnection(id, profile)
         }
     }
 
@@ -444,9 +444,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         const validated = await this.validateConnection(id, profile)
         const conn =
-            validated.type === 'sso'
-                ? this.getSsoConnection(id, validated)
-                : this.getIamConnection(id, await this.getCredentialsProvider(id, validated))
+            validated.type === 'sso' ? this.getSsoConnection(id, validated) : this.getIamConnection(id, validated)
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
@@ -685,7 +683,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             return this.getSsoConnection(id, profile)
         } else {
-            return this.getIamConnection(id, await this.getCredentialsProvider(id, profile))
+            return this.getIamConnection(id, profile)
         }
     }
 
@@ -699,6 +697,10 @@ export class Auth implements AuthService, ConnectionManager {
             return provider
         }
 
+        return this.getSsoLinkedCredentialsProvider(id, profile)
+    }
+
+    private getSsoLinkedCredentialsProvider(id: Connection['id'], profile: LinkedIamProfile) {
         const sourceProfile = this.store.getProfile(profile.ssoSession)
         if (sourceProfile === undefined) {
             throw new Error(`Source profile for "${id}" no longer exists`)
@@ -760,16 +762,17 @@ export class Auth implements AuthService, ConnectionManager {
         )
     }
 
-    private getIamConnection(id: Connection['id'], provider: CredentialsProvider): IamConnection & StatefulConnection {
-        const profile = this.store.getProfileOrThrow(id)
-
+    private getIamConnection(
+        id: Connection['id'],
+        profile: StoredProfile<IamProfile>
+    ): IamConnection & StatefulConnection {
         return {
             id,
             type: 'iam',
             state: profile.metadata.connectionState,
             label:
                 profile.metadata.label ?? (profile.type === 'iam' && profile.subtype === 'linked' ? profile.name : id),
-            getCredentials: () => this.getCredentials(id, provider),
+            getCredentials: async () => this.getCredentials(id, await this.getCredentialsProvider(id, profile)),
         }
     }
 
