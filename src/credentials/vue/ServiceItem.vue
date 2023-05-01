@@ -7,7 +7,7 @@
     of the service items.
  -->
 <template>
-    <button class="service-item-container" :class="classWhenIsSelected" v-on:mousedown="serviceItemClicked">
+    <li class="service-item-container" :class="classWhenIsSelected" v-on:mousedown="serviceItemClicked">
         <!-- The icon -->
         <div class="icon-item" :class="serviceIconClass"></div>
 
@@ -20,10 +20,16 @@
                 {{ description }}
             </div>
         </div>
-    </button>
+    </li>
+
+    <li class="service-item-content-list-item">
+        <!-- See 'Named Slots' for more info -->
+        <slot name="service-item-content-slot"></slot>
+    </li>
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
+import { ServiceItemContent } from './ServiceItemContent.vue'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
@@ -58,6 +64,8 @@ export interface StaticServiceItemProps {
  */
 export default defineComponent({
     name: 'ServiceItem',
+    components: { ServiceItemContent },
+    emits: ['service-item-clicked'],
     props: {
         id: {
             type: String as PropType<ServiceItemId>,
@@ -78,6 +86,11 @@ export default defineComponent({
         isSelected: {
             type: Boolean,
             default: false,
+        },
+        isLandscape: {
+            type: Boolean,
+            required: true,
+            description: 'Whether the screen is in landscape mode or not.',
         },
     },
     data() {
@@ -151,7 +164,7 @@ export class ServiceItemsState {
     private readonly unlockedServices: Set<ServiceItemId> = new Set(['NON_AUTH_FEATURES'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected: ServiceItemId = 'NON_AUTH_FEATURES'
+    private currentlySelected?: ServiceItemId = 'NON_AUTH_FEATURES'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
@@ -180,13 +193,25 @@ export class ServiceItemsState {
     }
 
     /** The currently selected service item */
-    get selected(): ServiceItemId {
+    get selected(): ServiceItemId | undefined {
         return this.currentlySelected
     }
 
     /** Marks the item as selected by the user */
     select(id: ServiceItemId) {
         this.currentlySelected = id
+    }
+
+    deselect() {
+        this.currentlySelected = undefined
+    }
+
+    toggleSelected(id: ServiceItemId) {
+        if (this.currentlySelected === id) {
+            this.deselect()
+        } else {
+            this.select(id)
+        }
     }
 
     /** Marks the item as being 'unlocked', implying the required auth is completed. */
@@ -209,19 +234,18 @@ export class ServiceItemsState {
     display: flex;
     margin-top: 10px;
     padding: 20px 15px 20px 15px;
-    width: 100%;
+
+    min-height: 35px;
 
     border-style: solid;
     border-width: 2px;
     border-radius: 4px;
     border-color: transparent;
 
-    /* Assumes that description is a single line.
-    If it can be multiple lines this value should be re-evaluated */
-    height: 75px;
-
     /* Icon and text are centered on the secondary axis */
     align-items: center;
+
+    cursor: pointer;
 }
 
 /* When a service item was clicked */
@@ -272,5 +296,11 @@ export class ServiceItemsState {
     display: flex;
     flex-direction: column;
     text-align: left;
+}
+
+/* ******** Service Item Content Container ******** */
+
+.service-item-content-list-item:empty {
+    display: none;
 }
 </style>
