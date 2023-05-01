@@ -125,11 +125,6 @@ async function setupVSCode(): Promise<string> {
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
 
-    // On stable/insiders we can install the ssh extension during the tests but not on minver
-    if (process.env[envvarVscodeTestVersion] === minimum) {
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.remotessh)
-    }
-
     console.log('VS Code Test instance has been set up')
     return vsCodeExecutablePath
 }

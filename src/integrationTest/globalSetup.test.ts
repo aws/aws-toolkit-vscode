@@ -11,7 +11,7 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
-import { patchObject, setRunnableTimeout } from '../test/setupUtil'
+import { mapTestErrors, normalizeError, patchObject, setRunnableTimeout } from '../test/setupUtil'
 import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 
 // ASSUMPTION: Tests are not run concurrently
@@ -25,6 +25,9 @@ export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Prevent CI from hanging by forcing a timeout on both hooks and tests
     this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
     this.on('test', test => setRunnableTimeout(test, maxTestDuration))
+
+    // Shows the full error chain when tests fail
+    mapTestErrors(this, normalizeError)
 
     // Set up a listener for proxying login requests
     patchWindow()

@@ -500,6 +500,7 @@ export class InlineCompletionService {
     }
 
     hideCodeWhispererStatusBar() {
+        this._isPaginationRunning = false
         this.statusBar.hide()
     }
 

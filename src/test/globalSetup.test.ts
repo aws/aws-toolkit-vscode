@@ -23,7 +23,7 @@ import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
-import { setRunnableTimeout } from './setupUtil'
+import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -32,14 +32,17 @@ const maxTestDuration = 30_000
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
-let openExternalStub: sinon.SinonStub<Parameters<typeof vscode['env']['openExternal']>, Thenable<boolean>>
+let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
 
-export async function mochaGlobalSetup(this: Mocha.Context) {
+export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
     } catch (e) {}
     mkdirpSync(testReportDir)
+
+    // Shows the full error chain when tests fail
+    mapTestErrors(this, normalizeError)
 
     // Extension activation has many side-effects such as changing globals
     // For stability in tests we will wait until the extension has activated prior to injecting mocks

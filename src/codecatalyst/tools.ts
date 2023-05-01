@@ -48,12 +48,22 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
             vscodeExtensionMinVersion.remotessh
         )
 
-        return Result.err(
-            new ToolkitError('Remote SSH extension not installed', {
-                cancelled: true,
-                code: 'MissingExtension',
-            })
-        )
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            return Result.err(
+                new ToolkitError('Remote SSH extension version is too low', {
+                    cancelled: true,
+                    code: 'ExtensionVersionTooLow',
+                    details: { expected: vscodeExtensionMinVersion.remotessh },
+                })
+            )
+        } else {
+            return Result.err(
+                new ToolkitError('Remote SSH extension not installed', {
+                    cancelled: true,
+                    code: 'MissingExtension',
+                })
+            )
+        }
     }
 
     const tools = await ensureTools()
@@ -253,8 +263,9 @@ async function verifySSHHost({
 
         const sshConfigPath = getSshConfigPath()
         try {
-            await fs.mkdirp(path.dirname(sshConfigPath))
-            await fs.appendFile(sshConfigPath, section)
+            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
+            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
+            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
         } catch (e) {
             const message = localize(
                 'AWS.codecatalyst.error.writeFail',

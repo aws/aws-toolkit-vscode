@@ -10,6 +10,17 @@ import { codewhispererNode } from '../../../codewhisperer/explorer/codewhisperer
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererNode', function () {
+    let isConnectionValid: sinon.SinonStub
+    let isConnected: sinon.SinonStub
+
+    beforeEach(function () {
+        isConnectionValid = sinon.stub(AuthUtil.instance, 'isConnectionValid')
+        isConnectionValid.returns(false)
+
+        isConnected = sinon.stub(AuthUtil.instance, 'isConnected')
+        isConnected.returns(false)
+    })
+
     describe('getTreeItem', function () {
         afterEach(function () {
             sinon.restore()
@@ -26,7 +37,8 @@ describe('codewhispererNode', function () {
 
         it('should create a node showing AWS Builder ID connection', function () {
             sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => true)
-            sinon.stub(AuthUtil.instance, 'isConnectionValid').resolves(true)
+            isConnectionValid.returns(true)
+
             const node = codewhispererNode
             const treeItem = node.getTreeItem()
 
@@ -38,8 +50,9 @@ describe('codewhispererNode', function () {
 
         it('should create a node showing enterprise SSO connection', function () {
             sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => true)
-            sinon.stub(AuthUtil.instance, 'isConnectionValid').resolves(true)
             sinon.stub(AuthUtil.instance, 'isEnterpriseSsoInUse').resolves(true)
+            isConnectionValid.returns(true)
+
             const node = codewhispererNode
             const treeItem = node.getTreeItem()
 

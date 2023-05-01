@@ -17,8 +17,7 @@ import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import { getRequestId, getTelemetryReason, getTelemetryResult, isClientFault, ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { DevSettings } from '../../shared/settings'
+import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 const clientRegistrationType = 'public'
@@ -124,18 +123,14 @@ export class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
-            const span = telemetry.aws_refreshCredentials
-            if (DevSettings.instance.get('reportRequestIds', false)) {
-                span.record({ requestId: getRequestId(err) } as any)
-            }
-
-            span.emit({
+            telemetry.aws_refreshCredentials.emit({
                 result: getTelemetryResult(err),
                 reason: getTelemetryReason(err),
+                requestId: getRequestId(err),
                 sessionDuration: getSessionDuration(this.tokenCacheKey),
                 credentialType: 'bearerToken',
                 credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
-            })
+            } as AwsRefreshCredentials)
 
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 await this.cache.token.clear(this.tokenCacheKey)
