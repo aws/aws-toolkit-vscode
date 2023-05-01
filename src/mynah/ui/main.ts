@@ -132,7 +132,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             invisibleContextItems: contextItemsUsedAsTabs,
             navigationTabs: getTabs(
                 NavigationTabs.top.value,
-                (initialData?.codeQuery?.usedFullyQualifiedNames ?? []).length > 0 ? [] : [NavigationTabs.apiDocs.value]
+                (initialData?.codeQuery?.fullyQualifiedNames.used ?? []).length > 0
+                    ? []
+                    : [NavigationTabs.apiDocs.value]
             ),
         },
         onReady: connector.uiReady,
@@ -143,7 +145,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 const selectedTab = payload.selectedTab ?? NavigationTabs.top.value
                 const disabledTabs =
                     selectedTab === NavigationTabs.apiDocs.value ||
-                    (payload.codeQuery?.usedFullyQualifiedNames ?? []).length > 0
+                    (payload.codeQuery?.fullyQualifiedNames.used ?? []).length > 0
                         ? []
                         : [NavigationTabs.apiDocs.value]
                 return {
