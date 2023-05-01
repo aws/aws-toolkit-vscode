@@ -22,9 +22,9 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
-import { patchObject, registerAuthHook, using } from '../../test/setupUtil'
+import { patchObject, registerAuthHook, skipTest, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from '../../shared/extensions'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { captureEventOnce } from '../../test/testUtil'
 import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
@@ -194,8 +194,8 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('prompts to install the ssh extension if not available', async function () {
-            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
-                this.skip()
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+                skipTest(this, 'remote ssh already installed')
             }
 
             await assert.rejects(
@@ -219,14 +219,16 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             })
 
             notification.selectItem('Install...')
-            await captureEventOnce(vscode.extensions.onDidChange, 30_000).catch(() => {
+            await captureEventOnce(vscode.extensions.onDidChange, 60_000).catch(() => {
                 throw new Error('Timed out waiting to install remote SSH extension')
             })
         })
 
         it('connects to a running Dev Environment', async function () {
             // Get necessary objects to run the ssh command.
-            const { SessionProcess, hostname, sshPath } = await prepareDevEnvConnection(client, { ...defaultDevEnv })
+            const { SessionProcess, hostname, sshPath } = await prepareDevEnvConnection(client, {
+                ...defaultDevEnv,
+            })
 
             // Through the actual ssh connection, run 'ls' command in the dev env.
             const lsOutput = (await new SessionProcess(sshPath, [hostname, 'ls', '/projects']).run()).stdout

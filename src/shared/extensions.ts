@@ -26,7 +26,7 @@ export const VSCODE_EXTENSION_ID = {
 }
 
 export const vscodeExtensionMinVersion = {
-    remotessh: '0.98.0',
+    remotessh: '0.74.0',
 }
 
 /**

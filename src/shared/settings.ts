@@ -584,10 +584,10 @@ const devSettings = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
-    reportRequestIds: Boolean,
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
     cawsStage: String,
+    ssoCacheDirectory: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
