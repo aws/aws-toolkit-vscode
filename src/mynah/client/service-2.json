@@ -139,11 +139,6 @@
                 "simpleNames": {
                     "shape": "SimpleNames"
                 },
-                "usedFullyQualifiedNames": {
-                    "shape": "FullyQualifiedSymbolDeclarationPaths",
-                    "deprecated": true,
-                    "deprecatedMessage": "To avoid loss of precision, use `fullyQualifiedNames` instead"
-                },
                 "fullyQualifiedNames": {
                     "shape": "FullyQualifiedNamesDeclarationsUsages"
                 }
