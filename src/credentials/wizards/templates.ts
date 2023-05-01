@@ -11,14 +11,14 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { SharedCredentialsKeys, StaticCredentialsProfileKeys } from '../types'
+import { SharedCredentialsKeys, StaticCredentialsProfile } from '../types'
 import { getCredentialError } from '../sharedCredentialsValidation'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
 }
 
-export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileKeys> = {
+export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfile> = {
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {

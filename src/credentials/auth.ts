@@ -46,7 +46,7 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
 import { saveProfileToCredentials } from './sharedCredentials'
-import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { SectionName, StaticCredentialsProfile } from './types'
 import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
 
 export const ssoScope = 'sso:account:access'
@@ -1204,16 +1204,20 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
 
 export async function tryAddCredentials(
     profileName: SectionName,
-    profileData: StaticCredentialsProfileKeys,
+    profileData: StaticCredentialsProfile,
     tryConnect = true
 ): Promise<boolean> {
-    await throwOnInvalidCredentials(profileName, profileData)
+    await throwOnInvalidCredentials(profileName, profileData) // sanity check
     await saveProfileToCredentials(profileName, profileData)
+
     if (tryConnect) {
         const auth = Auth.instance
-        const conn = await auth.getConnection({ id: profileName })
+
+        const conn = await auth.getConnection({ id: `profile:${profileName}` })
         if (conn === undefined) {
-            throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+            throw new ToolkitError(`Failed to get connection from profile: ${profileName}`, {
+                code: 'MissingConnection',
+            })
         }
 
         await auth.useConnection(conn)

@@ -15,7 +15,7 @@
                         @service-item-clicked="serviceWasSelected(itemId)"
                     >
                         <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
-                            <ServiceItemContent></ServiceItemContent>
+                            <component :is="getServiceItemContent(itemId)" :key="itemId"></component>
                         </template>
                     </ServiceItem>
                 </ul>
@@ -37,7 +37,7 @@
                         @service-item-clicked="serviceWasSelected(itemId)"
                     >
                         <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
-                            <ServiceItemContent></ServiceItemContent>
+                            <component :is="getServiceItemContent(itemId)" :key="itemId"></component>
                         </template>
                     </ServiceItem>
                 </ul>
@@ -45,7 +45,7 @@
             <h3></h3>
         </div>
         <div v-if="isLandscape && isAnyServiceSelected" id="right-column">
-            <ServiceItemContent></ServiceItemContent>
+            <component :is="getServiceItemContent(getSelectedService())"></component>
         </div>
     </div>
 </template>
@@ -53,12 +53,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './ServiceItem.vue'
-import ServiceItemContent from './ServiceItemContent.vue'
+import AwsExplorerContent from './serviceItemContent/AwsExplorerContent.vue'
+import serviceItemsContent from './serviceItemContent/types.vue'
 
 const serviceItemsState = new ServiceItemsState()
 
 export default defineComponent({
-    components: { ServiceItem, ServiceItemContent },
+    components: { ServiceItem, AwsExplorerContent },
     name: 'AuthRoot',
     data() {
         return {
@@ -96,6 +97,9 @@ export default defineComponent({
         isServiceSelected(id: ServiceItemId): boolean {
             return serviceItemsState.selected === id
         },
+        getSelectedService(): ServiceItemId {
+            return serviceItemsState.selected!
+        },
         getServiceItemProps(id: ServiceItemId): StaticServiceItemProps {
             return serviceItemsState.getStaticServiceItemProps(id)
         },
@@ -114,6 +118,9 @@ export default defineComponent({
         },
         updateWindowWidth() {
             this.currWindowWidth = window.innerWidth
+        },
+        getServiceItemContent(id: ServiceItemId) {
+            return serviceItemsContent[id]
         },
     },
 })

@@ -34,8 +34,9 @@ export type CredentialsKey = (typeof SharedCredentialsKeys)[keyof typeof SharedC
 //  *
 //  * https://docs.aws.amazon.com/sdkref/latest/guide/feature-static-credentials.html
 //  */
-export type StaticCredentialsProfileKeysOptional = Pick<CredentialsData, 'aws_access_key_id' | 'aws_secret_access_key'>
-export type StaticCredentialsProfileKeys = Required<StaticCredentialsProfileKeysOptional>
+export type StaticCredentialsProfileOptional = Pick<CredentialsData, 'aws_access_key_id' | 'aws_secret_access_key'>
+export type StaticCredentialsProfile = Required<StaticCredentialsProfileOptional>
+export type StaticCredentialsProfileKey = keyof StaticCredentialsProfile
 
 /**
  * The name of a section in a credentials/config file
