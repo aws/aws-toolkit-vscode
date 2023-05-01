@@ -7,7 +7,7 @@
     of the service items.
  -->
 <template>
-    <li class="service-item-container" :class="classWhenIsSelected" v-on:mousedown="serviceItemClicked">
+    <li :class="[classWhenIsSelected, 'service-item-container', 'border-common']" v-on:mousedown="serviceItemClicked">
         <!-- The icon -->
         <div class="icon-item" :class="serviceIconClass"></div>
 
@@ -29,7 +29,6 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { ServiceItemContent } from './ServiceItemContent.vue'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
@@ -64,7 +63,7 @@ export interface StaticServiceItemProps {
  */
 export default defineComponent({
     name: 'ServiceItem',
-    components: { ServiceItemContent },
+    components: {},
     emits: ['service-item-clicked'],
     props: {
         id: {
@@ -234,6 +233,8 @@ export class ServiceItemsState {
 </script>
 
 <style>
+@import './shared.css';
+
 /* ******** Container ******** */
 
 .service-item-container {
@@ -243,11 +244,6 @@ export class ServiceItemsState {
     padding: 20px 15px 20px 15px;
 
     min-height: 35px;
-
-    border-style: solid;
-    border-width: 2px;
-    border-radius: 4px;
-    border-color: transparent;
 
     /* Icon and text are centered on the secondary axis */
     align-items: center;

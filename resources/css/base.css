@@ -55,6 +55,7 @@ body.vscode-light input[type='checkbox']:checked {
 
 /* Text/number input box */
 input[type='text'],
+input[type='password'],
 input[type='number'] {
     color: var(--vscode-settings-textInputForeground);
     background: var(--vscode-settings-textInputBackground);
@@ -62,6 +63,7 @@ input[type='number'] {
     padding: 4px 4px;
 }
 input[type='text'][data-invalid='true'],
+input[type='password'][data-invalid='true'],
 input[type='number'][data-invalid='true'] {
     border: 1px solid var(--vscode-inputValidation-errorBorder);
     border-bottom: 0;
