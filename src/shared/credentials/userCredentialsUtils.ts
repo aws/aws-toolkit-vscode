@@ -6,10 +6,10 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { mkdirp, writeFile } from 'fs-extra'
-import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
+import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.

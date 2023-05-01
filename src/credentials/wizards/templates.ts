@@ -11,30 +11,19 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-
-// TODO: use this everywhere else
-export enum ProfileKey {
-    AccessKeyId = 'aws_access_key_id',
-    SecretKey = 'aws_secret_access_key',
-    Process = 'credential_process',
-}
+import { SharedCredentialsKeys, StaticCredentialsProfileData } from '../types'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
 }
 
-interface StaticProfile {
-    [ProfileKey.AccessKeyId]: string
-    [ProfileKey.SecretKey]: string
-}
-
 const accessKeyPattern = /[\w]{16,128}/
 
-export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> = {
+export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileData> = {
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
-        [ProfileKey.AccessKeyId]: name =>
+        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -57,7 +46,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
                     }
                 },
             }),
-        [ProfileKey.SecretKey]: name =>
+        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -79,14 +68,14 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
 }
 
 interface CredentialsProcessProfile {
-    [ProfileKey.Process]: string
+    [SharedCredentialsKeys.CREDENTIAL_PROCESS]: string
 }
 
 export const processCredentialsTemplate: ProfileTemplateProvider<CredentialsProcessProfile> = {
     label: 'External Process',
     description: 'Creates a new profile that fetches credentials from a process',
     prompts: {
-        [ProfileKey.Process]: name =>
+        [SharedCredentialsKeys.CREDENTIAL_PROCESS]: name =>
             createInputBox({
                 title: getTitle(name),
                 prompt: 'Enter a command to run',
