@@ -28,7 +28,7 @@ import {
     getSectionOrThrow,
     isProfileSection,
     Profile,
-    ProfileName,
+    SectionName,
     Section,
 } from '../sharedCredentials'
 import { hasScopes, SsoProfile } from '../auth'
@@ -140,7 +140,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return true
     }
 
-    private getProfile(name: ProfileName) {
+    private getProfile(name: SectionName) {
         return getSectionDataOrThrow(this.sections, name, 'profile')
     }
 

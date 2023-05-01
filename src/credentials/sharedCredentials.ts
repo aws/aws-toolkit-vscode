@@ -22,7 +22,7 @@ interface AssignmentNode {
 
 export interface BaseSection {
     readonly type: string
-    readonly name: ProfileName
+    readonly name: SectionName
     readonly source: vscode.Uri
     readonly startLines: number[]
     readonly assignments: AssignmentNode[]
@@ -86,7 +86,7 @@ export function getRequiredFields<T extends string>(section: Section, ...keys: T
 
 export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     sections: Section[],
-    name: ProfileName,
+    name: SectionName,
     type: T
 ): Section & { type: T } {
     const section = sections.find(s => s.name === name && s.type === type) as (Section & { type: T }) | undefined
@@ -98,7 +98,7 @@ export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     return section
 }
 
-export function getSectionDataOrThrow(sections: Section[], name: ProfileName, type: Section['type']) {
+export function getSectionDataOrThrow(sections: Section[], name: SectionName, type: Section['type']) {
     const section = getSectionOrThrow(sections, name, type)
     if (section.type !== type) {
         throw ParseError.fromSection(section, `Expected section to be type "${type}", got: ${section.type}`)
@@ -120,8 +120,8 @@ function validateSection(section: BaseSection): asserts section is Section {
 /**
  * Loads existing merged (credentials + config) profiles from the filesystem
  */
-export async function loadSharedCredentialsProfiles(): Promise<Record<ProfileName, Profile>> {
-    const profiles = {} as Record<ProfileName, Profile>
+export async function loadSharedCredentialsProfiles(): Promise<Record<SectionName, Profile>> {
+    const profiles = {} as Record<SectionName, Profile>
     for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
         if (v.type === 'profile') {
             profiles[k] = extractDataFromSection(v)
@@ -239,7 +239,7 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
  *
  * The is the value of `{A}` in `[ {A} ]` or `[ {B} {A} ]`.
  */
-export type ProfileName = string
+export type SectionName = string
 
 export interface Profile {
     [key: string]: string | undefined
