@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
-import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
+import { AsyncCloudFormationTemplateRegistry, CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../fs/watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'
@@ -35,11 +35,8 @@ export const devfileExcludePattern = /.*devfile\.(yaml|yml)/i
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
         const registry = new CloudFormationTemplateRegistry()
-        globals.templateRegistry = registry
-        await registry.addExcludedPattern(devfileExcludePattern)
-        await registry.addExcludedPattern(templateFileExcludePattern)
-        await registry.addWatchPattern(templateFileGlobPattern)
-        await registry.watchUntitledFiles()
+        extensionContext.subscriptions.push(registry)
+        setTemplateRegistryInGlobals(registry)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -48,15 +45,49 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 getIdeProperties().codelenses
             )
         )
-        getLogger().error('Failed to activate template registry', e)
+        getLogger().error('Failed to activate template registry: %s', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
         globals.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
-        globals.templateRegistry,
         Commands.register('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
         Commands.register('aws.sam.newTemplate', () => createStarterTemplateFile(true))
     )
+}
+
+/**
+ * Sets the `templateRegistry` property in the `globals` variable,
+ * where the value of the property depends on whether the registry
+ * is fully set up.
+ *
+ * This function exists to resolve the registry setup taking a long time
+ * and slowing down the extension starting up.
+ */
+function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) {
+    const registrySetupFunc = async (registry: CloudFormationTemplateRegistry) => {
+        await registry.addExcludedPattern(devfileExcludePattern)
+        await registry.addExcludedPattern(templateFileExcludePattern)
+        await registry.addWatchPattern(templateFileGlobPattern)
+        await registry.watchUntitledFiles()
+    }
+
+    const asyncRegistry = new AsyncCloudFormationTemplateRegistry(registry, registrySetupFunc)
+
+    Object.defineProperty(globals, 'templateRegistry', {
+        set(newInstance: CloudFormationTemplateRegistry) {
+            this.cfnInstance = newInstance
+        },
+        get() {
+            // This condition handles testing scenarios where we may have
+            // already set a mock object before activation.
+            // Though in prod nothing should be calling this 'set' function.
+            if (this.cfnInstance) {
+                return this.cfnInstance
+            }
+
+            return asyncRegistry.getInstance()
+        },
+    })
 }
