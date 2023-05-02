@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
@@ -12,19 +11,12 @@ import { stripUndefined } from '../../../shared/utilities/collectionUtils'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
 import { installFakeClock } from '../../testUtil'
-import { parseIni, mergeAndValidateSections } from '../../../credentials/sharedCredentials'
 import { SsoClient } from '../../../credentials/sso/clients'
 import { stub } from '../../utilities/stubber'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
+import { createTestSections } from '../testUtil'
 
 const missingPropertiesFragment = 'missing properties'
-
-async function createTestSections(ini: string) {
-    const doc = await vscode.workspace.openTextDocument({ content: ini })
-    const sections = parseIni(doc.getText(), doc.uri)
-
-    return mergeAndValidateSections(sections).sections
-}
 
 describe('SharedCredentialsProvider', async function () {
     let clock: FakeTimers.InstalledClock
