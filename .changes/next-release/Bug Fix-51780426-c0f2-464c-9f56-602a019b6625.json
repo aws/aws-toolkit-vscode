@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "auth: changes to the AWS shared configuration files are not always respected when fetching credentials"
+}
