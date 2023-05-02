@@ -24,7 +24,7 @@ import { SystemUtilities } from '../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SharedCredentialsProviderFactory } from '../../credentials/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
-import { getCredentialsFilename } from '../../credentials/sharedCredentials'
+import { getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
