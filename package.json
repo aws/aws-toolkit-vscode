@@ -3492,7 +3492,7 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run clean && npm run buildScripts && npm run lint && webpack --mode production && npm run copyFiles -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
@@ -3504,7 +3504,7 @@
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
-        "lint": "eslint -c .eslintrc.js --ext .ts .",
+        "lint": "ts-node ./scripts/lint/testLint.ts",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
