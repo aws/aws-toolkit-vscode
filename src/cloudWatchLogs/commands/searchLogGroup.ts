@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { telemetry, Result } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
@@ -27,6 +27,7 @@ import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/reg
 import { truncate } from '../../shared/utilities/textUtilities'
 import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
 import { PromptResult } from '../../shared/ui/prompter'
+import { ToolkitError } from '../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 
@@ -66,31 +67,26 @@ export async function prepareDocument(
     uri: vscode.Uri,
     logData: CloudWatchLogsData,
     registry: LogDataRegistry
-): Promise<Result> {
+) {
     try {
         // Gets the data: calls filterLogEventsFromUri().
         await registry.fetchNextLogEvents(uri)
         const doc = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(doc, { preview: false })
         vscode.languages.setTextDocumentLanguage(doc, 'log')
-
-        return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
-            getLogger().debug('cwl: User Cancelled Search')
-            return 'Cancelled'
-        } else {
-            const error = err as Error
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
-                    'Failed to get logs for {0} : {1}',
-                    parseCloudWatchLogsUri(uri).logGroupInfo.groupName,
-                    error.message
-                )
-            )
-            return 'Failed'
+            throw err
         }
+
+        throw ToolkitError.chain(
+            err,
+            localize(
+                'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                'Failed to get logs for {0}',
+                parseCloudWatchLogsUri(uri).logGroupInfo.groupName,
+            )
+        )
     }
 }
 
@@ -99,25 +95,18 @@ export async function searchLogGroup(
     registry: LogDataRegistry,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
-    const wizard = new SearchLogGroupWizard(logData)
+    await telemetry.cloudwatchlogs_open.run(async span => {
+        const wizard = new SearchLogGroupWizard(logData)
+        span.record({ source: logData ? 'Explorer' : 'Command', cloudWatchResourceType: 'logGroup' })
+        const response = await wizard.run()
+        if (!response) {
+            throw new CancellationError('user')
+        }
 
-    const response = await wizard.run()
-
-    let result: Result
-    const source = logData ? 'Explorer' : 'Command'
-
-    if (!response) {
-        result = 'Cancelled'
-        telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
-        return
-    }
-
-    const userResponse = handleWizardResponse(response, registry)
-
-    const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
-
-    result = await prepareDocument(uri, userResponse, registry)
-    telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logGroup', source: source })
+        const userResponse = handleWizardResponse(response, registry)
+        const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
+        await prepareDocument(uri, userResponse, registry)
+    })
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {

@@ -26,38 +26,34 @@ import {
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../shared/telemetry/telemetry'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
-    let result: Result = 'Succeeded'
-    const logStreamResponse = await new SelectLogStreamWizard(node).run()
-    if (
-        logStreamResponse === undefined ||
-        logStreamResponse.kind === 'cancelled' ||
-        logStreamResponse.kind === 'failed'
-    ) {
-        return
-    }
+    await telemetry.cloudwatchlogs_open.run(async span => {
+        span.record({ cloudWatchResourceType: 'logStream', source: 'Explorer' })
+        const r = await new SelectLogStreamWizard(node).run()
+        if (r === undefined || r.kind === 'cancelled' || r.kind === 'failed') {
+            throw new CancellationError('user')
+        }
 
-    if (logStreamResponse.kind === 'doSearchLogGroup') {
-        return searchLogGroup(registry, { regionName: node.regionCode, groupName: node.logGroup.logGroupName! })
-    }
+        if (r.kind === 'doSearchLogGroup') {
+            return searchLogGroup(registry, { regionName: node.regionCode, groupName: node.logGroup.logGroupName! })
+        }
 
-    const logGroupInfo: CloudWatchLogsGroupInfo = {
-        groupName: logStreamResponse.logGroupName,
-        regionName: logStreamResponse.region,
-        streamName: logStreamResponse.logStreamName,
-    }
+        const logGroupInfo: CloudWatchLogsGroupInfo = {
+            groupName: r.logGroupName,
+            regionName: r.region,
+            streamName: r.logStreamName,
+        }
 
-    const parameters: CloudWatchLogsParameters = {
-        limit: registry.configuration.get('limit', 10000),
-    }
+        const parameters: CloudWatchLogsParameters = {
+            limit: registry.configuration.get('limit', 10000),
+        }
 
-    const uri = createURIFromArgs(logGroupInfo, parameters)
-
-    const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
-
-    result = await prepareDocument(uri, logData, registry)
-    telemetry.cloudwatchlogs_open.emit({ result: result, cloudWatchResourceType: 'logStream', source: 'Explorer' })
+        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
+        await prepareDocument(uri, logData, registry)
+    })
 }
 
 /**
@@ -208,14 +204,6 @@ export class SelectLogStreamWizard extends MultiStepWizard<LogSearchChoice> {
     }
 
     protected getResult(): LogSearchChoice {
-        if (this.response.kind === 'cancelled') {
-            telemetry.cloudwatchlogs_open.emit({
-                result: 'Cancelled',
-                cloudWatchResourceType: 'logStream',
-                source: 'Explorer',
-            })
-        }
-
         return this.response
     }
 

@@ -35,17 +35,6 @@
     ],
     "metrics": [
         {
-            "name": "cloudwatchlogs_filter",
-            "description": "Filters a CloudWatch Logs entity.",
-            "metadata": [
-                { "type": "result" },
-                { "type": "cloudWatchResourceType" },
-                { "type": "source" },
-                { "type": "hasTextFilter", "required": false },
-                { "type": "hasTimeFilter", "required": false }
-            ]
-        },
-        {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
