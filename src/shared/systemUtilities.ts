@@ -197,6 +197,9 @@ export class SystemUtilities {
         const vscExe = process.argv0
         // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
         const vscs = [
+            // Special case for flatpak (steamdeck). #V896741845
+            // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
+            '/app/bin/code',
             // Note: macOS does not have a separate "code-insiders" binary.
             path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
             path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
