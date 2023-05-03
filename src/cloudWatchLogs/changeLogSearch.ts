@@ -2,7 +2,8 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { telemetry, CloudWatchResourceType } from '../shared/telemetry/telemetry'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
@@ -56,16 +57,14 @@ export async function getNewData(
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
             break
     }
-    let resourceType: CloudWatchResourceType = 'logGroup'
 
     if (newData.logGroupInfo.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUri
         newData.parameters.streamNameOptions = [newData.logGroupInfo.streamName]
         newData.logGroupInfo.streamName = undefined
-        resourceType = 'logStream'
     }
 
-    recordTelemetryFilter(newData, resourceType, 'EditorButton')
+    recordTelemetryFilter(newData)
 
     return newData
 }
@@ -74,42 +73,32 @@ export async function changeLogSearchParams(
     registry: LogDataRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    const oldUri = getActiveDocumentUri(registry)
-    if (!registry.isRegistered(oldUri)) {
-        telemetry.cloudwatchlogs_filter.emit({
-            result: 'Failed',
+    await telemetry.cloudwatchlogs_open.run(async span => {
+        const oldUri = getActiveDocumentUri(registry)
+        span.record({
             source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
             hasTimeFilter: param === 'timeFilter',
             hasTextFilter: param === 'filterPattern',
         })
-        throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
-    }
 
-    const oldData = registry.getRegisteredLog(oldUri)
-    const newData = await getNewData(param, oldData)
+        if (!registry.isRegistered(oldUri)) {
+            throw new Error(`cwl: Failed to get data for URI: ${oldUri}`)
+        }
 
-    if (!newData) {
-        telemetry.cloudwatchlogs_filter.emit({
-            result: 'Cancelled',
-            source: 'Editor',
+        const oldData = registry.getRegisteredLog(oldUri)
+        const newData = await getNewData(param, oldData)
+        span.record({
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
-            hasTimeFilter: !!(oldData.parameters.startTime || param === 'timeFilter'),
-            hasTextFilter:
-                (oldData.parameters.filterPattern !== undefined && oldData.parameters.filterPattern !== '') ||
-                param === 'filterPattern',
+            hasTimeFilter: !!oldData.parameters.startTime || param === 'timeFilter',
+            hasTextFilter: !!oldData.parameters.filterPattern || param === 'filterPattern',
         })
 
-        return
-    }
+        if (!newData) {
+            throw new CancellationError('user')
+        }
 
-    const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-
-    const result = await prepareDocument(newUri, newData, registry)
-    const typeOfResource = newData.parameters.streamNameOptions ? 'logStream' : 'logGroup'
-    telemetry.cloudwatchlogs_open.emit({
-        result: result,
-        cloudWatchResourceType: typeOfResource,
-        source: 'Editor',
+        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
+        await prepareDocument(newUri, newData, registry)
     })
 }

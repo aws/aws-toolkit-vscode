@@ -35,14 +35,16 @@
     ],
     "metrics": [
         {
-            "name": "cloudwatchlogs_filter",
-            "description": "Filters a CloudWatch Logs entity.",
+            "name": "cloudwatchlogs_open",
+            "description": "Open a CloudWatch Logs entity. ServiceType and source indicate where the request came from (example: while viewing an ECS container)",
             "metadata": [
                 { "type": "result" },
                 { "type": "cloudWatchResourceType" },
-                { "type": "source" },
+                { "type": "cloudWatchLogsPresentation", "required": false },
+                { "type": "serviceType", "required": false },
                 { "type": "hasTextFilter", "required": false },
-                { "type": "hasTimeFilter", "required": false }
+                { "type": "hasTimeFilter", "required": false },
+                { "type": "source" }
             ]
         },
         {

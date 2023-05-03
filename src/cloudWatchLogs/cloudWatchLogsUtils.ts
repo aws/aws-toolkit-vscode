@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { telemetry, CloudWatchResourceType } from '../shared/telemetry/telemetry'
+import { telemetry } from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
@@ -13,22 +13,14 @@ import { CloudWatchLogsParameters } from './registry/logDataRegistry'
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
-/**
- * records a metric that the filter was successful IF a filter was actually applied i.e one of time or filterPattern were set.
- * @param logData
- * @param resourceType
- */
-export function recordTelemetryFilter(
-    logData: CloudWatchLogsData,
-    resourceType: CloudWatchResourceType,
-    source: 'EditorButton' | 'Command'
-): void {
-    telemetry.cloudwatchlogs_filter.emit({
-        result: 'Succeeded',
-        source: source,
-        cloudWatchResourceType: resourceType,
-        hasTimeFilter: logData.parameters.startTime ? true : false,
-        hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,
+/** Records "filter" metric if a filter was actually applied. */
+export function recordTelemetryFilter(logData: CloudWatchLogsData): void {
+    const hasTimeFilter = !!logData.parameters.startTime
+    const hasTextFilter = !!logData.parameters.filterPattern && logData.parameters.filterPattern !== ''
+    // Update current container (span) metric.
+    telemetry.record({
+        hasTimeFilter: hasTimeFilter,
+        hasTextFilter: hasTextFilter,
     })
 }
 
