@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
-import { Settings } from '../shared/settings'
 import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
@@ -17,18 +16,18 @@ import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
 import { Commands } from '../shared/vscode/commands2'
 
-export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
-    const settings = new CloudWatchLogsSettings(configuration)
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
+    const settings = new CloudWatchLogsSettings()
     const registry = new LogStreamRegistry(settings)
 
-    context.subscriptions.push(
+    ctx.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(
             CLOUDWATCH_LOGS_SCHEME,
             new LogStreamDocumentProvider(registry)
         )
     )
 
-    context.subscriptions.push(
+    ctx.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument(doc => {
             if (doc.isClosed && doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
                 registry.deregisterLog(doc.uri)
@@ -36,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         })
     )
 
-    context.subscriptions.push(
+    ctx.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
             {
                 language: 'log',
@@ -46,8 +45,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         )
     )
 
-    context.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
-    context.subscriptions.push(
+    ctx.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
+    ctx.subscriptions.push(
         Commands.register(
             'aws.addLogEvents',
             async (

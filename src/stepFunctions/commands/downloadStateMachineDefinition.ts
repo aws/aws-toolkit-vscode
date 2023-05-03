@@ -16,7 +16,7 @@ import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/cl
 import { getLogger, Logger } from '../../shared/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import { previewStateMachineCommand } from '../activation'
+import { previewStateMachineCommand } from '..'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function downloadStateMachineDefinition(params: {

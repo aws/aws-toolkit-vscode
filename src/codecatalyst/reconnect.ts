@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { CodeCatalystClient, createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
-import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { DevEnvironmentSettings } from './commands'
@@ -17,13 +16,14 @@ import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
 import { isDevenvVscode, recordSource } from './utils'
 import { SsoConnection } from '../credentials/auth'
+import type { extcontext } from '../modules.gen'
 
 const localize = nls.loadMessageBundle()
 
 const reconnectTimer = 5000
 const maxReconnectTime = 10 * 60 * 1000
 
-export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCatalystAuthenticationProvider) {
+export function watchRestartingDevEnvs(ctx: extcontext, authProvider: CodeCatalystAuthenticationProvider) {
     let restartHandled = false
     authProvider.onDidChangeActiveConnection(async conn => {
         if (restartHandled || conn === undefined || authProvider.auth.getConnectionState(conn) !== 'valid') {
@@ -37,7 +37,7 @@ export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCataly
     })
 }
 
-function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | undefined) {
+function handleRestart(conn: SsoConnection, ctx: extcontext, envId: string | undefined) {
     if (envId !== undefined) {
         const memento = ctx.extensionContext.globalState
         const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
@@ -66,7 +66,7 @@ function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | und
  * @param conn a connection that may be used for CodeCatalyst
  * @param ctx the extension context
  */
-async function reconnectDevEnvs(conn: SsoConnection, ctx: ExtContext): Promise<void> {
+async function reconnectDevEnvs(conn: SsoConnection, ctx: extcontext): Promise<void> {
     const memento = ctx.extensionContext.globalState
     const pendingDevEnvs = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     const validDevEnvs = filterInvalidDevEnvs(pendingDevEnvs)

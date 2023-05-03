@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { getLogger } from '../../shared/logger'
@@ -37,18 +36,15 @@ export const toggleCodeSuggestions = Commands.declare(
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
-    (context: ExtContext) => async () => {
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
+    (context: vscode.ExtensionContext) => async () => {
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-        const hasShownWelcomeMsgBefore = get(
-            CodeWhispererConstants.welcomeMessageKey,
-            context.extensionContext.globalState
-        )
+        const hasShownWelcomeMsgBefore = get(CodeWhispererConstants.welcomeMessageKey, context.globalState)
         if (!hasShownWelcomeMsgBefore) {
             showCodeWhispererWelcomeMessage(context)
-            await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
+            await set(CodeWhispererConstants.welcomeMessageKey, true, context.globalState)
         }
         if (!isCloud9()) {
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
@@ -56,12 +52,9 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
-export const showReferenceLog = Commands.declare(
-    'aws.codeWhisperer.openReferencePanel',
-    (context: ExtContext) => async () => {
-        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
-    }
-)
+export const showReferenceLog = Commands.declare('aws.codeWhisperer.openReferencePanel', () => async () => {
+    await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
+})
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
@@ -69,7 +62,11 @@ export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction
 
 export const showSecurityScan = Commands.declare(
     'aws.codeWhisperer.security.scan',
-    (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
+    (
+            context: vscode.ExtensionContext,
+            securityPanelViewProvider: SecurityPanelViewProvider,
+            client: DefaultCodeWhispererClient
+        ) =>
         async () => {
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
@@ -79,7 +76,7 @@ export const showSecurityScan = Commands.declare(
                 if (codeScanState.isNotStarted()) {
                     // User intends to start as "Start Security Scan" is shown in the explorer tree
                     codeScanState.setToRunning()
-                    startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context.extensionContext)
+                    startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context)
                 } else if (codeScanState.isRunning()) {
                     // User intends to stop as "Stop Security Scan" is shown in the explorer tree
                     // Cancel only when the code scan state is "Running"
@@ -136,10 +133,10 @@ export const updateReferenceLog = Commands.declare('aws.codeWhisperer.updateRefe
     ReferenceLogViewProvider.instance.update()
 })
 
-async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
+async function showCodeWhispererWelcomeMessage(context: vscode.ExtensionContext): Promise<void> {
     const filePath = isCloud9()
-        ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
-        : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
+        ? context.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
+        : context.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
     const readmeUri = vscode.Uri.file(filePath)
     await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
 }

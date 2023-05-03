@@ -44,8 +44,8 @@ describe('DefaultTelemetryService', function () {
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
 
-    function initService(awsContext = new FakeAwsContext()): DefaultTelemetryService {
-        const newService = new DefaultTelemetryService(mockContext, awsContext, undefined, mockPublisher)
+    function initService(): DefaultTelemetryService {
+        const newService = new DefaultTelemetryService(mockContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
         newService.telemetryEnabled = true
 
@@ -170,9 +170,12 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
-        service = initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
+        service = initService()
         logger = service.logger
-        service.record(fakeMetric({ metricName: 'name' }))
+        service.record(
+            fakeMetric({ metricName: 'name' }),
+            makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
+        )
 
         assert.strictEqual(logger.metricCount, 1)
 
@@ -195,10 +198,12 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events created with a bad active account produce metadata mentioning the bad account', async function () {
-        service = initService({ getCredentialAccountId: () => 'this is bad!' } as unknown as FakeAwsContext)
+        service = initService()
         logger = service.logger
 
-        service.record(fakeMetric({ metricName: 'name' }))
+        service.record(fakeMetric({ metricName: 'name' }), {
+            getCredentialAccountId: () => 'this is bad!',
+        } as unknown as FakeAwsContext)
         assert.strictEqual(logger.metricCount, 1)
 
         const metricDatum = logger.queryFull({ metricName: 'name' })
@@ -206,7 +211,9 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events created prior to signing in do not have an account attached', async function () {
-        service.record(fakeMetric({ metricName: 'name' }))
+        service.record(fakeMetric({ metricName: 'name' }), {
+            getCredentialAccountId: () => undefined,
+        } as unknown as FakeAwsContext)
         assert.strictEqual(logger.metricCount, 1)
 
         const metricData = logger.queryFull({ metricName: 'name' })

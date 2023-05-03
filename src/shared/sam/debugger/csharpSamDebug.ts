@@ -15,7 +15,7 @@ import {
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { ExtContext } from '../../extensions'
+import type { extcontext } from '../../../modules.gen'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
@@ -66,7 +66,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * Linux, then mount it with the SAM app on run. User's C# workspace dir will
  * have a `.vsdbg` dir after the first run.
  */
-export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+export async function invokeCsharpLambda(ctx: extcontext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort

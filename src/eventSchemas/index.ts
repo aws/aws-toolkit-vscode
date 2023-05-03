@@ -3,23 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { downloadSchemaItemCode } from '../eventSchemas/commands/downloadSchemaItemCode'
+import * as vscode from 'vscode'
+import { downloadSchemaItemCode } from './commands/downloadSchemaItemCode'
 import { createSearchSchemasWebView } from './vue/searchSchemas'
-import { viewSchemaItem } from '../eventSchemas/commands/viewSchemaItem'
-import { RegistryItemNode } from '../eventSchemas/explorer/registryItemNode'
-import { SchemaItemNode } from '../eventSchemas/explorer/schemaItemNode'
-import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
-import { ExtContext } from '../shared/extensions'
+import { viewSchemaItem } from './commands/viewSchemaItem'
+import { RegistryItemNode } from './explorer/registryItemNode'
+import { SchemaItemNode } from './explorer/schemaItemNode'
+import { SchemasNode } from './explorer/schemasNode'
+import type { extcontext } from '../modules.gen'
 import { Commands } from '../shared/vscode/commands2'
 
 /**
  * Activate Schemas functionality for the extension.
  */
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(_: vscode.ExtensionContext, context: extcontext): Promise<void> {
     await registerSchemasCommands(context)
 }
 
-async function registerSchemasCommands(context: ExtContext): Promise<void> {
+async function registerSchemasCommands(context: extcontext): Promise<void> {
     context.extensionContext.subscriptions.push(
         Commands.register('aws.viewSchemaItem', async (node: SchemaItemNode) => await viewSchemaItem(node)),
         Commands.register(

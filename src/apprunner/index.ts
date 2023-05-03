@@ -12,7 +12,6 @@ import { createAppRunnerService } from './commands/createService'
 import { pauseService } from './commands/pauseService'
 import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
-import { ExtContext } from '../shared/extensions'
 import { copyToClipboard } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands2'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -78,9 +77,9 @@ commandMap.set(['aws.apprunner.deleteService', deleteServiceFailed], deleteServi
 /**
  * Activates App Runner
  */
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     commandMap.forEach((command, tuple) => {
-        context.extensionContext.subscriptions.push(
+        ctx.subscriptions.push(
             Commands.register(tuple[0], async (...args: any) => {
                 try {
                     await command(...args)

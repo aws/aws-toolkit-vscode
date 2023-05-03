@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 import { getLogger } from '../../../shared/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import {
@@ -65,7 +65,7 @@ export class SamInvokeWebview extends VueWebview {
     public readonly source = 'src/lambda/vue/configEditor/index.js'
 
     public constructor(
-        private readonly extContext: ExtContext, // TODO(sijaden): get rid of `ExtContext`
+        private readonly extContext: extcontext, // TODO(sijaden): get rid of `extcontext`
         private readonly config?: AwsSamDebuggerConfiguration
     ) {
         super()
@@ -302,7 +302,7 @@ export class SamInvokeWebview extends VueWebview {
 
 const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 
-export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
+export function registerSamInvokeVueCommand(context: extcontext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
         webview.show({

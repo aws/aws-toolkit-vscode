@@ -7,26 +7,23 @@ import * as vscode from 'vscode'
 import { RestApiNode } from './explorer/apiNodes'
 import { invokeRemoteRestApi } from './vue/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
-import { ExtContext } from '../shared/extensions'
+import type { extcontext } from '../modules.gen'
 import { Commands } from '../shared/vscode/commands2'
 
 /**
  * Activate API Gateway functionality for the extension.
  */
-export async function activate(activateArguments: {
-    extContext: ExtContext
-    outputChannel: vscode.OutputChannel
-}): Promise<void> {
-    const extensionContext = activateArguments.extContext.extensionContext
-    const regionProvider = activateArguments.extContext.regionProvider
+export async function activate(_: vscode.ExtensionContext, ctx: extcontext): Promise<void> {
+    const extensionContext = ctx.extensionContext
+    const regionProvider = ctx.regionProvider
     extensionContext.subscriptions.push(
         Commands.register('aws.apig.copyUrl', async (node: RestApiNode) => await copyUrlCommand(node, regionProvider)),
         Commands.register(
             'aws.apig.invokeRemoteRestApi',
             async (node: RestApiNode) =>
-                await invokeRemoteRestApi(activateArguments.extContext, {
+                await invokeRemoteRestApi(ctx, {
                     apiNode: node,
-                    outputChannel: activateArguments.outputChannel,
+                    outputChannel: ctx.outputChannel,
                 })
         )
     )

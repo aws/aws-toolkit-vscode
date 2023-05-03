@@ -19,6 +19,10 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 const { VueLoaderPlugin } = require('vue-loader')
 
+const modulePathsLocation = path.join(path.resolve(__dirname, 'dist'), 'modulePaths.json')
+const modulePaths = JSON.parse(fs.readFileSync(modulePathsLocation, 'utf-8'))
+const isProduction = process.argv[process.argv.indexOf('--mode') + 1] === 'production'
+
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
     name: 'main',
@@ -26,6 +30,7 @@ const baseConfig = {
     entry: {
         'src/main': './src/main.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
+        ...modulePaths,
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -33,7 +38,7 @@ const baseConfig = {
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]',
     },
-    devtool: 'source-map',
+    devtool: isProduction ? false : 'source-map',
     externals: {
         vscode: 'commonjs vscode',
         vue: 'root Vue',
@@ -88,6 +93,15 @@ const baseConfig = {
                 target: 'es2018',
             }),
         ],
+        splitChunks: {
+            cacheGroups: {
+                commons: {
+                    name: 'commons',
+                    chunks: 'initial',
+                    minChunks: 2,
+                },
+            },
+        },
     },
 }
 

@@ -6,20 +6,13 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as codecatalyst from './codecatalyst/activation'
-import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/statusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
-import { activate as activateSchemas } from './eventSchemas/activation'
-import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { DefaultAwsContext } from './shared/awsContext'
+import { documentationUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     aboutToolkit,
@@ -32,26 +25,10 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/regionProvider'
-import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
-import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
-import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
-import { ExtContext } from './shared/extensions'
-import { activate as activateApiGateway } from './apigateway/activation'
-import { activate as activateStepFunctions } from './stepFunctions/activation'
-import { activate as activateSsmDocument } from './ssmDocument/activation'
-import { activate as activateDynamicResources } from './dynamicResources/activation'
-import { activate as activateEcs } from './ecs/activation'
-import { activate as activateAppRunner } from './apprunner/activation'
-import { activate as activateIot } from './iot/activation'
-import { activate as activateDev } from './dev/activation'
-import { CredentialsStore } from './credentials/credentialsStore'
-import { getSamCliContext } from './shared/sam/cli/samCliContext'
+import { shutdown as codewhispererShutdown } from './codewhisperer'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -64,26 +41,25 @@ import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
 import { isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { Logging } from './shared/logger/commands'
-import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './credentials/auth'
+import { activateModules, extcontextModule } from './modules.gen'
+import { DefaultAwsContext } from './shared/awsContext'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
-    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
     initialize(context)
     initializeManifestPaths(context)
+    globals.awsContext = new DefaultAwsContext()
+    await initializeComputeRegion()
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
     )
     await activateLogger(context, toolkitOutputChannel)
-    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
-    )
     globals.outputChannel = toolkitOutputChannel
 
     registerErrorHandler((info, error) => {
@@ -96,15 +72,17 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        const settings = Settings.instance
+        const experiments = Experiments.instance
+
+        await activateTelemetry(context, settings)
+        const extContext = await extcontextModule.activate(context)
+        const awsContext = extContext.awsContext
+        const credentialsStore = extContext.credentialsStore
+        globals.regionProvider = extContext.regionProvider
+        globals.loginManager = new LoginManager(awsContext, credentialsStore)
+
         initializeCredentialsProviderManager()
-
-        const endpointsProvider = makeEndpointsProvider()
-
-        const awsContext = new DefaultAwsContext()
-        globals.awsContext = awsContext
-        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
-        const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -114,18 +92,10 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        globals.regionProvider = regionProvider
-        globals.loginManager = loginManager
-        globals.awsContextCommands = new AwsContextCommands(regionProvider, Auth.instance)
+        globals.awsContextCommands = new AwsContextCommands(extContext.regionProvider, Auth.instance)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService()
         globals.resourceManager = new AwsResourceManager(context)
-
-        const settings = Settings.instance
-        const experiments = Experiments.instance
-
-        await initializeCredentials(context, awsContext, loginManager)
-        await activateTelemetry(context, awsContext, settings)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {
@@ -137,27 +107,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await globals.schemaService.start()
         awsFiletypes.activate()
-
-        globals.uriHandler = new UriHandler()
-        context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
-
-        const extContext: ExtContext = {
-            extensionContext: context,
-            awsContext: globals.awsContext,
-            samCliContext: getSamCliContext,
-            regionProvider: regionProvider,
-            outputChannel: toolkitOutputChannel,
-            invokeOutputChannel: remoteInvokeOutputChannel,
-            telemetryService: globals.telemetry,
-            uriHandler: globals.uriHandler,
-            credentialsStore,
-        }
-
-        try {
-            activateDev(extContext)
-        } catch (error) {
-            getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
-        }
 
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
@@ -191,47 +140,11 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await codecatalyst.activate(extContext)
-
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCodeWhisperer(extContext)
-
-        await activateAwsExplorer({
-            context: extContext,
-            regionProvider,
-            toolkitOutputChannel,
-            remoteInvokeOutputChannel,
-        })
-
-        await activateAppRunner(extContext)
-
-        await activateApiGateway({
-            extContext: extContext,
-            outputChannel: remoteInvokeOutputChannel,
-        })
-
-        await activateLambda(extContext)
-
-        await activateSsmDocument(context, globals.awsContext, regionProvider, toolkitOutputChannel)
+        await activateModules(context)
 
         await activateSam(extContext)
-
-        await activateS3(extContext)
-
-        await activateEcr(context)
-
-        await activateCloudWatchLogs(context, settings)
-
-        await activateDynamicResources(context)
-
-        await activateIot(extContext)
-
-        await activateEcs(extContext)
-
-        await activateSchemas(extContext)
-
-        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         showWelcomeMessage(context)
 
@@ -298,16 +211,6 @@ function initializeCredentialsProviderManager() {
     manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
-function makeEndpointsProvider() {
-    const localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
-    const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
-
-    return {
-        local: () => getEndpointsFromFetcher(localManifestFetcher),
-        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
-    }
-}
-
 function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
     try {
         const activationFinishedOn = Date.now()
@@ -324,7 +227,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
  *
  * Cloud9 does not show a progress notification.
  */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): typeof vscode.window['withProgress'] {
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
     const withProgress = vscode.window.withProgress.bind(vscode.window)
 
     return (options, task) => {

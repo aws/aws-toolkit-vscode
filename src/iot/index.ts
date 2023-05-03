@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { IotThingNode } from './explorer/iotThingNode'
-import { ExtContext } from '../shared/extensions'
+import type { extcontext } from '../modules.gen'
 import { IotThingFolderNode } from './explorer/iotThingFolderNode'
 import { createThingCommand } from './commands/createThing'
 import { deleteThingCommand } from './commands/deleteThing'
@@ -37,7 +38,7 @@ import { Commands } from '../shared/vscode/commands2'
 /**
  * Activate IoT components.
  */
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(_: vscode.ExtensionContext, context: extcontext): Promise<void> {
     context.extensionContext.subscriptions.push(
         Commands.register('aws.iot.createThing', async (node: IotThingFolderNode) => {
             await createThingCommand(node)

@@ -18,7 +18,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 import { VueWebview } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -103,7 +103,7 @@ export class SearchSchemasWebview extends VueWebview {
 
 const Panel = VueWebview.compilePanel(SearchSchemasWebview)
 
-export async function createSearchSchemasWebView(context: ExtContext, node: RegistryItemNode | SchemasNode) {
+export async function createSearchSchemasWebView(context: extcontext, node: RegistryItemNode | SchemasNode) {
     const logger: Logger = getLogger()
 
     // note: this isn't tied to actually running a search (it's tied to opening the webview successfully), but this preserves existing metric behavior

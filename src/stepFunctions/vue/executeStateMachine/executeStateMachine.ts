@@ -11,7 +11,7 @@ import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunction
 import { getLogger } from '../../../shared/logger'
 import { Result } from '../../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
-import { ExtContext } from '../../../shared/extensions'
+import type { extcontext } from '../../../modules.gen'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -78,7 +78,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
 
 const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
 
-export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
+export async function executeStateMachine(context: extcontext, node: StateMachineNode): Promise<void> {
     const wv = new Panel(context.extensionContext, context.outputChannel, {
         arn: node.details.stateMachineArn,
         name: node.details.name,

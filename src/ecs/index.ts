@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
 import { ecsDocumentationUrl } from '../shared/constants'
 import { Commands } from '../shared/vscode/commands2'
 import { openTaskInTerminal, runCommandInContainer, toggleExecuteCommandFlag } from './commands'
@@ -13,9 +12,9 @@ import { Instance } from '../shared/utilities/typeConstructors'
 import { Service } from './model'
 import { telemetry } from '../shared/telemetry/telemetry'
 
-export async function activate(ctx: ExtContext): Promise<void> {
-    ctx.extensionContext.subscriptions.push(runCommandInContainer, openTaskInTerminal)
-    ctx.extensionContext.subscriptions.push(
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
+    ctx.subscriptions.push(runCommandInContainer, openTaskInTerminal)
+    ctx.subscriptions.push(
         Commands.register('aws.ecs.enableEcsExec', (param?: unknown) => {
             return telemetry.ecs_enableExecuteCommand.run(async () => {
                 const service = getResourceFromTreeNode(param, Instance(Service))

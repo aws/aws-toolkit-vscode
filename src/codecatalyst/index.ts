@@ -6,7 +6,7 @@
 import * as uriHandlers from './uriHandlers'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ExtContext } from '../shared/extensions'
+import type { awsexplorer, extcontext } from '../modules.gen'
 import { CodeCatalystRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { CodeCatalystCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
@@ -22,13 +22,14 @@ import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { getThisDevEnv } from './model'
 import { isDevenvVscode } from './utils'
 import { getLogger } from '../shared/logger/logger'
+import { CodeCatalystRootNode } from './explorer'
 
 const localize = nls.loadMessageBundle()
 
 /**
  * Activate CodeCatalyst functionality.
  */
-export async function activate(ctx: ExtContext): Promise<void> {
+export async function activate(_: vscode.ExtensionContext, ctx: extcontext, explorer: awsexplorer): Promise<void> {
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(ctx.extensionContext)
     const commands = new CodeCatalystCommands(authProvider)
     const remoteSourceProvider = new CodeCatalystRemoteSourceProvider(commands, authProvider)
@@ -97,9 +98,13 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }
     }
 
-    Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
-    })
+    const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
+    ctx.extensionContext.subscriptions.push(
+        ...codecatalystNode.map(n => explorer.developerTools.registerNode(n)),
+        Commands.register('aws.codecatalyst.removeConnection', () => {
+            authProvider.removeSavedConnection()
+        })
+    )
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {

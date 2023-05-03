@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { throttle } from '../shared/utilities/functionUtils'
+import { isNonNullable } from '../shared/utilities/tsUtils'
 
 export interface RootNode<T = unknown> extends TreeNode<T> {
     /**
@@ -29,24 +30,40 @@ export interface RootNode<T = unknown> extends TreeNode<T> {
  * Components placed under this view do not strictly need to be 'local'. They just need to place greater
  * emphasis on the developer's local development environment.
  */
-export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<TreeNode> {
+export function createLocalExplorerView() {
+    const rootNodes: RootNode[] = []
     const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(rootNodes) })
     const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
 
-    rootNodes.forEach(node => node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
+    function registerNode(node: RootNode) {
+        rootNodes.push(node)
 
-    // Cloud9 will only refresh when refreshing the entire tree
-    if (isCloud9()) {
-        rootNodes.forEach(node => {
+        const disposables: (vscode.Disposable | undefined)[] = []
+        disposables.push(node.onDidChangeVisibility?.(() => treeDataProvider.refresh(node)))
+        // Cloud9 will only refresh when refreshing the entire tree
+        if (isCloud9()) {
             // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
             // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
             const refresh = throttle(() => treeDataProvider.refresh(node), 10)
-            node.onDidChangeTreeItem?.(() => refresh())
-            node.onDidChangeChildren?.(() => refresh())
+            disposables.push(node.onDidChangeTreeItem?.(() => refresh()))
+            disposables.push(node.onDidChangeChildren?.(() => refresh()))
+        }
+
+        disposables.push({
+            dispose: () => {
+                const idx = rootNodes.findIndex(n => n === node)
+                if (idx !== -1) {
+                    rootNodes.splice(idx, -1)
+                }
+            },
         })
+
+        treeDataProvider.refresh(node)
+
+        return vscode.Disposable.from(...disposables.filter(isNonNullable))
     }
 
-    return view
+    return { view, registerNode }
 }
 
 async function getChildren(roots: RootNode[]) {

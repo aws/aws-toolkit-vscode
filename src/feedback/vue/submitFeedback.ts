@@ -4,7 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { ExtContext } from '../../shared/extensions'
+import type { extcontext } from '../../modules.gen'
 
 import { getLogger } from '../../shared/logger'
 import * as vscode from 'vscode'
@@ -63,7 +63,7 @@ const Panel = VueWebview.compilePanel(FeedbackWebview)
 
 let activeWebview: VueWebviewPanel | undefined
 
-export async function submitFeedback(context: ExtContext) {
+export async function submitFeedback(context: extcontext) {
     activeWebview ??= new Panel(context.extensionContext, globals.telemetry)
 
     const webviewPanel = await activeWebview.show({
