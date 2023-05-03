@@ -29,7 +29,7 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
-import { truncate } from '../utilities/textUtilities'
+import { truncateProps } from '../utilities/textUtilities'
 
 interface CodeCatalystConfig {
     readonly region: string
@@ -267,12 +267,17 @@ class CodeCatalystClientInternal {
                             'API request failed (time: %dms): %s\nparams: %O\nerror: %O\nheaders: %O',
                             timecost,
                             r.operation,
-                            r.params,
+                            truncateProps(r.params, 20, ['nextToken']),
                             errNoStack,
                             logHeaders
                         )
                     } else {
-                        log.error('API request failed (time: %dms):%O\nheaders: %O', timecost, req, logHeaders)
+                        log.error(
+                            'API request failed (time: %dms):%O\nheaders: %O',
+                            timecost,
+                            truncateProps(req, 20, ['nextToken']),
+                            logHeaders
+                        )
                     }
                     if (silent) {
                         if (defaultVal === undefined) {
@@ -285,19 +290,12 @@ class CodeCatalystClientInternal {
                     return
                 }
                 if (log.logLevelEnabled('verbose')) {
-                    const truncatedData = {
-                        ...data,
-                        nextToken: (data as any)?.nextToken ?? '',
-                    }
-                    if (truncatedData.nextToken && typeof truncatedData.nextToken === 'string') {
-                        truncatedData.nextToken = truncate(truncatedData.nextToken, 20)
-                    }
                     log.verbose(
                         'API request (time: %dms): %s\nparams: %O\nresponse: %O',
                         timecost,
                         r.operation ?? '?',
-                        r.params ?? '?',
-                        truncatedData
+                        r.params ? truncateProps(r.params, 20, ['nextToken']) : '?',
+                        truncateProps(data as object, 20, ['nextToken'])
                     )
                 }
                 resolve(data)
