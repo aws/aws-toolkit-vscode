@@ -35,6 +35,19 @@
     ],
     "metrics": [
         {
+            "name": "cloudwatchlogs_open",
+            "description": "Open a CloudWatch Logs entity. ServiceType and source indicate where the request came from (example: while viewing an ECS container)",
+            "metadata": [
+                { "type": "result" },
+                { "type": "cloudWatchResourceType" },
+                { "type": "cloudWatchLogsPresentation", "required": false },
+                { "type": "serviceType", "required": false },
+                { "type": "hasTextFilter", "required": false },
+                { "type": "hasTimeFilter", "required": false },
+                { "type": "source" }
+            ]
+        },
+        {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,

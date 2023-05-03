@@ -55,19 +55,12 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     }
 
     const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
-
-    if (logData.parameters.startTime || logData.parameters.filterPattern) {
-        recordTelemetryFilter(logData, 'logGroup', 'Command')
-    }
+    recordTelemetryFilter(logData)
 
     return logData
 }
 
-export async function prepareDocument(
-    uri: vscode.Uri,
-    logData: CloudWatchLogsData,
-    registry: LogDataRegistry
-) {
+export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsData, registry: LogDataRegistry) {
     try {
         // Gets the data: calls filterLogEventsFromUri().
         await registry.fetchNextLogEvents(uri)
@@ -84,7 +77,7 @@ export async function prepareDocument(
             localize(
                 'AWS.cwl.searchLogGroup.errorRetrievingLogs',
                 'Failed to get logs for {0}',
-                parseCloudWatchLogsUri(uri).logGroupInfo.groupName,
+                parseCloudWatchLogsUri(uri).logGroupInfo.groupName
             )
         )
     }
