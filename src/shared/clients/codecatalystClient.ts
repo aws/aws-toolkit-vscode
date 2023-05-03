@@ -29,7 +29,6 @@ import {
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
 
-// REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
     readonly region: string
     readonly endpoint: string
@@ -237,19 +236,16 @@ class CodeCatalystClientInternal {
                     const logHeaders = {}
                     // Selected headers which are useful for logging.
                     const logHeaderNames = [
+                        'x-amzn-requestid',
+                        'x-amzn-trace-id',
+                        'x-amzn-served-from',
+                        'x-cache',
+                        'x-amz-cf-id',
+                        'x-amz-cf-pop',
                         // 'access-control-expose-headers',
                         // 'cache-control',
                         // 'strict-transport-security',
-                        'x-amz-apigw-id',
-                        'x-amz-cf-id',
-                        'x-amz-cf-pop',
-                        'x-amzn-remapped-content-length',
-                        'x-amzn-remapped-x-amzn-requestid',
-                        'x-amzn-requestid',
-                        'x-amzn-served-from',
-                        'x-amzn-trace-id',
-                        'x-cache',
-                        'x-request-id', // <- Request id for caws/fusi!
+                        // 'x-amz-apigw-id',
                     ]
                     if (allHeaders && Object.keys(allHeaders).length > 0) {
                         for (const k of logHeaderNames) {
@@ -260,10 +256,7 @@ class CodeCatalystClientInternal {
                     // Stack is noisy and useless in production.
                     const errNoStack = { ...e }
                     delete errNoStack.stack
-                    // Remove confusing "requestId" field (= "x-amzn-requestid" header)
-                    // because for caws/fusi, "x-request-id" is more relevant.
-                    // All of the various request-ids can be found in the logged headers.
-                    delete errNoStack.requestId
+                    delete errNoStack.requestId // redundant (= "x-amzn-requestid" header).
 
                     if (r.operation || r.params) {
                         log.error(
