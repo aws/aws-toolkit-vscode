@@ -12,12 +12,11 @@ import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
 import { SharedCredentialsKeys, StaticCredentialsProfileData } from '../types'
+import { CredentialsKeyFormatValidators } from '../sharedCredentialsValidation'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
 }
-
-const accessKeyPattern = /[\w]{16,128}/
 
 export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileData> = {
     label: 'Static Credentials',
@@ -34,17 +33,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredential
                     'Input the {0} Access Key',
                     getIdeProperties().company
                 ),
-                validateInput: accessKey => {
-                    if (accessKey === '') {
-                        return localize('AWS.credentials.error.emptyAccessKey', 'Access key must not be empty')
-                    }
-                    if (!accessKeyPattern.test(accessKey)) {
-                        return localize(
-                            'AWS.credentials.error.emptyAccessKey',
-                            'Access key must be alphanumeric and between 16 and 128 characters'
-                        )
-                    }
-                },
+                validateInput: CredentialsKeyFormatValidators.aws_access_key_id,
             }),
         [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
             createInputBox({
@@ -57,11 +46,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredential
                     'Input the {0} Secret Key',
                     getIdeProperties().company
                 ),
-                validateInput: secretKey => {
-                    if (secretKey === '') {
-                        return localize('AWS.credentials.error.emptySecretKey', 'Secret key must not be empty')
-                    }
-                },
+                validateInput: CredentialsKeyFormatValidators.aws_secret_access_key,
                 password: true,
             }),
     },
