@@ -1,3 +1,10 @@
+## 1.72.0 2023-05-04
+
+- **Bug Fix** "Open CodeCatalyst Dev Environment" fails on flatpak (steamdeck)
+- **Bug Fix** auth: changes to the AWS shared configuration files are not always respected when fetching credentials
+- **Bug Fix** CodeWhisperer status bar showing even when not in use
+- **Feature** Improved startup performance on large workspaces #3370
+
 ## 1.71.0 2023-04-28
 
 - **Bug Fix** CodeWhisperer shows "The security token included in this request is expired" in Cloud9

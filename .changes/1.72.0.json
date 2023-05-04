@@ -1,0 +1,22 @@
+{
+	"date": "2023-05-04",
+	"version": "1.72.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "\"Open CodeCatalyst Dev Environment\" fails on flatpak (steamdeck)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "auth: changes to the AWS shared configuration files are not always respected when fetching credentials"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer status bar showing even when not in use"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved startup performance on large workspaces #3370"
+		}
+	]
+}
