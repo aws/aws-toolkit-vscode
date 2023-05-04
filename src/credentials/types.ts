@@ -33,3 +33,10 @@ export interface StaticCredentialsProfileData {
     [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: string
     [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: string
 }
+
+/**
+ * The name of a section in a credentials/config file
+ *
+ * The is the value of `{A}` in `[ {A} ]` or `[ {B} {A} ]`.
+ */
+export type SectionName = string
