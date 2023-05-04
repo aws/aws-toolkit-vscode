@@ -28,12 +28,11 @@ import {
     getSectionOrThrow,
     isProfileSection,
     Profile,
-    SectionName,
     Section,
 } from '../sharedCredentials'
 import { hasScopes, SsoProfile } from '../auth'
 import { builderIdStartUrl } from '../sso/model'
-import { SharedCredentialsKeys } from '../types'
+import { SectionName, SharedCredentialsKeys } from '../types'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
