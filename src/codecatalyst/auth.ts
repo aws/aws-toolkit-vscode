@@ -108,7 +108,7 @@ export class CodeCatalystAuthenticationProvider {
 
     public async promptOnboarding(): Promise<void> {
         await vscode.window.showInformationMessage(
-            `The current connection does not have permissions to use CodeCatalyst. [Sign up with CodeCatalyst](${onboardingUrl}) to get started.`
+            `Using CodeCatalyst requires onboarding with a Space. [Sign up with CodeCatalyst](${onboardingUrl}) to get started.`
         )
 
         throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
@@ -124,8 +124,9 @@ export class CodeCatalystAuthenticationProvider {
         const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
         if (conn === undefined) {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Create' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Create',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             const message = `The ${
                 getIdeProperties().company
@@ -145,15 +146,17 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         const upgrade = async () => {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Upgrade' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Upgrade',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             return this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
         if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Switch',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             const resp = await vscode.window.showInformationMessage(
                 'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
