@@ -158,8 +158,13 @@ class CodeWhispererTelemetryService {
             automatedTriggerType.specialChar.toString()
         } else null
 
-        val classifierResult = if (requestContext.fileContextInfo.programmingLanguage is CodeWhispererJava) {
-            CodeWhispererAutoTriggerService.getClassifierResultIfNeeded(requestContext.editor)
+        val language = requestContext.fileContextInfo.programmingLanguage
+        val shouldIncludeClassifier = language is CodeWhispererJava
+        val classifierResult = if (shouldIncludeClassifier) {
+            requestContext.triggerTypeInfo.automatedTriggerType.calculationResult
+        } else null
+        val classifierThreshold = if (shouldIncludeClassifier) {
+            CodeWhispererAutoTriggerService.getThreshold(language)
         } else null
 
         CodewhispererTelemetry.userTriggerDecision(
@@ -172,7 +177,7 @@ class CodeWhispererTelemetryService {
             codewhispererCharactersAccepted = null,
             codewhispererCharactersRecommended = null,
             codewhispererCompletionType = responseContext.completionType,
-            codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType(),
+            codewhispererLanguage = language.toTelemetryType(),
             codewhispererTriggerType = requestContext.triggerTypeInfo.triggerType,
             codewhispererAutomatedTriggerType = automatedTriggerType.telemetryType,
             codewhispererLineNumber = requestContext.caretPosition.line,
@@ -187,7 +192,8 @@ class CodeWhispererTelemetryService {
             codewhispererTimeToFirstRecommendation = requestContext.latencyContext.paginationFirstCompletionTime,
             codewhispererPreviousSuggestionState = previousUserTriggerDecision,
             codewhispererSuggestionState = suggestionState,
-            codewhispererClassifierResult = classifierResult
+            codewhispererClassifierResult = classifierResult,
+            codewhispererClassifierThreshold = classifierThreshold
         )
     }
 

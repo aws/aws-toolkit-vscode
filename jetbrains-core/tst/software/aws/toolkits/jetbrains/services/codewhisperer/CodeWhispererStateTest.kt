@@ -27,7 +27,7 @@ class CodeWhispererStateTest : CodeWhispererTestBase() {
             assertThat(actualProject).isEqualTo(projectRule.project)
             assertThat(actualEditor).isEqualTo(editor)
             assertThat(actualTriggerTypeInfo.triggerType).isEqualTo(CodewhispererTriggerType.OnDemand)
-            assertThat(actualTriggerTypeInfo.automatedTriggerType).isEqualTo(CodeWhispererAutomatedTriggerType.Unknown)
+            assertThat(actualTriggerTypeInfo.automatedTriggerType is CodeWhispererAutomatedTriggerType.Unknown).isTrue()
             assertThat(actualFilename).isEqualTo(pythonFileName)
             assertThat(actualProgrammingLanguage.languageId).isEqualTo(CodewhispererLanguage.Python.toString())
 

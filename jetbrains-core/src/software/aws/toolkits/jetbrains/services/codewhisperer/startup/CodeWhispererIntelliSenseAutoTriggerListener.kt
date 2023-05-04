@@ -24,7 +24,7 @@ object CodeWhispererIntelliSenseAutoTriggerListener : LookupManagerListener {
                 }
 
                 // Classifier
-                CodeWhispererAutoTriggerService.getInstance().tryInvokeAutoTrigger(editor, CodeWhispererAutomatedTriggerType.IntelliSense)
+                CodeWhispererAutoTriggerService.getInstance().tryInvokeAutoTrigger(editor, CodeWhispererAutomatedTriggerType.IntelliSense())
                 cleanup()
             }
             override fun lookupCanceled(event: LookupEvent) {

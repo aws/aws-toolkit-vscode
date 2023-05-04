@@ -5,15 +5,20 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 
-sealed class CodeWhispererAutomatedTriggerType(val telemetryType: CodewhispererAutomatedTriggerType) {
-    data class Classifier(val calculationResult: Double = 0.0) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Classifier)
-    data class SpecialChar(val specialChar: Char) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.SpecialCharacters)
+sealed class CodeWhispererAutomatedTriggerType(
+    val telemetryType: CodewhispererAutomatedTriggerType,
+    var calculationResult: Double?
+) {
+    class Classifier(calculationResult: Double?) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Classifier, calculationResult)
+    class SpecialChar(val specialChar: Char, calculationResult: Double? = null) :
+        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.SpecialCharacters, calculationResult)
 
-    object Enter : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Enter)
+    class Enter(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Enter, calculationResult)
 
-    object IntelliSense : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IntelliSenseAcceptance)
+    class IntelliSense(calculationResult: Double? = null) :
+        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IntelliSenseAcceptance, calculationResult)
 
-    object IdleTime : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IdleTime)
+    class IdleTime(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IdleTime, calculationResult)
 
-    object Unknown : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Unknown)
+    class Unknown(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Unknown, calculationResult)
 }

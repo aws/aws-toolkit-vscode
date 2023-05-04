@@ -28,7 +28,7 @@ class CodeWhispererRecommendationAction : AnAction(message("codewhisperer.trigge
             return
         }
 
-        val triggerType = TriggerTypeInfo(CodewhispererTriggerType.OnDemand, CodeWhispererAutomatedTriggerType.Unknown)
+        val triggerType = TriggerTypeInfo(CodewhispererTriggerType.OnDemand, CodeWhispererAutomatedTriggerType.Unknown())
         CodeWhispererService.getInstance().showRecommendationsInPopup(editor, triggerType, latencyContext)
     }
 }

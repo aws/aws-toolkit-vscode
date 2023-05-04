@@ -401,13 +401,13 @@ fun aRequestContext(project: Project): RequestContext {
     val triggerType = listOf(CodewhispererTriggerType.AutoTrigger, CodewhispererTriggerType.OnDemand).random()
     val automatedTriggerType = if (triggerType == CodewhispererTriggerType.AutoTrigger) {
         listOf(
-            CodeWhispererAutomatedTriggerType.IdleTime,
-            CodeWhispererAutomatedTriggerType.Enter,
+            CodeWhispererAutomatedTriggerType.IdleTime(),
+            CodeWhispererAutomatedTriggerType.Enter(),
             CodeWhispererAutomatedTriggerType.SpecialChar('a'),
-            CodeWhispererAutomatedTriggerType.IntelliSense
+            CodeWhispererAutomatedTriggerType.IntelliSense()
         ).random()
     } else {
-        CodeWhispererAutomatedTriggerType.Unknown
+        CodeWhispererAutomatedTriggerType.Unknown()
     }
 
     return RequestContext(

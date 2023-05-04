@@ -17,7 +17,7 @@ class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler
         originalHandler.execute(editor, caret, dataContext)
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            CodeWhispererAutoTriggerService.getInstance().tryInvokeAutoTrigger(editor, CodeWhispererAutomatedTriggerType.Enter)
+            CodeWhispererAutoTriggerService.getInstance().tryInvokeAutoTrigger(editor, CodeWhispererAutomatedTriggerType.Enter())
         }
     }
 }
