@@ -16,11 +16,15 @@ import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslF
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { closeAllEditors } from '../../testUtil'
 import { getLogger } from '../../../shared/logger'
+import { previewStateMachineCommand } from '../../../stepFunctions/activation'
+import { getTestWindow } from '../../shared/vscode/window'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
 
-const mockGlobalStorage: vscode.Memento = {
+const mockGlobalStorage: vscode.Memento & { setKeysForSync(keys: readonly string[]): void } = {
+    keys: () => [],
+    setKeysForSync: (keys: readonly string[]) => undefined,
     update: sinon.spy(),
     get: sinon.stub().returns(undefined),
 }
@@ -191,11 +195,21 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
     })
 
+    it('throws an error if no active text editor is open', async function () {
+        // Make sure nothing is open from previous tests.
+        await closeAllEditors()
+        assert.strictEqual(vscode.window.activeTextEditor, undefined)
+
+        const errorMessage = getTestWindow().waitForMessage(/no active text editor/i)
+
+        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
+    })
+
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {
         const yamlDoc = await getYamlDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
-            public getWebview(): vscode.Webview | undefined {
+            public override getWebview(): vscode.Webview | undefined {
                 return { postMessage } as unknown as vscode.Webview
             }
         }
@@ -219,7 +233,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const jsonDoc = await getJsonDoc()
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
-            public getWebview(): vscode.Webview | undefined {
+            public override getWebview(): vscode.Webview | undefined {
                 return { postMessage } as unknown as vscode.Webview
             }
         }

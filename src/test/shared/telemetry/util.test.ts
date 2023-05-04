@@ -6,11 +6,12 @@
 import * as assert from 'assert'
 import { Memento, ConfigurationTarget } from 'vscode'
 import { Settings } from '../../../shared/settings'
-import { convertLegacy, getClientId, TelemetryConfig } from '../../../shared/telemetry/util'
+import { convertLegacy, getClientId, getUserAgent, platformPair, TelemetryConfig } from '../../../shared/telemetry/util'
+import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 
 describe('TelemetryConfig', function () {
-    const SETTING_KEY = 'aws.telemetry'
+    const settingKey = 'aws.telemetry'
     const settings = new Settings(ConfigurationTarget.Workspace)
 
     let sut: TelemetryConfig
@@ -73,7 +74,7 @@ describe('TelemetryConfig', function () {
     describe('isTelemetryEnabled', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.update(SETTING_KEY, scenario.initialSettingValue)
+                await settings.update(settingKey, scenario.initialSettingValue)
 
                 assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })
@@ -120,6 +121,7 @@ describe('getClientId', function () {
 
     it('returns the nil UUID if it fails to save generated UUID', async function () {
         const mememto: Memento = {
+            keys: () => [],
             get(key) {
                 return undefined
             },
@@ -133,6 +135,7 @@ describe('getClientId', function () {
 
     it('returns the nil UUID if fails to retrive a saved UUID.', async function () {
         const mememto: Memento = {
+            keys: () => [],
             get(key) {
                 throw new Error()
             },
@@ -155,5 +158,38 @@ describe('getClientId', function () {
     it('should be 11111111-1111-1111-1111-111111111111 if telemetry is not enabled', async function () {
         const clientId = await getClientId(new FakeMemento(), false, false)
         assert.strictEqual(clientId, '11111111-1111-1111-1111-111111111111')
+    })
+})
+
+describe('getUserAgent', function () {
+    it('includes product name and version', async function () {
+        const userAgent = await getUserAgent()
+        const lastPair = userAgent.split(' ')[0]
+        assert.ok(lastPair?.startsWith(`AWS-Toolkit-For-VSCode/${extensionVersion}`))
+    })
+
+    it('includes only one pair by default', async function () {
+        const userAgent = await getUserAgent()
+        const pairs = userAgent.split(' ')
+        assert.strictEqual(pairs.length, 1)
+    })
+
+    it('omits `ClientId` by default', async function () {
+        const userAgent = await getUserAgent()
+        assert.ok(!userAgent.includes('ClientId'))
+    })
+
+    it('includes `ClientId` at the end if opted in', async function () {
+        const userAgent = await getUserAgent({ includeClientId: true })
+        const lastPair = userAgent.split(' ').pop()
+        assert.ok(lastPair?.startsWith('ClientId/'))
+    })
+
+    it('includes the platform before `ClientId` if opted in', async function () {
+        const userAgent = await getUserAgent({ includePlatform: true, includeClientId: true })
+        const pairs = userAgent.split(' ')
+        const clientPairIndex = pairs.findIndex(pair => pair.startsWith('ClientId/'))
+        const beforeClient = pairs[clientPairIndex - 1]
+        assert.strictEqual(beforeClient, platformPair())
     })
 })

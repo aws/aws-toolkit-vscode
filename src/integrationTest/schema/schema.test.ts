@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../../shared/extensionGlobals'
+import { GlobalStorage } from '../../shared/globalStorage'
+import * as fs from 'fs-extra'
+import { getDefaultSchemas, samAndCfnSchemaUrl } from '../../shared/schemas'
 import {
     getCITestSchemas,
     JSONObject,
@@ -12,6 +16,8 @@ import {
     assertRef,
     assertDefinition,
 } from '../../test/shared/schema/testUtils'
+import { assertTelemetry } from '../../test/testUtil'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 describe('Sam Schema Regression', function () {
     let samSchema: JSONObject
@@ -59,5 +65,33 @@ describe('Sam Schema Regression', function () {
 
     it('has Property AddDefaultAuthorizerToCorsPreflight in AWS::Serverless::Api.Auth', function () {
         assertDefinitionProperty(samSchema, 'AWS::Serverless::Api.Auth', 'AddDefaultAuthorizerToCorsPreflight')
+    })
+})
+
+describe('getDefaultSchemas()', () => {
+    beforeEach(async () => {})
+
+    it('uses cache after initial fetch for CFN/SAM schema', async () => {
+        fs.removeSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+        globals.telemetry.telemetryEnabled = true
+        globals.telemetry.clearRecords()
+        globals.telemetry.logger.clear()
+        await getDefaultSchemas()
+        await getDefaultSchemas()
+        await getDefaultSchemas()
+        await waitUntil(
+            async () => {
+                return fs.existsSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
+            },
+            { truthy: true, interval: 200, timeout: 5000 }
+        )
+        assertTelemetry('toolkit_getExternalResource', [
+            // Initial retrieval.
+            // (Technically, this is done on activation, not any of the getDefaultSchemas() calls above.)
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Succeeded' },
+            // Use cache after initial fetch.
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
+            { url: samAndCfnSchemaUrl, passive: true, result: 'Cancelled', reason: 'Cache hit' },
+        ])
     })
 })

@@ -8,12 +8,12 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 
 export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public id!: string
+    public override id!: string
 
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly partitionId: string,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private api: RestApi
     ) {
         super('')

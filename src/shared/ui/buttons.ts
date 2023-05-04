@@ -8,9 +8,12 @@ import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
 import { getIcon } from '../icons'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
+import { getIdeProperties } from '../extensionUtilities'
+import { openUrl } from '../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
-const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
+const helpTooltip = localize('AWS.command.help', 'View Toolkit Documentation')
+const awsConsoleTooltip = () => localize('AWS.button.awsConsole', 'Open {0} Console', getIdeProperties().company)
 
 type WizardButton<T> = QuickInputButton<T | WizardControl> | QuickInputButton<void>
 export type PrompterButtons<T> = readonly WizardButton<T>[]
@@ -27,11 +30,10 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  *
  * @param uri Opens the URI upon clicking
  * @param tooltip Optional tooltip for button
- * @param url Optional URL to open when button is clicked
  */
 export function createHelpButton(
     uri: string | vscode.Uri = documentationUrl,
-    tooltip: string = HELP_TOOLTIP
+    tooltip: string = helpTooltip
 ): QuickInputLinkButton {
     const iconPath = getIcon('vscode-help')
 
@@ -50,7 +52,7 @@ export class QuickInputLinkButton implements QuickInputButton<void> {
     }
 
     public onClick(): void {
-        vscode.env.openExternal(this.uri)
+        openUrl(this.uri)
     }
 }
 
@@ -109,6 +111,14 @@ export function createBackButton(): QuickInputButton<WizardControl> {
     return vscode.QuickInputButtons.Back as QuickInputButton<WizardControl>
 }
 
+export function createAwsConsoleButton(
+    uri: string | vscode.Uri,
+    tooltip: string = awsConsoleTooltip()
+): QuickInputLinkButton {
+    const iconPath = getIcon('vscode-link-external')
+    return new QuickInputLinkButton(uri, iconPath, tooltip)
+}
+
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
         iconPath: getIcon('vscode-close'),
@@ -137,8 +147,14 @@ export function createPlusButton(tooltip?: string): QuickInputButton<void> {
  * Currently has: 'help', 'exit', and 'back'
  *
  * @param helpUri optional URI to link to for the 'help' button (see {@link createHelpButton} for defaults)
+ * @param awsConsoleUri optional URI to AWS web console
  * @returns An array of buttons
  */
-export function createCommonButtons(helpUri?: string | vscode.Uri): PrompterButtons<WizardControl> {
-    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
+export function createCommonButtons(
+    helpUri?: string | vscode.Uri,
+    awsConsoleUri?: string | vscode.Uri
+): PrompterButtons<WizardControl> {
+    const buttons2 = [createHelpButton(helpUri), createBackButton(), createExitButton()]
+    const buttons1: typeof buttons2 = awsConsoleUri ? [createAwsConsoleButton(awsConsoleUri)] : []
+    return buttons1.concat(buttons2)
 }

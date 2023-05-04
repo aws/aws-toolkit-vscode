@@ -51,7 +51,7 @@ describe('timeoutUtils', async function () {
             clock.tick(timerLengthMs + 1)
             await assert.rejects(
                 shortTimer.promisify(),
-                new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE),
+                new Error(timeoutUtils.timeoutExpiredMessage),
                 'Timer did not reject due to timeout'
             )
         })
@@ -98,19 +98,14 @@ describe('timeoutUtils', async function () {
         })
 
         it('Correctly reports elapsed time with refresh', async function () {
-            // TODO: fake timers `refresh` is not implemented correctly for the non-global case
-            this.skip()
-
             const longTimer = (this.timer = new timeoutUtils.Timeout(10))
             clock.tick(5)
             longTimer.refresh()
             assert.strictEqual(longTimer.remainingTime, 10)
 
-            clock.tick(10)
-            assert.strictEqual(longTimer.elapsedTime, 15)
+            clock.tick(5)
+            assert.strictEqual(longTimer.elapsedTime, 10)
             assert.strictEqual(longTimer.remainingTime, 5)
-
-            clock = installFakeClock()
         })
 
         it('Refresh pushes back the start time', async function () {
@@ -121,8 +116,6 @@ describe('timeoutUtils', async function () {
         })
 
         it('does not reject if refreshed', async function () {
-            this.skip()
-
             const longTimer = (this.timer = new timeoutUtils.Timeout(10))
             clock.tick(5)
             longTimer.refresh()
@@ -329,20 +322,6 @@ describe('timeoutUtils', async function () {
     })
 
     describe('waitTimeout', async function () {
-        let clock: FakeTimers.InstalledClock
-
-        before(function () {
-            clock = installFakeClock()
-        })
-
-        after(function () {
-            clock.uninstall()
-        })
-
-        afterEach(function () {
-            clock.reset()
-        })
-
         async function testFunction(delay: number = 500, error?: Error) {
             await sleep(delay)
 
@@ -391,7 +370,7 @@ describe('timeoutUtils', async function () {
             clock.tick(300)
             timeout.dispose() // Promise now resolves undefined
             clock.tick(200)
-            await assert.rejects(timedPromise, new Error(timeoutUtils.TIMEOUT_UNEXPECTED_RESOLVE))
+            await assert.rejects(timedPromise, new Error(timeoutUtils.timeoutUnexpectedResolve))
         })
 
         it('"completeTimeout" option set to false throws expired error', async function () {
@@ -400,7 +379,7 @@ describe('timeoutUtils', async function () {
             clock.tick(600)
             await timedPromise
             clock.tick(300)
-            await assert.rejects(timeout.promisify(), new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE))
+            await assert.rejects(timeout.promisify(), new Error(timeoutUtils.timeoutExpiredMessage))
         })
     })
 })

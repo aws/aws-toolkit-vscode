@@ -36,7 +36,7 @@ export async function migrateLegacySettings() {
     )
 }
 
-const LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
+const localTimeoutDefaultMillis: number = 90000
 interface SavedBuckets {
     [profile: string]: { [region: string]: string }
 }
@@ -132,7 +132,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
     }
 
     public getLocalInvokeTimeout(): number {
-        return this.get('lambdaTimeout', LOCAL_TIMEOUT_DEFAULT_MILLIS)
+        return this.get('lambdaTimeout', localTimeoutDefaultMillis)
     }
 
     static #instance: SamCliSettings

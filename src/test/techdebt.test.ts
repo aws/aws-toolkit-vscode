@@ -14,24 +14,12 @@ describe('tech debt', function () {
         const minVscode = env.getMinVscodeVersion()
 
         assert.ok(
-            semver.lt(minVscode, '1.53.0'),
-            'remove src/shared/vscode/secrets.ts wrapper from https://github.com/aws/aws-toolkit-vscode/pull/2626'
+            semver.lt(minVscode, '1.75.0'),
+            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
         )
 
         assert.ok(
-            semver.lt(minVscode, '1.53.0'),
-            'remove `SecretMemento` from src/codecatalyst/auth.ts added in https://github.com/aws/aws-toolkit-vscode-staging/pull/466'
-        )
-
-        assert.ok(
-            semver.lt(minVscode, '1.51.0'),
-            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
-        )
-
-        assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
-
-        assert.ok(
-            semver.lt(minVscode, '1.56.0'),
+            semver.lt(minVscode, '1.75.0'),
             'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
         )
     })
@@ -48,5 +36,18 @@ describe('tech debt', function () {
             semver.lt(minNodejs, '16.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
+
+        assert.ok(
+            semver.lt(minNodejs, '16.0.0'),
+            'with node16+, we can use crypto.randomUUID and remove the "uuid" dependency'
+        )
+    })
+
+    it('temporary code removed', function () {
+        // Reason: https://sim.amazon.com/issues/IDE-10559
+        // At this point in time most users who would have run in to this error
+        // will have already had their old files deleted.
+        const august2023 = new Date(2023, 7, 1)
+        assert.ok(Date.now() < august2023.getTime(), 'remove `deleteOldFiles()` in `cache.ts`')
     })
 })

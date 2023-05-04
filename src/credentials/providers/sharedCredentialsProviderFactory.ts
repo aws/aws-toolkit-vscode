@@ -5,15 +5,11 @@
 
 import * as fs from 'fs-extra'
 import { getLogger, Logger } from '../../shared/logger'
-import {
-    getConfigFilename,
-    getCredentialsFilename,
-    loadSharedCredentialsProfiles,
-    updateAwsSdkLoadConfigEnvironmentVariable,
-} from '../sharedCredentials'
+import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../sharedCredentials'
 import { CredentialsProviderType } from './credentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
+import { getCredentialsFilename, getConfigFilename } from '../sharedCredentialsFile'
 
 export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
     private readonly logger: Logger = getLogger()
@@ -27,11 +23,11 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         }
     }
 
-    public getProviderType(): CredentialsProviderType | undefined {
+    public override getProviderType(): CredentialsProviderType | undefined {
         return SharedCredentialsProvider.getProviderType()
     }
 
-    protected resetProviders() {
+    protected override resetProviders() {
         this.loadedCredentialsModificationMillis = undefined
         this.loadedConfigModificationMillis = undefined
 
@@ -51,24 +47,25 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private async loadSharedCredentialsProviders(): Promise<void> {
         this.resetProviders()
 
-        this.logger.verbose('Loading all Shared Credentials Profiles')
-        const allCredentialProfiles = await loadSharedCredentialsProfiles()
+        this.logger.verbose('Loading all Shared Credentials Sections')
+        const result = await loadSharedCredentialsSections()
+        if (result.errors.length > 0) {
+            const errors = result.errors.map(e => e.message).join('\t\n')
+            getLogger().verbose(`credentials: errors occurred while parsing:\n%s`, errors)
+        }
+
         this.loadedCredentialsModificationMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
-        await updateAwsSdkLoadConfigEnvironmentVariable()
+        await updateAwsSdkLoadConfigEnvVar()
 
-        const profileNames = Array.from(allCredentialProfiles.keys())
-        getLogger().verbose(`credentials: found profiles: ${profileNames}`)
-        for (const profileName of profileNames) {
-            const profile = allCredentialProfiles.get(profileName)
-            if (!profile) {
-                continue
+        getLogger().verbose(`credentials: found sections: ${result.sections.map(s => `${s.type}:${s.name}`)}`)
+        for (const section of result.sections) {
+            if (section.type === 'profile') {
+                await this.addProviderIfValid(
+                    section.name,
+                    new SharedCredentialsProvider(section.name, result.sections)
+                )
             }
-
-            await this.addProviderIfValid(
-                profileName,
-                new SharedCredentialsProvider(profileName, allCredentialProfiles)
-            )
         }
     }
 

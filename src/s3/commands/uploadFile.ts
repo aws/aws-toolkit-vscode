@@ -3,21 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { S3 } from 'aws-sdk'
 import * as path from 'path'
-import { statSync } from 'fs'
+import * as mime from 'mime-types'
 import * as vscode from 'vscode'
-
+import { statSync } from 'fs'
+import { S3 } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { readablePath } from '../util'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { S3Client } from '../../shared/clients/s3Client'
+import { Bucket, Folder, S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -40,7 +39,6 @@ interface UploadRequest {
     fileLocation: vscode.Uri
     fileSizeBytes: number
     s3Client: S3Client
-    window: Window
     ongoingUpload?: S3.ManagedUpload
 }
 
@@ -57,7 +55,6 @@ export async function uploadFileCommand(
     fileSizeBytes: FileSizeBytes = statFile,
     getBucket = promptUserForBucket,
     getFile = getFilesToUpload,
-    window = Window.vscode(),
     outputChannel = globals.outputChannel,
     commands = Commands.vscode()
 ): Promise<void> {
@@ -84,11 +81,10 @@ export async function uploadFileCommand(
         fileLocation: file,
         fileSizeBytes: fileSizeBytes(file),
         s3Client,
-        window,
     })
 
     if (node) {
-        const filesToUpload = await getFile(undefined, window)
+        const filesToUpload = await getFile(undefined)
 
         if (!filesToUpload) {
             showOutputMessage(
@@ -106,9 +102,15 @@ export async function uploadFileCommand(
                 return fileToUploadRequest(node!.bucket.name, key, file)
             })
         )
+        if (node instanceof S3FolderNode) {
+            globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                bucket: node.bucket,
+                folder: node.folder,
+            })
+        }
     } else {
         while (true) {
-            const filesToUpload = await getFile(document, window)
+            const filesToUpload = await getFile(document)
 
             if (!filesToUpload || filesToUpload.length === 0) {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
@@ -149,29 +151,39 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketName = bucketResponse.Name
+            const bucketName = bucketResponse.bucket!.Name
             if (!bucketName) {
                 throw Error(`bucketResponse is not a S3.Bucket`)
             }
 
             uploadRequests.push(
                 ...filesToUpload.map(file => {
-                    const key = path.basename(file.fsPath)
+                    const key =
+                        bucketResponse.folder !== undefined
+                            ? bucketResponse.folder.path + path.basename(file.fsPath)
+                            : path.basename(file.fsPath)
                     return fileToUploadRequest(bucketName, key, file)
                 })
             )
+
+            if (bucketResponse.folder) {
+                globals.context.globalState.update('aws.lastUploadedToS3Folder', {
+                    bucket: bucketResponse.bucket,
+                    folder: bucketResponse.folder,
+                })
+            }
 
             break
         }
     }
 
-    await runBatchUploads(uploadRequests, window, outputChannel)
+    await runBatchUploads(uploadRequests, outputChannel)
 
     commands.execute('aws.refreshAwsExplorer', true)
 }
 
-async function promptForFileLocation(window: Window): Promise<vscode.Uri[] | undefined> {
-    const fileLocations = await window.showOpenDialog({
+async function promptForFileLocation(): Promise<vscode.Uri[] | undefined> {
+    const fileLocations = await vscode.window.showOpenDialog({
         canSelectMany: true,
         openLabel: localize('AWS.s3.uploadFile.openButton', 'Upload'),
     })
@@ -186,12 +198,8 @@ function statFile(file: vscode.Uri) {
 /**
  * Continously attempts to upload the files until all succeed or the user cancels.
  */
-async function runBatchUploads(
-    uploadRequests: UploadRequest[],
-    window = Window.vscode(),
-    outputChannel = globals.outputChannel
-): Promise<void> {
-    let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
+async function runBatchUploads(uploadRequests: UploadRequest[], outputChannel = globals.outputChannel): Promise<void> {
+    let failedRequests = await uploadBatchOfFiles(uploadRequests, outputChannel)
 
     showOutputMessage(
         localize(
@@ -227,7 +235,7 @@ async function runBatchUploads(
             )
         }
         //at least one request failed
-        const response = await window.showErrorMessage(
+        const response = await vscode.window.showErrorMessage(
             localize(
                 'AWS.s3.uploadFile.retryPrompt',
                 'S3 Upload: {0}/{1} failed.',
@@ -240,7 +248,7 @@ async function runBatchUploads(
 
         if (response === localizedText.retry) {
             // No tail call optimization in node :(
-            failedRequests = await uploadBatchOfFiles(failedRequests, window, outputChannel)
+            failedRequests = await uploadBatchOfFiles(failedRequests, outputChannel)
         } else {
             break
         }
@@ -255,11 +263,10 @@ async function runBatchUploads(
 
 async function uploadBatchOfFiles(
     uploadRequests: UploadRequest[],
-    window = Window.vscode(),
     outputChannel = globals.outputChannel
 ): Promise<UploadRequest[]> {
     const totalBytes = uploadRequests.map(r => r.fileSizeBytes).reduce((a, b) => a + b, 0)
-    const response = await window.withProgress(
+    const response = await vscode.window.withProgress(
         {
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
@@ -289,7 +296,6 @@ async function uploadBatchOfFiles(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel
                 )
-
                 let remainder = 0
                 let lastLoaded = 0
                 // TODO: don't use `withProgress`, it makes it hard to have control over the individual outputs
@@ -365,6 +371,7 @@ async function uploadWithProgress(
         key: request.key,
         content: request.fileLocation,
         progressListener,
+        contentType: mime.contentType(path.extname(request.fileLocation.fsPath)) || undefined,
     })
 
     progressListener(0)
@@ -382,8 +389,14 @@ async function uploadWithProgress(
     return (request.ongoingUpload = undefined)
 }
 
-interface BucketQuickPickItem extends vscode.QuickPickItem {
+export interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
+    folder?: Folder | undefined
+}
+
+interface SavedFolder {
+    bucket: Bucket
+    folder: Folder
 }
 
 // TODO:: extract and reuse logic from sam deploy wizard (bucket selection)
@@ -397,16 +410,15 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
  */
 export async function promptUserForBucket(
     s3client: S3Client,
-    window = Window.vscode(),
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
-): Promise<S3.Bucket | 'cancel' | 'back'> {
+): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
     let allBuckets: S3.Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
         getLogger().error('Failed to list buckets from client', e)
-        window.showErrorMessage(
+        vscode.window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )
         throw new Error('Failed to list buckets from client')
@@ -427,15 +439,69 @@ export async function promptUserForBucket(
         }
     })
 
+    const lastTouchedFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastTouchedS3Folder')
+    let lastFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastTouchedFolder) {
+        lastFolderItem = {
+            label: lastTouchedFolder.folder.name,
+            description: '(last opened S3 folder)',
+            bucket: { Name: lastTouchedFolder.bucket.name },
+            folder: lastTouchedFolder.folder,
+        }
+    }
+
+    const lastUploadedToFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastUploadedToS3Folder')
+    let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
+    if (lastUploadedToFolder) {
+        lastUploadedFolderItem = {
+            label: lastUploadedToFolder.folder.name,
+            description: '(last uploaded-to S3 folder)',
+            bucket: { Name: lastUploadedToFolder.bucket.name },
+            folder: lastUploadedToFolder.folder,
+        }
+    }
+
+    const folderItems = []
+    if (lastUploadedFolderItem !== undefined) {
+        folderItems.push(lastUploadedFolderItem)
+    }
+    // de-dupe if folders are the same
+    if (
+        lastFolderItem !== undefined &&
+        (lastUploadedFolderItem === undefined || lastFolderItem.folder?.path !== lastUploadedFolderItem.folder?.path)
+    ) {
+        folderItems.push(lastFolderItem)
+    }
+
+    const items: BucketQuickPickItem[] = [
+        ...(folderItems.length > 0
+            ? [
+                  {
+                      label: localize('AWS.s3.uploadFile.folderSeparator', 'Folders'),
+                      kind: vscode.QuickPickItemKind.Separator,
+                      bucket: undefined,
+                  } as BucketQuickPickItem,
+              ]
+            : []),
+        ...folderItems,
+        {
+            label: localize('AWS.s3.uploadFile.bucketSeparator', 'Buckets'),
+            kind: vscode.QuickPickItemKind.Separator,
+            bucket: undefined,
+        } as BucketQuickPickItem,
+        ...bucketItems,
+        createNewBucket,
+    ]
+
     const picker = createQuickPick({
         options: {
             canPickMany: false,
             ignoreFocusOut: true,
-            title: localize('AWS.message.selectBucket', 'Select an S3 bucket to upload to'),
+            title: localize('AWS.message.selectBucket', 'Select an S3 bucket or folder to upload to'),
             step: 2,
             totalSteps: 2,
         },
-        items: [...bucketItems, createNewBucket],
+        items,
         buttons: [vscode.QuickInputButtons.Back],
     })
     const response = verifySinglePickerOutput(
@@ -464,11 +530,11 @@ export async function promptUserForBucket(
         }
         if (response.label === 'Create new bucket') {
             const s3Node = new S3Node(s3client)
-            await createBucket(s3Node, window, Commands.vscode())
+            await createBucket(s3Node, Commands.vscode())
             return promptUserForBucket(s3client)
         }
     } else {
-        return response.bucket
+        return response
     }
     return 'cancel'
 }
@@ -483,13 +549,12 @@ export async function promptUserForBucket(
  */
 export async function getFilesToUpload(
     document?: vscode.Uri,
-    window = Window.vscode(),
     promptUserFunction = promptUser
 ): Promise<vscode.Uri[] | undefined> {
     let fileLocations: vscode.Uri[] | undefined
 
     if (!document) {
-        fileLocations = await promptForFileLocation(window)
+        fileLocations = await promptForFileLocation()
     } else {
         fileLocations = [document]
         const fileNameToDisplay = path.basename(fileLocations[0].fsPath)
@@ -529,7 +594,7 @@ export async function getFilesToUpload(
         }
 
         if (response.label === selectMore.label) {
-            fileLocations = await promptForFileLocation(window)
+            fileLocations = await promptForFileLocation()
         }
     }
 

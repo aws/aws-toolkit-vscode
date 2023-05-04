@@ -5,7 +5,7 @@
 
 import { createRegionPrompter } from '../../../../shared/ui/common/region'
 import { createCommonButtons } from '../../../../shared/ui/buttons'
-import { createQuickPickTester } from '../testUtils'
+import { createQuickPickPrompterTester } from '../testUtils'
 
 describe('createRegionPrompter', function () {
     it('prompts for region', async function () {
@@ -19,7 +19,7 @@ describe('createRegionPrompter', function () {
             buttons: createCommonButtons('https://aws.amazon.com/'),
             defaultRegion: 'foo-bar-1',
         })
-        const tester = createQuickPickTester(p)
+        const tester = createQuickPickPrompterTester(p)
         tester.assertItems(['FOO', 'PDX', 'IAD'])
         tester.acceptItem(regions[1].name)
         await tester.result(regions[1])

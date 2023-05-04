@@ -16,6 +16,13 @@ export class RuntimeLanguageContext {
      */
     private supportedLanguageMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>
 
+    /**
+     * A map storing CodeWhisperer supported programming language with key: vscLanguageId and value: language extension
+     * Key: vscLanguageId
+     * Value: language extension
+     */
+    private supportedLanguageExtensionMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, string>
+
     // A set contains vscode languageId and CodeWhispererLanguage
     private supportedLanguageSet = new Set<string>()
 
@@ -28,6 +35,35 @@ export class RuntimeLanguageContext {
             typescript: 'typescript',
             typescriptreact: 'tsx',
             csharp: 'csharp',
+            c: 'c',
+            cpp: 'cpp',
+            go: 'go',
+            kotlin: 'kotlin',
+            php: 'php',
+            ruby: 'ruby',
+            rust: 'rust',
+            scala: 'scala',
+            shellscript: 'shell',
+            sql: 'sql',
+        })
+        this.supportedLanguageExtensionMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, string>({
+            java: 'java',
+            python: 'py',
+            javascriptreact: 'jsx',
+            javascript: 'js',
+            typescript: 'ts',
+            typescriptreact: 'tsx',
+            csharp: 'cs',
+            c: 'c',
+            cpp: 'cpp',
+            go: 'go',
+            kotlin: 'kt',
+            php: 'php',
+            ruby: 'rb',
+            rust: 'rs',
+            scala: 'scala',
+            shellscript: 'sh',
+            sql: 'sql',
         })
 
         const values = Array.from(this.supportedLanguageMap.values())
@@ -43,6 +79,15 @@ export class RuntimeLanguageContext {
      */
     public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): CodewhispererLanguage | undefined {
         return this.supportedLanguageMap.get(vscLanguageId) ?? undefined
+    }
+
+    /**
+     * This is for notebook files map to a new filename with the corresponding language extension
+     * @param vscLanguageId : official vscode languageId
+     * @returns corresponding language extension if any, otherwise undefined
+     */
+    public getLanguageExtensionForNotebook(vscLanguageId?: string): string | undefined {
+        return this.supportedLanguageExtensionMap.get(vscLanguageId) ?? undefined
     }
 
     /**

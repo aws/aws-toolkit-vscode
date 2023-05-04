@@ -46,7 +46,7 @@ export const getIcon = memoize(resolveIconId)
  */
 export function codicon(parts: TemplateStringsArray, ...components: (string | IconPath)[]): string {
     const canUse = (sub: string | IconPath) => typeof sub === 'string' || (!isCloud9() && sub instanceof Icon)
-    const resolved = components.filter(canUse).map(String)
+    const resolved = components.map(i => (canUse(i) ? i : '')).map(String)
 
     return parts
         .map((v, i) => `${v}${i < resolved.length ? resolved[i] : ''}`)
@@ -60,11 +60,11 @@ export function codicon(parts: TemplateStringsArray, ...components: (string | Ic
  * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
-    public constructor(public readonly id: string, public readonly source?: Uri, public readonly color?: ThemeColor) {
-        super(id)
+    public constructor(id: string, public readonly source?: Uri, color?: ThemeColor) {
+        super(id, color)
     }
 
-    public toString() {
+    public override toString() {
         return `$(${this.id})`
     }
 }

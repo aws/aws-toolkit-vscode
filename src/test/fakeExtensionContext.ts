@@ -10,8 +10,8 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
+    minSamCliVersion,
+    minSamCliVersionForGoSupport,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
@@ -48,7 +48,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         dispose(): any
     }[] = []
     public workspaceState: vscode.Memento = new FakeMemento()
-    public globalState: vscode.Memento = new FakeMemento()
+    public globalState: vscode.Memento & { setKeysForSync(keys: readonly string[]): void } = new FakeMemento()
     public globalStorageUri: vscode.Uri = vscode.Uri.file('file://fake/storage/uri')
     public storagePath: string | undefined
     public logPath: string = ''
@@ -58,6 +58,17 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
     public secrets = new SecretStorage()
+
+    public extension: vscode.Extension<any> = {
+        activate: async () => undefined,
+        exports: undefined,
+        extensionKind: vscode.ExtensionKind.Workspace,
+        extensionPath: '/fake/extension',
+        extensionUri: vscode.Uri.file('/fake/extension/dir/'),
+        id: 'aws.toolkit.fake.extension',
+        isActive: true,
+        packageJSON: {},
+    }
 
     /**
      * Use {@link create()} to create a FakeExtensionContext.
@@ -113,7 +124,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
                     return new FakeChildProcessResult({})
                 }),
-                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
+                validator: new FakeSamCliValidator(minSamCliVersionForGoSupport),
             } as SamCliContext
         }
         const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
@@ -138,6 +149,12 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
 
 export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
+    public setKeysForSync(keys: readonly string[]): void {
+        // TODO(jmkeyes): implement this?
+    }
+    public keys(): readonly string[] {
+        return Object.keys(this._storage)
+    }
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T
     public get(key: string, defaultValue?: unknown) {
@@ -173,7 +190,7 @@ class SecretStorage implements vscode.SecretStorage {
 
 export class FakeSamCliValidator implements SamCliValidator {
     private readonly version: string
-    public constructor(version: string = MINIMUM_SAM_CLI_VERSION_INCLUSIVE) {
+    public constructor(version: string = minSamCliVersion) {
         this.version = version
     }
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {

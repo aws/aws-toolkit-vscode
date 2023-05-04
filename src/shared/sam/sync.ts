@@ -7,6 +7,7 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
@@ -39,6 +40,13 @@ import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
 import { isAutomation } from '../vscode/env'
 import { getOverriddenParameters } from '../../lambda/config/parameterUtils'
+import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
+import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
+import { getAwsConsoleUrl } from '../awsConsole'
+import { openUrl } from '../utilities/vsCodeUtils'
+import { showOnce } from '../utilities/messages'
+
+const localize = nls.loadMessageBundle()
 
 export interface SyncParams {
     readonly region: string
@@ -53,6 +61,7 @@ export interface SyncParams {
 }
 
 export const prefixNewBucketName = (name: string) => `newbucket:${name}`
+export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
 function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
@@ -66,12 +75,21 @@ function createBucketPrompter(client: DefaultS3Client) {
 
     return createQuickPick(items, {
         title: 'Select an S3 Bucket',
-        placeholder: 'Filter or enter a new bucket name',
-        buttons: createCommonButtons(),
+        placeholder: 'Select a bucket (or enter a name to create one)',
+        buttons: createCommonButtons(samSyncUrl),
         filterBoxInputSettings: {
             label: 'Create a New Bucket',
             // This is basically a hack. I need to refactor `createQuickPick` a bit.
             transform: v => prefixNewBucketName(v),
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No S3 buckets for region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -82,6 +100,7 @@ const canShowStack = (s: StackSummary) =>
 
 function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
+    const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map(stacks =>
         stacks.filter(canShowStack).map(s => ({
             label: s.StackName,
@@ -94,17 +113,27 @@ function createStackPrompter(client: DefaultCloudFormationClient) {
 
     return createQuickPick(items, {
         title: 'Select a CloudFormation Stack',
-        placeholder: 'Filter or enter a new stack name',
+        placeholder: 'Select a stack (or enter a name to create one)',
         filterBoxInputSettings: {
             label: 'Create a New Stack',
             transform: v => v,
         },
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
+        noItemsFoundItem: {
+            label: localize(
+                'aws.cfn.noStacks',
+                'No stacks in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
+        },
     })
 }
 
 function createEcrPrompter(client: DefaultEcrClient) {
     const recentEcrRepo = getRecentResponse(client.regionCode, 'ecrRepoUri')
+    const consoleUrl = getAwsConsoleUrl('ecr', client.regionCode)
     const items = client.listAllRepositories().map(list =>
         list.map(repo => ({
             label: repo.repositoryName,
@@ -116,11 +145,20 @@ function createEcrPrompter(client: DefaultEcrClient) {
 
     return createQuickPick(items, {
         title: 'Select an ECR Repository',
-        placeholder: 'Filter or enter an existing repository URI',
-        buttons: createCommonButtons(),
+        placeholder: 'Select a repository (or enter a name to create one)',
+        buttons: createCommonButtons(samSyncUrl, consoleUrl),
         filterBoxInputSettings: {
-            label: 'Existing repository URI',
-            transform: v => v,
+            label: 'Create a New Repository',
+            transform: v => prefixNewRepoName(v),
+        },
+        noItemsFoundItem: {
+            label: localize(
+                'aws.ecr.noRepos',
+                'No ECR repositories in region "{0}". Enter a name to create a new one.',
+                client.regionCode
+            ),
+            data: undefined,
+            onClick: undefined,
         },
     })
 }
@@ -136,7 +174,8 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
 
     return createQuickPick(items, {
         title: 'Select an Environment to Use',
-        buttons: createCommonButtons(),
+        placeholder: 'Select an environment',
+        buttons: createCommonButtons(samSyncUrl),
     })
 }
 
@@ -164,8 +203,14 @@ function createTemplatePrompter() {
 
     const trimmedItems = folders.size === 1 ? items.map(item => ({ ...item, description: undefined })) : items
     return createQuickPick(trimmedItems, {
-        title: 'Select a CloudFormation Template',
-        buttons: createCommonButtons(),
+        title: 'Select a SAM CloudFormation Template',
+        placeholder: 'Select a SAM template.yaml file',
+        buttons: createCommonButtons(samSyncUrl),
+        noItemsFoundItem: {
+            label: localize('aws.sam.noWorkspace', 'No SAM template.yaml file(s) found. Select for help'),
+            data: undefined,
+            onClick: () => openUrl(samInitDocUrl),
+        },
     })
 }
 
@@ -229,6 +274,21 @@ async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName'>) {
     }
 }
 
+async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
+    const newRepoName = resp.ecrRepoUri?.match(/^newrepo:(.*)/)?.[1]
+    if (newRepoName === undefined) {
+        return resp.ecrRepoUri
+    }
+
+    try {
+        const repo = await new DefaultEcrClient(resp.region).createRepository(newRepoName)
+
+        return repo.repository?.repositoryUri
+    } catch (err) {
+        throw ToolkitError.chain(err, `Failed to create new ECR repository "${newRepoName}"`)
+    }
+}
+
 async function injectCredentials(conn: IamConnection, env = process.env) {
     const creds = await conn.getCredentials()
     return { ...env, ...asEnvironmentVariables(creds) }
@@ -239,7 +299,8 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
         codeOnly: args.deployType === 'code',
         templatePath: args.template.uri.fsPath,
         bucketName: await ensureBucket(args),
-        ...selectFrom(args, 'stackName', 'ecrRepoUri', 'region', 'skipDependencyLayer'),
+        ecrRepoUri: await ensureRepo(args),
+        ...selectFrom(args, 'stackName', 'region', 'skipDependencyLayer'),
     }
 
     await Promise.all([
@@ -262,20 +323,21 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     return { boundArgs }
 }
 
-async function getSamCliPath() {
+async function getSamCliPathAndVersion() {
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
         throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
     }
 
     const info = await new SamCliInfoInvocation(samCliPath).execute()
+    const parsedVersion = parse(info.version)
     telemetry.record({ version: info.version })
 
-    if (parse(info.version)?.compare('1.53.0') === -1) {
+    if (parsedVersion?.compare('1.53.0') === -1) {
         throw new ToolkitError('SAM CLI version 1.53.0 or higher is required', { code: 'VersionTooLow' })
     }
 
-    return samCliPath
+    return { path: samCliPath, parsedVersion }
 }
 
 let oldTerminal: ProcessTerminal | undefined
@@ -337,7 +399,7 @@ async function loadLegacyParameterOverrides(template: TemplateItem) {
 export async function runSamSync(args: SyncParams) {
     telemetry.record({ lambdaPackageType: args.ecrRepoUri !== undefined ? 'Image' : 'Zip' })
 
-    const samCliPath = await getSamCliPath()
+    const { path: samCliPath, parsedVersion } = await getSamCliPathAndVersion()
     const { boundArgs } = await saveAndBindArgs(args)
     const overrides = await loadLegacyParameterOverrides(args.template)
     if (overrides !== undefined) {
@@ -347,11 +409,33 @@ export async function runSamSync(args: SyncParams) {
         boundArgs.push('--parameter-overrides', ...overrides)
     }
 
+    // '--no-watch' was not added until https://github.com/aws/aws-sam-cli/releases/tag/v1.77.0
+    // Forcing every user to upgrade will be a headache for what is otherwise a minor problem
+    if ((parsedVersion?.compare('1.77.0') ?? -1) >= 0) {
+        boundArgs.push('--no-watch')
+    }
+
+    if ((parsedVersion?.compare('1.78.0') ?? 1) < 0) {
+        showOnce('sam.sync.updateMessage', async () => {
+            const message = `Your current version of SAM CLI (${parsedVersion?.version}) does not include performance improvements for "sam sync". Update to 1.78.0 or higher for faster deployments.`
+            const learnMoreUrl = vscode.Uri.parse(
+                'https://aws.amazon.com/about-aws/whats-new/2023/03/aws-toolkits-jetbrains-vs-code-sam-accelerate/'
+            )
+            const openDocsItem = 'Open Upgrade Documentation'
+            const resp = await vscode.window.showInformationMessage(message, localizedText.learnMore, openDocsItem)
+            if (resp === openDocsItem) {
+                await openUrl(samUpgradeUrl)
+            } else if (resp === localizedText.learnMore) {
+                await openUrl(learnMoreUrl)
+            }
+        })
+    }
+
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
-        spawnOptions: {
+        spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
             env: await injectCredentials(args.connection),
-        },
+        }),
     })
 
     await runSyncInTerminal(sam)
@@ -471,14 +555,6 @@ export function registerSync() {
             autoconnect: true,
         },
         (arg?: unknown) => telemetry.sam_sync.run(() => runSync('infra', arg))
-    )
-
-    Commands.register(
-        {
-            id: 'aws.samcli.syncCode',
-            autoconnect: true,
-        },
-        (arg?: unknown) => telemetry.sam_sync.run(() => runSync('code', arg))
     )
 
     const settings = SamCliSettings.instance

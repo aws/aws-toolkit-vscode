@@ -25,7 +25,7 @@ type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChange
  */
 export class Settings {
     public constructor(
-        private readonly target = vscode.ConfigurationTarget.Global,
+        private readonly updateTarget = vscode.ConfigurationTarget.Global,
         private readonly scope: vscode.ConfigurationScope | undefined = undefined,
         private readonly workspace: Workspace = vscode.workspace
     ) {}
@@ -59,7 +59,7 @@ export class Settings {
      */
     public async update(key: string, value: unknown): Promise<boolean> {
         try {
-            await this.getConfig().update(key, value, this.target)
+            await this.getConfig().update(key, value, this.updateTarget)
 
             return true
         } catch (error) {
@@ -67,6 +67,20 @@ export class Settings {
 
             return false
         }
+    }
+
+    /**
+     * Checks if the key has been set in any non-language scope.
+     */
+    public isSet(key: string, section?: string): boolean {
+        const config = this.getConfig(section)
+        const info = config.inspect(key)
+
+        return (
+            info?.globalValue !== undefined ||
+            info?.workspaceValue !== undefined ||
+            info?.workspaceFolderValue !== undefined
+        )
     }
 
     /**
@@ -84,13 +98,12 @@ export class Settings {
      * ```
      */
     public getSection(section: string): ResetableMemento {
-        const parts = section.split('.')
-        const targetKey = parts.pop() ?? section
-        const parentSection = parts.join('.')
+        const [targetKey, parentSection] = splitKey(section)
 
         return {
+            keys: () => [], // TODO(jmkeyes): implement this?
             get: (key, defaultValue?) => this.getConfig(section).get(key, defaultValue),
-            reset: async () => this.getConfig().update(section, undefined, this.target),
+            reset: async () => this.getConfig().update(section, undefined, this.updateTarget),
             update: async (key, value) => {
                 // VS Code's settings API can read nested props but not write to them.
                 // We need to write to the parent if we cannot write to the child.
@@ -99,13 +112,13 @@ export class Settings {
                 // handle this asymmetry with try/catch
 
                 try {
-                    return await this.getConfig(section).update(key, value, this.target)
+                    return await this.getConfig(section).update(key, value, this.updateTarget)
                 } catch (error) {
                     const parent = this.getConfig(parentSection)
                     const val = parent.get(targetKey)
 
                     if (typeof val === 'object') {
-                        return parent.update(targetKey, { ...val, [key]: value }, this.target)
+                        return parent.update(targetKey, { ...val, [key]: value }, this.updateTarget)
                     }
 
                     throw error
@@ -161,6 +174,24 @@ export class Settings {
     }
 }
 
+/**
+ * Splits a key into 'leaf' and 'section' components.
+ *
+ * The leaf is assumed to be the last dot-separated component. Example:
+ *
+ * ```ts
+ * const [leaf, section] = this.split('aws.cloudWatchLogs.limit')
+ * console.log(leaf, section) // aws.cloudWatchLogs limit
+ * ```
+ */
+function splitKey(key: string): [leaf: string, section: string] {
+    const parts = key.split('.')
+    const leaf = parts.pop() ?? key
+    const section = parts.join('.')
+
+    return [leaf, section]
+}
+
 // Keeping a separate function without a return type allows us to infer protected methods
 // TODO(sijaden): we can make this better in TS 4.7
 function createSettingsClass<T extends TypeDescriptor>(section: string, descriptor: T) {
@@ -186,6 +217,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
         public get onDidChange() {
             return this.getChangedEmitter().event
+        }
+
+        public keys(): readonly string[] {
+            return this.config.keys()
         }
 
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
@@ -238,10 +273,23 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return vscode.Disposable.from(this.getChangedEmitter(), ...this.disposables).dispose()
         }
 
+        protected isSet(key: keyof Inner & string) {
+            return this.settings.isSet(key, section)
+        }
+
         protected getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             const value = this.config.get(key, defaultValue)
 
             return cast<Inner[K]>(value, descriptor[key])
+        }
+
+        protected getOrUndefined<K extends keyof Inner>(key: K & string) {
+            const value = this.config.get(key)
+            if (value === undefined) {
+                return value
+            }
+
+            return this.get(key, undefined)
         }
 
         private readonly getChangedEmitter = once(() => {
@@ -255,13 +303,13 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             // value is a valid way to express that the key exists but no (valid) value is set.
 
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.get(p, undefined))
+            const store = toRecord(props, p => this.getOrUndefined(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => {
                     const isDifferentLazy = () => {
                         const previous = store[p]
-                        return previous !== (store[p] = this.get(p, undefined))
+                        return previous !== (store[p] = this.getOrUndefined(p))
                     }
 
                     return event.affectsConfiguration(p) || isDifferentLazy()
@@ -529,17 +577,19 @@ export class Experiments extends Settings.define(
     }
 }
 
-const DEV_SETTINGS = {
+const devSettings = {
+    logfile: String,
     forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    renderDebugDetails: Boolean,
     endpoints: Record(String, String),
     cawsStage: String,
+    ssoCacheDirectory: String,
 }
-
-type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>
+type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
 
 /**
@@ -548,7 +598,7 @@ type AwsDevSetting = keyof ResolvedDevSettings
  * forcing certain behaviors, changing hard-coded endpoints, emitting extra debug info, etc.
  *
  * These settings should _not_ be placed in `package.json` as they are not meant to be seen by
- * the average user. Instead, add a new field to {@link DEV_SETTINGS this object} with the
+ * the average user. Instead, add a new field to {@link devSettings this object} with the
  * desired name/type.
  *
  * Note that a default value _must_ be supplied when calling {@link get} because developer
@@ -572,7 +622,7 @@ type AwsDevSetting = keyof ResolvedDevSettings
  * })
  * ```
  */
-export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
+export class DevSettings extends Settings.define('aws.dev', devSettings) {
     private readonly trappedSettings: Partial<ResolvedDevSettings> = {}
     private readonly onDidChangeActiveSettingsEmitter = new vscode.EventEmitter<void>()
 
@@ -583,11 +633,14 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
     }
 
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
-        const result = super.get(key, defaultValue)
+        if (!this.isSet(key)) {
+            this.unset(key)
 
-        if (result !== defaultValue) {
-            this.trap(key, result)
+            return defaultValue
         }
+
+        const result = super.get(key, defaultValue)
+        this.trap(key, result)
 
         return result
     }
@@ -599,13 +652,22 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
         }
     }
 
+    private unset(key: AwsDevSetting) {
+        if (key in this.trappedSettings) {
+            delete this.trappedSettings[key]
+            this.onDidChangeActiveSettingsEmitter.fire()
+        }
+    }
+
     static #instance: DevSettings
 
     public static get instance() {
-        const instance = (this.#instance ??= new this())
-        instance.get('forceDevMode', false)
+        if (this.#instance === undefined) {
+            this.#instance = new this()
+            this.#instance.get('forceDevMode', false)
+        }
 
-        return instance
+        return this.#instance
     }
 }
 

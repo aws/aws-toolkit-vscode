@@ -119,6 +119,32 @@
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "E2E Test (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "Test Lint",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/lint/testLint.ts",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ],
     "compounds": [

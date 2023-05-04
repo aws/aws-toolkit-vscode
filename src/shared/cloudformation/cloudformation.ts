@@ -11,14 +11,13 @@ import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
-import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
-import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
-    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
-    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
-    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
+    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
+    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
 
     export function isZipLambdaResource(
         resource?: ZipResourceProperties | ImageResourceProperties
@@ -421,7 +420,7 @@ export namespace CloudFormation {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (resource.Properties) {
-            if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
+            if (resource.Properties.PackageType === lambdaPackageTypeImage) {
                 if (!validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
                 }
@@ -810,10 +809,10 @@ export namespace CloudFormation {
  * Creates a starter YAML template file.
  * @param isSam: Create a SAM template instead of a CFN template
  */
-export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
+export async function createStarterTemplateFile(isSam?: boolean): Promise<void> {
     const content = createStarterTemplateYaml(isSam)
     const wsFolder = vscode.workspace.workspaceFolders
-    const loc = await window.showSaveDialog({
+    const loc = await vscode.window.showSaveDialog({
         filters: { YAML: ['yaml'] },
         defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
     })

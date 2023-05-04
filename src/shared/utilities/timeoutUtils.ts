@@ -6,14 +6,14 @@
 import globals from '../extensionGlobals'
 import { CancellationToken, EventEmitter, Event } from 'vscode'
 
-export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
-export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
-export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
+export const timeoutExpiredMessage = 'Timeout token expired'
+export const timeoutCancelledMessage = 'Timeout token cancelled'
+export const timeoutUnexpectedResolve = 'Promise resolved with an unexpected object'
 
 type CancellationAgent = 'user' | 'timeout'
 export class CancellationError extends Error {
     public constructor(public readonly agent: CancellationAgent) {
-        super(agent === 'user' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
+        super(agent === 'user' ? timeoutCancelledMessage : timeoutExpiredMessage)
     }
 
     public static isUserCancelled(err: any): err is CancellationError & { agent: 'user' } {
@@ -37,8 +37,6 @@ interface TypedCancellationToken extends CancellationToken {
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
  * cannot be used after 'complete' has been called or if the Timeout expired.
- *
- * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
     private _startTime: number
@@ -51,6 +49,9 @@ export class Timeout {
     private readonly _onCompletionEmitter = new EventEmitter<void>()
     public readonly onCompletion = this._onCompletionEmitter.event
 
+    /**
+     * @param timeoutLength Timeout duration (in ms)
+     */
     public constructor(timeoutLength: number) {
         this._startTime = globals.clock.Date.now()
         this._endTime = this._startTime + timeoutLength
@@ -263,7 +264,7 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
     }
 
     if (result === undefined && (opt.allowUndefined ?? true) !== true) {
-        throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+        throw new Error(timeoutUnexpectedResolve)
     }
 
     return result as T
@@ -274,7 +275,6 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
  *
  * Attempts to use the extension-scoped `setTimeout` if it exists, otherwise will fallback to the global scheduler.
  */
-
 export function sleep(duration: number = 0): Promise<void> {
     const schedule = globals?.clock?.setTimeout ?? setTimeout
     return new Promise(r => schedule(r, Math.max(duration, 0)))

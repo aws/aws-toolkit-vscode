@@ -21,7 +21,7 @@ describe('SyncWizard', function () {
     const createTester = (params?: Partial<SyncParams>) =>
         createWizardTester(new SyncWizard({ deployType: 'code', ...params }))
 
-    it('prompts for region -> template -> stackName -> bucketName', function () {
+    it('shows steps in correct order', function () {
         const tester = createTester()
         tester.region.assertShowFirst()
         tester.template.assertShowSecond()
@@ -60,13 +60,13 @@ describe('prepareSyncParams', function () {
     })
 
     afterEach(async function () {
-        await SystemUtilities.remove(tempDir)
+        await SystemUtilities.delete(tempDir, { recursive: true })
     })
 
     it('uses region if given a tree node', async function () {
         const params = await prepareSyncParams(
             new (class extends AWSTreeNodeBase {
-                public readonly regionCode = 'foo'
+                public override readonly regionCode = 'foo'
             })('')
         )
 

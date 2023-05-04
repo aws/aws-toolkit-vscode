@@ -39,6 +39,7 @@ export function createMockTextEditor(
         selection: createMockSelection(line, character),
         selections: [],
         visibleRanges: [],
+        viewColumn: undefined,
         options: {},
         insertSnippet: sinon.spy(),
         setDecorations: sinon.spy(),
@@ -125,6 +126,7 @@ export function createAcceptedSuggestionEntry(time = new Date()): AcceptedSugges
 
 export function createTextDocumentChangeEvent(document: vscode.TextDocument, range: vscode.Range, text: string) {
     return {
+        reason: undefined,
         document: document,
         contentChanges: [
             {

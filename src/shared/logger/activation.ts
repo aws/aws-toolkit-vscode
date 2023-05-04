@@ -9,19 +9,19 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
-import { extensionSettingsPrefix } from '../constants'
 import { setLogger } from './logger'
-import { LOG_OUTPUT_CHANNEL } from './outputChannel'
+import { logOutputChannel } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { SystemUtilities } from '../systemUtilities'
+import { resolvePath } from '../utilities/pathUtils'
 
 const localize = nls.loadMessageBundle()
 
-const DEFAULT_LOG_LEVEL: LogLevel = 'info'
+const defaultLogLevel: LogLevel = 'info'
 
 /**
  * Activate Logger functionality for the extension.
@@ -30,15 +30,19 @@ export async function activate(
     extensionContext: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const logOutputChannel = LOG_OUTPUT_CHANNEL
-    const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
+    const chan = logOutputChannel
+    const settings = Settings.instance.getSection('aws')
+    const devLogfile = settings.get('dev.logfile', '')
+    const logUri = devLogfile
+        ? vscode.Uri.file(resolvePath(devLogfile))
+        : vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
     await SystemUtilities.createDirectory(extensionContext.logUri)
 
     const mainLogger = makeLogger(
         {
             logPaths: [logUri.fsPath],
-            outputChannels: [logOutputChannel],
+            outputChannels: [chan],
         },
         extensionContext.subscriptions
     )
@@ -51,7 +55,7 @@ export async function activate(
         makeLogger(
             {
                 logPaths: [logUri.fsPath],
-                outputChannels: [outputChannel, logOutputChannel],
+                outputChannels: [outputChannel, chan],
             },
             extensionContext.subscriptions
         ),
@@ -63,7 +67,7 @@ export async function activate(
         makeLogger(
             {
                 staticLogLevel: 'verbose', // verbose will log anything
-                outputChannels: [outputChannel, logOutputChannel],
+                outputChannels: [outputChannel, chan],
                 useDebugConsole: true,
             },
             extensionContext.subscriptions
@@ -74,13 +78,18 @@ export async function activate(
     getLogger().debug(`Logging started: ${logUri}`)
 
     const commands = new Logging(logUri, mainLogger)
-    extensionContext.subscriptions.push(
-        ...Object.values(Logging.declared).map(c => c.register(commands)),
-        await createLogWatcher(logUri.fsPath)
-    )
+    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
+
+    createLogWatcher(logUri)
+        .then(sub => {
+            extensionContext.subscriptions.push(sub)
+        })
+        .catch(err => {
+            getLogger().warn('Failed to start log file watcher: %s', err)
+        })
 
     cleanLogFiles(path.dirname(logUri.fsPath)).catch(err => {
-        getLogger().warn('Failed to clean-up old logs: %s', (err as Error).message)
+        getLogger().warn('Failed to clean-up old logs: %s', err)
     })
 }
 
@@ -134,9 +143,8 @@ export function makeLogger(
 }
 
 function getLogLevel(): LogLevel {
-    const configuration = Settings.instance.getSection(extensionSettingsPrefix)
-
-    return configuration.get('logLevel', DEFAULT_LOG_LEVEL)
+    const configuration = Settings.instance.getSection('aws')
+    return configuration.get('logLevel', defaultLogLevel)
 }
 
 function makeLogFilename(): string {
@@ -152,11 +160,11 @@ function makeLogFilename(): string {
 /**
  * Watches for renames on the log file and notifies the user.
  */
-async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
-    const exists = await waitUntil(() => fs.pathExists(logPath), { interval: 1000, timeout: 60000 })
+async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
+    const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
-        getLogger().warn(`Log file ${logPath} does not exist!`)
+        getLogger().warn(`Log file ${logFile.path} does not exist!`)
         return { dispose: () => {} }
     }
 
@@ -164,13 +172,12 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
     // TODO: fs.watch() has many problems, consider instead:
     //   - https://github.com/paulmillr/chokidar
     //   - https://www.npmjs.com/package/fb-watchman
-    const watcher = fs.watch(logPath, async eventType => {
+    const watcher = fs.watch(logFile.fsPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return
         }
         checking = true
-        const exists = await fs.pathExists(logPath).catch(() => true)
-        if (!exists) {
+        if (!(await SystemUtilities.fileExists(logFile))) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )

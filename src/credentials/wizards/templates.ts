@@ -11,30 +11,18 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-
-// TODO: use this everywhere else
-export enum ProfileKey {
-    AccessKeyId = 'aws_access_key_id',
-    SecretKey = 'aws_secret_access_key',
-    Process = 'credential_process',
-}
+import { SharedCredentialsKeys, StaticCredentialsProfileData } from '../types'
+import { CredentialsKeyFormatValidators } from '../sharedCredentialsValidation'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
 }
 
-interface StaticProfile {
-    [ProfileKey.AccessKeyId]: string
-    [ProfileKey.SecretKey]: string
-}
-
-const accessKeyPattern = /[\w]{16,128}/
-
-export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> = {
+export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileData> = {
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
-        [ProfileKey.AccessKeyId]: name =>
+        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -45,19 +33,9 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
                     'Input the {0} Access Key',
                     getIdeProperties().company
                 ),
-                validateInput: accessKey => {
-                    if (accessKey === '') {
-                        return localize('AWS.credentials.error.emptyAccessKey', 'Access key must not be empty')
-                    }
-                    if (!accessKeyPattern.test(accessKey)) {
-                        return localize(
-                            'AWS.credentials.error.emptyAccessKey',
-                            'Access key must be alphanumeric and between 16 and 128 characters'
-                        )
-                    }
-                },
+                validateInput: CredentialsKeyFormatValidators.aws_access_key_id,
             }),
-        [ProfileKey.SecretKey]: name =>
+        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -68,25 +46,21 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
                     'Input the {0} Secret Key',
                     getIdeProperties().company
                 ),
-                validateInput: secretKey => {
-                    if (secretKey === '') {
-                        return localize('AWS.credentials.error.emptySecretKey', 'Secret key must not be empty')
-                    }
-                },
+                validateInput: CredentialsKeyFormatValidators.aws_secret_access_key,
                 password: true,
             }),
     },
 }
 
 interface CredentialsProcessProfile {
-    [ProfileKey.Process]: string
+    [SharedCredentialsKeys.CREDENTIAL_PROCESS]: string
 }
 
 export const processCredentialsTemplate: ProfileTemplateProvider<CredentialsProcessProfile> = {
     label: 'External Process',
     description: 'Creates a new profile that fetches credentials from a process',
     prompts: {
-        [ProfileKey.Process]: name =>
+        [SharedCredentialsKeys.CREDENTIAL_PROCESS]: name =>
             createInputBox({
                 title: getTitle(name),
                 prompt: 'Enter a command to run',

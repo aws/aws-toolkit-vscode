@@ -6,7 +6,20 @@
 import * as os from 'os'
 import * as _path from 'path'
 
-export const DRIVE_LETTER_REGEX = /^[a-zA-Z]\:/
+export const driveLetterRegex = /^[a-zA-Z]\:/
+
+/**
+ * Expands "~" at the start of `fname` to user home dir.
+ * TODO: expand env vars too.
+ */
+export function resolvePath(fname: string) {
+    const homedir = os.homedir()
+    if (fname.startsWith('~/') || fname.startsWith('~\\')) {
+        return _path.join(homedir, fname.substring(2))
+    }
+
+    return fname
+}
 
 function isUncPath(path: string) {
     return /^\s*[\/\\]{2}[^\/\\]+/.test(path)
@@ -80,7 +93,7 @@ export function normalize(p: string): string {
         return p
     }
     const firstChar = p.substring(0, 1)
-    if (DRIVE_LETTER_REGEX.test(p.substring(0, 2))) {
+    if (driveLetterRegex.test(p.substring(0, 2))) {
         return normalizeSeparator(_path.normalize(firstChar.toUpperCase() + p.substring(1)))
     }
     if (isUncPath(p)) {
@@ -90,10 +103,10 @@ export function normalize(p: string): string {
 }
 
 export function getLocalRootVariants(filePath: string): string[] {
-    if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
+    if (process.platform === 'win32' && driveLetterRegex.test(filePath)) {
         return [
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase()),
+            filePath.replace(driveLetterRegex, match => match.toLowerCase()),
+            filePath.replace(driveLetterRegex, match => match.toUpperCase()),
         ]
     }
 
@@ -107,7 +120,7 @@ export function getLocalRootVariants(filePath: string): string[] {
  */
 export function getDriveLetter(path: string): string {
     const fullpath = _path.resolve(path)
-    if (!fullpath || fullpath.length < 2 || !DRIVE_LETTER_REGEX.test(fullpath.substring(0, 2))) {
+    if (!fullpath || fullpath.length < 2 || !driveLetterRegex.test(fullpath.substring(0, 2))) {
         return ''
     }
 

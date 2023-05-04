@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
@@ -29,14 +28,13 @@ export type PolicyGen = typeof getPolicyList
 export async function attachPolicyCommand(
     node: IotThingCertNode | IotCertWithPoliciesNode,
     promptFun = promptForPolicy,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('AttachPolicy called for %O', node)
 
     const certArn = node.certificate.arn
 
-    const policy = await promptFun(node.iot, getPolicyList, window)
+    const policy = await promptFun(node.iot, getPolicyList)
     if (!isValidResponse(policy)) {
         getLogger().info('No policy chosen')
         return undefined
@@ -46,10 +44,7 @@ export async function attachPolicyCommand(
         await node.iot.attachPolicy({ policyName: policy.policyName!, target: certArn })
     } catch (e) {
         getLogger().error(`Failed to attach policy ${policy.policyName}: %s`, e)
-        showViewLogsMessage(
-            localize('AWS.iot.attachCert.error', 'Failed to attach policy {0}', policy.policyName),
-            window
-        )
+        showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to attach policy {0}', policy.policyName))
         return undefined
     }
 
@@ -76,16 +71,12 @@ function getBaseNode(node: IotThingCertNode | IotCertWithPoliciesNode): IotNode 
 /**
  * Prompts the user to pick a policy to attach.
  */
-async function promptForPolicy(
-    iot: IotClient,
-    policyFetch: PolicyGen,
-    window?: Window
-): Promise<PromptResult<Iot.Policy>> {
+async function promptForPolicy(iot: IotClient, policyFetch: PolicyGen): Promise<PromptResult<Iot.Policy>> {
     const placeHolder: DataQuickPickItem<Iot.Policy> = {
         label: 'No policies found',
         data: undefined,
     }
-    const picker = createQuickPick(policyFetch(iot, window), {
+    const picker = createQuickPick(policyFetch(iot), {
         title: localize('AWS.iot.attachPolicy', 'Select a policy'),
         noItemsFoundItem: placeHolder,
         buttons: [vscode.QuickInputButtons.Back],
@@ -96,7 +87,7 @@ async function promptForPolicy(
 /**
  * Async generator function to get the list of policies when creating a quick pick.
  */
-async function* getPolicyList(iot: IotClient, window?: Window) {
+async function* getPolicyList(iot: IotClient) {
     let marker: string | undefined = undefined
     let filteredPolicies: Iot.Policy[]
     do {
@@ -109,7 +100,7 @@ async function* getPolicyList(iot: IotClient, window?: Window) {
             filteredPolicies = policyResponse.policies?.filter(policy => policy.policyArn && policy.policyName) ?? []
         } catch (e) {
             getLogger().error(`Failed to retrieve policies: %s`, e)
-            showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'), window)
+            showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'))
             return
         }
         yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))

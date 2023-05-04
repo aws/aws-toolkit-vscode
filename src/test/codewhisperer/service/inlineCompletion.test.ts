@@ -192,7 +192,7 @@ describe('inlineCompletion', function () {
             isShowMethodsEnabled: true,
             isManualTriggerEnabled: true,
             isAutomatedTriggerEnabled: true,
-            isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            isSuggestionsWithCodeReferencesEnabled: true,
         }
         const invokeSpy = sinon.stub(RecommendationHandler.instance, 'getRecommendations')
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
@@ -299,6 +299,7 @@ describe('inlineCompletion', function () {
 
 export function createTextDocumentChangeEvent(document: vscode.TextDocument, range: vscode.Range, text: string) {
     return {
+        reason: undefined,
         document: document,
         contentChanges: [
             {

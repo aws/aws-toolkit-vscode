@@ -25,7 +25,7 @@ import { getIcon } from '../../shared/icons'
  * US: Jan 5, 2020 5:30:20 PM GMT-0700
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
-export const S3_DATE_FORMAT = 'll LTS [GMT]ZZ'
+export const s3DateFormat = 'll LTS [GMT]ZZ'
 
 /**
  * Represents an object in an S3 bucket.
@@ -47,7 +47,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
                 '{0}\nSize: {1}\nLast Modified: {2}',
                 this.file.key,
                 readableSize,
-                moment(file.lastModified).format(S3_DATE_FORMAT)
+                moment(file.lastModified).format(s3DateFormat)
             )
             this.description = `${readableSize}, ${getRelativeDate(file.lastModified, now)}`
         }

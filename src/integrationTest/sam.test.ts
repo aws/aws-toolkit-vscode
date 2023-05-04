@@ -20,7 +20,6 @@ import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
-import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
@@ -32,15 +31,13 @@ import { closeAllEditors } from '../test/testUtil'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
-const CODELENS_TIMEOUT: number = 60000
-const CODELENS_RETRY_INTERVAL: number = 200
-// note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 240000
-const NO_DEBUG_SESSION_TIMEOUT: number = 5000
-const NO_DEBUG_SESSION_INTERVAL: number = 100
+const codelensTimeout: number = 60000
+const codelensRetryInterval: number = 200
+const noDebugSessionTimeout: number = 5000
+const noDebugSessionInterval: number = 100
 
 /** Go can't handle API tests yet */
-const SKIP_LANGUAGES_ON_API = ['go']
+const skipLanguagesOnApi = ['go']
 
 interface TestScenario {
     displayName: string
@@ -85,15 +82,15 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.7',
-        displayName: 'python3.7 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.7',
+    //     displayName: 'python3.7 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // {
     //     runtime: 'python3.8',
     //     displayName: 'python3.8 (ZIP)',
@@ -112,6 +109,16 @@ const scenarios: TestScenario[] = [
     //     language: 'python',
     //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
     {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
@@ -147,7 +154,7 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
         // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
+        vscodeMinimum: '1.67.0',
     },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -182,16 +189,16 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.7',
-        displayName: 'python3.7 (Image)',
-        baseImage: `amazon/python3.7-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.7',
+    //     displayName: 'python3.7 (Image)',
+    //     baseImage: `amazon/python3.7-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // {
     //     runtime: 'python3.8',
     //     displayName: 'python3.8 (Image)',
@@ -213,6 +220,17 @@ const scenarios: TestScenario[] = [
     //     dependencyManager: 'pip',
     // },
     {
+        runtime: 'python3.10',
+        displayName: 'python 3.10 (ZIP)',
+        baseImage: 'amazon/python3.10-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
         baseImage: 'amazon/go1.x-base',
@@ -221,7 +239,7 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
         // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.59.0',
+        vscodeMinimum: '1.67.0',
     },
     {
         runtime: 'java8',
@@ -397,6 +415,30 @@ describe('SAM Integration Tests', async function () {
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
+    describe('SAM install test', async () => {
+        let runtimeTestRoot: string
+        let randomTestScenario: TestScenario
+
+        before(async function () {
+            if (scenarios.length == 0) {
+                throw new Error('There are no scenarios available.')
+            }
+            randomTestScenario = scenarios[0]
+
+            runtimeTestRoot = path.join(testSuiteRoot, 'randomScenario')
+            mkdirpSync(runtimeTestRoot)
+        })
+
+        after(async function () {
+            await tryRemoveFolder(runtimeTestRoot)
+        })
+
+        it('produces an error when creating a SAM Application to the same location', async function () {
+            await createSamApplication(runtimeTestRoot, randomTestScenario)
+            await assert.rejects(createSamApplication(runtimeTestRoot, randomTestScenario), 'Promise was not rejected')
+        })
+    })
+
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
@@ -421,33 +463,6 @@ describe('SAM Integration Tests', async function () {
             }
 
             /**
-             * This suite cleans up at the end of each test.
-             */
-            describe('Starting from scratch', async function () {
-                let testDir: string
-
-                beforeEach(async function () {
-                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
-                    log(`testDir: ${testDir}`)
-                })
-
-                afterEach(async function () {
-                    // don't clean up after java tests so the java language server doesn't freak out
-                    if (scenario.language !== 'java') {
-                        await tryRemoveFolder(testDir)
-                    }
-                })
-
-                it('creates a new SAM Application (happy path)', async function () {
-                    await createSamApplication(testDir)
-
-                    // Check for readme file
-                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
-                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
-                })
-            })
-
-            /**
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
@@ -463,10 +478,13 @@ describe('SAM Integration Tests', async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
-                    await createSamApplication(testDir)
+                    await createSamApplication(testDir, scenario)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
+
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
 
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
@@ -488,10 +506,6 @@ describe('SAM Integration Tests', async function () {
                     }
                 })
 
-                it('produces an error when creating a SAM Application to the same location', async function () {
-                    await assert.rejects(createSamApplication(testDir), 'Promise was not rejected')
-                })
-
                 it('produces an Add Debug Configuration codelens', async function () {
                     if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
                         this.skip()
@@ -499,8 +513,8 @@ describe('SAM Integration Tests', async function () {
 
                     const codeLenses = await testUtils.getAddConfigCodeLens(
                         samAppCodeUri,
-                        CODELENS_TIMEOUT,
-                        CODELENS_RETRY_INTERVAL
+                        codelensTimeout,
+                        codelensRetryInterval
                     )
                     assert.ok(codeLenses && codeLenses.length === 2)
 
@@ -540,11 +554,13 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (SKIP_LANGUAGES_ON_API.includes(scenario.language)) {
+                    if (
+                        skipLanguagesOnApi.includes(scenario.language) ||
+                        semver.lt(vscode.version, scenario.vscodeMinimum)
+                    ) {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
                     await testTarget('api', {
                         api: {
                             path: '/hello',
@@ -555,15 +571,18 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
+                        this.skip()
+                    }
+
                     await testTarget('template')
                 })
 
                 async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
                     await waitUntil(async () => vscode.debug.activeDebugSession === undefined, {
-                        timeout: NO_DEBUG_SESSION_TIMEOUT,
-                        interval: NO_DEBUG_SESSION_INTERVAL,
+                        timeout: noDebugSessionTimeout,
+                        interval: noDebugSessionInterval,
                         truthy: true,
                     })
 
@@ -622,22 +641,6 @@ describe('SAM Integration Tests', async function () {
             })
         })
 
-        async function createSamApplication(location: string): Promise<void> {
-            const initArguments: SamCliInitArgs = {
-                name: samApplicationName,
-                location: location,
-                dependencyManager: scenario.dependencyManager,
-            }
-            if (scenario.baseImage) {
-                initArguments.baseImage = scenario.baseImage
-            } else {
-                initArguments.runtime = scenario.runtime
-                initArguments.template = helloWorldTemplate
-            }
-            const samCliContext = getSamCliContext()
-            await runSamCliInit(initArguments, samCliContext)
-        }
-
         function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
             assert.ok(codeLens.command, 'CodeLens did not have a command')
             const command = codeLens.command!
@@ -651,5 +654,25 @@ describe('SAM Integration Tests', async function () {
 
             assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
         }
+    }
+
+    async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
+        const initArguments: SamCliInitArgs = {
+            name: samApplicationName,
+            location: location,
+            dependencyManager: scenario.dependencyManager,
+        }
+        if (scenario.baseImage) {
+            initArguments.baseImage = scenario.baseImage
+        } else {
+            initArguments.runtime = scenario.runtime
+            initArguments.template = helloWorldTemplate
+        }
+        const samCliContext = getSamCliContext()
+        await runSamCliInit(initArguments, samCliContext)
+        // XXX: Fixes flakiness. Ensures the files from creation of sam
+        // app are processed by code lens file watcher. Otherwise, potential
+        // issues of file not in registry before it is found.
+        await globals.codelensRootRegistry.rebuild()
     }
 })

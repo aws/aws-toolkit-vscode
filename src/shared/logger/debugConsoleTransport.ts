@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as Transport from 'winston-transport'
 import globals from '../extensionGlobals'
 
-export const MESSAGE = Symbol.for('message')
+export const MESSAGE = Symbol.for('message') // eslint-disable-line @typescript-eslint/naming-convention
 
 interface LogEntry {
     level: string
@@ -24,7 +24,7 @@ export class DebugConsoleTransport extends Transport {
         super(options)
     }
 
-    public log(info: LogEntry, next: () => void): void {
+    public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             vscode.debug.activeDebugConsole.append(info[MESSAGE])
             this.emit('logged', info)

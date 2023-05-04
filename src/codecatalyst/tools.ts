@@ -24,6 +24,7 @@ import { getLogger } from '../shared/logger'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { getSshConfigPath } from '../shared/extensions/ssh'
+import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from '../shared/extensions'
 
 interface DependencyPaths {
     readonly vsc: string
@@ -36,20 +37,33 @@ interface MissingTool {
     readonly reason?: string
 }
 
-export const HOST_NAME_PREFIX = 'aws-devenv-'
+export const hostNamePrefix = 'aws-devenv-'
 
-export async function ensureDependencies(
-    window = vscode.window
-): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
-        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to Dev Environment', window)
-
-        return Result.err(
-            new ToolkitError('Remote SSH extension not installed', {
-                cancelled: true,
-                code: 'MissingExtension',
-            })
+export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
+    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
+        showInstallExtensionMsg(
+            VSCODE_EXTENSION_ID.remotessh,
+            'Remote SSH',
+            'Connecting to Dev Environment',
+            vscodeExtensionMinVersion.remotessh
         )
+
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            return Result.err(
+                new ToolkitError('Remote SSH extension version is too low', {
+                    cancelled: true,
+                    code: 'ExtensionVersionTooLow',
+                    details: { expected: vscodeExtensionMinVersion.remotessh },
+                })
+            )
+        } else {
+            return Result.err(
+                new ToolkitError('Remote SSH extension not installed', {
+                    cancelled: true,
+                    code: 'MissingExtension',
+                })
+            )
+        }
     }
 
     const tools = await ensureTools()
@@ -180,7 +194,7 @@ async function ensureCodeCatalystSshConfig(sshPath: string) {
     return Result.ok()
 }
 
-const configHostName = `${HOST_NAME_PREFIX}*`
+const configHostName = `${hostNamePrefix}*`
 function createSSHConfigSection(proxyCommand: string): string {
     // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
     // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
@@ -205,7 +219,7 @@ async function verifySSHHost({
     section: string
     proxyCommand: string
 }) {
-    const matchResult = await matchSshSection(sshPath, `${HOST_NAME_PREFIX}test`)
+    const matchResult = await matchSshSection(sshPath, `${hostNamePrefix}test`)
     if (matchResult.isErr()) {
         return matchResult
     }
@@ -237,7 +251,7 @@ async function verifySSHHost({
 
         const confirmTitle = localize(
             'AWS.codecatalyst.confirm.installSshConfig.title',
-            '{0} Toolkit will add host {1} to ~/.ssh/config. This allows you to use SSH with your development envionments',
+            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
             getIdeProperties().company,
             configHostName
         )
@@ -249,8 +263,9 @@ async function verifySSHHost({
 
         const sshConfigPath = getSshConfigPath()
         try {
-            await fs.mkdirp(path.dirname(sshConfigPath))
-            await fs.appendFile(sshConfigPath, section)
+            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
+            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
+            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
         } catch (e) {
             const message = localize(
                 'AWS.codecatalyst.error.writeFail',

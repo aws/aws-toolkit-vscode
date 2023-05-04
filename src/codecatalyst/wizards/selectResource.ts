@@ -17,7 +17,7 @@ import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { associateDevEnv, docs } from '../model'
-import { getHelpUrl, isCodeCatalystVSCode } from '../utils'
+import { getHelpUrl, isDevenvVscode } from '../utils'
 
 export function createRepoLabel(r: codecatalyst.CodeCatalystRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
@@ -111,10 +111,10 @@ export function createOrgPrompter(
 
 export function createProjectPrompter(
     client: codecatalyst.CodeCatalystClient,
-    org?: codecatalyst.CodeCatalystOrg
+    spaceName?: codecatalyst.CodeCatalystOrg['name']
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
     const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
-    const projects = org ? client.listProjects({ spaceName: org.name }) : client.listResources('project')
+    const projects = spaceName ? client.listProjects({ spaceName }) : client.listResources('project')
 
     return createResourcePrompter(projects, helpUri, {
         title: 'Select a CodeCatalyst Project',
@@ -124,16 +124,17 @@ export function createProjectPrompter(
 
 export function createRepoPrompter(
     client: codecatalyst.CodeCatalystClient,
-    proj?: codecatalyst.CodeCatalystProject
+    proj?: codecatalyst.CodeCatalystProject,
+    thirdParty?: boolean
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
     const helpUri = isCloud9() ? docs.cloud9.cloneRepo : docs.vscode.main
     const repos = proj
-        ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name })
-        : client.listResources('repo')
+        ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name }, thirdParty)
+        : client.listResources('repo', thirdParty)
 
     return createResourcePrompter(repos, helpUri, {
         title: 'Select a CodeCatalyst Repository',
-        placeholder: 'Search for a Repository',
+        placeholder: 'Search for a CodeCatalyst Repository',
     })
 }
 
@@ -143,7 +144,7 @@ export function createDevEnvPrompter(
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
     const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
     const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
-    const filtered = envs.map(arr => arr.filter(env => isCodeCatalystVSCode(env.ides)))
+    const filtered = envs.map(arr => arr.filter(env => isDevenvVscode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }
@@ -188,6 +189,15 @@ export async function selectCodeCatalystResource<T extends ResourceType>(
 
     const response = await prompter.prompt()
     return isValidResponse(response) ? (response as codecatalyst.CodeCatalystResource & { type: T }) : undefined
+}
+
+export async function selectCodeCatalystRepository(
+    client: codecatalyst.CodeCatalystClient,
+    includeThirdPartyRepos?: boolean
+): Promise<codecatalyst.CodeCatalystRepo | undefined> {
+    const prompter = createRepoPrompter(client, undefined, includeThirdPartyRepos)
+    const response = await prompter.prompt()
+    return isValidResponse(response) ? response : undefined
 }
 
 /**

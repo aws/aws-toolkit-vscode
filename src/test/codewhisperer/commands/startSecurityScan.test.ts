@@ -17,6 +17,16 @@ import { join } from 'path'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { HttpResponse } from 'aws-sdk'
+import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
+import { cancel } from '../../../shared/localizedText'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import {
+    codeScanLogsOutputChannelId,
+    showScannedFilesMessage,
+    stopScanMessage,
+} from '../../../codewhisperer/models/constants'
+import * as model from '../../../codewhisperer/models/model'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -99,9 +109,22 @@ const mockListCodeScanFindingsResponse = {
     codeScanFindings: mockCodeScanFindings,
 }
 
+let extensionContext: FakeExtensionContext
+let mockSecurityPanelViewProvider: SecurityPanelViewProvider
+let appRoot: string
+let appCodePath: string
+let editor: vscode.TextEditor
+
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
 
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
+        mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
+        appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+        appCodePath = join(appRoot, 'hello_world', 'app.py')
+        editor = await openTestFile(appCodePath)
+    })
     afterEach(function () {
         sinon.restore()
     })
@@ -126,33 +149,23 @@ describe('startSecurityScan', function () {
     }
 
     it('Should prompt warning message if language is not supported', async function () {
-        const extensionContext = await FakeExtensionContext.create()
-        const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        const spy = sinon.spy(vscode.window, 'showWarningMessage')
-        const appRoot = join(workspaceFolder, 'go1-plain-sam-app')
-        const appCodePath = join(appRoot, 'hello-world', 'main.go')
-        const editor = await openTestFile(appCodePath)
-
+        appRoot = join(workspaceFolder, 'go1-plain-sam-app')
+        appCodePath = join(appRoot, 'hello-world', 'main.go')
+        editor = await openTestFile(appCodePath)
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
             stub(DefaultCodeWhispererClient),
             extensionContext
         )
-        assert.ok(spy.calledOnce)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 1)
     })
 
     it('Should render security scan result', async function () {
-        const extensionContext = await FakeExtensionContext.create()
-        const mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
-        const appCodePath = join(appRoot, 'hello_world', 'app.py')
-        const editor = await openTestFile(appCodePath)
-
         sinon.stub(got, 'default').resolves({ statusCode: 200 })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-        const warningSpy = sinon.spy(vscode.window, 'showWarningMessage')
 
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
@@ -162,6 +175,83 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        assert.ok(warningSpy.notCalled)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
+    })
+
+    it('Should stop security scan', async function () {
+        sinon.stub(got, 'default').callsFake(() => {
+            return sleep(1000).then(() => {
+                return { statusCode: 200 }
+            }) as any
+        })
+        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+        const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
+        const testWindow = getTestWindow()
+        testWindow.onDidShowMessage(message => {
+            if (message.message === stopScanMessage) {
+                message.selectItem(startSecurityScan.stopScanButton)
+            }
+        })
+        model.codeScanState.setToRunning()
+        const scanPromise = startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext
+        )
+        await startSecurityScan.confirmStopSecurityScan()
+        await scanPromise
+        assert.ok(securityScanRenderSpy.notCalled)
+        assert.ok(securityScanStoppedErrorSpy.calledOnce)
+        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+    })
+
+    it('Should not stop security scan when not confirmed', async function () {
+        sinon.stub(got, 'default').callsFake(() => {
+            return sleep(1000).then(() => {
+                return { statusCode: 200 }
+            }) as any
+        })
+        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+        const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
+        const testWindow = getTestWindow()
+        testWindow.onDidShowMessage(message => {
+            if (message.message === stopScanMessage) {
+                message.selectItem(cancel)
+            }
+        })
+        model.codeScanState.setToRunning()
+        const scanPromise = startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext
+        )
+        await startSecurityScan.confirmStopSecurityScan()
+        await scanPromise
+        assert.ok(securityScanRenderSpy.calledOnce)
+        assert.ok(securityScanStoppedErrorSpy.notCalled)
+        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+    })
+
+    it('Should highlight files after scan is completed', async function () {
+        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+        sinon.stub(got, 'default').resolves({ statusCode: 200 })
+        const testWindow = getTestWindow()
+        testWindow.onDidShowMessage(message => {
+            if (message.message.includes('Security scan completed')) {
+                message.selectItem(showScannedFilesMessage)
+            }
+        })
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext
+        )
+        assert.ok(commandSpy.calledWith(codeScanLogsOutputChannelId))
     })
 })

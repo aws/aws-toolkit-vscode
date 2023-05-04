@@ -3,6 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export function stringOrProp(obj: any, prop: string): string {
+    if (obj === undefined || typeof obj === 'string') {
+        return obj ?? ''
+    }
+    return obj[prop] ?? ''
+}
+
 export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
     return props.filter(prop => obj[prop] === undefined)
 }
@@ -37,9 +44,17 @@ export function selectFrom<T, K extends keyof T>(obj: T, ...props: K[]): { [P in
     return props.map(p => [p, obj[p]] as const).reduce((a, [k, v]) => ((a[k] = v), a), {} as { [P in K]: T[P] })
 }
 
-export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
+export function isNonNullable<T>(obj: T | void): obj is NonNullable<T> {
     // eslint-disable-next-line no-null/no-null
     return obj !== undefined && obj !== null
+}
+
+export function isKeyOf<T extends object>(key: PropertyKey, obj: T): key is keyof T {
+    return key in obj
+}
+
+export function hasKey<T extends object, K extends PropertyKey>(obj: T, key: K): obj is T & { [P in K]: unknown } {
+    return isKeyOf(key, obj)
 }
 
 /**
@@ -47,6 +62,13 @@ export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
  */
 export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] {
     return Object.keys(obj) as [keyof T & string]
+}
+
+/**
+ * Stricter form of {@link Object.entries} that gives slightly better types for object literals.
+ */
+export function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
+    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
 }
 
 export function isThenable<T>(obj: unknown): obj is Thenable<T> {

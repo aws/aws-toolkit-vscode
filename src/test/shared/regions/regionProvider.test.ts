@@ -8,7 +8,7 @@ import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { createRegionPrompter } from '../../../shared/ui/common/region'
 import { FakeMemento } from '../../fakeExtensionContext'
-import { createQuickPickTester } from '../ui/testUtils'
+import { createQuickPickPrompterTester } from '../ui/testUtils'
 
 const regionCode = 'someRegion'
 const serviceId = 'someService'
@@ -53,6 +53,24 @@ const endpoints = {
 }
 
 describe('RegionProvider', async function () {
+    describe('fromEndpointsProvider', function () {
+        it('pulls from the local source first and remote source later', async function () {
+            const localEndpoints = Promise.resolve({ partitions: endpoints.partitions.slice(0, 1) })
+            const remoteEndpoints = Promise.resolve(endpoints)
+            const regionProvider = RegionProvider.fromEndpointsProvider({
+                local: () => localEndpoints,
+                remote: () => remoteEndpoints,
+            })
+
+            await localEndpoints
+            assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
+            assert.strictEqual(regionProvider.getPartitionId('awscnregion1'), undefined)
+            await remoteEndpoints
+            assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
+            assert.strictEqual(regionProvider.getPartitionId('awscnregion1'), 'aws-cn')
+        })
+    })
+
     describe('isServiceInRegion', async function () {
         it('indicates when a service is in a region', async function () {
             const regionProvider = new RegionProvider(endpoints)
@@ -155,7 +173,7 @@ describe('RegionProvider', async function () {
             ]
 
             const p = createRegionPrompter(regions, { defaultRegion: 'foo-bar-1' })
-            const tester = createQuickPickTester(p)
+            const tester = createQuickPickPrompterTester(p)
             const selection = regions[2]
             tester.acceptItem(selection.name)
             await tester.result(selection)
@@ -186,7 +204,7 @@ describe('RegionProvider', async function () {
             regionProvider.setLastTouchedRegion('us-west-1')
 
             const node = new (class extends AWSTreeNodeBase {
-                public readonly regionCode = 'us-west-2'
+                public override readonly regionCode = 'us-west-2'
                 public constructor() {
                     super('')
                 }

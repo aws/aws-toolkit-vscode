@@ -5,13 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import {
-    Bucket,
-    CreateFolderRequest,
-    CreateFolderResponse,
-    S3Client,
-    UploadFileRequest,
-} from '../../shared/clients/s3Client'
+import { Bucket, CreateFolderRequest, CreateFolderResponse, S3Client } from '../../shared/clients/s3Client'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -46,7 +40,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.contextValue = 'awsS3BucketNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getNoChildrenPlaceholderNode: async () =>
@@ -89,14 +83,6 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
-    }
-
-    /**
-     * See {@link S3Client.uploadFile}.
-     */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
-        const managedUpload = await this.s3.uploadFile(request)
-        await managedUpload.promise()
     }
 
     /**

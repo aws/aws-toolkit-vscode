@@ -1,3 +1,101 @@
+## 1.71.0 2023-04-28
+
+- **Bug Fix** CodeWhisperer shows "The security token included in this request is expired" in Cloud9
+- **Feature** Improved error messages for file system permissions issues
+
+## 1.70.0 2023-04-22
+
+- **Deprecation** Minimum required VS Code version is now 1.65
+- **Feature** auth: AWS accounts and roles from IAM Identity Center are automatically discovered by the Toolkit when selecting a connection.
+- **Feature** feat(auth): IAM Identity Center connections now request the least permissive set of scopes for features. Using the same connection for multiple features will request additional scopes to be used.
+
+## 1.69.0 2023-04-18
+
+- **Bug Fix** endpoints: local file never loads if remote call hangs
+- **Bug Fix** CodeCatalyst: improved efficiency by reducing unnecessary service calls #3333
+- **Bug Fix** Incorrect offset icons in webviews
+- **Feature** CodeCatalyst: show readme on first load of a Dev Environment
+
+## 1.68.0 2023-04-13
+
+- **Bug Fix** Dev Env Space quick pick shows all Spaces + Projects
+- **Bug Fix** CodeCatalyst: Toolkit attempts reconnect to non-vscode Dev Environment
+- **Bug Fix** The AWS status bar item is colored despite there not being anything that needs user attention
+- **Feature** CodeWhisperer: Now also provides import recommendations
+- **Feature** CodeWhisperer: new code scan features: 
+1. highlighting scanned files 
+2. stop security scan
+- **Feature** auth: support `sso_session` for profiles in AWS shared ini files
+- **Feature** CodeWhisperer: new supported programming languages: c, cpp, go, kotlin, php, ruby, rust, scala, shell, sql. 
+
+## 1.67.0 2023-03-29
+
+- **Breaking Change** "Sync SAM Application" will now always ignore the 'watch' flag in `samconfig.toml`. The Toolkit does not support running `sam sync` in 'watch' mode.
+- **Bug Fix** auth: switching to a connection that just expired shows an error
+- **Bug Fix** S3 filesystem provider is not case-sensitive, so requesting "s3://bucket1/Test.json" may open "s3://bucket1/test.json"
+- **Feature** SAM: create, run and debug Python 3.10 Lambdas
+- **Feature** CodeCatalyst: retry connection to "FAILED" Dev Environments
+- **Feature** CodeCatalyst: improved messages and logging when connecting to Dev Environment
+- **Removal** `aws.experiments.samSyncCode` has been removed as similiar functionality is now in SAM CLI by default in 1.78.0.
+
+## 1.66.0 2023-03-24
+
+- **Bug Fix** CodeCatalyst: connecting to a Dev Environment while it is updating sometimes fails
+- **Bug Fix** "Enable Command Execution" shows wrong message
+- **Bug Fix** Update dependency amazon-states-language-service from 1.8.0 -> 1.9.0. This will allow newlines in Step Functions intrinsic functions.
+- **Bug Fix** CodeCatalyst: Disable new branch option when creating new Dev Environment for linked repo
+- **Bug Fix** CodeCatalyst: `Clone CodeCatalyst Repository` command now only lists non-linked repos
+- **Feature** Option to sign out of existing Builder ID when adding a new one
+- **Feature** CodeCatalyst: wait up to 1 hour (instead of 3 minutes) for Dev Environment to start
+- **Feature** CodeWhisperer improves right context handling
+- **Feature** CodeWhisperer will no longer automatically format code after accepting code suggestions
+
+## 1.65.0 2023-03-15
+
+- **Feature** auth: The status bar shows more information about which connections are in-use and which of those are expired or invalid.
+- **Feature** auth: Expired connections are now easier to recognize and re-authenticate from the "Switch Connections" quick pick menu
+
+## 1.64.0 2023-03-07
+
+- **Bug Fix** auth: "Copy Code" modal is shown twice when refreshing expired IAM Identity Center connections
+- **Feature** auth: verification codes for browser logins are now shown in a notification after opening the login URL
+- **Feature** S3: Choose last-touched and last-uploaded-to S3 folders in the Upload Files wizard.
+- **Feature** "Sync SAM Application" command provides Create and Help actions at each step (SAM template, S3 bucket, ECR repo, CloudFormation stack)
+
+## 1.63.0 2023-02-16
+
+- **Bug Fix** Bump amazon-states-language-service dependency to ^1.8.0 to allow state machines to be created with the new intrinsic functions and Map state
+- **Bug Fix** Authenticating through the browser now requires users to manually enter a user verification code. Previously this was done automatically.
+- **Feature** CloudWatch Logs: one click to list log streams for a log group
+
+## 1.62.0 2023-01-31
+
+- **Bug Fix** SAM template.yaml syntax support for PayloadFormatVersion, HttpApi event source, HttpApiFunctionAuth #2867
+- **Bug Fix** iam: ignore permission check when denial comes from organization csp policy
+- **Bug Fix** Improve extension start-up performance, especially on devices with slower file systems
+- **Bug Fix** Duplicate resource type definitions break the "Resources" node (#3132)
+- **Bug Fix** SAM template.yaml syntax support for FunctionResponseTypes #2924
+- **Feature** SAM: run/debug now works for a larger variety of TypeScript projects
+- **Feature** Upload Lambda wizard will skip prompts and auto select parent directory when invoked from a template file.
+
+## 1.61.0 2023-01-12
+
+- **Bug Fix** AWS regions are not dynamically fetched by the Toolkit
+- **Bug Fix** S3: saving files from the editor overwrites existing content types
+- **Bug Fix** S3: file editor fails on binary files with no file extension
+- **Feature** CodeWhisperer: more responsive Auto-Suggestions
+- **Feature** Copy Lambda Function URL in AWS Explorer
+
+## 1.60.0 2022-12-16
+
+- **Bug Fix** CodeWhisperer: fix potential undefined reference
+
+## 1.59.0 2022-12-15
+
+- **Bug Fix** Help button on the "save connection" prompt does nothing
+- **Bug Fix** CodeWhisperer may alter editor.hover.enabled configuration
+- **Feature** CodeWhisperer: Add 'Do not show again' button to authentication migration prompt
+
 ## 1.58.0 2022-12-06
 
 - **Feature** S3: "Download As" action defaults to the last-used download path.

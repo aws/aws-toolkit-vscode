@@ -8,7 +8,7 @@ import * as Transport from 'winston-transport'
 import globals from '../extensionGlobals'
 import { removeAnsi } from '../utilities/textUtilities'
 
-export const MESSAGE = Symbol.for('message')
+export const MESSAGE = Symbol.for('message') // eslint-disable-line @typescript-eslint/naming-convention
 
 interface LogEntry {
     level: string
@@ -34,7 +34,7 @@ export class OutputChannelTransport extends Transport {
         this.stripAnsi = options.stripAnsi
     }
 
-    public log(info: LogEntry, next: () => void): void {
+    public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
             const msg: string = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
 

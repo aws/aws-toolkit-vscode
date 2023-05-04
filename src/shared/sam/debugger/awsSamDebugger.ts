@@ -49,17 +49,14 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
+import { getInputTemplatePath, makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
-import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
-} from '../cli/samCliValidator'
+import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
@@ -339,6 +336,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
+    // eslint-disable-next-line id-length
     public async resolveDebugConfigurationWithSubstitutedVariables(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
@@ -466,7 +464,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             codeConfig.invokeTarget.projectRoot = pathutil.normalize(
                 resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
             )
-            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
+            templateInvoke.templatePath = getInputTemplatePath(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -489,7 +487,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: Remove this when min sam version is > 1.13.0
         if (!isZip) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForImageSupport)) {
                 const message = localize(
                     'AWS.output.sam.no.image.support',
                     'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
@@ -513,12 +511,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: remove this when min sam version is >= 1.18.1
         if (goRuntimes.includes(runtime) && !config.noDebug) {
             const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
+            if (semver.lt(samCliVersion, minSamCliVersionForGoSupport)) {
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.go.support',
                         'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
-                        MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+                        minSamCliVersionForGoSupport
                     )
                 )
                 config.noDebug = true
@@ -600,6 +598,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             envFile: '', // Populated by makeConfig().
             apiPort: apiPort,
             debugPort: debugPort,
+            invokeTarget: {
+                ...config.invokeTarget,
+            },
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,
@@ -654,6 +655,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 throw new ToolkitError(message, { code: 'UnsupportedRuntime' })
             }
         }
+
+        // generate template for target=code
+        if (launchConfig.invokeTarget.target === 'code') {
+            const codeConfig = launchConfig as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            await makeInputTemplate(codeConfig)
+        }
+
         await makeJsonFiles(launchConfig)
 
         // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().

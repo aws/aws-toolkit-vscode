@@ -11,6 +11,7 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
     python: 'ms-python.python',
@@ -21,6 +22,11 @@ export const VSCODE_EXTENSION_ID = {
     java: 'redhat.java',
     javadebug: 'vscjava.vscode-java-debug',
     git: 'vscode.git',
+    remotessh: 'ms-vscode-remote.remote-ssh',
+}
+
+export const vscodeExtensionMinVersion = {
+    remotessh: '0.74.0',
 }
 
 /**
@@ -41,4 +47,4 @@ export interface ExtContext {
 /**
  * Version of the .vsix produced by package.ts with the --debug option.
  */
-export const EXTENSION_ALPHA_VERSION = '1.99.0-SNAPSHOT'
+export const extensionAlphaVersion = '1.99.0-SNAPSHOT'

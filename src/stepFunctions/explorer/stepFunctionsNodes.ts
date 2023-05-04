@@ -20,7 +20,7 @@ import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
+export const contextValueStateMachine = 'awsStateMachineNode'
 
 const sfnNodeMap = new Map<string, StepFunctionsNode>()
 
@@ -40,7 +40,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     private readonly stateMachineNodes: Map<string, StateMachineNode>
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultStepFunctionsClient(regionCode)
     ) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
@@ -49,7 +49,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
         sfnNodeMap.set(regionCode, this)
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
@@ -83,7 +83,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         public details: StepFunctions.StateMachineListItem
     ) {
         super('')
@@ -120,7 +120,7 @@ function makeStateMachineNode(
     details: StepFunctions.StateMachineListItem
 ): StateMachineNode {
     const node = new StateMachineNode(parent, regionCode, details)
-    node.contextValue = CONTEXT_VALUE_STATE_MACHINE
+    node.contextValue = contextValueStateMachine
 
     return node
 }

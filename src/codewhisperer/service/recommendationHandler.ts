@@ -16,13 +16,13 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
+import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
+import { asyncCallWithTimeout, isInlineCompletionEnabled } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
 import { showTimedMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
@@ -151,7 +151,7 @@ export class RecommendationHandler {
             req = EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
-                accessToken ? undefined : config.isIncludeSuggestionsWithCodeReferencesEnabled
+                accessToken ? undefined : config.isSuggestionsWithCodeReferencesEnabled
             )
         } else {
             req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
@@ -179,6 +179,7 @@ export class RecommendationHandler {
                     page === 0,
                     codewhispererPromise
                 )
+                TelemetryHelper.instance.setSdkApiCallEndTime()
                 latency = startTime !== 0 ? performance.now() - startTime : 0
                 if ('recommendations' in resp) {
                     recommendation = (resp && resp.recommendations) || []
@@ -199,6 +200,15 @@ export class RecommendationHandler {
                 requestId = resp?.$response && resp?.$response?.requestId
                 nextToken = resp?.nextToken ? resp?.nextToken : ''
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
+                TelemetryHelper.instance.setFirstResponseRequestId(requestId)
+                TelemetryHelper.instance.setSessionId(sessionId)
+                if (page === 0) {
+                    TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
+                }
+                if (nextToken === '') {
+                    TelemetryHelper.instance.setLastRequestId(requestId)
+                    TelemetryHelper.instance.setAllPaginationEndTime()
+                }
             } else {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
@@ -217,12 +227,11 @@ export class RecommendationHandler {
             getLogger().error('CodeWhisperer Invocation Exception : ', error)
             getLogger().verbose(`CodeWhisperer Invocation Exception : ${error}`)
             if (isAwsError(error)) {
-                const awsError = error as AWSError
-                this.errorMessagePrompt = awsError.message
-                requestId = awsError.requestId || ''
-                errorCode = awsError.code
-                reason = `CodeWhisperer Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
-                await this.onThrottlingException(awsError, triggerType)
+                this.errorMessagePrompt = error.message
+                requestId = error.requestId || ''
+                errorCode = error.code
+                reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
+                await this.onThrottlingException(error, triggerType)
             } else {
                 errorCode = error as string
                 reason = error ? String(error) : 'unknown'
@@ -253,26 +262,20 @@ export class RecommendationHandler {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
             if (shouldRecordServiceInvocation) {
-                telemetry.codewhisperer_serviceInvocation.emit({
-                    codewhispererRequestId: requestId ? requestId : undefined,
-                    codewhispererSessionId: sessionId ? sessionId : undefined,
-                    codewhispererLastSuggestionIndex: this.recommendations.length - 1,
-                    codewhispererTriggerType: triggerType,
-                    codewhispererAutomatedTriggerType: autoTriggerType,
-                    codewhispererCompletionType:
-                        invocationResult == 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
-                    result: invocationResult,
-                    duration: latency ? latency : 0,
-                    codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
-                    codewhispererCursorOffset: TelemetryHelper.instance.cursorOffset
-                        ? TelemetryHelper.instance.cursorOffset
-                        : 0,
-                    codewhispererLanguage: languageContext.language,
-                    reason: reason ? reason.substring(0, 200) : undefined,
-                    credentialStartUrl: TelemetryHelper.instance.startUrl,
-                })
+                TelemetryHelper.instance.recordServiceInvocationTelemetry(
+                    requestId,
+                    sessionId,
+                    this.recommendations.length - 1,
+                    triggerType,
+                    autoTriggerType,
+                    invocationResult,
+                    latency,
+                    this.startPos.line,
+                    languageContext.language,
+                    reason
+                )
             }
-            if (invocationResult == 'Succeeded') {
+            if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
             }
         }
@@ -280,6 +283,7 @@ export class RecommendationHandler {
             const typedPrefix = editor.document
                 .getText(new vscode.Range(this.startPos, editor.selection.active))
                 .replace('\r\n', '\n')
+            TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
@@ -291,11 +295,13 @@ export class RecommendationHandler {
                     this.setSuggestionState(i + this.recommendations.length, 'Discard')
                 }
             })
-            this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
-            this._onDidReceiveRecommendation.fire()
+            this.recommendations = pagination ? this.recommendations.concat(recommendation) : recommendation
+            if (isInlineCompletionEnabled()) {
+                this._onDidReceiveRecommendation.fire()
+            }
         }
         // send Empty userDecision event if user receives no recommendations in this session at all.
-        if (this.recommendations.length === 0 && nextToken === '') {
+        if (invocationResult === 'Succeeded' && this.recommendations.length === 0 && nextToken === '') {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
                 requestId,
                 sessionId,
@@ -303,10 +309,12 @@ export class RecommendationHandler {
                 editor.document.languageId
             )
         }
-        this.requestId = requestId
-        this.sessionId = sessionId
-        this.nextToken = nextToken
-        this.errorCode = errorCode
+        if (!this.isCancellationRequested()) {
+            this.requestId = requestId
+            this.sessionId = sessionId
+            this.nextToken = nextToken
+            this.errorCode = errorCode
+        }
     }
 
     cancelPaginatedRequest() {
@@ -314,8 +322,12 @@ export class RecommendationHandler {
         this.cancellationToken.cancel()
     }
 
+    isCancellationRequested() {
+        return this.cancellationToken.token.isCancellationRequested
+    }
+
     checkAndResetCancellationTokens() {
-        if (this.cancellationToken.token.isCancellationRequested) {
+        if (this.isCancellationRequested()) {
             this.cancellationToken.dispose()
             this.cancellationToken = new vscode.CancellationTokenSource()
             this.nextToken = ''
@@ -335,7 +347,11 @@ export class RecommendationHandler {
         this.nextToken = ''
         this.errorMessagePrompt = ''
     }
-    reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
+
+    /**
+     * Emits telemetry reflecting user decision for current recommendation.
+     */
+    reportUserDecisionOfRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,
@@ -353,7 +369,7 @@ export class RecommendationHandler {
 
     canShowRecommendationInIntelliSense(editor: vscode.TextEditor, showPrompt: boolean = false): boolean {
         const reject = () => {
-            this.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            this.reportUserDecisionOfRecommendation(editor, -1)
             this.clearRecommendations()
         }
         if (!this.isValidResponse()) {

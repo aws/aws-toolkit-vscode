@@ -16,14 +16,14 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { PromptSettings } from './settings'
 import { isNonNullable } from './utilities/tsUtils'
-import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
 import { CreateProfileWizard } from '../credentials/wizards/createProfile'
-import { Profile } from './credentials/credentialsFile'
-import { ProfileKey, staticCredentialsTemplate } from '../credentials/wizards/templates'
+import { staticCredentialsTemplate } from '../credentials/wizards/templates'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { Auth } from '../credentials/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
+import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
+import { SharedCredentialsKeys } from '../credentials/types'
 
 /**
  * @deprecated
@@ -116,12 +116,8 @@ export class AwsContextCommands {
      * @returns The profile name, or undefined if user cancelled
      */
     public async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
-        const profiles = {} as Record<string, Profile>
-        for (const [k, v] of (await loadSharedCredentialsProfiles()).entries()) {
-            profiles[k] = v
-        }
-
-        const wizard = new CreateProfileWizard(profiles, staticCredentialsTemplate)
+        const existingProfiles = await loadSharedCredentialsProfiles()
+        const wizard = new CreateProfileWizard(existingProfiles, staticCredentialsTemplate)
         const resp = await wizard.run()
         if (!resp) {
             return
@@ -129,8 +125,8 @@ export class AwsContextCommands {
 
         await UserCredentialsUtils.generateCredentialsFile({
             profileName: resp.name,
-            accessKey: resp.profile[ProfileKey.AccessKeyId]!,
-            secretKey: resp.profile[ProfileKey.SecretKey]!,
+            accessKey: resp.profile[SharedCredentialsKeys.AWS_ACCESS_KEY_ID]!,
+            secretKey: resp.profile[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]!,
         })
 
         const sharedProviderId: CredentialsId = {

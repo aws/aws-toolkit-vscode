@@ -2,13 +2,18 @@ version: 0.2
 
 env:
     variables:
-        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
 
 phases:
     install:
         runtime-versions:
-            nodejs: 14
+            nodejs: 16
+
+        commands:
+            # Without this, "Unable to locate package libatk1.0-0".
+            - '>/dev/null apt-get -yqq update'
+            # Dependencies for running vscode.
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
 
     pre_build:
         commands:
@@ -26,9 +31,9 @@ phases:
 
     build:
         commands:
-            - npm run testCompile
-            - npm run lint
-            - xvfb-run npm test --silent
+            - mkdir -p /home/codebuild-user
+            - chown -R codebuild-user:codebuild-user /tmp /home/codebuild-user .
+            - su codebuild-user -c "xvfb-run npm test --silent"
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

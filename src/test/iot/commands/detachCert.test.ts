@@ -10,9 +10,9 @@ import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingCertNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import globals from '../../../shared/extensionGlobals'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('detachThingCertCommand', function () {
     const certificateId = 'test-certificate'
@@ -33,11 +33,13 @@ describe('detachThingCertCommand', function () {
     })
 
     it('confirms detach, detaches certificate, and refreshes node', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Detach' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         const commands = new FakeCommands()
-        await detachThingCertCommand(node, window, commands)
+        await detachThingCertCommand(node, commands)
 
-        assert.strictEqual(window.message.warning, 'Are you sure you want to detach certificate from Thing iot-thing?')
+        getTestWindow()
+            .getFirstMessage()
+            .assertWarn('Are you sure you want to detach certificate from Thing iot-thing?')
 
         verify(iot.detachThingPrincipal(deepEqual({ thingName, principal }))).once()
 
@@ -46,8 +48,8 @@ describe('detachThingCertCommand', function () {
     })
 
     it('does nothing when cancelled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        await detachThingCertCommand(node, window, new FakeCommands())
+        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        await detachThingCertCommand(node, new FakeCommands())
 
         verify(iot.detachThingPrincipal(anything())).never()
     })
@@ -55,11 +57,13 @@ describe('detachThingCertCommand', function () {
     it('shows an error message and refreshes node when thing detachment fails', async function () {
         when(iot.detachThingPrincipal(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Detach' } })
+        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
         const commands = new FakeCommands()
-        await detachThingCertCommand(node, window, commands)
+        await detachThingCertCommand(node, commands)
 
-        assert.ok(window.message.error?.includes('Failed to detach: test-certificate'))
+        getTestWindow()
+            .getSecondMessage()
+            .assertError(/Failed to detach: test-certificate/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])

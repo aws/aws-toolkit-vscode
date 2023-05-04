@@ -50,6 +50,8 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
         },
         uri => {
             try {
+                // SLOW: This request happens on every keystroke! (5MB+ read from filesystem).
+                // This is a design flaw in this registerContributor() API.
                 return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)

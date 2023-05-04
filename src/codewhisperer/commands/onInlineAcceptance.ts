@@ -9,8 +9,6 @@ import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
-import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletionService } from '../service/inlineCompletionService'
@@ -28,6 +26,7 @@ import {
 } from '../../shared/telemetry/telemetry.gen'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import { ImportAdderProvider } from '../service/importAdderProvider'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -83,13 +82,10 @@ export async function onInlineAcceptance(
         const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active
-        const languageId = acceptanceEntry.editor.document.languageId
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+        RecommendationHandler.instance.reportUserDecisionOfRecommendation(
             acceptanceEntry.editor,
             acceptanceEntry.acceptIndex
         )
-        // codewhisperer will be doing editing while formatting.
-        // formatting should not trigger consoals auto trigger
         vsCodeState.isCodeWhispererEditing = true
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
@@ -102,29 +98,13 @@ export async function onInlineAcceptance(
             ) {
                 await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
             }
+            await ImportAdderProvider.instance.onAcceptRecommendation(
+                acceptanceEntry.editor,
+                RecommendationHandler.instance.recommendations[acceptanceEntry.acceptIndex],
+                start.line
+            )
         } catch (error) {
-            getLogger().error(`${error} in handling right contexts`)
-        }
-        try {
-            if (languageId === CodeWhispererConstants.python) {
-                await vscode.commands.executeCommand('editor.action.format')
-            } else {
-                const range = new vscode.Range(start, end)
-                const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
-                    'vscode.executeFormatRangeProvider',
-                    acceptanceEntry.editor.document.uri,
-                    range,
-                    {
-                        tabSize: getTabSizeSetting(),
-                        insertSpaces: true,
-                    }
-                )
-                if (edits && acceptanceEntry.editor) {
-                    const wEdit = new WorkspaceEdit()
-                    wEdit.set(acceptanceEntry.editor.document.uri, edits)
-                    await workspace.applyEdit(wEdit)
-                }
-            }
+            getLogger().error(`${error} in handling extra brackets or imports`)
         } finally {
             vsCodeState.isCodeWhispererEditing = false
         }

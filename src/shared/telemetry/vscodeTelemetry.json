@@ -50,27 +50,14 @@
             ]
         },
         {
+            "name": "aws_autoUpdateBeta",
+            "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
+            "passive": true
+        },
+        {
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",
             "metadata": [{ "type": "result" }, { "type": "cli" }]
-        },
-        {
-            "name": "aws_refreshCredentials",
-            "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
-            "passive": true,
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "credentialType",
-                    "required": false
-                },
-                {
-                    "type": "credentialSourceId",
-                    "required": false
-                }
-            ]
         },
         {
             "name": "ssm_createDocument",

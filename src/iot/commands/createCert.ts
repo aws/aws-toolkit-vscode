@@ -8,14 +8,15 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands'
-import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const PEM_FILE_ENCODING = 'ascii'
 
 /**
@@ -25,12 +26,11 @@ export async function createCertificateCommand(
     node: IotCertsFolderNode,
     promptFunc = promptForSaveLocation,
     saveFunc = saveCredentials,
-    window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('CreateCertificate called for %O', node)
 
-    const folderLocation = await promptFunc(window)
+    const folderLocation = await promptFunc()
     if (!folderLocation) {
         getLogger().info('CreateCertificate canceled: No folder selected')
         return
@@ -44,7 +44,7 @@ export async function createCertificateCommand(
         })
     } catch (e) {
         getLogger().error('Failed to create certificate: %s', e)
-        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
+        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'))
         return undefined
     }
 
@@ -55,25 +55,22 @@ export async function createCertificateCommand(
 
     if (!certPem || !privateKey || !publicKey) {
         getLogger().error('Could not download certificate. Certificate is missing either the PEM or key pair.')
-        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
+        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'))
         return undefined
     }
 
     getLogger().info(`Downloaded certificate ${certId}`)
-    window.showInformationMessage(localize('AWS.iot.createCert.success', 'Created certificate {0}', certId))
+    vscode.window.showInformationMessage(localize('AWS.iot.createCert.success', 'Created certificate {0}', certId))
 
     //Save resources
-    const saveSuccessful = await saveFunc(window, folderLocation, certId!, certPem, privateKey, publicKey)
+    const saveSuccessful = await saveFunc(folderLocation, certId!, certPem, privateKey, publicKey)
     if (!saveSuccessful) {
         //Delete the certificate if the key pair cannot be saved
         try {
             await node.iot.deleteCertificate({ certificateId: certId! })
         } catch (e) {
             getLogger().error(`Failed to delete Certificate ${certId}: %s`, e)
-            showViewLogsMessage(
-                localize('AWS.iot.deleteCert.error', 'Failed to delete Certificate {0}', certId),
-                window
-            )
+            showViewLogsMessage(localize('AWS.iot.deleteCert.error', 'Failed to delete Certificate {0}', certId))
         }
     }
 
@@ -84,8 +81,8 @@ export async function createCertificateCommand(
 /**
  * Prompts for folder in which to save certificate and keys
  */
-async function promptForSaveLocation(window: Window): Promise<vscode.Uri | undefined> {
-    const folderLocation = await window.showOpenDialog({
+async function promptForSaveLocation(): Promise<vscode.Uri | undefined> {
+    const folderLocation = await vscode.window.showOpenDialog({
         openLabel: localize('AWS.iot.downloadCert.openButton', 'Save certificate here'),
         canSelectFolders: true,
         canSelectFiles: false,
@@ -104,7 +101,6 @@ async function promptForSaveLocation(window: Window): Promise<vscode.Uri | undef
  * @returns `true` if writes succeed, else `false`.
  */
 async function saveCredentials(
-    window: Window,
     basePath: vscode.Uri,
     certName: string,
     certPem: string,
@@ -122,14 +118,14 @@ async function saveCredentials(
 
     if (certExists) {
         getLogger().error('Certificate path {0} already exists', certPath)
-        window.showErrorMessage(
+        vscode.window.showErrorMessage(
             localize('AWS.iot.createCert.error', 'Failed to create certificate. Path {0} already exists.', certPath)
         )
         return false
     }
     if (privateKeyExists) {
         getLogger().error('Key path {0} already exists', privateKeyPath)
-        window.showErrorMessage(
+        vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',
                 'Failed to create certificate. Path {0} already exists.',
@@ -140,7 +136,7 @@ async function saveCredentials(
     }
     if (publicKeyExists) {
         getLogger().error('Key path {0} already exists', publicKeyPath)
-        window.showErrorMessage(
+        vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',
                 'Failed to create certificate. Path {0} already exists.',
@@ -155,7 +151,7 @@ async function saveCredentials(
         await fs.writeFile(publicKeyPath, publicKey, { encoding: PEM_FILE_ENCODING, mode: MODE_RW_R_R })
     } catch (e) {
         getLogger().error('Could not save certificate: %s', e)
-        showViewLogsMessage(localize('AWS.iot.createCert.saveError', 'Failed to save certificate'), window)
+        showViewLogsMessage(localize('AWS.iot.createCert.saveError', 'Failed to save certificate'))
         return false
     }
     return true

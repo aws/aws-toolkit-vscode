@@ -1,0 +1,22 @@
+{
+	"date": "2023-04-18",
+	"version": "1.69.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "endpoints: local file never loads if remote call hangs"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: improved efficiency by reducing unnecessary service calls #3333"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Incorrect offset icons in webviews"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: show readme on first load of a Dev Environment"
+		}
+	]
+}

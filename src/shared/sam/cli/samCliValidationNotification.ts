@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
@@ -11,8 +12,8 @@ import { getIdeProperties } from '../../extensionUtilities'
 import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
-    MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+    maxSamCliVersionExclusive,
+    minSamCliVersion,
     SamCliNotFoundError,
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
@@ -29,7 +30,7 @@ export interface SamCliValidationNotificationAction {
 const actionGoToSamCli: SamCliValidationNotificationAction = {
     label: localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI'),
     invoke: async () => {
-        await vscode.env.openExternal(vscode.Uri.parse(samAboutInstallUrl))
+        openUrl(samAboutInstallUrl)
     },
 }
 
@@ -112,25 +113,25 @@ export function makeSamCliValidationNotification(
 }
 
 function makeVersionValidationNotificationMessage(validationResult: SamCliVersionValidatorResult): string {
-    const RECOMMENDATION_UPDATE_TOOLKIT: string = localize(
+    const recommendationUpdateToolkit: string = localize(
         'AWS.samcli.recommend.update.toolkit',
         'Check the Marketplace for an updated {0} Toolkit.',
         getIdeProperties().company
     )
 
-    const RECOMMENDATION_UPDATE_SAM_CLI: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
+    const recommendationUpdateSamCli: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
 
     const recommendation: string =
         validationResult.validation === SamCliVersionValidation.VersionTooHigh
-            ? RECOMMENDATION_UPDATE_TOOLKIT
-            : RECOMMENDATION_UPDATE_SAM_CLI
+            ? recommendationUpdateToolkit
+            : recommendationUpdateSamCli
 
     return localize(
         'AWS.samcli.notification.version.invalid',
         'Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}',
         validationResult.version,
-        MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-        MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
+        minSamCliVersion,
+        maxSamCliVersionExclusive,
         recommendation
     )
 }

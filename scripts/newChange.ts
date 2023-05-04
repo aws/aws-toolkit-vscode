@@ -7,7 +7,7 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'
-import { v4 as uuid } from 'uuid'
+import * as crypto from 'crypto'
 
 const directory = join(process.cwd(), '.changes', 'next-release')
 const changeTypes = ['Breaking Change', 'Feature', 'Bug Fix', 'Deprecation', 'Removal', 'Test']
@@ -48,7 +48,7 @@ const contents: NewChange = {
     type: type,
     description: description,
 }
-const fileName = `${type}-${uuid()}.json`
+const fileName = `${type}-${crypto.randomUUID()}.json`
 const path = join(directory, fileName)
 fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t'))
 

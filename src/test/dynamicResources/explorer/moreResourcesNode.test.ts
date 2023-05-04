@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
+import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
@@ -16,8 +16,8 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('ResourcesNode', function () {
     let settings: ResourcesSettings
@@ -53,7 +53,7 @@ describe('ResourcesNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has ResourceTypeNode child nodes', async function () {
@@ -79,14 +79,20 @@ describe('ResourcesNode', function () {
     })
 
     it('sorts child nodes', async function () {
-        resourceTypes = UNSORTED_TEXT
+        resourceTypes = unsortedText
 
         await setConfiguration(resourceTypes)
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
+    })
+
+    it('handles duplicate type entries without failing', async function () {
+        prepareMock(['type1', 'type2', 'type1'])
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
     })
 
     async function setConfiguration(resourceTypes: string[]) {

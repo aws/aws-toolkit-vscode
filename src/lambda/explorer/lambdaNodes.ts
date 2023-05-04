@@ -18,8 +18,8 @@ import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
-export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
+export const contextValueLambdaFunction = 'awsRegionFunctionNode'
+export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -29,7 +29,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultLambdaClient(regionCode)
     ) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
@@ -37,7 +37,7 @@ export class LambdaNode extends AWSTreeNodeBase {
         this.contextValue = 'awsLambdaNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
@@ -72,8 +72,8 @@ function makeLambdaFunctionNode(
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
     node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')
-        ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
-        : CONTEXT_VALUE_LAMBDA_FUNCTION
+        ? contextValueLambdaFunctionImportable
+        : contextValueLambdaFunction
 
     return node
 }

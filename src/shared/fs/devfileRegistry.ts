@@ -11,7 +11,7 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 
-export const DEVFILE_GLOB_PATTERN = '**/devfile.{yaml,yml}'
+export const devfileGlobPattern = '**/devfile.{yaml,yml}'
 
 export class DevfileRegistry extends WatchedFiles<Devfile> {
     protected name = 'DevfileRegistry'
@@ -36,7 +36,7 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
         return undefined
     }
 
-    public async remove(path: vscode.Uri): Promise<void> {
+    public override async remove(path: vscode.Uri): Promise<void> {
         const uri = typeof path === 'string' ? vscode.Uri.parse(path, true) : path
         globals.schemaService.registerMapping({
             uri: uri,

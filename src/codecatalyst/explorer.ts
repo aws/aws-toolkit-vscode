@@ -5,25 +5,21 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { Connection, createBuilderIdConnection, isBuilderIdConnection } from '../credentials/auth'
-import { createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
-import { UnknownError } from '../shared/errors'
+import { Connection, isBuilderIdConnection } from '../credentials/auth'
+import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
-import { getLogger } from '../shared/logger/logger'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
-import { ConnectedDevEnv, getConnectedDevEnv, getDevfileLocation } from './model'
+import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
+import { getLogger } from '../shared/logger'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const conn = await createBuilderIdConnection(authProvider.auth)
-        await authProvider.secondaryAuth.useNewConnection(conn)
-    }
+    (authProvider: CodeCatalystAuthenticationProvider) => authProvider.promptNotConnected()
 )
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
@@ -127,7 +123,12 @@ export class CodeCatalystRootNode implements RootNode {
     }
 
     public async getTreeItem() {
-        this.devenv = await this.getDevEnv()
+        await this.authProvider.restore()
+
+        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
+            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
+            return undefined
+        })
 
         const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         item.contextValue = this.authProvider.isUsingSavedConnection
@@ -142,17 +143,5 @@ export class CodeCatalystRootNode implements RootNode {
         }
 
         return item
-    }
-
-    private async getDevEnv() {
-        try {
-            await this.authProvider.restore()
-            const conn = this.authProvider.activeConnection
-            const client = conn !== undefined ? await createClient(conn) : undefined
-
-            return client !== undefined ? await getConnectedDevEnv(client) : undefined
-        } catch (err) {
-            getLogger().warn(`codecatalyst: failed to get Dev Environment: ${UnknownError.cast(err).message}`)
-        }
     }
 }

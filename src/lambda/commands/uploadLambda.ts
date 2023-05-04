@@ -23,7 +23,6 @@ import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
-import { Window } from '../../shared/vscode/window'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails, listLambdaFunctions } from '../utils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
@@ -212,9 +211,13 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+        if (invokePath) {
             this.form.uploadType.setDefault('directory')
-            this.form.targetUri.setDefault(invokePath)
+            if (fs.statSync(invokePath.fsPath).isFile()) {
+                this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(invokePath.fsPath)))
+            } else {
+                this.form.targetUri.setDefault(invokePath)
+            }
         } else {
             this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
             this.form.targetUri.bindPrompter(({ uploadType }) => {
@@ -269,16 +272,11 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
  * @param type Whether to zip or sam build the directory
  * @param window Wrapper around vscode.window functionality for testing
  */
-async function runUploadDirectory(
-    lambda: LambdaFunction,
-    type: 'zip' | 'sam',
-    parentDir: vscode.Uri,
-    window = Window.vscode()
-) {
+async function runUploadDirectory(lambda: LambdaFunction, type: 'zip' | 'sam', parentDir: vscode.Uri) {
     if (type === 'sam' && lambda.configuration) {
         return await runUploadLambdaWithSamBuild({ ...lambda, configuration: lambda.configuration }, parentDir)
     } else {
-        return await window.withProgress(
+        return await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false,
@@ -300,29 +298,22 @@ async function runUploadDirectory(
  * @param parentDir Parent dir to build
  * @param window Wrapper around vscode.window functionality for testing
  */
-async function runUploadLambdaWithSamBuild(
-    lambda: Required<LambdaFunction>,
-    parentDir: vscode.Uri,
-    window = Window.vscode()
-) {
+async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, parentDir: vscode.Uri) {
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
         const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
         if (!(await fileExists(handlerFile))) {
-            const isConfirmed = await showConfirmationMessage(
-                {
-                    prompt: localize(
-                        'AWS.lambda.upload.handlerNotFound',
-                        "{0} Toolkit can't find a file corresponding to handler: {1} at filepath {2}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
-                        getIdeProperties().company,
-                        lambda.configuration.Handler,
-                        handlerFile
-                    ),
-                    confirm: localizedText.yes,
-                    cancel: localizedText.no,
-                },
-                window
-            )
+            const isConfirmed = await showConfirmationMessage({
+                prompt: localize(
+                    'AWS.lambda.upload.handlerNotFound',
+                    "{0} Toolkit can't find a file corresponding to handler: {1} at filepath {2}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
+                    getIdeProperties().company,
+                    lambda.configuration.Handler,
+                    handlerFile
+                ),
+                confirm: localizedText.yes,
+                cancel: localizedText.no,
+            })
 
             if (!isConfirmed) {
                 getLogger().info('Handler file not found. Aborting runUploadLambdaWithSamBuild')
@@ -336,7 +327,7 @@ async function runUploadLambdaWithSamBuild(
         )
     }
 
-    return await window.withProgress(
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -398,19 +389,16 @@ async function runUploadLambdaWithSamBuild(
  * @param lambda LambdaFunction
  * @param window Wrapper around vscode.window functionality for testing
  */
-async function confirmLambdaDeployment(lambda: LambdaFunction, window = Window.vscode()): Promise<boolean> {
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.lambda.upload.confirm',
-                'This will immediately publish the selected code as the $LATEST version of Lambda: {0}.\n\nContinue?',
-                lambda.name
-            ),
-            confirm: localizedText.yes,
-            cancel: localizedText.no,
-        },
-        window
-    )
+async function confirmLambdaDeployment(lambda: LambdaFunction): Promise<boolean> {
+    const isConfirmed = await showConfirmationMessage({
+        prompt: localize(
+            'AWS.lambda.upload.confirm',
+            'This will immediately publish the selected code as the $LATEST version of Lambda: {0}.\n\nContinue?',
+            lambda.name
+        ),
+        confirm: localizedText.yes,
+        cancel: localizedText.no,
+    })
 
     if (!isConfirmed) {
         getLogger().info('UploadLambda confirmation cancelled.')
@@ -419,8 +407,8 @@ async function confirmLambdaDeployment(lambda: LambdaFunction, window = Window.v
     return isConfirmed
 }
 
-async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode.Uri, window = Window.vscode()) {
-    return await window.withProgress(
+async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode.Uri) {
+    return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -483,7 +471,7 @@ async function uploadZipBuffer(
         throw new ToolkitError('Failed to upload zip archive', { cause: err })
     })
 
-    Window.vscode().showInformationMessage(
+    vscode.window.showInformationMessage(
         localize('AWS.lambda.upload.done', 'Uploaded Lambda function: {0}', lambda.name)
     )
 }

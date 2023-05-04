@@ -5,7 +5,16 @@
 
 import globals from '../../shared/extensionGlobals'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
+import * as localizedText from '../../shared/localizedText'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { ssoAuthHelpUrl } from '../../shared/constants'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export interface SsoToken {
     /**
@@ -66,12 +75,55 @@ export interface SsoProfile {
     readonly identifier?: string
 }
 
-export async function openSsoPortalLink(authorization: { readonly verificationUriComplete: string }): Promise<boolean> {
-    return vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUriComplete))
+export const builderIdStartUrl = 'https://view.awsapps.com/start'
+
+const tryOpenHelpUrl = (url: vscode.Uri) =>
+    openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
+
+export async function openSsoPortalLink(
+    startUrl: string,
+    authorization: { readonly verificationUri: string; readonly userCode: string }
+): Promise<boolean> {
+    async function copyCodeAndOpenLink() {
+        await vscode.env.clipboard.writeText(authorization.userCode).then(undefined, err => {
+            getLogger().warn(`auth: failed to copy user code "${authorization.userCode}" to clipboard: %s`, err)
+        })
+
+        return vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUri))
+    }
+
+    async function showLoginNotification() {
+        const name = startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenterFull()
+        const title = localize('AWS.auth.loginWithBrowser.messageTitle', 'Copy Code for {0}', name)
+        const detail = localize(
+            'AWS.auth.loginWithBrowser.messageDetail',
+            'To proceed, open the login page and provide this code to confirm the access request: {0}',
+            authorization.userCode
+        )
+        const copyCode = localize('AWS.auth.loginWithBrowser.copyCodeAction', 'Copy Code and Proceed')
+        const options = { modal: true, detail } as vscode.MessageOptions
+
+        while (true) {
+            // TODO: add the 'Help' item back once we have a suitable URL
+            // const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
+            const resp = await vscode.window.showInformationMessage(title, options, copyCode)
+            switch (resp) {
+                case copyCode:
+                    return copyCodeAndOpenLink()
+                case localizedText.help:
+                    await tryOpenHelpUrl(ssoAuthHelpUrl)
+                    continue
+                default:
+                    throw new CancellationError('user')
+            }
+        }
+    }
+
+    return telemetry.aws_loginWithBrowser.run(() => showLoginNotification())
 }
 
 // Most SSO 'expirables' are fairly long lived, so a one minute buffer is plenty.
-const EXPIRATION_BUFFER_MS = 60000
+const expirationBufferMs = 60000
 export function isExpired(expirable: { expiresAt: Date }): boolean {
-    return globals.clock.Date.now() + EXPIRATION_BUFFER_MS >= expirable.expiresAt.getTime()
+    return globals.clock.Date.now() + expirationBufferMs >= expirable.expiresAt.getTime()
 }

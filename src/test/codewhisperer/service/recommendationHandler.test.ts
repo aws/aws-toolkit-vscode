@@ -24,7 +24,7 @@ describe('recommendationHandler', function () {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
         isAutomatedTriggerEnabled: true,
-        isIncludeSuggestionsWithCodeReferencesEnabled: true,
+        isSuggestionsWithCodeReferencesEnabled: true,
     }
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
@@ -34,12 +34,14 @@ describe('recommendationHandler', function () {
         const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
+        const testStartUrl = 'testStartUrl'
 
         beforeEach(function () {
             sinon.restore()
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
+            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {
@@ -92,6 +94,7 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(handler, 'isCancellationRequested').returns(false)
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(handler.sessionId, 'test_request')
@@ -123,11 +126,13 @@ describe('recommendationHandler', function () {
                 codewhispererLastSuggestionIndex: -1,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererAutomatedTriggerType: 'Enter',
+                codewhispererImportRecommendationEnabled: true,
                 codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
+                credentialStartUrl: testStartUrl,
             })
         })
 
@@ -161,6 +166,7 @@ describe('recommendationHandler', function () {
                 codewhispererSuggestionReferenceCount: 0,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
+                credentialStartUrl: testStartUrl,
             })
         })
     })

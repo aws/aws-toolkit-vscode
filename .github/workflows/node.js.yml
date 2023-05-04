@@ -15,59 +15,90 @@ jobs:
         runs-on: macos-latest
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v2
+              uses: actions/setup-node@v3
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
-              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
               with:
                   run: npm test
             - name: Code coverage
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v2
+              uses: codecov/codecov-action@v3
               with:
                   verbose: true
                   file: ./coverage/coverage-final.json
                   flags: macos-unittests
+            - name: Code coverage (CodeWhisperer)
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              uses: codecov/codecov-action@v3
+              with:
+                  verbose: true
+                  file: ./coverage/coverage-final.json
+                  flags: codewhisperer
 
     windows:
         name: Windows nodejs
         runs-on: windows-2019
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 vscode-version: [stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v2
+              uses: actions/setup-node@v3
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
-              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
               run: npm test
             - name: Code coverage
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v2
+              uses: codecov/codecov-action@v3
               with:
                   verbose: true
                   file: ./coverage/coverage-final.json
                   flags: windows-unittests
+
+    lint:
+        name: Ubuntu nodejs Lint
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x]
+                vscode-version: [stable]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run testCompile
+            - run: npm run lint

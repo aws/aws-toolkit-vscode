@@ -10,36 +10,37 @@ import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { DevEnvironmentSettings } from './commands'
-import { codeCatalystConnectCommand, CODECATALYST_RECONNECT_KEY, DevEnvironmentId, DevEnvMemento } from './model'
+import { codeCatalystConnectCommand, codecatalystReconnectKey, DevEnvironmentId, DevEnvMemento } from './model'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
-import { recordSource } from './utils'
+import { isDevenvVscode, recordSource } from './utils'
+import { SsoConnection } from '../credentials/auth'
 
 const localize = nls.loadMessageBundle()
 
-const RECONNECT_TIMER = 5000
-const MAX_RECONNECT_TIME = 10 * 60 * 1000
+const reconnectTimer = 5000
+const maxReconnectTime = 10 * 60 * 1000
 
 export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCatalystAuthenticationProvider) {
     let restartHandled = false
     authProvider.onDidChangeActiveConnection(async conn => {
-        if (restartHandled || conn === undefined) {
+        if (restartHandled || conn === undefined || authProvider.auth.getConnectionState(conn) !== 'valid') {
             return
         }
+        getLogger().info(`codecatalyst: reconnect: onDidChangeActiveConnection: startUrl=${conn.startUrl}`)
 
-        const client = await createClient(conn)
         const envId = getCodeCatalystDevEnvId()
-        handleRestart(client, ctx, envId)
+        handleRestart(conn, ctx, envId)
         restartHandled = true
     })
 }
 
-function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: string | undefined) {
+function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | undefined) {
     if (envId !== undefined) {
         const memento = ctx.extensionContext.globalState
-        const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
+        const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
         if (envId in pendingReconnects) {
             const devenv = pendingReconnects[envId]
             const devenvName = getDevEnvName(devenv.alias, envId)
@@ -48,13 +49,13 @@ function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: strin
                 localize('AWS.codecatalyst.reconnect.success', 'Reconnected to Dev Environment: {0}', devenvName)
             )
             delete pendingReconnects[envId]
-            memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
+            memento.update(codecatalystReconnectKey, pendingReconnects)
         }
     } else {
-        getLogger().info('codecatalyst: attempting to poll development envionments')
+        getLogger().info('codecatalyst: attempting to poll dev environments')
 
         // Reconnect devenvs (if coming from a restart)
-        reconnectDevEnvs(client, ctx).catch(err => {
+        reconnectDevEnvs(conn, ctx).catch(err => {
             getLogger().error(`codecatalyst: error while resuming devenvs: ${err}`)
         })
     }
@@ -62,12 +63,12 @@ function handleRestart(client: CodeCatalystClient, ctx: ExtContext, envId: strin
 
 /**
  * Attempt to poll for connection in all valid devenvs
- * @param client a connected client
+ * @param conn a connection that may be used for CodeCatalyst
  * @param ctx the extension context
  */
-async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Promise<void> {
+async function reconnectDevEnvs(conn: SsoConnection, ctx: ExtContext): Promise<void> {
     const memento = ctx.extensionContext.globalState
-    const pendingDevEnvs = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
+    const pendingDevEnvs = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     const validDevEnvs = filterInvalidDevEnvs(pendingDevEnvs)
     if (Object.keys(validDevEnvs).length === 0) {
         return
@@ -81,15 +82,17 @@ async function reconnectDevEnvs(client: CodeCatalystClient, ctx: ExtContext): Pr
     const polledDevEnvs = devenvNames.join(', ')
     const progressTitle = localize(
         'AWS.codecatalyst.reconnect.restarting',
-        'The following devenvs are restarting: {0}',
+        'Dev Environments restarting: {0}',
         polledDevEnvs
     )
-    vscode.window.withProgress(
+    await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
         },
-        (progress, token) => {
+        async (progress, token) => {
             progress.report({ message: progressTitle })
+            const client = await createClient(conn)
+
             return pollDevEnvs(client, progress, token, memento, validDevEnvs)
         }
     )
@@ -119,7 +122,7 @@ function setWatchedDevEnvStatus(memento: vscode.Memento, devenvs: Record<string,
     for (const [id, detail] of Object.entries(devenvs)) {
         devenvs[id] = { ...detail, attemptingReconnect: watchStatus }
     }
-    return memento.update(CODECATALYST_RECONNECT_KEY, devenvs)
+    return memento.update(codecatalystReconnectKey, devenvs)
 }
 
 /**
@@ -143,6 +146,7 @@ async function pollDevEnvs(
     await setWatchedDevEnvStatus(memento, devenvs, true)
 
     const shouldCloseRootInstance = Object.keys(devenvs).length === 1
+    getLogger().info(`codecatalyst: reconnect: pollDevEnvs: ${Object.keys(devenvs).length}`)
 
     while (Object.keys(devenvs).length > 0) {
         if (token.isCancellationRequested) {
@@ -152,7 +156,6 @@ async function pollDevEnvs(
 
         for (const id in devenvs) {
             const details = devenvs[id]
-
             const devenvName = getDevEnvName(details.alias, id)
 
             try {
@@ -162,6 +165,9 @@ async function pollDevEnvs(
                     projectName: details.projectName,
                 })
 
+                const ide = metadata.ides?.[0]?.name
+                getLogger().info(`codecatalyst: reconnect: ides=${ide} statusReason=${metadata.statusReason}`)
+
                 if (metadata?.status === 'RUNNING') {
                     progress.report({
                         message: `Dev Environment ${devenvName} is now running. Attempting to reconnect.`,
@@ -169,11 +175,21 @@ async function pollDevEnvs(
 
                     openReconnectedDevEnv(client, id, details, shouldCloseRootInstance)
 
-                    // We no longer need to watch this devenv anymore because it's already being re-opened in SSH
+                    // Don't watch this devenv, it is already being re-opened in SSH.
+                    delete devenvs[id]
+                } else if (!isDevenvVscode(metadata.ides)) {
+                    // Technically vscode _can_ connect to a ideRuntime=jetbrains/cloud9 devenv, but
+                    // we refuse to anyway so that the experience is consistent with other IDEs
+                    // (jetbrains/cloud9) which are not capable of connecting to a devenv that lacks
+                    // their runtime/bootstrap files.
+                    const ide = metadata.ides?.[0]
+                    const toIde = ide ? ` to "${ide.name}"` : ''
+                    progress.report({ message: `Dev Environment ${devenvName} was switched${toIde}` })
+                    // Don't watch devenv that is no longer connectable.
                     delete devenvs[id]
                 } else if (isTerminating(metadata)) {
                     progress.report({ message: `Dev Environment ${devenvName} is terminating` })
-                    // We no longer need to watch a devenv that is in a terminating state
+                    // Don't watch devenv that is terminating.
                     delete devenvs[id]
                 } else if (isExpired(details.previousConnectionTimestamp)) {
                     progress.report({ message: `Dev Environment ${devenvName} has expired` })
@@ -184,7 +200,7 @@ async function pollDevEnvs(
                 showViewLogsMessage(localize('AWS.codecatalyst.reconnect', 'Unable to reconnect to ${0}', devenvName))
             }
         }
-        await sleep(RECONNECT_TIMER)
+        await sleep(reconnectTimer)
     }
 }
 
@@ -192,12 +208,11 @@ function isTerminating(devenv: Pick<DevEnvironment, 'status'>): boolean {
     if (!devenv.status) {
         return false
     }
-
     return devenv.status === 'FAILED' || devenv.status === 'DELETING' || devenv.status === 'DELETED'
 }
 
 function isExpired(previousConnectionTime: number): boolean {
-    return Date.now() - previousConnectionTime > MAX_RECONNECT_TIME
+    return Date.now() - previousConnectionTime > maxReconnectTime
 }
 
 /**
@@ -206,9 +221,9 @@ function isExpired(previousConnectionTime: number): boolean {
  * @param devenvId the id of the deveng to fail
  */
 function failDevEnv(memento: vscode.Memento, devenvId: string) {
-    const curr = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
+    const curr = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     delete curr[devenvId]
-    return memento.update(CODECATALYST_RECONNECT_KEY, curr)
+    return memento.update(codecatalystReconnectKey, curr)
 }
 
 async function openReconnectedDevEnv(
@@ -248,7 +263,7 @@ export function isLongReconnect(oldSettings: DevEnvironmentSettings, newSettings
 
 export function saveReconnectionInformation(devenv: DevEnvironmentId & Pick<DevEnvironment, 'alias'>): Thenable<void> {
     const memento = globals.context.globalState
-    const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
+    const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     const workspaceFolders = vscode.workspace.workspaceFolders
     const currentWorkspace =
         workspaceFolders !== undefined && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : '/projects'
@@ -260,12 +275,12 @@ export function saveReconnectionInformation(devenv: DevEnvironmentId & Pick<DevE
         previousConnectionTimestamp: Date.now(),
         alias: devenv.alias,
     }
-    return memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
+    return memento.update(codecatalystReconnectKey, pendingReconnects)
 }
 
 export function removeReconnectionInformation(devenv: DevEnvironmentId): Thenable<void> {
     const memento = globals.context.globalState
-    const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(CODECATALYST_RECONNECT_KEY, {})
+    const pendingReconnects = memento.get<Record<string, DevEnvMemento>>(codecatalystReconnectKey, {})
     delete pendingReconnects[devenv.id]
-    return memento.update(CODECATALYST_RECONNECT_KEY, pendingReconnects)
+    return memento.update(codecatalystReconnectKey, pendingReconnects)
 }

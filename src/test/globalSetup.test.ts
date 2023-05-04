@@ -7,6 +7,8 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { format } from 'util'
@@ -20,19 +22,27 @@ import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
+import { getTestWindow, resetTestWindow } from './shared/vscode/window'
+import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
+const globalSandbox = sinon.createSandbox()
+const maxTestDuration = 30_000
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
+let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
 
-before(async function () {
+export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
     } catch (e) {}
     mkdirpSync(testReportDir)
+
+    // Shows the full error chain when tests fail
+    mapTestErrors(this, normalizeError)
 
     // Extension activation has many side-effects such as changing globals
     // For stability in tests we will wait until the extension has activated prior to injecting mocks
@@ -42,34 +52,51 @@ before(async function () {
     fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
     fakeContext.extensionPath = globals.context.extensionPath
     Object.assign(globals, { context: fakeContext })
-})
+}
 
-after(async function () {
+export async function mochaGlobalTeardown(this: Mocha.Context) {
     testUtil.deleteTestTempDirs()
-})
+}
 
-beforeEach(async function () {
-    // Set every test up so that TestLogger is the logger used by toolkit code
-    testLogger = setupTestLogger()
-    globals.templateRegistry = new CloudFormationTemplateRegistry()
-    globals.codelensRootRegistry = new CodelensRootRegistry()
+export const mochaHooks = {
+    async beforeEach(this: Mocha.Context) {
+        // Set every test up so that TestLogger is the logger used by toolkit code
+        testLogger = setupTestLogger()
+        globals.templateRegistry = new CloudFormationTemplateRegistry()
+        globals.codelensRootRegistry = new CodelensRootRegistry()
 
-    // Enable telemetry features for tests. The metrics won't actually be posted.
-    globals.telemetry.telemetryEnabled = true
-    globals.telemetry.clearRecords()
-    globals.telemetry.logger.clear()
-    ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
+        // In general, we do not want to "fake" the `vscode` API. The only exception is for things
+        // that _require_ user input apart of a workflow. Even then, these replacements are intended
+        // to be minimally intrusive and as close to the real thing as possible.
+        globalSandbox.replace(vscode, 'window', getTestWindow())
+        openExternalStub = globalSandbox.stub(vscode.env, 'openExternal')
+        openExternalStub.rejects(
+            new Error('No return value has been set. Use `getOpenExternalStub().resolves` to set one.')
+        )
 
-    await testUtil.closeAllEditors()
-})
+        // Wraps the test function to bubble up errors that occurred in events from `TestWindow`
+        if (this.currentTest?.fn) {
+            setRunnableTimeout(this.currentTest, maxTestDuration)
+        }
 
-afterEach(function () {
-    // Prevent other tests from using the same TestLogger instance
-    teardownTestLogger(this.currentTest?.fullTitle() as string)
-    testLogger = undefined
-    globals.templateRegistry.dispose()
-    globals.codelensRootRegistry.dispose()
-})
+        // Enable telemetry features for tests. The metrics won't actually be posted.
+        globals.telemetry.telemetryEnabled = true
+        globals.telemetry.clearRecords()
+        globals.telemetry.logger.clear()
+        ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
+
+        await testUtil.closeAllEditors()
+    },
+    afterEach(this: Mocha.Context) {
+        // Prevent other tests from using the same TestLogger instance
+        teardownTestLogger(this.currentTest?.fullTitle() as string)
+        testLogger = undefined
+        resetTestWindow()
+        globals.templateRegistry.dispose()
+        globals.codelensRootRegistry.dispose()
+        globalSandbox.restore()
+    },
+}
 
 /**
  * Provides the TestLogger to tests that want to access it.
@@ -124,4 +151,8 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
             ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
+}
+
+export function getOpenExternalStub(): typeof openExternalStub {
+    return openExternalStub
 }

@@ -102,7 +102,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
         files: iconSources,
         fontName: fontId,
         formats: ['woff'],
-        startUnicode: 0xe000,
+        startUnicode: 0xf000,
         verbose: true,
         normalize: true,
         sort: true,
@@ -136,10 +136,13 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
             }
 
             if (!obj.name.startsWith('vscode')) {
+                // Normalize the font path regardless of platform
+                // See https://github.com/aws/aws-toolkit-vscode/pull/3066#discussion_r1063662657
+                const normalizedPath = relativeDest.split(path.sep).join(path.posix.sep)
                 icons.push({
                     name: obj.name,
                     path: filePath,
-                    data: createPackageIcon(`./${relativeDest}`, obj.unicode[0]),
+                    data: createPackageIcon(`./${normalizedPath}`, obj.unicode[0]),
                 })
             } else {
                 icons.push({ name: obj.name, path: filePath })
@@ -200,7 +203,11 @@ async function loadCodiconMappings(): Promise<Record<string, number | undefined>
     const mappings: Record<string, number | undefined> = {}
     for (const [k, v] of Object.entries(data)) {
         if (typeof k === 'string' && typeof v === 'number') {
-            mappings[`vscode-${k}`] = v - 0xd000
+            if (v < 0xe000 || v >= 0xf000) {
+                // Will warn us if the codepoint moves outside the expected range
+                throw new Error(`Codicon "${k}" has unexpected codepoint: ${v}`)
+            }
+            mappings[`vscode-${k}`] = v
         }
     }
 

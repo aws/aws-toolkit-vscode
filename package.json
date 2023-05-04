@@ -1,8 +1,8 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.59.0-SNAPSHOT",
+    "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
+    "version": "1.72.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -13,7 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.50.1"
+        "vscode": "^1.65.0"
     },
     "icon": "resources/marketplace/aws-icon-256x256.png",
     "bugs": {
@@ -29,76 +29,27 @@
         "Other"
     ],
     "keywords": [
-        "AWS",
+        "Lambda",
         "CodeCatalyst",
         "CodeWhisperer",
-        "Lambda",
-        "Serverless"
+        "Code",
+        "Whisperer"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onStartupFinished",
         "onDebugResolve:aws-sam",
-        "onCommand:aws.login",
-        "onCommand:aws.credentials.profile.create",
-        "onCommand:aws.credentials.edit",
-        "onCommand:aws.logout",
-        "onCommand:aws.createIssueOnGitHub",
-        "onCommand:aws.submitFeedback",
-        "onCommand:aws.showRegion",
-        "onView:aws.explorer",
         "onView:aws.codeWhisperer.securityPanel",
-        "onCommand:aws.deploySamApplication",
-        "onCommand:aws.samcli.detect",
-        "onCommand:aws.lambda.createNewSamApp",
         "onDebugInitialConfigurations",
-        "onCommand:aws.viewLogs",
-        "onCommand:aws.quickStart",
-        "onCommand:aws.help",
-        "onCommand:aws.github",
-        "onCommand:aws.previewStateMachine",
-        "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
-        "onCommand:aws.stepfunctions.publishStateMachine",
-        "onView:aws.developerTools",
-        "onCommand:aws.cdk.refresh",
-        "onCommand:aws.cdk.renderStateMachineGraph",
-        "onCommand:aws.aboutToolkit",
-        "onCommand:aws.cloudWatchLogs.viewLogStream",
-        "onCommand:aws.codecatalyst.listCommands",
-        "onCommand:aws.codecatalyst.openOrg",
-        "onCommand:aws.codecatalyst.openProject",
-        "onCommand:aws.codecatalyst.openRepo",
-        "onCommand:aws.codecatalyst.openDevEnv",
-        "onCommand:aws.codecatalyst.cloneRepo",
-        "onCommand:aws.codecatalyst.createDevEnv",
-        "onLanguage:asl",
-        "onLanguage:asl-yaml",
-        "onLanguage:ssm-json",
-        "onLanguage:ssm-yaml",
-        "onCommand:aws.ssmDocument.createLocalDocument",
-        "onCommand:aws.ssmDocument.openLocalDocument",
-        "onCommand:aws.ssmDocument.openLocalDocumentJson",
-        "onCommand:aws.ssmDocument.openLocalDocumentYaml",
-        "onCommand:aws.ssmDocument.deleteDocument",
-        "onCommand:aws.ssmDocument.publishDocument",
-        "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
         "onLanguage:java",
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.launchConfigForm",
-        "onCommand:aws.toggleSamCodeLenses",
-        "onCommand:aws.addSamDebugConfig",
-        "onCommand:aws.s3.uploadFile",
-        "onCommand:aws.cloudFormation.newTemplate",
-        "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
         "onFileSystem:s3-readonly",
-        "onCommand:aws.codeWhisperer.accept",
-        "onCommand:aws.codeWhisperer",
-        "onCommand:aws.uploadLambda"
+        "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/main",
     "contributes": {
@@ -265,6 +216,10 @@
                         "remoteConnected": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "codeWhispererConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -273,15 +228,10 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false,
-                        "samSyncCode": false
+                        "jsonResourceModification": false
                     },
                     "properties": {
                         "jsonResourceModification": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "samSyncCode": {
                             "type": "boolean",
                             "default": false
                         }
@@ -291,6 +241,11 @@
                 "aws.codeWhisperer.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.codewhisperer%",
+                    "default": true
+                },
+                "aws.codeWhisperer.importRecommendation": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.codewhisperer.importRecommendation%",
                     "default": true
                 },
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
@@ -841,6 +796,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyLambdaUrl",
+                    "when": "false"
+                },
+                {
                     "command": "aws.viewSchemaItem",
                     "when": "false"
                 },
@@ -997,10 +956,6 @@
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy"
-                },
-                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1145,6 +1100,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.auth.showConnectionsPage",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -1240,11 +1199,6 @@
                     "group": "3_lambda@3"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@4"
-                },
-                {
                     "command": "aws.quickStart",
                     "when": "view == aws.explorer",
                     "group": "y_toolkitMeta@1"
@@ -1310,11 +1264,6 @@
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
                     "group": "z_aws@1"
-                },
-                {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && isFileSystemResource && resourceFilename =~ /^(template\\.(json|yml|yaml))|(samconfig\\.toml)$/",
-                    "group": "z_aws@2"
                 },
                 {
                     "command": "aws.uploadLambda",
@@ -1429,11 +1378,6 @@
                     "group": "1@2"
                 },
                 {
-                    "command": "aws.samcli.syncCode",
-                    "when": "config.aws.experiments.samSyncCode && !config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@3"
-                },
-                {
                     "command": "aws.ecr.copyTagUri",
                     "when": "view == aws.explorer && viewItem == awsEcrTagNode",
                     "group": "2@1"
@@ -1477,6 +1421,11 @@
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                     "group": "4@1"
+                },
+                {
+                    "command": "aws.copyLambdaUrl",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "group": "2@0"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -2039,6 +1988,12 @@
                 "category": "%AWS.title%"
             },
             {
+                "command": "aws.auth.showConnectionsPage",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%",
+                "enablement": "aws.isDevMode"
+            },
+            {
                 "command": "aws.auth.switchConnections",
                 "title": "%AWS.command.auth.switchConnections%",
                 "category": "%AWS.title%"
@@ -2447,6 +2402,16 @@
             {
                 "command": "aws.deleteLambda",
                 "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.copyLambdaUrl",
+                "title": "%AWS.generic.copyUrl%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3091,11 +3056,6 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.samcli.syncCode",
-                "title": "%AWS.command.samcli.syncCode%",
-                "category": "%AWS.title%"
-            },
-            {
                 "command": "aws.codeWhisperer",
                 "title": "%AWS.command.codewhisperer.title%",
                 "category": "%AWS.title%"
@@ -3339,140 +3299,139 @@
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1a5"
+                    "fontCharacter": "\\f1a5"
                 }
             },
             "aws-cdk-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1a6"
+                    "fontCharacter": "\\f1a6"
                 }
             },
             "aws-cloudformation-stack": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1a7"
+                    "fontCharacter": "\\f1a7"
                 }
             },
             "aws-cloudwatch-log-group": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1a8"
+                    "fontCharacter": "\\f1a8"
                 }
             },
             "aws-codecatalyst-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1a9"
+                    "fontCharacter": "\\f1a9"
                 }
             },
             "aws-ecr-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1aa"
+                    "fontCharacter": "\\f1aa"
                 }
             },
             "aws-ecs-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1ab"
+                    "fontCharacter": "\\f1ab"
                 }
             },
             "aws-ecs-container": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1ac"
+                    "fontCharacter": "\\f1ac"
                 }
             },
             "aws-ecs-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1ad"
+                    "fontCharacter": "\\f1ad"
                 }
             },
             "aws-generic-attach-file": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1ae"
+                    "fontCharacter": "\\f1ae"
                 }
             },
             "aws-iot-certificate": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1af"
+                    "fontCharacter": "\\f1af"
                 }
             },
             "aws-iot-policy": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b0"
+                    "fontCharacter": "\\f1b0"
                 }
             },
             "aws-iot-thing": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b1"
+                    "fontCharacter": "\\f1b1"
                 }
             },
             "aws-lambda-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b2"
+                    "fontCharacter": "\\f1b2"
                 }
             },
             "aws-s3-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b3"
+                    "fontCharacter": "\\f1b3"
                 }
             },
             "aws-s3-create-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b4"
+                    "fontCharacter": "\\f1b4"
                 }
             },
             "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b5"
+                    "fontCharacter": "\\f1b5"
                 }
             },
             "aws-schemas-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b6"
+                    "fontCharacter": "\\f1b6"
                 }
             },
             "aws-stepfunctions-preview": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b7"
+                    "fontCharacter": "\\f1b7"
                 }
             }
         }
     },
     "scripts": {
-        "prepare": "husky install",
-        "vscode:prepublish": "npm run clean && npm run buildScripts && npm run lint && webpack --mode production && npm run copyFiles -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
@@ -3482,8 +3441,9 @@
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
+        "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
-        "lint": "eslint -c .eslintrc.js --ext .ts .",
+        "lint": "ts-node ./scripts/lint/testLint.ts",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
@@ -3499,11 +3459,11 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.82",
+        "@aws-toolkits/telemetry": "^1.0.125",
         "@cspotcode/source-map-support": "^0.8.1",
-        "@sinonjs/fake-timers": "^8.1.0",
+        "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
-        "@types/async-lock": "^1.1.3",
+        "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
@@ -3517,19 +3477,19 @@
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
-        "@types/sinonjs__fake-timers": "^8.1.1",
+        "@types/sinonjs__fake-timers": "^8.1.2",
         "@types/tcp-port-used": "^1.0.1",
         "@types/uuid": "^8.3.3",
-        "@types/vscode": "1.50.0",
-        "@types/vscode-webview": "^1.57.0",
+        "@types/vscode": "^1.65.0",
+        "@types/vscode-webview": "^1.57.1",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.38.0",
-        "@typescript-eslint/parser": "^5.38.0",
-        "@vscode/codicons": "^0.0.32",
-        "@vscode/test-electron": "^2.1.5",
+        "@typescript-eslint/eslint-plugin": "^5.59.0",
+        "@typescript-eslint/parser": "^5.59.1",
+        "@vscode/codicons": "^0.0.33",
+        "@vscode/test-electron": "^2.2.3",
         "@vue/compiler-sfc": "^3.2.40",
         "circular-dependency-plugin": "^5.2.2",
-        "css-loader": "^6.5.1",
+        "css-loader": "^6.7.3",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.3",
@@ -3537,15 +3497,15 @@
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
-        "json-schema-to-typescript": "^11.0.2",
+        "json-schema-to-typescript": "^12.0.0",
         "marked": "^4.0.10",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
-        "prettier": "^2.7.1",
-        "prettier-plugin-sh": "^0.8.1",
-        "pretty-quick": "^3.1.0",
+        "prettier": "^2.8.8",
+        "prettier-plugin-sh": "^0.12.8",
+        "pretty-quick": "^3.1.3",
         "readline-sync": "^1.4.9",
         "sinon": "^14.0.0",
         "ts-mockito": "^2.5.0",
@@ -3556,7 +3516,7 @@
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
         "webfont": "^11.2.26",
-        "webpack": "^5.65.0",
+        "webpack": "^5.81.0",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.9.2"
     },
@@ -3569,9 +3529,9 @@
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.9",
-        "amazon-states-language-service": "^1.7.2",
-        "async-lock": "^1.3.0",
-        "aws-sdk": "^2.1267.0",
+        "amazon-states-language-service": "^1.9.0",
+        "async-lock": "^1.4.0",
+        "aws-sdk": "^2.1369.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.2",
         "cross-spawn": "^7.0.3",
@@ -3585,21 +3545,21 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "portfinder": "^1.0.25",
-        "semver": "^7.3.5",
+        "semver": "^7.5.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.8.4",
+        "typescript": "^5.0.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.3",
-        "vscode-nls": "^5.0.0",
+        "vscode-nls": "^5.2.0",
         "vue": "^3.2.31",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
-        "xml2js": "^0.4.19",
+        "xml2js": "^0.5.0",
         "yaml": "^1.9.2",
-        "yaml-cfn": "^0.3.1"
+        "yaml-cfn": "^0.3.2"
     },
     "prettier": {
         "printWidth": 120,

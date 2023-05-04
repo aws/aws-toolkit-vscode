@@ -9,14 +9,14 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { DevEnvClient } from '../shared/clients/devenvClient'
-import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
+import { DevfileRegistry, devfileGlobPattern } from '../shared/fs/devfileRegistry'
 import { getLogger } from '../shared/logger'
 import { Commands } from '../shared/vscode/commands2'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
-    const client = new DevEnvClient()
+    const client = DevEnvClient.instance
     if (!client.isCodeCatalystDevEnv()) {
         throw new Error('Cannot update devfile outside a Dev Environment')
     }
@@ -60,7 +60,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 
     public constructor(
         registry: DevfileRegistry,
-        private readonly client = new DevEnvClient(),
+        private readonly client = DevEnvClient.instance,
         workspace: Workspace = vscode.workspace
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)
@@ -110,13 +110,13 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
 export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Disposable {
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
-    registry.addWatchPattern(DEVFILE_GLOB_PATTERN)
+    registry.addWatchPattern(devfileGlobPattern)
 
     const codelensDisposable = vscode.languages.registerCodeLensProvider(
         {
             language: 'yaml',
             scheme: 'file',
-            pattern: DEVFILE_GLOB_PATTERN,
+            pattern: devfileGlobPattern,
         },
         codelensProvider
     )

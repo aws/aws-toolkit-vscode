@@ -33,7 +33,12 @@ export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs14.x',
     'nodejs12.x',
 ])
-export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['python3.9', 'python3.8', 'python3.7'])
+export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.10',
+    'python3.9',
+    'python3.8',
+    'python3.7',
+])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore3.1', 'dotnet6'])
@@ -55,7 +60,7 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs8.10',
     'nodejs10.x',
 ])
-const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
+const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs14.x'],
     [RuntimeFamily.Python, 'python3.9'],
     [RuntimeFamily.DotNetCore, 'dotnetcore3.1'],
@@ -191,7 +196,7 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
  * Provides the default runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
-    return DEFAULT_RUNTIMES.get(runtime)
+    return defaultRuntimes.get(runtime)
 }
 
 /**

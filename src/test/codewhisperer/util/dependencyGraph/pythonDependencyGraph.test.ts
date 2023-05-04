@@ -60,12 +60,12 @@ describe('pythonDependencyGraph', function () {
     describe('generateTruncation', function () {
         it('Should generate and return expected truncation', async function () {
             const pythonDependencyGraph = new PythonDependencyGraph(languageId)
-            const truncation = await pythonDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
-            assert.ok(truncation.root.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-            assert.ok(truncation.src.dir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-            assert.ok(truncation.src.zip.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-            // assert.ok(truncation.lines > 0)
-            // assert.ok(truncation.src.size > 0)
+            const truncation = await pythonDependencyGraph.generateTruncation(vscode.Uri.file(appCodePath))
+            assert.ok(truncation.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(truncation.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(truncation.lines > 0)
+            assert.ok(truncation.srcPayloadSizeInBytes > 0)
+            assert.ok(truncation.scannedFiles.size > 0)
         })
     })
 })

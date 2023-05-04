@@ -59,15 +59,19 @@ export class TelemetryLogger {
 
         if (!isReleaseVersion()) {
             this._metrics.push(metric)
-            const stringified = JSON.stringify(metric)
-            getLogger().debug(`${msg} -> ${stringified}`)
+            if (getLogger().logLevelEnabled('debug')) {
+                const stringified = JSON.stringify(metric)
+                getLogger().debug(`${msg} -> ${stringified}`)
+            } else {
+                getLogger().verbose(msg)
+            }
 
             if (this.metricCount > 1000) {
                 this.clear()
-                getLogger().debug('telemetry: cleared buffered metrics')
+                getLogger().verbose('telemetry: cleared buffered metrics')
             }
         } else {
-            getLogger().debug(msg)
+            getLogger().verbose(msg)
         }
     }
 

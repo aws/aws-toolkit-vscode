@@ -47,19 +47,18 @@ import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
+import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 
-type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
-
-export const SAM_INIT_TEMPLATE_FILES: string[] = ['template.yaml', 'template.yml']
-export const SAM_INIT_README_FILE: string = 'README.TOOLKIT.md'
-export const SAM_INIT_README_SOURCE: string = 'resources/markdown/samReadme.md'
+export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
+export const samInitReadmeFile: string = 'README.TOOLKIT.md'
+export const samInitReadmeSource: string = 'resources/markdown/samReadme.md'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
     let createResult: Result = 'Succeeded'
-    let reason: CreateReason = 'complete'
+    let reason: string | undefined
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
@@ -134,7 +133,7 @@ export async function createNewSamApplication(
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
-    let reason: CreateReason = 'unknown'
+    let reason: string | undefined
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let samVersion: string | undefined
@@ -199,14 +198,14 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILES)
+        const templateUri = await getProjectUri(config, samInitTemplateFiles)
         if (!templateUri) {
             reason = 'fileNotFound'
 
             return
         }
 
-        const readmeUri = vscode.Uri.file(path.join(path.dirname(templateUri.fsPath), SAM_INIT_README_FILE))
+        const readmeUri = vscode.Uri.file(path.join(path.dirname(templateUri.fsPath), samInitReadmeFile))
 
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
@@ -323,8 +322,8 @@ export async function createNewSamApplication(
             await vscode.workspace.openTextDocument(templateUri)
         }
     } catch (err) {
-        createResult = 'Failed'
-        reason = 'error'
+        createResult = getTelemetryResult(err)
+        reason = getTelemetryReason(err)
 
         globals.outputChannel.show(true)
         getLogger('channel').error(
@@ -453,7 +452,7 @@ export async function writeToolkitReadme(
 ): Promise<boolean> {
     try {
         const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
-        const readme = (await getText(globals.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
+        const readme = (await getText(globals.context.asAbsolutePath(samInitReadmeSource)))
             .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
             .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
             .replace(/\$\{CODELENS\}/g, getIdeProperties().codelens)

@@ -1,5 +1,5 @@
 # Documentation for configuration options:
-# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
 updates:
@@ -8,3 +8,8 @@ updates:
       target-branch: 'master' # Avoid updates to "staging".
       schedule:
           interval: 'daily'
+    # Check for updates to GitHub Actions every week
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'weekly'

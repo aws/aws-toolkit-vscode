@@ -13,7 +13,7 @@ import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
 import { IotNode } from '../iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
-import { DEFAULT_PARTITION, RegionProvider } from '../shared/regions/regionProvider'
+import { defaultPartition, RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
@@ -25,7 +25,7 @@ import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../ecs/model'
-import { TreeShim } from '../shared/treeview/utils'
+import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
 
 const serviceCandidates = [
     {
@@ -85,7 +85,7 @@ const serviceCandidates = [
  */
 export class RegionNode extends AWSTreeNodeBase {
     private region: Region
-    public readonly regionCode: string
+    public override readonly regionCode: string
 
     public get regionName(): string {
         return this.region.name
@@ -99,12 +99,12 @@ export class RegionNode extends AWSTreeNodeBase {
         this.update(region)
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         //  Services that are candidates to add to the region explorer.
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
         //  If the service is available, we use the `createFn` to generate the node for the region.
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
-        const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
+        const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const { serviceId, createFn } of serviceCandidates) {
             if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
@@ -122,11 +122,7 @@ export class RegionNode extends AWSTreeNodeBase {
     private sortNodes(nodes: AWSTreeNodeBase[]) {
         return nodes.sort((a, b) => {
             // Always sort `ResourcesNode` at the bottom
-            return a instanceof ResourcesNode
-                ? 1
-                : b instanceof ResourcesNode
-                ? -1
-                : (a.label ?? '').localeCompare(b.label ?? '')
+            return a instanceof ResourcesNode ? 1 : b instanceof ResourcesNode ? -1 : compareTreeItems(a, b)
         })
     }
     public update(region: Region): void {

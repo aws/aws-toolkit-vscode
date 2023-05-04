@@ -21,13 +21,13 @@ import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { getIcon } from '../../shared/icons'
 
-export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
+export const contextValueCloudformationLambdaFunction = 'awsCloudFormationFunctionNode'
 
 export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultCloudFormationClient(regionCode)
     ) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
@@ -35,7 +35,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
         this.contextValue = 'awsCloudFormationRootNode'
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
@@ -65,7 +65,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     public constructor(
         public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private stackSummary: CloudFormation.StackSummary,
         private readonly lambdaClient = new DefaultLambdaClient(regionCode),
         private readonly cloudformationClient = new DefaultCloudFormationClient(regionCode)
@@ -98,7 +98,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         return this.stackSummary.StackName
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
@@ -154,7 +154,7 @@ function makeCloudFormationLambdaFunctionNode(
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
+    node.contextValue = contextValueCloudformationLambdaFunction
 
     return node
 }

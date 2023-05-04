@@ -7,8 +7,9 @@ import * as assert from 'assert'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as vscode from 'vscode'
-import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
+import { createInputBox, defaultInputboxOptions, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
+import { TestInputBox } from '../vscode/quickInput'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createInputBox', function () {
     it('creates a new prompter with options', async function () {
@@ -20,34 +21,24 @@ describe('createInputBox', function () {
         const prompter = createInputBox()
         const inputBox = prompter.inputBox
 
-        Object.keys(DEFAULT_INPUTBOX_OPTIONS).forEach(key => {
-            assert.strictEqual(inputBox[key as keyof vscode.InputBox], (DEFAULT_INPUTBOX_OPTIONS as any)[key])
+        Object.keys(defaultInputboxOptions).forEach(key => {
+            assert.strictEqual(inputBox[key as keyof vscode.InputBox], (defaultInputboxOptions as any)[key])
         })
     })
 })
 
 describe('InputBoxPrompter', function () {
-    let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
+    let inputBox: TestInputBox
     let testPrompter: InputBoxPrompter
 
     beforeEach(function () {
-        inputBox = exposeEmitters(vscode.window.createInputBox(), [
-            'onDidAccept',
-            'onDidChangeValue',
-            'onDidTriggerButton',
-        ])
+        inputBox = getTestWindow().createInputBox() as typeof inputBox
         testPrompter = new InputBoxPrompter(inputBox)
     })
 
-    /** Sets the input box's value then fires an accept event */
-    function accept(value: string): void {
-        inputBox.value = value
-        inputBox.fireOnDidAccept()
-    }
-
     it('accepts user input', async function () {
         const result = testPrompter.prompt()
-        accept('input')
+        inputBox.acceptValue('input')
         assert.strictEqual(await result, 'input')
     })
 
@@ -59,7 +50,7 @@ describe('InputBoxPrompter', function () {
 
     it('returns last response', async function () {
         const result = testPrompter.prompt()
-        accept('input')
+        inputBox.acceptValue('input')
         assert.strictEqual(await result, 'input')
         assert.strictEqual(testPrompter.recentItem, 'input')
     })
@@ -75,7 +66,7 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [back]
 
             const result = testPrompter.prompt()
-            inputBox.fireOnDidTriggerButton(back)
+            inputBox.pressButton(back)
 
             assert.strictEqual(await result, WIZARD_BACK)
         })
@@ -88,7 +79,7 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [button]
 
             const result = testPrompter.prompt()
-            inputBox.fireOnDidTriggerButton(button)
+            inputBox.pressButton(button)
 
             assert.strictEqual(await result, 'answer')
         })
@@ -101,8 +92,8 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [button]
 
             const result = testPrompter.prompt()
-            inputBox.fireOnDidTriggerButton(button)
-            accept('answer')
+            inputBox.pressButton(button)
+            inputBox.acceptValue('answer')
 
             assert.strictEqual(await result, 'answer')
         })
@@ -112,9 +103,9 @@ describe('InputBoxPrompter', function () {
         it('will not accept input if validation message is showing', async function () {
             const result = testPrompter.prompt()
             inputBox.validationMessage = 'bad input'
-            accept('hello')
+            inputBox.acceptValue('hello')
             inputBox.validationMessage = undefined
-            accept('goodbye')
+            inputBox.acceptValue('goodbye')
 
             assert.strictEqual(await result, 'goodbye')
         })
@@ -123,13 +114,12 @@ describe('InputBoxPrompter', function () {
             const validateInput = (resp: string) => (Number.isNaN(Number.parseInt(resp)) ? 'NaN' : undefined)
             testPrompter.setValidation(validateInput)
             const result = testPrompter.prompt()
-
-            inputBox.fireOnDidChangeValue('hello')
+            inputBox.acceptValue('hello')
             assert.strictEqual(inputBox.validationMessage, 'NaN')
-            inputBox.fireOnDidChangeValue('100')
+            inputBox.value = '100'
             assert.strictEqual(inputBox.validationMessage, undefined)
-            accept('we cannot accept this message')
-            accept('200')
+            inputBox.acceptValue('we cannot accept this message')
+            inputBox.acceptValue('200')
             assert.strictEqual(await result, '200')
         })
     })

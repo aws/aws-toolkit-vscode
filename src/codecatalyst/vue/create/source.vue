@@ -12,15 +12,23 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'linked'">
-        <span style="width: 100%">
-            <label class="option-label soft">Project</label>
-            <select class="picker" v-model="model.selectedProject" @input="update">
-                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.name" :value="project">
-                    {{ `${project.org.name} / ${project.name}` }}
-                </option>
-            </select>
-        </span>
+        <div class="modes flex-sizing mt-16">
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Space</label>
+                <button class="project-button" @click="quickPickSpace()">
+                    {{ selectedSpaceName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Project</label>
+                <button class="project-button" @click="quickPickProject()" :disabled="!isSpaceSelected">
+                    {{ selectedProjectName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+        </div>
 
         <div class="modes flex-sizing mt-16">
             <!-- Existing branch -->
@@ -43,12 +51,13 @@
             <!-- New Branch -->
             <span class="flex-sizing">
                 <label class="options-label soft mb-8" style="display: block" for="branch-input"
-                    >Optional - Create a Branch from an Existing Branch</label
+                    >Create Branch - Optional for CodeCatalyst Repos</label
                 >
                 <input
                     id="branch-input"
                     type="text"
-                    placeholder="branch-name"
+                    :placeholder="newBranchNamePlaceholder"
+                    :disabled="!newBranchNameAllowed"
                     v-model="model.newBranch"
                     @input="update"
                 />
@@ -59,15 +68,23 @@
     </div>
 
     <div class="source-pickers" v-if="model.type === 'none'">
-        <span style="width: 100%">
-            <label class="option-label soft">Project</label>
-            <select class="picker" v-model="model.selectedProject" @input="update">
-                <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.name" :value="project">
-                    {{ `${project.org.name} / ${project.name}` }}
-                </option>
-            </select>
-        </span>
+        <div class="modes flex-sizing mt-16">
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Space</label>
+                <button class="project-button" @click="quickPickSpace()">
+                    {{ selectedSpaceName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+
+            <span class="flex-sizing mt-8">
+                <label class="option-label soft">Project</label>
+                <button class="project-button" @click="quickPickProject()" :disabled="!isSpaceSelected">
+                    {{ selectedProjectName }}
+                    <span class="icon icon-lg icon-vscode-edit edit-icon"></span>
+                </button>
+            </span>
+        </div>
     </div>
 </template>
 
@@ -108,11 +125,12 @@ export default defineComponent({
             branches: {} as Record<string, CodeCatalystBranch[] | undefined>,
             loadingProjects: false,
             loadingBranches: {} as Record<string, boolean | undefined>,
+            newBranchNameAllowed: false,
+            newBranchNamePlaceholder: 'Select branch first...',
         }
     },
     async created() {
         this.loadingProjects = true
-        this.projects = await client.getProjects().finally(() => (this.loadingProjects = false))
     },
     watch: {
         async 'model.selectedProject'(project?: CodeCatalystProject) {
@@ -124,6 +142,40 @@ export default defineComponent({
                     this.loadingBranches[project.name] = false
                 })
                 this.useFirstBranch()
+            }
+        },
+        async 'model.selectedBranch'(branch?: CodeCatalystBranch) {
+            if (this.model.type !== 'linked' || branch === undefined) {
+                this.newBranchNameAllowed = false
+                this.newBranchNamePlaceholder = ''
+                return
+            }
+
+            // Disable user input for new branch name while calculating
+            this.newBranchNameAllowed = false
+            this.newBranchNamePlaceholder = 'Loading...'
+
+            // Clear the existing new branch value so user does not see it
+            const previousNewBranch = this.model.newBranch
+            this.$emit('update:modelValue', { ...this.model, newBranch: undefined })
+
+            // Only want to allow users to set a branch name if first party repo
+            const isThirdPartyRepo = await client.isThirdPartyRepo({
+                spaceName: branch.org.name,
+                projectName: branch.project.name,
+                sourceRepositoryName: branch.repo.name,
+            })
+            if (isThirdPartyRepo) {
+                this.newBranchNamePlaceholder = 'Not Applicable for Linked Repo'
+                this.newBranchNameAllowed = false
+                // Clear the new branch in case one was already selected
+                this.$emit('update:modelValue', { ...this.model, newBranch: undefined })
+            } else {
+                // First Party
+                this.newBranchNamePlaceholder = 'branch-name'
+                this.newBranchNameAllowed = true
+                // Since this can have a new branch, set this back to what it previously was
+                this.$emit('update:modelValue', { ...this.model, newBranch: previousNewBranch })
             }
         },
     },
@@ -162,6 +214,24 @@ export default defineComponent({
                 return 'Branch already exists'
             }
         },
+        isSpaceSelected() {
+            return !!this.model.selectedSpace
+        },
+        isProjectSelected() {
+            return !!this.model.selectedProject
+        },
+        selectedSpaceName() {
+            if (this.model.selectedSpace === undefined) {
+                return 'Not Selected'
+            }
+            return this.model.selectedSpace.name
+        },
+        selectedProjectName() {
+            if (this.model.selectedProject === undefined) {
+                return 'Not Selected'
+            }
+            return this.model.selectedProject.name
+        },
     },
     methods: {
         update() {
@@ -181,6 +251,25 @@ export default defineComponent({
             })
             this.update()
         },
+        async quickPickSpace() {
+            const space = await client.quickPickSpace()
+            if (space === undefined) {
+                return
+            }
+            this.$emit('update:modelValue', { ...this.modelValue, selectedSpace: space, selectedProject: undefined })
+        },
+        async quickPickProject() {
+            const selectedSpace = this.modelValue.selectedSpace
+            if (selectedSpace === undefined) {
+                return
+            }
+
+            const project = await client.quickPickProject(selectedSpace.name)
+            if (project === undefined) {
+                return
+            }
+            this.$emit('update:modelValue', { ...this.modelValue, selectedProject: project })
+        },
     },
     emits: {
         'update:modelValue': (value: InstanceType<typeof VueModel>) => true,
@@ -191,6 +280,8 @@ export default defineComponent({
 <style scope>
 .picker {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .source-pickers {
@@ -241,5 +332,18 @@ body.vscode-light .mode-container[data-disabled='true'] .config-item {
 
 #branch-input {
     min-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.project-button {
+    background-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    font-weight: bold;
+}
+
+.edit-icon {
+    color: #0078d7;
 }
 </style>

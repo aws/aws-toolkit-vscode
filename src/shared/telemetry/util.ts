@@ -3,16 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Memento } from 'vscode'
+import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
 import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
-import { isAutomation } from '../vscode/env'
+import { extensionVersion, isAutomation } from '../vscode/env'
 import { v4 as uuidv4 } from 'uuid'
 import { addTypeName } from '../utilities/typeConstructors'
+import globals from '../extensionGlobals'
 
-const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+const legacySettingsTelemetryValueDisable = 'Disable'
+const legacySettingsTelemetryValueEnable = 'Enable'
 
 const TelemetryFlag = addTypeName('boolean', convertLegacy)
 
@@ -28,9 +29,9 @@ export function convertLegacy(value: unknown): boolean {
     }
 
     // Set telemetry value to boolean if the current value matches the legacy value
-    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+    if (value === legacySettingsTelemetryValueDisable) {
         return false
-    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
+    } else if (value === legacySettingsTelemetryValueEnable) {
         return true
     } else {
         throw new TypeError(`Unknown telemetry setting: ${value}`)
@@ -59,3 +60,28 @@ export const getClientId = shared(
         }
     }
 )
+
+export const platformPair = () => `${env.appName.replace(/\s/g, '-')}/${version}`
+
+/**
+ * Returns a string that should be used as the extension's user agent.
+ *
+ * Omits the platform and `ClientId` pairs by default.
+ */
+export async function getUserAgent(
+    opt?: { includePlatform?: boolean; includeClientId?: boolean },
+    globalState = globals.context.globalState
+): Promise<string> {
+    const pairs = [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+
+    if (opt?.includePlatform) {
+        pairs.push(platformPair())
+    }
+
+    if (opt?.includeClientId) {
+        const clientId = await getClientId(globalState)
+        pairs.push(`ClientId/${clientId}`)
+    }
+
+    return pairs.join(' ')
+}

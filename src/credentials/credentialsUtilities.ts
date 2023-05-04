@@ -9,15 +9,15 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { authHelpUrl } from '../shared/constants'
-import { Profile } from '../shared/credentials/credentialsFile'
 import globals from '../shared/extensionGlobals'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
 import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../shared/settings'
+import { Profile } from './sharedCredentials'
 
-const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
-const CREDENTIALS_PROGRESS_DELAY = 1000
+const credentialsTimeout = 300000 // 5 minutes
+const credentialsProgressDelay = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -40,7 +40,6 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
 
     showViewLogsMessage(
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
-        vscode.window,
         'error',
         buttons
     ).then((selection: string | undefined) => {
@@ -70,7 +69,7 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
 export async function resolveProviderWithCancel(
     profile: string,
     provider: Promise<Credentials>,
-    timeout: Timeout | number = CREDENTIALS_TIMEOUT
+    timeout: Timeout | number = credentialsTimeout
 ): Promise<Credentials> {
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
@@ -84,7 +83,7 @@ export async function resolveProviderWithCancel(
                 timeout
             )
         }
-    }, CREDENTIALS_PROGRESS_DELAY)
+    }, credentialsProgressDelay)
 
     return await waitTimeout(provider, timeout, {
         allowUndefined: false,

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Window } from '../../shared/vscode/window'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -14,7 +13,7 @@ import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { DEFAULT_DNS_SUFFIX, RegionProvider } from '../../shared/regions/regionProvider'
+import { defaultDnsSuffix, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -23,18 +22,14 @@ interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     detail: string
 }
 
-export async function copyUrlCommand(
-    node: RestApiNode,
-    regionProvider: RegionProvider,
-    window = Window.vscode()
-): Promise<void> {
+export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionProvider): Promise<void> {
     const region = node.regionCode
-    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
+    const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
     const client = new DefaultApiGatewayClient(region)
 
     let stages: Stage[]
     try {
-        stages = await window.withProgress(
+        stages = await vscode.window.withProgress(
             {
                 cancellable: false,
                 location: ProgressLocation.Window,
@@ -58,7 +53,7 @@ export async function copyUrlCommand(
     }))
 
     if (quickPickItems.length === 0) {
-        window.showInformationMessage(
+        vscode.window.showInformationMessage(
             localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
         )
         telemetry.apigateway_copyUrl.emit({ result: 'Failed' })

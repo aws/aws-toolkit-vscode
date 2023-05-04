@@ -13,6 +13,7 @@ export const ok = localize('AWS.generic.response.ok', 'OK')
 export const retry = localize('AWS.generic.response.retry', 'Retry')
 export const skip = localize('AWS.generic.response.skip', 'Skip')
 export const confirm = localize('AWS.generic.confirm', 'Confirm')
+export const continueText = localize('AWS.generic.continue', 'Continue')
 export const invalidArn = localize('AWS.error.invalidArn', 'Invalid ARN')
 export const localizedDelete = localize('AWS.generic.delete', 'Delete')
 export const cancel = localize('AWS.generic.cancel', 'Cancel')
@@ -23,14 +24,24 @@ export const recentlyUsed = localize('AWS.generic.recentlyUsed', 'recently used'
 export const viewSettings = localize('AWS.generic.viewSettings', 'View Settings')
 export const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
 export const loadMore = localize('AWS.generic.loadMore', 'Load More')
+export const learnMore = localize('AWS.generic.learnMore', 'Learn More')
+export const proceed = localize('AWS.generic.proceed', 'Proceed')
 
-export function checklogs(): string {
-    const message = localize(
+export const checklogs = () =>
+    localize(
         'AWS.error.check.logs',
         'Check the logs by running the "View {0} Toolkit Logs" command from the {1}.',
         getIdeProperties().company,
         getIdeProperties().commandPalette
     )
 
-    return message
-}
+export const builderId = () => localize('AWS.auth.names.builderId', '{0} Builder ID', getIdeProperties().company)
+
+export const iamIdentityCenter = localize('AWS.auth.names.iamIdentityCenter', 'IAM Identity Center')
+export const iamIdentityCenterFull = () =>
+    localize(
+        'AWS.auth.names.iamIdentityCenterFull',
+        '{0} (Successor to {1} Single Sign-on)',
+        iamIdentityCenter,
+        getIdeProperties().company
+    )

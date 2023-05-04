@@ -7,24 +7,20 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../models/constants'
 import {
-    createEnableCodeSuggestionsNode,
     createAutoSuggestionsNode,
     createOpenReferenceLogNode,
     createSecurityScanNode,
     createLearnMore,
     createSsoSignIn,
     createFreeTierLimitMetNode,
+    createReconnectNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
-import { getIcon } from '../../shared/icons'
 
 export class CodeWhispererNode implements RootNode {
-    private readonly isAvailable = getCodeCatalystDevEnvId() === undefined
-
     public readonly id = 'codewhisperer'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -38,19 +34,7 @@ export class CodeWhispererNode implements RootNode {
     constructor() {}
 
     public getTreeItem() {
-        if (!this.isAvailable) {
-            const item = new vscode.TreeItem('CodeWhisperer (Preview)')
-            item.description = 'Unavailable in Dev Environment'
-            item.iconPath = getIcon('vscode-circle-slash')
-
-            return item
-        }
-
-        if (!isCloud9()) {
-            AuthUtil.instance.restore()
-        }
-
-        const item = new vscode.TreeItem('CodeWhisperer (Preview)')
+        const item = new vscode.TreeItem('CodeWhisperer')
         item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = AuthUtil.instance.isUsingSavedConnection
@@ -73,47 +57,41 @@ export class CodeWhispererNode implements RootNode {
         if (accessToken) {
             return 'Access Token'
         }
-        if (AuthUtil.instance.isUsingSavedConnection && AuthUtil.instance.isConnectionValid()) {
+        if (AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'
                 : 'AWS Builder ID Connected'
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            return 'Expired Connection'
         }
         return ''
     }
 
     public getChildren() {
-        if (!this.isAvailable) {
-            return []
-        }
-
-        const termsAccepted = globals.context.globalState.get<boolean>(CodeWhispererConstants.termsAcceptedKey)
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
 
-        if (isCloud9()) {
-            if (termsAccepted) {
-                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
+        if (!AuthUtil.instance.isConnected()) {
+            return [createSsoSignIn(), createLearnMore()]
+        }
+
+        if (AuthUtil.instance.isConnectionExpired()) {
+            return [createReconnectNode(), createLearnMore()]
+        } else if (this._showFreeTierLimitReachedNode) {
+            if (isCloud9()) {
+                return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
-                return [createLearnMore(), createEnableCodeSuggestionsNode()]
+                return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
             }
         } else {
-            const accessToken = this.getDescription()
-            if (accessToken || AuthUtil.instance.isConnected()) {
-                if (termsAccepted) {
-                    if (this._showFreeTierLimitReachedNode) {
-                        return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
-                    } else {
-                        return [
-                            createAutoSuggestionsNode(autoTriggerEnabled),
-                            createSecurityScanNode(),
-                            createOpenReferenceLogNode(),
-                        ]
-                    }
-                } else {
-                    return [createSsoSignIn(), createLearnMore()]
-                }
+            if (isCloud9()) {
+                return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
-                return [createSsoSignIn(), createLearnMore()]
+                return [
+                    createAutoSuggestionsNode(autoTriggerEnabled),
+                    createSecurityScanNode(),
+                    createOpenReferenceLogNode(),
+                ]
             }
         }
     }

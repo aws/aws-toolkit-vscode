@@ -14,10 +14,11 @@ import { removeAnsi } from '../../utilities/textUtilities'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
+import { addTelemetryEnvVar } from './samCliInvokerUtils'
 
 const localize = nls.loadMessageBundle()
 
-export const WAIT_FOR_DEBUGGER_MESSAGES = {
+export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
     PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
@@ -54,14 +55,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
     public constructor(
-        private readonly debuggerAttachCues: string[] = [
-            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
-        ]
+        private readonly debuggerAttachCues: string[] = [waitForDebuggerMessages.PYTHON, waitForDebuggerMessages.NODEJS]
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
-        const childProcess = new ChildProcess(params.command, params.args, { spawnOptions: options })
+        const childProcess = new ChildProcess(params.command, params.args, {
+            spawnOptions: await addTelemetryEnvVar(options),
+        })
         getLogger('channel').info('AWS.running.command', 'Command: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`

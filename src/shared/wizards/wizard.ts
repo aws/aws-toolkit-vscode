@@ -34,15 +34,18 @@ export type WizardState<T> = {
 }
 
 // We use a symbol to safe-guard against collisions (alternatively this can be a class and use 'instanceof')
-const WIZARD_CONTROL = Symbol()
+const WIZARD_CONTROL = Symbol() // eslint-disable-line @typescript-eslint/naming-convention
 const makeControlString = (type: string) => `[WIZARD_CONTROL] ${type}`
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_RETRY = {
     id: WIZARD_CONTROL,
     type: ControlSignal.Retry,
     toString: () => makeControlString('Retry'),
 }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back, toString: () => makeControlString('Back') }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit, toString: () => makeControlString('Exit') }
 
 /** Control signals allow for alterations of the normal wizard flow */

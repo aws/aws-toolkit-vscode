@@ -4,7 +4,7 @@
  */
 import { existsSync, statSync, readdirSync, readlinkSync } from 'fs'
 import * as vscode from 'vscode'
-import { DependencyGraphConstants, DependencyGraph, TruncPaths } from './dependencyGraph'
+import { DependencyGraphConstants, DependencyGraph, Truncation } from './dependencyGraph'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
 import { getLogger } from '../../../shared/logger'
@@ -21,8 +21,8 @@ export interface JavaStatement {
     packages: string[]
 }
 
-export const IMPORT_REGEX = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
-export const PACKAGE_REGEX = /^package\s+([\w\.]+)\s*;/gm
+export const importRegex = /^import(\s+static\s*)?\s+([\w\.]+)\s*;/gm
+export const packageRegex = /^package\s+([\w\.]+)\s*;/gm
 
 export class JavaDependencyGraph extends DependencyGraph {
     private _outputDirs: Set<string> = new Set<string>()
@@ -30,22 +30,14 @@ export class JavaDependencyGraph extends DependencyGraph {
     private _buildFileRelativePaths: Set<string> = new Set<string>()
     private _packageStrs: Set<string> = new Set<string>()
 
-    getReadableSizeLimit(): string {
-        return `${CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes / Math.pow(2, 20)}MB`
-    }
-
-    willReachSizeLimit(current: number, adding: number): boolean {
-        return current + adding > CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
-    }
-
-    reachSizeLimit(size: number): boolean {
-        return size > CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
+    getPayloadSizeLimitInBytes(): number {
+        return CodeWhispererConstants.codeScanJavaPayloadSizeLimitBytes
     }
 
     private extractStatement(content: string): JavaStatement {
         return {
-            imports: content.match(new RegExp(IMPORT_REGEX)) ?? [],
-            packages: content.match(new RegExp(PACKAGE_REGEX)) ?? [],
+            imports: content.match(new RegExp(importRegex)) ?? [],
+            packages: content.match(new RegExp(packageRegex)) ?? [],
         }
     }
 
@@ -101,7 +93,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         return packagePath
     }
 
-    private generateBuildFileRelativePath(uri: vscode.Uri, projectPath: string, pacakges: RegExpMatchArray) {
+    private generateBuildFileRelativePath(uri: vscode.Uri, projectPath: string, pacakges: string[]) {
         const packagePath = pacakges.length > 0 ? this.generatePackagePath(pacakges[0]) : ''
         const sourceFilePath = uri.fsPath
         if (!sourceFilePath.startsWith(projectPath)) {
@@ -260,23 +252,25 @@ export class JavaDependencyGraph extends DependencyGraph {
     private generateBuildFilePaths() {
         const buildFiles: Set<string> = new Set<string>()
         this._buildFileRelativePaths.forEach(relativePath => {
-            let findBuildFile: boolean = false
+            let foundBuildFile: boolean = false
             this._outputDirs.forEach(dir => {
                 const builFilePath = path.join(dir, relativePath)
-                if (existsSync(builFilePath) && !findBuildFile) {
+                if (existsSync(builFilePath) && !foundBuildFile) {
                     buildFiles.add(builFilePath)
-                    findBuildFile = true
+                    foundBuildFile = true
                 }
             })
-            this._outputNonStrictDirs.forEach(dir => {
-                const builFilePath = path.join(dir, relativePath)
-                if (existsSync(builFilePath) && !findBuildFile) {
-                    buildFiles.add(builFilePath)
-                    findBuildFile = true
-                }
-            })
-            if (!findBuildFile) {
-                throw new Error(`${relativePath} is not found.`)
+            if (!foundBuildFile) {
+                this._outputNonStrictDirs.forEach(dir => {
+                    const builFilePath = path.join(dir, relativePath)
+                    if (existsSync(builFilePath) && !foundBuildFile) {
+                        buildFiles.add(builFilePath)
+                        foundBuildFile = true
+                    }
+                })
+            }
+            if (!foundBuildFile) {
+                getLogger().verbose(`${relativePath} is not found.`)
             }
         })
         return Array.from(buildFiles.values())
@@ -369,7 +363,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         return valid
     }
 
-    async generateTruncation(uri: vscode.Uri): Promise<TruncPaths> {
+    async generateTruncation(uri: vscode.Uri): Promise<Truncation> {
         try {
             const projectName = this.getProjectName(uri)
             const projectPath = this.getProjectPath(uri)
@@ -380,47 +374,26 @@ export class JavaDependencyGraph extends DependencyGraph {
             if (this._outputDirs.size === 0 && this._outputNonStrictDirs.size === 0) {
                 throw new Error(`Classpath auto-detection failed.`)
             }
-            let buildFiles: string[] = []
-            try {
-                buildFiles = this.generateBuildFilePaths()
-            } catch (error) {
-                getLogger().debug('Project level compile error:', error)
+            let buildFiles: string[] = this.generateBuildFilePaths()
+            if (buildFiles.length == 0) {
+                getLogger().debug('Project level compile error:')
                 buildFiles = await this.getFileLevelBuildFilePaths(uri, projectPath)
             }
             const truncDirPath = this.getTruncDirPath(uri)
-            const truncSourceDirPath = this.getTruncSourceDirPath(uri)
-            const truncBuildDirPath = this.getTruncBuildDirPath(uri)
             getLogger().debug(`Picked source files:`)
-            this.copyFilesToTmpDir(this._pickedSourceFiles, truncSourceDirPath)
+            this.copyFilesToTmpDir(this._pickedSourceFiles, truncDirPath)
             getLogger().debug(`Picked build artifacts:`)
-            this.copyFilesToTmpDir(buildFiles, truncBuildDirPath)
+            this.copyFilesToTmpDir(buildFiles, truncDirPath)
             const totalBuildSize = this.getFilesTotalSize(Array.from(buildFiles.values()))
-            const zipSourcePath = this.zipDir(
-                truncSourceDirPath,
-                truncSourceDirPath,
-                CodeWhispererConstants.codeScanZipExt
-            )
-            const zipBuildPath = this.zipDir(
-                truncBuildDirPath,
-                truncBuildDirPath,
-                CodeWhispererConstants.codeScanZipExt
-            )
-            const zipSourceSize = statSync(zipSourcePath).size
-            const zipBuildSize = statSync(zipBuildPath).size
+            const zipFilePath = this.zipDir(truncDirPath, CodeWhispererConstants.codeScanZipExt)
+            const zipFileSize = statSync(zipFilePath).size
             return {
-                root: truncDirPath,
-                src: {
-                    dir: truncSourceDirPath,
-                    zip: zipSourcePath,
-                    size: this._totalSize,
-                    zipSize: zipSourceSize,
-                },
-                build: {
-                    dir: truncBuildDirPath,
-                    zip: zipBuildPath,
-                    size: totalBuildSize,
-                    zipSize: zipBuildSize,
-                },
+                rootDir: truncDirPath,
+                zipFilePath: zipFilePath,
+                srcPayloadSizeInBytes: this._totalSize,
+                scannedFiles: new Set(this._pickedSourceFiles),
+                zipFileSizeInBytes: zipFileSize,
+                buildPayloadSizeInBytes: totalBuildSize,
                 lines: this._totalLines,
             }
         } catch (error) {

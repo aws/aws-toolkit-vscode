@@ -8,7 +8,7 @@ import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ChildProcess, EOF } from '../../../shared/utilities/childProcess'
+import { ChildProcess, eof } from '../../../shared/utilities/childProcess'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
@@ -300,7 +300,7 @@ describe('ChildProcess', async function () {
                 const childProcess = new ChildProcess('cat')
                 const result = childProcess.run()
                 await childProcess.send('foo')
-                await childProcess.send(EOF)
+                await childProcess.send(eof)
                 const { stdout } = await result
                 assert.strictEqual(stdout, 'foo')
             })

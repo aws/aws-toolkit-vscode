@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import {
     Auth,
     isBuilderIdConnection,
@@ -14,6 +14,7 @@ import {
     codecatalystScopes,
     hasScopes,
     createBuilderIdConnection,
+    ssoAccountAccessScopes,
 } from '../credentials/auth'
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
@@ -38,8 +39,13 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = 'https://codecatalyst.aws/onboarding/view'
 
-const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
+const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
+
+export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
+    isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
+
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
 
@@ -47,7 +53,12 @@ export class CodeCatalystAuthenticationProvider {
         protected readonly storage: CodeCatalystAuthStorage,
         protected readonly memento: vscode.Memento,
         public readonly auth = Auth.instance,
-        public readonly secondaryAuth = getSecondaryAuth('codecatalyst', 'CodeCatalyst', isValidCodeCatalystConnection)
+        public readonly secondaryAuth = getSecondaryAuth(
+            auth,
+            'codecatalyst',
+            'CodeCatalyst',
+            isValidCodeCatalystConnection
+        )
     ) {}
 
     public get activeConnection() {
@@ -105,27 +116,27 @@ export class CodeCatalystAuthenticationProvider {
 
     public async promptNotConnected(): Promise<SsoConnection> {
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
-            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade'
+            readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-        const isNewUser = conn === undefined
-        const okItem: vscode.MessageItem = { title: localizedText.ok }
+        const continueItem: vscode.MessageItem = { title: localizedText.continueText }
         const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
-        if (isNewUser || !isValidCodeCatalystConnection(conn)) {
+        if (conn === undefined) {
             // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: isNewUser ? 'Create' : 'Upgrade' } as ConnectionFlowEvent)
+            telemetry.record({ codecatalyst_connectionFlow: 'Create' } as ConnectionFlowEvent)
 
-            const message = isNewUser
-                ? 'CodeCatalyst requires an AWS Builder ID connection. Creating a connection opens your browser to login.\n\n Create one now?'
-                : 'Your AWS Builder ID connection does not have access to CodeCatalyst. Upgrading the connection requires another login.\n\n Upgrade now?'
-            const resp = await vscode.window.showInformationMessage(message, { modal: true }, okItem, cancelItem)
-            if (resp !== okItem) {
+            const message = `The ${
+                getIdeProperties().company
+            } Toolkit extension requires a connection for CodeCatalyst to begin.\n\n Proceed to the browser to allow access?`
+
+            const resp = await vscode.window.showInformationMessage(message, { modal: true }, continueItem, cancelItem)
+            if (resp !== continueItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
             }
 
-            const newConn = await createBuilderIdConnection(this.auth)
+            const newConn = await createBuilderIdConnection(this.auth, defaultScopes)
             if (this.auth.activeConnection?.id !== newConn.id) {
                 await this.secondaryAuth.useNewConnection(newConn)
             }
@@ -133,23 +144,38 @@ export class CodeCatalystAuthenticationProvider {
             return newConn
         }
 
-        if (this.auth.activeConnection?.id !== conn.id) {
+        const upgrade = async () => {
+            // TODO: change to `satisfies` on TS 4.9
+            telemetry.record({ codecatalyst_connectionFlow: 'Upgrade' } as ConnectionFlowEvent)
+
+            return this.secondaryAuth.addScopes(conn, defaultScopes)
+        }
+
+        if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
             // TODO: change to `satisfies` on TS 4.9
             telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
 
             const resp = await vscode.window.showInformationMessage(
                 'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
                 { modal: true },
-                okItem,
+                continueItem,
                 cancelItem
             )
-            if (resp !== okItem) {
+            if (resp !== continueItem) {
                 throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
+            }
+
+            if (isUpgradeableConnection(conn)) {
+                await upgrade()
             }
 
             await this.secondaryAuth.useNewConnection(conn)
 
             return conn
+        }
+
+        if (isUpgradeableConnection(conn)) {
+            return upgrade()
         }
 
         throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
@@ -158,41 +184,6 @@ export class CodeCatalystAuthenticationProvider {
     private static instance: CodeCatalystAuthenticationProvider
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        const secrets = isCloud9() ? new SecretMemento(ctx.globalState) : ctx.secrets
-
-        return (this.instance ??= new this(new CodeCatalystAuthStorage(secrets), ctx.globalState))
-    }
-}
-
-/**
- * `secrets` API polyfill for C9.
- *
- * For development only. Do NOT use this for anything else.
- */
-class SecretMemento implements vscode.SecretStorage {
-    private readonly onDidChangeEmitter = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
-    public readonly onDidChange = this.onDidChangeEmitter.event
-
-    public constructor(private readonly memento: vscode.Memento) {}
-
-    public async get(key: string): Promise<string | undefined> {
-        return this.getSecrets()[key]
-    }
-
-    public async store(key: string, value: string): Promise<void> {
-        const current = this.getSecrets()
-        await this.memento.update('__secrets', { ...current, [key]: value })
-        this.onDidChangeEmitter.fire({ key })
-    }
-
-    public async delete(key: string): Promise<void> {
-        const current = this.getSecrets()
-        delete current[key]
-        await this.memento.update('__secrets', current)
-        this.onDidChangeEmitter.fire({ key })
-    }
-
-    private getSecrets(): Record<string, string | undefined> {
-        return this.memento.get('__secrets', {})
+        return (this.instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
     }
 }

@@ -163,6 +163,10 @@ You can find the coverage report at `./coverage/index.html` after running the te
 -   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
 -   Generate a report with `npm run report`
 
+### CodeCatalyst Blueprints
+
+You can find documentation to create VSCode IDE settings for CodeCatalyst blueprints at [docs/vscode-config.md](./docs/vscode-config.md).
+
 ## Pull Requests
 
 Before sending a pull request:
@@ -231,6 +235,18 @@ The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30
 Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
+
+### Logging
+
+The `aws.dev.logfile` setting allows you to set the path of the logfile. This makes it easy to
+follow and filter the logfile using shell tools like `tail` and `grep`. For example in
+settings.json,
+
+    "aws.dev.logfile": "~/awstoolkit.log",
+
+then following the log with:
+
+    tail -F ~/awstoolkit.log
 
 ### Service Endpoints
 
@@ -332,6 +348,24 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
     ```ts
     getIcon('aws-cloudwatch-log-stream')
     ```
+
+### Beta artifacts
+
+The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
+
+### VSCode Marketplace
+
+The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
+is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
+the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
+
+Note therefore:
+
+1. Don't delete images from `docs/marketplace/` unless the _current published_
+   AWS Toolkit release doesn't depend on them.
+2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
+   `master`). Changes to other branches won't affect the marketplace page.
 
 ## Importing icons from other open source repos
 

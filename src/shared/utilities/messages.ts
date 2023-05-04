@@ -7,14 +7,13 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
-import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
-import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
+import globals from '../extensionGlobals'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -35,17 +34,16 @@ export function makeFailedWriteMessage(filename: string): string {
 function showMessageWithItems(
     message: string,
     kind: 'info' | 'warn' | 'error' = 'error',
-    items: string[] = [],
-    window: Window = globals.window
+    items: string[] = []
 ): Thenable<string | undefined> {
     switch (kind) {
         case 'info':
-            return window.showInformationMessage(message, ...items)
+            return vscode.window.showInformationMessage(message, ...items)
         case 'warn':
-            return window.showWarningMessage(message, ...items)
+            return vscode.window.showWarningMessage(message, ...items)
         case 'error':
         default:
-            return window.showErrorMessage(message, ...items)
+            return vscode.window.showErrorMessage(message, ...items)
     }
 }
 
@@ -91,14 +89,13 @@ export async function showMessageWithUrl(
  */
 export async function showViewLogsMessage(
     message: string,
-    window: Window = globals.window,
     kind: 'info' | 'warn' | 'error' = 'error',
     extraItems: string[] = []
 ): Promise<string | undefined> {
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
     const items = [...extraItems, logsItem]
 
-    const p = showMessageWithItems(message, kind, items, window)
+    const p = showMessageWithItems(message, kind, items)
     return p.then<string | undefined>(selection => {
         if (selection === logsItem) {
             showLogOutputChannel()
@@ -115,18 +112,25 @@ export async function showViewLogsMessage(
  * @param cancel the cancel button text.
  * @param window the window.
  */
-export async function showConfirmationMessage(
-    { prompt, confirm, cancel, type }: { prompt: string; confirm?: string; cancel?: string; type?: 'info' | 'warning' },
-    window: Window = globals.window
-): Promise<boolean> {
+export async function showConfirmationMessage({
+    prompt,
+    confirm,
+    cancel,
+    type,
+}: {
+    prompt: string
+    confirm?: string
+    cancel?: string
+    type?: 'info' | 'warning'
+}): Promise<boolean> {
     const confirmItem: vscode.MessageItem = { title: confirm ?? localizedText.confirm }
     const cancelItem: vscode.MessageItem = { title: cancel ?? localizedText.cancel, isCloseAffordance: true }
 
     if (type === 'info') {
-        const selection = await window.showInformationMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        const selection = await vscode.window.showInformationMessage(prompt, { modal: true }, confirmItem, cancelItem)
         return selection?.title === confirmItem.title
     } else {
-        const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        const selection = await vscode.window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
         return selection?.title === confirmItem.title
     }
 }
@@ -150,8 +154,7 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
  */
 async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
-    timeout: Timeout,
-    window: Window = globals.window
+    timeout: Timeout
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
     if (isCloud9()) {
@@ -159,7 +162,7 @@ async function showProgressWithTimeout(
     }
 
     const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
-        window.withProgress(options, function (progress, token) {
+        vscode.window.withProgress(options, function (progress, token) {
             token.onCancellationRequested(() => timeout.cancel())
             resolve(progress)
             return new Promise(timeout.onCompletion)
@@ -174,17 +177,16 @@ async function showProgressWithTimeout(
  *
  * @param message Message to display
  * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
- * @param window Window to display the message on (default: globals.window)
+ * @param window Window to display the message on (default: vscode.window)
  *
  * @returns Progress object allowing the caller to update progress status
  */
 export async function showMessageWithCancel(
     message: string,
-    timeout: Timeout,
-    window: Window = globals.window
+    timeout: Timeout
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
-    return showProgressWithTimeout(progressOptions, timeout, window)
+    return showProgressWithTimeout(progressOptions, timeout)
 }
 
 /**
@@ -208,14 +210,24 @@ export async function showTimedMessage(message: string, duration: number) {
     )
 }
 
-export async function copyToClipboard(
-    data: string,
-    label?: string,
-    window: Window = vscode.window,
-    env: Env = vscode.env
-): Promise<void> {
+export async function copyToClipboard(data: string, label?: string, env: Env = vscode.env): Promise<void> {
     await env.clipboard.writeText(data)
     const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
-    window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
+    vscode.window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
     getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
+}
+
+export async function showOnce<T>(
+    key: string,
+    fn: () => Promise<T>,
+    memento = globals.context.globalState
+): Promise<T | undefined> {
+    if (memento.get(key)) {
+        return
+    }
+
+    const result = fn()
+    await memento.update(key, true)
+
+    return result
 }

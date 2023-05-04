@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
@@ -24,14 +24,14 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
     public constructor(
         private readonly partitionId: string,
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly client = new DefaultApiGatewayClient(regionCode)
     ) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)
         this.apiNodes = new Map<string, RestApiNode>()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
@@ -43,7 +43,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.apigateway.noApis', '[No API Gateway REST APIs found]')
                 ),
-            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => compareTreeItems(nodeA, nodeB),
         })
     }
 

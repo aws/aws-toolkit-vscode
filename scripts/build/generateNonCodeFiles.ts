@@ -9,7 +9,7 @@ import { marked } from 'marked'
 import * as path from 'path'
 
 // doesn't use path utils as this should be formatted for finding images with HTML markup
-const REPO_ROOT = process.cwd()
+const repoRoot = process.cwd()
 
 /**
  * replaces relative paths with an `!!EXTENSIONROOT!!` token.
@@ -45,10 +45,10 @@ function generateFileHash(root: string) {
 }
 
 try {
-    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStartVscode.html')
-    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
-    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
-    generateFileHash(REPO_ROOT)
+    translateReadmeToHtml(repoRoot, 'README.quickstart.vscode.md', 'quickStartVscode.html')
+    translateReadmeToHtml(repoRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
+    translateReadmeToHtml(repoRoot, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
+    generateFileHash(repoRoot)
 } catch (error) {
     console.error(error)
     process.exit(100)

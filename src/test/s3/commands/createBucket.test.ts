@@ -9,7 +9,7 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
 describe('createBucketCommand', function () {
@@ -27,21 +27,25 @@ describe('createBucketCommand', function () {
             bucket: { name: bucketName, region: 'region', arn: 'arn' },
         })
 
-        const window = new FakeWindow({ inputBox: { input: bucketName } })
+        getTestWindow().onDidShowInputBox(input => {
+            assert.strictEqual(input.prompt, 'Enter a new bucket name')
+            assert.strictEqual(input.placeholder, 'Bucket Name')
+            input.acceptValue(bucketName)
+        })
         const commands = new FakeCommands()
-        await createBucketCommand(node, window, commands)
+        await createBucketCommand(node, commands)
 
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new bucket name')
-        assert.strictEqual(window.inputBox.options?.placeHolder, 'Bucket Name')
-
-        assert.strictEqual(window.message.information, 'Created bucket: buc.ket-n4.m3')
+        getTestWindow()
+            .getFirstMessage()
+            .assertInfo(/Created bucket: buc.ket-n4.m3/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await assert.rejects(() => createBucketCommand(node, new FakeWindow(), new FakeCommands()), CancellationError)
+        getTestWindow().onDidShowInputBox(input => input.hide())
+        await assert.rejects(() => createBucketCommand(node, new FakeCommands()), CancellationError)
 
         verify(s3.createFolder(anything())).never()
     })
@@ -49,9 +53,9 @@ describe('createBucketCommand', function () {
     it('throws an error and refreshes node when bucket creation fails', async function () {
         when(s3.createBucket(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ inputBox: { input: bucketName } })
+        getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
         const commands = new FakeCommands()
-        await assert.rejects(() => createBucketCommand(node, window, commands), /Failed to create bucket/)
+        await assert.rejects(() => createBucketCommand(node, commands), /Failed to create bucket/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])

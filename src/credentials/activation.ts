@@ -5,15 +5,15 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { Settings } from '../shared/settings'
 import { Auth } from './auth'
 import { LoginManager } from './loginManager'
 import { fromString } from './providers/credentials'
+import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
+import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
-    settings: Settings,
     loginManager: LoginManager
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(conn => {
@@ -24,4 +24,12 @@ export async function initialize(
             loginManager.logout()
         }
     })
+
+    // TODO: To enable this in prod we need to remove the 'when' clause
+    // for: '"command": "aws.auth.showConnectionsPage"' in package.json
+    registerCommandsWithVSCode(
+        extensionContext,
+        new AuthCommandDeclarations(),
+        new AuthCommandBackend(extensionContext)
+    )
 }

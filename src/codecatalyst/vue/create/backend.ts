@@ -26,15 +26,20 @@ import {
     CodeCatalystProject,
     CodeCatalystClient,
     DevEnvironment,
+    isThirdPartyRepo,
 } from '../../../shared/clients/codecatalystClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { recordSource } from '../../utils'
+import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
+import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
+import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 
 interface LinkedResponse {
     readonly type: 'linked'
+    readonly selectedSpace: Pick<CodeCatalystOrg, 'name'>
     readonly selectedProject: CodeCatalystProject
     readonly selectedBranch: CodeCatalystBranch
     readonly newBranch: string
@@ -42,12 +47,16 @@ interface LinkedResponse {
 
 interface EmptyResponse {
     readonly type: 'none'
+    readonly selectedSpace: Pick<CodeCatalystOrg, 'name'>
     readonly selectedProject: CodeCatalystProject
 }
 
 export type SourceResponse = LinkedResponse | EmptyResponse
 
 export class CodeCatalystCreateWebview extends VueWebview {
+    private projectPrompter?: QuickPickPrompter<CodeCatalystProject>
+    private spacePrompter?: QuickPickPrompter<CodeCatalystOrg>
+
     public readonly id = 'createCodeCatalyst'
     public readonly source = 'src/codecatalyst/vue/create/index.js'
 
@@ -57,6 +66,9 @@ export class CodeCatalystCreateWebview extends VueWebview {
         private readonly onComplete: (devenv?: DevEnvironment) => void
     ) {
         super()
+
+        // triggers pre-loading of Spaces
+        this.spacePrompter = createOrgPrompter(client)
     }
 
     public close() {
@@ -64,8 +76,42 @@ export class CodeCatalystCreateWebview extends VueWebview {
         this.onComplete()
     }
 
-    public async getProjects() {
-        return this.client.listResources('project').flatten().promise()
+    /**
+     * Opens a quick pick that lists all Spaces of the user.
+     *
+     * @returns Space if it was selected, otherwise undefined due to user cancellation.
+     */
+    public async quickPickSpace(): Promise<CodeCatalystOrg | undefined> {
+        this.spacePrompter = this.spacePrompter ?? createOrgPrompter(this.client)
+        const selectedSpace = await this.spacePrompter.prompt()
+        this.spacePrompter = undefined // We want the prompter to be re-created on subsequent calls
+
+        if (!isValidResponse(selectedSpace)) {
+            return undefined
+        }
+
+        // This will initiate preloading of the projects
+        this.projectPrompter = createProjectPrompter(this.client, selectedSpace?.name)
+
+        return selectedSpace
+    }
+
+    /**
+     * Opens a quick pick that lists all Projects from a given Space.
+     *
+     * @param spaceName Space to show Projects from
+     * @returns Project if it was selected, otherwise undefined due to user cancellation.
+     */
+    public async quickPickProject(spaceName: CodeCatalystOrg['name']): Promise<CodeCatalystProject | undefined> {
+        this.projectPrompter = this.projectPrompter ?? createProjectPrompter(this.client, spaceName)
+        const selectedProject = await this.projectPrompter.prompt()
+        this.projectPrompter = undefined // We want the prompter to be re-created on subsequent calls
+
+        if (!isValidResponse(selectedProject)) {
+            return undefined
+        }
+
+        return selectedProject
     }
 
     public async getBranches(project: CodeCatalystProject) {
@@ -88,6 +134,10 @@ export class CodeCatalystCreateWebview extends VueWebview {
         )
 
         return branches.flatten().promise()
+    }
+
+    public isThirdPartyRepo(codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest): Promise<boolean> {
+        return isThirdPartyRepo(this.client, codeCatalystRepo)
     }
 
     public getAllInstanceDescriptions() {
@@ -133,6 +183,11 @@ export class CodeCatalystCreateWebview extends VueWebview {
     }
 
     public async submit(settings: DevEnvironmentSettings, source: SourceResponse) {
+        const devenv = await this.createDevEnvOfType(settings, source)
+        this.commands.openDevEnv.execute(devenv)
+    }
+
+    public async createDevEnvOfType(settings: DevEnvironmentSettings, source: SourceResponse) {
         const devenv: DevEnvironment = await (() => {
             switch (source.type) {
                 case 'none':
@@ -146,7 +201,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
 
         this.onComplete(devenv)
-        this.commands.openDevEnv.execute(devenv)
+        return devenv
     }
 
     private async createEmptyDevEnv(settings: DevEnvironmentSettings, source: EmptyResponse) {

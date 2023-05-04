@@ -3,20 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
-import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
-import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
+import globals from '../../shared/extensionGlobals'
+import * as vscode from 'vscode'
+import { AuthorizationPendingException, SlowDownException, SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
+import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile, builderIdStartUrl } from './model'
 import { getCache } from './cache'
-import { hasProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
-import { isClientFault } from '../../shared/errors'
+import { getRequestId, getTelemetryReason, getTelemetryResult, isClientFault, ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
+import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
-const CLIENT_REGISTRATION_TYPE = 'public'
-const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
-const REFRESH_GRANT_TYPE = 'refresh_token'
+const clientRegistrationType = 'public'
+const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
+const refreshGrantType = 'refresh_token'
 
 /**
  *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
@@ -78,11 +84,7 @@ export class SsoAccessTokenProvider {
         if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
             const refreshed = await this.refreshToken(data.token, data.registration)
 
-            if (refreshed) {
-                await this.cache.token.save(this.tokenCacheKey, refreshed)
-            }
-
-            return refreshed?.token
+            return refreshed.token
         } else {
             await this.invalidate()
         }
@@ -92,6 +94,7 @@ export class SsoAccessTokenProvider {
         const access = await this.runFlow()
         const identity = (await identityProvider?.(access.token)) ?? this.tokenCacheKey
         await this.cache.token.save(identity, access)
+        await setSessionCreationDate(this.tokenCacheKey, new Date())
 
         return { ...access.token, identity }
     }
@@ -114,10 +117,21 @@ export class SsoAccessTokenProvider {
     private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
         try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
-            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: REFRESH_GRANT_TYPE })
+            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
+            const refreshed = this.formatToken(response, registration)
+            await this.cache.token.save(this.tokenCacheKey, refreshed)
 
-            return this.formatToken(response, registration)
+            return refreshed
         } catch (err) {
+            telemetry.aws_refreshCredentials.emit({
+                result: getTelemetryResult(err),
+                reason: getTelemetryReason(err),
+                requestId: getRequestId(err),
+                sessionDuration: getSessionDuration(this.tokenCacheKey),
+                credentialType: 'bearerToken',
+                credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+            } as AwsRefreshCredentials)
+
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 await this.cache.token.clear(this.tokenCacheKey)
             }
@@ -145,7 +159,7 @@ export class SsoAccessTokenProvider {
             clientSecret: registration.clientSecret,
         })
 
-        if (!(await openSsoPortalLink(authorization))) {
+        if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
             throw new CancellationError('user')
         }
 
@@ -153,22 +167,18 @@ export class SsoAccessTokenProvider {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
             deviceCode: authorization.deviceCode,
-            grantType: DEVICE_GRANT_TYPE,
+            grantType: deviceGrantType,
         }
 
-        const token = await this.oidc.pollForToken(
-            tokenRequest,
-            registration.expiresAt.getTime(),
-            authorization.interval
-        )
-
+        const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         return this.formatToken(token, registration)
     }
 
     private async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
         return this.oidc.registerClient({
-            clientName: `aws-toolkit-vscode-${globals.clock.Date.now()}`,
-            clientType: CLIENT_REGISTRATION_TYPE,
+            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} Toolkit for VSCode`,
+            clientType: clientRegistrationType,
             scopes: this.profile.scopes,
         })
     }
@@ -176,4 +186,79 @@ export class SsoAccessTokenProvider {
     public static create(profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>) {
         return new this(profile)
     }
+}
+
+const backoffDelayMs = 5000
+async function pollForTokenWithProgress<T>(
+    fn: () => Promise<T>,
+    authorization: Awaited<ReturnType<OidcClient['startDeviceAuthorization']>>,
+    interval = authorization.interval ?? backoffDelayMs
+) {
+    async function poll(token: vscode.CancellationToken) {
+        while (
+            authorization.expiresAt.getTime() - globals.clock.Date.now() > interval &&
+            !token.isCancellationRequested
+        ) {
+            try {
+                return await fn()
+            } catch (err) {
+                if (!hasStringProps(err, 'name')) {
+                    throw err
+                }
+
+                if (err instanceof SlowDownException) {
+                    interval += backoffDelayMs
+                } else if (!(err instanceof AuthorizationPendingException)) {
+                    throw err
+                }
+            }
+
+            await sleep(interval)
+        }
+
+        throw new ToolkitError('Timed-out waiting for browser login flow to complete', {
+            code: 'TimedOut',
+        })
+    }
+
+    return vscode.window.withProgress(
+        {
+            title: localize(
+                'AWS.auth.loginWithBrowser.messageDetail',
+                'Login page opened in browser. When prompted, provide this code: {0}',
+                authorization.userCode
+            ),
+            cancellable: true,
+            location: vscode.ProgressLocation.Notification,
+        },
+        (_, token) =>
+            Promise.race([
+                poll(token),
+                new Promise<never>((_, reject) =>
+                    token.onCancellationRequested(() => reject(new CancellationError('user')))
+                ),
+            ])
+    )
+}
+
+const sessionCreationDateKey = '#sessionCreationDates'
+async function setSessionCreationDate(id: string, date: Date, memento = globals.context.globalState) {
+    try {
+        await memento.update(sessionCreationDateKey, {
+            ...memento.get(sessionCreationDateKey),
+            [id]: date.getTime(),
+        })
+    } catch (err) {
+        getLogger().verbose('auth: failed to set session creation date: %s', err)
+    }
+}
+
+function getSessionCreationDate(id: string, memento = globals.context.globalState): number | undefined {
+    return memento.get(sessionCreationDateKey, {} as Record<string, number>)[id]
+}
+
+function getSessionDuration(id: string, memento = globals.context.globalState) {
+    const creationDate = getSessionCreationDate(id, memento)
+
+    return creationDate !== undefined ? Date.now() - creationDate : undefined
 }

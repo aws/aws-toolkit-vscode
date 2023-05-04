@@ -14,7 +14,6 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilit
 import { getLogger } from '../logger'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ChildProcess } from '../utilities/childProcess'
-import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
@@ -50,7 +49,7 @@ type AwsClis = Extract<ToolId, 'session-manager-plugin'>
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
+export const awsClis: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
@@ -75,12 +74,8 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
  * @param confirmBefore Prompt before starting install?
  * @returns CLI Path
  */
-export async function installCli(
-    cli: AwsClis,
-    confirm: boolean,
-    window: Window = Window.vscode()
-): Promise<string | never> {
-    const cliToInstall = AWS_CLIS[cli]
+export async function installCli(cli: AwsClis, confirm: boolean): Promise<string | never> {
+    const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
     }
@@ -92,7 +87,7 @@ export async function installCli(
         const install = localize('AWS.generic.install', 'Install')
         const selection = !confirm
             ? install
-            : await window.showInformationMessage(
+            : await vscode.window.showInformationMessage(
                   localize(
                       'AWS.cli.installCliPrompt',
                       '{0} could not find {1} CLI. Install a local copy?',
@@ -144,7 +139,7 @@ export async function installCli(
 
         result = 'Failed'
 
-        window
+        vscode.window
             .showErrorMessage(
                 localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
                 manualInstall
@@ -252,9 +247,9 @@ async function installSsmCli(
 ): Promise<string> {
     progress.report({ message: msgDownloading })
 
-    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin'], tempDir, timeout)
+    const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']))
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
@@ -318,15 +313,11 @@ async function installSsmCli(
 /**
  * @throws {@link CancellationError} if the install times out or the user cancels
  */
-export async function getOrInstallCli(
-    cli: AwsClis,
-    confirm: boolean,
-    window: Window = Window.vscode()
-): Promise<string> {
+export async function getOrInstallCli(cli: AwsClis, confirm: boolean): Promise<string> {
     if (DevSettings.instance.get('forceInstallTools', false)) {
-        return installCli(cli, confirm, window)
+        return installCli(cli, confirm)
     } else {
-        return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)
+        return (await getCliCommand(awsClis[cli])) ?? installCli(cli, confirm)
     }
 }
 

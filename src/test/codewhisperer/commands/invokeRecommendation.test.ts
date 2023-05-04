@@ -11,7 +11,6 @@ import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
-import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandler'
 
 describe('invokeRecommendation', function () {
     describe('invokeRecommendation', function () {
@@ -35,23 +34,10 @@ describe('invokeRecommendation', function () {
                 isShowMethodsEnabled: true,
                 isManualTriggerEnabled: true,
                 isAutomatedTriggerEnabled: true,
-                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+                isSuggestionsWithCodeReferencesEnabled: true,
             }
             await invokeRecommendation(mockEditor, mockClient, config)
             assert.ok(getRecommendationStub.called || oldGetRecommendationStub.called)
-        })
-
-        it('When called, keyStrokeCount should be set to 0', async function () {
-            const mockEditor = createMockTextEditor()
-            KeyStrokeHandler.instance.keyStrokeCount = 10
-            const config: ConfigurationEntry = {
-                isShowMethodsEnabled: true,
-                isManualTriggerEnabled: true,
-                isAutomatedTriggerEnabled: true,
-                isIncludeSuggestionsWithCodeReferencesEnabled: true,
-            }
-            await invokeRecommendation(mockEditor, mockClient, config)
-            assert.strictEqual(KeyStrokeHandler.instance.keyStrokeCount, 0)
         })
     })
 })

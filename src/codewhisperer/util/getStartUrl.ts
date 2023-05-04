@@ -9,20 +9,21 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { createStartUrlPrompter } from '../../credentials/auth'
+import { codewhispererScopes, createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {
-    const inputBox = await createStartUrlPrompter('IAM Identity Center', false)
+    const inputBox = await createStartUrlPrompter('IAM Identity Center', codewhispererScopes)
     const userInput = await inputBox.prompt()
     if (!isValidResponse(userInput)) {
         telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
         throw new CancellationError('user')
     }
     telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
+    const region = await showRegionPrompter()
+    telemetry.ui_click.emit({ elementId: 'connection_region' })
     try {
-        await AuthUtil.instance.connectToEnterpriseSso(userInput)
+        await AuthUtil.instance.connectToEnterpriseSso(userInput, region.id)
     } catch (e) {
         throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectIamIdentityCenter, {
             code: 'FailedToConnect',

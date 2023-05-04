@@ -16,7 +16,7 @@ import { pushIf } from '../utilities/collectionUtils'
 interface GitFile {
     name: string
     /**
-     * Reads the file's contents
+     * Reads the file's contents. Affected by {@link maxBufferSizeInMB}.
      * @throws If the Git API becomes disabled or we were unable to read the file
      */
     read: () => Promise<string>
@@ -48,7 +48,12 @@ interface GitConfig {
 }
 
 const execFileAsync = promisify(execFile)
-const MIN_GIT_FILTER_VERSION = new SemVer('2.27.0')
+const minGitFilterVersion = new SemVer('2.27.0')
+
+// Arbitrary limit for the in-mem buffer when downloading files via `git cat-file`
+// This can be increased though for larger files streaming might be a better choice
+// See https://github.com/nodejs/node/issues/9829 for a discussion on `maxBuffer`
+const maxBufferSizeInMB = 100
 
 function formatBranch(branch?: GitTypes.Branch): string {
     return branch?.name ?? branch?.commit ?? 'unknown'
@@ -333,9 +338,9 @@ export class GitExtension {
         const api = await this.validateApi(new Error('Cannot list files when the git extension is disabled'))
         const version = await this.getVersion()
 
-        if (version === undefined || version.compare(MIN_GIT_FILTER_VERSION) === -1) {
+        if (version === undefined || version.compare(minGitFilterVersion) === -1) {
             throw new Error(
-                `Git version is too low or could not be determined (min=${MIN_GIT_FILTER_VERSION}): ${
+                `Git version is too low or could not be determined (min=${minGitFilterVersion}): ${
                     version ?? 'unknown'
                 }`
             )
@@ -369,7 +374,7 @@ export class GitExtension {
 
                         return execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
-                            maxBuffer: 1024 * 1024 * 5,
+                            maxBuffer: 1024 * 1024 * maxBufferSizeInMB,
                         }).then(({ stdout }) => stdout)
                     },
                 }))

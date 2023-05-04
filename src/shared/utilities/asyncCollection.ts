@@ -26,6 +26,21 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     filter<U extends T>(predicate: (item: T) => boolean): AsyncCollection<U>
 
     /**
+     * Resolves the first element that matches the predicate.
+     */
+    find<U extends T>(predicate: (item: T) => item is U): Promise<U | undefined>
+    find<U extends T>(predicate: (item: T) => boolean): Promise<U | undefined>
+
+    /**
+     * Catches all errors from the underlying iterable(s).
+     *
+     * Note that currently the contiuation behavior is highly dependent on the
+     * underlying implementations. For example, a `for await` loop cannot be
+     * continued if any of the resulting values are rejected.
+     */
+    catch<U>(handler: (error: unknown) => Promise<U> | U): AsyncCollection<T | U>
+
+    /**
      * Uses only the first 'count' number of values returned by the generator.
      */
     limit(count: number): AsyncCollection<T>
@@ -76,9 +91,12 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
 
     return Object.assign(iterable, {
         [asyncCollection]: true,
+        find: <U extends T>(predicate: Predicate<T, U>) => find(iterable, predicate),
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
         filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
+        catch: <U>(fn: (error: unknown) => Promise<U> | U) =>
+            toCollection<T | U>(() => catchGenerator(generator(), fn)),
         map: <U>(fn: (item: T) => Promise<U> | U) => toCollection<U>(() => mapGenerator(generator(), fn)),
         limit: (count: number) => toCollection(() => delegateGenerator(generator(), takeFrom(count))),
         promise: () => promise(iterable),
@@ -90,6 +108,14 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
 
 export function isAsyncCollection<T>(iterable: AsyncIterable<T>): iterable is AsyncCollection<T> {
     return asyncCollection in iterable
+}
+
+function isIterable<T>(obj: any): obj is Iterable<T> {
+    return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
+}
+
+function isAsyncIterable<T>(obj: any): obj is AsyncIterable<T> {
+    return obj && typeof obj === 'object' && typeof obj[Symbol.asyncIterator] === 'function'
 }
 
 async function* mapGenerator<T, U, R = T>(
@@ -162,7 +188,7 @@ async function* delegateGenerator<T, U, R = T>(
 }
 
 async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
-    if (isIterable<U>(item)) {
+    if (isIterable<U>(item) || isAsyncIterable<U>(item)) {
         yield* item
     } else {
         yield item as unknown as U
@@ -181,11 +207,7 @@ function takeFrom<T>(count: number) {
 /**
  * Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable
  */
-type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
-
-export function isIterable<T>(obj: any): obj is Iterable<T> {
-    return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
-}
+type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T extends AsyncIterable<infer U> ? U : T
 
 async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     const result: T[] = []
@@ -224,4 +246,32 @@ async function asyncIterableToMap<T, K extends StringProperty<T>, U extends stri
     }
 
     return result
+}
+
+async function find<T, U extends T>(iterable: AsyncIterable<T>, predicate: (item: T) => item is U) {
+    for await (const item of iterable) {
+        if (predicate(item)) {
+            return item
+        }
+    }
+}
+
+async function* catchGenerator<T, U, R = T>(
+    generator: AsyncGenerator<T, R | undefined | void>,
+    fn: (error: unknown) => Promise<U> | U
+): AsyncGenerator<T | U, R | U | undefined | void> {
+    while (true) {
+        try {
+            const { value, done } = await generator.next()
+            if (done) {
+                return value
+            }
+            yield value
+        } catch (err) {
+            // Catching an error when the generator would normally
+            // report 'done' means that the 'done' value would be
+            // replaced by `undefined`.
+            yield fn(err)
+        }
+    }
 }

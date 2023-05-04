@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Improved startup performance on large workspaces #3370"
+}

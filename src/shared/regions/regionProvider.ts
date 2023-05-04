@@ -10,16 +10,16 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
-import { Endpoints, Region } from './endpoints'
-import { EndpointsProvider } from './endpointsProvider'
+import { Endpoints, loadEndpoints, Region } from './endpoints'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 
-export const DEFAULT_REGION = 'us-east-1'
-export const DEFAULT_PARTITION = 'aws'
-export const DEFAULT_DNS_SUFFIX = 'amazonaws.com'
+export const defaultRegion = 'us-east-1'
+export const defaultPartition = 'aws'
+export const defaultDnsSuffix = 'amazonaws.com'
 
 interface RegionData {
     dnsSuffix: string
@@ -44,7 +44,7 @@ export class RegionProvider {
     }
 
     public get defaultRegionId() {
-        return this.awsContext.getCredentialDefaultRegion() ?? DEFAULT_REGION
+        return this.awsContext.getCredentialDefaultRegion() ?? defaultRegion
     }
 
     public get defaultPartitionId() {
@@ -120,6 +120,7 @@ export class RegionProvider {
     }
 
     private loadFromEndpoints(endpoints: Endpoints) {
+        this.regionData.clear()
         endpoints.partitions.forEach(partition => {
             partition.regions.forEach(region =>
                 this.regionData.set(region.id, {
@@ -140,40 +141,71 @@ export class RegionProvider {
                 })
             })
         })
+        this.onDidChangeEmitter.fire()
     }
 
-    public static fromEndpointsProvider(endpointsProvider: EndpointsProvider): RegionProvider {
+    /**
+     * @param endpointsProvider.local Retrieves endpoints manifest from local sources available to the toolkit. Expected
+     *                                to resolve fast, and is both a placeholder until the remote resources are loaded, and
+     *                                is a fallback in case the toolkit is unable to load a remote resource
+     * @param endpointsProvider.remote Retrieves endpoints manifest from remote host
+     */
+    public static fromEndpointsProvider(endpointsProvider: {
+        local: () => Endpoints | Promise<Endpoints>
+        remote: () => Endpoints | Promise<Endpoints>
+    }): RegionProvider {
         const instance = new this()
 
-        endpointsProvider
-            .load()
-            .then(endpoints => {
-                instance.regionData.clear()
-                instance.loadFromEndpoints(endpoints)
-                instance.onDidChangeEmitter.fire()
-            })
-            .catch(err => {
-                getLogger().error('Failure while loading Endpoints Manifest: %s', err)
+        async function load() {
+            getLogger().info('endpoints: retrieving AWS endpoints data')
+            instance.loadFromEndpoints(await endpointsProvider.local())
 
-                vscode.window.showErrorMessage(
-                    `${localize(
-                        'AWS.error.endpoint.load.failure',
-                        'The {0} Toolkit was unable to load endpoints data.',
-                        getIdeProperties().company
-                    )} ${
-                        isCloud9()
-                            ? localize(
-                                  'AWS.error.impactedFunctionalityReset.cloud9',
-                                  'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                              )
-                            : localize(
-                                  'AWS.error.impactedFunctionalityReset.vscode',
-                                  'Toolkit functionality may be impacted until VS Code is restarted.'
-                              )
-                    }`
+            try {
+                instance.loadFromEndpoints(await endpointsProvider.remote())
+            } catch (err) {
+                getLogger().warn(
+                    `endpoints: failed to load from remote source, region data may appear outdated: %s`,
+                    err
                 )
-            })
+            }
+        }
+
+        load().catch(err => {
+            getLogger().error('Failure while loading Endpoints Manifest: %s', err)
+
+            vscode.window.showErrorMessage(
+                `${localize(
+                    'AWS.error.endpoint.load.failure',
+                    'The {0} Toolkit was unable to load endpoints data.',
+                    getIdeProperties().company
+                )} ${
+                    isCloud9()
+                        ? localize(
+                              'AWS.error.impactedFunctionalityReset.cloud9',
+                              'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
+                          )
+                        : localize(
+                              'AWS.error.impactedFunctionalityReset.vscode',
+                              'Toolkit functionality may be impacted until VS Code is restarted.'
+                          )
+                }`
+            )
+        })
 
         return instance
     }
+}
+
+export async function getEndpointsFromFetcher(fetcher: ResourceFetcher): Promise<Endpoints> {
+    const endpointsJson = await fetcher.get()
+    if (!endpointsJson) {
+        throw new Error('Failed to get resource')
+    }
+
+    const endpoints = loadEndpoints(endpointsJson)
+    if (!endpoints) {
+        throw new Error('Failed to load endpoints')
+    }
+
+    return endpoints
 }

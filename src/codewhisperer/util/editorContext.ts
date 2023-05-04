@@ -35,7 +35,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     )
 
     return {
-        filename: getFileName(editor),
+        filename: getFileNameForRequest(editor),
         programmingLanguage: {
             languageName:
                 runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId) ??
@@ -48,6 +48,21 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
 
 export function getFileName(editor: vscode.TextEditor): string {
     const fileName = path.basename(editor.document.fileName)
+    return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
+}
+
+export function getFileNameForRequest(editor: vscode.TextEditor): string {
+    const fileName = path.basename(editor.document.fileName)
+
+    // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
+    // the filename sent in the request to reflect that language
+    if (fileName.endsWith('.ipynb')) {
+        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(editor.document.languageId)
+        if (fileExtension !== undefined) {
+            const filenameWithNewExtension = fileName.substring(0, fileName.length - 5) + fileExtension
+            return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)
+        }
+    }
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 

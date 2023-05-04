@@ -3,13 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Uri } from 'vscode'
+import * as vscode from 'vscode'
 import { AWSError } from 'aws-sdk'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
+import type * as fs from 'fs'
+import type * as os from 'os'
+
+export const errorCode = {
+    invalidConnection: 'InvalidConnection',
+}
 
 export interface ErrorInformation {
     /**
@@ -77,7 +83,7 @@ export interface ErrorInformation {
      *
      * TODO: implement this
      */
-    readonly documentationUri?: Uri
+    readonly documentationUri?: vscode.Uri
 }
 
 /**
@@ -108,7 +114,7 @@ export class ToolkitError extends Error implements ErrorInformation {
      * A message that could potentially be shown to the user. This should not contain any
      * sensitive information and should be limited in technical detail.
      */
-    public readonly message: string
+    public override readonly message: string
     public readonly code = this.info.code
     public readonly details = this.info.details
 
@@ -135,7 +141,7 @@ export class ToolkitError extends Error implements ErrorInformation {
     /**
      * The name of the error. This is not necessarily the same as the class name.
      */
-    public get name(): string {
+    public override get name(): string {
         return this.#name
     }
 
@@ -194,10 +200,9 @@ export class ToolkitError extends Error implements ErrorInformation {
 
             // TypeScript does not allow the use of `this` types for generic prototype methods unfortunately
             // This implementation is equivalent to re-assignment i.e. an unbound method on the prototype
-            public static chain<T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError>(
-                this: T,
-                ...args: Parameters<NamedErrorConstructor['chain']>
-            ): InstanceType<T> {
+            public static override chain<
+                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError
+            >(this: T, ...args: Parameters<NamedErrorConstructor['chain']>): InstanceType<T> {
                 return ToolkitError.chain.call(this, ...args) as InstanceType<T>
             }
         }
@@ -237,7 +242,7 @@ function formatDetails(err: Error): string | undefined {
 }
 
 export class UnknownError extends Error {
-    public readonly name = 'UnknownError'
+    public override readonly name = 'UnknownError'
 
     public constructor(public readonly cause: unknown) {
         super(String(cause))
@@ -276,16 +281,102 @@ export function getTelemetryReason(error: unknown | undefined): string | undefin
     return 'Unknown'
 }
 
-export function isAwsError(error: unknown | undefined): error is AWSError {
+/**
+ * Determines the appropriate error message to display to the user.
+ *
+ * We do not want to display every error message to the user, this
+ * resolves what we actually want to show them based off the given
+ * input.
+ */
+export function resolveErrorMessageToDisplay(error: unknown, defaultMessage: string): string {
+    const mainMessage = error instanceof ToolkitError ? error.message : defaultMessage
+    // We want to explicitly show certain AWS Error messages if they are raised
+    const prioritizedMessage = findPrioritizedAwsError(error)?.message
+    return prioritizedMessage ? `${mainMessage}: ${prioritizedMessage}` : mainMessage
+}
+
+/**
+ * Patterns that match the value of {@link AWSError.code}
+ */
+export const prioritizedAwsErrors: RegExp[] = [
+    /^ConflictException$/,
+    /^ValidationException$/,
+    /^ResourceNotFoundException$/,
+    /^ServiceQuotaExceededException$/,
+]
+
+/**
+ * Sometimes there are AWS specific errors that we want to explicitly
+ * show to the user, these are 'prioritized' errors.
+ *
+ * In certain cases we may unknowingly wrap these errors in a Toolkit error
+ * as the 'cause', in return masking the the underlying error from being
+ * reported to the user.
+ *
+ * Since we do not want developers to worry if they are allowed to wrap
+ * a specific AWS error in a Toolkit error, we will instead handle
+ * it in this function by extracting the 'prioritized' error if it is
+ * found.
+ *
+ * @returns new ToolkitError with prioritized error message, otherwise original error
+ */
+export function findPrioritizedAwsError(
+    error: unknown,
+    prioritizedErrors = prioritizedAwsErrors
+): AWSError | undefined {
+    const awsError = findAwsErrorInCausalChain(error)
+
+    if (awsError === undefined || !prioritizedErrors.some(regex => regex.test(awsError.code))) {
+        return undefined
+    }
+
+    return awsError
+}
+
+/**
+ * This will search through the causal chain of errors (if it exists)
+ * until it finds an {@link AWSError}.
+ *
+ * {@link ToolkitError} instances can wrap a 'cause', which is the underlying
+ * error that caused it.
+ *
+ * @returns AWSError if found, otherwise undefined
+ */
+export function findAwsErrorInCausalChain(error: unknown): AWSError | undefined {
+    let currentError = error
+
+    while (currentError !== undefined) {
+        if (isAwsError(currentError)) {
+            return currentError
+        }
+
+        // TODO: Base Error has 'cause' in ES2022. If we upgrade this can be made
+        // non-ToolkitError specific
+        if (currentError instanceof ToolkitError && currentError.cause !== undefined) {
+            currentError = currentError.cause
+            continue
+        }
+
+        return undefined
+    }
+
+    return undefined
+}
+
+export function isAwsError(error: unknown): error is AWSError {
     if (error === undefined) {
         return false
     }
 
-    return error instanceof Error && hasCode(error) && (error as { time?: unknown }).time instanceof Date
+    return error instanceof Error && hasCode(error) && hasTime(error)
 }
 
 function hasCode(error: Error): error is typeof error & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
+}
+
+function hasTime(error: Error): error is typeof error & { time: Date } {
+    return (error as { time?: unknown }).time instanceof Date
 }
 
 export function isUserCancelledError(error: unknown): boolean {
@@ -297,4 +388,109 @@ export function isUserCancelledError(error: unknown): boolean {
  */
 export function isClientFault(error: ServiceException): boolean {
     return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
+}
+
+export function getRequestId(error: unknown): string | undefined {
+    if (isAwsError(error)) {
+        return error.requestId
+    }
+
+    if (error instanceof ServiceException) {
+        return error.$metadata.requestId
+    }
+}
+
+export function isFileNotFoundError(err: unknown): boolean {
+    if (err instanceof vscode.FileSystemError) {
+        return err.code === vscode.FileSystemError.FileNotFound().code
+    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+        return err.code === 'ENOENT'
+    }
+
+    return false
+}
+
+export function isNoPermissionsError(err: unknown): boolean {
+    if (err instanceof vscode.FileSystemError) {
+        return (
+            err.code === vscode.FileSystemError.NoPermissions().code ||
+            // The code _should_ be `NoPermissions`, maybe this is a bug?
+            (err.code === 'Unknown' && err.message.includes('EACCES: permission denied'))
+        )
+    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+        return err.code === 'EACCES'
+    }
+
+    return false
+}
+
+const modeToString = (mode: number) =>
+    Array.from('rwxrwxrwx')
+        .map((c, i, a) => ((mode >> (a.length - (i + 1))) & 1 ? c : '-'))
+        .join('')
+
+function getEffectivePerms(uid: number, gid: number, stats: fs.Stats) {
+    const mode = stats.mode
+    const isOwner = uid === stats.uid
+    const isGroup = gid === stats.gid && !isOwner
+
+    // Many unix systems support multiple groups but we only know the primary
+    // The user can still have group permissions despite not having the same `gid`
+    // These situations are ambiguous, so the effective permissions are the
+    // intersection of the two bitfields
+    if (!isOwner && !isGroup) {
+        return {
+            isAmbiguous: true,
+            effective: mode & 0o007 & ((mode & 0o070) >> 3),
+        }
+    }
+
+    const ownerMask = isOwner ? 0o700 : 0
+    const groupMask = isGroup ? 0o070 : 0
+
+    return {
+        isAmbiguous: false,
+        effective: ((mode & groupMask) >> 3) | ((mode & ownerMask) >> 6),
+    }
+}
+
+// The wildcard (`*`) symbol is non-standard. It's used to represent "don't cares" and takes
+// on the actual flag once known.
+export type PermissionsTriplet = `${'r' | '-' | '*'}${'w' | '-' | '*'}${'x' | '-' | '*'}`
+export class PermissionsError extends ToolkitError {
+    public readonly actual: string // This is a resolved triplet, _not_ the full bits
+
+    public constructor(
+        public readonly uri: vscode.Uri,
+        public readonly stats: fs.Stats,
+        public readonly userInfo: os.UserInfo<string>,
+        public readonly expected: PermissionsTriplet,
+        source?: unknown
+    ) {
+        const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
+        const owner = stats.uid === userInfo.uid ? userInfo.username : stats.uid
+        const { effective, isAmbiguous } = getEffectivePerms(userInfo.uid, userInfo.gid, stats)
+        const actual = modeToString(effective).slice(-3)
+        const resolvedExpected = Array.from(expected)
+            .map((c, i) => (c === '*' ? actual[i] : c))
+            .join('')
+        const actualText = !isAmbiguous ? actual : `${mode.slice(-6, -3)} & ${mode.slice(-3)} (ambiguous)`
+
+        // Guard against surfacing confusing error messages. If the actual perms equal the resolved
+        // perms then odds are it wasn't really a permissions error. Some operating systems report EPERM
+        // in situations that aren't related to permissions at all.
+        if (actual === resolvedExpected && !isAmbiguous && source !== undefined) {
+            throw source
+        }
+
+        super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actualText}.`, {
+            code: 'InvalidPermissions',
+            details: {
+                isOwner: stats.uid === -1 ? 'unknown' : userInfo.uid == stats.uid,
+                mode: `${mode}${stats.uid === -1 ? '' : ` ${owner}`}${stats.gid === -1 ? '' : ` ${stats.gid}`}`,
+            },
+        })
+
+        this.actual = actual
+    }
 }

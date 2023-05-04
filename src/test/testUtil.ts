@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as util from 'util'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
@@ -13,7 +14,6 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
-import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 
 const testTempDirs: string[] = []
@@ -145,30 +145,62 @@ export function getMetrics<K extends MetricName>(
     return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
 
-/*
- * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
- * match the expected values.
+/**
+ * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
+ * match the expected values, in the (non-continguous) order specified by `expected`.
+ *
+ * @param name Metric name
+ * @param expected Metric(s) shape(s) which are compared _in order_ (non-continguous) to metrics matching `name`.
  */
-export function assertTelemetry<K extends MetricName>(name: K, expected: MetricShapes[K]): void | never {
-    const expectedCopy = { ...expected } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
-    const passive = expectedCopy?.passive
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[K] | MetricShapes[K][]
+): void | never
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[MetricName] | MetricShapes[MetricName][]
+): void | never
+export function assertTelemetry<K extends MetricName>(
+    name: K,
+    expected: MetricShapes[K] | MetricShapes[K][]
+): void | never {
+    const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name, excludeKeys: ['awsAccount', 'duration'] }
-    delete expectedCopy['passive']
+    let metadata = globals.telemetry.logger.query(query)
+    assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
 
-    Object.keys(expectedCopy).forEach(
-        k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
-    )
+    for (let i = 0; i < expectedList.length; i++) {
+        const metric = expectedList[i]
+        const expectedCopy = { ...metric } as { -readonly [P in keyof MetricShapes[K]]: MetricShapes[K][P] }
+        const passive = expectedCopy?.passive
+        delete expectedCopy['passive']
 
-    // Telemetry client should add awsRegion to all metrics.
-    ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
+        Object.keys(expectedCopy).forEach(
+            k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+        )
 
-    const metadata = globals.telemetry.logger.query(query)
-    assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    assert.deepStrictEqual(metadata[0], expectedCopy)
+        // Telemetry client adds awsRegion to all metrics.
+        ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
 
-    if (passive !== undefined) {
-        const metric = globals.telemetry.logger.queryFull(query)
-        assert.strictEqual(metric[0].Passive, passive)
+        if (expectedList.length == 1) {
+            assert.deepStrictEqual(metadata[0], expectedCopy)
+        } else {
+            const found = metadata.findIndex(val => util.isDeepStrictEqual(val, expectedCopy))
+            assert.ok(
+                found >= 0,
+                `telemetry item ${i + 1} (of ${
+                    expectedList.length
+                }) not found (in the expected order) for metric name: "${name}" `
+            )
+            // Remove all items up to the found item, to ensure we are checking the expected _order_.
+            metadata = metadata.splice(found, metadata.length - 1)
+        }
+
+        // Check this explicitly because we deleted it above.
+        if (passive !== undefined) {
+            const metric = globals.telemetry.logger.queryFull(query)
+            assert.strictEqual(metric[0].Passive, passive)
+        }
     }
 }
 
@@ -216,17 +248,9 @@ export async function assertTextEditorContains(contents: string): Promise<void |
  * editors were closed after waiting.
  */
 export async function closeAllEditors(): Promise<void> {
-    const hasCloseAll = (await vscode.commands.getCommands()).includes('openEditors.closeAll')
     // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-    // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
-    const closeAllCmd = hasCloseAll ? 'openEditors.closeAll' : 'workbench.action.closeAllEditors'
-    if (hasCloseAll) {
-        if (isMinimumVersion() && !isReleaseVersion()) {
-            throw Error(
-                '"openEditors.closeAll" is available in min version, remove use of "workbench.action.closeAllEditors"!'
-            )
-        }
-    }
+    // Note: `workbench.action.closeAllEditors` is unreliable.
+    const closeAllCmd = 'openEditors.closeAll'
 
     // Output channels are named with the prefix 'extension-output'
     // Maybe we can close these with a command?
@@ -278,6 +302,7 @@ export interface EventCapturer<T = unknown> extends vscode.Disposable {
  */
 export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let disposed = false
+    let idx = 0
     const emits: T[] = []
     const listeners: vscode.Disposable[] = []
     listeners.push(event(data => emits.push(data)))
@@ -292,20 +317,29 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
                 throw new Error('Capturer has been disposed')
             }
 
-            return new Promise<T>((resolve, reject) => {
-                const stop = () => reject(new Error('Timed out waiting for event'))
-                const disposable = event(data => resolve(data))
+            if (idx < emits.length) {
+                return Promise.resolve(emits[idx++])
+            }
 
-                if (timeout !== undefined) {
-                    setTimeout(stop, timeout)
-                }
-
-                listeners.push({ dispose: () => (disposable.dispose(), stop()) })
-            })
+            return captureEventOnce(event, timeout)
         },
         dispose: () => {
             disposed = true
             vscode.Disposable.from(...listeners).dispose()
         },
     }
+}
+
+/**
+ * Captures the first value emitted by an event, optionally with a timeout
+ */
+export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const stop = () => reject(new Error('Timed out waiting for event'))
+        event(data => resolve(data))
+
+        if (timeout !== undefined) {
+            setTimeout(stop, timeout)
+        }
+    })
 }

@@ -11,15 +11,13 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { Result } from '../../shared/telemetry/telemetry'
-import { Window } from '../../shared/vscode/window'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export async function saveCurrentLogStreamContent(
     uri: vscode.Uri | undefined,
-    registry: LogStreamRegistry,
-    window = Window.vscode()
+    registry: LogStreamRegistry
 ): Promise<void> {
     let result: Result = 'Succeeded'
 
@@ -39,7 +37,7 @@ export async function saveCurrentLogStreamContent(
         const uriComponents = parseCloudWatchLogsUri(uri)
 
         const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
-        const selectedUri = await window.showSaveDialog({
+        const selectedUri = await vscode.window.showSaveDialog({
             defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
             filters: {
                 [localizedLogFile]: ['log'],

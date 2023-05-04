@@ -25,7 +25,7 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
-const CONTEXT_BASE = 'awsIotCertificateNode'
+const contextBase = 'awsIotCertificateNode'
 /**
  * Represents an IoT Certificate that may have either a Thing Node or the
  * Certificate Folder Node as a parent.
@@ -54,14 +54,14 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         )
         this.iconPath = getIcon('aws-iot-certificate')
         this.description = `\t[${this.certificate.activeStatus}]`
-        this.contextValue = `${CONTEXT_BASE}.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.${this.certificate.activeStatus}`
     }
 
     public update(): void {
         return undefined
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getNoChildrenPlaceholderNode: async () =>
@@ -128,14 +128,14 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
 
 export class IotThingCertNode extends IotCertificateNode {
     public constructor(
-        public readonly certificate: IotCertificate,
-        public readonly parent: IotThingNode,
-        public readonly iot: IotClient,
-        public readonly things?: string[],
-        protected readonly workspace = Workspace.vscode()
+        public override readonly certificate: IotCertificate,
+        public override readonly parent: IotThingNode,
+        public override readonly iot: IotClient,
+        public override readonly things?: string[],
+        protected override readonly workspace = Workspace.vscode()
     ) {
         super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Things.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.Things.${this.certificate.activeStatus}`
     }
 }
 
@@ -144,13 +144,13 @@ export class IotThingCertNode extends IotCertificateNode {
  */
 export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadMoreNode {
     public constructor(
-        public readonly certificate: IotCertificate,
-        public readonly parent: IotCertsFolderNode,
-        public readonly iot: IotClient,
-        public readonly things?: string[],
-        protected readonly workspace = Workspace.vscode()
+        public override readonly certificate: IotCertificate,
+        public override readonly parent: IotCertsFolderNode,
+        public override readonly iot: IotClient,
+        public override readonly things?: string[],
+        protected override readonly workspace = Workspace.vscode()
     ) {
         super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
+        this.contextValue = `${contextBase}.Policies.${this.certificate.activeStatus}`
     }
 }

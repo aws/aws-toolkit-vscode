@@ -214,8 +214,8 @@ async function installVsix(
     })
     const { hostname, vscPath, sshPath, SessionProcess } = connection
 
-    const EXT_ID = VSCODE_EXTENSION_ID.awstoolkit
-    const EXT_PATH = `/home/mde-user/.vscode-server/extensions`
+    const extId = VSCODE_EXTENSION_ID.awstoolkit
+    const extPath = `/home/mde-user/.vscode-server/extensions`
     const userWithHost = `mde-user@${hostname}`
 
     if (path.extname(resp) !== '.vsix') {
@@ -223,7 +223,7 @@ async function installVsix(
 
         const packageData = await fs.readFile(path.join(resp, 'package.json'), 'utf-8')
         const targetManfiest: typeof manifest = JSON.parse(packageData)
-        const destName = `${EXT_PATH}/${EXT_ID}-${targetManfiest.version}`
+        const destName = `${extPath}/${extId}-${targetManfiest.version}`
         const source = `${resp}${path.sep}`
 
         // Using `.vscodeignore` would be nice here but `rsync` doesn't understand glob patterns
@@ -248,14 +248,14 @@ async function installVsix(
             .reverse()
             .slice(0, 2)
             .map(s => s.replace('.vsix', ''))
-        const destName = [EXT_ID, ...suffixParts.reverse()].join('-')
+        const destName = [extId, ...suffixParts.reverse()].join('-')
 
         const installCmd = [
-            `rm ${EXT_PATH}/.obsolete || true`,
-            `find ${EXT_PATH} -type d -name '${EXT_ID}*' -exec rm -rf {} +`,
-            `unzip ${remoteVsix} "extension/*" "extension.vsixmanifest" -d ${EXT_PATH}`,
-            `mv ${EXT_PATH}/extension ${EXT_PATH}/${destName}`,
-            `mv ${EXT_PATH}/extension.vsixmanifest ${EXT_PATH}/${destName}/.vsixmanifest`,
+            `rm ${extPath}/.obsolete || true`,
+            `find ${extPath} -type d -name '${extId}*' -exec rm -rf {} +`,
+            `unzip ${remoteVsix} "extension/*" "extension.vsixmanifest" -d ${extPath}`,
+            `mv ${extPath}/extension ${extPath}/${destName}`,
+            `mv ${extPath}/extension.vsixmanifest ${extPath}/${destName}/.vsixmanifest`,
         ].join(' && ')
 
         progress.report({ message: 'Installing VSIX...' })

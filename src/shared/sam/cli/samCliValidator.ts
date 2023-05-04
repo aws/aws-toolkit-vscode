@@ -8,30 +8,27 @@ import * as semver from 'semver'
 import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
+import { ToolkitError } from '../../errors'
 
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT = '1.13.0'
-export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '2.0.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT = '1.18.1'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT = '1.33.0'
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT = '1.4.0'
+export const minSamCliVersion = '0.47.0'
+export const minSamCliVersionForImageSupport = '1.13.0'
+export const maxSamCliVersionExclusive = '2.0.0'
+export const minSamCliVersionForGoSupport = '1.18.1'
+export const minSamCliVersionForArmSupport = '1.33.0'
+export const minSamCliVersionForDotnet31Support = '1.4.0'
 
 // Errors
-export class InvalidSamCliError extends Error {
-    public constructor(message?: string | undefined) {
-        super(message)
-    }
-}
+export class InvalidSamCliError extends ToolkitError {}
 
 export class SamCliNotFoundError extends InvalidSamCliError {
     public constructor() {
-        super('SAM CLI was not found')
+        super('SAM CLI was not found', { code: 'MissingSamCli' })
     }
 }
 
 export class InvalidSamCliVersionError extends InvalidSamCliError {
     public constructor(public versionValidation: SamCliVersionValidatorResult) {
-        super('SAM CLI has an invalid version')
+        super('SAM CLI has an invalid version', { code: 'InvalidSamCliVersion' })
     }
 }
 
@@ -120,11 +117,11 @@ export class DefaultSamCliValidator implements SamCliValidator {
             return SamCliVersionValidation.VersionNotParseable
         }
 
-        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+        if (semver.lt(version, minSamCliVersion)) {
             return SamCliVersionValidation.VersionTooLow
         }
 
-        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+        if (semver.gte(version, maxSamCliVersionExclusive)) {
             return SamCliVersionValidation.VersionTooHigh
         }
 

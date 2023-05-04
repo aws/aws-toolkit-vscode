@@ -11,16 +11,20 @@ import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
+import { GlobalStorage } from './globalStorage'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
 import { writeFile } from 'fs-extra'
 import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
+import { telemetry } from './telemetry/telemetry'
 
-const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
-const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
-const SCHEMA_PREFIX = `${AWS_SCHEME}://`
+// Note: this file is currently 12+ MB. When requesting it, specify compression/gzip.
+export const samAndCfnSchemaUrl =
+    'https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json'
+const devfileManifestUrl = 'https://api.github.com/repos/devfile/api/releases/latest'
+const schemaPrefix = `${AWS_SCHEME}://`
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -42,7 +46,7 @@ export interface SchemaHandler {
  * Processes the update of schema mappings for files in the workspace
  */
 export class SchemaService {
-    private static readonly DEFAULT_UPDATE_PERIOD_MILLIS = 1000
+    private static readonly defaultUpdatePeriodMillis = 1000
 
     private updatePeriod: number
     private timer?: NodeJS.Timer
@@ -51,16 +55,13 @@ export class SchemaService {
     private schemas?: Schemas
     private handlers: Map<SchemaType, SchemaHandler>
 
-    public constructor(
-        private readonly extensionContext: vscode.ExtensionContext,
-        opts?: {
-            /** Assigned in start(). */
-            schemas?: Schemas
-            updatePeriod?: number
-            handlers?: Map<SchemaType, SchemaHandler>
-        }
-    ) {
-        this.updatePeriod = opts?.updatePeriod ?? SchemaService.DEFAULT_UPDATE_PERIOD_MILLIS
+    public constructor(opts?: {
+        /** Assigned in start(). */
+        schemas?: Schemas
+        updatePeriod?: number
+        handlers?: Map<SchemaType, SchemaHandler>
+    }) {
+        this.updatePeriod = opts?.updatePeriod ?? SchemaService.defaultUpdatePeriodMillis
         this.schemas = opts?.schemas
         this.handlers =
             opts?.handlers ??
@@ -80,7 +81,7 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        getDefaultSchemas().then(schemas => (this.schemas = schemas))
         await this.startTimer()
     }
 
@@ -137,44 +138,43 @@ export class SchemaService {
  * Checks manifest and downloads new schemas if the manifest version has been bumped.
  * Uses local, predownloaded version if up-to-date or network call fails
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
- * @param extensionContext VSCode extension context
  */
-export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
-    const cfnSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'cloudformation.schema.json')
-    const samSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'sam.schema.json')
-    const devfileSchemaUri = vscode.Uri.joinPath(extensionContext.globalStorageUri, 'devfile.schema.json')
+export async function getDefaultSchemas(): Promise<Schemas | undefined> {
+    const devfileSchemaUri = GlobalStorage.devfileSchemaUri()
+    const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
-    const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
-    const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
+    // Sam schema is a superset of Cfn schema, so we can use it for both
+    const samAndCfnSchemaDestinationUri = GlobalStorage.samAndCfnSchemaDestinationUri()
+    const samAndCfnCacheKey = 'samAndCfnSchemaVersion'
 
     const schemas: Schemas = {}
 
     try {
-        await updateSchemaFromRemote({
-            destination: cfnSchemaUri,
-            version: goformationSchemaVersion,
-            url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
-            cacheKey: 'cfnSchemaVersion',
-            extensionContext,
-            title: SCHEMA_PREFIX + 'cloudformation.schema.json',
+        await updateSchemaFromRemoteETag({
+            destination: samAndCfnSchemaDestinationUri,
+            eTag: undefined,
+            url: samAndCfnSchemaUrl,
+            cacheKey: samAndCfnCacheKey,
+            extensionContext: globals.context,
+            title: schemaPrefix + 'cloudformation.schema.json',
         })
-        schemas['cfn'] = cfnSchemaUri
+        schemas['cfn'] = samAndCfnSchemaDestinationUri
     } catch (e) {
-        getLogger().verbose('Could not download cfn schema: %s', (e as Error).message)
+        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
     }
 
     try {
-        await updateSchemaFromRemote({
-            destination: samSchemaUri,
-            version: goformationSchemaVersion,
-            url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
-            cacheKey: 'samSchemaVersion',
-            extensionContext,
-            title: SCHEMA_PREFIX + 'sam.schema.json',
+        await updateSchemaFromRemoteETag({
+            destination: samAndCfnSchemaDestinationUri,
+            eTag: undefined,
+            url: samAndCfnSchemaUrl,
+            cacheKey: samAndCfnCacheKey,
+            extensionContext: globals.context,
+            title: schemaPrefix + 'sam.schema.json',
         })
-        schemas['sam'] = samSchemaUri
+        schemas['sam'] = samAndCfnSchemaDestinationUri
     } catch (e) {
-        getLogger().verbose('Could not download sam schema: %s', (e as Error).message)
+        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
     }
 
     try {
@@ -183,8 +183,8 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             version: devfileSchemaVersion,
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
-            extensionContext,
-            title: SCHEMA_PREFIX + 'devfile.schema.json',
+            extensionContext: globals.context,
+            title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
     } catch (e) {
@@ -231,13 +231,7 @@ export async function updateSchemaFromRemote(params: {
             throw new Error(`failed to resolve schema: ${params.destination}`)
         }
 
-        const parsedFile = { ...JSON.parse(content), title: params.title }
-        const dir = vscode.Uri.joinPath(params.destination, '..')
-        await SystemUtilities.createDirectory(dir)
-        await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
-        await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
-            getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
-        })
+        await doCacheContent(content, params)
     } catch (err) {
         if (cachedContent) {
             getLogger().warn(
@@ -249,6 +243,90 @@ export async function updateSchemaFromRemote(params: {
             throw err
         }
     }
+}
+
+/**
+ * Fetches url content and caches locally. Uses E-Tag to determine if cached
+ * content can be used.
+ * @param params.destination Path to local file
+ * @param params.eTag E-Tag to send with fetch request. If this matches the url's it means we can use our cache.
+ * @param params.url Url to fetch from
+ * @param params.cacheKey Cache key to check version against
+ * @param params.extensionContext VSCode extension context
+ */
+export async function updateSchemaFromRemoteETag(params: {
+    destination: vscode.Uri
+    eTag?: string
+    url: string
+    cacheKey: string
+    extensionContext: vscode.ExtensionContext
+    title: string
+}): Promise<void> {
+    const cachedETag = params.extensionContext.globalState.get<string>(params.cacheKey)
+
+    // Check that the cached file actually can be fetched. Else we might
+    // never update the cache.
+    const fileFetcher = new FileResourceFetcher(params.destination.fsPath)
+    const cachedContent = await fileFetcher.get()
+
+    // Determine if existing cached content is sufficient
+    const needsUpdate = cachedETag === undefined || cachedETag !== params.eTag
+    const hasCachedContent = cachedContent !== undefined
+    if (hasCachedContent && !needsUpdate) {
+        return
+    }
+
+    try {
+        // Only use our cached E-Tag if we have it + cached content
+        const eTagToRequest = !!cachedETag && cachedContent !== undefined ? cachedETag : params.eTag
+
+        const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
+        const response = await httpFetcher.getNewETagContent(eTagToRequest)
+        const { content, eTag: latestETag } = response
+        if (content === undefined) {
+            // Our cached content is the latest
+            telemetry.toolkit_getExternalResource.emit({
+                url: params.url,
+                passive: true,
+                result: 'Cancelled',
+                reason: 'Cache hit',
+            })
+            return
+        }
+        telemetry.toolkit_getExternalResource.emit({ url: params.url, passive: true, result: 'Succeeded' })
+        await doCacheContent(content, { ...params, version: latestETag })
+    } catch (err) {
+        if (cachedContent) {
+            getLogger().warn(`schemas: Using cached schema, failed to fetch latest "${params.title}": %s`, err)
+        } else {
+            throw err
+        }
+    }
+}
+
+/**
+ * Cache content to our extension context
+ * @param content
+ * @param params.version An identifier for a version of the resource. Can include an E-Tag value
+ */
+async function doCacheContent(
+    content: string,
+    params: {
+        destination: vscode.Uri
+        version?: string
+        url: string
+        cacheKey: string
+        extensionContext: vscode.ExtensionContext
+        title: string
+    }
+): Promise<void> {
+    const parsedFile = { ...JSON.parse(content), title: params.title }
+    const dir = vscode.Uri.joinPath(params.destination, '..')
+    await SystemUtilities.createDirectory(dir)
+    await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+    await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
+        getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
+    })
 }
 
 /**
