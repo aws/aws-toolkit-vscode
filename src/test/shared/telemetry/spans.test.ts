@@ -8,6 +8,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
+import { selectFrom } from '../../../shared/utilities/tsUtils'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -51,7 +52,7 @@ describe('TelemetrySpan', function () {
         new TelemetrySpan('vscode_executeCommand').emit()
 
         assert.deepStrictEqual(getMetrics('vscode_executeCommand')[0], {
-            missingFields: String(['command', 'debounceCount']),
+            missingFields: String(['command']),
         })
     })
 
@@ -76,13 +77,40 @@ describe('TelemetryTracer', function () {
     })
 
     describe('record', function () {
-        it('writes data to all spans in the current context', function () {
-            tracer.apigateway_copyUrl.record({})
-            tracer.run(metricName, () => tracer.record({ source: 'bar' }))
-            tracer.spans[0]?.emit()
+        it('writes to all existing spans in the current context', function () {
+            tracer.apigateway_copyUrl.run(() => {
+                tracer.run(metricName, () => tracer.record({ source: 'bar' }))
+                tracer.spans[0]?.emit()
+            })
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
             assertTelemetry('apigateway_copyUrl', { source: 'bar' } as MetricShapes['apigateway_copyUrl'])
+        })
+
+        it('writes to all new spans in the current context', function () {
+            tracer.apigateway_copyUrl.run(() => {
+                tracer.record({ source: 'bar' })
+                tracer.run(metricName, () => {})
+            })
+
+            assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
+            assertTelemetry('apigateway_copyUrl', { result: 'Succeeded', source: 'bar' } as any)
+        })
+
+        it('does not propagate state outside of the execution', function () {
+            tracer.apigateway_copyUrl.run(() => tracer.record({ source: 'bar' }))
+            tracer.run(metricName, () => {})
+
+            assertTelemetry(metricName, { result: 'Succeeded' })
+        })
+
+        it('does not clobber subsequent writes to individual spans', function () {
+            tracer.run(metricName, span => {
+                tracer.record({ source: 'bar' })
+                span.record({ source: 'foo' })
+            })
+
+            assertTelemetry(metricName, { result: 'Succeeded', source: 'foo' })
         })
     })
 
@@ -111,12 +139,6 @@ describe('TelemetryTracer', function () {
     })
 
     describe('metrics', function () {
-        it('adds the span to the current context', function () {
-            tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
-
-            assert.strictEqual(tracer.spans[0].name, 'vscode_executeCommand')
-        })
-
         it('does not change the context when emitting', function () {
             tracer.vscode_executeCommand.emit({ command: 'foo', debounceCount: 1 })
 
@@ -133,26 +155,35 @@ describe('TelemetryTracer', function () {
             assertTelemetry(metricName, { result: 'Succeeded' })
             assert.strictEqual(tracer.activeSpan, undefined)
         })
+    })
 
-        it('re-uses existing spans if available', function () {
-            tracer.vscode_executeCommand.record({ command: 'foo' })
-            tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
+    describe('increment', function () {
+        it('starts at 0 for uninitialized fields', function () {
+            tracer.vscode_executeCommand.run(span => {
+                span.record({ command: 'foo' })
+                span.increment({ debounceCount: 1 })
+                span.increment({ debounceCount: 1 })
+            })
 
             assertTelemetry('vscode_executeCommand', {
                 result: 'Succeeded',
                 command: 'foo',
-                debounceCount: 100,
+                debounceCount: 2,
             })
         })
 
-        it('does not persist changes made to the span when switching contexts', function () {
-            tracer.vscode_executeCommand.record({ command: 'foo' })
-            tracer.vscode_executeCommand.run(span => span.record({ debounceCount: 100 }))
-            tracer.spans[0]?.emit()
+        it('applies to spans independently from one another', function () {
+            tracer.vscode_executeCommand.run(span => {
+                span.record({ debounceCount: 1 })
+                span.increment({ debounceCount: 1 })
+                tracer.vscode_executeCommand.run(span => {
+                    span.increment({ debounceCount: 10 })
+                })
+            })
 
-            const metrics = getMetrics('vscode_executeCommand', 'duration', 'result', 'missingFields')
-            assert.deepStrictEqual(metrics[1], { command: 'foo' })
-            assert.deepStrictEqual(metrics[0], { command: 'foo', debounceCount: '100' })
+            const metrics = getMetrics('vscode_executeCommand').map(m => selectFrom(m, 'debounceCount'))
+            assert.deepStrictEqual(metrics[0], { debounceCount: '10' })
+            assert.deepStrictEqual(metrics[1], { debounceCount: '2' })
         })
     })
 
@@ -202,32 +233,23 @@ describe('TelemetryTracer', function () {
                 })
             })
 
-            it('adds spans during a nested execution', function () {
+            it('adds spans during a nested execution, closing them when after', function () {
                 tracer.run(metricName, () => {
-                    tracer.run(nestedName, () => {
-                        assert.strictEqual(tracer.spans.length, 2)
-                        tracer.apigateway_copyUrl.record({})
-                        assert.strictEqual(tracer.spans.length, 3)
-                    })
-
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
                     assert.strictEqual(tracer.spans.length, 1)
-                })
-            })
-
-            it('closes spans after exiting nested executions', function () {
-                tracer.run(metricName, () => {
-                    tracer.apigateway_copyUrl.record({})
-
-                    tracer.run(nestedName, () => {
-                        assert.strictEqual(tracer.spans.length, 3)
-                        tracer.apigateway_copyUrl.record({})
-                        assert.strictEqual(tracer.spans.length, 3)
-                    })
-
-                    assert.strictEqual(tracer.spans.length, 2)
                 })
 
                 assert.strictEqual(tracer.spans.length, 0)
+            })
+
+            it('supports nesting the same event name', function () {
+                tracer.run(metricName, () => {
+                    tracer.run(metricName, () => {
+                        assert.strictEqual(tracer.spans.length, 2)
+                        assert.ok(tracer.spans.every(s => s.name === metricName))
+                    })
+                })
             })
         })
     })

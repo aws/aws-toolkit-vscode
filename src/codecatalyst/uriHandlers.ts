@@ -7,14 +7,14 @@ import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { CodeCatalystCommands } from './commands'
-import { recordSource } from './utils'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export function register(
     handler: UriHandler,
     commands: Pick<typeof CodeCatalystCommands.declared, 'cloneRepo' | 'openDevEnv'>
 ) {
     async function cloneHandler(params: ReturnType<typeof parseCloneParams>) {
-        recordSource('UriHandler')
+        telemetry.record({ source: 'UriHandler' })
 
         if (params.url.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
             await commands.cloneRepo.execute(params.url)
@@ -24,7 +24,7 @@ export function register(
     }
 
     async function connectHandler(params: ReturnType<typeof parseConnectParams | typeof parseConnectParamsOld>) {
-        recordSource('UriHandler')
+        telemetry.record({ source: 'UriHandler' })
 
         await commands.openDevEnv.execute({
             id: params.devEnvironmentId,

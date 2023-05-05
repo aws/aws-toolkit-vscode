@@ -16,6 +16,7 @@ import {
     TelemetryBase,
 } from './telemetry.gen'
 import { getTelemetryReason, getTelemetryResult } from '../errors'
+import { entries, NumericKeys } from '../utilities/tsUtils'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -83,9 +84,9 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
     return missingFields.length !== 0 ? Object.assign({ missingFields }, state) : state
 }
 
-export class TelemetrySpan {
+export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime: Date | undefined = undefined
-    private readonly state: Partial<MetricBase> = {}
+    private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
         unit: 'None',
         passive: true,
@@ -104,12 +105,12 @@ export class TelemetrySpan {
         return this.#startTime
     }
 
-    public record(data: Partial<MetricBase>): this {
+    public record(data: Partial<T>): this {
         Object.assign(this.state, data)
         return this
     }
 
-    public emit(data?: MetricBase): void {
+    public emit(data?: Partial<T>): void {
         const state = getValidatedState({ ...this.state, ...data }, this.definition)
         const metadata = Object.entries(state)
             .filter(([_, v]) => v !== '') // XXX: the telemetry service currently rejects empty strings :/
@@ -146,11 +147,18 @@ export class TelemetrySpan {
             duration,
             result: getTelemetryResult(err),
             reason: getTelemetryReason(err),
-        })
+        } as Partial<T>)
 
         this.#startTime = undefined
     }
 
+    public increment(data: { [P in NumericKeys<T>]+?: number }): void {
+        for (const [k, v] of entries(data)) {
+            ;(this.state as Record<typeof k, number>)[k] = ((this.state[k] as number) ?? 0) + v!
+        }
+    }
+
+    // TODO: implement copy-on-write abstraction if this method causes perf issues
     /**
      * Creates a copy of the span with an uninitialized start time.
      */
@@ -159,9 +167,11 @@ export class TelemetrySpan {
     }
 }
 
+type Attributes = Partial<MetricShapes[MetricName]>
+
 interface TelemetryContext {
     readonly spans: TelemetrySpan[]
-    readonly activeSpan?: TelemetrySpan
+    readonly attributes: Attributes
 }
 
 // This class is called 'Telemetry' but really it can be used for any kind of tracing
@@ -183,33 +193,39 @@ export class TelemetryTracer extends TelemetryBase {
      * on existing spans has no effect on the active span.
      */
     public get activeSpan(): TelemetrySpan | undefined {
-        return this.#context.getStore()?.activeSpan
+        return this.#context.getStore()?.spans[0]
     }
 
     /**
-     * Records information on all _current_ spans in the current execution context.
+     * State that is applied to all new spans within the current or subsequent executions.
+     */
+    public get attributes(): Readonly<Attributes> {
+        return this.#context.getStore()?.attributes ?? {}
+    }
+
+    /**
+     * Records information on all current and future spans in the execution context.
      *
      * This is merged in with the current state present in each span, **overwriting**
-     * any existing values for a given key.
+     * any existing values for a given key. New spans are initialized with {@link attributes}
+     * but that may be overriden on subsequent writes.
      */
-    public record(data: Partial<MetricShapes[MetricName]>): void {
+    public record(data: Attributes): void {
         for (const span of this.spans) {
             span.record(data)
         }
+
+        Object.assign(this.attributes, data)
     }
 
     /**
      * Executes the provided callback function with a named span.
      *
-     * Spans that already exist in the current context are re-used and brought
-     * forward, becoming the active span. A new span is created if none exist.
-     *
-     * On completion of the callback, the span is emitted and the context reverts
-     * to how it was prior to calling `run`. Modifications made to pre-existing
-     * spans within the execution are not preserved.
+     * All changes made to {@link attributes} (via {@link record}) during the execution are
+     * reverted after the execution completes.
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
-        const span = this.getClonedSpan(name).start()
+        const span = this.createSpan(name).start()
         const frame = this.switchContext(span)
 
         try {
@@ -247,41 +263,29 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     protected getMetric(name: string): Metric {
-        const enterWithSpan = () => {
-            const span = this.getSpan(name)
-            if (!this.spans.includes(span)) {
-                this.#context.enterWith({ ...this.#context.getStore(), spans: [span, ...this.spans] })
-            }
-
-            return span
-        }
+        const getSpan = () => this.getSpan(name)
 
         return {
             name,
-            emit: data => this.getSpan(name).emit(data),
-            record: data => void enterWithSpan().record(data),
+            emit: data => getSpan().emit(data),
+            record: data => getSpan().record(data),
             run: fn => this.run(name as MetricName, fn),
+            increment: data => getSpan().increment(data),
         }
     }
 
     private getSpan(name: string): TelemetrySpan {
-        return this.spans.find(s => s.name === name) ?? new TelemetrySpan(name)
+        return this.spans.find(s => s.name === name) ?? this.createSpan(name)
     }
 
-    private getClonedSpan(name: string): TelemetrySpan {
-        return this.spans.find(s => s.name === name)?.clone() ?? new TelemetrySpan(name)
+    private createSpan(name: string): TelemetrySpan {
+        return new TelemetrySpan(name).record(this.attributes)
     }
 
     private switchContext(span: TelemetrySpan): TelemetryContext {
-        const spans = [...this.spans]
-        const previousSpanIndex = spans.findIndex(s => s.name === span.name)
-
-        if (previousSpanIndex !== -1) {
-            spans.splice(previousSpanIndex, 1, span)
-        } else {
-            spans.unshift(span)
+        return {
+            spans: [span, ...this.spans],
+            attributes: { ...this.attributes },
         }
-
-        return { spans, activeSpan: span }
     }
 }
