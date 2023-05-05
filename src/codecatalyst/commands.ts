@@ -143,7 +143,7 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
         const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
         const validatedConn = await validateConnection(conn, authProvider.auth)
         const client = await createClient(validatedConn).catch(async e => {
-            if (isOnboardingException(e)) {
+            if (isOnboardingException(e) && Auth.instance.getConnectionState(conn) === 'valid') {
                 await authProvider.promptOnboarding()
             }
 

@@ -21,6 +21,7 @@ import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
 import { ToolkitError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -37,7 +38,7 @@ export class CodeCatalystAuthStorage {
     }
 }
 
-export const onboardingUrl = 'https://codecatalyst.aws/onboarding/view'
+export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
 export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
@@ -107,10 +108,15 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async promptOnboarding(): Promise<void> {
-        await vscode.window.showInformationMessage(
-            `Using CodeCatalyst requires onboarding with a Space. [Sign up with CodeCatalyst](${onboardingUrl}) to get started.`
-        )
+        const message = `Using CodeCatalyst requires onboarding with a Space. Sign into CodeCatalyst to get started.`
+        const openBrowser = 'Open Browser'
+        const resp = await vscode.window.showInformationMessage(message, { modal: true }, openBrowser)
+        if (resp === openBrowser) {
+            await openUrl(onboardingUrl)
+        }
 
+        // Mark the current execution as cancelled regardless of the user response. We could poll here instead, waiting
+        // for the user to onboard. But that might take a while.
         throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
     }
 
