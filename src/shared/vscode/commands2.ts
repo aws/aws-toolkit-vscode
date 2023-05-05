@@ -9,7 +9,7 @@ import { isNameMangled } from './env'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, MetricName } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -392,7 +392,7 @@ function getInstrumenter(id: string, threshold: number, telemetryName?: MetricNa
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
         span.run(span => {
             telemetry.record({ command: id })
-            span.record({ debounceCount })
+            ;(span as Metric<VscodeExecuteCommand>).record({ debounceCount })
 
             try {
                 const result = fn(...args)
