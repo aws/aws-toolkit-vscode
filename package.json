@@ -3431,6 +3431,7 @@
         }
     },
     "scripts": {
+        "prepare": "ts-node ./scripts/build/prepare.ts",
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",

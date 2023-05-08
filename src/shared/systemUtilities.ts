@@ -332,11 +332,4 @@ export class SystemUtilities {
             getLogger().warn('findBashPath: failed: %s', proc)
         }
     }
-
-    /**
-     * Returns true if the current build is running on CI (build server).
-     */
-    public static isCI(): boolean {
-        return undefined !== process.env['CODEBUILD_BUILD_ID']
-    }
 }
