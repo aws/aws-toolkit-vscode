@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
+import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import {
     Auth,
@@ -19,7 +19,7 @@ import {
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
@@ -108,7 +108,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async promptOnboarding(): Promise<void> {
-        const message = `Using CodeCatalyst requires onboarding with a Space. Sign into CodeCatalyst to get started.`
+        const message = `Using CodeCatalyst requires onboarding with a Space. Sign up with CodeCatalyst to get started.`
         const openBrowser = 'Open Browser'
         const resp = await vscode.window.showInformationMessage(message, { modal: true }, openBrowser)
         if (resp === openBrowser) {
@@ -188,6 +188,41 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
+    }
+
+    public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
+        const mementoKey = 'codecatalyst.connections'
+        const getState = () => this.memento.get(mementoKey, {} as Record<string, { onboarded: boolean }>)
+        const updateState = (state: { onboarded: boolean }) =>
+            this.memento.update(mementoKey, {
+                ...getState(),
+                [conn.id]: state,
+            })
+
+        const state = getState()[conn.id]
+        if (state !== undefined && !recheck) {
+            return state.onboarded
+        }
+
+        try {
+            await createClient(conn)
+            await updateState({ onboarded: true })
+
+            return true
+        } catch (e) {
+            if (isOnboardingException(e) && this.auth.getConnectionState(conn) === 'valid') {
+                await updateState({ onboarded: false })
+
+                return false
+            }
+
+            throw e
+        }
+
+        function isOnboardingException(e: unknown) {
+            // `GetUserDetails` returns `AccessDeniedException` if the user has not onboarded
+            return isAwsError(e) && e.code === 'AccessDeniedException' && e.message.includes('GetUserDetails')
+        }
     }
 
     private static instance: CodeCatalystAuthenticationProvider
