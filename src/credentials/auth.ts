@@ -872,7 +872,6 @@ export class Auth implements AuthService, ConnectionManager {
                 vscode.window.showInformationMessage(message, login, localizedText.no),
                 timeout.promisify(),
             ])
-
             if (resp !== login) {
                 throw new ToolkitError('User cancelled login', {
                     cancelled: true,

@@ -51,6 +51,8 @@ export const lineBreak = '\n'
 
 export const lineBreakWin = '\r\n'
 
+export const supplementalContextTimeoutInMs = 50
+
 /**
  * Ux of recommendations
  */
@@ -97,7 +99,7 @@ export const supportedLanguages = [
     'sql',
 ] as const
 
-export type SupportedLanguage = typeof supportedLanguages[number]
+export type SupportedLanguage = (typeof supportedLanguages)[number]
 
 /**
  * Prompt
@@ -282,3 +284,5 @@ export const stopScanMessage =
 export const showScannedFilesMessage = 'Show Scanned Files'
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
+
+export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'

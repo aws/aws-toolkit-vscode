@@ -16,6 +16,7 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { stub } from '../../utilities/stubber'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import { FakeMemento } from '../../fakeExtensionContext'
+import * as supplementalContextUtil from '../../../codewhisperer/util/supplementalContext/supplementalContextUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -115,6 +116,13 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
+                isUtg: false,
+                isProcessTimeout: false,
+                contents: [],
+                contentsLength: 100,
+                latency: 0,
+            })
             sinon.stub(performance, 'now').returns(0.0)
             handler.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
@@ -133,6 +141,10 @@ describe('recommendationHandler', function () {
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererSupplementalContextIsUtg: false,
+                codewhispererSupplementalContextTimeout: false,
+                codewhispererSupplementalContextLatency: 0,
+                codewhispererSupplementalContextLength: 100,
             })
         })
 

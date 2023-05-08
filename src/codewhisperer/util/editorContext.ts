@@ -11,6 +11,11 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
+import {
+    CodeWhispererSupplementalContext,
+    fetchSupplementalContext,
+} from './supplementalContext/supplementalContextUtil'
+import { supplementalContextTimeoutInMs } from '../models/constants'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -66,62 +71,83 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export function buildListRecommendationRequest(
+export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
     allowCodeWithReference: boolean | undefined = undefined
-): codewhispererClient.ListRecommendationsRequest {
-    let fileContext: codewhispererClient.FileContext
-    if (editor !== undefined) {
-        fileContext = extractContextForCodeWhisperer(editor)
-    } else {
-        fileContext = {
-            filename: '',
-            programmingLanguage: {
-                languageName: '',
-            },
-            leftFileContent: '',
-            rightFileContent: '',
-        }
+): Promise<{
+    request: codewhispererClient.ListRecommendationsRequest
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
+}> {
+    const fileContext = extractContextForCodeWhisperer(editor)
+
+    const tokenSource = new vscode.CancellationTokenSource()
+    setTimeout(() => {
+        tokenSource.cancel()
+    }, supplementalContextTimeoutInMs)
+
+    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    const suppelmetalMetadata = {
+        isUtg: supplementalContexts.isUtg,
+        isProcessTimeout: supplementalContexts.isProcessTimeout,
+        contentsLength: supplementalContexts.contentsLength,
+        latency: supplementalContexts.latency,
     }
+
+    logSupplementalContext(supplementalContexts)
 
     if (allowCodeWithReference === undefined) {
         return {
-            fileContext: fileContext,
-            nextToken: nextToken,
+            request: {
+                fileContext: fileContext,
+                nextToken: nextToken,
+                supplementalContexts: supplementalContexts.contents,
+            },
+            supplementalMetadata: suppelmetalMetadata,
         }
     }
+
     return {
-        fileContext: fileContext,
-        nextToken: nextToken,
-        referenceTrackerConfiguration: {
-            recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+        request: {
+            fileContext: fileContext,
+            nextToken: nextToken,
+            referenceTrackerConfiguration: {
+                recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+            },
+            supplementalContexts: supplementalContexts.contents,
         },
+        supplementalMetadata: suppelmetalMetadata,
     }
 }
 
-export function buildGenerateRecommendationRequest(
-    editor: vscode.TextEditor
-): codewhispererClient.GenerateRecommendationsRequest {
-    let req: codewhispererClient.GenerateRecommendationsRequest = {
-        fileContext: {
-            filename: '',
-            programmingLanguage: {
-                languageName: '',
-            },
-            leftFileContent: '',
-            rightFileContent: '',
-        },
-        maxResults: CodeWhispererConstants.maxRecommendations,
+export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
+    request: codewhispererClient.GenerateRecommendationsRequest
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
+}> {
+    const fileContext = extractContextForCodeWhisperer(editor)
+
+    const tokenSource = new vscode.CancellationTokenSource()
+    setTimeout(() => {
+        tokenSource.cancel()
+    }, supplementalContextTimeoutInMs)
+    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    const supplemetalMetadata = {
+        isUtg: supplementalContexts.isUtg,
+        isProcessTimeout: supplementalContexts.isProcessTimeout,
+        contentsLength: supplementalContexts.contentsLength,
+        latency: supplementalContexts.latency,
     }
-    if (editor !== undefined) {
-        const fileContext = extractContextForCodeWhisperer(editor)
-        req = {
+
+    logSupplementalContext(supplementalContexts)
+
+    return {
+        request: {
             fileContext: fileContext,
             maxResults: CodeWhispererConstants.maxRecommendations,
-        }
+            supplementalContexts: supplementalContexts.contents,
+        },
+        supplementalMetadata: supplemetalMetadata,
     }
-    return req
 }
 
 export function validateRequest(
@@ -171,4 +197,21 @@ export function getLeftContext(editor: vscode.TextEditor, line: number): string 
     }
 
     return lineText
+}
+
+function logSupplementalContext(supplementalContext: CodeWhispererSupplementalContext) {
+    getLogger().verbose(`
+            isUtg: ${supplementalContext.isUtg},
+            isProcessTimeout: ${supplementalContext.isProcessTimeout},
+            contentsLength: ${supplementalContext.contentsLength},
+            latency: ${supplementalContext.latency},
+        `)
+
+    supplementalContext.contents.forEach((context, index) => {
+        getLogger().verbose(`
+                -----------------------------------------------
+                Chunk ${index}:${context.content}
+                -----------------------------------------------
+            `)
+    })
 }

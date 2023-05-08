@@ -31,6 +31,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
+import { CodeWhispererSupplementalContext } from '../util/supplementalContext/supplementalContextUtil'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -133,6 +134,10 @@ export class RecommendationHandler {
         pagination: boolean = true,
         page: number = 0
     ) {
+        if (!editor) {
+            return
+        }
+
         let recommendation: RecommendationsList = []
         let requestId = ''
         let sessionId = ''
@@ -144,17 +149,24 @@ export class RecommendationHandler {
         let nextToken = ''
         let errorCode = ''
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
             const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-            req = EditorContext.buildListRecommendationRequest(
+            const requestObj = await EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
                 accessToken ? undefined : config.isSuggestionsWithCodeReferencesEnabled
             )
+
+            req = requestObj.request
+            supplementalContextMetadata = requestObj.supplementalMetadata
         } else {
-            req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+            const requestObj = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+
+            req = requestObj.request
+            supplementalContextMetadata = requestObj.supplementalMetadata
         }
 
         try {
@@ -272,7 +284,11 @@ export class RecommendationHandler {
                     latency,
                     this.startPos.line,
                     languageContext.language,
-                    reason
+                    reason,
+                    supplementalContextMetadata.isUtg,
+                    supplementalContextMetadata.isProcessTimeout,
+                    supplementalContextMetadata.contentsLength,
+                    supplementalContextMetadata.latency
                 )
             }
             if (invocationResult === 'Succeeded') {

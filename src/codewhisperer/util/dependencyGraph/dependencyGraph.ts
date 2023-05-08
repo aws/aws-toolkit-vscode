@@ -180,6 +180,12 @@ export abstract class DependencyGraph {
         getLogger().verbose(`Scanning project for context truncation.`)
         return await asyncCallWithTimeout(this.generateTruncation(uri), 'Context truncation timeout.', seconds * 1000)
     }
+    // 3 new functions added below for Cross-file and UTG support
+    abstract getSourceDependencies(uri: vscode.Uri, content: string): Promise<string[]>
+
+    abstract getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]>
+    
+    abstract isTestFile(content: string): Promise<boolean>
 
     abstract generateTruncation(uri: vscode.Uri): Promise<Truncation>
 

@@ -50,6 +50,9 @@ export type GetCodeScanRequest = Readonly<
 export type ListCodeScanFindingsRequest = Readonly<
     CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
 >
+export type SupplementalContext = Readonly<
+    CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
+>
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
 export type ListCodeScanFindingsResponse =
