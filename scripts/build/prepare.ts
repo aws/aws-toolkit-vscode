@@ -23,7 +23,7 @@ export function isCI(): boolean {
 }
 
 function main() {
-    if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
+    if (isCI()) {
         console.log('prepare: skipped (running in CI)')
         return
     }
@@ -31,4 +31,3 @@ function main() {
 }
 
 main()
-
