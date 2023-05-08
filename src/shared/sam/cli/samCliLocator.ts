@@ -22,7 +22,7 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
 
     /** Checks that the given `sam` actually works by invoking `sam --version`. */
     private static async isValidSamLocation(samPath: string) {
-        return await SystemUtilities.tryRun(samPath, ['--version'], true, 'SAM CLI')
+        return await SystemUtilities.tryRun(samPath, ['--version'], 'no', 'SAM CLI')
     }
 
     /**

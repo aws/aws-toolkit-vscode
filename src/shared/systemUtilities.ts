@@ -192,16 +192,16 @@ export class SystemUtilities {
      * @param doLog log failures
      * @param expected output must contain this string
      */
-    public static async tryRun(p: string, args: string[], doLog?: boolean, expected?: string): Promise<boolean> {
-        const proc = new ChildProcess(p, args)
+    public static async tryRun(p: string, args: string[], logging: 'yes' | 'no' | 'noresult' = 'yes', expected?: string): Promise<boolean> {
+        const proc = new ChildProcess(p, args, { logging: 'no' })
         const r = await proc.run()
-        if (r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))) {
-            return true
+        const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+        if (logging === 'noresult') {
+            getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
+        } else if (logging !== 'no') {
+            getLogger().info('tryRun: %s: %s %O', ok ? 'ok' : 'failed', proc, proc.result())
         }
-        if (doLog) {
-            getLogger().warn('tryRun: failed: %s %O', proc, proc.result())
-        }
-        return false
+        return ok
     }
 
     /**
@@ -263,7 +263,7 @@ export class SystemUtilities {
 
         for (const tsc of tscPaths) {
             // Try to run "tsc -v".
-            if (await SystemUtilities.tryRun(tsc, ['-v'], false, 'Version')) {
+            if (await SystemUtilities.tryRun(tsc, ['-v'], 'yes', 'Version')) {
                 return tsc
             }
         }
@@ -292,7 +292,7 @@ export class SystemUtilities {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
                 continue
             }
-            if (await SystemUtilities.tryRun(p, ['-G', 'x'])) {
+            if (await SystemUtilities.tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
                 SystemUtilities.sshPath = p
                 return p
             }
