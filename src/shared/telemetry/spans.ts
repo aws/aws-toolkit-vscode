@@ -180,6 +180,13 @@ export class TelemetryTracer extends TelemetryBase {
     readonly #context = new AsyncLocalStorage<TelemetryContext>()
 
     /**
+     * `record` may be called prior to entering any span. This field simulates the
+     * effect of having an ephemeral "root" span that only extends until we enter
+     * an async context.
+     */
+    #syncAttributes: Attributes = {}
+
+    /**
      * All spans present in the current execution context.
      */
     public get spans(): readonly TelemetrySpan[] {
@@ -200,7 +207,7 @@ export class TelemetryTracer extends TelemetryBase {
      * State that is applied to all new spans within the current or subsequent executions.
      */
     public get attributes(): Readonly<Attributes> {
-        return this.#context.getStore()?.attributes ?? {}
+        return this.#context.getStore()?.attributes ?? this.#syncAttributes
     }
 
     /**
@@ -283,9 +290,12 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     private switchContext(span: TelemetrySpan): TelemetryContext {
-        return {
+        const ctx = {
             spans: [span, ...this.spans],
             attributes: { ...this.attributes },
         }
+        this.#syncAttributes = {}
+
+        return ctx
     }
 }

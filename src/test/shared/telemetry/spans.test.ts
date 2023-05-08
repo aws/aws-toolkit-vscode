@@ -112,6 +112,15 @@ describe('TelemetryTracer', function () {
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'foo' })
         })
+
+        it('applies to next immediate span when called outside of a context', function () {
+            tracer.record({ source: 'bar' })
+            tracer.run(metricName, () => {})
+            tracer.apigateway_copyUrl.run(() => {})
+
+            assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
+            assertTelemetry('apigateway_copyUrl', { result: 'Succeeded' } as any)
+        })
     })
 
     describe('instrument', function () {
