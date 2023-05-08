@@ -8,6 +8,7 @@ import { fromExtensionManifest, migrateSetting, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
+import { onceChanged } from '../../utilities/functionUtils'
 
 // TODO(sijaden): remove after a few releases
 export async function migrateLegacySettings() {
@@ -83,6 +84,8 @@ const description = {
 }
 
 export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {
+    protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
+
     public constructor(
         private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
         settings: ClassToInterfaceType<Settings> = Settings.instance
@@ -100,10 +103,12 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
         const fromConfig = this.get('location', '')
 
         if (fromConfig) {
+            SamCliSettings.logIfChanged(`SAM CLI location: ${fromConfig}`)
             return { path: fromConfig, autoDetected: false }
         }
 
         const fromSearch = await this.locationProvider.getLocation()
+        SamCliSettings.logIfChanged(`SAM CLI location: ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }
     }
 
