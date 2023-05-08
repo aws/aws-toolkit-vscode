@@ -386,26 +386,14 @@ function getInstrumenter(id: string, threshold: number, telemetryName?: MetricNa
 
     // Throttling occurs regardless of whether or not the instrumenter is invoked
     const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
-    const debounceCount = info?.debounceCount
+    const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
     telemetryInfo.set(id, { startTime: currentTime, debounceCount: 0 })
 
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
         span.run(span => {
-            telemetry.record({ command: id })
-            ;(span as Metric<VscodeExecuteCommand>).record({ debounceCount })
+            ;(span as Metric<VscodeExecuteCommand>).record({ command: id, debounceCount })
 
-            try {
-                const result = fn(...args)
-                if (result instanceof Promise) {
-                    return result.finally(() => telemetryInfo.delete(id))
-                }
-                telemetryInfo.delete(id)
-
-                return result
-            } catch (e) {
-                telemetryInfo.delete(id)
-                throw e
-            }
+            return fn(...args)
         })
 }
 
