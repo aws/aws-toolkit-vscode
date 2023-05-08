@@ -177,6 +177,7 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 
 class UnixSamCliLocator extends BaseSamCliLocator {
     private static readonly locationPaths: string[] = [
+        '/opt/homebrew/bin/sam',
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if
