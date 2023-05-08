@@ -4,11 +4,11 @@
  */
 
 import * as assert from 'assert'
-import { once, throttle } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, throttle } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
-describe('once', function () {
-    it('does not execute sync functions returning void more than once', function () {
+describe('functionUtils', function () {
+    it('once()', function () {
         let counter = 0
         const fn = once(() => void counter++)
 
@@ -17,6 +17,36 @@ describe('once', function () {
 
         fn()
         assert.strictEqual(counter, 1)
+    })
+
+    it('onceChanged()', function () {
+        let counter = 0
+        const arg2 = {}
+        const arg2_ = { a: 42 }
+        const fn = onceChanged((s: string, o: object) => void counter++)
+
+        fn('arg1', arg2)
+        assert.strictEqual(counter, 1)
+
+        fn('arg1', arg2)
+        fn('arg1', arg2)
+        assert.strictEqual(counter, 1)
+
+        fn('arg1_', arg2)
+        assert.strictEqual(counter, 2)
+
+        fn('arg1_', arg2)
+        fn('arg1_', arg2)
+        fn('arg1_', arg2)
+        assert.strictEqual(counter, 2)
+
+        fn('arg1', arg2_)
+        assert.strictEqual(counter, 3)
+
+        // TODO: bug/limitation: Objects are not discriminated.
+        // TODO: use lib?: https://github.com/anywhichway/nano-memoize
+        fn('arg1', arg2_)
+        assert.strictEqual(counter, 3)
     })
 })
 
