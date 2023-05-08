@@ -188,26 +188,6 @@ class CreateConfigurationActionTest {
     }
 
     @Test
-    fun `Add Aurora MySQL data source`() {
-        val database = createDbInstance(address = address, port = port, engineType = "aurora")
-        val registry = DataSourceRegistry(projectRule.project)
-        registry.createRdsDatasource(
-            RdsDatasourceConfiguration(
-                username = username,
-                credentialId = credentialIdentifier.id,
-                regionId = region.id,
-                database = database
-            )
-        )
-        assertThat(registry.newDataSources).singleElement().satisfies {
-            assertThat(it.username).isEqualTo(username)
-            assertThat(it.driverClass).contains("mariadb")
-            assertThat(it.url).contains(JDBC_MYSQL_AURORA)
-            assertThat(it.sslCfg?.myMode).isEqualTo(JdbcSettings.SslMode.REQUIRE)
-        }
-    }
-
-    @Test
     fun `Add Aurora MySQL 5_7 data source`() {
         val database = createDbInstance(address = address, port = port, engineType = "aurora-mysql")
         val registry = DataSourceRegistry(projectRule.project)

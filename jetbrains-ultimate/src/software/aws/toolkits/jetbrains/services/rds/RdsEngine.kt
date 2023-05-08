@@ -61,8 +61,8 @@ object MySql : MySqlBase(setOf("mysql")) {
     override fun connectionStringUrl(endpoint: String) = "jdbc:$JDBC_MYSQL://$endpoint/"
 }
 
-// aurora == 5.6, aurora-mysql == 5.7
-object AuroraMySql : MySqlBase(setOf("aurora", "aurora-mysql"), additionalInfo = message("rds.aurora")) {
+// aurora-mysql == 5.7
+object AuroraMySql : MySqlBase(setOf("aurora-mysql"), additionalInfo = message("rds.aurora")) {
     // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
     // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
     override fun connectionStringUrl(endpoint: String) = "jdbc:$JDBC_MYSQL_AURORA://$endpoint/"
