@@ -192,7 +192,12 @@ export class SystemUtilities {
      * @param doLog log failures
      * @param expected output must contain this string
      */
-    public static async tryRun(p: string, args: string[], logging: 'yes' | 'no' | 'noresult' = 'yes', expected?: string): Promise<boolean> {
+    public static async tryRun(
+        p: string,
+        args: string[],
+        logging: 'yes' | 'no' | 'noresult' = 'yes',
+        expected?: string
+    ): Promise<boolean> {
         const proc = new ChildProcess(p, args, { logging: 'no' })
         const r = await proc.run()
         const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))

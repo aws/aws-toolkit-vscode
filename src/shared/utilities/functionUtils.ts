@@ -56,9 +56,10 @@ export function onceChanged<T, U extends any[]>(fn: (...args: U) => T): (...args
     let ran = false
     let prevArgs = ''
 
-    return (...args) => ((ran && prevArgs === args.map(String).join(':'))
-        ? val
-        : ((val = fn(...args)), (ran = true), (prevArgs = args.map(String).join(':')), val))
+    return (...args) =>
+        ran && prevArgs === args.map(String).join(':')
+            ? val
+            : ((val = fn(...args)), (ran = true), (prevArgs = args.map(String).join(':')), val)
 }
 
 /**

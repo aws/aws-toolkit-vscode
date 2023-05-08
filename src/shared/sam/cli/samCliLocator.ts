@@ -34,12 +34,13 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
         const cachedLoc = DefaultSamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
-        if (cachedLoc && await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path)) {
+        if (cachedLoc && (await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
             perflog.done()
             return cachedLoc
         }
 
-        DefaultSamCliLocationProvider.cachedSamLocation = await DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
+        DefaultSamCliLocationProvider.cachedSamLocation =
+            await DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
         perflog.done()
         return DefaultSamCliLocationProvider.cachedSamLocation
     }
@@ -105,7 +106,9 @@ abstract class BaseSamCliLocator {
                         BaseSamCliLocator.didFind = true
                         return { path: fullPath, version: validationResult.version }
                     }
-                    this.logger.warn(`samCliLocator: found invalid SAM CLI: (${validationResult.validation}): ${fullPath}`)
+                    this.logger.warn(
+                        `samCliLocator: found invalid SAM CLI: (${validationResult.validation}): ${fullPath}`
+                    )
                 } catch (e) {
                     const err = e as Error
                     this.logger.error('samCliLocator failed: %s', err.message)
