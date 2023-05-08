@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { stat } from 'fs-extra'
 import * as semver from 'semver'
 import { ClassToInterfaceType } from '../../utilities/tsUtils'
 import { SamCliSettings } from './samCliSettings'
@@ -63,9 +62,6 @@ export interface SamCliValidator {
 export type SamCliValidatorContext = ClassToInterfaceType<DefaultSamCliValidatorContext>
 
 export class DefaultSamCliValidator implements SamCliValidator {
-    private cachedSamInfoResponse?: SamCliInfoResponse
-    private cachedSamCliVersionId?: string
-
     public constructor(private readonly context: SamCliValidatorContext) {}
 
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {
@@ -83,29 +79,11 @@ export class DefaultSamCliValidator implements SamCliValidator {
     }
 
     public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
-        const samCliId: string = await this.context.getSamCliExecutableId()
-        if (!this.isSamCliVersionCached(samCliId)) {
-            this.cachedSamInfoResponse = await this.context.getSamCliInfo()
-            this.cachedSamCliVersionId = samCliId
-        }
-
-        const version = this.cachedSamInfoResponse!.version
-
+        const r = await this.context.getSamCliInfo()
         return {
-            version,
-            validation: DefaultSamCliValidator.validateSamCliVersion(version),
+            version: r.version,
+            validation: DefaultSamCliValidator.validateSamCliVersion(r.version),
         }
-    }
-
-    private isSamCliVersionCached(samCliVersionId: string): boolean {
-        if (!this.cachedSamInfoResponse) {
-            return false
-        }
-        if (!this.cachedSamCliVersionId) {
-            return false
-        }
-
-        return this.cachedSamCliVersionId === samCliVersionId
     }
 
     public static validateSamCliVersion(version?: string): SamCliVersionValidation {
@@ -134,19 +112,6 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
 
     public async samCliLocation(): Promise<string | undefined> {
         return (await this.config.getOrDetectSamCli()).path
-    }
-
-    public async getSamCliExecutableId(): Promise<string> {
-        // Function should never get called if there is no SAM CLI
-        const location = await this.samCliLocation()
-        if (!location) {
-            throw new Error('SAM CLI does not exist')
-        }
-
-        // The modification timestamp of SAM CLI is used as the "distinct executable id"
-        const stats = await stat(location)
-
-        return stats.mtime.valueOf().toString()
     }
 
     public async getSamCliInfo(): Promise<SamCliInfoResponse> {

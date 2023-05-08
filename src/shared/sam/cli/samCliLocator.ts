@@ -9,6 +9,8 @@ import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
+import { SystemUtilities } from '../../systemUtilities'
+import { PerfLog } from '../../logger/logger'
 
 export interface SamCliLocationProvider {
     getLocation(): Promise<{ path: string; version: string } | undefined>
@@ -16,9 +18,30 @@ export interface SamCliLocationProvider {
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
+    protected static cachedSamLocation: { path: string; version: string } | undefined
 
+    /** Checks that the given `sam` actually works by invoking `sam --version`. */
+    private static async isValidSamLocation(samPath: string) {
+        return await SystemUtilities.tryRun(samPath, ['--version'], true, 'SAM CLI')
+    }
+
+    /**
+     * Gets the last-found `sam` location, or searches the system if a working
+     * `sam` wasn't previously found and cached.
+     */
     public async getLocation() {
-        return DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
+        const perflog = new PerfLog('samCliLocator: getLocation')
+        const cachedLoc = DefaultSamCliLocationProvider.cachedSamLocation
+
+        // Avoid searching the system for `sam` (especially slow on Windows).
+        if (cachedLoc && await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path)) {
+            perflog.done()
+            return cachedLoc
+        }
+
+        DefaultSamCliLocationProvider.cachedSamLocation = await DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
+        perflog.done()
+        return DefaultSamCliLocationProvider.cachedSamLocation
     }
 
     public static getSamCliLocator(): SamCliLocationProvider {
@@ -43,7 +66,6 @@ abstract class BaseSamCliLocator {
         this.verifyOs()
     }
 
-    // TODO: this method is being called multiple times on my Windows machine and is really slow
     public async getLocation() {
         let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
@@ -69,11 +91,10 @@ abstract class BaseSamCliLocator {
 
         for (const fullPath of fullPaths) {
             if (!BaseSamCliLocator.didFind) {
-                this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
+                this.logger.verbose(`samCliLocator: searching in: ${fullPath}`)
             }
             const context: SamCliValidatorContext = {
                 samCliLocation: async () => fullPath,
-                getSamCliExecutableId: async () => 'bogus',
                 getSamCliInfo: async () => new SamCliInfoInvocation(fullPath).execute(),
             }
             const validator = new DefaultSamCliValidator(context)
@@ -84,10 +105,10 @@ abstract class BaseSamCliLocator {
                         BaseSamCliLocator.didFind = true
                         return { path: fullPath, version: validationResult.version }
                     }
-                    this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
+                    this.logger.warn(`samCliLocator: found invalid SAM CLI: (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
                     const err = e as Error
-                    this.logger.error(err)
+                    this.logger.error('samCliLocator failed: %s', err.message)
                 }
             }
         }
