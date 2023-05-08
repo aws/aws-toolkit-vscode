@@ -15,7 +15,7 @@ plugins {
 // Note: We can't use our standard source layout due to https://github.com/gradle/gradle/issues/14310
 
 dependencies {
-    compileOnly(libs.jacoco)
+    implementation(libs.jacoco)
     implementation(libs.aws.codeGen)
     implementation(libs.bundles.jackson)
     implementation(libs.commonmark)

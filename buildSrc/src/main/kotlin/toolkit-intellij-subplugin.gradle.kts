@@ -75,7 +75,7 @@ configurations {
 
 tasks.processResources {
     // needed because both rider and ultimate include plugin-datagrip.xml which we are fine with
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.WARN
 }
 
 // Run after the project has been evaluated so that the extension (intellijToolkit) has been configured
@@ -214,6 +214,46 @@ tasks.withType<RunIdeForUiTestTask>().all {
             isIncludeNoLocationClasses = true
 
             output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
+        }
+    }
+}
+
+// weird implicit dependency issue, maybe with how the task graph works?
+// or because tests are on the ide classpath for some reason?
+tasks.named("classpathIndexCleanup") {
+    dependsOn(tasks.named("compileIntegrationTestKotlin"))
+}
+
+configurations.instrumentedJar.configure {
+    // when the "instrumentedJar" configuration is selected, gradle is unable to resolve configurations needed by jacoco
+    // to calculate coverage, so we declare these as seconary artifacts on the primary "instrumentedJar" implicit variant
+    outgoing.variants {
+        create("instrumentedClasses") {
+            attributes {
+                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+                attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+                attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+                attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.CLASSES))
+            }
+
+            artifact(tasks.instrumentCode) {
+                type = ArtifactTypeDefinition.JVM_CLASS_DIRECTORY
+            }
+        }
+
+        listOf("coverageDataElements", "mainSourceElements").forEach { implicitVariant ->
+            val configuration = configurations.getByName(implicitVariant)
+            create(implicitVariant) {
+                attributes {
+                    configuration.attributes.keySet().forEach {
+                        attribute(it as Attribute<Any>, configuration.attributes.getAttribute(it)!!)
+                    }
+                }
+
+                configuration.artifacts.forEach {
+                    artifact(it)
+                }
+            }
         }
     }
 }
