@@ -34,7 +34,7 @@ export function shared<T, U extends any[]>(fn: (...args: U) => Promise<T>): (...
 }
 
 /**
- * Special-case of `memoize`. Ensures a function is executed only once.
+ * Special-case of `memoize`: creates a function that is executed only once.
  */
 export function once<T>(fn: () => T): () => T {
     let val: T
@@ -44,12 +44,31 @@ export function once<T>(fn: () => T): () => T {
 }
 
 /**
+ * Special-case of `memoize`: creates a function that runs only if the args
+ * changed versus the previous invocation.
+ *
+ * @note See note on {@link memoize}
+ *
+ * TODO: use lib?: https://github.com/anywhichway/nano-memoize
+ */
+export function onceChanged<T, U extends any[]>(fn: (...args: U) => T): (...args: U) => T {
+    let val: T
+    let ran = false
+    let prevArgs = ''
+
+    return (...args) => ((ran && prevArgs === args.map(String).join(':'))
+        ? val
+        : ((val = fn(...args)), (ran = true), (prevArgs = args.map(String).join(':')), val))
+}
+
+/**
  * Creates a new function that stores the result of a call.
  *
- * ### Important
- * This currently uses an extremely simple mechanism for creating keys from parameters.
+ * @note This uses an extremely simple mechanism for creating keys from parameters.
  * Objects are effectively treated as a single key, while primitive values will behave as
  * expected with a few very uncommon exceptions.
+ *
+ * TODO: use lib?: https://github.com/anywhichway/nano-memoize
  */
 export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U) => T {
     const cache: { [key: string]: T | undefined } = {}
