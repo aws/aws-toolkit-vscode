@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
+import { PerfLog } from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
@@ -28,6 +29,7 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
+import { truncate } from '../utilities/textUtilities'
 
 interface CodeCatalystConfig {
     readonly region: string
@@ -223,10 +225,12 @@ class CodeCatalystClientInternal {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
         req.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+        const perflog = new PerfLog('API request')
 
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
+                const timecost = perflog.elapsed().toFixed(1)
                 if (e) {
                     if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
                         CodeCatalystClientInternal.identityCache.delete(bearerToken)
@@ -260,14 +264,15 @@ class CodeCatalystClientInternal {
 
                     if (r.operation || r.params) {
                         log.error(
-                            'API request failed: %s\nparams: %O\nerror: %O\nheaders: %O',
+                            'API request failed (time: %dms): %s\nparams: %O\nerror: %O\nheaders: %O',
+                            timecost,
                             r.operation,
                             r.params,
                             errNoStack,
                             logHeaders
                         )
                     } else {
-                        log.error('API request failed:%O\nheaders: %O', req, logHeaders)
+                        log.error('API request failed (time: %dms):%O\nheaders: %O', timecost, req, logHeaders)
                     }
                     if (silent) {
                         if (defaultVal === undefined) {
@@ -279,7 +284,22 @@ class CodeCatalystClientInternal {
                     }
                     return
                 }
-                log.verbose('API request (%s):\nparams: %O\nresponse: %O', r.operation ?? '?', r.params ?? '?', data)
+                if (log.logLevelEnabled('verbose')) {
+                    const truncatedData = {
+                        ...data,
+                        nextToken: (data as any)?.nextToken ?? '',
+                    }
+                    if (truncatedData.nextToken && typeof truncatedData.nextToken === 'string') {
+                        truncatedData.nextToken = truncate(truncatedData.nextToken, 20)
+                    }
+                    log.verbose(
+                        'API request (time: %dms): %s\nparams: %O\nresponse: %O',
+                        timecost,
+                        r.operation ?? '?',
+                        r.params ?? '?',
+                        truncatedData
+                    )
+                }
                 resolve(data)
             })
         })
