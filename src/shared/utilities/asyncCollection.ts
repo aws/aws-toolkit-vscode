@@ -222,11 +222,11 @@ async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
 function addToMap<T, U extends string>(map: Map<string, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
     const key = typeof selector === 'function' ? selector(item) : item[selector]
     if (key) {
-        if (map.has(key as keyof typeof map['keys'])) {
+        if (map.has(key as keyof (typeof map)['keys'])) {
             throw new Error(`Duplicate key found when converting AsyncIterable to map: ${key}`)
         }
 
-        map.set(key as keyof typeof map['keys'], item)
+        map.set(key as keyof (typeof map)['keys'], item)
     }
 }
 

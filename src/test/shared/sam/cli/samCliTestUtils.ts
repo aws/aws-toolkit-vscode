@@ -21,9 +21,9 @@ export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
 
         this.validateArgs(invokeSettings.arguments)
 
-        return ({
+        return {
             exitCode: 0,
-        } as any) as ChildProcessResult
+        } as any as ChildProcessResult
     }
 }
 

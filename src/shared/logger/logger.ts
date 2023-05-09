@@ -142,3 +142,24 @@ export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logge
 export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
 }
+
+export class PerfLog {
+    private log
+    public readonly start
+
+    public constructor(public readonly topic: string) {
+        const log = getLogger()
+        this.log = log
+        if (log.logLevelEnabled('verbose')) {
+            this.start = Date.now()
+        }
+    }
+
+    public done(): void {
+        if (!this.start) {
+            return
+        }
+        const elapsed = Date.now() - this.start
+        this.log.verbose('%s took %dms', this.topic, elapsed.toFixed(1))
+    }
+}
