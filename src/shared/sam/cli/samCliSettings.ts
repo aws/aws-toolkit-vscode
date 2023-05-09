@@ -94,8 +94,10 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
     }
 
     /**
-     * Gets location of `sam` from user config, or tries to find `sam` on the
-     * system if the user config is invalid.
+     * Gets location of `sam` from:
+     * 1. user config (if any; overrides auto-detected location)
+     * 2. previous cached location (if valid)
+     * 3. searching for `sam` on the system
      *
      * @returns `autoDetected=true` if auto-detection was _attempted_.
      */
