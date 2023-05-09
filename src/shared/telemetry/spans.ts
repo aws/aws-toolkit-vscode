@@ -85,7 +85,8 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
 }
 
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
-    #startTime: Date | undefined = undefined
+    #startTime?: Date
+
     private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
         unit: 'None',
@@ -152,13 +153,20 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         this.#startTime = undefined
     }
 
+    /**
+     * Adds the values provided in {@link data} to the current state.
+     *
+     * Any `undefined` values are ignored. If the current {@link state} is `undefined` then the value
+     * is initialized as 0 prior to adding {@link data}.
+     */
     public increment(data: { [P in NumericKeys<T>]+?: number }): void {
         for (const [k, v] of entries(data)) {
-            ;(this.state as Record<typeof k, number>)[k] = ((this.state[k] as number) ?? 0) + v!
+            if (v !== undefined) {
+                ;(this.state as Record<typeof k, number>)[k] = ((this.state[k] as number) ?? 0) + v
+            }
         }
     }
 
-    // TODO: implement copy-on-write abstraction if this method causes perf issues
     /**
      * Creates a copy of the span with an uninitialized start time.
      */
@@ -180,13 +188,6 @@ export class TelemetryTracer extends TelemetryBase {
     readonly #context = new AsyncLocalStorage<TelemetryContext>()
 
     /**
-     * `record` may be called prior to entering any span. This field simulates the
-     * effect of having an ephemeral "root" span that only extends until we enter
-     * an async context.
-     */
-    #syncAttributes: Attributes = {}
-
-    /**
      * All spans present in the current execution context.
      */
     public get spans(): readonly TelemetrySpan[] {
@@ -206,8 +207,8 @@ export class TelemetryTracer extends TelemetryBase {
     /**
      * State that is applied to all new spans within the current or subsequent executions.
      */
-    public get attributes(): Readonly<Attributes> {
-        return this.#context.getStore()?.attributes ?? this.#syncAttributes
+    public get attributes(): Readonly<Attributes> | undefined {
+        return this.#context.getStore()?.attributes
     }
 
     /**
@@ -216,13 +217,17 @@ export class TelemetryTracer extends TelemetryBase {
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key. New spans are initialized with {@link attributes}
      * but that may be overriden on subsequent writes.
+     *
+     * Callers must already be within an execution context for this to have any effect.
      */
     public record(data: Attributes): void {
         for (const span of this.spans) {
             span.record(data)
         }
 
-        Object.assign(this.attributes, data)
+        if (this.attributes) {
+            Object.assign(this.attributes, data)
+        }
     }
 
     /**
@@ -256,6 +261,19 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * Executes the given function within an anonymous 'root' span which does not emit
+     * any telemetry on its own.
+     *
+     * This can be used as a 'staging area' for adding attributes prior to creating spans.
+     */
+    public runRoot<T>(fn: () => T): T {
+        const span = this.createSpan('root')
+        const frame = this.switchContext(span)
+
+        return this.#context.run(frame, fn)
+    }
+
+    /**
      * Wraps a function with {@link run}.
      *
      * This can be used when immediate execution of the function is not desirable.
@@ -286,7 +304,7 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     private createSpan(name: string): TelemetrySpan {
-        return new TelemetrySpan(name).record(this.attributes)
+        return new TelemetrySpan(name).record(this.attributes ?? {})
     }
 
     private switchContext(span: TelemetrySpan): TelemetryContext {
@@ -294,7 +312,6 @@ export class TelemetryTracer extends TelemetryBase {
             spans: [span, ...this.spans],
             attributes: { ...this.attributes },
         }
-        this.#syncAttributes = {}
 
         return ctx
     }

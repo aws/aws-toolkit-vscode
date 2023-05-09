@@ -146,4 +146,5 @@ export type FactoryFunction<T extends abstract new (...args: any[]) => any> = (
     ...args: ConstructorParameters<T>
 ) => InstanceType<T>
 
+/** Can be used to isolate all number fields of a record `T` */
 export type NumericKeys<T> = { [P in keyof T]-?: T[P] extends number | undefined ? P : never }[keyof T]
