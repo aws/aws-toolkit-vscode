@@ -17,6 +17,7 @@ import globals from '../extensionGlobals'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { sleep } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
+import { PerfLog } from '../logger/logger'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     protected name: string = 'CloudFormationTemplateRegistry'
@@ -90,10 +91,10 @@ export class AsyncCloudFormationTemplateRegistry {
         private readonly instance: CloudFormationTemplateRegistry,
         asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
     ) {
-        getLogger().info('cfn: starting template registry setup.')
+        const perflog = new PerfLog('cfn: template registry setup')
         asyncSetupFunc(instance).then(() => {
             this.isSetup = true
-            getLogger().info('cfn: template registry setup successful.')
+            perflog.done()
         })
     }
 
@@ -120,11 +121,11 @@ export class AsyncCloudFormationTemplateRegistry {
                         // Allows for new message to be created if templateRegistry variable attempted to be used again
                         this.setupProgressMessage = undefined
                     })
-                    getLogger().info('cfn: Waiting for template registry setup to complete.')
+                    getLogger().debug('cfn: getInstance() requested, still initializing')
                     while (!this.isSetup) {
                         await sleep(2000)
                     }
-                    getLogger().info('cfn: Finished waiting for template registry setup.')
+                    getLogger().debug('cfn: getInstance() ready')
                 }
             )
         }
