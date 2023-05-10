@@ -42,7 +42,9 @@ export function getCredentialsErrors(
         }
         errors[key] = validateFunc(key, value)
     })
-    if (Object.keys(errors).length === 0) {
+
+    const hasErrors = Object.values(errors).some(v => v)
+    if (!hasErrors) {
         return
     }
     return errors
