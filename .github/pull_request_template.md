@@ -15,6 +15,7 @@
 - [ ] My code follows the code style of this project
 - [ ] I have added tests to cover my changes
 - [ ] A short description of the change has been added to the **[CHANGELOG](https://github.com/aws/aws-toolkit-jetbrains/blob/master/CONTRIBUTING.md#contributing-via-pull-requests)** if the change is customer-facing in the IDE.
+- [ ] I have added metrics for my changes (if required)
  
 ## License
 I confirm that my contribution is made under the terms of the Apache 2.0 license.
