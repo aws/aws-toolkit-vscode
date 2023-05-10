@@ -45,7 +45,7 @@ export type ServiceStatus = Exclude<ServiceIconStatus, 'LOCKED_SELECTED'>
 const serviceIconClasses = {
     LOCKED: 'icon icon-lg icon-vscode-lock',
     LOCKED_SELECTED: 'icon icon-lg icon-vscode-lock locked-selected',
-    UNLOCKED: 'icon icon-vscode-check unlocked',
+    UNLOCKED: 'icon icon-lg icon-vscode-check unlocked',
 } as const
 
 /**
