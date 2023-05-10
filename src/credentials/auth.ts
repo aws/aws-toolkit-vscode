@@ -46,7 +46,7 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
 import { saveProfileToCredentials } from './sharedCredentials'
-import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { SectionName, StaticProfile } from './types'
 import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
 
 export const ssoScope = 'sso:account:access'
@@ -1204,7 +1204,7 @@ const addConnection = Commands.register({ id: 'aws.auth.addConnection', telemetr
 
 export async function tryAddCredentials(
     profileName: SectionName,
-    profileData: StaticCredentialsProfileKeys,
+    profileData: StaticProfile,
     tryConnect = true
 ): Promise<boolean> {
     await throwOnInvalidCredentials(profileName, profileData)
