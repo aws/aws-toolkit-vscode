@@ -46,7 +46,7 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
 import { saveProfileToCredentials } from './sharedCredentials'
-import { SectionName, StaticProfile, StaticProfileErrors } from './types'
+import { SectionName, SharedCredentialsKeys, StaticProfile, StaticProfileKeyErrorMessage } from './types'
 import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
 import { TempCredentialProvider } from './providers/tempCredentialsProvider'
 
@@ -588,12 +588,11 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * Returns true if credential data can be authenticated successfully
+     * Authenticates the given data and returns error info if it fails.
      *
-     * @returns An object with an error message for each specific key if an error exists,
-     *          else undefined if there are no errors.
+     * @returns undefined if authentication succeeds, otherwise object with error info
      */
-    public async getAuthenticatedStaticDataError(data: StaticProfile): Promise<StaticProfileErrors | undefined> {
+    public async authenticateData(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         const tempId = await this.addTempCredential(data)
         const tempIdString = asString(tempId)
         try {
@@ -601,9 +600,9 @@ export class Auth implements AuthService, ConnectionManager {
         } catch (e) {
             if (isAwsError(e)) {
                 if (e.code === 'InvalidClientTokenId') {
-                    return { aws_access_key_id: 'Invalid access key' }
+                    return { key: SharedCredentialsKeys.AWS_ACCESS_KEY_ID, error: 'Invalid access key' }
                 } else if (e.code === 'SignatureDoesNotMatch') {
-                    return { aws_secret_access_key: 'Invalid secret access key' }
+                    return { key: SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY, error: 'Invalid secret key' }
                 }
             }
             throw e
@@ -1257,13 +1256,30 @@ export async function tryAddCredentials(
     profileData: StaticProfile,
     tryConnect = true
 ): Promise<boolean> {
+    const auth = Auth.instance
+
+    // sanity checks
     await throwOnInvalidCredentials(profileName, profileData)
+    const authenticationError = await auth.authenticateData(profileData)
+    if (authenticationError) {
+        throw new ToolkitError(`Found error with '${authenticationError.key}':'${authenticationError.error}' `, {
+            code: 'InvalidCredentials',
+        })
+    }
+
     await saveProfileToCredentials(profileName, profileData)
+
     if (tryConnect) {
-        const auth = Auth.instance
-        const conn = await auth.getConnection({ id: profileName })
+        const id = asString({
+            credentialSource: 'profile',
+            credentialTypeId: profileName,
+        })
+        const conn = await auth.getConnection({ id })
+
         if (conn === undefined) {
-            throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+            throw new ToolkitError(`Failed to get connection from profile: ${profileName}`, {
+                code: 'MissingConnection',
+            })
         }
 
         await auth.useConnection(conn)
