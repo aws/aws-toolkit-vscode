@@ -11,14 +11,14 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { SharedCredentialsKeys, StaticCredentialsProfileData } from '../types'
-import { CredentialsKeyFormatValidators } from '../sharedCredentialsValidation'
+import { SharedCredentialsKeys, StaticCredentialsProfileKeys } from '../types'
+import { getCredentialError } from '../sharedCredentialsValidation'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)
 }
 
-export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileData> = {
+export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredentialsProfileKeys> = {
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
@@ -33,7 +33,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredential
                     'Input the {0} Access Key',
                     getIdeProperties().company
                 ),
-                validateInput: CredentialsKeyFormatValidators.aws_access_key_id,
+                validateInput: value => getCredentialError(SharedCredentialsKeys.AWS_ACCESS_KEY_ID, value),
             }),
         [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
             createInputBox({
@@ -46,7 +46,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticCredential
                     'Input the {0} Secret Key',
                     getIdeProperties().company
                 ),
-                validateInput: CredentialsKeyFormatValidators.aws_secret_access_key,
+                validateInput: value => getCredentialError(SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY, value),
                 password: true,
             }),
     },
