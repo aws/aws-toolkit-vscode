@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: When a Space has reached quota, trying to connect to a DevEnv waits a long time instead of failing immediately."
+}
