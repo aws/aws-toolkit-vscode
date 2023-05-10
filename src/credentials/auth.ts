@@ -18,14 +18,14 @@ import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, formatError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, formatError, isAwsError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { asString, CredentialsProvider, fromString } from './providers/credentials'
+import { asString, CredentialsId, CredentialsProvider, fromString } from './providers/credentials'
 import { once } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
@@ -46,8 +46,9 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
 import { saveProfileToCredentials } from './sharedCredentials'
-import { SectionName, StaticProfile } from './types'
+import { SectionName, StaticProfile, StaticProfileErrors } from './types'
 import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
+import { TempCredentialProvider } from './providers/tempCredentialsProvider'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -584,6 +585,55 @@ export class Auth implements AuthService, ConnectionManager {
 
     public getInvalidationReason(connection: Pick<Connection, 'id'>): Error | undefined {
         return this.#validationErrors.get(connection.id)
+    }
+
+    /**
+     * Returns true if credential data can be authenticated successfully
+     *
+     * @returns An object with an error message for each specific key if an error exists,
+     *          else undefined if there are no errors.
+     */
+    public async getAuthenticatedStaticDataError(data: StaticProfile): Promise<StaticProfileErrors | undefined> {
+        const tempId = await this.addTempCredential(data)
+        const tempIdString = asString(tempId)
+        try {
+            await this.reauthenticate({ id: tempIdString })
+        } catch (e) {
+            if (isAwsError(e)) {
+                if (e.code === 'InvalidClientTokenId') {
+                    return { aws_access_key_id: 'Invalid access key' }
+                } else if (e.code === 'SignatureDoesNotMatch') {
+                    return { aws_secret_access_key: 'Invalid secret access key' }
+                }
+            }
+            throw e
+        } finally {
+            await this.removeTempCredential(tempId)
+        }
+        return undefined
+    }
+
+    private async addTempCredential(data: StaticProfile): Promise<CredentialsId> {
+        const tempProvider = new TempCredentialProvider(data)
+        this.iamProfileProvider.addProvider(tempProvider)
+        await this.thrownOnConn(tempProvider.getCredentialsId(), 'not-exists')
+        return tempProvider.getCredentialsId()
+    }
+    private async removeTempCredential(id: CredentialsId) {
+        this.iamProfileProvider.removeProvider(id)
+        await this.thrownOnConn(id, 'exists')
+    }
+
+    private async thrownOnConn(id: CredentialsId, throwOn: 'exists' | 'not-exists') {
+        const idAsString = asString(id)
+        const conns = await this.listConnections() // triggers loading of profile in to store
+        const connExists = conns.some(conn => conn.id === idAsString)
+
+        if (throwOn === 'exists' && connExists) {
+            throw new ToolkitError(`Conn should not exist: ${idAsString}`)
+        } else if (throwOn === 'not-exists' && !connExists) {
+            throw new ToolkitError(`Conn should exist: ${idAsString}`)
+        }
     }
 
     /**

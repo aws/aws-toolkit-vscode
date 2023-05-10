@@ -37,6 +37,7 @@ export type CredentialsKey = (typeof SharedCredentialsKeys)[keyof typeof SharedC
 export type StaticProfileOptional = Pick<CredentialsData, 'aws_access_key_id' | 'aws_secret_access_key'>
 export type StaticProfile = Required<StaticProfileOptional>
 export type StaticProfileKey = keyof StaticProfile
+export type StaticProfileErrors = StaticProfileOptional
 
 /**
  * The name of a section in a credentials/config file
