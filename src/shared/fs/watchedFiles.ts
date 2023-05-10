@@ -9,6 +9,13 @@ import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
+/**
+ * Prevent `findFiles()` from recursing into these directories.
+ *
+ * `findFiles()` defaults to the vscode `files.exclude` setting, which by default does not exclude "node_modules/".
+ */
+const alwaysExclude = '**/{.aws-sam,.git,.svn,.hg,.rvm,.gem,.project,node_modules,venv,bower_components}/'
+
 export interface WatchedItem<T> {
     /**
      * The absolute path to the file
@@ -224,7 +231,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     public async rebuild(): Promise<void> {
         this.reset()
         for (const glob of this.globs) {
-            const itemUris = await vscode.workspace.findFiles(glob)
+            const itemUris = await vscode.workspace.findFiles(glob, alwaysExclude)
             for (const item of itemUris) {
                 await this.addItemToRegistry(item, true)
             }
