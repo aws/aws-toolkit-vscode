@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Faster startup and less filesystem usage when the `aws.samcli.enableCodeLenses` setting is disabled"
+}
