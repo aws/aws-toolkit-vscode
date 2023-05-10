@@ -5,7 +5,8 @@
  * This module focuses on the validation of shared credentials properties
  */
 
-import { localize } from 'vscode-nls'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { CredentialsData, CredentialsKey, SectionName, SharedCredentialsKeys } from './types'
 import { ToolkitError } from '../shared/errors'
 import { profileExists } from './sharedCredentials'
