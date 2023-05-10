@@ -124,9 +124,9 @@ function validateSection(section: BaseSection): asserts section is Section {
  */
 export async function loadSharedCredentialsProfiles(): Promise<Record<SectionName, Profile>> {
     const profiles = {} as Record<SectionName, Profile>
-    for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
-        if (v.type === 'profile') {
-            profiles[k] = extractDataFromSection(v)
+    for (const section of (await loadSharedCredentialsSections()).sections.values()) {
+        if (section.type === 'profile') {
+            profiles[section.name] = extractDataFromSection(section)
         }
     }
     return profiles
