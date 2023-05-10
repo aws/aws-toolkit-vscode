@@ -50,6 +50,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateMynah } from './mynah/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
@@ -231,6 +232,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
+        await activateMynah(extContext.extensionContext)
+
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         showWelcomeMessage(context)
@@ -324,7 +327,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
  *
  * Cloud9 does not show a progress notification.
  */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): typeof vscode.window['withProgress'] {
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
     const withProgress = vscode.window.withProgress.bind(vscode.window)
 
     return (options, task) => {
