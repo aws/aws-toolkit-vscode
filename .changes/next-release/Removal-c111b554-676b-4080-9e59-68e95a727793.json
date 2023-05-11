@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Removed legacy setting `aws.samcli.lambda.timeout` (use `aws.samcli.lambdaTimeout` instead)"
-}

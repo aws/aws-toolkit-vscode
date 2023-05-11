@@ -1,3 +1,12 @@
+## 1.73.0 2023-05-11
+
+- **Bug Fix** Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`
+- **Bug Fix** CodeCatalyst: When a Space has reached quota, trying to connect to a DevEnv waits a long time instead of failing immediately.
+- **Feature** Faster startup and less filesystem usage when the `aws.samcli.enableCodeLenses` setting is disabled
+- **Removal** Removed legacy setting `aws.sam.enableCodeLenses` (use `aws.samcli.enableCodeLenses` instead)
+- **Removal** Removed legacy setting `aws.manuallySelectedBuckets` (use `aws.samcli.manuallySelectedBuckets` instead)
+- **Removal** Removed legacy setting `aws.samcli.lambda.timeout` (use `aws.samcli.lambdaTimeout` instead)
+
 ## 1.72.0 2023-05-04
 
 - **Bug Fix** "Open CodeCatalyst Dev Environment" fails on flatpak (steamdeck)
