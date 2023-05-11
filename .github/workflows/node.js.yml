@@ -28,7 +28,7 @@ jobs:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
             - name: Tests
-              uses: GabrielBB/xvfb-action@v1
+              uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
             - name: Code coverage
@@ -81,3 +81,22 @@ jobs:
                   verbose: true
                   file: ./coverage/coverage-final.json
                   flags: windows-unittests
+
+    lint:
+        name: Ubuntu nodejs Lint
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x]
+                vscode-version: [stable]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run testCompile
+            - run: npm run lint

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit (Mynah Beta)",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.72.0-SNAPSHOT",
+    "version": "1.73.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3466,27 +3466,28 @@
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b8"
+                    "fontCharacter": "\\f1b8"
                 }
             },
             "aws-schemas-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1b9"
+                    "fontCharacter": "\\f1b9"
                 }
             },
             "aws-stepfunctions-preview": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\e1ba"
+                    "fontCharacter": "\\f1ba"
                 }
             }
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run clean && npm run buildScripts && npm run lint && webpack --mode production && npm run copyFiles -- --webpacked",
+        "prepare": "ts-node ./scripts/build/prepare.ts",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
@@ -3498,7 +3499,7 @@
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
-        "lint": "eslint -c .eslintrc.js --ext .ts .",
+        "lint": "ts-node ./scripts/lint/testLint.ts",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
@@ -3556,7 +3557,7 @@
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
-        "json-schema-to-typescript": "^11.0.2",
+        "json-schema-to-typescript": "^12.0.0",
         "marked": "^4.0.10",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
@@ -3580,7 +3581,7 @@
         "webfont": "^11.2.26",
         "webpack": "^5.81.0",
         "webpack-cli": "^4.9.1",
-        "webpack-dev-server": "^4.9.2"
+        "webpack-dev-server": "^4.13.3"
     },
     "dependencies": {
         "@aws-sdk/client-cognito-identity": "3.46.0",
@@ -3597,7 +3598,7 @@
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.9.0",
         "async-lock": "^1.4.0",
-        "aws-sdk": "^2.1267.0",
+        "aws-sdk": "^2.1369.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.2",
         "cross-spawn": "^7.0.3",

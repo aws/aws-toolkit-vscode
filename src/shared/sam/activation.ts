@@ -37,7 +37,7 @@ import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfigu
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
-import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
+import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 
@@ -48,7 +48,6 @@ const sharedDetectSamCli = shared(detectSamCli)
  */
 export async function activate(ctx: ExtContext): Promise<void> {
     await createYamlExtensionPrompt()
-    await migrateLegacySettings()
     const config = SamCliSettings.instance
 
     ctx.extensionContext.subscriptions.push(

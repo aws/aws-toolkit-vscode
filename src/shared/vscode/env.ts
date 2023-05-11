@@ -37,7 +37,7 @@ class DefaultEnv implements Env {
  * Returns true if the current build is running on CI (build server).
  */
 export function isCI(): boolean {
-    return undefined !== process.env['CODEBUILD_BUILD_ID']
+    return undefined !== process.env['GITHUB_ACTION'] || undefined !== process.env['CODEBUILD_BUILD_ID']
 }
 
 /** Variable added via webpack */

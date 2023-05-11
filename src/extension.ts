@@ -327,7 +327,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
  *
  * Cloud9 does not show a progress notification.
  */
-function wrapWithProgressForCloud9(channel: vscode.OutputChannel): typeof vscode.window['withProgress'] {
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
     const withProgress = vscode.window.withProgress.bind(vscode.window)
 
     return (options, task) => {

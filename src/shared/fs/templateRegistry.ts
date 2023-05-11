@@ -11,10 +11,13 @@ import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
-import { WatchedFiles, WatchedItem } from './watchedFiles'
+import { NoopWatcher, WatchedFiles, WatchedItem } from './watchedFiles'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
+import { sleep } from '../utilities/timeoutUtils'
+import { localize } from '../utilities/vsCodeUtils'
+import { PerfLog } from '../logger/logger'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     protected name: string = 'CloudFormationTemplateRegistry'
@@ -65,6 +68,69 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
             schema: undefined,
         })
         await super.remove(uri)
+    }
+}
+
+/**
+ * The purpose of this class is to resolve a {@link CloudFormationTemplateRegistry}
+ * instance once the given setup is complete.
+ *
+ * This solves the issue where setup can take a while and if we
+ * block on it the entire extension startup time is increased.
+ */
+export class AsyncCloudFormationTemplateRegistry {
+    /** Setup of the registry can take a while, this property indicates it is done */
+    private isSetup = false
+    /** The message that is shown to the user to indicate the registry is being set up */
+    private setupProgressMessage: Thenable<void> | undefined = undefined
+
+    /**
+     * @param asyncSetupFunc registry setup that will be run async
+     */
+    constructor(
+        private readonly instance: CloudFormationTemplateRegistry,
+        asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
+    ) {
+        const perflog = new PerfLog('cfn: template registry setup')
+        asyncSetupFunc(instance).then(() => {
+            this.isSetup = true
+            perflog.done()
+        })
+    }
+
+    /**
+     * Returns the initial registry instance if setup has completed, otherwise
+     * returning a temporary instance and showing a progress message to the user
+     * to indicate setup is in progress.
+     */
+    getInstance(): CloudFormationTemplateRegistry {
+        if (this.isSetup) {
+            return this.instance
+        }
+
+        // Show user a message indicating setup is in progress
+        if (this.setupProgressMessage === undefined) {
+            this.setupProgressMessage = vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: localize('AWS.codelens.waitingForTemplateRegistry', 'Scanning CloudFormation templates...'),
+                    cancellable: true,
+                },
+                async (progress, token) => {
+                    token.onCancellationRequested(() => {
+                        // Allows for new message to be created if templateRegistry variable attempted to be used again
+                        this.setupProgressMessage = undefined
+                    })
+                    getLogger().debug('cfn: getInstance() requested, still initializing')
+                    while (!this.isSetup) {
+                        await sleep(2000)
+                    }
+                    getLogger().debug('cfn: getInstance() ready')
+                }
+            )
+        }
+
+        return new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
 }
 

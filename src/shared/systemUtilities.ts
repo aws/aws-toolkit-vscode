@@ -184,6 +184,35 @@ export class SystemUtilities {
     // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
 
     /**
+     * Tries to execute a program at path `p` with the given args and
+     * optionally checks the output for `expected`.
+     *
+     * @param p path to a program to execute
+     * @param args program args
+     * @param doLog log failures
+     * @param expected output must contain this string
+     */
+    public static async tryRun(
+        p: string,
+        args: string[],
+        logging: 'yes' | 'no' | 'noresult' = 'yes',
+        expected?: string
+    ): Promise<boolean> {
+        const proc = new ChildProcess(p, args, { logging: 'no' })
+        const r = await proc.run()
+        const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+        if (logging === 'noresult') {
+            getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
+        } else if (logging !== 'no') {
+            getLogger().info('tryRun: %s: %s %O', ok ? 'ok' : 'failed', proc, proc.result())
+        }
+        return ok
+    }
+
+    // TODO: implement this by checking the file mode
+    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
+
+    /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
      * absolute) if it works.
      *
@@ -197,6 +226,9 @@ export class SystemUtilities {
         const vscExe = process.argv0
         // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
         const vscs = [
+            // Special case for flatpak (steamdeck). #V896741845
+            // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
+            '/app/bin/code',
             // Note: macOS does not have a separate "code-insiders" binary.
             path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
             path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
@@ -214,13 +246,10 @@ export class SystemUtilities {
             if (!vsc || (vsc !== 'code' && !fs.existsSync(vsc))) {
                 continue
             }
-            const proc = new ChildProcess(vsc, ['--version'])
-            const r = await proc.run()
-            if (r.exitCode === 0) {
+            if (await SystemUtilities.tryRun(vsc, ['--version'])) {
                 SystemUtilities.vscPath = vsc
                 return vsc
             }
-            getLogger().warn('getVscodeCliPath: failed: %s %O', proc, proc.result())
         }
 
         return undefined
@@ -242,8 +271,7 @@ export class SystemUtilities {
 
         for (const tsc of tscPaths) {
             // Try to run "tsc -v".
-            const result = await new ChildProcess(tsc, ['-v']).run()
-            if (result.exitCode === 0 && result.stdout.includes('Version')) {
+            if (await SystemUtilities.tryRun(tsc, ['-v'], 'yes', 'Version')) {
                 return tsc
             }
         }
@@ -272,13 +300,10 @@ export class SystemUtilities {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(p, ['-G', 'x'])
-            const r = await proc.run()
-            if (r.exitCode === 0) {
+            if (await SystemUtilities.tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
                 SystemUtilities.sshPath = p
                 return p
             }
-            getLogger().warn('findSshPath: failed: %s', proc)
         }
     }
 
@@ -297,13 +322,10 @@ export class SystemUtilities {
             if (!p || ('git' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(p, ['--version'])
-            const r = await proc.run()
-            if (r.exitCode === 0) {
+            if (await SystemUtilities.tryRun(p, ['--version'])) {
                 SystemUtilities.gitPath = p
                 return p
             }
-            getLogger().warn('findGitPath: failed: %s', proc)
         }
     }
 
@@ -320,20 +342,10 @@ export class SystemUtilities {
             if (!p || ('bash' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(p, ['--version'])
-            const r = await proc.run()
-            if (r.exitCode === 0) {
+            if (await SystemUtilities.tryRun(p, ['--version'])) {
                 SystemUtilities.bashPath = p
                 return p
             }
-            getLogger().warn('findBashPath: failed: %s', proc)
         }
-    }
-
-    /**
-     * Returns true if the current build is running on CI (build server).
-     */
-    public static isCI(): boolean {
-        return undefined !== process.env['CODEBUILD_BUILD_ID']
     }
 }

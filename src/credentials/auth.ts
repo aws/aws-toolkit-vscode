@@ -36,7 +36,6 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { getConfigFilename } from './sharedCredentials'
 import { authHelpUrl } from '../shared/constants'
 import { getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
@@ -45,6 +44,10 @@ import { createRegionPrompter } from '../shared/ui/common/region'
 import { SsoCredentialsProvider } from './providers/ssoCredentialsProvider'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { join, toStream } from '../shared/utilities/collectionUtils'
+import { getConfigFilename } from './sharedCredentialsFile'
+import { saveProfileToCredentials } from './sharedCredentials'
+import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -296,14 +299,14 @@ async function loadIamProfilesIntoStore(store: ProfileStore, manager: Credential
             continue
         }
 
-        if (providers[id] === undefined) {
-            await store.deleteProfile(id)
-        } else if (profile.subtype === 'linked') {
+        if (profile.subtype === 'linked') {
             const source = store.getProfile(profile.ssoSession)
             if (source === undefined || source.type !== 'sso') {
                 await store.deleteProfile(id)
                 manager.removeProvider(fromString(id))
             }
+        } else if (providers[id] === undefined) {
+            await store.deleteProfile(id)
         }
     }
 
@@ -430,7 +433,7 @@ export class Auth implements AuthService, ConnectionManager {
             const provider = await this.getCredentialsProvider(id, profile)
             await this.authenticate(id, () => this.createCachedCredentials(provider))
 
-            return this.getIamConnection(id, provider)
+            return this.getIamConnection(id, profile)
         }
     }
 
@@ -444,9 +447,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         const validated = await this.validateConnection(id, profile)
         const conn =
-            validated.type === 'sso'
-                ? this.getSsoConnection(id, validated)
-                : this.getIamConnection(id, await this.getCredentialsProvider(id, validated))
+            validated.type === 'sso' ? this.getSsoConnection(id, validated) : this.getIamConnection(id, validated)
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
@@ -685,7 +686,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             return this.getSsoConnection(id, profile)
         } else {
-            return this.getIamConnection(id, await this.getCredentialsProvider(id, profile))
+            return this.getIamConnection(id, profile)
         }
     }
 
@@ -699,6 +700,10 @@ export class Auth implements AuthService, ConnectionManager {
             return provider
         }
 
+        return this.getSsoLinkedCredentialsProvider(id, profile)
+    }
+
+    private getSsoLinkedCredentialsProvider(id: Connection['id'], profile: LinkedIamProfile) {
         const sourceProfile = this.store.getProfile(profile.ssoSession)
         if (sourceProfile === undefined) {
             throw new Error(`Source profile for "${id}" no longer exists`)
@@ -760,16 +765,17 @@ export class Auth implements AuthService, ConnectionManager {
         )
     }
 
-    private getIamConnection(id: Connection['id'], provider: CredentialsProvider): IamConnection & StatefulConnection {
-        const profile = this.store.getProfileOrThrow(id)
-
+    private getIamConnection(
+        id: Connection['id'],
+        profile: StoredProfile<IamProfile>
+    ): IamConnection & StatefulConnection {
         return {
             id,
             type: 'iam',
             state: profile.metadata.connectionState,
             label:
                 profile.metadata.label ?? (profile.type === 'iam' && profile.subtype === 'linked' ? profile.name : id),
-            getCredentials: () => this.getCredentials(id, provider),
+            getCredentials: async () => this.getCredentials(id, await this.getCredentialsProvider(id, profile)),
         }
     }
 
@@ -1195,6 +1201,25 @@ const addConnection = Commands.register('aws.auth.addConnection', async () => {
         }
     }
 })
+
+export async function tryAddCredentials(
+    profileName: SectionName,
+    profileData: StaticCredentialsProfileKeys,
+    tryConnect = true
+): Promise<boolean> {
+    await throwOnInvalidCredentials(profileName, profileData)
+    await saveProfileToCredentials(profileName, profileData)
+    if (tryConnect) {
+        const auth = Auth.instance
+        const conn = await auth.getConnection({ id: profileName })
+        if (conn === undefined) {
+            throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+        }
+
+        await auth.useConnection(conn)
+    }
+    return true
+}
 
 const getConnectionIcon = (conn: Connection) =>
     conn.type === 'sso' ? getIcon('vscode-account') : getIcon('vscode-key')

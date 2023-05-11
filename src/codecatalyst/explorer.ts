@@ -19,7 +19,12 @@ import { getLogger } from '../shared/logger'
 
 const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
-    (authProvider: CodeCatalystAuthenticationProvider) => authProvider.promptNotConnected()
+    async (authProvider: CodeCatalystAuthenticationProvider) => {
+        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
+            await authProvider.promptOnboarding()
+        }
+    }
 )
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
@@ -34,9 +39,9 @@ const reauth = Commands.register(
     }
 )
 
-function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
+async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
-    if (!isBuilderIdConnection(auth.activeConnection)) {
+    if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
             getStartedCommand.build(auth).asTreeNode({
                 label: 'Start',

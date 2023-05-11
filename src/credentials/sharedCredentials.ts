@@ -4,23 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { join } from 'path'
-import { EnvironmentVariables } from '../shared/environmentVariables'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { assertHasProps } from '../shared/utilities/tsUtils'
-
-export function getCredentialsFilename(): string {
-    const env = process.env as EnvironmentVariables
-
-    return env.AWS_SHARED_CREDENTIALS_FILE || join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
-}
-
-export function getConfigFilename(): string {
-    const env = process.env as EnvironmentVariables
-
-    return env.AWS_CONFIG_FILE || join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
-}
+import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
+import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
     const configFileExists = await SystemUtilities.fileExists(getConfigFilename())
@@ -35,7 +24,7 @@ interface AssignmentNode {
 
 export interface BaseSection {
     readonly type: string
-    readonly name: string
+    readonly name: SectionName
     readonly source: vscode.Uri
     readonly startLines: number[]
     readonly assignments: AssignmentNode[]
@@ -75,7 +64,7 @@ export class ParseError extends Error {
 export const isProfileSection = (section: Section): section is ProfileSection => section.type === 'profile'
 export const isSsoSessionSection = (section: Section): section is SsoSessionSection => section.type === 'sso-session'
 
-export function extractData(section: BaseSection): Record<string, string> {
+export function extractDataFromSection(section: BaseSection): Record<string, string> {
     const data: Record<string, string> = {}
     for (const assignment of section.assignments) {
         data[assignment.key] = assignment.value
@@ -86,7 +75,7 @@ export function extractData(section: BaseSection): Record<string, string> {
 
 export function getRequiredFields<T extends string>(section: Section, ...keys: T[]): { [P in T]: string } {
     try {
-        const data = extractData(section)
+        const data = extractDataFromSection(section)
         assertHasProps(data, ...keys)
 
         return data
@@ -99,7 +88,7 @@ export function getRequiredFields<T extends string>(section: Section, ...keys: T
 
 export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     sections: Section[],
-    name: string,
+    name: SectionName,
     type: T
 ): Section & { type: T } {
     const section = sections.find(s => s.name === name && s.type === type) as (Section & { type: T }) | undefined
@@ -111,13 +100,13 @@ export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     return section
 }
 
-export function getSectionDataOrThrow(sections: Section[], name: string, type: Section['type']) {
+export function getSectionDataOrThrow(sections: Section[], name: SectionName, type: Section['type']) {
     const section = getSectionOrThrow(sections, name, type)
     if (section.type !== type) {
         throw ParseError.fromSection(section, `Expected section to be type "${type}", got: ${section.type}`)
     }
 
-    return extractData(section)
+    return extractDataFromSection(section)
 }
 
 const sectionTypes = ['profile', 'sso-session'] as const
@@ -128,6 +117,19 @@ function validateSection(section: BaseSection): asserts section is Section {
             `Invalid section type "${section.type}". Expected one of: ${sectionTypes.join(', ')}`
         )
     }
+}
+
+/**
+ * Loads existing merged (credentials + config) profiles from the filesystem
+ */
+export async function loadSharedCredentialsProfiles(): Promise<Record<SectionName, Profile>> {
+    const profiles = {} as Record<SectionName, Profile>
+    for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
+        if (v.type === 'profile') {
+            profiles[k] = extractDataFromSection(v)
+        }
+    }
+    return profiles
 }
 
 export async function loadSharedCredentialsSections(): Promise<ParseResult> {
@@ -232,6 +234,34 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
     }
 
     return parseIni(await SystemUtilities.readFile(credentialsUri), credentialsUri)
+}
+
+/**
+ * Saves the given profile data to the credentials file.
+ */
+export async function saveProfileToCredentials(
+    profileName: SectionName,
+    profileData: StaticCredentialsProfileKeys
+): Promise<void> {
+    if (await profileExists(profileName)) {
+        throw new ToolkitError(`Cannot save profile "${profileName}" because it already exists.`, {
+            code: 'ProfileAlreadyExists',
+        })
+    }
+
+    return UserCredentialsUtils.generateCredentialsFile({
+        profileName,
+        accessKey: profileData.aws_access_key_id,
+        secretKey: profileData.aws_secret_access_key,
+    })
+}
+
+/**
+ * Checks if a profile exists in a shared credentials file.
+ */
+export async function profileExists(profileName: SectionName): Promise<boolean> {
+    const existingProfiles = await loadSharedCredentialsProfiles()
+    return Object.keys(existingProfiles).includes(profileName)
 }
 
 export interface Profile {
