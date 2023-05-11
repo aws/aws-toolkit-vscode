@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Removed legacy setting `aws.sam.enableCodeLenses` (use `aws.samcli.enableCodeLenses` instead)"
-}

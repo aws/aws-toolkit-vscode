@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.73.0-SNAPSHOT",
+    "version": "1.73.0",
     "extensionKind": [
         "workspace"
     ],

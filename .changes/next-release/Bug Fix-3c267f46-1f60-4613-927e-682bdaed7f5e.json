@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`"
-}
