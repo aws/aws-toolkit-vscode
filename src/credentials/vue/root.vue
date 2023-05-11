@@ -95,13 +95,12 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './serviceItem.vue'
-import AwsExplorerContent from './serviceItemContent/awsExplorerContent.vue'
 import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemContent/shared.vue'
 
 const serviceItemsState = new ServiceItemsState()
 
 export default defineComponent({
-    components: { ServiceItem, AwsExplorerContent },
+    components: { ServiceItem },
     name: 'AuthRoot',
     data() {
         return {
@@ -113,10 +112,7 @@ export default defineComponent({
         }
     },
     async created() {
-        await this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
-            this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
-        })
-
+        await this.updateServiceConnections()
         this.renderItems()
     },
     mounted() {
@@ -180,6 +176,25 @@ export default defineComponent({
         onIsAuthConnected(id: ServiceItemId, isConnected: boolean) {
             this.updateServiceLock(id, isConnected)
             this.renderItems()
+            // In some cases, during the connection process for one auth method,
+            // an already connected auth can be disconnected. This refreshes all
+            // auths to show the user the latest state of everything.
+            this.updateServiceConnections().then(() => {
+                this.renderItems()
+            })
+        },
+        async updateServiceConnections() {
+            return Promise.all([
+                this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
+                }),
+                this.serviceItemsAuthStatus.CODE_WHISPERER.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('CODE_WHISPERER', isConnected)
+                }),
+                this.serviceItemsAuthStatus.CODE_CATALYST.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('CODE_CATALYST', isConnected)
+                }),
+            ])
         },
     },
 })

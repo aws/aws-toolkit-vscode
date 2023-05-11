@@ -101,6 +101,10 @@ export class AuthUtil {
         return this.conn !== undefined && this.usingEnterpriseSSO
     }
 
+    public isBuilderIdInUse(): boolean {
+        return this.conn !== undefined && isBuilderIdConnection(this.conn)
+    }
+
     public async connectToAwsBuilderId() {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 

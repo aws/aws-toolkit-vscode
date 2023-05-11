@@ -4,13 +4,15 @@ import BaseServiceItemContent from './baseServiceItemContent.vue'
 import { ServiceItemId, serviceItemIds } from '../serviceItem.vue'
 import { UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
 import { AuthStatus } from '../authForms/shared.vue'
+import CodeWhispererContent, { CodeWhispererContentState } from './codeWhispererContent.vue'
+import CodeCatalystContent, { CodeCatalystContentState } from './codeCatalystContent.vue'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent = {
     [serviceItemIds.NON_AUTH_FEATURES]: BaseServiceItemContent,
     [serviceItemIds.RESOURCE_EXPLORER]: AwsExplorerContent,
-    [serviceItemIds.CODE_CATALYST]: BaseServiceItemContent,
-    [serviceItemIds.CODE_WHISPERER]: BaseServiceItemContent,
+    [serviceItemIds.CODE_CATALYST]: CodeCatalystContent,
+    [serviceItemIds.CODE_WHISPERER]: CodeWhispererContent,
 } as const
 
 /**
@@ -22,8 +24,8 @@ const serviceItemsContent = {
 export const serviceItemsAuthStatus: Record<ServiceItemId, AuthStatus> = {
     [serviceItemIds.NON_AUTH_FEATURES]: new UnimplementedAuthStatus(),
     [serviceItemIds.RESOURCE_EXPLORER]: new ResourceExplorerContentState(),
-    [serviceItemIds.CODE_CATALYST]: new UnimplementedAuthStatus(),
-    [serviceItemIds.CODE_WHISPERER]: new UnimplementedAuthStatus(),
+    [serviceItemIds.CODE_CATALYST]: new CodeCatalystContentState(),
+    [serviceItemIds.CODE_WHISPERER]: new CodeWhispererContentState(),
 } as const
 
 export default serviceItemsContent

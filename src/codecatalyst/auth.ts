@@ -70,6 +70,10 @@ export class CodeCatalystAuthenticationProvider {
         return this.secondaryAuth.isUsingSavedConnection
     }
 
+    public isConnectionValid(): boolean {
+        return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
+    }
+
     // Get rid of this? Not sure where to put PAT code.
     public async getPat(client: CodeCatalystClient, username = client.identity.name): Promise<string> {
         const stored = await this.storage.getPat(username)

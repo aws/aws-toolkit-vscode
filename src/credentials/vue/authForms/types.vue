@@ -1,6 +1,8 @@
 <script lang="ts">
 export const authForms = {
     CREDENTIALS: 'CREDENTIALS',
+    BUILDER_ID_CODE_WHISPERER: 'BUILDER_ID_CODE_WHISPERER',
+    BUILDER_ID_CODE_CATALYST: 'BUILDER_ID_CODE_CATALYST',
 } as const
 
 export type AuthFormId = (typeof authForms)[keyof typeof authForms]
