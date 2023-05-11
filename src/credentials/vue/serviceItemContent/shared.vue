@@ -2,7 +2,8 @@
 import AwsExplorerContent, { ResourceExplorerContentState } from './awsExplorerContent.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import { ServiceItemId, serviceItemIds } from '../serviceItem.vue'
-import { AuthStatus, UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
+import { UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
+import { AuthStatus } from '../authForms/shared.vue'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent = {
