@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
+import { PerfLog } from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
@@ -28,8 +29,8 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
+import { truncateProps } from '../utilities/textUtilities'
 
-// REMOVE ME SOON: only used for development
 interface CodeCatalystConfig {
     readonly region: string
     readonly endpoint: string
@@ -224,10 +225,12 @@ class CodeCatalystClientInternal {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
         req.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+        const perflog = new PerfLog('API request')
 
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
+                const timecost = perflog.elapsed().toFixed(1)
                 if (e) {
                     if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
                         CodeCatalystClientInternal.identityCache.delete(bearerToken)
@@ -237,19 +240,16 @@ class CodeCatalystClientInternal {
                     const logHeaders = {}
                     // Selected headers which are useful for logging.
                     const logHeaderNames = [
+                        'x-amzn-requestid',
+                        'x-amzn-trace-id',
+                        'x-amzn-served-from',
+                        'x-cache',
+                        'x-amz-cf-id',
+                        'x-amz-cf-pop',
                         // 'access-control-expose-headers',
                         // 'cache-control',
                         // 'strict-transport-security',
-                        'x-amz-apigw-id',
-                        'x-amz-cf-id',
-                        'x-amz-cf-pop',
-                        'x-amzn-remapped-content-length',
-                        'x-amzn-remapped-x-amzn-requestid',
-                        'x-amzn-requestid',
-                        'x-amzn-served-from',
-                        'x-amzn-trace-id',
-                        'x-cache',
-                        'x-request-id', // <- Request id for caws/fusi!
+                        // 'x-amz-apigw-id',
                     ]
                     if (allHeaders && Object.keys(allHeaders).length > 0) {
                         for (const k of logHeaderNames) {
@@ -260,21 +260,24 @@ class CodeCatalystClientInternal {
                     // Stack is noisy and useless in production.
                     const errNoStack = { ...e }
                     delete errNoStack.stack
-                    // Remove confusing "requestId" field (= "x-amzn-requestid" header)
-                    // because for caws/fusi, "x-request-id" is more relevant.
-                    // All of the various request-ids can be found in the logged headers.
-                    delete errNoStack.requestId
+                    delete errNoStack.requestId // redundant (= "x-amzn-requestid" header).
 
                     if (r.operation || r.params) {
                         log.error(
-                            'API request failed: %s\nparams: %O\nerror: %O\nheaders: %O',
+                            'API request failed (time: %dms): %s\nparams: %O\nerror: %O\nheaders: %O',
+                            timecost,
                             r.operation,
-                            r.params,
+                            truncateProps(r.params, 20, ['nextToken']),
                             errNoStack,
                             logHeaders
                         )
                     } else {
-                        log.error('API request failed:%O\nheaders: %O', req, logHeaders)
+                        log.error(
+                            'API request failed (time: %dms):%O\nheaders: %O',
+                            timecost,
+                            truncateProps(req, 20, ['nextToken']),
+                            logHeaders
+                        )
                     }
                     if (silent) {
                         if (defaultVal === undefined) {
@@ -286,7 +289,15 @@ class CodeCatalystClientInternal {
                     }
                     return
                 }
-                log.verbose('API request (%s):\nparams: %O\nresponse: %O', r.operation ?? '?', r.params ?? '?', data)
+                if (log.logLevelEnabled('verbose')) {
+                    log.verbose(
+                        'API request (time: %dms): %s\nparams: %O\nresponse: %O',
+                        timecost,
+                        r.operation ?? '?',
+                        r.params ? truncateProps(r.params, 20, ['nextToken']) : '?',
+                        truncateProps(data as object, 20, ['nextToken'])
+                    )
+                }
                 resolve(data)
             })
         })

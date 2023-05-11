@@ -4,38 +4,11 @@
  */
 
 import { getLogger } from '../../logger'
-import { fromExtensionManifest, migrateSetting, Settings } from '../../settings'
+import { fromExtensionManifest, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
 import { onceChanged } from '../../utilities/functionUtils'
-
-// TODO(sijaden): remove after a few releases
-export async function migrateLegacySettings() {
-    await migrateSetting(
-        {
-            key: 'aws.manuallySelectedBuckets',
-            type: SavedBuckets,
-        },
-        { key: 'aws.samcli.manuallySelectedBuckets' }
-    )
-
-    await migrateSetting(
-        {
-            key: 'aws.sam.enableCodeLenses',
-            type: Boolean,
-        },
-        { key: 'aws.samcli.enableCodeLenses' }
-    )
-
-    await migrateSetting(
-        {
-            key: 'aws.samcli.lambda.timeout',
-            type: Number,
-        },
-        { key: 'aws.samcli.lambdaTimeout' }
-    )
-}
 
 const localTimeoutDefaultMillis: number = 90000
 interface SavedBuckets {
