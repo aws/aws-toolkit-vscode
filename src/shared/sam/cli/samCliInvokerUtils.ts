@@ -4,6 +4,7 @@
  */
 
 import { SpawnOptions } from 'child_process'
+import globals from '../../extensionGlobals'
 import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
@@ -102,11 +103,16 @@ function startsWithError(text: string): boolean {
 }
 
 export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Promise<SpawnOptions> {
+    const samTelemetry = {
+        SAM_CLI_TELEMETRY: process.env.SAM_CLI_TELEMETRY ?? (globals.telemetry.telemetryEnabled ? '1' : '0'),
+    }
+
     return {
         ...options,
         env: {
             AWS_TOOLING_USER_AGENT: await getUserAgent({ includeClientId: false }),
             ...options?.env,
+            ...samTelemetry,
         },
     }
 }
