@@ -10,6 +10,65 @@ import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 
+/**
+ * Truncates string `s` if it exceeds `n` chars.
+ *
+ * If `n` is negative, truncates at start instead of end.
+ *
+ * @param s String to truncate
+ * @param n Truncate top-level string properties exceeding this length
+ * @param suffix String appended to truncated value (default: "…")
+ */
+export function truncate(s: string, n: number, suffix?: string): string {
+    suffix = suffix ?? '…'
+    if (s.length <= Math.abs(n)) {
+        return s
+    }
+    const start = n < 0 ? s.length - Math.abs(n) : 0
+    const end = n < 0 ? s.length : n
+    const truncated = s.substring(start, end)
+    return n < 0 ? suffix + truncated : truncated + suffix
+}
+
+/**
+ * Creates a (shallow) clone of `obj` and truncates its top-level string properties.
+ *
+ * @param obj Object to copy and truncate
+ * @param len Truncate top-level string properties exceeding this length
+ * @param propNames Only truncate properties in this list
+ * @param suffix String appended to truncated values (default: "…")
+ */
+export function truncateProps(obj: object, len: number, propNames?: string[], suffix?: string): object {
+    if (len <= 0) {
+        throw Error(`invalid len: ${len}`)
+    }
+    // Shallow-copy to avoid modifying the original object.
+    const r = { ...obj }
+
+    if (propNames) {
+        for (const propName of propNames) {
+            try {
+                const val = (r as any)[propName]
+                if (val !== undefined && typeof val === 'string') {
+                    ;(r as any)[propName] = truncate(val, len, suffix)
+                }
+            } catch {
+                // Do nothing ("best effort").
+            }
+        }
+    } else {
+        for (const propName of Object.getOwnPropertyNames(r)) {
+            try {
+                ;(r as any)[propName] = truncate((r as any)[propName], len, suffix)
+            } catch {
+                // Do nothing ("best effort").
+            }
+        }
+    }
+
+    return r
+}
+
 export function removeAnsi(text: string): string {
     try {
         return stripAnsi(text)
@@ -57,21 +116,6 @@ export function stripNewLinesAndComments(text: string): string {
     })
 
     return result
-}
-
-/**
- * Returns string if it is less than n chars long, or truncates the string and appends "…".
- *
- * If n is negative, string is truncated at start instead of end.
- */
-export function truncate(s: string, n: number): string {
-    if (s.length <= Math.abs(n)) {
-        return s
-    }
-    const start = n < 0 ? s.length - Math.abs(n) : 0
-    const end = n < 0 ? s.length : n
-    const truncated = s.substring(start, end)
-    return n < 0 ? '…' + truncated : truncated + '…'
 }
 
 /**

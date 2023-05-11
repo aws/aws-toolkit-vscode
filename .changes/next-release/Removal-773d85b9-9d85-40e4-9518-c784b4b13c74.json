@@ -1,0 +1,4 @@
+{
+	"type": "Removal",
+	"description": "Removed legacy setting `aws.manuallySelectedBuckets` (use `aws.samcli.manuallySelectedBuckets` instead)"
+}

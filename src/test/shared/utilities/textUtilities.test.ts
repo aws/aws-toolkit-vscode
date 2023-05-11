@@ -4,9 +4,52 @@
  */
 
 import * as assert from 'assert'
-import { getRelativeDate, getStringHash, removeAnsi, truncate } from '../../../shared/utilities/textUtilities'
+import {
+    getRelativeDate,
+    getStringHash,
+    removeAnsi,
+    truncate,
+    truncateProps,
+} from '../../../shared/utilities/textUtilities'
 
-describe('textUtil', async function () {
+describe('textUtilities', async function () {
+    it('truncateProps()', async function () {
+        const testObj = {
+            a: 34234234234,
+            b: '123456789',
+            c: new Date(2023, 1, 1),
+            d: '123456789_abcdefg_ABCDEFG',
+            e: {
+                e1: [4, 3, 7],
+                e2: 'loooooooooo \n nnnnnnnnnnn \n gggggggg \n string',
+            },
+            f: () => {
+                throw Error()
+            },
+        }
+        const expected = {
+            ...testObj,
+            e: {
+                e1: [...testObj.e.e1],
+                e2: testObj.e.e2,
+            },
+        }
+
+        assert.deepStrictEqual(truncateProps(testObj, 25), expected)
+        assert.deepStrictEqual(truncateProps(testObj, 3, ['b']), {
+            ...expected,
+            b: '123…',
+        })
+        // Assert that original object didn't change.
+        assert.deepStrictEqual(truncateProps(testObj, 25), expected)
+
+        assert.deepStrictEqual(truncateProps(testObj, 3, ['a', 'b', 'd', 'f']), {
+            ...expected,
+            b: '123…',
+            d: '123…',
+        })
+    })
+
     it('truncate()', async function () {
         assert.deepStrictEqual(truncate('abc 123', 3), 'abc…')
         assert.deepStrictEqual(truncate('abc 123', -3), '…123')
