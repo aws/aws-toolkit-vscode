@@ -68,22 +68,24 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
 
     /**
      * Gets location of `sam` from:
-     * 1. user config (if any; overrides auto-detected location)
-     * 2. previous cached location (if valid)
-     * 3. searching for `sam` on the system
+     * 1. user config (if any)
+     * 2. previous location cached in `getLocation` (if valid)
+     * 3. system search (done by `getLocation`)
      *
      * @returns `autoDetected=true` if auto-detection was _attempted_.
      */
-    public async getOrDetectSamCli(): Promise<{ path: string | undefined; autoDetected: boolean }> {
+    public async getOrDetectSamCli(
+        forceSearch?: boolean
+    ): Promise<{ path: string | undefined; autoDetected: boolean }> {
         const fromConfig = this.get('location', '')
 
         if (fromConfig) {
-            SamCliSettings.logIfChanged(`SAM CLI location: ${fromConfig}`)
+            SamCliSettings.logIfChanged(`SAM CLI location (from settings): ${fromConfig}`)
             return { path: fromConfig, autoDetected: false }
         }
 
-        const fromSearch = await this.locationProvider.getLocation()
-        SamCliSettings.logIfChanged(`SAM CLI location: ${fromSearch?.path}`)
+        const fromSearch = await this.locationProvider.getLocation(forceSearch)
+        SamCliSettings.logIfChanged(`SAM CLI location (version: ${fromSearch?.version}): ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }
     }
 

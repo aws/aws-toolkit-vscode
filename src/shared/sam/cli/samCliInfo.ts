@@ -5,11 +5,7 @@
 
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
-import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
-/**
- * Maps out the response text from the sam cli command `sam --info`
- */
 export interface SamCliInfoResponse {
     version: string
 }
@@ -18,13 +14,16 @@ export class SamCliInfoInvocation {
     public constructor(private readonly samPath: string) {}
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const childProcessResult = await new ChildProcess(this.samPath, ['--info'], { logging: 'no' }).run()
+        const r = await new ChildProcess(this.samPath, ['--info'], { logging: 'no' }).run()
 
-        logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
-        const response = this.convertOutput(childProcessResult.stdout)
+        if (r.exitCode !== 0) {
+            // getVersionValidatorResult() will return `SamCliVersionValidation.VersionNotParseable`.
+            return { version: '' }
+        }
+        const response = this.convertOutput(r.stdout)
 
         if (!response) {
-            throw new Error('SAM CLI did not return expected data')
+            return { version: '' }
         }
 
         return response
