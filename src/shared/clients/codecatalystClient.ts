@@ -397,6 +397,15 @@ class CodeCatalystClientInternal {
      * Gets a list of all projects for the given CodeCatalyst user.
      */
     public listProjects(request: CodeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+        // Only get projects the user is a member of.
+        request.filters = [
+            ...(request.filters ?? []),
+            {
+                key: 'hasAccessTo',
+                values: ['true'],
+            },
+        ]
+
         const requester = async (request: CodeCatalyst.ListProjectsRequest) =>
             this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
