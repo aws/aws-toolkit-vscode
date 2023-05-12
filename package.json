@@ -3499,7 +3499,7 @@
         "glob": "^7.1.7",
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^12.0.0",
-        "marked": "^4.0.10",
+        "marked": "^5.0.2",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
