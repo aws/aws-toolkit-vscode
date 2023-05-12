@@ -153,11 +153,7 @@ export function createDevEnvPrompter(
         placeholder: 'Search for a Dev Environment',
         compare: (a, b) => {
             if (isData(a.data) && isData(b.data)) {
-                if (a.data.status === b.data.status) {
-                    return b.data.lastUpdatedTime.getTime() - a.data.lastUpdatedTime.getTime()
-                }
-
-                return a.data.status === 'RUNNING' ? 1 : b.data.status === 'RUNNING' ? -1 : 0
+                return b.data.lastUpdatedTime.getTime() - a.data.lastUpdatedTime.getTime()
             }
 
             return 0
