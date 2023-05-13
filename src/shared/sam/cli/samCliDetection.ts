@@ -32,7 +32,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
         await config.delete('location')
     }
 
-    const sam = await config.getOrDetectSamCli()
+    const sam = await config.getOrDetectSamCli(true)
     const notFound = sam.path === ''
 
     // Update the user setting.
