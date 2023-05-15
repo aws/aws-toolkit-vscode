@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as fs from 'fs'
 import { JavaDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/javaDependencyGraph'
-import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
+import { getTestWorkspaceFolder } from '../../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 
