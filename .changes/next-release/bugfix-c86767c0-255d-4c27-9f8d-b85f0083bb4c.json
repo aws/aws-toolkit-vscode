@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix 'null' is not a connection when authenticating to CodeWhisperer"
+}

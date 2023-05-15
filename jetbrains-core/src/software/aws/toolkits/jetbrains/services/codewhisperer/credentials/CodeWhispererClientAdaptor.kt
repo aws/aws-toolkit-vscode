@@ -20,6 +20,8 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUr
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -153,17 +155,22 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
      * it will go through this again which should get the current up-to-date connection. This stale client would be
      * unused and stay in memory for a while until eventually closed by ToolkitClientManager.
      */
-    open fun getBearerClient(oldProviderIdToRemove: String = ""): CodeWhispererRuntimeClient {
+    open fun getBearerClient(oldProviderIdToRemove: String = ""): CodeWhispererRuntimeClient? {
         myBearerClient = null
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED)
             .providerRemoved(oldProviderIdToRemove)
 
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-        connection as? AwsBearerTokenConnection ?: error("$connection is not a bearer token connection")
+        connection as? AwsBearerTokenConnection ?: run {
+            LOG.warn { "$connection is not a bearer token connection" }
+            return null
+        }
+
         return AwsClientManager.getInstance().getClient<CodeWhispererRuntimeClient>(connection.getConnectionSettings())
     }
 
     companion object {
+        private val LOG = getLogger<CodeWhispererClientAdaptorImpl>()
         private fun createUnmanagedSigv4Client(): CodeWhispererClient = AwsClientManager.getInstance().createUnmanagedClient(
             AnonymousCredentialsProvider.create(),
             CodeWhispererConstants.Config.Sigv4ClientRegion,

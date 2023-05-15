@@ -32,7 +32,6 @@ import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.credentials.DEFAULT_SSO_REGION
-import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
@@ -150,14 +149,7 @@ open class ToolkitAddConnectionDialog(
 
                 val scopes = customizer?.scopes?.nullize() ?: listOf("sso:account:access")
 
-                LOG.info {
-                    """
-                        Try to fetch credential with: 
-                        \t loginType=${modal.loginType}, 
-                        \t region=${modal.region},
-                        \t startUrl=${modal.startUrl}
-                    """.trimIndent()
-                }
+                LOG.info { "Try to fetch credential with: $modal" }
 
                 loginSso(project, startUrl, region, scopes)
             }
@@ -178,20 +170,7 @@ open class ToolkitAddConnectionDialog(
                 }
             }
 
-            LOG.warn(e) {
-                """
-                    Failed to fetch credential with:
-                    \t loginType=${modal.loginType},
-                    \t region=${modal.region},
-                    \t startUrl=${modal.startUrl},
-                    \t message=$message
-                """.trimIndent()
-            }
-
-            if (e is ProcessCanceledException) {
-                // clean up dirty connection
-                ToolkitAuthManager.getInstance().deleteConnection(ToolkitBearerTokenProvider.ssoIdentifier(modal.startUrl, modal.region))
-            }
+            LOG.warn(e) { "Failed to fetch credential with: $modal; reason: $message" }
 
             runInEdt(ModalityState.any()) {
                 ToolkitAddConnectionDialog(
