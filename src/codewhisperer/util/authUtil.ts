@@ -102,20 +102,19 @@ export class AuthUtil {
     }
 
     public async connectToAwsBuilderId() {
-        const existingConn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-        if (!existingConn) {
-            const newConn = await this.auth.createConnection(awsBuilderIdSsoProfile)
-            await this.secondaryAuth.useNewConnection(newConn)
+        let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
-            return newConn
+        if (!conn) {
+            conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
+        } else if (!isValidCodeWhispererConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
-        if (isValidCodeWhispererConnection(existingConn)) {
-            await this.secondaryAuth.useNewConnection(existingConn)
-            return existingConn
+        if (this.auth.getConnectionState(conn) === 'invalid') {
+            conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.addScopes(existingConn, defaultScopes)
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {

@@ -225,9 +225,13 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    private static instance: CodeCatalystAuthenticationProvider
+    static #instance: CodeCatalystAuthenticationProvider | undefined
+
+    public static get instance(): CodeCatalystAuthenticationProvider | undefined {
+        return CodeCatalystAuthenticationProvider.#instance
+    }
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        return (this.instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
+        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
     }
 }
