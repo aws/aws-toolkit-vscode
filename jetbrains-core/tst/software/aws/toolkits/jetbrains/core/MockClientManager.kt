@@ -8,6 +8,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.replaceService
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
@@ -87,7 +90,7 @@ class MockClientManager : AwsClientManager() {
 // Scoped to this file only, users should be using MockClientManagerRule to enforce cleanup correctly
 private fun getMockInstance(): MockClientManager = service<ToolkitClientManager>() as MockClientManager
 
-class MockClientManagerRule : ExternalResource() {
+sealed class MockClientManagerBase : ExternalResource() {
     private lateinit var mockClientManager: MockClientManager
 
     override fun before() {
@@ -115,5 +118,17 @@ class MockClientManagerRule : ExternalResource() {
     inline fun <reified T : SdkClient> register(mock: T): T = mock.also {
         @Suppress("DEPRECATION")
         manager().register(T::class, it)
+    }
+}
+
+class MockClientManagerRule : MockClientManagerBase()
+
+class MockClientManagerExtension : MockClientManagerBase(), BeforeEachCallback, AfterEachCallback {
+    override fun beforeEach(context: ExtensionContext?) {
+        before()
+    }
+
+    override fun afterEach(context: ExtensionContext?) {
+        after()
     }
 }

@@ -134,7 +134,6 @@
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate $it")</ID>
     <ID>UseCheckOrError:JavaTestUtils.kt$throw IllegalStateException("Failed to locate gradlew")</ID>
     <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
-    <ID>UseCheckOrError:MockRegionProvider.kt$MockRegionProviderRule$throw IllegalStateException("Failed to generate a unique region ID")</ID>
     <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("Can't locate us-west-2")</ID>
     <ID>UseCheckOrError:RunWithRealCredentials.kt$RunWithRealCredentials.&lt;no name provided>$throw IllegalStateException("RunWithRealCredentials requires a default AWS profile!")</ID>
     <ID>UseOrEmpty:EditAttributesDialogTest.kt$EditAttributesDialogTest$testMessageSize?.toString() ?: ""</ID>

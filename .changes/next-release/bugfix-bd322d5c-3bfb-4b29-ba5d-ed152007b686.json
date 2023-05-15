@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue reconnecting to CodeWhisperer using an Identity Center directory outside of us-east-1 (#3662)"
+}

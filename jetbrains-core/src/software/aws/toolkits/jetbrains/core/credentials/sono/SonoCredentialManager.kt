@@ -69,7 +69,7 @@ class SonoCredentialManager {
         val provider = provider()
         return when (provider?.state()) {
             null -> runUnderProgressIfNeeded(null, message("credentials.sono.login.pending"), true) {
-                loginSso(project, SONO_URL, requestedScopes = CODECATALYST_SCOPES)
+                loginSso(project, SONO_URL, SONO_REGION, CODECATALYST_SCOPES)
             }
 
             else -> reauthProviderIfNeeded(project, provider)

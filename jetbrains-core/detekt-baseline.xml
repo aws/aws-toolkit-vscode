@@ -165,7 +165,6 @@
     <ID>UseCheckOrError:LocalLambdaRunSettings.kt$TemplateRunSettings$throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")</ID>
     <ID>UseCheckOrError:LocalLambdaRunSettings.kt$throw IllegalStateException("Can't find debugger support for $this")</ID>
     <ID>UseCheckOrError:MockClientManager.kt$MockClientManager$throw IllegalStateException("No mock registered for $sdkClass")</ID>
-    <ID>UseCheckOrError:MockRegionProvider.kt$MockRegionProviderRule$throw IllegalStateException("Failed to generate a unique region ID")</ID>
     <ID>UseCheckOrError:OpenShellInContainerDialog.kt$OpenShellInContainerDialog$throw IllegalStateException("Task not Selected")</ID>
     <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile $sourceProfileName looks to have been removed")</ID>
     <ID>UseCheckOrError:ProfileCredentialProviderFactory.kt$ProfileCredentialProviderFactory$throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")</ID>

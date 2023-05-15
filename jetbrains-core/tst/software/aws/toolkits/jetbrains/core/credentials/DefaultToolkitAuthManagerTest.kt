@@ -161,7 +161,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo", requestedScopes = emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
@@ -189,7 +189,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo", requestedScopes = emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).resolveToken()
@@ -215,7 +215,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo", requestedScopes = emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).reauthenticate()
@@ -241,7 +241,7 @@ class DefaultToolkitAuthManagerTest {
                 )
             )
 
-            loginSso(projectRule.project, "foo", requestedScopes = listOf("existing1"))
+            loginSso(projectRule.project, "foo", "us-east-1", listOf("existing1"))
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
@@ -269,7 +269,7 @@ class DefaultToolkitAuthManagerTest {
             )
 
             val newScopes = listOf("existing1", "new1")
-            loginSso(projectRule.project, "foo", requestedScopes = newScopes)
+            loginSso(projectRule.project, "foo", "us-east-1", newScopes)
 
             val captor = argumentCaptor<ManagedBearerSsoConnection>()
 
@@ -298,7 +298,7 @@ class DefaultToolkitAuthManagerTest {
             // before
             assertThat(sut.listConnections()).hasSize(0)
 
-            loginSso(projectRule.project, "foo", requestedScopes = listOf("scope1", "scope2"))
+            loginSso(projectRule.project, "foo", "us-east-1", listOf("scope1", "scope2"))
 
             // after
             assertThat(sut.listConnections()).hasSize(1)

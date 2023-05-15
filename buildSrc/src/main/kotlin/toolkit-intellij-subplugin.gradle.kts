@@ -71,6 +71,24 @@ configurations {
         testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterEngine").get())
         testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterVintage").get())
     }
+
+    all {
+        if (name.startsWith("detekt")) {
+            return@all
+        }
+
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlinx" && requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(versionCatalog.findVersion("kotlinCoroutines").get().toString())
+                because("resolve kotlinx-coroutines version conflicts in favor of local version catalog")
+            }
+
+            if (requested.group == "org.jetbrains.kotlin" && requested.name.startsWith("kotlin")) {
+                useVersion(versionCatalog.findVersion("kotlin").get().toString())
+                because("resolve kotlin version conflicts in favor of local version catalog")
+            }
+        }
+    }
 }
 
 tasks.processResources {

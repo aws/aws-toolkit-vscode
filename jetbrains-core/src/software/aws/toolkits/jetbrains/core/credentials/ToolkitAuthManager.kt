@@ -9,17 +9,16 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageDialogBuilder
+import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.ClientConnectionSettings
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.TokenConnectionSettings
-import software.aws.toolkits.core.credentials.DEFAULT_SSO_REGION
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
-import software.aws.toolkits.jetbrains.core.credentials.sono.ALL_SONO_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -104,7 +103,7 @@ interface ToolkitConnectionManager : Disposable {
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
 
-fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_REGION, requestedScopes: List<String> = ALL_SONO_SCOPES): BearerTokenProvider {
+fun loginSso(project: Project?, startUrl: String, region: String, requestedScopes: List<String>): BearerTokenProvider {
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
 
     val manager = ToolkitAuthManager.getInstance()
@@ -174,7 +173,8 @@ fun loginSso(project: Project?, startUrl: String, region: String = DEFAULT_SSO_R
     }
 }
 
-private fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
+@VisibleForTesting
+internal fun reauthConnection(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
     val provider = reauthProviderIfNeeded(project, connection)
 
     ToolkitConnectionManager.getInstance(project).switchConnection(connection)

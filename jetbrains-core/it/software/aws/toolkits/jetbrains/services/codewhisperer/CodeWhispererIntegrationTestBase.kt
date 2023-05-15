@@ -34,6 +34,8 @@ import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.MockClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.codeWhispererRecommendationActionId
@@ -85,7 +87,7 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
         assumeTrue("CI doesn't have Builder ID credentials", System.getenv("CI").isNullOrBlank())
         MockClientManager.useRealImplementations(disposableRule.disposable)
 
-        loginSso(projectRule.project, SONO_URL)
+        loginSso(projectRule.project, SONO_URL, SONO_REGION, CODEWHISPERER_SCOPES)
         val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(SONO_URL)
         val connection = ToolkitAuthManager.getInstance().getConnection(connectionId) ?: return
         val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider

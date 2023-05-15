@@ -9,7 +9,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
@@ -161,11 +160,9 @@ object CodeWhispererUtil {
 
     fun reconnectCodeWhisperer(project: Project) {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
-        if (connection !is BearerSsoConnection) return
+        if (connection !is ManagedBearerSsoConnection) return
         ApplicationManager.getApplication().executeOnPooledThread {
-            getConnectionStartUrl(connection)?.let { startUrl ->
-                loginSso(project, startUrl, requestedScopes = connection.scopes)
-            }
+            loginSso(project, connection.startUrl, connection.region, connection.scopes)
         }
     }
 }

@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.ApplicationRule
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
@@ -62,7 +64,7 @@ private class MockRegionProvider : ToolkitRegionProvider() {
     }
 }
 
-class MockRegionProviderRule : ApplicationRule() {
+sealed class MockRegionProviderBase : ApplicationRule() {
     private val lazyRegionProvider = ClearableLazy {
         MockRegionProvider.getInstance()
     }
@@ -89,7 +91,7 @@ class MockRegionProviderRule : ApplicationRule() {
                 return generatedId
             }
         }
-        throw IllegalStateException("Failed to generate a unique region ID")
+        error("Failed to generate a unique region ID")
     }
 
     fun defaultPartition(): AwsPartition = regionManager.defaultPartition()
@@ -107,6 +109,14 @@ class MockRegionProviderRule : ApplicationRule() {
 
     fun reset() {
         regionManager.reset()
+    }
+}
+
+class MockRegionProviderRule : MockRegionProviderBase()
+
+class MockRegionProviderExtension : MockRegionProviderBase(), AfterEachCallback {
+    override fun afterEach(context: ExtensionContext?) {
+        after()
     }
 }
 
