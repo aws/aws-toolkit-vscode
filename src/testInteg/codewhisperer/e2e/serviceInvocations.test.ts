@@ -115,7 +115,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
-        
+
         assert.ok(requestId.length === 0)
         assert.ok(sessionId.length === 0)
         assert.ok(!validRecs)

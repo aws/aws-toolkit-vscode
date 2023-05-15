@@ -127,7 +127,7 @@ You can run tests directly from Visual Studio Code:
 You can also run tests from the command line:
 
     npm run test
-    npm run integrationTest
+    npm run testInteg
 
 Tests will write logs to `./.test-reports/testLog.log`.
 
