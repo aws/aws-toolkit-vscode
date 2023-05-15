@@ -223,6 +223,7 @@ const hideCommand = Commands.declare(
     'editor.action.inlineSuggest.hide',
     (service: InlineCompletionService) => async () => {
         await service.clearInlineCompletionStates(vscode.window.activeTextEditor)
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     }
 )
 
