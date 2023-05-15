@@ -12,7 +12,7 @@ import * as startSecurityScan from '../../../codewhisperer/commands/startSecurit
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
-import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
+import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import { closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
