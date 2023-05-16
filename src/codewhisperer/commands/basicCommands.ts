@@ -132,9 +132,12 @@ export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLim
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
 })
 
-export const updateReferenceLog = Commands.declare('aws.codeWhisperer.updateReferenceLog', () => () => {
-    ReferenceLogViewProvider.instance.update()
-})
+export const updateReferenceLog = Commands.declare(
+    { id: 'aws.codeWhisperer.updateReferenceLog', logging: false },
+    () => () => {
+        ReferenceLogViewProvider.instance.update()
+    }
+)
 
 async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
     const filePath = isCloud9()
@@ -144,12 +147,15 @@ async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<voi
     await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
 }
 
-export const refreshStatusBar = Commands.declare('aws.codeWhisperer.refreshStatusBar', () => () => {
-    if (AuthUtil.instance.isConnectionValid()) {
-        InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-    } else if (AuthUtil.instance.isConnectionExpired()) {
-        InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
-    } else {
-        InlineCompletionService.instance.hideCodeWhispererStatusBar()
+export const refreshStatusBar = Commands.declare(
+    { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
+    () => () => {
+        if (AuthUtil.instance.isConnectionValid()) {
+            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
+        } else {
+            InlineCompletionService.instance.hideCodeWhispererStatusBar()
+        }
     }
-})
+)

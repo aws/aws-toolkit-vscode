@@ -15,8 +15,9 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
-import { isDevenvVscode, recordSource } from './utils'
+import { isDevenvVscode } from './utils'
 import { SsoConnection } from '../credentials/auth'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -238,14 +239,16 @@ async function openReconnectedDevEnv(
         project: { name: devenv.projectName },
     }
 
-    recordSource('Reconnect')
-    await codeCatalystConnectCommand.execute(client, identifier, devenv.previousVscodeWorkspace)
+    await telemetry.runRoot(async () => {
+        telemetry.record({ source: 'Reconnect' })
+        await codeCatalystConnectCommand.execute(client, identifier, devenv.previousVscodeWorkspace)
 
-    // When we only have 1 devenv to watch we might as well close the local vscode instance
-    if (closeRootInstance) {
-        // A brief delay ensures that metrics are saved from the connect command
-        sleep(5000).then(() => vscode.commands.executeCommand('workbench.action.closeWindow'))
-    }
+        // When we only have 1 devenv to watch we might as well close the local vscode instance
+        if (closeRootInstance) {
+            // A brief delay ensures that metrics are saved from the connect command
+            sleep(5000).then(() => vscode.commands.executeCommand('workbench.action.closeWindow'))
+        }
+    })
 }
 
 function getDevEnvName(alias: string | undefined, id: string) {

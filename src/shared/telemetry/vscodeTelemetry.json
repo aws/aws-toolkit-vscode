@@ -40,11 +40,14 @@
             "passive": true,
             "metadata": [
                 { "type": "command" },
-                { "type": "debounceCount" },
                 { "type": "duration" },
                 { "type": "result" },
                 {
                     "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "debounceCount",
                     "required": false
                 }
             ]
