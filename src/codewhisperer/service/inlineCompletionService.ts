@@ -225,11 +225,6 @@ const rejectCommand = Commands.declare(
     'aws.codeWhisperer.rejectCodeSuggestion',
     (service: InlineCompletionService) => async () => {
         await service.clearInlineCompletionStates(vscode.window.activeTextEditor)
-        // fix a regression that requires user to hit Esc twice to clear inline ghost text
-        // because disposing a provider does not clear the UX
-        if (isVscHavingRegressionInlineCompletionApi()) {
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-        }
     }
 )
 
@@ -354,6 +349,11 @@ export class InlineCompletionService {
             this.disposeInlineCompletion()
             vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             this.disposeCommandOverrides()
+            // fix a regression that requires user to hit Esc twice to clear inline ghost text
+            // because disposing a provider does not clear the UX
+            if (isVscHavingRegressionInlineCompletionApi()) {
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+            }
         } finally {
             this.clearRejectionTimer()
         }
