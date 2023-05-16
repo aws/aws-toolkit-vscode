@@ -5,12 +5,11 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { isAutomation, isNameMangled } from './env'
-import { getTelemetryReason, getTelemetryResult } from '../errors'
+import { isNameMangled } from './env'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, Metric, MetricName, VscodeExecuteCommand } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -347,84 +346,73 @@ interface CommandInfo<T extends Callback> {
     readonly autoconnect?: boolean
 
     /**
-     * The telemetry metric associated with this command.
+     * The telemetry event associated with this command.
      *
-     * Metadata can be added during execution like so:
+     * Attributes can be added during execution like so:
      * ```ts
-     * telemetry.aws_foo.record({ exampleMetadata: 'bar' })
+     * telemetry.record({ exampleMetadata: 'bar' })
      * ```
      *
-     * Any metadata is sent with the metric on completion.
+     * Attributes are sent with the event on completion.
      */
     readonly telemetryName?: MetricName
+
+    /**
+     * Prevents telemetry from being emitted more than once
+     * within N milliseconds. Setting this to false disables
+     * throttling, emitting an event for every call.
+     *
+     * (default: 5 minutes)
+     */
+    readonly telemetryThrottleMs?: number | false
 }
 
 // This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
 // commands with telemetry at once. The alternative is to do a gradual rollout although
 // it's not much safer in terms of weeding out problematic commands.
-const emitInfo = new Map<string, { token: number; startTime: number; debounceCounter: number }>()
-const emitTokens: Record<string, number> = {}
+const telemetryInfo = new Map<string, { startTime: number; debounceCount: number }>()
 
-function startRecordCommand(id: string, threshold: number): number {
+function getInstrumenter(id: string, threshold: number, telemetryName?: MetricName) {
     const currentTime = Date.now()
-    const previousEmit = emitInfo.get(id)
-    const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
+    const info = telemetryInfo.get(id)
 
-    if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
-        emitInfo.set(id, { ...previousEmit, debounceCounter: previousEmit.debounceCounter + 1 })
-        return token
-    }
-
-    emitInfo.set(id, { token, startTime: currentTime, debounceCounter: previousEmit?.debounceCounter ?? 0 })
-    return token
-}
-
-function endRecordCommand(id: string, token: number, name?: MetricName, err?: unknown) {
-    const data = emitInfo.get(id)
-    const currentTime = Date.now()
-
-    if (token !== data?.token) {
+    if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
+        info.debounceCount += 1
+        telemetryInfo.set(id, info)
         getLogger().debug(`commands: skipped telemetry for "${id}"`)
-        return
+
+        return undefined
     }
 
-    emitInfo.set(id, { ...data, debounceCounter: 0 })
+    // Throttling occurs regardless of whether or not the instrumenter is invoked
+    const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
+    const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
+    telemetryInfo.set(id, { startTime: currentTime, debounceCount: 0 })
 
-    const metric = name ? (telemetry[name] as Metric<VscodeExecuteCommand>) : telemetry.vscode_executeCommand
-    metric.emit({
-        command: id,
-        debounceCount: data.debounceCounter,
-        result: getTelemetryResult(err),
-        reason: getTelemetryReason(err),
-        duration: currentTime - data.startTime,
-    })
+    return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
+        span.run(span => {
+            ;(span as Metric<VscodeExecuteCommand>).record({ command: id, debounceCount })
+
+            return fn(...args)
+        })
 }
 
 async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
-    const threshold = isAutomation() || info.telemetryName ? 0 : 300_000 // 5 minutes
-    const telemetryToken = startRecordCommand(info.id, threshold)
+    const threshold = info.telemetryThrottleMs ?? 300_000 // 5 minutes
+    const instrumenter = logging ? getInstrumenter(info.id, threshold || 0, info.telemetryName) : undefined
 
     logger.debug(`command: running ${label}${withArgs}`)
-
-    if (info.telemetryName !== undefined) {
-        telemetry[info.telemetryName].record({ command: info.id })
-    }
 
     try {
         if (info.autoconnect === true) {
             await vscode.commands.executeCommand('_aws.auth.autoConnect')
         }
 
-        const result = await fn(...args)
-        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName)
-
-        return result
+        return await (instrumenter ? instrumenter(fn, ...args) : fn(...args))
     } catch (error) {
-        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
-
         if (errorHandler !== undefined) {
             errorHandler(info, error)
         } else {

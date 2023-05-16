@@ -1164,7 +1164,7 @@ Commands.register('aws.auth.signout', () => {
     return signout(Auth.instance)
 })
 
-const addConnection = Commands.register('aws.auth.addConnection', async () => {
+const addConnection = Commands.register({ id: 'aws.auth.addConnection', telemetryThrottleMs: false }, async () => {
     const c9IamItem = createIamItem()
     c9IamItem.detail =
         'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'

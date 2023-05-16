@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
-import { openCodeCatalystUrl, recordSource } from './utils'
+import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
@@ -234,7 +234,7 @@ export class CodeCatalystCommands {
     }
 
     public updateDevEnv(...args: WithClient<typeof updateDevEnv>) {
-        telemetry.codecatalyst_updateDevEnvironmentSettings.record({
+        telemetry.record({
             codecatalyst_updateDevEnvironmentLocationType: 'remote',
         })
 
@@ -272,7 +272,7 @@ export class CodeCatalystCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            recordSource('CommandPalette')
+            telemetry.record({ source: 'CommandPalette' })
         }
 
         return this.withClient(openDevEnv, devenv, targetPath)

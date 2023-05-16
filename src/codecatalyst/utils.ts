@@ -7,7 +7,6 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
-import { telemetry } from '../shared/telemetry/telemetry'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.
@@ -55,10 +54,4 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 /** Returns true if the dev env has a "vscode" IDE runtime. */
 export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
-}
-
-export function recordSource(source: 'Webview' | 'UriHandler' | 'Reconnect' | 'CommandPalette') {
-    // TODO: add `source` (or something similar) as a base component to events
-    telemetry.codecatalyst_connect.record({ source } as any)
-    telemetry.codecatalyst_localClone.record({ source } as any)
 }

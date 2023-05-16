@@ -102,11 +102,17 @@ export class CodeWhispererNode implements RootNode {
 }
 
 export const codewhispererNode = new CodeWhispererNode()
-export const refreshCodeWhisperer = Commands.register('aws.codeWhisperer.refresh', (showFreeTierLimitNode = false) => {
-    codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
-    codewhispererNode.refresh()
-})
+export const refreshCodeWhisperer = Commands.register(
+    { id: 'aws.codeWhisperer.refresh', logging: false },
+    (showFreeTierLimitNode = false) => {
+        codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
+        codewhispererNode.refresh()
+    }
+)
 
-export const refreshCodeWhispererRootNode = Commands.register('aws.codeWhisperer.refreshRootNode', () => {
-    codewhispererNode.refreshRootNode()
-})
+export const refreshCodeWhispererRootNode = Commands.register(
+    { id: 'aws.codeWhisperer.refreshRootNode', logging: false },
+    () => {
+        codewhispererNode.refreshRootNode()
+    }
+)
