@@ -3513,7 +3513,7 @@
         "ts-node": "^10.9.1",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
-        "vscode-nls-dev": "^3.3.1",
+        "vscode-nls-dev": "^4.0.4",
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
         "webfont": "^11.2.26",
