@@ -182,6 +182,8 @@ interface TelemetryContext {
     readonly attributes: Attributes
 }
 
+const rootSpanName = 'root'
+
 // This class is called 'Telemetry' but really it can be used for any kind of tracing
 // You would need to make `Span` a template type and reduce the interface to just create/start/stop
 export class TelemetryTracer extends TelemetryBase {
@@ -267,7 +269,7 @@ export class TelemetryTracer extends TelemetryBase {
      * This can be used as a 'staging area' for adding attributes prior to creating spans.
      */
     public runRoot<T>(fn: () => T): T {
-        const span = this.createSpan('root')
+        const span = this.createSpan(rootSpanName)
         const frame = this.switchContext(span)
 
         return this.#context.run(frame, fn)
@@ -304,7 +306,12 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     private createSpan(name: string): TelemetrySpan {
-        return new TelemetrySpan(name).record(this.attributes ?? {})
+        const span = new TelemetrySpan(name).record(this.attributes ?? {})
+        if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
+            return span.record({ parentMetric: this.activeSpan.name } satisfies { parentMetric: string } as any)
+        }
+
+        return span
     }
 
     private switchContext(span: TelemetrySpan): TelemetryContext {

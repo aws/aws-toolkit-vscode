@@ -24,7 +24,7 @@ describe('TelemetrySpan', function () {
     it('removes passive and value from the metadata', function () {
         new TelemetrySpan('foo').emit({ passive: false, value: 100, reason: 'bar' })
 
-        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], { reason: 'bar' })
+        assertTelemetry('foo' as MetricName, { reason: 'bar' })
     })
 
     it('records duration if a start time is available', function () {
@@ -32,28 +32,28 @@ describe('TelemetrySpan', function () {
         clock.tick(100)
         span.stop()
 
-        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], {
+        assertTelemetry('foo' as MetricName, {
             result: 'Succeeded',
-            duration: '100',
+            duration: 100,
         })
     })
 
     it('records failure reason if available', function () {
         new TelemetrySpan('foo').start().stop(new ToolkitError('', { code: 'Foo' }))
 
-        assert.deepStrictEqual(getMetrics('foo' as MetricName)[0], {
+        assertTelemetry('foo' as MetricName, {
             result: 'Failed',
             reason: 'Foo',
-            duration: '0',
+            duration: 0,
         })
     })
 
     it('reports missing required fields', function () {
         new TelemetrySpan('vscode_executeCommand').emit()
 
-        assert.deepStrictEqual(getMetrics('vscode_executeCommand')[0], {
+        assertTelemetry('vscode_executeCommand', {
             missingFields: String(['command']),
-        })
+        } as any)
     })
 
     it('can create clones that do not copy the start time', function () {
@@ -62,9 +62,10 @@ describe('TelemetrySpan', function () {
         span.clone().emit({ result: 'Failed' })
         span.stop()
 
-        const metrics = getMetrics('foo' as MetricName)
-        assert.deepStrictEqual(metrics[0], { result: 'Failed', reason: 'bar' })
-        assert.deepStrictEqual(metrics[1], { result: 'Succeeded', duration: '100' })
+        assertTelemetry('foo' as MetricName, [
+            { result: 'Failed', reason: 'bar' },
+            { result: 'Succeeded', duration: 100 },
+        ])
     })
 })
 
@@ -257,6 +258,12 @@ describe('TelemetryTracer', function () {
                         assert.ok(tracer.spans.every(s => s.name === metricName))
                     })
                 })
+            })
+
+            it('attaches the parent event name to the child span', function () {
+                tracer.run(metricName, () => tracer.run(nestedName, () => {}))
+                assertTelemetry(metricName, { result: 'Succeeded' })
+                assertTelemetry(nestedName, { result: 'Succeeded', parentMetric: metricName } as any)
             })
         })
     })

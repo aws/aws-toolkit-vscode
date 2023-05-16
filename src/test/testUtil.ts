@@ -15,6 +15,7 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesyste
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
+import { keys, selectFrom } from '../shared/utilities/tsUtils'
 
 const testTempDirs: string[] = []
 
@@ -136,21 +137,30 @@ export function installFakeClock(): FakeTimers.InstalledClock {
  * Unlike {@link assertTelemetry}, this function does not do any transformations to
  * handle fields being converted into strings. It will also not return `passive` or `value`.
  */
-export function getMetrics<K extends MetricName>(
-    name: K,
-    ...excludeKeys: string[]
-): readonly Partial<MetricShapes[K]>[] {
-    const query = { metricName: name, excludeKeys: ['awsAccount', 'awsRegion', ...excludeKeys] }
+export function getMetrics<K extends MetricName>(name: K): readonly Partial<MetricShapes[K]>[] {
+    const query = { metricName: name }
 
     return globals.telemetry.logger.query(query) as unknown as Partial<MetricShapes[K]>[]
 }
 
+// Note that Typescript is unable to describe the set of all supertypes of a type.
+// This should be typed something like `asserts actual is * extends T`
+export function partialDeepCompare<T>(actual: unknown, expected: T, message?: string): asserts actual is T {
+    if (typeof actual !== 'object' || !actual || typeof expected !== 'object' || !expected) {
+        assert.deepStrictEqual(actual, expected, message)
+    }
+
+    const partial = selectFrom(actual, ...keys(expected as object))
+    assert.deepStrictEqual(partial, expected, message)
+}
+
 /**
  * Finds the emitted telemetry metrics with the given `name`, then checks if the metadata fields
- * match the expected values, in the (non-continguous) order specified by `expected`.
+ * match the expected values, in the order specified by `expected`. Comparisons are done using
+ * {@link partialDeepCompare}. **Only fields present in {@link expected} will be checked.**
  *
  * @param name Metric name
- * @param expected Metric(s) shape(s) which are compared _in order_ (non-continguous) to metrics matching `name`.
+ * @param expected Metric(s) shape(s) which are compared _in order_ to metrics matching `name`.
  */
 export function assertTelemetry<K extends MetricName>(
     name: K,
@@ -165,8 +175,8 @@ export function assertTelemetry<K extends MetricName>(
     expected: MetricShapes[K] | MetricShapes[K][]
 ): void | never {
     const expectedList = Array.isArray(expected) ? expected : [expected]
-    const query = { metricName: name, excludeKeys: ['awsAccount', 'duration'] }
-    let metadata = globals.telemetry.logger.query(query)
+    const query = { metricName: name }
+    const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
 
     for (let i = 0; i < expectedList.length; i++) {
@@ -179,22 +189,10 @@ export function assertTelemetry<K extends MetricName>(
             k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
         )
 
-        // Telemetry client adds awsRegion to all metrics.
-        ;(expectedCopy as any)['awsRegion'] = globals.regionProvider.guessDefaultRegion()
-
-        if (expectedList.length == 1) {
-            assert.deepStrictEqual(metadata[0], expectedCopy)
-        } else {
-            const found = metadata.findIndex(val => util.isDeepStrictEqual(val, expectedCopy))
-            assert.ok(
-                found >= 0,
-                `telemetry item ${i + 1} (of ${
-                    expectedList.length
-                }) not found (in the expected order) for metric name: "${name}" `
-            )
-            // Remove all items up to the found item, to ensure we are checking the expected _order_.
-            metadata = metadata.splice(found, metadata.length - 1)
-        }
+        const msg = `telemetry item ${i + 1} (of ${
+            expectedList.length
+        }) not found (in the expected order) for metric name: "${name}" `
+        partialDeepCompare(metadata[i], expectedCopy, msg)
 
         // Check this explicitly because we deleted it above.
         if (passive !== undefined) {
