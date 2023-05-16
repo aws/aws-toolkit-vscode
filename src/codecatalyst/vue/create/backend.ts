@@ -32,7 +32,6 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
-import { recordSource } from '../../utils'
 import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
 import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
@@ -197,8 +196,10 @@ export class CodeCatalystCreateWebview extends VueWebview {
             }
         })()
 
-        recordSource('Webview')
-        telemetry.codecatalyst_createDevEnvironment.record({ codecatalyst_createDevEnvironmentRepoType: source.type })
+        telemetry.record({
+            source: 'Webview',
+            codecatalyst_createDevEnvironmentRepoType: source.type,
+        })
 
         this.onComplete(devenv)
         return devenv
