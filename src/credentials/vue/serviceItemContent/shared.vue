@@ -1,8 +1,8 @@
 <script lang="ts">
-import AwsExplorerContent, { ResourceExplorerContentState } from './AwsExplorerContent.vue'
-import BaseServiceItemContent from './BaseServiceItemContent.vue'
-import { ServiceItemId, serviceItemIds } from '../ServiceItem.vue'
-import { AuthStatus, UnimplementedAuthStatus } from '../authForms/BaseAuthForm.vue'
+import AwsExplorerContent, { ResourceExplorerContentState } from './awsExplorerContent.vue'
+import BaseServiceItemContent from './baseServiceItemContent.vue'
+import { ServiceItemId, serviceItemIds } from '../serviceItem.vue'
+import { AuthStatus, UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent = {

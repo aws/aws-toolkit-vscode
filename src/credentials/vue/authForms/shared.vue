@@ -1,6 +1,6 @@
 <script lang="ts">
-import { CredentialsState } from './CredentialsForm.vue'
-import { authForms } from './BaseAuthForm.vue'
+import { CredentialsState } from './manageCredentials.vue'
+import { authForms } from './baseAuth.vue'
 
 /**
  * The state instance of all auth forms

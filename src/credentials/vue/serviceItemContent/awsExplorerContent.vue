@@ -11,9 +11,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { AuthStatus } from '../authForms/BaseAuthForm.vue'
-import CredentialsForm, { CredentialsState } from '../authForms/CredentialsForm.vue'
-import BaseServiceItemContent from './BaseServiceItemContent.vue'
+import { AuthStatus } from '../authForms/baseAuth.vue'
+import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
+import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState from '../authForms/shared.vue'
 
 export default defineComponent({

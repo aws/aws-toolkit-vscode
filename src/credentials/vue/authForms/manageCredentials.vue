@@ -50,8 +50,8 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm, { AuthStatus } from './BaseAuthForm.vue'
-import FormTitle from './FormTitle.vue'
+import BaseAuthForm, { AuthStatus } from './baseAuth.vue'
+import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile } from '../../types'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { AuthWebview } from '../show'

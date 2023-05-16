@@ -94,8 +94,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './ServiceItem.vue'
-import AwsExplorerContent from './serviceItemContent/AwsExplorerContent.vue'
+import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './serviceItem.vue'
+import AwsExplorerContent from './serviceItemContent/awsExplorerContent.vue'
 import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemContent/shared.vue'
 
 const serviceItemsState = new ServiceItemsState()
