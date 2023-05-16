@@ -23,6 +23,7 @@ import { ToolkitError } from '../../shared/errors'
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/credentials/vue/index.js'
+    public readonly onDidConnectionUpdate = new vscode.EventEmitter<undefined>()
 
     private codeCatalystAuth: CodeCatalystAuthenticationProvider
 
@@ -126,17 +127,35 @@ export class AuthWebview extends VueWebview {
             await this.codeCatalystAuth.removeSavedConnection()
         }
     }
+
+    /**
+     * Sets up {@link onDidConnectionUpdate} to emit auth change events
+     * that happen outside of the webview (eg: status bar > quickpick).
+     */
+    setupConnectionChangeEmitter() {
+        const events = [
+            this.codeCatalystAuth.onDidChangeActiveConnection,
+            CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
+            Auth.instance.onDidChangeActiveConnection,
+            Auth.instance.onDidChangeConnectionState,
+        ]
+
+        events.forEach(event =>
+            event(() => {
+                this.onDidConnectionUpdate.fire(undefined)
+            })
+        )
+    }
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
-let submitPromise: Promise<void> | undefined
 
 export async function showAuthWebview(ctx: vscode.ExtensionContext): Promise<void> {
-    submitPromise ??= new Promise<void>((resolve, reject) => {
-        activePanel ??= new Panel(ctx)
-    })
+    activePanel ??= new Panel(ctx)
+
+    activePanel.server.setupConnectionChangeEmitter()
 
     const webview = await activePanel!.show({
         title: `Add Connection to ${getIdeProperties().company}`,
@@ -149,10 +168,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext): Promise<voi
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined
-                submitPromise = undefined
             }),
         ]
     }
-
-    return submitPromise
 }
