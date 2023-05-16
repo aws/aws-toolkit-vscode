@@ -18,13 +18,15 @@ import { getLogger } from '../../shared/logger/logger'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Commands } from '../../shared/vscode/commands2'
-import { getPrefixSuffixOverlap } from '../util/commonUtil'
+import { getPrefixSuffixOverlap, isVscHavingRegressionInlineCompletionApi } from '../util/commonUtil'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
+import { Mutex } from 'async-mutex'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
+const mutex = new Mutex()
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -219,11 +221,15 @@ const nextCommand = Commands.declare(
     }
 )
 
-const hideCommand = Commands.declare(
-    'editor.action.inlineSuggest.hide',
+const rejectCommand = Commands.declare(
+    'aws.codeWhisperer.rejectCodeSuggestion',
     (service: InlineCompletionService) => async () => {
         await service.clearInlineCompletionStates(vscode.window.activeTextEditor)
-        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+        // fix a regression that requires user to hit Esc twice to clear inline ghost text
+        // because disposing a provider does not clear the UX
+        if (isVscHavingRegressionInlineCompletionApi()) {
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+        }
     }
 )
 
@@ -235,7 +241,7 @@ export class InlineCompletionService {
     private _timer?: NodeJS.Timer
     private _showRecommendationTimer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined = undefined
-    private hide: vscode.Disposable
+    private reject: vscode.Disposable
     private next: vscode.Disposable
     private prev: vscode.Disposable
     private _isPaginationRunning = false
@@ -243,7 +249,7 @@ export class InlineCompletionService {
     constructor() {
         this.prev = prevCommand.register(this)
         this.next = nextCommand.register(this)
-        this.hide = hideCommand.register(this)
+        this.reject = rejectCommand.register(this)
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
             this.startShowRecommendationTimer()
         })
@@ -288,7 +294,7 @@ export class InlineCompletionService {
     private registerCommandOverrides() {
         this.prev = prevCommand.register(this)
         this.next = nextCommand.register(this)
-        this.hide = hideCommand.register(this)
+        this.reject = rejectCommand.register(this)
     }
 
     subscribeSuggestionCommands() {
@@ -296,12 +302,12 @@ export class InlineCompletionService {
         this.registerCommandOverrides()
         globals.context.subscriptions.push(this.prev)
         globals.context.subscriptions.push(this.next)
-        globals.context.subscriptions.push(this.hide)
+        globals.context.subscriptions.push(this.reject)
     }
 
     private disposeCommandOverrides() {
         this.prev.dispose()
-        this.hide.dispose()
+        this.reject.dispose()
         this.next.dispose()
     }
 
@@ -361,7 +367,7 @@ export class InlineCompletionService {
         if (this.isSuggestionVisible()) {
             // to force refresh the visual cue so that the total recommendation count can be updated
             const index = this.inlineCompletionProvider?.getActiveItemIndex
-            await this.showRecommendation(index ? index : 0, true)
+            await this.showRecommendation(index ? index : 0, false)
             return
         }
         if (
@@ -441,34 +447,49 @@ export class InlineCompletionService {
         TelemetryHelper.instance.tryRecordClientComponentLatency(editor.document.languageId)
     }
 
-    async showRecommendation(indexShift: number, isFirstRecommendation: boolean = false) {
-        this.inlineCompletionProvider = new CWInlineCompletionItemProvider(
-            this.inlineCompletionProvider?.getActiveItemIndex,
-            indexShift
-        )
-        this.inlineCompletionProviderDisposable?.dispose()
-        // when suggestion is active, registering a new provider will let VS Code invoke inline API automatically
-        this.inlineCompletionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
-            Object.assign([], CodeWhispererConstants.supportedLanguages),
-            this.inlineCompletionProvider
-        )
-        if (isFirstRecommendation) {
-            await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
-            if (vscode.window.activeTextEditor) {
-                const languageContext = runtimeLanguageContext.getLanguageContext(
-                    vscode.window.activeTextEditor.document.languageId
-                )
-                telemetry.codewhisperer_perceivedLatency.emit({
-                    codewhispererRequestId: RecommendationHandler.instance.requestId,
-                    codewhispererSessionId: RecommendationHandler.instance.sessionId,
-                    codewhispererTriggerType: TelemetryHelper.instance.triggerType,
-                    codewhispererCompletionType: TelemetryHelper.instance.completionType,
-                    codewhispererLanguage: languageContext.language,
-                    duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
-                    passive: true,
-                    credentialStartUrl: TelemetryHelper.instance.startUrl,
-                })
+    async showRecommendation(indexShift: number, noSuggestionVisible: boolean = false) {
+        await mutex.runExclusive(async () => {
+            const inlineCompletionProvider = new CWInlineCompletionItemProvider(
+                this.inlineCompletionProvider?.getActiveItemIndex,
+                indexShift
+            )
+            this.inlineCompletionProviderDisposable?.dispose()
+            // when suggestion is active, registering a new provider will let VS Code invoke inline API automatically
+            this.inlineCompletionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
+                Object.assign([], CodeWhispererConstants.supportedLanguages),
+                inlineCompletionProvider
+            )
+            this.inlineCompletionProvider = inlineCompletionProvider
+
+            if (isVscHavingRegressionInlineCompletionApi() && !noSuggestionVisible) {
+                // fix a regression in new VS Code when disposing and re-registering
+                // a new provider does not auto refresh the inline suggestion widget
+                // by manually refresh it
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }
+            if (noSuggestionVisible) {
+                await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
+                this.sendPerceivedLatencyTelemetry()
+            }
+        })
+    }
+
+    private sendPerceivedLatencyTelemetry() {
+        if (vscode.window.activeTextEditor) {
+            const languageContext = runtimeLanguageContext.getLanguageContext(
+                vscode.window.activeTextEditor.document.languageId
+            )
+            telemetry.codewhisperer_perceivedLatency.emit({
+                codewhispererRequestId: RecommendationHandler.instance.requestId,
+                codewhispererSessionId: RecommendationHandler.instance.sessionId,
+                codewhispererTriggerType: TelemetryHelper.instance.triggerType,
+                codewhispererCompletionType: TelemetryHelper.instance.completionType,
+                codewhispererLanguage: languageContext.language,
+                duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
+                passive: true,
+                credentialStartUrl: TelemetryHelper.instance.startUrl,
+            })
         }
     }
 
