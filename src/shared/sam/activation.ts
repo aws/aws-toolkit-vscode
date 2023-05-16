@@ -26,8 +26,7 @@ import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProv
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
-import { getLogger } from '../logger/logger'
-import { TelemetryService } from '../telemetry/telemetryService'
+import { PerfLog, getLogger } from '../logger/logger'
 import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
 import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
@@ -37,27 +36,47 @@ import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfigu
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
-import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
+import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
+const supportedLanguages: {
+    [language: string]: codelensUtils.OverridableCodeLensProvider
+} = {}
+
 /**
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
+    let didActivateCodeLensProviders = false
     await createYamlExtensionPrompt()
-    await migrateLegacySettings()
     const config = SamCliSettings.instance
 
-    ctx.extensionContext.subscriptions.push(
-        ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
-    )
+    // Do this "on-demand" because it is slow.
+    async function activateSlowCodeLensesOnce(): Promise<void> {
+        if (!didActivateCodeLensProviders) {
+            didActivateCodeLensProviders = true
+            const disposeable = await activateCodefileOverlays(ctx, config)
+            ctx.extensionContext.subscriptions.push(...disposeable)
+        }
+    }
 
-    await registerServerlessCommands(ctx, config)
+    if (config.get('enableCodeLenses', false)) {
+        activateSlowCodeLensesOnce()
+    }
+
+    await registerCommands(ctx, config)
+    Commands.register('aws.addSamDebugConfig', async () => {
+        if (!didActivateCodeLensProviders) {
+            await activateSlowCodeLensesOnce()
+            await samDebugConfigCmd()
+        }
+    })
 
     ctx.extensionContext.subscriptions.push(
+        activateSamYamlOverlays(),
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
     )
 
@@ -73,10 +92,19 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    config.onDidChange(event => {
-        if (event.key === 'location') {
-            // This only shows a message (passive=true), does not set anything.
-            sharedDetectSamCli({ passive: true, showMessage: true })
+    config.onDidChange(async event => {
+        switch (event.key) {
+            case 'location':
+                // This only shows a message (passive=true), does not set anything.
+                sharedDetectSamCli({ passive: true, showMessage: true })
+                break
+            case 'enableCodeLenses':
+                if (config.get(event.key, false) && !didActivateCodeLensProviders) {
+                    await activateSlowCodeLensesOnce()
+                }
+                break
+            default:
+                break
         }
     })
 
@@ -89,7 +117,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     registerSync()
 }
 
-async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
+async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         Commands.register({ id: 'aws.samcli.detect', autoconnect: false }, () =>
@@ -124,6 +152,10 @@ async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSetti
                     settings,
                 }
             )
+        }),
+        Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
+            const toggled = !settings.get('enableCodeLenses', false)
+            settings.update('enableCodeLenses', toggled)
         })
     )
 }
@@ -159,12 +191,70 @@ async function activateCodeLensRegistry(context: ExtContext) {
     context.extensionContext.subscriptions.push(globals.codelensRootRegistry)
 }
 
-async function activateCodeLensProviders(
+async function samDebugConfigCmd() {
+    const activeEditor = vscode.window.activeTextEditor
+    if (!activeEditor) {
+        getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
+        vscode.window.showErrorMessage(
+            localize('AWS.pickDebugHandler.noEditor', 'Toolkit could not find an active editor')
+        )
+
+        return
+    }
+    const document = activeEditor.document
+    const provider = supportedLanguages[document.languageId]
+    if (!provider) {
+        getLogger().error(`aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`)
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.pickDebugHandler.invalidLanguage',
+                'Toolkit cannot detect handlers in language: {0}',
+                document.languageId
+            )
+        )
+
+        return
+    }
+
+    // TODO: No reason for this to depend on the codelense provider (which scans the whole workspace and creates filewatchers).
+    const lenses = (await provider.provideCodeLenses(document, new vscode.CancellationTokenSource().token, true)) ?? []
+    codelensUtils.invokeCodeLensCommandPalette(document, lenses)
+}
+
+/**
+ * Creates vscode.CodeLensProvider for SAM "template.yaml" files.
+ *
+ * Used for:
+ * 1. showing codelenses in SAM template.yaml files
+ */
+function activateSamYamlOverlays(): vscode.Disposable {
+    return vscode.languages.registerCodeLensProvider(
+        [
+            {
+                language: 'yaml',
+                scheme: 'file',
+                pattern: '**/*template.{yml,yaml}',
+            },
+        ],
+        new SamTemplateCodeLensProvider()
+    )
+}
+
+/**
+ * EXPENSIVE AND SLOW. Creates filewatchers and vscode.CodeLensProvider objects
+ * for codefiles (as opposed to SAM template.yaml files).
+ *
+ * Used for:
+ * 1. showing codelenses
+ * 2. "Add SAM Debug Configuration" command (TODO: remove dependency on
+ *    codelense provider (which scans the whole workspace and creates
+ *    filewatchers)).
+ */
+async function activateCodefileOverlays(
     context: ExtContext,
-    configuration: SamCliSettings,
-    toolkitOutputChannel: vscode.OutputChannel,
-    telemetryService: TelemetryService
+    configuration: SamCliSettings
 ): Promise<vscode.Disposable[]> {
+    const perflog = new PerfLog('activateCodefileOverlays')
     const disposables: vscode.Disposable[] = []
     const tsCodeLensProvider = codelensUtils.makeTypescriptCodeLensProvider(configuration)
     const pyCodeLensProvider = await codelensUtils.makePythonCodeLensProvider(configuration)
@@ -176,12 +266,8 @@ async function activateCodeLensProviders(
     // the event to notify on when their results change.
     await activateCodeLensRegistry(context)
 
-    const supportedLanguages: {
-        [language: string]: codelensUtils.OverridableCodeLensProvider
-    } = {
-        [jsLensProvider.javascriptLanguage]: tsCodeLensProvider,
-        [pyLensProvider.pythonLanguage]: pyCodeLensProvider,
-    }
+    supportedLanguages[jsLensProvider.javascriptLanguage] = tsCodeLensProvider
+    supportedLanguages[pyLensProvider.pythonLanguage] = pyCodeLensProvider
 
     if (!isCloud9()) {
         supportedLanguages[javaLensProvider.javaLanguage] = javaCodeLensProvider
@@ -190,66 +276,13 @@ async function activateCodeLensProviders(
         supportedLanguages[jsLensProvider.typescriptLanguage] = tsCodeLensProvider
     }
 
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            [
-                {
-                    language: 'yaml',
-                    scheme: 'file',
-                    pattern: '**/*template.{yml,yaml}',
-                },
-            ],
-            new SamTemplateCodeLensProvider()
-        )
-    )
-
     disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.typescriptAllFiles, tsCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.pythonAllfiles, pyCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.javaAllfiles, javaCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.csharpAllfiles, csCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.goAllfiles, goCodeLensProvider))
 
-    disposables.push(
-        Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
-            const toggled = !configuration.get('enableCodeLenses', false)
-            configuration.update('enableCodeLenses', toggled)
-        })
-    )
-
-    disposables.push(
-        Commands.register('aws.addSamDebugConfig', async () => {
-            const activeEditor = vscode.window.activeTextEditor
-            if (!activeEditor) {
-                getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
-                vscode.window.showErrorMessage(
-                    localize('AWS.pickDebugHandler.noEditor', 'Toolkit could not find an active editor')
-                )
-
-                return
-            }
-            const document = activeEditor.document
-            const provider = supportedLanguages[document.languageId]
-            if (!provider) {
-                getLogger().error(
-                    `aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`
-                )
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.pickDebugHandler.invalidLanguage',
-                        'Toolkit cannot detect handlers in language: {0}',
-                        document.languageId
-                    )
-                )
-
-                return
-            }
-
-            const lenses =
-                (await provider.provideCodeLenses(document, new vscode.CancellationTokenSource().token, true)) ?? []
-            codelensUtils.invokeCodeLensCommandPalette(document, lenses)
-        })
-    )
-
+    perflog.done()
     return disposables
 }
 

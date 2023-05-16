@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.72.0-SNAPSHOT",
+    "version": "1.74.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3431,6 +3431,7 @@
         }
     },
     "scripts": {
+        "prepare": "ts-node ./scripts/build/prepare.ts",
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
@@ -3442,7 +3443,7 @@
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
-        "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
+        "testInteg": "npm run testCompile && ts-node ./scripts/test/testInteg.ts && npm run report",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
@@ -3459,7 +3460,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.125",
+        "@aws-toolkits/telemetry": "^1.0.127",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -3470,7 +3471,7 @@
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
-        "@types/marked": "^4.0.2",
+        "@types/marked": "^4.3.0",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.5",
@@ -3498,7 +3499,7 @@
         "glob": "^7.1.7",
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^12.0.0",
-        "marked": "^4.0.10",
+        "marked": "^5.0.2",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
@@ -3509,7 +3510,7 @@
         "readline-sync": "^1.4.9",
         "sinon": "^14.0.0",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.7.0",
+        "ts-node": "^10.9.1",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
@@ -3518,7 +3519,7 @@
         "webfont": "^11.2.26",
         "webpack": "^5.81.0",
         "webpack-cli": "^4.9.1",
-        "webpack-dev-server": "^4.9.2"
+        "webpack-dev-server": "^4.13.3"
     },
     "dependencies": {
         "@aws-sdk/client-sso": "^3.181.0",
@@ -3538,13 +3539,13 @@
         "fast-json-patch": "^3.1.1",
         "fs-extra": "^10.0.1",
         "got": "^11.8.5",
-        "immutable": "^4.0.0",
+        "immutable": "^4.3.0",
         "js-yaml": "^4.1.0",
-        "jsonc-parser": "^3.0.0",
+        "jsonc-parser": "^3.2.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
-        "portfinder": "^1.0.25",
+        "portfinder": "^1.0.32",
         "semver": "^7.5.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
@@ -3552,7 +3553,7 @@
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
-        "vscode-languageserver-textdocument": "^1.0.3",
+        "vscode-languageserver-textdocument": "^1.0.8",
         "vscode-nls": "^5.2.0",
         "vue": "^3.2.31",
         "winston": "^3.7.1",

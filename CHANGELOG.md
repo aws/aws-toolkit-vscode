@@ -1,3 +1,19 @@
+## 1.73.0 2023-05-11
+
+- **Bug Fix** Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`
+- **Bug Fix** CodeCatalyst: When a Space has reached quota, trying to connect to a DevEnv waits a long time instead of failing immediately.
+- **Feature** Faster startup and less filesystem usage when the `aws.samcli.enableCodeLenses` setting is disabled
+- **Removal** Removed legacy setting `aws.sam.enableCodeLenses` (use `aws.samcli.enableCodeLenses` instead)
+- **Removal** Removed legacy setting `aws.manuallySelectedBuckets` (use `aws.samcli.manuallySelectedBuckets` instead)
+- **Removal** Removed legacy setting `aws.samcli.lambda.timeout` (use `aws.samcli.lambdaTimeout` instead)
+
+## 1.72.0 2023-05-04
+
+- **Bug Fix** "Open CodeCatalyst Dev Environment" fails on flatpak (steamdeck)
+- **Bug Fix** auth: changes to the AWS shared configuration files are not always respected when fetching credentials
+- **Bug Fix** CodeWhisperer status bar showing even when not in use
+- **Feature** Improved startup performance on large workspaces #3370
+
 ## 1.71.0 2023-04-28
 
 - **Bug Fix** CodeWhisperer shows "The security token included in this request is expired" in Cloud9

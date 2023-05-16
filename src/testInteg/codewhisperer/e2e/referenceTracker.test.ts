@@ -58,7 +58,6 @@ describe('CodeWhisperer service invocation', async function () {
         this.skip()
         //valid connection required to run tests
         skiptTestIfNoValidConn(validConnection, this)
-       
     })
 
     it('trigger known to return recs with references returns rec with reference', async function () {
@@ -99,7 +98,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestIdBefore = RecommendationHandler.instance.requestId
         const sessionIdBefore = RecommendationHandler.instance.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
-        
+
         assert.ok(requestIdBefore.length === 0)
         assert.ok(sessionIdBefore.length === 0)
         assert.ok(!validRecsBefore)
@@ -116,7 +115,7 @@ describe('CodeWhisperer service invocation', async function () {
         const requestId = RecommendationHandler.instance.requestId
         const sessionId = RecommendationHandler.instance.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
- 
+
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
         //no recs returned because example request returns 1 rec with reference, so no recs returned when references off

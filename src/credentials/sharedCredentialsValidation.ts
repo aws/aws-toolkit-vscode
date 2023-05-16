@@ -6,89 +6,127 @@
  */
 
 import { localize } from 'vscode-nls'
-import { SectionName, SharedCredentialsKeys, StaticCredentialsProfileData } from './types'
+import { CredentialsData, CredentialsKey, SectionName, SharedCredentialsKeys } from './types'
 import { ToolkitError } from '../shared/errors'
 import { profileExists } from './sharedCredentials'
+import { getLogger } from '../shared/logger'
+
+/** credentials keys and their associated error message, if they exists */
+type CredentialsErrors = CredentialsData
 
 /**
- * The format validators for shared credentials keys.
+ * A function that validates a credential value
  *
- * A format validator validates the format of the data,
- * but not the validity of the content.
+ * @returns An error message string if there is an error, otherwise undefined.
  */
-export const CredentialsKeyFormatValidators = {
-    [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: getAccessKeyIdFormatError,
-    [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: getSecretAccessKeyFormatError,
-} as const
+type GetCredentialError = (key: CredentialsKey, value: string | undefined) => string | undefined
 
 /**
- * Holds the error for each key of static credentials data,
- * if it exists. This allows the user to get all the errors
- * at once.
+ * Validates all credentials values from the given input
+ *
+ * @returns Returns the same shape as the input, but the value of each
+ * key is an error message if the original value is invalid,
+ * otherwise undefined.
+ *
+ * If there are no errors at all, undefined is returned
  */
-export type StaticCredentialsErrorResult = {
-    [k in keyof StaticCredentialsProfileData]: string | undefined
+export function getCredentialsErrors(
+    data: CredentialsData,
+    validateFunc: GetCredentialError = getCredentialError
+): CredentialsErrors | undefined {
+    const errors: CredentialsData = {}
+    Object.entries(data).forEach(([key, value]) => {
+        if (!isCredentialsKey(key)) {
+            return
+        }
+        errors[key] = validateFunc(key, value)
+    })
+    if (Object.keys(errors).length === 0) {
+        return
+    }
+    return errors
 }
 
-export function getStaticCredentialsDataErrors(
-    data: StaticCredentialsProfileData
-): StaticCredentialsErrorResult | undefined {
-    const accessKeyIdError = CredentialsKeyFormatValidators[SharedCredentialsKeys.AWS_ACCESS_KEY_ID](
-        data[SharedCredentialsKeys.AWS_ACCESS_KEY_ID]
-    )
-    const secretAccessKeyError = CredentialsKeyFormatValidators[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY](
-        data[SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]
-    )
-
-    if (accessKeyIdError === undefined && secretAccessKeyError === undefined) {
-        return undefined
+export const getCredentialError: GetCredentialError = (key: CredentialsKey, value: string | undefined) => {
+    const emptyError = getCredentialEmptyError(key, value)
+    if (emptyError) {
+        return emptyError
     }
 
-    return {
-        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: accessKeyIdError,
-        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: secretAccessKeyError,
+    // If value is allowed to be empty, no need to validate anything further
+    if (!value) {
+        return
+    }
+
+    return getCredentialFormatError(key, value)
+}
+
+/**
+ * Validates the format of a credential value.
+ *
+ * This function assumes there is a value to evaluate, if not
+ * it returns no error.
+ */
+export const getCredentialFormatError: GetCredentialError = (key, value) => {
+    if (!value) {
+        /** Empty values should be validated in {@link getCredentialEmptyError} */
+        getLogger().debug('getCredentialFormatError() called with empty value for key "%s"', key)
+        return
+    }
+
+    switch (key) {
+        case SharedCredentialsKeys.AWS_ACCESS_KEY_ID: {
+            const accessKeyPattern = /[\w]{16,128}/
+            if (!accessKeyPattern.test(value)) {
+                return localize(
+                    'AWS.credentials.error.invalidAccessKeyFormat',
+                    'Access key must be alphanumeric and between 16 and 128 characters'
+                )
+            }
+            return
+        }
+        case SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY:
+            return
+        default:
+            throw new ToolkitError(`Unsupported key in getCredentialFormatError(): "${key}"`)
     }
 }
 
-const accessKeyPattern = /[\w]{16,128}/
-
-function getAccessKeyIdFormatError(awsAccessKeyId: string | undefined): string | undefined {
-    if (awsAccessKeyId === undefined) {
-        return undefined
-    }
-
-    if (awsAccessKeyId === '') {
-        return localize('AWS.credentials.error.emptyAccessKey', 'Access key must not be empty')
-    }
-    if (!accessKeyPattern.test(awsAccessKeyId)) {
-        return localize(
-            'AWS.credentials.error.emptyAccessKey',
-            'Access key must be alphanumeric and between 16 and 128 characters'
-        )
-    }
-}
-
-function getSecretAccessKeyFormatError(awsSecretAccessKey: string | undefined): string | undefined {
-    if (awsSecretAccessKey === undefined) {
-        return undefined
-    }
-
-    if (awsSecretAccessKey === '') {
-        return localize('AWS.credentials.error.emptySecretKey', 'Secret key must not be empty')
+export const getCredentialEmptyError: GetCredentialError = (key: CredentialsKey, value: string | undefined) => {
+    switch (key) {
+        case SharedCredentialsKeys.AWS_ACCESS_KEY_ID:
+        case SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY:
+            if (value) {
+                return undefined
+            }
+            return 'Cannot be empty.'
+        default:
+            throw new ToolkitError(`Unsupported key in getCredentialEmptyError(): "${key}"`)
     }
 }
 
 /** To be used as a sanity check to validate all core parts of a credentials profile */
-export async function validateCredentialsProfile(profileName: SectionName, profileData: StaticCredentialsProfileData) {
-    if (await profileExists(profileName)) {
-        throw new ToolkitError(`Credentials profile "${profileName}" already exists`)
-    }
+export async function throwOnInvalidCredentials(profileName: SectionName, data: CredentialsData) {
+    await validateProfileName(profileName)
 
-    const credentialsDataErrors = getStaticCredentialsDataErrors(profileData)
+    const credentialsDataErrors = getCredentialsErrors(data)
     if (credentialsDataErrors !== undefined) {
         throw new ToolkitError(`Errors in credentials data: ${credentialsDataErrors}`, {
             code: 'InvalidCredentialsData',
             details: credentialsDataErrors,
         })
     }
+}
+
+async function validateProfileName(profileName: SectionName) {
+    if (await profileExists(profileName)) {
+        throw new ToolkitError(`Credentials profile "${profileName}" already exists`)
+    }
+}
+
+// All shared credentials keys
+const sharedCredentialsKeysSet = new Set(Object.values(SharedCredentialsKeys))
+
+export function isCredentialsKey(key: string): key is CredentialsKey {
+    return sharedCredentialsKeysSet.has(key as CredentialsKey)
 }

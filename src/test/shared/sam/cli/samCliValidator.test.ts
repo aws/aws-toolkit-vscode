@@ -26,9 +26,6 @@ describe('DefaultSamCliValidator', async function () {
             return this.mockSamLocation
         }
 
-        public async getSamCliExecutableId(): Promise<string> {
-            return this.samCliVersionId
-        }
         public async getSamCliInfo(): Promise<SamCliInfoResponse> {
             this.getInfoCallCount++
 
@@ -115,29 +112,6 @@ describe('DefaultSamCliValidator', async function () {
                     'sam cli version validation mismatch'
                 )
             })
-        })
-
-        it('Uses the cached validation result', async function () {
-            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
-            const samCliValidator = new DefaultSamCliValidator(validatorContext)
-
-            await samCliValidator.getVersionValidatorResult()
-            await samCliValidator.getVersionValidatorResult()
-
-            assert.strictEqual(validatorContext.getInfoCallCount, 1, 'getInfo called more than once')
-        })
-
-        it('Does not use the cached validation result if the SAM CLI timestamp changed', async function () {
-            const validatorContext = new TestSamCliValidatorContext(minSamCliVersion)
-            const samCliValidator = new DefaultSamCliValidator(validatorContext)
-
-            await samCliValidator.getVersionValidatorResult()
-
-            // Oh look, a new SAM CLI timestamp
-            validatorContext.samCliVersionId = validatorContext.samCliVersionId + 'x'
-            await samCliValidator.getVersionValidatorResult()
-
-            assert.strictEqual(validatorContext.getInfoCallCount, 2, 'getInfo was not called both times')
         })
     })
 

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeCatalystClient } from '../shared/clients/codecatalystClient'
+import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import {
     Auth,
@@ -19,8 +19,9 @@ import {
 import { getSecondaryAuth } from '../credentials/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -36,6 +37,8 @@ export class CodeCatalystAuthStorage {
         await this.secrets.store(`codecatalyst.pat.${username}`, pat)
     }
 }
+
+export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
 export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
@@ -104,6 +107,19 @@ export class CodeCatalystAuthenticationProvider {
         await this.secondaryAuth.restoreConnection()
     }
 
+    public async promptOnboarding(): Promise<void> {
+        const message = `Using CodeCatalyst requires onboarding with a Space. Sign up with CodeCatalyst to get started.`
+        const openBrowser = 'Open Browser'
+        const resp = await vscode.window.showInformationMessage(message, { modal: true }, openBrowser)
+        if (resp === openBrowser) {
+            await openUrl(onboardingUrl)
+        }
+
+        // Mark the current execution as cancelled regardless of the user response. We could poll here instead, waiting
+        // for the user to onboard. But that might take a while.
+        throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
+    }
+
     public async promptNotConnected(): Promise<SsoConnection> {
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
@@ -114,8 +130,9 @@ export class CodeCatalystAuthenticationProvider {
         const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
         if (conn === undefined) {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Create' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Create',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             const message = `The ${
                 getIdeProperties().company
@@ -135,15 +152,17 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         const upgrade = async () => {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Upgrade' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Upgrade',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             return this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
         if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
-            // TODO: change to `satisfies` on TS 4.9
-            telemetry.record({ codecatalyst_connectionFlow: 'Switch' } as ConnectionFlowEvent)
+            telemetry.record({
+                codecatalyst_connectionFlow: 'Switch',
+            } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
 
             const resp = await vscode.window.showInformationMessage(
                 'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
@@ -169,6 +188,41 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
+    }
+
+    public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
+        const mementoKey = 'codecatalyst.connections'
+        const getState = () => this.memento.get(mementoKey, {} as Record<string, { onboarded: boolean }>)
+        const updateState = (state: { onboarded: boolean }) =>
+            this.memento.update(mementoKey, {
+                ...getState(),
+                [conn.id]: state,
+            })
+
+        const state = getState()[conn.id]
+        if (state !== undefined && !recheck) {
+            return state.onboarded
+        }
+
+        try {
+            await createClient(conn)
+            await updateState({ onboarded: true })
+
+            return true
+        } catch (e) {
+            if (isOnboardingException(e) && this.auth.getConnectionState(conn) === 'valid') {
+                await updateState({ onboarded: false })
+
+                return false
+            }
+
+            throw e
+        }
+
+        function isOnboardingException(e: unknown) {
+            // `GetUserDetails` returns `AccessDeniedException` if the user has not onboarded
+            return isAwsError(e) && e.code === 'AccessDeniedException' && e.message.includes('GetUserDetails')
+        }
     }
 
     private static instance: CodeCatalystAuthenticationProvider

@@ -4,6 +4,7 @@
  */
 
 import { Uri } from 'vscode'
+import globals from '../extensionGlobals'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -141,4 +142,27 @@ export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logge
  */
 export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
+}
+
+export class PerfLog {
+    private readonly log
+    public readonly start
+
+    public constructor(public readonly topic: string) {
+        const log = getLogger()
+        this.log = log
+        this.start = globals.clock.Date.now()
+    }
+
+    public elapsed(): number {
+        return globals.clock.Date.now() - this.start
+    }
+
+    public done(): void {
+        if (!this.log.logLevelEnabled('verbose')) {
+            return
+        }
+        const elapsed = this.elapsed()
+        this.log.verbose('%s took %dms', this.topic, elapsed.toFixed(1))
+    }
 }

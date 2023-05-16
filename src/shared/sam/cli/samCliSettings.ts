@@ -4,37 +4,11 @@
  */
 
 import { getLogger } from '../../logger'
-import { fromExtensionManifest, migrateSetting, Settings } from '../../settings'
+import { fromExtensionManifest, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
-
-// TODO(sijaden): remove after a few releases
-export async function migrateLegacySettings() {
-    await migrateSetting(
-        {
-            key: 'aws.manuallySelectedBuckets',
-            type: SavedBuckets,
-        },
-        { key: 'aws.samcli.manuallySelectedBuckets' }
-    )
-
-    await migrateSetting(
-        {
-            key: 'aws.sam.enableCodeLenses',
-            type: Boolean,
-        },
-        { key: 'aws.samcli.enableCodeLenses' }
-    )
-
-    await migrateSetting(
-        {
-            key: 'aws.samcli.lambda.timeout',
-            type: Number,
-        },
-        { key: 'aws.samcli.lambdaTimeout' }
-    )
-}
+import { onceChanged } from '../../utilities/functionUtils'
 
 const localTimeoutDefaultMillis: number = 90000
 interface SavedBuckets {
@@ -83,6 +57,8 @@ const description = {
 }
 
 export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {
+    protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
+
     public constructor(
         private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
         settings: ClassToInterfaceType<Settings> = Settings.instance
@@ -91,19 +67,25 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
     }
 
     /**
-     * Gets location of `sam` from user config, or tries to find `sam` on the
-     * system if the user config is invalid.
+     * Gets location of `sam` from:
+     * 1. user config (if any)
+     * 2. previous location cached in `getLocation` (if valid)
+     * 3. system search (done by `getLocation`)
      *
      * @returns `autoDetected=true` if auto-detection was _attempted_.
      */
-    public async getOrDetectSamCli(): Promise<{ path: string | undefined; autoDetected: boolean }> {
+    public async getOrDetectSamCli(
+        forceSearch?: boolean
+    ): Promise<{ path: string | undefined; autoDetected: boolean }> {
         const fromConfig = this.get('location', '')
 
         if (fromConfig) {
+            SamCliSettings.logIfChanged(`SAM CLI location (from settings): ${fromConfig}`)
             return { path: fromConfig, autoDetected: false }
         }
 
-        const fromSearch = await this.locationProvider.getLocation()
+        const fromSearch = await this.locationProvider.getLocation(forceSearch)
+        SamCliSettings.logIfChanged(`SAM CLI location (version: ${fromSearch?.version}): ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }
     }
 

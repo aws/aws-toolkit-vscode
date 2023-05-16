@@ -33,7 +33,7 @@ The test suite has the following categories of tests:
     -   Any type of test related to the format/quality/content of the code
     -   Does not have context of the `vscode` api
 -   Integration Tests: **slow** tests
-    -   Live in `src/integrationTest/`
+    -   Live in `src/testInteg/`
     -   Use a full instance of VSCode with an activated instance of the extension.
     -   Global state is shared across tests, thus there is a risk that later tests are polluted by earlier tests.
     -   Trigger VSCode commands and UI elements to test codepaths as from an actual user session, instead of invoking functions directly.
@@ -48,7 +48,7 @@ The test suite has the following categories of tests:
     -   `src/test/globalSetup.test.ts` :
         -   defines global setup functions run before and after each test
         -   defines global utility functions such as `getTestLogger()`
--   `src/integrationTest/` : integration tests
+-   `src/testInteg/` : integration tests
 -   `src/test/testRunner.ts` : used by _both_ the unit tests and integration
     tests to discover tests, setup the test framework, and run tests.
 -   `src/testFixtures/` : test data (sample projects, SAM templates, ...)
