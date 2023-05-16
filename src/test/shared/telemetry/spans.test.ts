@@ -77,14 +77,14 @@ describe('TelemetryTracer', function () {
     })
 
     describe('record', function () {
-        it('writes to all existing spans in the current context', function () {
+        it('only writes to the active span in the current context', function () {
             tracer.apigateway_copyUrl.run(() => {
                 tracer.run(metricName, () => tracer.record({ source: 'bar' }))
                 tracer.spans[0]?.emit()
             })
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-            assertTelemetry('apigateway_copyUrl', { source: 'bar' } as MetricShapes['apigateway_copyUrl'])
+            assertTelemetry('apigateway_copyUrl', {} as MetricShapes['apigateway_copyUrl'])
         })
 
         it('writes to all new spans in the current context', function () {

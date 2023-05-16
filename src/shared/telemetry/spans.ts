@@ -212,7 +212,7 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
-     * Records information on all current and future spans in the execution context.
+     * Records information on the current and future spans in the execution context.
      *
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key. New spans are initialized with {@link attributes}
@@ -221,9 +221,7 @@ export class TelemetryTracer extends TelemetryBase {
      * Callers must already be within an execution context for this to have any effect.
      */
     public record(data: Attributes): void {
-        for (const span of this.spans) {
-            span.record(data)
-        }
+        this.activeSpan?.record(data)
 
         if (this.attributes) {
             Object.assign(this.attributes, data)
@@ -261,6 +259,8 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * **You should use {@link run} in the majority of cases. Only use this for instrumenting extension entrypoints.**
+     *
      * Executes the given function within an anonymous 'root' span which does not emit
      * any telemetry on its own.
      *
