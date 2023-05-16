@@ -31,8 +31,12 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
     }
 
     const messageListener = webview.onDidReceiveMessage(
-        AsyncResource.bind(async (event: Message) => {
-            const { id, command, data } = event
+        // XXX: In earlier versions of Node the first parameter was used as
+        // the `thisArg` for calling the bound function.
+        //
+        // Fixed in https://github.com/nodejs/node/commit/324a6c235a5bfcbcd7cc7491d55461915c10af34
+        AsyncResource.bind(async function (this: any, event: Message) {
+            const { id, command, data } = event ?? (this as Message)
             const metadata: Omit<Message, 'id' | 'command' | 'data'> = {}
 
             const handler = commands[command]
