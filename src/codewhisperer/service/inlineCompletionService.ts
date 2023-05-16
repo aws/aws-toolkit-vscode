@@ -23,10 +23,11 @@ import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
-import { Mutex } from 'async-mutex'
+import * as AsyncLock from 'async-lock'
+import { updateInlineLockKey } from '../models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
-const mutex = new Mutex()
+const lock = new AsyncLock({ maxPending: 1 })
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -448,7 +449,7 @@ export class InlineCompletionService {
     }
 
     async showRecommendation(indexShift: number, noSuggestionVisible: boolean = false) {
-        await mutex.runExclusive(async () => {
+        await lock.acquire(updateInlineLockKey, async () => {
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
                 this.inlineCompletionProvider?.getActiveItemIndex,
                 indexShift
