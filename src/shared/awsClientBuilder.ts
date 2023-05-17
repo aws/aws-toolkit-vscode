@@ -9,6 +9,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { AwsContext } from './awsContext'
 import { DevSettings } from './settings'
 import { getUserAgent } from './telemetry/util'
+import { telemetry } from './telemetry/telemetry'
 
 // These are not on the public API but are very useful for logging purposes.
 // Tests guard against the possibility that these values change unexpectedly.
@@ -131,13 +132,36 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
         const serviceName =
-            apiConfig?.metadata?.serviceId ?? (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+            apiConfig?.metadata?.serviceId?.toLowerCase() ??
+            (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+
         if (serviceName) {
-            opt.endpoint = settings.get('endpoints', {})[serviceName.toLowerCase()] ?? opt.endpoint
+            opt.endpoint = settings.get('endpoints', {})[serviceName] ?? opt.endpoint
         }
 
         const service = new type(opt)
         const originalSetup = service.setupRequestListeners.bind(service)
+
+        // Record request IDs to the current context, potentially overriding the field if
+        // multiple API calls are made in the same context. We only do failures as successes
+        // are generally uninteresting and noisy.
+        listeners.push(request => {
+            request.on('error', err => {
+                if (!err.retryable) {
+                    // TODO: update codegen so `record` enumerates all fields as a flat object instead of
+                    // intersecting all of the definitions
+                    interface RequestData {
+                        requestId?: string
+                        requestServiceType?: string
+                    }
+
+                    telemetry.record({
+                        requestId: err.requestId,
+                        requestServiceType: serviceName,
+                    } satisfies RequestData as any)
+                }
+            })
+        })
 
         service.setupRequestListeners = (request: Request<any, AWSError>) => {
             originalSetup(request)
