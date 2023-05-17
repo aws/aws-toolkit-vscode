@@ -52,7 +52,7 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
     override fun update(presentation: PresentationData) {
         presentation.addText(value, SimpleTextAttributes.REGULAR_ATTRIBUTES)
 
-        with(ConnectionPinningManager.getInstance(project)) {
+        with(ConnectionPinningManager.getInstance()) {
             if (isFeaturePinned(CodeCatalystConnection.getInstance())) {
                 presentation.addText(message("caws.connected.builder_id"), SimpleTextAttributes.GRAY_ATTRIBUTES)
             }

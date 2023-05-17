@@ -11,7 +11,7 @@ interface ConnectionPinningManagerListener : EventListener {
     fun pinnedConnectionChanged(feature: FeatureWithPinnedConnection, newConnection: ToolkitConnection?)
 
     companion object {
-        @Topic.ProjectLevel
+        @Topic.AppLevel
         val TOPIC = Topic.create("Feature pinned active connection change", ConnectionPinningManagerListener::class.java)
     }
 }

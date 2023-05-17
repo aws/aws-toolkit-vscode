@@ -19,7 +19,7 @@ class UnpinConnectionAction : AnAction(), DumbAware, UpdateInBackground {
         val project = e.project
         val feature = feature(e)
 
-        e.presentation.isEnabledAndVisible = project != null && feature != null && ConnectionPinningManager.getInstance(project).isFeaturePinned(feature)
+        e.presentation.isEnabledAndVisible = project != null && feature != null && ConnectionPinningManager.getInstance().isFeaturePinned(feature)
 
         feature?.featureName?.let { e.presentation.text = message("connection.pinning.unlink", it) }
     }
@@ -27,7 +27,7 @@ class UnpinConnectionAction : AnAction(), DumbAware, UpdateInBackground {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val feature = feature(e) ?: return
-        ConnectionPinningManager.getInstance(project).setPinnedConnection(feature, null)
+        ConnectionPinningManager.getInstance().setPinnedConnection(feature, null)
 
         DevToolsToolWindow.getInstance(project).redrawContent()
     }

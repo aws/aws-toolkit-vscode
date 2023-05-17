@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
@@ -124,9 +125,10 @@ class DefaultToolkitConnectionManagerTest {
         val pinningMock = mock<ConnectionPinningManager>()
         val feature = mock<FeatureWithPinnedConnection> {
             on { it.supportsConnectionType(any()) } doReturn true
+            on { it.featureId } doReturn "test"
         }
 
-        projectRule.project.replaceService(ConnectionPinningManager::class.java, pinningMock, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ConnectionPinningManager::class.java, pinningMock, disposableRule.disposable)
         assertThat(sut.activeConnectionForFeature(feature)).isNull()
 
         val connection = authManager.createConnection(ManagedSsoProfile("us-east-1", aString(), emptyList()))
