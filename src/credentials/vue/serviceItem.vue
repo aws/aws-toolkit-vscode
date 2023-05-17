@@ -7,7 +7,7 @@
     of the service items.
  -->
 <template>
-    <li class="service-item-container" :class="classWhenIsSelected" v-on:mousedown="serviceItemClicked">
+    <li :class="[classWhenIsSelected, 'service-item-container', 'border-common']" v-on:mousedown="serviceItemClicked">
         <!-- The icon -->
         <div class="icon-item" :class="serviceIconClass"></div>
 
@@ -29,7 +29,6 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { ServiceItemContent } from './ServiceItemContent.vue'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
@@ -45,7 +44,7 @@ export type ServiceStatus = Exclude<ServiceIconStatus, 'LOCKED_SELECTED'>
 const serviceIconClasses = {
     LOCKED: 'icon icon-lg icon-vscode-lock',
     LOCKED_SELECTED: 'icon icon-lg icon-vscode-lock locked-selected',
-    UNLOCKED: 'icon icon-vscode-check unlocked',
+    UNLOCKED: 'icon icon-lg icon-vscode-check unlocked',
 } as const
 
 /**
@@ -64,7 +63,7 @@ export interface StaticServiceItemProps {
  */
 export default defineComponent({
     name: 'ServiceItem',
-    components: { ServiceItemContent },
+    components: {},
     emits: ['service-item-clicked'],
     props: {
         id: {
@@ -125,24 +124,31 @@ export default defineComponent({
 /**
  * A Service Item ID is the main identifier/representation of a specific service item.
  */
-export type ServiceItemId = keyof typeof staticServiceItemProps
+export type ServiceItemId = (typeof serviceItemIds)[keyof typeof serviceItemIds]
+
+export const serviceItemIds = {
+    NON_AUTH_FEATURES: 'NON_AUTH_FEATURES',
+    RESOURCE_EXPLORER: 'RESOURCE_EXPLORER',
+    CODE_WHISPERER: 'CODE_WHISPERER',
+    CODE_CATALYST: 'CODE_CATALYST',
+} as const
 
 const staticServiceItemProps = {
-    NON_AUTH_FEATURES: {
+    [serviceItemIds.NON_AUTH_FEATURES]: {
         title: 'Debug Lambda Functions & Edit AWS Document Types',
-        description: "Local features that don't require authentication",
+        description: "Local features that don't require authentication.",
     },
-    RESOURCE_EXPLORER: {
+    [serviceItemIds.RESOURCE_EXPLORER]: {
         title: 'Resource Explorer',
-        description: 'View, modify, deploy, and troubleshoot AWS resources',
+        description: 'View, modify, deploy, and troubleshoot AWS resources.',
     },
-    CODE_WHISPERER: {
+    [serviceItemIds.CODE_WHISPERER]: {
         title: 'Amazon CodeWhisperer',
-        description: 'Build applications faster with AI code recommendations',
+        description: 'Build applications faster with AI code recommendations.',
     },
-    CODE_CATALYST: {
+    [serviceItemIds.CODE_CATALYST]: {
         title: 'Amazon CodeCatalyst',
-        description: 'Spark a faster planning, development, and delivery lifecycle on AWS',
+        description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
 } as const
 
@@ -161,10 +167,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['NON_AUTH_FEATURES'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set([serviceItemIds.NON_AUTH_FEATURES])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'NON_AUTH_FEATURES'
+    private currentlySelected?: ServiceItemId = serviceItemIds.NON_AUTH_FEATURES
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
@@ -227,6 +233,8 @@ export class ServiceItemsState {
 </script>
 
 <style>
+@import './shared.css';
+
 /* ******** Container ******** */
 
 .service-item-container {
@@ -236,11 +244,6 @@ export class ServiceItemsState {
     padding: 20px 15px 20px 15px;
 
     min-height: 35px;
-
-    border-style: solid;
-    border-width: 2px;
-    border-radius: 4px;
-    border-color: transparent;
 
     /* Icon and text are centered on the secondary axis */
     align-items: center;
