@@ -3175,7 +3175,7 @@
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
