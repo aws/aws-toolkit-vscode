@@ -8,7 +8,11 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.gateway.connection.SshAgentService" />
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.gateway.connection.ThinClientTrackerService" />
+
     </extensions>
+    <applicationListeners>
+        <listener class="software.aws.toolkits.jetbrains.gateway.GatewayDeprecationNotice" topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
 
     <extensions defaultExtensionNs="com.jetbrains">
         <gatewayConnector implementation="software.aws.toolkits.jetbrains.gateway.CawsConnector" />
