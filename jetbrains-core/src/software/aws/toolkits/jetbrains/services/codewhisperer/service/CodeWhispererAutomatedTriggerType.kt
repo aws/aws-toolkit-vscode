@@ -7,18 +7,18 @@ import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
 
 sealed class CodeWhispererAutomatedTriggerType(
     val telemetryType: CodewhispererAutomatedTriggerType,
-    var calculationResult: Double?
+    var calculationResult: Double? = null
 ) {
-    class Classifier(calculationResult: Double?) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Classifier, calculationResult)
-    class SpecialChar(val specialChar: Char, calculationResult: Double? = null) :
-        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.SpecialCharacters, calculationResult)
+    class Classifier : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Classifier)
+    class SpecialChar(val specialChar: Char) :
+        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.SpecialCharacters)
 
-    class Enter(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Enter, calculationResult)
+    class Enter : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Enter)
 
-    class IntelliSense(calculationResult: Double? = null) :
-        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IntelliSenseAcceptance, calculationResult)
+    class IntelliSense :
+        CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IntelliSenseAcceptance)
 
-    class IdleTime(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IdleTime, calculationResult)
+    class IdleTime : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.IdleTime)
 
-    class Unknown(calculationResult: Double? = null) : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Unknown, calculationResult)
+    class Unknown : CodeWhispererAutomatedTriggerType(CodewhispererAutomatedTriggerType.Unknown)
 }

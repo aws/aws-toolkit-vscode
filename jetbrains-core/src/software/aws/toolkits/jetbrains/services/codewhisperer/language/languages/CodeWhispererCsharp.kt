@@ -13,6 +13,8 @@ class CodeWhispererCsharp private constructor() : CodeWhispererProgrammingLangua
 
     override fun isCodeCompletionSupported(): Boolean = true
 
+    override fun isClassifierSupported(): Boolean = true
+
     companion object {
         const val ID = "csharp"
 

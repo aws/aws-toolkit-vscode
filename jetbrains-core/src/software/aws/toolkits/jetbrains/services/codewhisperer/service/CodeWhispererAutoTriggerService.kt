@@ -63,7 +63,7 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
 
     fun determineUserGroupIfNeeded() {
         if (isClassifierGroup == null) {
-            isClassifierGroup = Math.random() <= 0.40
+            isClassifierGroup = Math.random() <= 0.50
         }
     }
 
@@ -90,8 +90,9 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
         val language = runReadAction {
             FileDocumentManager.getInstance().getFile(editor.document)?.programmingLanguage()
         } ?: CodeWhispererUnknownLanguage.INSTANCE
-        return if (language is CodeWhispererJava) {
-            // we need classifier result for any type of triggering for java
+
+        // we need classifier result for any type of triggering for classifier group for supported languages
+        return if ((language.isClassifierSupported() && isClassifierGroup()) || language.isAllClassifier()) {
             triggerType.calculationResult = classifierResult.calculatedResult
 
             when (triggerType) {
@@ -185,8 +186,8 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
         } ?: CodeWhispererUnknownLanguage.INSTANCE
         val caretPosition = runReadAction { CodeWhispererEditorUtil.getCaretPosition(editor) }
 
-        // tryClassifier with only the following language
-        if (language !is CodeWhispererJava) {
+        // tryClassifier with only the supported language
+        if (!language.isClassifierSupported()) {
             return ClassifierResult(false)
         }
 
@@ -295,7 +296,7 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
             val language = runReadAction {
                 FileDocumentManager.getInstance().getFile(editor.document)?.programmingLanguage()
             } ?: CodeWhispererUnknownLanguage.INSTANCE
-            return if (language is CodeWhispererJava) {
+            return if (CodeWhispererAutoTriggerService.getInstance().isClassifierGroup() || language.isAllClassifier()) {
                 CodeWhispererAutoTriggerService.getInstance().shouldTriggerClassifier(editor).calculatedResult
             } else null
         }
@@ -335,12 +336,12 @@ private enum class VariableTypeNeedNormalize {
 
     companion object {
         private val maxx = NormalizedCoefficients(
-            cursor = 90716.0,
-            lineNum = 2085.0,
-            lenLeftCur = 166.0,
-            lenLeftPrev = 161.0,
+            cursor = 84716.0,
+            lineNum = 2033.0,
+            lenLeftCur = 157.0,
+            lenLeftPrev = 157.0,
             lenRight = 10239.0,
-            lineDiff = 327.0,
+            lineDiff = 270.0,
         )
 
         private val minn = NormalizedCoefficients(
@@ -349,7 +350,7 @@ private enum class VariableTypeNeedNormalize {
             lenLeftCur = 0.0,
             lenLeftPrev = 0.0,
             lenRight = 0.0,
-            lineDiff = -5157.0,
+            lineDiff = -28336.0,
         )
     }
 }
