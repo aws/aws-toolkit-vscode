@@ -64,7 +64,7 @@ export class ClassifierTrigger {
     private ideVscode = -0.114251
 
     // intercept of logistic regression classifier
-    private intercept = -0.44590798
+    private intercept = -1.26185983
 
     private maxx: normalizedCoefficients = {
         cursor: 90716.0,
