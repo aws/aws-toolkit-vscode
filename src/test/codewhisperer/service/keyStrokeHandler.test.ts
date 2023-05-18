@@ -17,6 +17,7 @@ import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhisperer
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -224,12 +225,12 @@ describe('keyStrokeHandler', function () {
             sinon.restore()
         })
 
-        it('should call getPaginatedRecommendation', async function () {
+        it('should call getPaginatedRecommendation when inline completion is enabled', async function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new KeyStrokeHandler()
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
             await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.ok(getRecommendationsStub.calledOnce)
+            assert.strictEqual(getRecommendationsStub.called, isInlineCompletionEnabled())
         })
     })
 
@@ -238,7 +239,7 @@ describe('keyStrokeHandler', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
             sinon.stub(InlineCompletionService.instance, 'isPaginationRunning').returns(true)
             const result = keyStrokeHandler.shouldTriggerIdleTime()
-            assert.strictEqual(result, false)
+            assert.strictEqual(result, !isInlineCompletionEnabled())
         })
     })
 

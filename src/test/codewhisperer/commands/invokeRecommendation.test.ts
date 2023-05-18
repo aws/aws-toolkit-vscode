@@ -10,6 +10,7 @@ import { resetCodeWhispererGlobalVariables, createMockTextEditor } from '../test
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
+import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 
 describe('invokeRecommendation', function () {
     describe('invokeRecommendation', function () {
@@ -25,7 +26,7 @@ describe('invokeRecommendation', function () {
             sinon.restore()
         })
 
-        it('Should call getPaginatedRecommendation with OnDemand as trigger type', async function () {
+        it('Should call getPaginatedRecommendation with OnDemand as trigger type when inline completion is enabled', async function () {
             const mockEditor = createMockTextEditor()
             const config: ConfigurationEntry = {
                 isShowMethodsEnabled: true,
@@ -34,7 +35,7 @@ describe('invokeRecommendation', function () {
                 isSuggestionsWithCodeReferencesEnabled: true,
             }
             await invokeRecommendation(mockEditor, mockClient, config)
-            assert.ok(getRecommendationStub.called)
+            assert.strictEqual(getRecommendationStub.called, isInlineCompletionEnabled())
         })
     })
 })
