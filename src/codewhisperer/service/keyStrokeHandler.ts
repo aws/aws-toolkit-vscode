@@ -16,7 +16,6 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../credentials/auth'
 
@@ -117,9 +116,6 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
-            const isClassifierSupportedLanguage = ClassifierTrigger.instance.isSupportedLanguage(
-                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId)
-            )
 
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
@@ -135,7 +131,7 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    if (!ClassifierTrigger.instance.isClassifierEnabled() || !isClassifierSupportedLanguage) {
+                    if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
                     } else {
                         triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
@@ -150,7 +146,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                if (isClassifierSupportedLanguage) {
+                if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                     ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
                 }
                 if (changedSource === DocumentChangedSource.SpecialCharsKey) {

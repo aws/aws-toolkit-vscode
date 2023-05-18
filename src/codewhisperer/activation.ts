@@ -219,7 +219,7 @@ export async function activate(context: ExtContext): Promise<void> {
             CodeWhispererConstants.isClassifierEnabledKey
         )
         if (isClassifierEnabled === undefined) {
-            const result = Math.random() <= 0.4
+            const result = Math.random() <= 0.5
             context.extensionContext.globalState.update(CodeWhispererConstants.isClassifierEnabledKey, result)
         }
     }
