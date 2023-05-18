@@ -8,7 +8,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
-import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
@@ -86,9 +85,6 @@ export class KeyStrokeHandler {
         if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
             return false
         }
-        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) {
-            return false
-        }
         return true
     }
 
@@ -105,11 +101,6 @@ export class KeyStrokeHandler {
 
             // Skip when output channel gains focus and invoke
             if (editor.document.languageId === 'Log') {
-                return
-            }
-
-            // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) {
                 return
             }
 
@@ -229,17 +220,6 @@ export class KeyStrokeHandler {
                     config,
                     autoTriggerType
                 )
-            } else {
-                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
-                    await InlineCompletion.instance.resetInlineStates(editor)
-                    InlineCompletion.instance.getPaginatedRecommendation(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType
-                    )
-                }
             }
         }
     }
