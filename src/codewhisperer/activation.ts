@@ -10,7 +10,6 @@ import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
 import { vsCodeState, ConfigurationEntry } from './models/model'
-import { InlineCompletion } from './service/inlineCompletion'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -32,7 +31,6 @@ import {
     showFreeTierLimit,
     updateReferenceLog,
     showIntroduction,
-    showAccessTokenErrorLearnMore,
     reconnect,
     refreshStatusBar,
 } from './commands/basicCommands'
@@ -48,8 +46,6 @@ import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil } from './util/authUtil'
-import { Auth } from '../credentials/auth'
-import globals from '../shared/extensionGlobals'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 
@@ -161,8 +157,6 @@ export async function activate(context: ExtContext): Promise<void> {
         reconnect.register(),
         // learn more about CodeWhisperer
         showLearnMore.register(),
-        // learn more about CodeWhisperer access token migration
-        showAccessTokenErrorLearnMore.register(),
         // show free tier limit
         showFreeTierLimit.register(),
         // update reference log instance
@@ -230,63 +224,6 @@ export async function activate(context: ExtContext): Promise<void> {
         }
     }
 
-    async function showAccessTokenMigrationDialogue() {
-        // TODO: Change the color of the buttons
-        const accessTokenExpired =
-            context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.accessTokenExpriedKey) || false
-
-        if (AuthUtil.instance.hasAccessToken()) {
-            await Auth.instance.tryAutoConnect()
-            await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-            await globals.context.globalState.update(CodeWhispererConstants.accessTokenExpriedKey, true)
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode')
-            maybeShowTokenMigrationError()
-        } else if (accessTokenExpired) {
-            maybeShowTokenMigrationError()
-        }
-    }
-
-    function maybeShowTokenMigrationError() {
-        const migrationErrordoNotShowAgain =
-            context.extensionContext.globalState.get<boolean>(
-                CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey
-            ) || false
-        const migrationErrorLastShown: number =
-            context.extensionContext.globalState.get<number | undefined>(
-                CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown
-            ) || 1
-
-        //Add 7 days to notificationLastShown to determine whether warn message should show
-        if (migrationErrordoNotShowAgain || migrationErrorLastShown + 1000 * 60 * 60 * 24 * 7 >= Date.now()) {
-            return
-        }
-
-        vscode.window
-            .showErrorMessage(
-                CodeWhispererConstants.accessTokenMigrationErrorMessage,
-                CodeWhispererConstants.accessTokenMigrationErrorButtonMessage,
-                CodeWhispererConstants.accessTokenMigrationLearnMore,
-                CodeWhispererConstants.DoNotShowAgain
-            )
-            .then(async resp => {
-                if (resp === CodeWhispererConstants.accessTokenMigrationErrorButtonMessage) {
-                    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-                    await showSsoSignIn.execute()
-                } else if (resp === CodeWhispererConstants.DoNotShowAgain) {
-                    await context.extensionContext.globalState.update(
-                        CodeWhispererConstants.accessTokenExpiredDoNotShowAgainKey,
-                        true
-                    )
-                } else if (resp === CodeWhispererConstants.accessTokenMigrationLearnMore) {
-                    await vscode.commands.executeCommand('aws.codeWhisperer.accessTokenErrorLearnMore')
-                }
-            })
-        context.extensionContext.globalState.update(
-            CodeWhispererConstants.accessTokenExpiredDoNotShowLastShown,
-            Date.now()
-        )
-    }
-
     function getAutoTriggerStatus(): boolean {
         return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
     }
@@ -312,11 +249,6 @@ export async function activate(context: ExtContext): Promise<void> {
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-    } else {
-        await setSubscriptionsforVsCodeInline()
-    }
-    if (!isCloud9()) {
-        showAccessTokenMigrationDialogue()
     }
 
     async function setSubscriptionsforInlineCompletion() {
@@ -377,106 +309,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
-    }
-
-    async function setSubscriptionsforVsCodeInline() {
-        /**
-         * Automated trigger
-         */
-        context.extensionContext.subscriptions.push(
-            vscode.workspace.onDidChangeTextDocument(async e => {
-                /**
-                 * CodeWhisperer security panel dynamic handling
-                 */
-                if (e.document === vscode.window.activeTextEditor?.document) {
-                    if (isCloud9()) {
-                        securityPanelViewProvider.disposeSecurityPanelItem(e, vscode.window.activeTextEditor)
-                    } else {
-                        disposeSecurityDiagnostic(e)
-                    }
-                }
-
-                const codeCoverageTracker = CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)
-                codeCoverageTracker?.countTotalTokens(e)
-
-                /**
-                 * Handle this keystroke event only when
-                 * 1. It is in current active editor with cwspr supported file types
-                 * 2. It is not a backspace
-                 * 3. It is not caused by CodeWhisperer editing
-                 * 4. It is not from undo/redo.
-                 */
-                if (
-                    e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
-                    e.contentChanges.length != 0 &&
-                    !vsCodeState.isCodeWhispererEditing &&
-                    !JSON.stringify(e).includes('reason')
-                ) {
-                    vsCodeState.lastUserModificationTime = performance.now()
-                    /**
-                     * Important:  Doing this sleep(10) is to make sure
-                     * 1. this event is processed by vs code first
-                     * 2. editor.selection.active has been successfully updated by VS Code
-                     * Then this event can be processed by our code.
-                     */
-                    await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    if (InlineCompletion.instance.getIsActive) {
-                        await InlineCompletion.instance.setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
-                    } else {
-                        await KeyStrokeHandler.instance.processKeyStroke(
-                            e,
-                            vscode.window.activeTextEditor,
-                            client,
-                            await getConfigEntry()
-                        )
-                    }
-                }
-            }),
-
-            /**
-             * On recommendation rejection
-             */
-            vscode.window.onDidChangeVisibleTextEditors(async e => {
-                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor, false, true)
-            }),
-            vscode.window.onDidChangeActiveTextEditor(async e => {
-                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
-                if (vscode.window.activeTextEditor) {
-                    CodeWhispererCodeCoverageTracker.getTracker(
-                        vscode.window.activeTextEditor.document.languageId
-                    )?.updateAcceptedTokensCount(vscode.window.activeTextEditor)
-                }
-            }),
-            vscode.window.onDidChangeTextEditorSelection(async e => {
-                if (e.kind === TextEditorSelectionChangeKind.Mouse && vscode.window.activeTextEditor) {
-                    await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
-                }
-            }),
-            /**
-             * Recommendation navigation
-             */
-            Commands.register('aws.codeWhisperer.nextCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) {
-                    InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, true)
-                }
-            }),
-            Commands.register('aws.codeWhisperer.previousCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) {
-                    InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, false)
-                }
-            }),
-            /**
-             * Recommendation acceptance
-             */
-            Commands.register('aws.codeWhisperer.acceptCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) {
-                    await InlineCompletion.instance.acceptRecommendation(vscode.window.activeTextEditor)
-                }
-            })
-        )
-
-        InlineCompletion.instance.setCodeWhispererStatusBarOk()
     }
 
     function setSubscriptionsforCloud9() {
@@ -567,10 +399,6 @@ export async function shutdown() {
     }
     if (isInlineCompletionEnabled()) {
         await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
-    } else {
-        if (vscode.window.activeTextEditor) {
-            await InlineCompletion.instance.resetInlineStates(vscode.window.activeTextEditor)
-        }
     }
     CodeWhispererTracker.getTracker().shutdown()
 }
