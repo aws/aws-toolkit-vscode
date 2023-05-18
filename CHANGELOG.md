@@ -1,3 +1,9 @@
+## 1.74.0 2023-05-18
+
+- **Bug Fix** CodeWhisperer: cannot navigate to next or previous code suggestion in VS Code 1.78+
+- **Feature** CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command allows filtering by Space and Project name
+- **Feature** CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command now sorts Dev Environments by most recent usage
+
 ## 1.73.0 2023-05-11
 
 - **Bug Fix** Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`
