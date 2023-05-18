@@ -1,11 +1,6 @@
 <script lang="ts">
 import { CredentialsState } from './manageCredentials.vue'
-
-export const authForms = {
-    CREDENTIALS: 'CREDENTIALS',
-} as const
-
-export type AuthFormId = (typeof authForms)[keyof typeof authForms]
+import authForms from './types.vue'
 
 /**
  * The state instance of all auth forms
