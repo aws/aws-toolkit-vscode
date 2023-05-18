@@ -67,11 +67,12 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
  * - "sso" refers to all SSO-based profiles. Currently, any profile with a start URL will
  *   be treated as SSO _by the Toolkit_. Incomplete profiles may be rejected by the SDKs, so
  *   valid SSO profiles may not necessarily be considered valid among all tools.
- *
+ * - "temp" refers to credentials that are used temporarily within the code.
+ *   This can be for something like testing raw credentials data
  * Compare the similar concept `telemetry.CredentialSourceId`.
  */
-export type CredentialsProviderType = typeof credentialsProviderType[number]
-export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env', 'sso'] as const
+export type CredentialsProviderType = (typeof credentialsProviderType)[number]
+export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env', 'sso', 'temp'] as const
 
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId

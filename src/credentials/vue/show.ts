@@ -9,10 +9,55 @@
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { VueWebview } from '../../webviews/main'
 import * as vscode from 'vscode'
+import { CredentialsData, CredentialsKey, SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../types'
+import { Auth, tryAddCredentials } from '../auth'
+import { getCredentialFormatError, getCredentialsErrors } from '../sharedCredentialsValidation'
+import { profileExists } from '../sharedCredentials'
+import { getLogger } from '../../shared/logger'
 
-class AuthWebview extends VueWebview {
+export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/credentials/vue/index.js'
+
+    async getProfileNameError(profileName?: SectionName, required = true): Promise<string | undefined> {
+        if (!profileName) {
+            if (required) {
+                return 'Profile name is required'
+            }
+            return
+        }
+
+        if (await profileExists(profileName)) {
+            return 'Profile name already exists'
+        }
+    }
+
+    getCredentialFormatError(key: CredentialsKey, value: string | undefined): string | undefined {
+        getLogger().warn('getCredentialFormatError(): %s %s', key, value)
+        return getCredentialFormatError(key, value)
+    }
+
+    getCredentialsSubmissionErrors(data: CredentialsData): CredentialsData | undefined {
+        return getCredentialsErrors(data)
+    }
+
+    async trySubmitCredentials(profileName: SectionName, data: StaticProfile) {
+        return tryAddCredentials(profileName, data, true)
+    }
+
+    isCredentialConnected(): boolean {
+        const conn = Auth.instance.activeConnection
+
+        if (!conn) {
+            return false
+        }
+
+        return conn.type === 'iam' && conn.state === 'valid'
+    }
+
+    async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
+        return Auth.instance.authenticateData(data)
+    }
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)

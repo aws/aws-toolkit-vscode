@@ -8,7 +8,7 @@ import { SystemUtilities } from '../shared/systemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { assertHasProps } from '../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
-import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { SectionName, StaticProfile } from './types'
 import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
@@ -124,9 +124,9 @@ function validateSection(section: BaseSection): asserts section is Section {
  */
 export async function loadSharedCredentialsProfiles(): Promise<Record<SectionName, Profile>> {
     const profiles = {} as Record<SectionName, Profile>
-    for (const [k, v] of (await loadSharedCredentialsSections()).sections.entries()) {
-        if (v.type === 'profile') {
-            profiles[k] = extractDataFromSection(v)
+    for (const section of (await loadSharedCredentialsSections()).sections.values()) {
+        if (section.type === 'profile') {
+            profiles[section.name] = extractDataFromSection(section)
         }
     }
     return profiles
@@ -239,10 +239,7 @@ async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnT
 /**
  * Saves the given profile data to the credentials file.
  */
-export async function saveProfileToCredentials(
-    profileName: SectionName,
-    profileData: StaticCredentialsProfileKeys
-): Promise<void> {
+export async function saveProfileToCredentials(profileName: SectionName, profileData: StaticProfile): Promise<void> {
     if (await profileExists(profileName)) {
         throw new ToolkitError(`Cannot save profile "${profileName}" because it already exists.`, {
             code: 'ProfileAlreadyExists',
