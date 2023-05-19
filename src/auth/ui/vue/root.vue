@@ -139,7 +139,7 @@ export default defineComponent({
     },
     computed: {
         isLandscape() {
-            return this.currWindowWidth > 1300
+            return this.currWindowWidth > 1350
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined
@@ -226,12 +226,13 @@ export default defineComponent({
 .flex-container {
     display: flex;
     flex-direction: row;
+    gap: 20px;
 }
 
 #left-column {
-    width: 500px;
+    min-width: 500px;
+    max-width: 500px;
     box-sizing: border-box;
-    margin: 10px;
 }
 
 .service-item-list {

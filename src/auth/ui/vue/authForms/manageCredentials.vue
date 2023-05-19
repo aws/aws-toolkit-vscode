@@ -1,49 +1,53 @@
 <template>
-    <div class="auth-form container-background border-common" id="credentials-form" v-show="canShowAll">
-        <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
+    <div class="auth-form container-background border-common" id="credentials-form">
+        <div v-show="canShowAll">
+            <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
-        <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
-            <div :class="collapsibleClass"></div>
-            <div>Add another profile</div>
-        </div>
+            <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
+                <div :class="collapsibleClass"></div>
+                <div>Add another profile</div>
+            </div>
 
-        <div v-if="isFormShown">
-            <div class="form-section">
-                <label class="small-description">Credentials will be added to the appropriate `~/.aws/` files.</label>
-                <div>
-                    <div class="icon icon-vscode-edit edit-icon"></div>
-                    Edit file directly
+            <div v-if="isFormShown">
+                <div class="form-section">
+                    <label class="small-description"
+                        >Credentials will be added to the appropriate `~/.aws/` files.</label
+                    >
+                    <div>
+                        <div class="icon icon-vscode-edit edit-icon"></div>
+                        Edit file directly
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-section">
-                <label class="input-title">Profile Name</label>
-                <label class="small-description">The identifier for these credentials</label>
-                <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
-                <div class="small-description error-text">{{ errors.profileName }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Profile Name</label>
+                    <label class="small-description">The identifier for these credentials</label>
+                    <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
+                    <div class="small-description error-text">{{ errors.profileName }}</div>
+                </div>
 
-            <div class="form-section">
-                <label class="input-title">Access Key</label>
-                <label class="small-description">The access key</label>
-                <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
-                <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Access Key</label>
+                    <label class="small-description">The access key</label>
+                    <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
+                    <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
+                </div>
 
-            <div class="form-section">
-                <label class="input-title">Secret Key</label>
-                <label class="small-description">The secret key</label>
-                <input
-                    v-model="data.aws_secret_access_key"
-                    type="password"
-                    :data-invalid="!!errors.aws_secret_access_key"
-                />
-                <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Secret Key</label>
+                    <label class="small-description">The secret key</label>
+                    <input
+                        v-model="data.aws_secret_access_key"
+                        type="password"
+                        :data-invalid="!!errors.aws_secret_access_key"
+                    />
+                    <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
+                </div>
 
-            <div class="form-section">
-                <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
-                <div class="small-description error-text">{{ errors.submit }}</div>
+                <div class="form-section">
+                    <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
+                    <div class="small-description error-text">{{ errors.submit }}</div>
+                </div>
             </div>
         </div>
     </div>

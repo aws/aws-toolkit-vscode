@@ -1,11 +1,32 @@
 <template>
     <div class="service-item-content-container border-common">
-        <div class="form-container">
-            <BuilderIdForm :state="builderIdState" @auth-connection-updated="onAuthConnectionUpdated"></BuilderIdForm>
-            <IdentityCenterForm
-                :state="identityCenterState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-            ></IdentityCenterForm>
+        <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
+
+        <div>
+            <img
+                src="https://d1.awsstatic.com/developer-tools/01-Toolkit-for-VS-Code-Create-SAM-App.81c8c18274f2062516ba859ed97d61c4cab5ee98.png"
+            />
+        </div>
+
+        <div>INSERT TEXT HERE</div>
+
+        <div>
+            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeWhisperer.</a>
+        </div>
+
+        <hr />
+
+        <div class="service-item-content-form-section">
+            <div class="service-item-content-form-container">
+                <BuilderIdForm
+                    :state="builderIdState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                ></BuilderIdForm>
+                <IdentityCenterForm
+                    :state="identityCenterState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                ></IdentityCenterForm>
+            </div>
         </div>
     </div>
 </template>

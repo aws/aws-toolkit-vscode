@@ -1,7 +1,12 @@
 <template>
     <div class="service-item-content-container border-common">
-        <div>
-            <BuilderIdForm :state="builderIdState" @auth-connection-updated="onAuthConnectionUpdated"></BuilderIdForm>
+        <div class="service-item-content-form-section">
+            <div class="service-item-content-form-container">
+                <BuilderIdForm
+                    :state="builderIdState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                ></BuilderIdForm>
+            </div>
         </div>
     </div>
 </template>

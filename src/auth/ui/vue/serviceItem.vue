@@ -299,6 +299,7 @@ export class ServiceItemsState {
     display: flex;
     flex-direction: column;
     text-align: left;
+    user-select: none;
 }
 
 /* ******** Service Item Content Container ******** */
