@@ -43,7 +43,7 @@ interface ConnectionPinningManager {
     fun getPinnedConnection(feature: FeatureWithPinnedConnection): ToolkitConnection?
     fun setPinnedConnection(feature: FeatureWithPinnedConnection, newConnection: ToolkitConnection?)
 
-    fun maybePinFeatures(oldConnection: ToolkitConnection, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>)
+    fun maybePinFeatures(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>)
 
     companion object {
         fun getInstance(): ConnectionPinningManager = service()
@@ -90,7 +90,7 @@ class DefaultConnectionPinningManager :
         ApplicationManager.getApplication().messageBus.syncPublisher(ConnectionPinningManagerListener.TOPIC).pinnedConnectionChanged(feature, newConnection)
     }
 
-    override fun maybePinFeatures(oldConnection: ToolkitConnection, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>) {
+    override fun maybePinFeatures(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>) {
         val featuresString = if (features.size == 1) {
             features.first().featureName
         } else {
@@ -127,7 +127,7 @@ class DefaultConnectionPinningManager :
     override fun dispose() {}
 
     @TestOnly
-    internal fun showDialogIfNeeded(oldConnection: ToolkitConnection, newConnection: ToolkitConnection, featuresString: String, project: Project? = null) =
+    internal fun showDialogIfNeeded(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, featuresString: String, project: Project? = null) =
         if (!doNotPromptForPinning) {
             val bearerTokenConnectionName = bearerTokenConnectionString(oldConnection, newConnection)
 
@@ -157,7 +157,7 @@ class DefaultConnectionPinningManager :
             false
         }
 
-    private fun bearerTokenConnectionString(oldConnection: ToolkitConnection, newConnection: ToolkitConnection): String {
+    private fun bearerTokenConnectionString(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection): String {
         val connection = if (oldConnection is AwsBearerTokenConnection) oldConnection else newConnection
         return if (connection.isSono()) message("aws_builder_id.service_name") else message("iam_identity_center.name")
     }

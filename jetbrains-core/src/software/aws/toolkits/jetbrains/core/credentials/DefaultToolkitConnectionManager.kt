@@ -105,10 +105,17 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
             this.connection = newConnection
 
             val pinningManager = pinningManager
-            if (oldConnection != null && newConnection != null && pinningManager != null) {
+            if (newConnection != null && pinningManager != null) {
                 val featuresToPin = mutableListOf<FeatureWithPinnedConnection>()
                 FeatureWithPinnedConnection.EP_NAME.forEachExtensionSafe {
-                    if (!pinningManager.isFeaturePinned(it) && (it.supportsConnectionType(oldConnection) != it.supportsConnectionType(newConnection))) {
+                    if (!pinningManager.isFeaturePinned(it) &&
+
+                        (
+                            (oldConnection == null && it.supportsConnectionType(newConnection)) ||
+                                (oldConnection != null && it.supportsConnectionType(oldConnection) != it.supportsConnectionType(newConnection))
+                            )
+
+                    ) {
                         featuresToPin.add(it)
                     }
                 }

@@ -68,6 +68,33 @@ class ConnectionPinningManagerTest {
     }
 
     @Test
+    fun `add new supported connection will pin the feature if user allows`() {
+        sut.stub {
+            onGeneric { it.showDialogIfNeeded(any(), any(), any(), any()) } doReturn true
+        }
+        TestDialogManager.setTestDialog(TestDialog.OK)
+
+        val feature = object : FeatureWithPinnedConnection {
+            override val featureId = "mockId"
+            override val featureName = "mockFeature"
+            override fun supportsConnectionType(connection: ToolkitConnection) = true
+        }
+
+        val newConnection = mock<AwsBearerTokenConnection>() {
+            on { id } doReturn "connId"
+        }
+
+        val mockAuthManager = mock<ToolkitAuthManager> {
+            on { it.getConnection("connId") }.thenReturn(newConnection)
+        }
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, mockAuthManager, disposableRule.disposable)
+
+        sut.maybePinFeatures(null, newConnection, listOf(feature))
+
+        assertThat(sut.getPinnedConnection(feature)).isEqualTo(newConnection)
+    }
+
+    @Test
     fun `switching connection from unsupported feature pins connection to new connection if user allows`() {
         sut.stub {
             onGeneric { it.showDialogIfNeeded(any(), any(), any(), any()) } doReturn true
