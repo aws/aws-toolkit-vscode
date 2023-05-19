@@ -382,7 +382,6 @@ export class InlineCompletionService {
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
             RecommendationHandler.instance.clearRecommendations()
         } else if (RecommendationHandler.instance.recommendations.length > 0) {
-            RecommendationHandler.instance.moveStartPositionToSkipSpaces(editor)
             this.subscribeSuggestionCommands()
             await this.startRejectionTimer(editor)
             await this.showRecommendation(0, true)

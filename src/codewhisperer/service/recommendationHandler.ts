@@ -412,15 +412,6 @@ export class RecommendationHandler {
         return true
     }
 
-    moveStartPositionToSkipSpaces(editor: vscode.TextEditor) {
-        const start = this.startPos
-        const prefix = editor.document.getText(new vscode.Range(start, editor.selection.active))
-        // skip space from invocation position
-        if (prefix.length > 0 && prefix.trimStart().length != prefix.length) {
-            this.startPos = start.translate(undefined, prefix.length - prefix.trimStart().length)
-        }
-    }
-
     async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {
         if (
             awsError.code === 'ThrottlingException' &&
