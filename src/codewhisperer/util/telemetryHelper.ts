@@ -70,6 +70,7 @@ export class TelemetryHelper {
     private invocationTime = 0
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
+    private classifierThreshold?: number = undefined
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -237,6 +238,7 @@ export class TelemetryHelper {
         if (!this.sessionDecisions.length) {
             return
         }
+
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const language = this.sessionDecisions[0].codewhispererLanguage
@@ -267,7 +269,8 @@ export class TelemetryHelper {
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
             codewhispererSuggestionState: this.getAggregatedUserDecision(this.sessionDecisions),
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
-            codewhispererClassifierResult: language === 'java' ? this.classifierResult : undefined,
+            codewhispererClassifierResult: this.classifierResult,
+            codewhispererClassifierThreshold: this.classifierThreshold,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
@@ -283,6 +286,10 @@ export class TelemetryHelper {
 
     public setClassifierResult(classifierResult: number) {
         this.classifierResult = classifierResult
+    }
+
+    public setClassifierThreshold(classifierThreshold: number) {
+        this.classifierThreshold = classifierThreshold
     }
 
     public setIsRequestCancelled(isRequestCancelled: boolean) {
@@ -330,6 +337,7 @@ export class TelemetryHelper {
         this.timeSinceLastModification = 0
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
+        this.classifierThreshold = undefined
     }
 
     private getAggregatedCompletionType(
