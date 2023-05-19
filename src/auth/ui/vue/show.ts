@@ -30,6 +30,7 @@ import { tryAddCredentials, signout, showRegionPrompter } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl } from '../../sso/validation'
+import { throttle } from '../../../shared/utilities/functionUtils'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -204,9 +205,13 @@ export class AuthWebview extends VueWebview {
             Auth.instance.onDidChangeConnectionState,
         ]
 
+        // The event handler in the frontend refreshes all connection statuses
+        // when triggered, and multiple events can fire at the same time so we throttle.
+        const throttledFire = throttle(() => this.onDidConnectionUpdate.fire(undefined), 500)
+
         events.forEach(event =>
             event(() => {
-                this.onDidConnectionUpdate.fire(undefined)
+                throttledFire()
             })
         )
     }
