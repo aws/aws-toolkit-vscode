@@ -40,7 +40,7 @@
                         :isLandscape="isLandscape"
                         :id="itemId"
                         :key="buildServiceItemKey(itemId, 'UNLOCKED')"
-                        @service-item-clicked="serviceWasSelected(itemId)"
+                        @service-item-clicked="serviceWasClicked(itemId)"
                     >
                         <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
                             <component
@@ -66,7 +66,7 @@
                         :isLandscape="isLandscape"
                         :id="itemId"
                         :key="buildServiceItemKey(itemId, 'LOCKED')"
-                        @service-item-clicked="serviceWasSelected(itemId)"
+                        @service-item-clicked="serviceWasClicked(itemId)"
                     >
                         <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
                             <component
@@ -163,8 +163,8 @@ export default defineComponent({
         getServiceItemProps(id: ServiceItemId): StaticServiceItemProps {
             return serviceItemsState.getStaticServiceItemProps(id)
         },
-        serviceWasSelected(id: ServiceItemId): void {
-            serviceItemsState.select(id)
+        serviceWasClicked(id: ServiceItemId): void {
+            serviceItemsState.toggleSelected(id)
             this.renderItems()
         },
         /**
