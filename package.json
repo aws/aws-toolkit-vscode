@@ -3510,7 +3510,7 @@
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.9",
-        "amazon-states-language-service": "^1.9.0",
+        "amazon-states-language-service": "^1.10.0",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1369.0",
         "aws-ssm-document-language-service": "^1.0.0",
