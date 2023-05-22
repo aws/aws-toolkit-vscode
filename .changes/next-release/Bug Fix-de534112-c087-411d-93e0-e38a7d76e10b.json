@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeWhisperer sometimes add extra space at the beginning of suggestion"
+}
