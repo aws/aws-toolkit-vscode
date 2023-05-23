@@ -5,7 +5,7 @@
  * This module sets up the necessary components
  * for the webview to be shown.
  */
-
+import globals from '../../../shared/extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
@@ -100,6 +100,10 @@ export class AuthWebview extends VueWebview {
 
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         return Auth.instance.authenticateData(data)
+    }
+
+    editCredentialsFile() {
+        return globals.awsContextCommands.onCommandEditCredentials()
     }
 
     async startCodeWhispererBuilderIdSetup(): Promise<void> {

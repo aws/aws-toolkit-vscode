@@ -13,7 +13,7 @@
                     <label class="small-description"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
-                    <div>
+                    <div v-on:click="editCredentialsFile()" style="cursor: pointer">
                         <div class="icon icon-vscode-edit edit-icon"></div>
                         Edit file directly
                     </div>
@@ -175,6 +175,9 @@ export default defineComponent({
             this.data.profileName = ''
             this.data.aws_access_key_id = ''
             this.data.aws_secret_access_key = ''
+        },
+        editCredentialsFile() {
+            client.editCredentialsFile()
         },
     },
     watch: {
