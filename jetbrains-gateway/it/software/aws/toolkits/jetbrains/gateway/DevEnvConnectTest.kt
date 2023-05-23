@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -62,6 +63,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 @ExtendWith(ApplicationExtension::class)
 @SsoLogin("codecatalyst-test-account")
+@DisabledIfEnvironmentVariable(named = "IS_PROD", matches = "false")
 class DevEnvConnectTest : AfterAllCallback {
     companion object {
         @JvmField

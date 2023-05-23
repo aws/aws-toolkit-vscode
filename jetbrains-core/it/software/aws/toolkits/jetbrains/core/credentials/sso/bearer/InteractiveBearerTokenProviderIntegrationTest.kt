@@ -11,6 +11,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
@@ -25,6 +26,7 @@ import java.time.Instant
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @ExtendWith(ApplicationExtension::class, SsoLoginExtension::class)
 @SsoLogin("codecatalyst-test-account")
+@DisabledIfEnvironmentVariable(named = "IS_PROD", matches = "false")
 class InteractiveBearerTokenProviderIntegrationTest {
     companion object {
         @JvmStatic

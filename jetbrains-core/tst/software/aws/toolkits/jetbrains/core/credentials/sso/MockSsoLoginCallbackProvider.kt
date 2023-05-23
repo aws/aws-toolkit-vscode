@@ -84,6 +84,7 @@ internal class TestSsoPrompt(private val secretName: String) : SsoLoginCallback 
         LOG.info {
             """
                 "Auth invocation request ID: ${response.responseMetadata().requestId()}"
+                "Auth function error: ${response.functionError()}
                 "Auth invocation response status code: ${response.statusCode()}"
             """.trimIndent()
         }
