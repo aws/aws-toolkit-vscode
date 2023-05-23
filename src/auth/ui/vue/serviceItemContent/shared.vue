@@ -10,7 +10,7 @@ import { ServiceItemId } from '../backend/types'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
-    NON_AUTH_FEATURES: BaseServiceItemContent,
+    DOCUMENT_TYPE_SUPPORT: BaseServiceItemContent,
     RESOURCE_EXPLORER: AwsExplorerContent,
     CODE_CATALYST: CodeCatalystContent,
     CODE_WHISPERER: CodeWhispererContent,
@@ -23,7 +23,7 @@ const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
  * the current service.
  */
 export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, AuthStatus>> = {
-    NON_AUTH_FEATURES: new UnimplementedAuthStatus(),
+    DOCUMENT_TYPE_SUPPORT: new UnimplementedAuthStatus(),
     RESOURCE_EXPLORER: new ResourceExplorerContentState(),
     CODE_CATALYST: new CodeCatalystContentState(),
     CODE_WHISPERER: new CodeWhispererContentState(),

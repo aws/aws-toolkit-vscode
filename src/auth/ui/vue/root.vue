@@ -30,7 +30,7 @@
                         <h1>Welcome & Getting Started</h1>
                     </div>
                 </div>
-                <h1>Select a feature to get started</h1>
+                <h1>Try these features now:</h1>
                 <ul class="service-item-list" v-for="itemId in unlockedItemIds">
                     <ServiceItem
                         :title="getServiceItemProps(itemId).title"

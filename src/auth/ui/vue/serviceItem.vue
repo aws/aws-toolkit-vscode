@@ -127,20 +127,20 @@ export default defineComponent({
  */
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
-    NON_AUTH_FEATURES: {
-        title: 'Debug Lambda Functions & Edit AWS Document Types',
-        description: "Local features that don't require authentication.",
+    DOCUMENT_TYPE_SUPPORT: {
+        title: 'Edit CloudFormation Templates',
+        description: 'Invalid syntax validation and auto-completion.',
     },
     RESOURCE_EXPLORER: {
-        title: 'Resource Explorer',
-        description: 'View, modify, deploy, and troubleshoot AWS resources.',
+        title: 'View, modify, and deploy AWS Resources',
+        description: 'Work with S3, CloudWatch, and more.',
     },
     CODE_WHISPERER: {
-        title: 'Amazon CodeWhisperer',
-        description: 'Build applications faster with AI code recommendations.',
+        title: 'AI-powered code suggestions from CodeWhisperer',
+        description: 'Build applications faster with your AI coding companion.',
     },
     CODE_CATALYST: {
-        title: 'Amazon CodeCatalyst',
+        title: 'Launch CodeCatalyst Cloud-based Dev Environments',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
 }
@@ -160,10 +160,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['NON_AUTH_FEATURES'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set(['DOCUMENT_TYPE_SUPPORT'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'NON_AUTH_FEATURES'
+    private currentlySelected?: ServiceItemId = 'DOCUMENT_TYPE_SUPPORT'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
