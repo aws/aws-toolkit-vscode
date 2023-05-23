@@ -53,7 +53,7 @@ import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
-import { AuthFormId, authForms } from './types.vue'
+import { AuthFormId } from './types.vue'
 import { Region } from '../../../../shared/regions/endpoints'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -199,7 +199,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
 export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     override get id(): AuthFormId {
-        return authForms.IDENTITY_CENTER_CODE_WHISPERER
+        return 'IDENTITY_CENTER_CODE_WHISPERER'
     }
 
     protected override async _startIdentityCenterSetup(): Promise<void> {

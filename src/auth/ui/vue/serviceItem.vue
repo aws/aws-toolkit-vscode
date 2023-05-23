@@ -29,6 +29,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
+import { ServiceItemId } from './backend/types'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
@@ -124,33 +125,25 @@ export default defineComponent({
 /**
  * A Service Item ID is the main identifier/representation of a specific service item.
  */
-export type ServiceItemId = (typeof serviceItemIds)[keyof typeof serviceItemIds]
 
-export const serviceItemIds = {
-    NON_AUTH_FEATURES: 'NON_AUTH_FEATURES',
-    RESOURCE_EXPLORER: 'RESOURCE_EXPLORER',
-    CODE_WHISPERER: 'CODE_WHISPERER',
-    CODE_CATALYST: 'CODE_CATALYST',
-} as const
-
-const staticServiceItemProps = {
-    [serviceItemIds.NON_AUTH_FEATURES]: {
+const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
+    NON_AUTH_FEATURES: {
         title: 'Debug Lambda Functions & Edit AWS Document Types',
         description: "Local features that don't require authentication.",
     },
-    [serviceItemIds.RESOURCE_EXPLORER]: {
+    RESOURCE_EXPLORER: {
         title: 'Resource Explorer',
         description: 'View, modify, deploy, and troubleshoot AWS resources.',
     },
-    [serviceItemIds.CODE_WHISPERER]: {
+    CODE_WHISPERER: {
         title: 'Amazon CodeWhisperer',
         description: 'Build applications faster with AI code recommendations.',
     },
-    [serviceItemIds.CODE_CATALYST]: {
+    CODE_CATALYST: {
         title: 'Amazon CodeCatalyst',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
-} as const
+}
 
 /* -------------------------------------- */
 
@@ -167,10 +160,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set([serviceItemIds.NON_AUTH_FEATURES])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set(['NON_AUTH_FEATURES'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = serviceItemIds.NON_AUTH_FEATURES
+    private currentlySelected?: ServiceItemId = 'NON_AUTH_FEATURES'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked

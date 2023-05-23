@@ -1,19 +1,20 @@
 <script lang="ts">
 import AwsExplorerContent, { ResourceExplorerContentState } from './awsExplorerContent.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import { ServiceItemId, serviceItemIds } from '../serviceItem.vue'
 import { UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
 import { AuthStatus } from '../authForms/shared.vue'
 import CodeWhispererContent, { CodeWhispererContentState } from './codeWhispererContent.vue'
 import CodeCatalystContent, { CodeCatalystContentState } from './codeCatalystContent.vue'
+import { DefinedComponent } from '../../../../webviews/types'
+import { ServiceItemId } from '../backend/types'
 
 /** Maps a service item id to its respective component */
-const serviceItemsContent = {
-    [serviceItemIds.NON_AUTH_FEATURES]: BaseServiceItemContent,
-    [serviceItemIds.RESOURCE_EXPLORER]: AwsExplorerContent,
-    [serviceItemIds.CODE_CATALYST]: CodeCatalystContent,
-    [serviceItemIds.CODE_WHISPERER]: CodeWhispererContent,
-} as const
+const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
+    NON_AUTH_FEATURES: BaseServiceItemContent,
+    RESOURCE_EXPLORER: AwsExplorerContent,
+    CODE_CATALYST: CodeCatalystContent,
+    CODE_WHISPERER: CodeWhispererContent,
+}
 
 /**
  * Maps a service item id to the content window state.
@@ -21,11 +22,11 @@ const serviceItemsContent = {
  * This knows about the overall connection status for
  * the current service.
  */
-export const serviceItemsAuthStatus: Record<ServiceItemId, AuthStatus> = {
-    [serviceItemIds.NON_AUTH_FEATURES]: new UnimplementedAuthStatus(),
-    [serviceItemIds.RESOURCE_EXPLORER]: new ResourceExplorerContentState(),
-    [serviceItemIds.CODE_CATALYST]: new CodeCatalystContentState(),
-    [serviceItemIds.CODE_WHISPERER]: new CodeWhispererContentState(),
+export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, AuthStatus>> = {
+    NON_AUTH_FEATURES: new UnimplementedAuthStatus(),
+    RESOURCE_EXPLORER: new ResourceExplorerContentState(),
+    CODE_CATALYST: new CodeCatalystContentState(),
+    CODE_WHISPERER: new CodeWhispererContentState(),
 } as const
 
 export default serviceItemsContent

@@ -38,7 +38,7 @@ import BaseAuthForm from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
 import { AuthWebview } from '../show'
-import authForms, { AuthFormId } from './types.vue'
+import { AuthFormId } from './types.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -124,7 +124,7 @@ abstract class BaseBuilderIdState implements AuthStatus {
 
 export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
     override get id(): AuthFormId {
-        return authForms.BUILDER_ID_CODE_WHISPERER
+        return 'BUILDER_ID_CODE_WHISPERER'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -138,7 +138,7 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
 
 export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
     override get id(): AuthFormId {
-        return authForms.BUILDER_ID_CODE_CATALYST
+        return 'BUILDER_ID_CODE_CATALYST'
     }
 
     override isAuthConnected(): Promise<boolean> {
