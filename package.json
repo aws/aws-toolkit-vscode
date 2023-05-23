@@ -3512,7 +3512,7 @@
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.10.0",
         "async-lock": "^1.4.0",
-        "aws-sdk": "^2.1369.0",
+        "aws-sdk": "^2.1382.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.2",
         "cross-spawn": "^7.0.3",
