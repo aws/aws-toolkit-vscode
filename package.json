@@ -3509,7 +3509,7 @@
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@iarna/toml": "^2.2.5",
-        "adm-zip": "^0.5.9",
+        "adm-zip": "^0.5.10",
         "amazon-states-language-service": "^1.10.0",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1369.0",
