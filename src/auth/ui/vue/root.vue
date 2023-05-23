@@ -98,6 +98,7 @@ export default defineComponent({
         }
     },
     async created() {
+        await this.selectInitialService()
         await this.updateServiceConnections()
 
         // This handles the case where non-webview auth setup is used.
@@ -110,6 +111,9 @@ export default defineComponent({
             // event that changes the state of this service (eg: disconnected)
             // this forced rerender will display the new state
             this.rerenderSelectedContentWindow()
+        })
+        client.onDidSelectService((id: ServiceItemId) => {
+            this.selectService(id)
         })
     },
     mounted() {
@@ -155,6 +159,10 @@ export default defineComponent({
         },
         serviceWasClicked(id: ServiceItemId): void {
             serviceItemsState.toggleSelected(id)
+            this.renderItems()
+        },
+        selectService(id: ServiceItemId) {
+            serviceItemsState.select(id)
             this.renderItems()
         },
         /**
@@ -206,6 +214,12 @@ export default defineComponent({
         rerenderSelectedContentWindow() {
             // Arbitrarily toggles value between 0 and 1
             this.rerenderContentWindowKey = this.rerenderContentWindowKey === 0 ? 1 : 0
+        },
+        async selectInitialService() {
+            const initialService = await client.getInitialService()
+            if (initialService) {
+                this.selectService(initialService)
+            }
         },
     },
 })

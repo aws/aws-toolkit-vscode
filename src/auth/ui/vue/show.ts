@@ -39,6 +39,8 @@ export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
     public readonly onDidConnectionUpdate = new vscode.EventEmitter<undefined>()
+    /** If the backend needs to tell the frontend to select/show a specific service to the user */
+    public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
     private codeCatalystAuth: CodeCatalystAuthenticationProvider
 
@@ -222,6 +224,25 @@ export class AuthWebview extends VueWebview {
             })
         )
     }
+
+    #initialService?: ServiceItemId
+
+    /**
+     * Sets which service will be initially shown to the user
+     */
+    setInitialService(id: ServiceItemId) {
+        this.#initialService = id
+    }
+
+    /**
+     * The method for the frontend to use to know which service it should initially
+     * show the user.
+     */
+    getInitialService(): ServiceItemId | undefined {
+        const initialService = this.#initialService
+        this.#initialService = undefined // consecutive requests will not do anything
+        return initialService
+    }
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)
@@ -233,8 +254,22 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
         // Fallback logic was executed
         return
     }
+    
+    let wasInitialServiceSet = false
+    if (activePanel && serviceToShow) {
+        // Webview is already open, so we have to select the service
+        // through an event
+        activePanel.server.onDidSelectService.fire(serviceToShow)
+        wasInitialServiceSet = true
+    }
 
     activePanel ??= new Panel(ctx)
+
+    if (!wasInitialServiceSet && serviceToShow) {
+        // Webview does not exist yet, preemptively set
+        // the initial service to show
+        activePanel.server.setInitialService(serviceToShow)
+    }
 
     activePanel.server.setupConnectionChangeEmitter()
 
