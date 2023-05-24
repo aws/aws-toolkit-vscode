@@ -1,5 +1,5 @@
 <template>
-    <div class="service-item-content-container border-common">
+    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
         <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
 
         <div>
@@ -37,11 +37,21 @@ import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageB
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import AuthFormId from '../authForms/types.vue'
 
 export default defineComponent({
     name: 'CodeWhispererContent',
     components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
+    data() {
+        return {
+            isAllAuthsLoaded: false,
+            isLoaded: {
+                BUILDER_ID_CODE_WHISPERER: false,
+                IDENTITY_CENTER_CODE_WHISPERER: false,
+            } as Record<AuthFormId, boolean>,
+        }
+    },
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {
             return authFormsState.BUILDER_ID_CODE_WHISPERER
@@ -51,7 +61,14 @@ export default defineComponent({
         },
     },
     methods: {
-        async onAuthConnectionUpdated() {
+        updateIsAllAuthsLoaded() {
+            const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
+            this.isAllAuthsLoaded = !hasUnloaded
+        },
+        async onAuthConnectionUpdated(id: AuthFormId) {
+            this.isLoaded[id] = true
+            this.updateIsAllAuthsLoaded()
+
             const isConnected = await this.state.isAuthConnected()
             this.emitIsAuthConnected('CODE_WHISPERER', isConnected)
         },

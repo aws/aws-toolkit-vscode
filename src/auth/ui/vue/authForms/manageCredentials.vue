@@ -1,6 +1,6 @@
 <template>
     <div class="auth-form container-background border-common" id="credentials-form">
-        <div v-show="canShowAll">
+        <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
@@ -94,26 +94,16 @@ export default defineComponent({
              * need to know if we should show the form
              */
             isFormShown: false,
-
-            /**
-             * This exists since setup is run async and there is a visual
-             * stutter when this form is first shown. This will not allow
-             * anything to be shown until this is set to true
-             */
-            canShowAll: false,
         }
     },
-
     async created() {
         await this.updateDataError('profileName')
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
+        this.isFormShown = !(await this.state.isAuthConnected())
+        await this.updateSubmittableStatus()
 
-        await Promise.all([this.updateConnectedStatus(), this.updateSubmittableStatus()])
-
-        this.isFormShown = !this.isConnected
-
-        this.canShowAll = true // make sure this is last
+        this.updateConnectedStatus()
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */

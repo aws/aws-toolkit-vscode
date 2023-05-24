@@ -1,5 +1,5 @@
 <template>
-    <div class="service-item-content-container border-common">
+    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
         <div class="service-item-content-container-title">Resource Explorer</div>
 
         <div>
@@ -40,18 +40,34 @@ import { defineComponent } from 'vue'
 import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import AuthFormId from '../authForms/types.vue'
 
 export default defineComponent({
     name: 'AwsExplorerContent',
     components: { CredentialsForm },
     extends: BaseServiceItemContent,
+    data() {
+        return {
+            isAllAuthsLoaded: false,
+            isLoaded: {
+                CREDENTIALS: false,
+            } as Record<AuthFormId, boolean>,
+        }
+    },
     computed: {
         credentialsFormState(): CredentialsState {
             return authFormsState.CREDENTIALS
         },
     },
     methods: {
-        async onAuthConnectionUpdated() {
+        updateIsAllAuthsLoaded() {
+            const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
+            this.isAllAuthsLoaded = !hasUnloaded
+        },
+        async onAuthConnectionUpdated(id: AuthFormId) {
+            this.isLoaded[id] = true
+            this.updateIsAllAuthsLoaded()
+
             const isConnected = await this.state.isAuthConnected()
             this.emitIsAuthConnected('RESOURCE_EXPLORER', isConnected)
         },
