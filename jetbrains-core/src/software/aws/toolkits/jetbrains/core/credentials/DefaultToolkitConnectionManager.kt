@@ -97,35 +97,34 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
     }
 
     @Synchronized
-    override fun switchConnection(connection: ToolkitConnection?) {
+    override fun switchConnection(newConnection: ToolkitConnection?) {
         val oldConnection = this.connection
-        val newConnection = connection
 
         if (oldConnection != newConnection) {
+            val application = ApplicationManager.getApplication()
             this.connection = newConnection
 
-            val pinningManager = pinningManager
-            if (newConnection != null && pinningManager != null) {
+            if (newConnection != null) {
                 val featuresToPin = mutableListOf<FeatureWithPinnedConnection>()
                 FeatureWithPinnedConnection.EP_NAME.forEachExtensionSafe {
                     if (!pinningManager.isFeaturePinned(it) &&
-
                         (
                             (oldConnection == null && it.supportsConnectionType(newConnection)) ||
                                 (oldConnection != null && it.supportsConnectionType(oldConnection) != it.supportsConnectionType(newConnection))
                             )
-
                     ) {
                         featuresToPin.add(it)
                     }
                 }
 
                 if (featuresToPin.isNotEmpty()) {
-                    pinningManager.maybePinFeatures(oldConnection, newConnection, featuresToPin)
+                    application.executeOnPooledThread {
+                        pinningManager.maybePinFeatures(oldConnection, newConnection, featuresToPin)
+                    }
                 }
             }
 
-            ApplicationManager.getApplication().messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC).activeConnectionChanged(connection)
+            application.messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC).activeConnectionChanged(newConnection)
         }
     }
 }

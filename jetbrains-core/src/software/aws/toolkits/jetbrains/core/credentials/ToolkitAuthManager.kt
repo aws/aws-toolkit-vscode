@@ -90,7 +90,7 @@ interface ToolkitConnectionManager : Disposable {
 
     fun activeConnectionForFeature(feature: FeatureWithPinnedConnection): ToolkitConnection?
 
-    fun switchConnection(connection: ToolkitConnection?)
+    fun switchConnection(newConnection: ToolkitConnection?)
 
     override fun dispose() {}
 
