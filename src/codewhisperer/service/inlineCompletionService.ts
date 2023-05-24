@@ -97,9 +97,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         return index
     }
 
-    truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
+    truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string, pos: vscode.Position): string {
         const trimmedSuggestion = suggestion.trim()
-        const pos = vscode.window.activeTextEditor?.selection.active || RecommendationHandler.instance.startPos
         // limit of 5000 for right context matching
         const rightContext = document.getText(new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + 5000)))
         const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
@@ -123,7 +122,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         if (!r.content.startsWith(prefix)) {
             return undefined
         }
-        const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content)
+        const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content, end)
         if (truncatedSuggestion.length === 0) {
             if (RecommendationHandler.instance.getSuggestionState(index) !== 'Showed') {
                 RecommendationHandler.instance.setSuggestionState(index, 'Discard')
