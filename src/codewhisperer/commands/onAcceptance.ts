@@ -4,18 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
-import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { InlineCompletion } from '../service/inlineCompletion'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 
@@ -31,7 +27,6 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
-        const languageId = acceptanceEntry.editor.document.languageId
         RecommendationHandler.instance.reportUserDecisionOfRecommendation(
             acceptanceEntry.editor,
             acceptanceEntry.acceptIndex
@@ -42,12 +37,10 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
-        if (!InlineCompletion.instance.isTypeaheadInProgress) {
-            try {
-                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
-            } catch (error) {
-                getLogger().error(`${error} in handleAutoClosingBrackets`)
-            }
+        try {
+            await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
+        } catch (error) {
+            getLogger().error(`${error} in handleAutoClosingBrackets`)
         }
         // move cursor to end of suggestion before doing code format
         // after formatting, the end position will still be editor.selection.active
@@ -55,32 +48,8 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             acceptanceEntry.editor.selection = new vscode.Selection(end, end)
         }
 
-        if (languageId === CodeWhispererConstants.python) {
-            await vscode.commands.executeCommand('editor.action.format')
-        } else {
-            const range = new vscode.Range(start, end)
-            const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
-                'vscode.executeFormatRangeProvider',
-                acceptanceEntry.editor.document.uri,
-                range,
-                {
-                    tabSize: getTabSizeSetting(),
-                    insertSpaces: true,
-                }
-            )
-            if (edits && acceptanceEntry.editor) {
-                const wEdit = new WorkspaceEdit()
-                wEdit.set(acceptanceEntry.editor.document.uri, edits)
-                await workspace.applyEdit(wEdit)
-            }
-        }
-        /* After formatting, update global variable states.
-         */
-
         if (isCloud9()) {
             vsCodeState.isIntelliSenseActive = false
-        } else {
-            InlineCompletion.instance.isTypeaheadInProgress = false
         }
         vsCodeState.isCodeWhispererEditing = false
         CodeWhispererTracker.getTracker().enqueue({

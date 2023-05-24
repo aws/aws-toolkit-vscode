@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -21,7 +19,6 @@ import {
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../credentials/secondaryAuth'
-import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
@@ -47,9 +44,6 @@ export class AuthUtil {
     private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
 
-    private readonly clearAccessToken = once(() =>
-        globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-    )
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
         'codewhisperer',
@@ -67,9 +61,6 @@ export class AuthUtil {
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
-                if (this.auth.getConnectionState(conn) === 'valid') {
-                    await this.clearAccessToken()
-                }
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
             } else {
                 this.usingEnterpriseSSO = false
@@ -229,9 +220,5 @@ export class AuthUtil {
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
-    }
-
-    public hasAccessToken() {
-        return !!globals.context.globalState.get(CodeWhispererConstants.accessToken)
     }
 }

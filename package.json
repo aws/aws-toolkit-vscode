@@ -3221,28 +3221,10 @@
                 "when": "editorTextFocus"
             },
             {
-                "command": "aws.codeWhisperer.nextCodeSuggestion",
-                "key": "right",
-                "mac": "right",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
-            },
-            {
-                "command": "aws.codeWhisperer.previousCodeSuggestion",
-                "key": "left",
-                "mac": "left",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
-            },
-            {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
                 "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
-            },
-            {
-                "command": "aws.codeWhisperer.acceptCodeSuggestion",
-                "key": "tab",
-                "mac": "tab",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
             },
             {
                 "key": "right",
