@@ -1,5 +1,21 @@
 <template>
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
+        <div class="service-item-content-container-title">Amazon CodeCatalyst</div>
+
+        <div>
+            <img
+                src="https://d1.awsstatic.com/developer-tools/01-Toolkit-for-VS-Code-Create-SAM-App.81c8c18274f2062516ba859ed97d61c4cab5ee98.png"
+            />
+        </div>
+
+        <div>INSERT TEXT HERE</div>
+
+        <div>
+            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeCatalyst.</a>
+        </div>
+
+        <hr />
+
         <div class="service-item-content-form-section">
             <div class="service-item-content-form-container">
                 <BuilderIdForm
