@@ -4,11 +4,16 @@
 
         <div>
             <img
-                src="https://d1.awsstatic.com/developer-tools/01-Toolkit-for-VS-Code-Create-SAM-App.81c8c18274f2062516ba859ed97d61c4cab5ee98.png"
+                src="https://github.com/aws/aws-toolkit-vscode/assets/118216176/37e373c5-25f1-4098-95a8-9204daf8dde8"
             />
         </div>
 
-        <div>INSERT TEXT HERE</div>
+        <div>
+            Amazon CodeCatalyst, is a cloud-based collaboration space for software development teams. You can create a
+            project that will generate resources that you can manage, including Dev Environments and workflows. Through
+            the AWS Toolkit for Visual Studio Code, you can view and manage your CodeCatalyst resources directly from VS
+            Code.
+        </div>
 
         <div>
             <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeCatalyst.</a>

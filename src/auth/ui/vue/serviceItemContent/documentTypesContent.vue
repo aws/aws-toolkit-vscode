@@ -3,9 +3,7 @@
         <div class="service-item-content-container-title">Edit CloudFormation Templates</div>
 
         <div>
-            <img
-                src="https://d1.awsstatic.com/developer-tools/01-Toolkit-for-VS-Code-Create-SAM-App.81c8c18274f2062516ba859ed97d61c4cab5ee98.png"
-            />
+            <img src="https://i.stack.imgur.com/qvON5.png" />
         </div>
 
         <div>This is my description</div>

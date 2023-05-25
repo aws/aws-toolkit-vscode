@@ -8,7 +8,10 @@
             />
         </div>
 
-        <div>INSERT TEXT HERE</div>
+        <div>
+            Amazon CodeWhisperer is an AI coding companion that generates whole line and full function code suggestions
+            in your IDE in real-time, to help you quickly write secure code.
+        </div>
 
         <div>
             <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeWhisperer.</a>

@@ -4,7 +4,7 @@
 
         <div>
             <img
-                src="https://d1.awsstatic.com/developer-tools/01-Toolkit-for-VS-Code-Create-SAM-App.81c8c18274f2062516ba859ed97d61c4cab5ee98.png"
+                src="https://github.com/aws/aws-toolkit-vscode/assets/118216176/7542f78b-f6ce-47c9-aa8c-cab48cd06997"
             />
         </div>
 
