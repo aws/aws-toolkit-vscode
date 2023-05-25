@@ -1,6 +1,6 @@
 <script lang="ts">
 import AwsExplorerContent, { ResourceExplorerContentState } from './awsExplorerContent.vue'
-import BaseServiceItemContent from './baseServiceItemContent.vue'
+import DocumentTypesContent from './documentTypesContent.vue'
 import { UnimplementedAuthStatus } from '../authForms/baseAuth.vue'
 import { AuthStatus } from '../authForms/shared.vue'
 import CodeWhispererContent, { CodeWhispererContentState } from './codeWhispererContent.vue'
@@ -10,7 +10,7 @@ import { ServiceItemId } from '../backend/types'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
-    DOCUMENT_TYPE_SUPPORT: BaseServiceItemContent,
+    DOCUMENT_TYPE_SUPPORT: DocumentTypesContent,
     RESOURCE_EXPLORER: AwsExplorerContent,
     CODE_CATALYST: CodeCatalystContent,
     CODE_WHISPERER: CodeWhispererContent,

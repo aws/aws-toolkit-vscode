@@ -207,8 +207,10 @@ export class ServiceItemsState {
 
     toggleSelected(id: ServiceItemId) {
         if (this.currentlySelected === id) {
+            console.log(`DESELECTED: ${id}`)
             this.deselect()
         } else {
+            console.log(`SELECTED: ${id}`)
             this.select(id)
         }
     }

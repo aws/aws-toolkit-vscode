@@ -37,12 +37,12 @@
                         :description="getServiceItemProps(itemId).description"
                         :status="'UNLOCKED'"
                         :isSelected="isServiceSelected(itemId)"
-                        :isLandscape="isLandscape"
+                        :isLandscape="isLandscape()"
                         :id="itemId"
                         :key="buildServiceItemKey(itemId, 'UNLOCKED')"
                         @service-item-clicked="serviceWasClicked(itemId)"
                     >
-                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
+                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape()">
                             <component
                                 :is="getServiceItemContent(itemId)"
                                 :state="serviceItemsAuthStatus[itemId]"
@@ -63,12 +63,12 @@
                         :description="getServiceItemProps(itemId).description"
                         :status="'LOCKED'"
                         :isSelected="isServiceSelected(itemId)"
-                        :isLandscape="isLandscape"
+                        :isLandscape="isLandscape()"
                         :id="itemId"
                         :key="buildServiceItemKey(itemId, 'LOCKED')"
                         @service-item-clicked="serviceWasClicked(itemId)"
                     >
-                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape">
+                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape()">
                             <component
                                 :is="getServiceItemContent(itemId)"
                                 :state="serviceItemsAuthStatus[itemId]"
@@ -81,7 +81,7 @@
             </div>
             <h3></h3>
         </div>
-        <div v-if="isLandscape && isAnyServiceSelected" id="right-column">
+        <div v-if="isLandscape() && isAnyServiceSelected()" id="right-column">
             <component
                 :is="getServiceItemContent(getSelectedService())"
                 :state="serviceItemsAuthStatus[getSelectedService()]"
@@ -138,15 +138,14 @@ export default defineComponent({
     unmounted() {
         window.removeEventListener('resize', this.updateWindowWidth)
     },
-    computed: {
+    computed: {},
+    methods: {
         isLandscape() {
             return this.currWindowWidth > 1350
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined
         },
-    },
-    methods: {
         /**
          * Triggers a rendering of the service items.
          */

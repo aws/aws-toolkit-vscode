@@ -6,9 +6,9 @@
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    If your organization has provided you a CodeWhisperer license, sign in with your Identity Center
-                    access portal login page.
-                    <a>Read more.</a>
+                    <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                        >Learn more about IAM Identity Center.</a
+                    >
                 </div>
 
                 <div class="form-section">
