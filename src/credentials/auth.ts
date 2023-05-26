@@ -881,7 +881,6 @@ export class Auth implements AuthService, ConnectionManager {
             if (isNetworkError(err)) {
                 throw new ToolkitError('Failed to refresh connection due to networking issues', {
                     cause: err,
-                    cancelled: true,
                 })
             }
 
