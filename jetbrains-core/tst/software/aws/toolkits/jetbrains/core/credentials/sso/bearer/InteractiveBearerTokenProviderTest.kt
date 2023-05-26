@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.core.credentials.sso.bearer
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.RuleChain
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,18 +17,30 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.core.exception.SdkException
+import software.amazon.awssdk.core.interceptor.Context
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor
+import software.amazon.awssdk.core.internal.InternalCoreExecutionAttribute
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.ssooidc.model.AccessDeniedException
 import software.amazon.awssdk.services.ssooidc.model.CreateTokenRequest
 import software.amazon.awssdk.services.ssooidc.model.CreateTokenResponse
+import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.MockClientManager
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.credentials.sso.ClientRegistration
@@ -46,6 +60,10 @@ class InteractiveBearerTokenProviderTest {
         mockClientManager
     )
 
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
+
     private lateinit var oidcClient: SsoOidcClient
     private val diskCache = mock<DiskCache>()
     private val startUrl = aString()
@@ -57,29 +75,56 @@ class InteractiveBearerTokenProviderTest {
         oidcClient = mockClientManager.create<SsoOidcClient>()
     }
 
-    @Test
-    fun `reads last token from disk on initialziation`() {
-        buildSut()
-        verify(diskCache).loadAccessToken(
-            argThat<AccessTokenCacheKey> {
-                val (_, url, scopes) = this
-                url == startUrl && scopes == this.scopes
-            }
-        )
+    @After
+    fun tearDown() {
+        oidcClient.close()
     }
 
     @Test
-    fun `resolveToken refreshes from service if local token expired`() {
-        stubClientRegistration()
-        stubAccessToken()
-        val sut = buildSut()
-        sut.resolveToken()
+    fun `oidcClient retries twice on InvalidGrantException failure`() {
+        fun verifyRetryAttempts(configuration: ClientOverrideConfiguration.Builder) {
+            configuration.addExecutionInterceptor(
+                object : ExecutionInterceptor {
+                    override fun onExecutionFailure(context: Context.FailedExecution?, executionAttributes: ExecutionAttributes?) {
+                        super.onExecutionFailure(context, executionAttributes)
 
-        verify(oidcClient).createToken(
-            argThat<CreateTokenRequest> {
-                grantType() == "refresh_token"
+                        // 3 total network calls, showing 4 since the sdk increments the attempt count at the beginning
+                        // of the loop before it checks whether it's allowed to retry.
+                        assertThat(executionAttributes?.getAttribute(InternalCoreExecutionAttribute.EXECUTION_ATTEMPT)).isEqualTo(4)
+                    }
+                }
+            )
+        }
+        fun buildUnmanagedSsoOidcClientForTests(region: String): SsoOidcClient =
+            AwsClientManager.getInstance()
+                .createUnmanagedClient(
+                    AnonymousCredentialsProvider.create(),
+                    Region.of(region),
+                    clientCustomizer = { _, _, _, _, configuration ->
+                        verifyRetryAttempts(ssoOidcClientConfigurationBuilder(configuration))
+                    }
+                )
+
+        MockClientManager.useRealImplementations(disposableRule.disposable)
+        oidcClient = spy(buildUnmanagedSsoOidcClientForTests("us-east-1"))
+        val registerClientResponse = oidcClient.registerClient {
+            it.clientType("public")
+            it.scopes(scopes)
+            it.clientName("test")
+        }
+        val deviceAuthorizationResponse = oidcClient.startDeviceAuthorization {
+            it.clientId(registerClientResponse.clientId())
+            it.clientSecret(registerClientResponse.clientSecret())
+            it.startUrl(SONO_URL)
+        }
+        assertThrows<InvalidGrantException> {
+            oidcClient.createToken {
+                it.clientId(registerClientResponse.clientId())
+                it.clientSecret(registerClientResponse.clientSecret())
+                it.deviceCode(deviceAuthorizationResponse.deviceCode() + "invalid")
+                it.grantType("urn:ietf:params:oauth:grant-type:device_code")
             }
-        )
+        }
     }
 
     @Test

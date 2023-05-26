@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "CodeWhisperer: user is sometimes required to re-login before token expiration"
+}
