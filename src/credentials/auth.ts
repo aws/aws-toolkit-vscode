@@ -879,7 +879,10 @@ export class Auth implements AuthService, ConnectionManager {
         const token = await provider.getToken().catch(err => {
             // Bubble-up networking issues so we don't treat the session as invalid
             if (isNetworkError(err)) {
-                throw err
+                throw new ToolkitError('Failed to refresh connection due to networking issues', {
+                    cause: err,
+                    cancelled: true,
+                })
             }
 
             this.#validationErrors.set(id, err)
