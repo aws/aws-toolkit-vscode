@@ -18,7 +18,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, formatError, isAwsError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, formatError, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
@@ -877,6 +877,11 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch(err => {
+            // Bubble-up networking issues so we don't treat the session as invalid
+            if (isNetworkError(err)) {
+                throw err
+            }
+
             this.#validationErrors.set(id, err)
         })
 
