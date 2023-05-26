@@ -11,9 +11,9 @@ phases:
 
         commands:
             # Without this, "Unable to locate package libatk1.0-0".
-            - '>/dev/null apt -yqq update'
+            - '>/dev/null apt-get -yqq update'
             # Dependencies for running vscode.
-            - '>/dev/null apt -y install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
 
     pre_build:
         commands:
