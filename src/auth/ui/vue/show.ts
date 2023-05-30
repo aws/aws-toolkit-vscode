@@ -149,6 +149,14 @@ export class AuthWebview extends VueWebview {
         }
     }
 
+    async showCodeWhispererNode(): Promise<void> {
+        vscode.commands.executeCommand('aws.developerTools.showCodeWhisperer')
+    }
+
+    async showCodeCatalystNode(): Promise<void> {
+        vscode.commands.executeCommand('aws.developerTools.showCodeCatalyst')
+    }
+
     async getIdentityCenterRegion(): Promise<Region> {
         return showRegionPrompter()
     }
