@@ -7,6 +7,7 @@ import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
+
 enum class IdeFlavor { GW, IC, IU, RD }
 
 object IdeVersions {
@@ -60,44 +61,6 @@ object IdeVersions {
                 netFrameworkTarget = "net472",
                 rdGenVersion = "0.213.394",
                 nugetVersion = "2021.3.0"
-            )
-        ),
-        Profile(
-            name = "2022.1",
-            community = ProductProfile(
-                sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "2022.1",
-                plugins = commonPlugins + listOf(
-                    "java",
-                    "com.intellij.gradle",
-                    "org.jetbrains.idea.maven",
-                    "PythonCore:221.5080.216",
-                    "Docker:221.5080.126"
-                )
-            ),
-            ultimate = ProductProfile(
-                sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "2022.1",
-                plugins = commonPlugins + listOf(
-                    "JavaScript",
-                    // Transitive dependency needed for javascript
-                    // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
-                    "com.intellij.css",
-                    "JavaScriptDebugger",
-                    "com.jetbrains.codeWithMe",
-                    "com.intellij.database",
-                    "Pythonid:221.5080.212",
-                    "org.jetbrains.plugins.go:221.5080.210"
-                )
-            ),
-            rider = RiderProfile(
-                sdkVersion = "2022.1",
-                plugins = commonPlugins + listOf(
-                    "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
-                ),
-                netFrameworkTarget = "net472",
-                rdGenVersion = "2022.1.3",
-                nugetVersion = "2022.1.0"
             )
         ),
         Profile(
