@@ -1,29 +1,19 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
-import com.intellij.openapi.module.ModuleManager
-import com.intellij.openapi.progress.DumbProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.project.rootManager
-import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.intellij.xml.util.XmlUtil
-import com.jetbrains.rider.ideaInterop.fileTypes.msbuild.CsprojFileType
 import com.jetbrains.rider.ideaInterop.fileTypes.sln.SolutionFileType
-import com.jetbrains.rider.projectView.SolutionManager
 import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharperTemplateGeneratorBase
-import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharperTemplatesInteraction
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
-import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel
@@ -36,7 +26,7 @@ import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
 import javax.swing.JTextPane
 
-class DotNetSamProjectGenerator(
+abstract class DotNetSamProjectGeneratorRoot(
     private val context: ProjectTemplateDialogContext,
     group: String,
     categoryName: String,
@@ -60,6 +50,10 @@ class DotNetSamProjectGenerator(
         // needed to rerun the validation when the wizard is changed
         wizardUpdateCallback = { validateData() }
     )
+
+    fun getSamPanel() = samPanel
+
+    fun getSamGenerator() = generator
 
     private val projectStructurePanel: JTabbedPane
 
@@ -152,74 +146,6 @@ class DotNetSamProjectGenerator(
         builder.appendLine("</span></html>")
         structurePane.text = builder.toString()
         validateData()
-    }
-
-    override fun expand() = Runnable {
-        val samSettings = samPanel.getNewProjectSettings()
-
-        val solutionDirectory = getSolutionDirectory()
-            ?: throw Exception(message("sam.init.error.no.solution.basepath"))
-
-        val fileSystem = LocalFileSystem.getInstance()
-        if (!solutionDirectory.exists()) {
-            FileUtil.createDirectory(solutionDirectory)
-        }
-
-        val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
-            ?: throw Exception(message("sam.init.error.no.virtual.file"))
-
-        val progressManager = ProgressManager.getInstance()
-        val samProjectBuilder = generator.createModuleBuilder()
-        progressManager.runProcessWithProgressSynchronously(
-            {
-                samProjectBuilder.runSamInit(
-                    context.project,
-                    projectNameField.text,
-                    samSettings,
-                    null,
-                    outDirVf
-                )
-            },
-            message("sam.init.generating.template"),
-            false,
-            null
-        )
-
-        // Create solution file
-        val projectFiles =
-            File(solutionDirectory, "src").walk().filter { it.extension == CsprojFileType.defaultExtension } +
-                File(solutionDirectory, "test").walk().filter { it.extension == CsprojFileType.defaultExtension }
-
-        // Get the rest of generated files and copy to "SolutionItems" default folder in project structure
-        val solutionFiles = solutionDirectory.listFiles()?.filter { it.isFile }?.toList() ?: emptyList()
-
-        val solutionFile = ReSharperTemplatesInteraction.createSolution(
-            name = getSolutionName(),
-            directory = solutionDirectory,
-            projectFiles = projectFiles.toList(),
-            protocolHost = context.protocolHost,
-            solutionFiles = solutionFiles
-        ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
-
-        val project = runBlocking {
-            SolutionManager.openExistingSolution(
-                projectToClose = null,
-                forceOpenInNewFrame = false,
-                solutionFile = solutionFile,
-                forceConsiderTrusted = true
-            )
-        } ?: return@Runnable
-
-        vcsPanel?.createInitializer()?.execute(project)
-
-        val modifiableModel = ModuleManager.getInstance(project).modules.firstOrNull()?.rootManager?.modifiableModel ?: return@Runnable
-        try {
-            val progressIndicator = if (progressManager.hasProgressIndicator()) progressManager.progressIndicator else DumbProgressIndicator()
-
-            samProjectBuilder.runPostSamInit(project, modifiableModel, progressIndicator, samSettings, outDirVf)
-        } finally {
-            modifiableModel.dispose()
-        }
     }
 
     override fun refreshUI() {
