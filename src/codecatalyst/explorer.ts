@@ -134,6 +134,18 @@ export class CodeCatalystRootNode implements RootNode {
         return getRemoteCommands(this.devenv.summary, devfileLocation)
     }
 
+    /**
+     * HACK: Since this is assumed to be an immediate child of the
+     * root, we return undefined.
+     *
+     * TODO: Look to have a base root class to extend so we do not
+     * need to implement this here.
+     * @returns
+     */
+    getParent(): TreeNode<unknown> | undefined {
+        return undefined
+    }
+
     public async getTreeItem() {
         await this.authProvider.restore()
 
