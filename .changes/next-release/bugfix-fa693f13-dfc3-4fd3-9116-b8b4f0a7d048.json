@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where the \"Do not ask again\" option is not respected when switching connections on CodeWhisperer/CodeCatalyst"
+}

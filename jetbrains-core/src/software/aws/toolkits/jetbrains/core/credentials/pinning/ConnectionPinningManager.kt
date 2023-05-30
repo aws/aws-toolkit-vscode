@@ -56,7 +56,9 @@ class DefaultConnectionPinningManager :
     ConnectionPinningManager,
     PersistentStateComponent<ConnectionPinningManagerState>,
     Disposable {
-    private var doNotPromptForPinning: Boolean = false
+    @VisibleForTesting
+    internal var shouldPinConnections: Boolean? = null
+
     private val pinnedConnections = ConcurrentHashMap<String, ToolkitConnection>()
 
     init {
@@ -108,14 +110,14 @@ class DefaultConnectionPinningManager :
     }
 
     override fun getState() = ConnectionPinningManagerState(
-        doNotPromptForPinning,
+        shouldPinConnections,
         pinnedConnections.entries.associate { (k, v) -> k to v.id }
     )
 
     override fun loadState(state: ConnectionPinningManagerState) {
         val authManager = ToolkitAuthManager.getInstance()
 
-        doNotPromptForPinning = state.doNotPromptForPinning
+        shouldPinConnections = state.shouldPinConnections
 
         pinnedConnections.clear()
         pinnedConnections.putAll(
@@ -129,35 +131,37 @@ class DefaultConnectionPinningManager :
 
     @VisibleForTesting
     internal fun showDialogIfNeeded(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, featuresString: String, project: Project? = null) =
-        if (!doNotPromptForPinning) {
-            val bearerTokenConnectionName = bearerTokenConnectionString(oldConnection, newConnection)
+        shouldPinConnections.let { shouldPinConnections ->
+            if (shouldPinConnections == null) {
+                val bearerTokenConnectionName = bearerTokenConnectionString(oldConnection, newConnection)
 
-            computeOnEdt(ModalityState.defaultModalityState()) {
-                MessageDialogBuilder.yesNo(
-                    message("credentials.switch.confirmation.title", featuresString, bearerTokenConnectionName),
-                    message("credentials.switch.confirmation.comment", featuresString, bearerTokenConnectionName, message("iam.name"))
-                )
-                    .yesText(message("credentials.switch.confirmation.yes"))
-                    .noText(message("credentials.switch.confirmation.no"))
-                    .doNotAsk(object : com.intellij.openapi.ui.DoNotAskOption.Adapter() {
-                        override fun rememberChoice(isSelected: Boolean, exitCode: Int) {
-                            if (isSelected && exitCode == DialogWrapper.OK_EXIT_CODE) {
-                                doNotPromptForPinning = true
+                computeOnEdt(ModalityState.defaultModalityState()) {
+                    MessageDialogBuilder.yesNo(
+                        message("credentials.switch.confirmation.title", featuresString, bearerTokenConnectionName),
+                        message("credentials.switch.confirmation.comment", featuresString, bearerTokenConnectionName, message("iam.name"))
+                    )
+                        .yesText(message("credentials.switch.confirmation.yes"))
+                        .noText(message("credentials.switch.confirmation.no"))
+                        .doNotAsk(object : com.intellij.openapi.ui.DoNotAskOption.Adapter() {
+                            override fun rememberChoice(isSelected: Boolean, exitCode: Int) {
+                                if (isSelected) {
+                                    this@DefaultConnectionPinningManager.shouldPinConnections = exitCode == DialogWrapper.OK_EXIT_CODE
+                                }
+                            }
+                        })
+                        .icon(AllIcons.General.QuestionDialog)
+                        .help(HelpIds.EXPLORER_CREDS_HELP.id)
+                        .ask(project).apply {
+                            if (this) {
+                                UiTelemetry.click(project, "connection_multiple_auths_yes")
+                            } else {
+                                UiTelemetry.click(project, "connection_multiple_auths_no")
                             }
                         }
-                    })
-                    .icon(AllIcons.General.QuestionDialog)
-                    .help(HelpIds.EXPLORER_CREDS_HELP.id)
-                    .ask(project).apply {
-                        if (this) {
-                            UiTelemetry.click(project, "connection_multiple_auths_yes")
-                        } else {
-                            UiTelemetry.click(project, "connection_multiple_auths_no")
-                        }
-                    }
+                }
+            } else {
+                shouldPinConnections
             }
-        } else {
-            false
         }
 
     private fun bearerTokenConnectionString(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection): String {
@@ -167,6 +171,6 @@ class DefaultConnectionPinningManager :
 }
 
 data class ConnectionPinningManagerState(
-    var doNotPromptForPinning: Boolean = false,
+    var shouldPinConnections: Boolean? = null,
     var pinnedConnections: Map<String, String> = emptyMap()
 )
