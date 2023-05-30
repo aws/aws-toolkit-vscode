@@ -252,6 +252,12 @@ export const stopScanMessage =
 
 export const showScannedFilesMessage = 'Show Scanned Files'
 
-export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
+export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
+
+export enum UserGroup {
+    Classifier = 'Classifier',
+    CrossFile = 'CrossFile',
+    Control = 'Control',
+}
