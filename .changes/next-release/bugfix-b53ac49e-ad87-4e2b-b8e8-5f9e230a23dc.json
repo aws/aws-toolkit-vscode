@@ -1,4 +1,0 @@
-{
-  "type" : "removal",
-  "description" : "Remove support for Aurora MySQL v1 (#3356)"
-}

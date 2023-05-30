@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix threading issue preventing SAM Applications from opening in Rider 2023.1"
-}

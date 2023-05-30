@@ -1,0 +1,35 @@
+{
+  "date" : "2023-05-30",
+  "version" : "1.68",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer supports application wide connections"
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer improves auto-suggestions for java"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix threading issue preventing SAM Applications from opening in Rider 2023.1"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue reconnecting to CodeWhisperer using an Identity Center directory outside of us-east-1 (#3662)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'null' is not a connection when authenticating to CodeWhisperer"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: user is sometimes required to re-login before token expiration"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where the \"Do not ask again\" option is not respected when switching connections on CodeWhisperer/CodeCatalyst"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for JetBrains Gateway version 2022.2 and version 2022.3"
+  }, {
+    "type" : "removal",
+    "description" : "Remove support for Aurora MySQL v1 (#3356)"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2022.1.x IDEs"
+  } ]
+}

@@ -1,3 +1,11 @@
+# _1.67_ (2023-04-27)
+- **(Feature)** Using the least permissive set of scopes for features during BuilderID/SSO login. Using the same connection for multiple features will request additional scopes to be used.
+- **(Feature)** Add support for Lambda Runtime Java17
+- **(Bug Fix)** Fix the Add Connection Dialog box references to the correct documentation pages
+- **(Bug Fix)** Fix thread access during validation of SAM templates
+- **(Bug Fix)** [CodeWhisperer]: login session length should increase to it's expected length. Users will now see less frequent expired sessions.
+- **(Bug Fix)** Improve handling of disk errors related to SSO and align folder permissions with AWS CLI
+
 # _1.66_ (2023-04-19)
 - **(Feature)** Display current space and project name on status bar while working in a CodeCatalyst Dev Environment
 - **(Feature)** Add support for Lambda runtime Python 3.10
