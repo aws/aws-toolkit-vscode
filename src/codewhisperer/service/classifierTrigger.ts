@@ -319,7 +319,11 @@ export class ClassifierTrigger {
     }
 
     public isClassifierEnabled() {
-        return globals.context.globalState.get<boolean>(CodeWhispererConstants.isClassifierEnabledKey)
+        const userGroup = globals.context.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
+            CodeWhispererConstants.userGroupKey
+        )
+
+        return userGroup === CodeWhispererConstants.UserGroup.Classifier
     }
 
     public getThreshold() {
