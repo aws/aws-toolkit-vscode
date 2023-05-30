@@ -126,10 +126,6 @@ export class KeyStrokeHandler {
                     triggerType = 'SpecialCharacters'
                     break
                 }
-                case DocumentChangedSource.IntelliSense: {
-                    triggerType = 'IntelliSenseAcceptance'
-                    break
-                }
                 case DocumentChangedSource.RegularKey: {
                     if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
@@ -303,10 +299,6 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
-                // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
-                // multi-words code snippets
-                return DocumentChangedSource.IntelliSense
             } else {
                 return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
@@ -322,7 +314,6 @@ export enum DocumentChangedSource {
     RegularKey = 'RegularKey',
     TabKey = 'TabKey',
     EnterKey = 'EnterKey',
-    IntelliSense = 'IntelliSense',
     Reformatting = 'Reformatting',
     Deletion = 'Deletion',
     Unknown = 'Unknown',
