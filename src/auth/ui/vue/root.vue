@@ -30,56 +30,29 @@
                         <h1>Welcome & Getting Started</h1>
                     </div>
                 </div>
-                <h1>Try these features now:</h1>
-                <ul class="service-item-list" v-for="itemId in unlockedItemIds">
+                <h1>Select a feature to begin</h1>
+                <ul class="service-item-list" v-for="item in serviceItems">
                     <ServiceItem
-                        :title="getServiceItemProps(itemId).title"
-                        :description="getServiceItemProps(itemId).description"
-                        :status="'UNLOCKED'"
-                        :isSelected="isServiceSelected(itemId)"
+                        :title="getServiceItemProps(item.id).title"
+                        :description="getServiceItemProps(item.id).description"
+                        :status="item.status"
+                        :isSelected="isServiceSelected(item.id)"
                         :isLandscape="isLandscape()"
-                        :id="itemId"
-                        :key="buildServiceItemKey(itemId, 'UNLOCKED')"
-                        @service-item-clicked="serviceWasClicked(itemId)"
+                        :id="item.id"
+                        :key="buildServiceItemKey(item.id, item.status)"
+                        @service-item-clicked="serviceWasClicked(item.id)"
                     >
-                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape()">
+                        <template v-slot:service-item-content-slot v-if="isServiceSelected(item.id) && !isLandscape()">
                             <component
-                                :is="getServiceItemContent(itemId)"
-                                :state="serviceItemsAuthStatus[itemId]"
-                                :key="itemId + rerenderContentWindowKey"
+                                :is="getServiceItemContent(item.id)"
+                                :state="serviceItemsAuthStatus[item.id]"
+                                :key="item.id + rerenderContentWindowKey"
                                 @is-auth-connected="onIsAuthConnected"
                             ></component>
                         </template>
                     </ServiceItem>
                 </ul>
             </div>
-
-            <div>
-                <h3>ENABLE ADDITIONAL FEATURES</h3>
-
-                <ul class="service-item-list" v-for="itemId in lockedItemIds">
-                    <ServiceItem
-                        :title="getServiceItemProps(itemId).title"
-                        :description="getServiceItemProps(itemId).description"
-                        :status="'LOCKED'"
-                        :isSelected="isServiceSelected(itemId)"
-                        :isLandscape="isLandscape()"
-                        :id="itemId"
-                        :key="buildServiceItemKey(itemId, 'LOCKED')"
-                        @service-item-clicked="serviceWasClicked(itemId)"
-                    >
-                        <template v-slot:service-item-content-slot v-if="isServiceSelected(itemId) && !isLandscape()">
-                            <component
-                                :is="getServiceItemContent(itemId)"
-                                :state="serviceItemsAuthStatus[itemId]"
-                                :key="itemId + rerenderContentWindowKey"
-                                @is-auth-connected="onIsAuthConnected"
-                            ></component>
-                        </template>
-                    </ServiceItem>
-                </ul>
-            </div>
-            <h3></h3>
         </div>
         <div v-if="isLandscape() && isAnyServiceSelected()" id="right-column">
             <component
@@ -138,7 +111,17 @@ export default defineComponent({
     unmounted() {
         window.removeEventListener('resize', this.updateWindowWidth)
     },
-    computed: {},
+    computed: {
+        serviceItems(): { status: ServiceStatus; id: ServiceItemId }[] {
+            const unlocked = this.unlockedItemIds.map(id => {
+                return { status: 'UNLOCKED' as ServiceStatus, id }
+            })
+            const locked = this.lockedItemIds.map(id => {
+                return { status: 'LOCKED' as ServiceStatus, id }
+            })
+            return [...unlocked, ...locked]
+        },
+    },
     methods: {
         isLandscape() {
             return this.currWindowWidth > 1350
