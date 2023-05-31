@@ -35,9 +35,9 @@ include("core")
 include("jetbrains-core")
 
 when (providers.gradleProperty("ideProfileName").get()) {
-    // FIX_WHEN_MIN_IS_222
+    // FIX_WHEN_MIN_IS_223
     // TODO: see if we can key this off the prescence of a gateway SDK declared in IdeVersions
-    "2021.2", "2021.3", "2022.1" -> {}
+    "2022.2", "2022.3" -> {}
     else -> {
         include("jetbrains-gateway")
     }
