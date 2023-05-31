@@ -46,7 +46,7 @@
                             <component
                                 :is="getServiceItemContent(itemId)"
                                 :state="serviceItemsAuthStatus[itemId]"
-                                :key="itemId"
+                                :key="itemId + rerenderContentWindowKey"
                                 @is-auth-connected="onIsAuthConnected"
                             ></component>
                         </template>
@@ -72,7 +72,7 @@
                             <component
                                 :is="getServiceItemContent(itemId)"
                                 :state="serviceItemsAuthStatus[itemId]"
-                                :key="itemId"
+                                :key="itemId + rerenderContentWindowKey"
                                 @is-auth-connected="onIsAuthConnected"
                             ></component>
                         </template>
@@ -85,7 +85,7 @@
             <component
                 :is="getServiceItemContent(getSelectedService())"
                 :state="serviceItemsAuthStatus[getSelectedService()]"
-                :key="getSelectedService()"
+                :key="getSelectedService() + rerenderContentWindowKey"
                 @is-auth-connected="onIsAuthConnected"
             ></component>
         </div>
@@ -95,13 +95,15 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './serviceItem.vue'
-import AwsExplorerContent from './serviceItemContent/awsExplorerContent.vue'
 import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemContent/shared.vue'
+import { WebviewClientFactory } from '../../webviews/client'
+import { AuthWebview } from './show'
 
+const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()
 
 export default defineComponent({
-    components: { ServiceItem, AwsExplorerContent },
+    components: { ServiceItem },
     name: 'AuthRoot',
     data() {
         return {
@@ -110,14 +112,24 @@ export default defineComponent({
             currWindowWidth: window.innerWidth,
 
             serviceItemsAuthStatus: serviceItemsAuthStatus,
+
+            rerenderContentWindowKey: 0,
         }
     },
     async created() {
-        await this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
-            this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
-        })
+        await this.updateServiceConnections()
 
-        this.renderItems()
+        // This handles the case where non-webview auth setup is used.
+        // This will detect their resulting changes to auth
+        // and it will have this webview update to get the latest info.
+        client.onDidConnectionUpdate(() => {
+            this.updateServiceConnections()
+            // This handles the edge case where we have selected a service item
+            // and its content window is being shown. If there is an external
+            // event that changes the state of this service (eg: disconnected)
+            // this forced rerender will display the new state
+            this.rerenderSelectedContentWindow()
+        })
     },
     mounted() {
         window.addEventListener('resize', this.updateWindowWidth)
@@ -180,6 +192,30 @@ export default defineComponent({
         onIsAuthConnected(id: ServiceItemId, isConnected: boolean) {
             this.updateServiceLock(id, isConnected)
             this.renderItems()
+            // In some cases, during the connection process for one auth method,
+            // an already connected auth can be disconnected. This refreshes all
+            // auths to show the user the latest state of everything.
+            this.updateServiceConnections()
+        },
+        async updateServiceConnections() {
+            return Promise.all([
+                this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
+                }),
+                this.serviceItemsAuthStatus.CODE_WHISPERER.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('CODE_WHISPERER', isConnected)
+                }),
+                this.serviceItemsAuthStatus.CODE_CATALYST.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('CODE_CATALYST', isConnected)
+                }),
+            ]).then(() => this.renderItems())
+        },
+        /**
+         * This will trigger a re-rendering of the currently shown content window.
+         */
+        rerenderSelectedContentWindow() {
+            // Arbitrarily toggles value between 0 and 1
+            this.rerenderContentWindowKey = this.rerenderContentWindowKey === 0 ? 1 : 0
         },
     },
 })

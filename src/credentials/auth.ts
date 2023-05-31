@@ -1061,7 +1061,7 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
     }
 })
 
-async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
+export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
     if (conn?.type === 'sso') {
         // TODO: does deleting the connection make sense UX-wise?
         // this makes it disappear from the list of available connections
