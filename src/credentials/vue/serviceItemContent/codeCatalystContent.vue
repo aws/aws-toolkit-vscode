@@ -1,40 +1,37 @@
 <template>
     <div class="service-item-content-container border-common">
         <div>
-            <CredentialsForm
-                :state="credentialsFormState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-            ></CredentialsForm>
+            <BuilderIdForm :state="builderIdState" @auth-connection-updated="onAuthConnectionUpdated"></BuilderIdForm>
         </div>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
+import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBuilderId.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 
 export default defineComponent({
-    name: 'AwsExplorerContent',
-    components: { CredentialsForm },
+    name: 'CodeCatalystContent',
+    components: { BuilderIdForm },
     extends: BaseServiceItemContent,
     computed: {
-        credentialsFormState(): CredentialsState {
-            return authFormsState.CREDENTIALS
+        builderIdState(): CodeCatalystBuilderIdState {
+            return authFormsState.BUILDER_ID_CODE_CATALYST
         },
     },
     methods: {
         async onAuthConnectionUpdated() {
             const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('RESOURCE_EXPLORER', isConnected)
+            this.emitIsAuthConnected('CODE_CATALYST', isConnected)
         },
     },
 })
 
-export class ResourceExplorerContentState implements AuthStatus {
+export class CodeCatalystContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.CREDENTIALS.isAuthConnected()
+        return authFormsState.BUILDER_ID_CODE_CATALYST.isAuthConnected()
     }
 }
 </script>
