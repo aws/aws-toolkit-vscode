@@ -33,6 +33,7 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    selectCustomization,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -167,6 +168,8 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
+        // select customization
+        selectCustomization.register(client),
         /**
          * On recommendation acceptance
          */

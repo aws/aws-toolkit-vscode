@@ -14,6 +14,7 @@ import {
     showSsoSignIn,
     showFreeTierLimit,
     reconnect,
+    selectCustomization,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
 
@@ -84,5 +85,14 @@ export const createFreeTierLimitMetNode = () => {
         label: localize('AWS.explorerNode.freeTierLimitMet.label', 'Free Tier Limit Met'),
         iconPath: getIcon('vscode-error'),
         description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
+    })
+}
+
+export const createSelectCustomizationNode = () => {
+    return selectCustomization.build().asTreeNode({
+        label: localize('AWS.explorerNode.selectCustomization.label', 'Select Customization'),
+        iconPath: getIcon('vscode-extensions'),
+        // TODO: update description to make it dynamically show the new customizations balloon notification
+        description: localize('AWS.explorerNode.selectCustomization.tooltip', 'new'),
     })
 }
