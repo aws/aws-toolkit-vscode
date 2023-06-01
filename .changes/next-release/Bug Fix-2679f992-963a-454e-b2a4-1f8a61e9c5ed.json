@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "auth: IAM Identity Center connections expire sooner than expected"
-}
