@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.75.0-SNAPSHOT",
+    "version": "1.76.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3484,7 +3484,7 @@
         "webpack-dev-server": "^4.13.3"
     },
     "dependencies": {
-        "@aws-sdk/client-sso": "^3.181.0",
+        "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
