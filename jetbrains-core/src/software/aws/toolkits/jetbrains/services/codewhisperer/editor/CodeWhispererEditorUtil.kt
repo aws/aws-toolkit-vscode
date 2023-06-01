@@ -44,7 +44,8 @@ object CodeWhispererEditorUtil {
 
         val caretRightFileContext = document.getText(
             TextRange(
-                caretOffset, totalCharLength.coerceAtMost(CodeWhispererConstants.CHARACTERS_LIMIT + caretOffset)
+                caretOffset,
+                totalCharLength.coerceAtMost(CodeWhispererConstants.CHARACTERS_LIMIT + caretOffset)
             )
         )
 

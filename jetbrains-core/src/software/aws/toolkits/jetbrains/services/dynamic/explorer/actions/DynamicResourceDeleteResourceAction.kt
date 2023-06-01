@@ -29,7 +29,8 @@ class DynamicResourceDeleteResourceAction :
         if (response) {
             val dynamicResourceIdentifier = DynamicResourceIdentifier(
                 selected.nodeProject.getConnectionSettingsOrThrow(),
-                selected.resource.type.fullName, selected.resource.identifier
+                selected.resource.type.fullName,
+                selected.resource.identifier
             )
             val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
             fileEditorManager.openFiles.forEach {

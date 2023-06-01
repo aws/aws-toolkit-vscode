@@ -88,7 +88,8 @@ class SyncServerlessAppAction : AnAction(
                     message("sam.cli.version.warning"),
                     message(
                         "sam.cli.version.upgrade.required",
-                        execVersion.parsedVersion, minVersion.parsedVersion
+                        execVersion.parsedVersion,
+                        minVersion.parsedVersion
                     ),
                     project = project,
                     listOf(

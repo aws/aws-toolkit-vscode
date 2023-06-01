@@ -72,7 +72,8 @@ class ResourceSchemaProviderFactoryTest {
 
         val schemaFile = LightVirtualFile("AWSLogLogGroupSchema.json", schema)
         resourceCache.addEntry(
-            projectRule.project, CloudControlApiResources.getResourceSchema(resource.type.fullName),
+            projectRule.project,
+            CloudControlApiResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)
         )
     }

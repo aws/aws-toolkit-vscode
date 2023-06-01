@@ -30,7 +30,8 @@ class CodeWhispererEditorManager {
         val typeahead = sessionContext.typeahead
         val detail = recommendationContext.details[selectedIndex]
         val reformatted = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            detail, recommendationContext.userInputSinceInvocation
+            detail,
+            recommendationContext.userInputSinceInvocation
         )
         val remainingRecommendation = reformatted.substring(typeahead.length)
         val originalOffset = primaryCaret.offset - typeahead.length

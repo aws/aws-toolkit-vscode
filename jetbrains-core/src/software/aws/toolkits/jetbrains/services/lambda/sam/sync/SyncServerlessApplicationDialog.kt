@@ -133,7 +133,9 @@ class SyncServerlessApplicationDialog(
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
     private fun checkIfStackInSettingsExists(): Boolean = if (!settings?.samStackName(samPath).isNullOrEmpty()) {
         !activeStacks.map { it.stackName() }.contains(settings?.samStackName(samPath))
-    } else true
+    } else {
+        true
+    }
 
     fun settings() = SyncServerlessApplicationSettings(
         stackName = if (createNewStack) {

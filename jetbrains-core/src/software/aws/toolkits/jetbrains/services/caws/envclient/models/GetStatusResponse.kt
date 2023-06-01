@@ -26,7 +26,8 @@ data class GetStatusResponse(
         STABLE("STABLE"),
         CHANGED("CHANGED"),
         IMAGES_UPDATE_AVAILABLE("IMAGES-UPDATE-AVAILABLE"),
+
         @JsonEnumDefaultValue
-        UNKNOWN("UNKNOWN");
+        UNKNOWN("UNKNOWN")
     }
 }

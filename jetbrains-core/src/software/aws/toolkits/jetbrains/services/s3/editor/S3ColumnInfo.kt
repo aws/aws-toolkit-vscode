@@ -33,5 +33,5 @@ class S3Column(private val type: S3ColumnType) : ColumnInfo<Any?, Any?>(type.tit
 enum class S3ColumnType(val title: String) {
     NAME(message("s3.name")),
     SIZE(message("s3.size")),
-    LAST_MODIFIED(message("s3.last_modified"));
+    LAST_MODIFIED(message("s3.last_modified"))
 }

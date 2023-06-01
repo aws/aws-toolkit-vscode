@@ -58,7 +58,9 @@ class TemplateSettings(val project: Project) {
         pathMappingsTable.isVisible = false
         environmentVariables.isEnabled = false
         installTextFieldProjectFileBrowseListener(
-            project, templateFile, FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
+            project,
+            templateFile,
+            FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
         ) {
             it.canonicalPath ?: ""
         }

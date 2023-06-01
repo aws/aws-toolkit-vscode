@@ -14,6 +14,7 @@ class EndpointsJsonValidatorTest {
             assertThat(EndpointsJsonValidator.canBeParsed(it)).isTrue
         }
     }
+
     @Test
     fun `endpoints json file parsing fails`() {
         EndpointsJsonValidatorTest::class.java.getResourceAsStream("/jsonSampleFailure.json").use {

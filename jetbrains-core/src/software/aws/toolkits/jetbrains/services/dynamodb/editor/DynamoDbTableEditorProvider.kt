@@ -32,7 +32,8 @@ class DynamoDbTableEditorProvider : FileEditorProvider, DumbAware {
                 val virtualFile = DynamoDbVirtualFile(tableArn, project.getConnectionSettingsOrThrow())
                 FileEditorManager.getInstance(project).openTextEditor(
                     OpenFileDescriptor(project, virtualFile),
-                    /*focusEditor*/ true
+                    /*focusEditor*/
+                    true
                 )
 
                 DynamodbTelemetry.openTable(project, Result.Succeeded)

@@ -88,7 +88,7 @@ class StepExecutorTest {
     fun `stopping the process handler will cancel the workflow steps and skip success callback`() {
         val stepStarted = CountDownLatch(1)
         val stepPaused = CountDownLatch(1)
-        val step1 = mock<Step>() {
+        val step1 = mock<Step> {
             on { run(any(), any(), any()) }.thenAnswer {
                 stepStarted.countDown()
                 stepPaused.await()

@@ -2,11 +2,13 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>IgnoredReturnValue:CodeWhispererCompletionIntegrationTest.kt$CodeWhispererCompletionIntegrationTest$generateCompletionsPaginator(any())</ID>
     <ID>UnsafeCallOnNullableType:CreateFunctionIntegrationTest.kt$CreateFunctionIntegrationTest$AwsRegionProvider.getInstance()[Region.US_WEST_2.id()]!!</ID>
     <ID>UnsafeCallOnNullableType:EcrPullIntegrationTest.kt$EcrPullIntegrationTest$dockerAdapter.buildLocalImage(dockerfile)!!</ID>
     <ID>UnsafeCallOnNullableType:EcrPullIntegrationTest.kt$EcrPullIntegrationTest$ecrRule.createRepository().toToolkitEcrRepository()!!</ID>
     <ID>UnsafeCallOnNullableType:EcrPushIntegrationTest.kt$EcrPushIntegrationTest$dockerAdapter.buildLocalImage(dockerfile)!!</ID>
     <ID>UnsafeCallOnNullableType:EcrPushIntegrationTest.kt$EcrPushIntegrationTest$ecrRule.createRepository().toToolkitEcrRepository()!!</ID>
+    <ID>UnsafeCallOnNullableType:InteractiveBearerTokenProviderIntegrationTest.kt$InteractiveBearerTokenProviderIntegrationTest$initialToken!!</ID>
     <ID>UnsafeCallOnNullableType:JavaAwsConnectionExtensionIntegrationTest.kt$JavaAwsConnectionExtensionIntegrationTest$CompilerProjectExtension.getInstance(project)!!</ID>
     <ID>UnsafeCallOnNullableType:JavaAwsConnectionExtensionIntegrationTest.kt$JavaAwsConnectionExtensionIntegrationTest$LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!</ID>
     <ID>UnsafeCallOnNullableType:JavaAwsConnectionExtensionIntegrationTest.kt$JavaAwsConnectionExtensionIntegrationTest$SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!</ID>
@@ -14,5 +16,6 @@
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$FileDocumentManager.getInstance().getDocument(lambdaClass.virtualFile)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$LambdaRuntime.fromValue(runtime)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonLocalLambdaRunConfigurationIntegrationTest.kt$PythonLocalLambdaRunConfigurationIntegrationTest$projectRule.fixture.tempDirFixture.createFile("tmp", "Hello World").canonicalPath!!</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeScanIntegrationTest.kt$CodeWhispererCodeScanIntegrationTest$file.virtualFile.extension ?: ""</ID>
   </CurrentIssues>
 </SmellBaseline>

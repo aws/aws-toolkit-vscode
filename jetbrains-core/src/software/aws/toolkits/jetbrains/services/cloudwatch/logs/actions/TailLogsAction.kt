@@ -26,6 +26,7 @@ class TailLogsAction(private val project: Project, private val channel: () -> Ch
     private var isSelected = false
     var logStreamingJob: Job? = null
         private set
+
         @TestOnly get
 
     override fun isSelected(e: AnActionEvent): Boolean = isSelected

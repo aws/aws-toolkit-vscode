@@ -77,7 +77,8 @@ class PythonLambdaBuilderTest {
 
         val actualMappings = sut.defaultPathMappings(templatePath, logicalId, buildDir)
         verifyPathMappings(
-            projectRule.module, actualMappings,
+            projectRule.module,
+            actualMappings,
             listOf(
                 PathMapping(codeUri.toString(), LambdaBuilder.TASK_PATH),
                 PathMapping(buildDir.resolve(logicalId).toString(), LambdaBuilder.TASK_PATH)

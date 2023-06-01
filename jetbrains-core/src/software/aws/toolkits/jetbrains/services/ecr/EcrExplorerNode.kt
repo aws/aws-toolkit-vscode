@@ -30,7 +30,8 @@ class EcrRepositoryNode(
     val repository: Repository
 ) :
     AwsExplorerResourceNode<String>(
-        project, EcrClient.SERVICE_NAME,
+        project,
+        EcrClient.SERVICE_NAME,
         repository.repositoryName,
         AwsIcons.Resources.ECR_REPOSITORY
     ),

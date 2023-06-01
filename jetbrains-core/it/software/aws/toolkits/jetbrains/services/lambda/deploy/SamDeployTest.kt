@@ -157,7 +157,9 @@ class SamDeployTest {
         val templateFile = setUpProject()
         runAssertsAndClean(stackName) {
             val changeSetArn = createChangeSet(
-                templateFile, stackName, hasImage = false,
+                templateFile,
+                stackName,
+                hasImage = false,
                 tags = mapOf(
                     "TestTag" to "FooBar",
                     "some:gross" to "tag name and value",

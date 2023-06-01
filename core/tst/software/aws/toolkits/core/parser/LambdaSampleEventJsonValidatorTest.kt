@@ -13,6 +13,7 @@ class LambdaSampleEventJsonValidatorTest {
             assertThat(LambdaSampleEventJsonValidator.canBeParsed(it)).isTrue
         }
     }
+
     @Test
     fun `lambda sample event json file parsing fails`() {
         LambdaSampleEventJsonValidatorTest::class.java.getResourceAsStream("/jsonSampleFailure.json").use {

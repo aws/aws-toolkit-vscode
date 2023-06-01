@@ -152,10 +152,10 @@ dependencies {
 }
 
 // fix implicit dependency on generated source
-tasks.withType<Detekt>() {
+tasks.withType<Detekt> {
     dependsOn(generateTelemetry)
 }
 
-tasks.withType<DetektCreateBaselineTask>() {
+tasks.withType<DetektCreateBaselineTask> {
     dependsOn(generateTelemetry)
 }

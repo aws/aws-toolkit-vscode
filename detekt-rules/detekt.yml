@@ -50,7 +50,7 @@ exceptions:
   active: false
 
 # unfortunately, does not respect .editorconfig in the project folder
-# also needs to be manually updated if there are new rules upstream
+# this configuration reflects the delta from the default "formatting" (ktlint) rule set
 formatting:
   active: true
   android: false
@@ -62,28 +62,10 @@ formatting:
     active: false
     autoCorrect: true
   ArgumentListWrapping:
-    active: false
+    active: true
     autoCorrect: true
     indentSize: 4
     maxLineLength: 160
-  ChainWrapping:
-    active: true
-    autoCorrect: true
-  CommentSpacing:
-    active: true
-    autoCorrect: true
-  EnumEntryNameCase:
-    active: false
-    autoCorrect: true
-  Filename:
-    active: true
-  FinalNewline:
-    active: true
-    autoCorrect: true
-    insertFinalNewLine: true
-  ImportOrdering:
-    active: true
-    autoCorrect: true
   Indentation:
     active: true
     autoCorrect: true
@@ -92,99 +74,31 @@ formatting:
   MaximumLineLength:
     active: true
     maxLineLength: 160
-    ignoreBackTickedIdentifier: false
-  ModifierOrdering:
-    active: true
-    autoCorrect: true
-  MultiLineIfElse:
-    active: true
-    autoCorrect: true
-  NoBlankLineBeforeRbrace:
-    active: true
-    autoCorrect: true
-  NoConsecutiveBlankLines:
-    active: true
-    autoCorrect: true
-  NoEmptyClassBody:
-    active: true
-    autoCorrect: true
-  NoEmptyFirstLineInMethodBlock:
-    active: true
-    autoCorrect: true
-  NoLineBreakAfterElse:
-    active: true
-    autoCorrect: true
-  NoLineBreakBeforeAssignment:
-    active: true
-    autoCorrect: true
-  NoMultipleSpaces:
-    active: true
-    autoCorrect: true
-  NoSemicolons:
-    active: true
-    autoCorrect: true
-  NoTrailingSpaces:
-    active: true
-    autoCorrect: true
-  NoUnitReturn:
-    active: true
-    autoCorrect: true
-  NoUnusedImports:
-    active: true
-    autoCorrect: true
+    ignoreBackTickedIdentifier: true
   NoWildcardImports:
+    # no `packagesToUseImportOnDemandProperty` because we don't want to allow any star imports
     active: true
-  PackageName:
-    active: true
-    autoCorrect: true
   ParameterListWrapping:
     active: true
-    autoCorrect: true
-  SpacingAroundAngleBrackets:
-    active: false
-    autoCorrect: true
-  SpacingAroundColon:
+    indentSize: 4
+    maxLineLength: 160
+  ParameterWrapping:
     active: true
-    autoCorrect: true
-  SpacingAroundComma:
+    indentSize: 4
+    maxLineLength: 160
+  PropertyWrapping:
     active: true
-    autoCorrect: true
-  SpacingAroundCurly:
-    active: true
-    autoCorrect: true
-  SpacingAroundDot:
-    active: true
-    autoCorrect: true
-  SpacingAroundDoubleColon:
-    active: false
-    autoCorrect: true
-  SpacingAroundKeyword:
-    active: true
-    autoCorrect: true
-  SpacingAroundOperators:
-    active: true
-    autoCorrect: true
-  SpacingAroundParens:
-    active: true
-    autoCorrect: true
-  SpacingAroundRangeOperator:
-    active: true
-    autoCorrect: true
-  SpacingAroundUnaryOperator:
-    active: true
-  SpacingBetweenDeclarationsWithAnnotations:
-    active: false
-    autoCorrect: true
+    indentSize: 4
+    maxLineLength: 160
   SpacingBetweenDeclarationsWithComments:
     active: true
     autoCorrect: true
     excludes: [ '**/icons/**' ]
-  StringTemplate:
-    active: true
-    autoCorrect: true
   Wrapping:
     active: true
     autoCorrect: true
+    indentSize: 4
+    maxLineLength: 160
 
 naming:
   active: true
@@ -196,7 +110,6 @@ naming:
     parameterPattern: '[a-z][A-Za-z0-9]*'
     privateParameterPattern: '[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
-    ignoreOverridden: true
   EnumNaming:
     active: true
     enumEntryPattern: '[A-Z][_a-zA-Z0-9]*'
@@ -204,13 +117,11 @@ naming:
     active: true
     functionPattern: '([a-z][a-zA-Z0-9]*)|(`.*`)'
     excludeClassPattern: '$^'
-    ignoreOverridden: true
     ignoreAnnotated: [ 'Composable' ]
   FunctionParameterNaming:
     active: true
     parameterPattern: '[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
-    ignoreOverridden: true
   # prefer rule provided by ktlint
   MatchingDeclarationName:
     active: false
@@ -236,7 +147,6 @@ naming:
     variablePattern: '[a-z][A-Za-z0-9]*'
     privateVariablePattern: '(_)?[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
-    ignoreOverridden: true
 
 performance:
   SpreadOperator:
@@ -262,8 +172,6 @@ potential-bugs:
     active: false
   IgnoredReturnValue:
     active: false
-    restrictToAnnotatedMethods: true
-    returnValueAnnotations: [ '*.CheckReturnValue', '*.CheckResult' ]
   ImplicitUnitReturnType:
     active: false
     allowExplicitReturnType: true
@@ -280,17 +188,19 @@ potential-bugs:
   UnconditionalJumpStatementInLoop:
     active: false
   UnnecessaryNotNullOperator:
-    active: false
+    active: true
   UnnecessarySafeCall:
     active: true
   UnreachableCatchBlock:
     active: true
+  # doesn't seem to work correctly on our codebase
+  # qodana provides coverage for this
   UnreachableCode:
     active: false
   UnsafeCallOnNullableType:
     active: true
   UnsafeCast:
-    active: false
+    active: true
   UnusedUnaryOperator:
     active: false
   UselessPostfixExpression:
@@ -306,8 +216,14 @@ style:
     active: false
   MagicNumber:
     active: false
-  # prefer rule provided by ktlint in the formatting section
+  # prefer rule provided by ktlint
   MaxLineLength:
+    active: false
+  # prefer rule provided by ktlint
+  ModifierOrder:
+    active: false
+  # prefer rule provided by ktlint
+  NewLineAtEndOfFile:
     active: false
   NoTabs:
     active: true
@@ -318,7 +234,6 @@ style:
   UnnecessaryAbstractClass:
     active: false
   UnusedPrivateMember:
-    active: false
     allowedNames: '(_|ignored|expected|serialVersionUID|createUIComponents)'
   VarCouldBeVal:
     active: false

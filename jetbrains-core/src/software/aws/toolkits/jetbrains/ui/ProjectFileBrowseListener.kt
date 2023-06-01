@@ -22,9 +22,14 @@ private class ProjectFileBrowseListener<T : JComponent>(
     textComponentAccessor: TextComponentAccessor<T>,
     private val onChosen: ((VirtualFile) -> String?)? = null
 ) : ComponentWithBrowseButton.BrowseFolderActionListener<T>(
-    /* title */ null,
-    /* description */ null,
-    component, project, fileChooserDescriptor, textComponentAccessor
+    /* title */
+    null,
+    /* description */
+    null,
+    component,
+    project,
+    fileChooserDescriptor,
+    textComponentAccessor
 ) {
     override fun getInitialFile(): VirtualFile? {
         val text = componentText
@@ -64,7 +69,9 @@ fun <T : JComponent> installProjectFileRootedCompletionAndBrowseDialog(
 
     textField?.let {
         FileChooserFactory.getInstance().installFileCompletion(
-            it, fileChooserDescriptor, true,
+            it,
+            fileChooserDescriptor,
+            true,
             null /* infer disposable from UI context */
         )
     }

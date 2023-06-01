@@ -40,7 +40,7 @@ class SsoCredentialProviderTest {
     @Before
     fun setUp() {
         ssoClient = delegateMock()
-        ssoAccessTokenProvider = mock() {
+        ssoAccessTokenProvider = mock {
             onBlocking {
                 it.accessToken()
             }.thenReturn(

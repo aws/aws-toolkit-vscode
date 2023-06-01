@@ -586,7 +586,9 @@ class DefaultAwsResourceCache(
                 if (predicate(v)) {
                     removed = true
                     null
-                } else v
+                } else {
+                    v
+                }
             }
             return removed
         }

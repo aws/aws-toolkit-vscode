@@ -42,19 +42,27 @@ class CodeWhispererInlayManager {
         }
         val otherLinesRenderer = CodeWhispererInlayBlockRenderer(otherLines)
         val blockInlay = editor.inlayModel.addBlockElement(
-            startOffset, true, false, 0, otherLinesRenderer
+            startOffset,
+            true,
+            false,
+            0,
+            otherLinesRenderer
         )
         blockInlay?.let { Disposer.register(popup, it) }
     }
 
     fun clearInlays(editor: Editor) {
         editor.inlayModel.getInlineElementsInRange(
-            0, editor.document.textLength, CodeWhispererInlayInlineRenderer::class.java
+            0,
+            editor.document.textLength,
+            CodeWhispererInlayInlineRenderer::class.java
         ).forEach { disposable ->
             Disposer.dispose(disposable)
         }
         editor.inlayModel.getBlockElementsInRange(
-            0, editor.document.textLength, CodeWhispererInlayBlockRenderer::class.java
+            0,
+            editor.document.textLength,
+            CodeWhispererInlayBlockRenderer::class.java
         ).forEach { disposable ->
             Disposer.dispose(disposable)
         }

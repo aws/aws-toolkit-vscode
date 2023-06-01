@@ -128,7 +128,8 @@ class EcsExecUtilsTest {
             on { describeTasks(any<DescribeTasksRequest>()) } doAnswer { DescribeTasksResponse.builder().tasks(listOf(task)).build() }
         }
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
         val taskRoleArnResponse = EcsExecUtils.getTaskRoleArn(projectRule.project, clusterArn, taskArn)
@@ -149,7 +150,8 @@ class EcsExecUtilsTest {
             on { describeTasks(any<DescribeTasksRequest>()) } doAnswer { DescribeTasksResponse.builder().tasks(listOf(task)).build() }
         }
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
 
@@ -191,7 +193,8 @@ class EcsExecUtilsTest {
         }
 
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
 
@@ -231,7 +234,8 @@ class EcsExecUtilsTest {
             }
         }
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
 
@@ -249,7 +253,8 @@ class EcsExecUtilsTest {
         val evaluationResult = EvaluationResult.builder().evalDecision(PolicyEvaluationDecisionType.ALLOWED).build()
         val taskDefinition = TaskDefinition.builder().taskDefinitionArn(taskDefinitionArn).taskRoleArn(taskRoleArn).build()
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
 
@@ -278,7 +283,8 @@ class EcsExecUtilsTest {
         val evaluationResult = EvaluationResult.builder().evalDecision(PolicyEvaluationDecisionType.IMPLICIT_DENY).build()
         val taskDefinition = TaskDefinition.builder().taskDefinitionArn(taskDefinitionArn).taskRoleArn(taskRoleArn).build()
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
+            projectRule.project,
+            EcsResources.describeTaskDefinition(task.taskDefinitionArn()),
             CompletableFuture.completedFuture(taskDefinition)
         )
         ecsClient.stub {

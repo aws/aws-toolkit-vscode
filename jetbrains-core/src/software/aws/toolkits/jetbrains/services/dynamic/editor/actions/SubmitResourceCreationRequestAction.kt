@@ -28,7 +28,9 @@ class SubmitResourceCreationRequestAction : AnAction(message("general.create")) 
                 message("dynamic_resources.create_resource_file_empty_title"),
                 Messages.getWarningIcon()
             ) == Messages.YES
-        } else true
+        } else {
+            true
+        }
         if (continueWithContent) {
             notifyInfo(
                 message("dynamic_resources.resource_creation", resourceType),

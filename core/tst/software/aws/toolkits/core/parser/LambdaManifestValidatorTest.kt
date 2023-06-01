@@ -15,6 +15,7 @@ class LambdaManifestValidatorTest {
             assertThat(LambdaManifestValidator.canBeParsed(it)).isTrue
         }
     }
+
     @Test
     fun `manifest xml file parsing fails`() {
         LambdaManifestValidatorTest::class.java.getResourceAsStream("/xmlSampleFailure.xml").use {

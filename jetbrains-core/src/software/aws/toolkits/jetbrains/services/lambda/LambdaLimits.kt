@@ -14,8 +14,10 @@ object LambdaLimits {
     const val MEMORY_INCREMENT = 64
     const val DEFAULT_MEMORY_SIZE = 128
     const val MIN_TIMEOUT = 1
+
     @JvmField
     val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
+
     @JvmField
     val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5).toInt()
 }

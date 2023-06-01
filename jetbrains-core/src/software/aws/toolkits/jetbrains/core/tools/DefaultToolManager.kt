@@ -178,7 +178,8 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
             object : Task.Backgroundable(
                 project,
                 message("executableCommon.updating", type.displayName),
-                /* canBeCanceled */ false,
+                /* canBeCanceled */
+                false,
                 PerformInBackgroundOption.ALWAYS_BACKGROUND
             ) {
                 override fun run(indicator: ProgressIndicator) {

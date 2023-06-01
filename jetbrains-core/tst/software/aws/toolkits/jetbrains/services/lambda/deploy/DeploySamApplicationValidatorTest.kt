@@ -145,7 +145,8 @@ class DeploySamApplicationValidatorTest {
     fun invalidStackName_Duplicate() {
         sut.forceUi(
             sutPanel,
-            isCreateStack = true, stackName = "bar",
+            isCreateStack = true,
+            stackName = "bar",
             stacks = listOf(
                 StackSummary.builder().stackName("foo").build(),
                 StackSummary.builder().stackName("bar").build(),

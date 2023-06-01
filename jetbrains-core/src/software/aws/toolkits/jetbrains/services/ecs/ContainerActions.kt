@@ -173,7 +173,8 @@ class ExecuteCommandInShellAction(
             } else {
                 notifyWarn(
                     message("ecs.execute_command_run_command_in_shell"),
-                    message("ecs.execute_command_disable_in_progress", container.service.serviceName()), project
+                    message("ecs.execute_command_disable_in_progress", container.service.serviceName()),
+                    project
                 )
             }
         }

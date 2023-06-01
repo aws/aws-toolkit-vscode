@@ -64,7 +64,9 @@ class SliderPanel(
         val value = textField.text.toIntOrNull()
         return if (value == null || value < min || value > max) {
             ValidationInfo(message("lambda.slider_validation", min, max), textField)
-        } else null
+        } else {
+            null
+        }
     }
 
     fun setEnabled(enabled: Boolean) {

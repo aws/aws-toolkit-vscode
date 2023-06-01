@@ -66,6 +66,7 @@ class SecretsManagerAuthWidget : AwsAuthWidget(userFieldEnabled = false) {
 
     @TestOnly
     internal fun getSecretId() = secretIdSelector.text
+
     @TestOnly
     internal fun getUrlFromSecretSet() = urlFromSecret.isSelected
 }

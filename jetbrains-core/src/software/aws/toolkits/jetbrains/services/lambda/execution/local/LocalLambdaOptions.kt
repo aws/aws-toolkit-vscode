@@ -28,6 +28,7 @@ class FunctionOptions {
     var isImage: Boolean = false
     var pathMappings: List<PersistedPathMapping> = listOf()
     var templateFile: String? = null
+
     @get:OptionTag("logicalFunctionName")
     var logicalId: String? = null
     var runtime: String? = null

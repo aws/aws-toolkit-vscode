@@ -18,7 +18,9 @@ abstract class CodeWhispererInlayRenderer(protected val myValue: String) : Edito
         val attributes = editor.colorsScheme.getAttributes(DebuggerColors.INLINED_VALUES_EXECUTION_LINE)
         val fontStyle = attributes?.fontType ?: Font.PLAIN
         return ComplementaryFontsRegistry.getFontAbleToDisplay(
-            'a'.toInt(), fontStyle, fontPreferences,
+            'a'.toInt(),
+            fontStyle,
+            fontPreferences,
             FontInfo.getFontRenderContext(editor.contentComponent)
         )
     }

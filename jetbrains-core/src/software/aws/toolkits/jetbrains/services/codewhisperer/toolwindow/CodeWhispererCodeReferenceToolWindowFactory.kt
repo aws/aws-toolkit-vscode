@@ -14,7 +14,8 @@ class CodeWhispererCodeReferenceToolWindowFactory : ToolWindowFactory, DumbAware
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val toolWindowContent = toolWindow.contentManager.factory.createContent(
             JBScrollPane(CodeWhispererCodeReferenceManager.getInstance(project).codeReferenceComponents.contentPanel, 20, 30),
-            null, false
+            null,
+            false
         )
 
         toolWindowContent.isCloseable = false

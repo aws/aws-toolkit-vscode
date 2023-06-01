@@ -69,6 +69,7 @@ class RemoteResourceResolverTest {
         assertThat(secondCall).hasContent("data2")
         verify(urlFetcher, times(2)).fetch(eq(PRIMARY_URL), any())
     }
+
     @Test
     fun downloadedParseFailedSkippedMove() {
         val urlFetcher = mock<UrlFetcher> {

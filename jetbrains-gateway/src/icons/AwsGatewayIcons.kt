@@ -11,6 +11,7 @@ import javax.swing.Icon
  */
 object AwsGatewayIcons {
     @JvmField val GATEWAY_RUNNING = load("/icons/gateway/running.svg") // 16x16
+
     @JvmField val GATEWAY_STOPPED = load("/icons/gateway/stopped.svg") // 16x16
 
     private fun load(path: String): Icon = IconLoader.getIcon(path, AwsGatewayIcons::class.java)

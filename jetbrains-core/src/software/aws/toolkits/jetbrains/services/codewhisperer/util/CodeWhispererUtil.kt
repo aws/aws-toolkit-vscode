@@ -63,8 +63,11 @@ object CodeWhispererUtil {
     fun notifyErrorCodeWhispererUsageLimit(project: Project? = null, isCodeScan: Boolean = false) {
         notifyError(
             "",
-            if (!isCodeScan) message("codewhisperer.notification.usage_limit.codesuggestion.warn.content")
-            else message("codewhisperer.notification.usage_limit.codescan.warn.content"),
+            if (!isCodeScan) {
+                message("codewhisperer.notification.usage_limit.codesuggestion.warn.content")
+            } else {
+                message("codewhisperer.notification.usage_limit.codescan.warn.content")
+            },
             project,
         )
     }

@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>Filename:mockDataSourceSshTunnelConfiguration.kt$software.aws.toolkits.jetbrains.datagrip.auth.mockDataSourceSshTunnelConfiguration.kt</ID>
     <ID>NoNameShadowing:IamAuthWidgetTest.kt$IamAuthWidgetTest${ it[CREDENTIAL_ID_PROPERTY] = credentialId it[REGION_ID_PROPERTY] = defaultRegion if (hasCluster) { it[CLUSTER_ID_PROPERTY] = defaultClusterId } }</ID>
     <ID>NoNameShadowing:SecretsManagerAuthTest.kt$SecretsManagerAuthTest${ u = it.arguments[0] as String Unit }</ID>
     <ID>NoNameShadowing:SecretsManagerAuthWidgetTest.kt$SecretsManagerAuthWidgetTest${ it[CREDENTIAL_ID_PROPERTY] = credentialId it[REGION_ID_PROPERTY] = defaultRegion if (hasSecret) { it[SECRET_ID_PROPERTY] = defaultSecretId } it[GET_URL_FROM_SECRET] = getUrlFromSecret.toString() }</ID>
@@ -11,7 +12,6 @@
     <ID>UnsafeCallOnNullableType:IamAuthTest.kt$IamAuthTest$connection!!</ID>
     <ID>UnsafeCallOnNullableType:NodeJsCodeInsightTestFixtureRule.kt$NodeJsCodeInsightTestFixtureRule$codeInsightFixture.tempDirFixture.getFile(".")!!</ID>
     <ID>UnsafeCallOnNullableType:NodeJsCodeInsightTestFixtureRule.kt$psiFile.findElementAt(fileContent.indexOf(handlerName))!!</ID>
-    <ID>UnusedPrivateMember:VgoCompatShims.kt$VgoCompatShims$goVersion: String?</ID>
     <ID>UseCheckOrError:GoCodeInsightTestFixtureRule.kt$throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")</ID>
   </CurrentIssues>
 </SmellBaseline>

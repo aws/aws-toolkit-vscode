@@ -101,10 +101,12 @@ class IndexedFunction : IndexedResource {
     override fun toString(): String = "IndexedFunction(indexedProperties=$indexedProperties,indexedMetadata=$indexedMetadata)"
 }
 
-internal val INDEXED_RESOURCE_MAPPINGS = mapOf<String,
+internal val INDEXED_RESOURCE_MAPPINGS = mapOf<
+    String,
     Pair<
         (String, Map<String, String>, Map<String, String>) -> IndexedResource,
-        (Resource) -> IndexedResource>
+        (Resource) -> IndexedResource
+        >
     >(
     LAMBDA_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction),
     SERVERLESS_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction)

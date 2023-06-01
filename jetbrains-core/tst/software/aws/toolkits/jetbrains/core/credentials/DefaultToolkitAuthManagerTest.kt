@@ -278,7 +278,7 @@ class DefaultToolkitAuthManagerTest {
             assertThat(captor.secondValue).satisfies { connection ->
                 assertThat(connection.scopes.toSet()).isEqualTo(setOf("existing1", "existing2", "existing3", "new1"))
             }
-            assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<BearerSsoConnection>() { connection ->
+            assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<BearerSsoConnection> { connection ->
                 assertThat(connection).usingRecursiveComparison().isNotEqualTo(existingConnection)
                 assertThat(connection.scopes.toSet()).isEqualTo(setOf("existing1", "existing2", "existing3", "new1"))
             }

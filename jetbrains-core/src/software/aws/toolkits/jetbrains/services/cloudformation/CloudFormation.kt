@@ -144,7 +144,9 @@ fun CloudFormationClient.waitForStackDeletionComplete(
         fail = { stack ->
             if (stack.stackStatus() in CFN_DELETE_FAILURE_TERMINAL_STATES) {
                 message("cloudformation.delete_stack.failed", stack.stackName(), stack.stackStatus())
-            } else null
+            } else {
+                null
+            }
         },
         successByException = { e -> e is CloudFormationException && e.awsErrorDetails().errorCode() == "ValidationError" },
         timeoutErrorMessage = message("cloudformation.delete_stack.timeout", stackName, maxAttempts * delay.seconds),

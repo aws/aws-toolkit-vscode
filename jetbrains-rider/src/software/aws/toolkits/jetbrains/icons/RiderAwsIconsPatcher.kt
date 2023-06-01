@@ -25,8 +25,11 @@ internal class RiderAwsIconsPatcher : IconPathPatcher() {
     override fun patchPath(path: String, classLoader: ClassLoader?): String? = myIconsOverrideMap[path]
 
     override fun getContextClassLoader(path: String, originalClassLoader: ClassLoader?): ClassLoader? =
-        if (myIconsOverrideMap.containsKey(path)) javaClass.classLoader
-        else originalClassLoader
+        if (myIconsOverrideMap.containsKey(path)) {
+            javaClass.classLoader
+        } else {
+            originalClassLoader
+        }
 
     private val myIconsOverrideMap = mapOf(
         "/resharper/LambdaRunMarkers/Lambda.svg" to "AwsIcons.Resources.LAMBDA_FUNCTION",

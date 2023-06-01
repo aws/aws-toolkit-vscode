@@ -72,7 +72,9 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
             ) {
                 override fun createGutterRenderer(): GutterIconRenderer = LambdaGutterIcon(this, actionGroup)
             }
-        } else null
+        } else {
+            null
+        }
     }
 
     private fun shouldShowLineMarker(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {

@@ -15,9 +15,13 @@ class CodeWhispererActionPromoter : ActionPromoter {
     override fun promote(actions: MutableList<out AnAction>, context: DataContext): MutableList<AnAction> {
         val results = actions.toMutableList()
         results.sortWith { a, b ->
-            if (isCodeWhispererPopupAction(a)) return@sortWith -1
-            else if (isCodeWhispererPopupAction(b)) return@sortWith 1
-            else 0
+            if (isCodeWhispererPopupAction(a)) {
+                return@sortWith -1
+            } else if (isCodeWhispererPopupAction(b)) {
+                return@sortWith 1
+            } else {
+                0
+            }
         }
         return results
     }

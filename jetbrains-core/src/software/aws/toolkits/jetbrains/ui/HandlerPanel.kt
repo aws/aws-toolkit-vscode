@@ -28,8 +28,11 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
     private var runtime: Runtime? = null
 
     val handler: EditorTextField
-        get() = if (handlerCompletionProvider.isCompletionSupported) handlerWithCompletion
-        else simpleHandler
+        get() = if (handlerCompletionProvider.isCompletionSupported) {
+            handlerWithCompletion
+        } else {
+            simpleHandler
+        }
 
     init {
         initSimpleHandler()

@@ -3,24 +3,21 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>BannedImports:CawsConnectionProvider.kt$import com.intellij.ui.layout.panel</ID>
-    <ID>BannedImports:WorkspaceConfigurationDialog.kt$import com.intellij.ui.layout.panel</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.NormalizeRepoUrl${ it: String -> normalizeRepoUrl(it).authority }</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.NormalizeRepoUrl${ it: String -> normalizeRepoUrl(it).scheme }</ID>
     <ID>ExplicitItLambdaParameter:GitUtilsTest.kt$GitUtilsTest.PrimeSSHAgentCommand${ it: String -> buildAgentPrimeCommand(normalizeRepoUrl(it))?.commandLineString }</ID>
-    <ID>UnusedPrivateMember:InstallPluginBackend.kt$InstallPluginBackend.InstallMarketplacePluginBackend$private val ideProduct: GatewayProduct?</ID>
-    <ID>UnusedPrivateMember:InstallPluginBackend.kt$InstallPluginBackend.InstallMarketplacePluginBackend$private val marketplaceUrl: String = "https://plugins.jetbrains.com"</ID>
-    <ID>UnusedPrivateMember:PatchBackend.kt$PatchBackend$private val gatewayHandle: GatewayConnectionHandle</ID>
-    <ID>UnusedPrivateMember:SshCommandLine.kt$SshCommandLine.Companion$private const val ADDITIONAL_OPTIONS = "sshAdditionalOptions"</ID>
-    <ID>UnusedPrivateMember:WorkspaceDetails.kt$e: AnActionEvent</ID>
+    <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>$return object : BaseOutputReader.Options() { override fun policy(): BaseDataReader.SleepingPolicy { return BaseDataReader.SleepingPolicy.BLOCKING } override fun splitToLines(): Boolean { return false } }</ID>
+    <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>.&lt;no name provided>$return BaseDataReader.SleepingPolicy.BLOCKING</ID>
+    <ID>ExpressionBodySyntax:PtyCliBasedStep.kt$PtyCliBasedStep.&lt;no name provided>.&lt;no name provided>$return false</ID>
+    <ID>UnusedParameter:WorkspaceDetails.kt$e: AnActionEvent</ID>
+    <ID>UnusedPrivateProperty:SshCommandLine.kt$SshCommandLine.Companion$private const val ADDITIONAL_OPTIONS = "sshAdditionalOptions"</ID>
     <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS environment id")</ID>
-    <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS organization name")</ID>
     <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionParameters.Companion$throw IllegalStateException("Missing required parameter: CAWS project name")</ID>
     <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionProvider$throw IllegalStateException("Environment is deleted, unable to start")</ID>
     <ID>UseCheckOrError:CawsConnectionProvider.kt$CawsConnectionProvider$throw IllegalStateException("Unknown state $status")</ID>
     <ID>UseCheckOrError:GatewayEcrVersions.kt$GatewayProduct.Companion$throw IllegalStateException("Could not parse runtime for build: ${ide.runtime()}")</ID>
     <ID>UseCheckOrError:IdeBackendActions.kt$IdeBackendActions.Companion$throw IllegalStateException("IDE runtime was not provided")</ID>
     <ID>UseCheckOrError:IdeBackendActions.kt$IdeBackendActions.Companion$throw IllegalStateException("Project was not provided")</ID>
-    <ID>UseCheckOrError:StartBackend.kt$StartBackend$throw IllegalStateException( "Starting the IDE backend failed with exit code ${backend.exitCode}. Any available backend logs are available above." )</ID>
     <ID>UseCheckOrError:StartBackend.kt$StartBackend$throw IllegalStateException("Backend did not start within $duration")</ID>
     <ID>UseCheckOrError:WorkspaceActions.kt$WorkspaceActions$throw IllegalStateException("Environment did not start: ${response.status()}")</ID>
     <ID>UseCheckOrError:WorkspaceActions.kt$WorkspaceActions$throw IllegalStateException("Environment did not stop: ${response.status()}")</ID>

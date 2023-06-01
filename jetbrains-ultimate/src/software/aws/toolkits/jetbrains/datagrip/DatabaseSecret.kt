@@ -44,28 +44,36 @@ object DatabaseSecret {
         // If it is a resource node, validate that it is the same resource
         when (node) {
             is RdsNode -> {
-                if (node.database.engine != dbSecret.engine) return ValidationInfo(
-                    message(
-                        "datagrip.secretsmanager.validation.different_engine",
-                        secretName,
-                        dbSecret.engine.toString()
+                if (node.database.engine != dbSecret.engine) {
+                    return ValidationInfo(
+                        message(
+                            "datagrip.secretsmanager.validation.different_engine",
+                            secretName,
+                            dbSecret.engine.toString()
+                        )
                     )
-                )
-                if (node.database.endpoint.host != dbSecret.host) return ValidationInfo(
-                    message("datagrip.secretsmanager.validation.different_address", secretName, dbSecret.host.toString())
-                )
+                }
+                if (node.database.endpoint.host != dbSecret.host) {
+                    return ValidationInfo(
+                        message("datagrip.secretsmanager.validation.different_address", secretName, dbSecret.host.toString())
+                    )
+                }
             }
             is RedshiftExplorerNode -> {
-                if (dbSecret.engine != REDSHIFT_ENGINE_TYPE) return ValidationInfo(
-                    message(
-                        "datagrip.secretsmanager.validation.different_engine",
-                        secretName,
-                        dbSecret.engine.toString()
+                if (dbSecret.engine != REDSHIFT_ENGINE_TYPE) {
+                    return ValidationInfo(
+                        message(
+                            "datagrip.secretsmanager.validation.different_engine",
+                            secretName,
+                            dbSecret.engine.toString()
+                        )
                     )
-                )
-                if (node.cluster.endpoint().address() != dbSecret.host) return ValidationInfo(
-                    message("datagrip.secretsmanager.validation.different_address", secretName, dbSecret.host.toString())
-                )
+                }
+                if (node.cluster.endpoint().address() != dbSecret.host) {
+                    return ValidationInfo(
+                        message("datagrip.secretsmanager.validation.different_address", secretName, dbSecret.host.toString())
+                    )
+                }
             }
         }
         return null

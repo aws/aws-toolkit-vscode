@@ -155,7 +155,9 @@ class CodeWhispererTelemetryService {
         val automatedTriggerType = requestContext.triggerTypeInfo.automatedTriggerType
         val triggerChar = if (automatedTriggerType is CodeWhispererAutomatedTriggerType.SpecialChar) {
             automatedTriggerType.specialChar.toString()
-        } else null
+        } else {
+            null
+        }
 
         val language = requestContext.fileContextInfo.programmingLanguage
 
@@ -164,11 +166,15 @@ class CodeWhispererTelemetryService {
 
         val classifierResult = if (shouldIncludeClassifier) {
             requestContext.triggerTypeInfo.automatedTriggerType.calculationResult
-        } else null
+        } else {
+            null
+        }
 
         val classifierThreshold = if (shouldIncludeClassifier) {
             CodeWhispererAutoTriggerService.getThreshold(language)
-        } else null
+        } else {
+            null
+        }
 
         CodewhispererTelemetry.userTriggerDecision(
             project = requestContext.project,
@@ -326,8 +332,9 @@ class CodeWhispererTelemetryService {
             }
         }
 
-        return if (isEmpty) CodewhispererPreviousSuggestionState.Empty
-        else CodewhispererPreviousSuggestionState.Discard
+        return if (isEmpty) {
+            CodewhispererPreviousSuggestionState.Empty
+        } else CodewhispererPreviousSuggestionState.Discard
     }
 
     fun sendPerceivedLatencyEvent(

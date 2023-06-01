@@ -45,6 +45,7 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
             projectRule.fixture.editor.document.insertString(projectRule.fixture.editor.caretModel.offset, "test")
         }
     }
+
     @Test
     fun `test delete to word start should cancel popup`() {
         testUserActionsShouldCancelPopup(ACTION_EDITOR_DELETE_TO_WORD_START)

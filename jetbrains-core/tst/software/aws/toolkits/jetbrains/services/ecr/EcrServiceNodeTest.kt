@@ -82,7 +82,8 @@ class EcrServiceNodeTest {
         val repo = Repository(aString(), aString(), aString())
         val node = EcrRepositoryNode(projectRule.project, repo)
         resourceCache.addEntry(
-            projectRule.project, EcrResources.listTags(repo.repositoryName),
+            projectRule.project,
+            EcrResources.listTags(repo.repositoryName),
             CompletableFuture.failedFuture(RuntimeException("network broke"))
         )
         val children = node.children

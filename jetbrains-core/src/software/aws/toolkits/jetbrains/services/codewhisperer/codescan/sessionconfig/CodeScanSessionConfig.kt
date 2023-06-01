@@ -103,7 +103,9 @@ sealed class CodeScanSessionConfig(
                 if (includedSourceFiles.contains(currentFilePath) ||
                     currentFile == null ||
                     willExceedPayloadLimit(currentTotalFileSize, currentFile.length)
-                ) continue
+                ) {
+                    continue
+                }
 
                 val currentFileSize = currentFile.length
 

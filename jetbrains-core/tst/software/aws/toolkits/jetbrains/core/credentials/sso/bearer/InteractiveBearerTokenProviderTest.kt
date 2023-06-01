@@ -239,7 +239,9 @@ class InteractiveBearerTokenProviderTest {
     private fun stubClientRegistration() {
         whenever(diskCache.loadClientRegistration(any<ClientRegistrationCacheKey>())).thenReturn(
             ClientRegistration(
-                "", "", Instant.MAX
+                "",
+                "",
+                Instant.MAX
             )
         )
     }

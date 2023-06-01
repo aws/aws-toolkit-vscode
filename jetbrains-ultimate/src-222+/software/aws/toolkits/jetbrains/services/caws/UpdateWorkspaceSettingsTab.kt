@@ -167,9 +167,9 @@ class UpdateWorkspaceSettingsTab : GatewayControlCenterTabProvider {
                                         combobox(lifetime, instanceSize, selectedValue = initialEnv.instanceType(), handleSelected = {
                                             instanceSizeSelected = it
                                         }, presentation = {
-                                                // TODO: Velox to provide API for this info
-                                                label(it.toString().substringAfter("dev.standard1.").capitalize())
-                                            })
+                                            // TODO: Velox to provide API for this info
+                                            label(it.toString().substringAfter("dev.standard1.").capitalize())
+                                        })
                                     }
                                 }
                             }

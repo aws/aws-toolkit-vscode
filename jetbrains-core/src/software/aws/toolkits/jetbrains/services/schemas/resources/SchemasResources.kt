@@ -38,7 +38,7 @@ object SchemasResources {
 
                     val schemaSelectionItems = ArrayList<SchemaSelectionItem>()
                     schemaSelectionItems.add(SchemaSelectionItem.RegistryItem(registryName))
-                    schemas.forEach() { schemaSelectionItems.add(SchemaSelectionItem.SchemaItem(it.schemaName(), registryName)) }
+                    schemas.forEach { schemaSelectionItems.add(SchemaSelectionItem.SchemaItem(it.schemaName(), registryName)) }
 
                     schemaSelectionItems
                 }

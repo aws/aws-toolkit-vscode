@@ -124,7 +124,10 @@ class WorkspaceGroupsPanel(
 
                 addToRight(
                     ActionButton(
-                        actions, actions.templatePresentation.clone(), ActionPlaces.UNKNOWN, ActionToolbar.DEFAULT_MINIMUM_BUTTON_SIZE
+                        actions,
+                        actions.templatePresentation.clone(),
+                        ActionPlaces.UNKNOWN,
+                        ActionToolbar.DEFAULT_MINIMUM_BUTTON_SIZE
                     ).apply {
                         setLook(MORE_LOOK)
                     }

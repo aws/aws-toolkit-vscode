@@ -81,7 +81,8 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
             codeReferenceComponents.contentPanel.apply {
                 add(
                     codeReferenceComponents.codeReferenceRecordPanel(reference, relativePath, lineNums),
-                    horizontalPanelConstraints, components.size - 1
+                    horizontalPanelConstraints,
+                    components.size - 1
                 )
 
                 // add each line of the original reference a JPanel to the tool window content panel
@@ -89,7 +90,8 @@ class CodeWhispererCodeReferenceManager(private val project: Project) {
                     if (line.isEmpty()) return@forEach
                     add(
                         codeReferenceComponents.codeContentPanel(line),
-                        horizontalPanelConstraints, components.size - 1
+                        horizontalPanelConstraints,
+                        components.size - 1
                     )
                 }
             }

@@ -60,5 +60,5 @@ object CloudControlApiResources {
 data class ResourceDetails(val operations: List<PermittedOperation>, val arnRegex: String?, val documentation: String?)
 
 enum class PermittedOperation {
-    CREATE, READ, UPDATE, DELETE, LIST;
+    CREATE, READ, UPDATE, DELETE, LIST
 }

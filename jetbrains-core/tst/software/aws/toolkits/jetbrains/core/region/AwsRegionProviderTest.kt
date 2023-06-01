@@ -79,6 +79,7 @@ class AwsRegionProviderTest {
         val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.partitions()).isNotEmpty
     }
+
     @Test
     fun noDefaultRegionFallsBackToUsEast1() {
         createRegionDataProvider("no-default-region-us-east-1-fallback-endpoints.json")

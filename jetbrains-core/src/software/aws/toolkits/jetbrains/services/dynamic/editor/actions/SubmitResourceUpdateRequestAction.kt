@@ -23,7 +23,8 @@ class SubmitResourceUpdateRequestAction : AnAction(message("dynamic_resources.ed
         val patchOperations = JsonDiff.asJson(mapper.readTree(file.inputStream), mapper.readTree(content))
         if (patchOperations.isEmpty) {
             if (showYesNoDialog(
-                    psiFile.project, message("dynamic_resources.update_resource_no_changes_made"),
+                    psiFile.project,
+                    message("dynamic_resources.update_resource_no_changes_made"),
                     message("dynamic_resources.update_resource_no_changes_made_title"),
                     Messages.getWarningIcon()
                 ) == Messages.NO

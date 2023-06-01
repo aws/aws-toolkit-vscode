@@ -55,7 +55,7 @@ class ConnectionPinningManagerTest {
             override fun supportsConnectionType(connection: ToolkitConnection) = true
         }
 
-        val oldConnection = mock<AwsBearerTokenConnection>() {
+        val oldConnection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
         val mockAuthManager = mock<ToolkitAuthManager> {
@@ -81,7 +81,7 @@ class ConnectionPinningManagerTest {
             override fun supportsConnectionType(connection: ToolkitConnection) = true
         }
 
-        val newConnection = mock<AwsBearerTokenConnection>() {
+        val newConnection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
 
@@ -111,11 +111,11 @@ class ConnectionPinningManagerTest {
                 connection is AwsBearerTokenConnection
         }
 
-        val oldConnection = mock<AwsCredentialConnection>() {
+        val oldConnection = mock<AwsCredentialConnection> {
             on { id } doReturn oldConnectionId
         }
 
-        val newConnection = mock<AwsBearerTokenConnection>() {
+        val newConnection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "newId"
         }
         val mockAuthManager = mock<ToolkitAuthManager> {
@@ -141,7 +141,7 @@ class ConnectionPinningManagerTest {
             override fun supportsConnectionType(connection: ToolkitConnection) = true
         }
 
-        val oldConnection = mock<AwsBearerTokenConnection>() {
+        val oldConnection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
         val mockAuthManager = mock<ToolkitAuthManager> {
@@ -161,7 +161,7 @@ class ConnectionPinningManagerTest {
             override val featureName = "mockFeature"
             override fun supportsConnectionType(connection: ToolkitConnection) = true
         }
-        val connection = mock<AwsBearerTokenConnection>() {
+        val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
 
@@ -177,7 +177,7 @@ class ConnectionPinningManagerTest {
             override val featureName = "mockFeature"
             override fun supportsConnectionType(connection: ToolkitConnection) = true
         }
-        val connection = mock<AwsBearerTokenConnection>() {
+        val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
         val mockAuthManager = mock<ToolkitAuthManager> {
@@ -192,7 +192,7 @@ class ConnectionPinningManagerTest {
 
     @Test
     fun `respects pinning prompt = yes`() {
-        val connection = mock<AwsBearerTokenConnection>() {
+        val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
         val dialogMock = mock<TestDialog>()
@@ -205,7 +205,7 @@ class ConnectionPinningManagerTest {
 
     @Test
     fun `respects pinning prompt = no`() {
-        val connection = mock<AwsBearerTokenConnection>() {
+        val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
         val dialogMock = mock<TestDialog>()
@@ -218,7 +218,7 @@ class ConnectionPinningManagerTest {
 
     @Test
     fun `prompts for pinning`() {
-        val connection = mock<AwsBearerTokenConnection>() {
+        val connection = mock<AwsBearerTokenConnection> {
             on { id } doReturn "connId"
         }
 

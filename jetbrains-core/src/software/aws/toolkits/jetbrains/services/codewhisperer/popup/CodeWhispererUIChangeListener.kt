@@ -29,7 +29,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
 
         // get matching brackets from recommendations to the brackets after caret position
         val remaining = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            detail, states.recommendationContext.userInputSinceInvocation
+            detail,
+            states.recommendationContext.userInputSinceInvocation
         ).substring(typeahead.length)
 
         val remainingLines = remaining.split("\n")
@@ -38,7 +39,10 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
 
         // process first line inlays, where we do subsequence matching as much as possible
         val matchingSymbols = editorManager.getMatchingSymbolsFromRecommendation(
-            editor, firstLineOfRemaining, detail.isTruncatedOnRight, sessionContext
+            editor,
+            firstLineOfRemaining,
+            detail.isTruncatedOnRight,
+            sessionContext
         )
 
         sessionContext.toBeRemovedHighlighter?.let {
@@ -103,7 +107,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
 
         // get matching brackets from recommendations to the brackets after caret position
         val remaining = CodeWhispererPopupManager.getInstance().getReformattedRecommendation(
-            detail, states.recommendationContext.userInputSinceInvocation
+            detail,
+            states.recommendationContext.userInputSinceInvocation
         ).substring(typeahead.length)
 
         val remainingLines = remaining.split("\n")

@@ -81,6 +81,7 @@ internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: 
         publisher: TelemetryPublisher = NoOpPublisher(),
         batcher: TelemetryBatcher
     ) : TelemetryService(publisher, batcher)
+
     @Rule
     @JvmField
     val projectRule: CodeInsightTestFixtureRule
@@ -135,6 +136,7 @@ internal abstract class CodeWhispererCodeCoverageTrackerTestBase(myProjectRule: 
 internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCoverageTrackerTestBase(PythonCodeInsightTestFixtureRule()) {
     private lateinit var invocationContext: InvocationContext
     private lateinit var sessionContext: SessionContext
+
     @Before
     override fun setup() {
         super.setup()

@@ -218,7 +218,9 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
                 CodeWhispererClassifierConstants.osMap["Windows 10"]
             } else if (osVersion.contains("7", true)) {
                 CodeWhispererClassifierConstants.osMap["Windows 7"]
-            } else 0.0
+            } else {
+                0.0
+            }
         } else {
             0.0
         } ?: 0.0
@@ -252,7 +254,11 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
                 if (
                     previousOneDecision != CodewhispererPreviousSuggestionState.Accept &&
                     previousOneDecision != CodewhispererPreviousSuggestionState.Reject
-                ) CodeWhispererClassifierConstants.prevDecisionOtherCoefficient else 0.0
+                ) {
+                    CodeWhispererClassifierConstants.prevDecisionOtherCoefficient
+                } else {
+                    0.0
+                }
         }
 
         val resultBeforeSigmoid =
@@ -287,8 +293,11 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
         fun getInstance(): CodeWhispererAutoTriggerService = service()
 
         fun getThreshold(language: CodeWhispererProgrammingLanguage): Double =
-            if (language is CodeWhispererJava && CodeWhispererAutoTriggerService.getInstance().isExpThreshold()) expTriggerThreshold
-            else triggerThreshold
+            if (language is CodeWhispererJava && CodeWhispererAutoTriggerService.getInstance().isExpThreshold()) {
+                expTriggerThreshold
+            } else {
+                triggerThreshold
+            }
 
         fun sigmoid(x: Double): Double = 1 / (1 + exp(-x))
 
@@ -298,7 +307,9 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Persist
             } ?: CodeWhispererUnknownLanguage.INSTANCE
             return if (CodeWhispererAutoTriggerService.getInstance().isClassifierGroup() || language.isAllClassifier()) {
                 CodeWhispererAutoTriggerService.getInstance().shouldTriggerClassifier(editor).calculatedResult
-            } else null
+            } else {
+                null
+            }
         }
     }
 }

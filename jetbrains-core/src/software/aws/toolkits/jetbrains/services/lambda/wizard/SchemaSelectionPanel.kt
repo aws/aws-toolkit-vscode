@@ -23,7 +23,7 @@ import javax.swing.JComponent
 
 /*
  * A panel encapsulating  AWS credential selection during SAM new project creation wizard
-  */
+ */
 class SchemaSelectionPanel : WizardFragment {
     private val schemaSelector by lazy { SchemaResourceSelector() }
     private val awsConnectionSelector by lazy {

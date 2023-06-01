@@ -41,7 +41,8 @@ class EnableEcsExecuteCommandTest {
             .build()
 
         resourceCache.addEntry(
-            projectRule.project, EcsResources.describeService(clusterArn, serviceArn),
+            projectRule.project,
+            EcsResources.describeService(clusterArn, serviceArn),
             CompletableFuture.completedFuture(ecsService)
         )
 

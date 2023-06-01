@@ -51,7 +51,7 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
         }
 
         stepEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
-        val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.matched().response().get()
+        val response = lambdaClient.waiter().waitUntilFunctionExists { it.functionName(details.name) }.matched().response().get()
 
         // Also wait for it to become active
         lambdaClient.waiter().waitUntilFunctionActive { it.functionName(details.name) }

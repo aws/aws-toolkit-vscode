@@ -2,8 +2,8 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>AbsentOrWrongFileLicense:build.gradle.kts$.build.gradle.kts</ID>
     <ID>Filename:retryableAssert.kt$software.aws.toolkits.jetbrains.uitests.utils.retryableAssert.kt</ID>
+    <ID>RedundantSuspendModifier:InsightsQueryTest.kt$InsightsQueryTest$suspend</ID>
     <ID>UseCheckOrError:IdeExtension.kt$GradleProcess$throw IllegalStateException("Failed to locate build.gradle.kts in $cwd}")</ID>
     <ID>UseCheckOrError:IdeExtension.kt$Ide$throw IllegalStateException("Gradle task has ended, check log")</ID>
     <ID>UseCheckOrError:IdeExtension.kt$Ide$throw java.lang.IllegalStateException("GRADLE_PROJECT not set")</ID>

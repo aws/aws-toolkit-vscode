@@ -176,6 +176,7 @@ class DevEnvConnectTest : AfterAllCallback {
     }
 
     private lateinit var connectionHandle: GatewayConnectionHandle
+
     @TestFactory
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     fun `test connect to devenv`(): Iterator<DynamicTest> = sequence<DynamicTest> {

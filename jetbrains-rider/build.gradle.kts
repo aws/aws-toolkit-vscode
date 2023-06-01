@@ -234,14 +234,14 @@ val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
   <configuration>
     <packageSources> 
     ${
-        if (codeArtifactNugetUrl.isPresent) {
-            """
+            if (codeArtifactNugetUrl.isPresent) {
+                """
        |   <clear /> 
        |   <add key="codeartifact-nuget" value="${codeArtifactNugetUrl.get()}v3/index.json" />
         """.trimMargin("|")
-        } else {
-            ""
-        }
+            } else {
+                ""
+            }
         }
     </packageSources>
   </configuration>
@@ -347,7 +347,7 @@ tasks.compileKotlin {
     dependsOn(generateModels)
 }
 
-tasks.withType<Detekt>() {
+tasks.withType<Detekt> {
     // Make sure kotlin code is generated before we execute detekt
     dependsOn(generateModels)
 }
@@ -369,6 +369,6 @@ tasks.integrationTest {
 }
 
 // fix implicit dependency on generated source
-tasks.withType<DetektCreateBaselineTask>() {
+tasks.withType<DetektCreateBaselineTask> {
     dependsOn(generateModels)
 }

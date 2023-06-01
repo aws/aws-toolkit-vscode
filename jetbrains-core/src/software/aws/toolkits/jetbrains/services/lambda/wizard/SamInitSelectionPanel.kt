@@ -88,7 +88,7 @@ class SamInitSelectionPanel(
         fragments.setContent(
             panel {
                 wizardFragments.values.forEach {
-                    row() {
+                    row {
                         it(grow)
                     }
                 }

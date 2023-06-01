@@ -149,7 +149,8 @@ class SyncSamApplicationValidatorTest {
     fun `invalid stack name duplicate`() {
         sut.forceUi(
             sutPanel,
-            isCreateStack = true, stackName = "bar",
+            isCreateStack = true,
+            stackName = "bar",
             stacks = listOf(
                 StackSummary.builder().stackName("foo").build(),
                 StackSummary.builder().stackName("bar").build(),

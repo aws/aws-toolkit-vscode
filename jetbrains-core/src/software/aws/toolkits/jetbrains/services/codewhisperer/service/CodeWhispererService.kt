@@ -401,7 +401,8 @@ class CodeWhispererService {
             return null
         }
         val userInputOriginal = CodeWhispererEditorManager.getInstance().getUserInputSinceInvocation(
-            requestContext.editor, requestContext.caretPosition.offset
+            requestContext.editor,
+            requestContext.caretPosition.offset
         )
         val userInput =
             if (caretMovement == CaretMovement.NO_CHANGE) {
@@ -417,7 +418,10 @@ class CodeWhispererService {
                 }
             }
         val detailContexts = CodeWhispererRecommendationManager.getInstance().buildDetailContext(
-            requestContext, userInput, recommendations, requestId
+            requestContext,
+            userInput,
+            recommendations,
+            requestId
         )
         val recommendationContext = RecommendationContext(detailContexts, userInputOriginal, userInput, visualPosition)
         return buildInvocationContext(requestContext, responseContext, recommendationContext, popup)

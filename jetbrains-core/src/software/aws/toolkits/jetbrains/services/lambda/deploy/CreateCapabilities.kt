@@ -25,7 +25,7 @@ enum class CreateCapabilities(val capability: String, val text: String, val tool
         message("cloudformation.capabilities.auto_expand"),
         message("cloudformation.capabilities.auto_expand.toolTipText"),
         false
-    );
+    )
 }
 
 class CapabilitiesEnumCheckBoxes {

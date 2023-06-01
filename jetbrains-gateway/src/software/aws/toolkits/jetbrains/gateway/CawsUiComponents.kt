@@ -46,6 +46,7 @@ internal sealed interface SeparatorItem : GatewayProductComboBoxItem {
 @JvmInline internal value class GatewayProductItem(override val item: GatewayProduct) : GatewayProductComboBoxItem
 
 @JvmInline internal value class GenericTextItem(override val text: String) : SeparatorItem
+
 @JvmInline internal value class ProductSeparatorItem(val productCode: String) : SeparatorItem {
     override val text: String
         get() = IntelliJPlatformProduct.fromProductCode(productCode)?.ideName ?: productCode

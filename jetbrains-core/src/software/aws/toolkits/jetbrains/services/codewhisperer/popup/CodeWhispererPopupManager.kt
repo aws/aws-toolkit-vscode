@@ -171,7 +171,8 @@ class CodeWhispererPopupManager {
         )
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CODEWHISPERER_POPUP_STATE_CHANGED).stateChanged(
-            states, sessionContext
+            states,
+            sessionContext
         )
     }
 
@@ -234,7 +235,9 @@ class CodeWhispererPopupManager {
         if (isScrolling ||
             CodeWhispererInvocationStatus.getInstance().hasExistingInvocation() ||
             !sessionContext.isFirstTimeShowingPopup
-        ) return
+        ) {
+            return
+        }
         CodeWhispererTelemetryService.getInstance().sendClientComponentLatencyEvent(states)
     }
 

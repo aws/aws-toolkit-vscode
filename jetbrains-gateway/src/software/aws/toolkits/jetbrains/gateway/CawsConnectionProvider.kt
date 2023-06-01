@@ -237,7 +237,9 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                 val (backendVersion, getBackendVersionTime) = measureTimedValue {
                                     tryOrNull {
                                         executor.executeCommandNonInteractive(
-                                            "sh", "-c", GET_IDE_BACKEND_VERSION_COMMAND,
+                                            "sh",
+                                            "-c",
+                                            GET_IDE_BACKEND_VERSION_COMMAND,
                                             timeout = Duration.ofSeconds(15)
                                         ).stdout
                                     }

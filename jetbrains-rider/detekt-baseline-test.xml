@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>Filename:setUpCustomToolset.kt$base.setUpCustomToolset.kt</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$@Test( dataProvider = "handlerCompletionSupportedData", description = "Check completion in run configuration feature is enabled for DOTNET runtime." ) fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: LambdaRuntime)</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(description = "Check a single handler is shown in lookup when one is defined in a project.") @TestEnvironment(solution = "SamHelloWorldApp") fun testDetermineHandlers_SingleHandler()</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(enabled = false, description = "Check all handlers are show in completion lookup when multiple handlers are defined in a project.") @TestEnvironment(solution = "SamMultipleHandlersApp") fun testDetermineHandlers_MultipleHandlers()</ID>
@@ -54,8 +55,7 @@
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_MethodLevel_Detected()</ID>
     <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_NoSerializer_NotDetected()</ID>
     <ID>UnsafeCallOnNullableType:AwsReuseSolutionTestBase.kt$AwsReuseSolutionTestBase$this.myProject!!</ID>
-    <ID>UnusedPrivateMember:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$name: String</ID>
-    <ID>UnusedPrivateMember:setUpCustomToolset.kt$host: com.jetbrains.rdclient.protocol.IProtocolHost</ID>
+    <ID>UnusedParameter:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$name: String</ID>
     <ID>UseCheckOrError:RiderTestFrameworkUtils.kt$throw IllegalStateException("Failed to locate dotnet version: ${output.stderr}")</ID>
   </CurrentIssues>
 </SmellBaseline>

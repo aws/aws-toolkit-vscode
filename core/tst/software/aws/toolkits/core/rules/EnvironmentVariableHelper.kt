@@ -14,6 +14,7 @@ import java.security.PrivilegedAction
 class EnvironmentVariableHelper : ExternalResource() {
     private val originalEnvironmentVariables = System.getenv().toMap()
     private val modifiableMap = getProcessEnvMap() ?: getEnvMap()
+
     @Volatile
     private var mutated = false
 
