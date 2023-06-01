@@ -210,5 +210,7 @@
     "AWS.command.codewhisperer.title": "CodeWhisperer Invoke Service",
     "AWS.explorerNode.selectCustomization.label": "Select a Customization",
     "AWS.codewhisperer.customization.base.label": "CodeWhisperer base model",
-    "AWS.codewhisperer.customization.base.description": "default"
+    "AWS.codewhisperer.customization.base.description": "default",
+    "AWS.codewhisperer.customization.quickPick.title": "Select a Customization",
+    "AWS.codewhisperer.customization.quickPick.placeholder": "You have access to the following customizations"
 }

@@ -12,8 +12,11 @@ import { Customization } from '../client/codewhispereruserclient'
 
 export const showCustomizationPrompt = async (client: DefaultCodeWhispererClient) => {
     await showQuickPick(createCustomizationItems(client), {
-        title: 'Select a Customization',
-        placeholder: 'You have access to the following customizations',
+        title: localize('AWS.codewhisperer.customization.quickPick.title', 'Select a Customization'),
+        placeholder: localize(
+            'AWS.codewhisperer.customization.quickPick.placeholder',
+            'You have access to the following customizations'
+        ),
         buttons: createCommonButtons() as vscode.QuickInputButton[],
     })
 }
