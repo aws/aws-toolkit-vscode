@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { Customization } from '../client/codewhispereruserclient'
 
