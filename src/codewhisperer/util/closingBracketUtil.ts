@@ -42,11 +42,19 @@ export const calculateBracketsLevel = (code: string, isRightContext: boolean = f
             const count = bracketCounts.get(correspondingBracket) || 0
             const newCount = count === 0 ? 0 : count - 1
             bracketCounts.set(bracketMap[char], newCount)
-            bracketsIndexLevel.push({
-                char: correspondingBracket,
-                count: newCount,
-                idx: i,
-            })
+
+            if (
+                bracketsIndexLevel.length > 0 &&
+                bracketsIndexLevel[bracketsIndexLevel.length - 1].char === correspondingBracket
+            ) {
+                bracketsIndexLevel.pop()
+            } else {
+                bracketsIndexLevel.push({
+                    char: char,
+                    count: newCount,
+                    idx: i,
+                })
+            }
         } else if (isRightContext && !(char in bracketMap) && !bracketCounts.has(char) && !/\s/.test(char)) {
             // we can stop processing right context when we encounter a char that is not a bracket nor white space
             break

@@ -130,7 +130,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             return undefined
         }
         return {
-            insertText: this.getGhostText(prefix, truncatedSuggestion),
+            insertText: this.getGhostText(prefix, r.content),
             range: new vscode.Range(this.getGhostTextStartPos(start, end), end),
             command: {
                 command: 'aws.codeWhisperer.accept',
@@ -138,7 +138,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 arguments: [
                     new vscode.Range(start, end),
                     index,
-                    truncatedSuggestion,
+                    r,
                     RecommendationHandler.instance.requestId,
                     RecommendationHandler.instance.sessionId,
                     TelemetryHelper.instance.triggerType,

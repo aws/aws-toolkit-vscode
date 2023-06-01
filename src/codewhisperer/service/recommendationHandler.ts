@@ -177,6 +177,16 @@ export class RecommendationHandler {
                     page === 0,
                     codewhispererPromise
                 )
+
+                const recos = resp.completions as codewhispererClient.Completion[]
+
+                console.log(`******************************************************`)
+                recos.forEach(reco => {
+                    console.log('-----------------------------')
+                    console.log(`${reco.content}`)
+                    console.log(`-----------------------------`)
+                })
+
                 TelemetryHelper.instance.setSdkApiCallEndTime()
                 latency = startTime !== 0 ? performance.now() - startTime : 0
                 if ('recommendations' in resp) {
