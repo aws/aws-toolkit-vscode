@@ -30,6 +30,27 @@
                 </div>
             </div>
         </div>
+        <div
+            v-if="successfulAuthConnection"
+            class="border-common"
+            style="display: inline-flex; flex-direction: row; background-color: #28632b; color: #ffffff; padding: 10px"
+        >
+            <div class="icon icon-lg icon-vscode-check"></div>
+            &nbsp; &nbsp;
+            <div style="display: flex; flex-direction: row">
+                You're connected to {{ authFormDisplayName }}! Switch between connections in the&nbsp;<a
+                    v-on:click="showConnectionQuickPick()"
+                    style="cursor: pointer"
+                    >Toolkit panel</a
+                >&nbsp;or add additional connections below.
+            </div>
+            &nbsp;&nbsp;
+            <div
+                v-on:click="closeStatusBar"
+                style="cursor: pointer"
+                class="icon icon-lg icon-vscode-chrome-close"
+            ></div>
+        </div>
         <div class="flex-container">
             <div id="left-column">
                 <div>
@@ -79,7 +100,7 @@ import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemConten
 import { AuthWebview } from './show'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { ServiceItemId } from './types'
-import { AuthFormId } from './authForms/types'
+import { AuthFormDisplayName, AuthFormId } from './authForms/types'
 import { ConnectionUpdateArgs } from './authForms/baseAuth.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -135,6 +156,15 @@ export default defineComponent({
                 return { status: 'LOCKED' as ServiceStatus, id }
             })
             return [...unlocked, ...locked]
+        },
+        hasConnectedAuth(): boolean {
+            return this.unlockedItemIds.length > 0
+        },
+        authFormDisplayName() {
+            if (this.successfulAuthConnection === undefined) {
+                return ''
+            }
+            return AuthFormDisplayName[this.successfulAuthConnection]
         },
     },
     methods: {
@@ -229,6 +259,12 @@ export default defineComponent({
             if (initialService) {
                 this.selectService(initialService)
             }
+        },
+        showConnectionQuickPick() {
+            client.showConnectionQuickPick()
+        },
+        closeStatusBar() {
+            this.successfulAuthConnection = undefined
         },
     },
 })

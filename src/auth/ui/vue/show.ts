@@ -26,7 +26,7 @@ import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
 import { isBuilderIdConnection } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, addConnection } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl } from '../../sso/validation'
@@ -254,6 +254,10 @@ export class AuthWebview extends VueWebview {
         const initialService = this.#initialService
         this.#initialService = undefined // consecutive requests will not do anything
         return initialService
+    }
+
+    showConnectionQuickPick() {
+        return promptForConnection(Auth.instance)
     }
 }
 
