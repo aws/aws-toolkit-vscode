@@ -157,9 +157,6 @@ export default defineComponent({
             })
             return [...unlocked, ...locked]
         },
-        hasConnectedAuth(): boolean {
-            return this.unlockedItemIds.length > 0
-        },
         authFormDisplayName() {
             if (this.successfulAuthConnection === undefined) {
                 return ''
