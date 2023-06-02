@@ -101,7 +101,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const trimmedSuggestion = suggestion.trim()
         // limit of 5000 for right context matching
         const rightContext = document.getText(new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + 5000)))
-        const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
+        const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trimRight())
         const overlapIndex = suggestion.lastIndexOf(overlap)
         if (overlapIndex >= 0) {
             const truncated = suggestion.slice(0, overlapIndex)
@@ -130,7 +130,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             return undefined
         }
         return {
-            insertText: this.getGhostText(prefix, r.content),
+            insertText: this.getGhostText(prefix, truncatedSuggestion),
             range: new vscode.Range(this.getGhostTextStartPos(start, end), end),
             command: {
                 command: 'aws.codeWhisperer.accept',
@@ -138,7 +138,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 arguments: [
                     new vscode.Range(start, end),
                     index,
-                    r,
+                    truncatedSuggestion,
                     RecommendationHandler.instance.requestId,
                     RecommendationHandler.instance.sessionId,
                     TelemetryHelper.instance.triggerType,
