@@ -1,0 +1,10 @@
+{
+	"date": "2023-06-02",
+	"version": "1.76.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix CodeWhisperer not found error when it is disabled by users issue #3490"
+		}
+	]
+}

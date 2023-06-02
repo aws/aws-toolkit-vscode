@@ -1,3 +1,7 @@
+## 1.76.0 2023-06-02
+
+- **Bug Fix** Fix CodeWhisperer not found error when it is disabled by users issue #3490
+
 ## 1.75.0 2023-05-31
 
 - **Bug Fix** auth: IAM Identity Center connections expire sooner than expected
