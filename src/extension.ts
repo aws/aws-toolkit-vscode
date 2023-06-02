@@ -36,6 +36,7 @@ import { getEndpointsFromFetcher, RegionProvider } from './shared/regions/region
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
+import { activate as activateCodeArtifact } from './codeartifact/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
@@ -229,6 +230,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateS3(extContext)
 
         await activateEcr(context)
+
+        await activateCodeArtifact(context)
 
         await activateCloudWatchLogs(context, settings)
 
