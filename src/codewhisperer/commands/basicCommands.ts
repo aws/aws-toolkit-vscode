@@ -18,6 +18,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
+import { showCustomizationPrompt } from '../customization/showCustomizationPrompt'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -90,6 +91,14 @@ export const showSecurityScan = Commands.declare(
                 vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
+)
+
+export const selectCustomization = Commands.declare(
+    'aws.codeWhisperer.selectCustomization',
+    (client: DefaultCodeWhispererClient) => async () => {
+        telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
+        await showCustomizationPrompt(client)
+    }
 )
 
 export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {

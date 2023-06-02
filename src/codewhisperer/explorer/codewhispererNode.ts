@@ -14,6 +14,7 @@ import {
     createSsoSignIn,
     createFreeTierLimitMetNode,
     createReconnectNode,
+    createSelectCustomizationNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
@@ -83,6 +84,14 @@ export class CodeWhispererNode implements RootNode {
             if (isCloud9()) {
                 return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
+                if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                    return [
+                        createAutoSuggestionsNode(autoTriggerEnabled),
+                        createSecurityScanNode(),
+                        createSelectCustomizationNode(),
+                        createOpenReferenceLogNode(),
+                    ]
+                }
                 return [
                     createAutoSuggestionsNode(autoTriggerEnabled),
                     createSecurityScanNode(),

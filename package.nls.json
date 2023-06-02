@@ -207,5 +207,10 @@
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
     "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain",
-    "AWS.command.codewhisperer.title": "CodeWhisperer Invoke Service"
+    "AWS.command.codewhisperer.title": "CodeWhisperer Invoke Service",
+    "AWS.explorerNode.selectCustomization.label": "Select a Customization",
+    "AWS.codewhisperer.customization.base.label": "CodeWhisperer base model",
+    "AWS.codewhisperer.customization.base.description": "default",
+    "AWS.codewhisperer.customization.quickPick.title": "Select a Customization",
+    "AWS.codewhisperer.customization.quickPick.placeholder": "You have access to the following customizations"
 }
