@@ -3218,7 +3218,7 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && CODEWHISPERER_ENABLED"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
