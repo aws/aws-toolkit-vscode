@@ -253,7 +253,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (isCloud9()) {
         setSubscriptionsforCloud9()
-    } else if (isInlineCompletionEnabled()) {
+    } else if (isInlineCompletionEnabled() && AuthUtil.instance.isConnected()) {
         await setSubscriptionsforInlineCompletion()
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
     }
