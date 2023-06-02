@@ -72,6 +72,8 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
+
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
     }
 
