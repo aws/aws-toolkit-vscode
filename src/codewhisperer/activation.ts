@@ -62,7 +62,7 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
     } else {
-        determineIsClassifierEnabled()
+        determineUserGroup()
     }
     /**
      * CodeWhisperer security panel
@@ -214,13 +214,20 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    function determineIsClassifierEnabled() {
-        const isClassifierEnabled = context.extensionContext.globalState.get<boolean | undefined>(
-            CodeWhispererConstants.isClassifierEnabledKey
+    function determineUserGroup() {
+        const userGroup = context.extensionContext.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
+            CodeWhispererConstants.userGroupKey
         )
-        if (isClassifierEnabled === undefined) {
-            const result = Math.random() <= 0.5
-            context.extensionContext.globalState.update(CodeWhispererConstants.isClassifierEnabledKey, result)
+        if (userGroup === undefined) {
+            const randomNum = Math.random()
+            const result =
+                randomNum <= 1 / 3
+                    ? CodeWhispererConstants.UserGroup.Control
+                    : randomNum <= 2 / 3
+                    ? CodeWhispererConstants.UserGroup.CrossFile
+                    : CodeWhispererConstants.UserGroup.Classifier
+
+            context.extensionContext.globalState.update(CodeWhispererConstants.userGroupKey, result)
         }
     }
 
@@ -248,7 +255,7 @@ export async function activate(context: ExtContext): Promise<void> {
         setSubscriptionsforCloud9()
     } else if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
-        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', AuthUtil.instance.isConnected())
     }
 
     async function setSubscriptionsforInlineCompletion() {

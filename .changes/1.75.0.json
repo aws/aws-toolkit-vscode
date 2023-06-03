@@ -1,0 +1,34 @@
+{
+	"date": "2023-05-31",
+	"version": "1.75.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "auth: IAM Identity Center connections expire sooner than expected"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: user is sometimes required to re-login before token expiration"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Add fallback to local cached files for Step Function Visualizations where host doesn't have internet."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Update dependency amazon-states-language-service from 1.9->1.10. This fixes  support for Yaml Comments in states machines, ProcessorConfig property & Credentials key."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Requested operation is not recognized by the service when fetching recommendations"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer sometimes add extra space at the beginning of suggestion"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer no longer trigger suggestions on IntelliSense acceptance"
+		}
+	]
+}

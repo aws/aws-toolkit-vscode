@@ -70,6 +70,10 @@ export class CodeCatalystAuthenticationProvider {
         return this.secondaryAuth.isUsingSavedConnection
     }
 
+    public isConnectionValid(): boolean {
+        return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
+    }
+
     // Get rid of this? Not sure where to put PAT code.
     public async getPat(client: CodeCatalystClient, username = client.identity.name): Promise<string> {
         const stored = await this.storage.getPat(username)
@@ -225,9 +229,13 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    private static instance: CodeCatalystAuthenticationProvider
+    static #instance: CodeCatalystAuthenticationProvider | undefined
+
+    public static get instance(): CodeCatalystAuthenticationProvider | undefined {
+        return CodeCatalystAuthenticationProvider.#instance
+    }
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        return (this.instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
+        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
     }
 }
