@@ -18,16 +18,28 @@ const bracketMap: bracketMapType = {
     '}': '{',
 }
 
-export const calculateBracketsLevel = (code: string, isRightContext: boolean = false) => {
+export const calculateBracketsLevel = (
+    editor: vscode.TextEditor,
+    code: string,
+    isRightContext: boolean = false,
+    end: vscode.Position,
+    start: vscode.Position
+) => {
     const bracketCounts: Map<string, number> = new Map([
         ['(', 0],
         ['[', 0],
         ['{', 0],
     ])
     const bracketsIndexLevel = []
-
+    let position: vscode.Position
     for (let i = 0; i < code.length; i++) {
         const char = code[i]
+        if (isRightContext) {
+            position = editor.document.positionAt(editor.document.offsetAt(end) + i)
+        } else {
+            position = editor.document.positionAt(editor.document.offsetAt(start) + i)
+        }
+
         if (bracketCounts.has(char)) {
             const count = bracketCounts.get(char) || 0
             const newCount = count + 1
@@ -36,6 +48,7 @@ export const calculateBracketsLevel = (code: string, isRightContext: boolean = f
                 char,
                 count: newCount,
                 idx: i,
+                position: position,
             })
         } else if (char in bracketMap) {
             const correspondingBracket = bracketMap[char as keyof bracketMapType]
@@ -53,6 +66,7 @@ export const calculateBracketsLevel = (code: string, isRightContext: boolean = f
                     char: char,
                     count: newCount,
                     idx: i,
+                    position: position,
                 })
             }
         } else if (isRightContext && !(char in bracketMap) && !bracketCounts.has(char) && !/\s/.test(char)) {
@@ -63,21 +77,56 @@ export const calculateBracketsLevel = (code: string, isRightContext: boolean = f
     return bracketsIndexLevel
 }
 
-export const getBracketsToRemove = (recommendation: string, rightContext: string) => {
-    const recommendationBrackets = calculateBracketsLevel(recommendation)
-    const rightContextBrackets = calculateBracketsLevel(rightContext, true)
+/**
+ * 1. indentation is exact the same
+ * 2. closing braket is in the same line as opening (this closing is added by the IDE)
+ */
+export const getBracketsToRemove = (
+    editor: vscode.TextEditor,
+    recommendation: string,
+    rightContext: string,
+    end: vscode.Position,
+    start: vscode.Position
+) => {
+    const recommendationBrackets = calculateBracketsLevel(editor, recommendation, false, end, start)
+    const rightContextBrackets = calculateBracketsLevel(editor, rightContext, true, end, start)
     let i = 0
     let j = 0
     const toBeRemoved = []
 
     while (i < recommendationBrackets.length && j < rightContextBrackets.length) {
-        const { char: char1, count: level1 } = recommendationBrackets[i]
-        const { char: char2, count: level2, idx: idx2 } = rightContextBrackets[j]
+        const { char: char1, count: level1, idx: idx1, position: position1 } = recommendationBrackets[i]
+        const { char: char2, count: level2, idx: idx2, position: position2 } = rightContextBrackets[j]
         if (char1 !== char2 || level1 !== level2) {
             i++
             continue
         }
-        toBeRemoved.push(idx2)
+
+        const char = editor.document.getText(new vscode.Range(start.translate(0, -1), start))
+        const originalOffset = editor.document.offsetAt(position2) - recommendation.length
+
+        const isSameLine =
+            char === bracketMap[char2 as keyof bracketMapType] &&
+            start.line === editor.document.positionAt(originalOffset).line
+        let hasSameIndentation: boolean
+
+        const indent1 = editor.document.getText(
+            new vscode.Range(position1.line, 0, position1.line, position1.character)
+        )
+        const indent2 = editor.document.getText(
+            new vscode.Range(position2.line, 0, position2.line, position2.character)
+        )
+
+        if (indent1.trim().length === 0 && indent2.trim().length === 0) {
+            hasSameIndentation = indent1.length === indent2.length
+        } else {
+            hasSameIndentation = false
+        }
+
+        if (isSameLine || hasSameIndentation) {
+            toBeRemoved.push(idx2)
+        }
+
         i++
         j++
     }
@@ -121,7 +170,8 @@ export const removeBracketsFromRightContext = async (
 export async function handleExtraBrackets(
     editor: vscode.TextEditor,
     recommendation: string,
-    endPosition: vscode.Position
+    endPosition: vscode.Position,
+    startPosition: vscode.Position
 ) {
     const end = editor.document.offsetAt(endPosition)
     const rightContext = editor.document.getText(
@@ -130,7 +180,7 @@ export async function handleExtraBrackets(
             editor.document.positionAt(end + CodeWhispererConstants.charactersLimit)
         )
     )
-    const bracketsToRemove = getBracketsToRemove(recommendation, rightContext)
+    const bracketsToRemove = getBracketsToRemove(editor, recommendation, rightContext, endPosition, startPosition)
     if (bracketsToRemove.length) {
         await removeBracketsFromRightContext(editor, bracketsToRemove, endPosition)
     }

@@ -96,7 +96,7 @@ export async function onInlineAcceptance(
                 acceptanceEntry.recommendation ===
                 RecommendationHandler.instance.recommendations[acceptanceEntry.acceptIndex].content
             ) {
-                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
+                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
             }
             await ImportAdderProvider.instance.onAcceptRecommendation(
                 acceptanceEntry.editor,
