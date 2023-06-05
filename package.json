@@ -3463,7 +3463,7 @@
         "json-schema-to-typescript": "^12.0.0",
         "marked": "^5.0.4",
         "mocha": "^10.1.0",
-        "mocha-junit-reporter": "^2.0.0",
+        "mocha-junit-reporter": "^2.2.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
         "prettier": "^2.8.8",
