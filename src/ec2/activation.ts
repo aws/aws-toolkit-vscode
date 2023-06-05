@@ -9,10 +9,11 @@ import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import { createRegionPrompter } from '../shared/ui/common/region'
 
-import { selectInstance } from './commands'
+import { extractInstanceIds, selectInstance } from './commands'
 import { EC2 } from 'aws-sdk'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { getLogger } from '../shared/logger/logger'
+import { pageableToCollection } from '../shared/utilities/collectionUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -23,22 +24,14 @@ export async function activate(ctx: ExtContext): Promise<void> {
             const selectedRegion = await regionPrompter.prompt()
             if(isValidResponse(selectedRegion)){
                 const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, selectedRegion.id)
-                const request = client.describeInstances()
-                request.send(function (err, data) {
-                    if (err) {
-                        console.log("We got an error.")
-                    } else {
-                        console.log("Your instances are: ")
-                        data.Reservations?.forEach( (curReservation) => 
-                        curReservation.Instances?.forEach( (curInstance) => 
-                            console.log(curInstance.InstanceId)
-                        ))
-                    }
+                const requester = async (request: EC2.DescribeInstancesRequest) => 
+                    client.describeInstances(request).promise() 
+                const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
+                .flatten().map(instanceList => instanceList?.Instances).flatten().map(instance => instance?.InstanceId)
 
-                })
+                const selection = await selectInstance(collection.filter(instanceId => instanceId !== undefined))
+                console.log(selection)
             }
-            // const selection = await selectInstance()
-            // console.log(selection)
         })
     )
 }

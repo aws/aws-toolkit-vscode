@@ -5,26 +5,32 @@
 
 import { createQuickPick, QuickPickPrompter } from "../shared/ui/pickerPrompter"
 import { DataQuickPickItem } from "../shared/ui/pickerPrompter"
+import { AsyncCollection } from "../shared/utilities/asyncCollection"
 import { isValidResponse } from '../shared/wizards/wizard'
+import { EC2 } from 'aws-sdk'
 
-function asQuickpickItem(stringItem: string): DataQuickPickItem<string> 
+function asQuickpickItem(stringItem: string): DataQuickPickItem<string>[] 
 {
-    return {
+    return [{
         label: stringItem, 
         data: stringItem
-    }
+    }]
 }
 
-function createInstancePrompter(): QuickPickPrompter<string> {
-    const someTestStrings = ["option1", "option2"]
-    const items = someTestStrings.map(asQuickpickItem)
+function createInstancePrompter(instances: AsyncCollection<string>): QuickPickPrompter<string> {
+    const items = instances.map(asQuickpickItem)
     const prompter = createQuickPick(items)
 
     return prompter
 }
 
-export async function selectInstance(): Promise<string | undefined> {
-    const prompter = createInstancePrompter()
+export async function selectInstance(instances: AsyncCollection<string>): Promise<string | undefined> {
+    const prompter = createInstancePrompter(instances)
     const response = await prompter.prompt() 
     return isValidResponse(response) ? response : undefined
 }
+
+export function extractInstanceIds(reservations: EC2.ReservationList): string[] {
+    console.log(reservations)
+    return ["1"]
+} 
