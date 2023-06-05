@@ -2021,6 +2021,16 @@
                 }
             },
             {
+                "command": "aws.ec2.connectToInstance",
+                "title": "%AWS.command.ec2.connectToInstance%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.ecr.copyTagUri",
                 "title": "%AWS.command.ecr.copyTagUri%",
                 "category": "%AWS.title%",
