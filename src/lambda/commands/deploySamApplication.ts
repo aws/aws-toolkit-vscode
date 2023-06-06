@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { asEnvironmentVariables } from '../../auth/credentials/credentialsUtilities'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { AwsContext } from '../../shared/awsContext'
 import globals from '../../shared/extensionGlobals'
 

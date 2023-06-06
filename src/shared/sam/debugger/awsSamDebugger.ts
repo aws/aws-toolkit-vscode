@@ -51,7 +51,7 @@ import {
 } from './awsSamDebugConfigurationValidator'
 import { getInputTemplatePath, makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
-import { getCredentialsFromStore } from '../../../auth/credentials/credentialsStore'
+import { getCredentialsFromStore } from '../../../auth/credentials/store'
 import { fromString } from '../../../auth/providers/credentials'
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'

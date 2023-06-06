@@ -17,7 +17,7 @@ import {
     StaticProfileKeyErrorMessage,
 } from '../credentials/types'
 import { Auth, isBuilderIdConnection, signout, tryAddCredentials } from '../auth'
-import { getCredentialFormatError, getCredentialsErrors } from '../credentials/sharedCredentialsValidation'
+import { getCredentialFormatError, getCredentialsErrors } from '../credentials/validation'
 import { profileExists } from '../credentials/sharedCredentials'
 import { getLogger } from '../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../codewhisperer/util/authUtil'

@@ -13,7 +13,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { showLoginFailedMessage } from '../credentials/credentialsUtilities'
+import { showLoginFailedMessage } from '../credentials/utils'
 import { ParsedIniData, Profile } from '../credentials/sharedCredentials'
 import { SharedCredentialsKeys } from '../credentials/types'
 
