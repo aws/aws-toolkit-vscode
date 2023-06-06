@@ -8,12 +8,12 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
-import { authHelpUrl } from '../shared/constants'
-import globals from '../shared/extensionGlobals'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { messages, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
-import { Timeout, waitTimeout } from '../shared/utilities/timeoutUtils'
-import { fromExtensionManifest } from '../shared/settings'
+import { authHelpUrl } from '../../shared/constants'
+import globals from '../../shared/extensionGlobals'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { messages, showMessageWithCancel, showViewLogsMessage } from '../../shared/utilities/messages'
+import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { fromExtensionManifest } from '../../shared/settings'
 import { Profile } from './sharedCredentials'
 
 const credentialsTimeout = 300000 // 5 minutes

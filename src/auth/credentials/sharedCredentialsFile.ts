@@ -6,8 +6,8 @@
  */
 
 import { join } from 'path'
-import { EnvironmentVariables } from '../shared/environmentVariables'
-import { SystemUtilities } from '../shared/systemUtilities'
+import { EnvironmentVariables } from '../../shared/environmentVariables'
+import { SystemUtilities } from '../../shared/systemUtilities'
 
 export function getCredentialsFilename(): string {
     const env = process.env as EnvironmentVariables

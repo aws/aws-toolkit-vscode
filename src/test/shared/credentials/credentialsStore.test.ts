@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { CredentialsStore } from '../../../auth/credentialsStore'
+import { CredentialsStore } from '../../../auth/credentials/credentialsStore'
 import { Credentials } from '@aws-sdk/types'
 import { CredentialsProvider, CredentialsId, asString } from '../../../auth/providers/credentials'
 

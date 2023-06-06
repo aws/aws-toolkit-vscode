@@ -22,8 +22,8 @@ import { SharedCredentialsProvider } from '../auth/providers/sharedCredentialsPr
 import { Auth } from '../auth/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
-import { loadSharedCredentialsProfiles } from '../auth/sharedCredentials'
-import { SharedCredentialsKeys } from '../auth/types'
+import { loadSharedCredentialsProfiles } from '../auth/credentials/sharedCredentials'
+import { SharedCredentialsKeys } from '../auth/credentials/types'
 
 /**
  * @deprecated

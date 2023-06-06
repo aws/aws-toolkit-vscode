@@ -11,8 +11,8 @@ import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { credentialHelpUrl } from '../../shared/constants'
-import { SharedCredentialsKeys, StaticProfile } from '../types'
-import { getCredentialError } from '../sharedCredentialsValidation'
+import { SharedCredentialsKeys, StaticProfile } from '../credentials/types'
+import { getCredentialError } from '../credentials/sharedCredentialsValidation'
 
 function getTitle(profileName: string): string {
     return localize('AWS.title.createCredentialProfile', 'Creating new profile "{0}"', profileName)

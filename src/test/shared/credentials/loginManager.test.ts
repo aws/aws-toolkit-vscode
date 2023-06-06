@@ -10,7 +10,7 @@ import { LoginManager } from '../../../auth/loginManager'
 import { CredentialsProvider, CredentialsId } from '../../../auth/providers/credentials'
 import { CredentialsProviderManager } from '../../../auth/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
-import { CredentialsStore } from '../../../auth/credentialsStore'
+import { CredentialsStore } from '../../../auth/credentials/credentialsStore'
 import { assertTelemetryCurried } from '../../testUtil'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 

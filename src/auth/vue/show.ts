@@ -9,10 +9,16 @@
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { VueWebview } from '../../webviews/main'
 import * as vscode from 'vscode'
-import { CredentialsData, CredentialsKey, SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../types'
+import {
+    CredentialsData,
+    CredentialsKey,
+    SectionName,
+    StaticProfile,
+    StaticProfileKeyErrorMessage,
+} from '../credentials/types'
 import { Auth, isBuilderIdConnection, signout, tryAddCredentials } from '../auth'
-import { getCredentialFormatError, getCredentialsErrors } from '../sharedCredentialsValidation'
-import { profileExists } from '../sharedCredentials'
+import { getCredentialFormatError, getCredentialsErrors } from '../credentials/sharedCredentialsValidation'
+import { profileExists } from '../credentials/sharedCredentials'
 import { getLogger } from '../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../codewhisperer/util/authUtil'
 import { awsIdSignIn } from '../../codewhisperer/util/showSsoPrompt'

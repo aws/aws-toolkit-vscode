@@ -13,8 +13,8 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getLogger } from '../shared/logger'
 import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
-import { CredentialsStore } from './credentialsStore'
-import { CredentialsSettings, showLoginFailedMessage } from './credentialsUtilities'
+import { CredentialsStore } from './credentials/credentialsStore'
+import { CredentialsSettings, showLoginFailedMessage } from './credentials/credentialsUtilities'
 import {
     asString,
     CredentialsProvider,

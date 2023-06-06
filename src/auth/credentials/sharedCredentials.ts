@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { SystemUtilities } from '../shared/systemUtilities'
-import { ToolkitError } from '../shared/errors'
-import { assertHasProps } from '../shared/utilities/tsUtils'
+import { SystemUtilities } from '../../shared/systemUtilities'
+import { ToolkitError } from '../../shared/errors'
+import { assertHasProps } from '../../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
 import { SectionName, StaticProfile } from './types'
-import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
+import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
     const configFileExists = await SystemUtilities.fileExists(getConfigFilename())

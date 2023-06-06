@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
-import * as sharedCredentials from '../../../auth/sharedCredentials'
+import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
 
 describe('SharedCredentialsProviderFactory', async function () {
     let sandbox: sinon.SinonSandbox

@@ -5,11 +5,11 @@
 
 import * as fs from 'fs-extra'
 import { getLogger, Logger } from '../../shared/logger'
-import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../sharedCredentials'
+import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../credentials/sharedCredentials'
 import { CredentialsProviderType } from './credentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
-import { getCredentialsFilename, getConfigFilename } from '../sharedCredentialsFile'
+import { getCredentialsFilename, getConfigFilename } from '../credentials/sharedCredentialsFile'
 
 export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
     private readonly logger: Logger = getLogger()

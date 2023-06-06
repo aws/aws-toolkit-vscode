@@ -39,7 +39,7 @@ import {
     makeSampleYamlParameters,
 } from '../../cloudformation/cloudformationTestUtils'
 import { readFileSync } from 'fs-extra'
-import { CredentialsStore } from '../../../../auth/credentialsStore'
+import { CredentialsStore } from '../../../../auth/credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../auth/providers/credentialsProviderManager'
 import { Credentials } from '@aws-sdk/types'
 import { ExtContext } from '../../../../shared/extensions'

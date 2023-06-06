@@ -7,7 +7,7 @@ import { Credentials } from '@aws-sdk/types'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
-import { StaticProfile } from '../types'
+import { StaticProfile } from '../credentials/types'
 import { Auth } from '../auth'
 
 /**

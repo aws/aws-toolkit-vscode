@@ -9,8 +9,8 @@ import { CreateProfileWizard, ProfileTemplateProvider } from '../../../auth/wiza
 import { processCredentialsTemplate, staticCredentialsTemplate } from '../../../auth/wizards/templates'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
 import { StepEstimator } from '../../../shared/wizards/wizard'
-import { Profile } from '../../../auth/sharedCredentials'
-import { SharedCredentialsKeys } from '../../../auth/types'
+import { Profile } from '../../../auth/credentials/sharedCredentials'
+import { SharedCredentialsKeys } from '../../../auth/credentials/types'
 
 class TestPrompter extends Prompter<string | undefined> {
     public constructor(private readonly name: string, private readonly profile: Profile) {

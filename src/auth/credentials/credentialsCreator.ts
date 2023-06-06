@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { createInputBox, promptUser } from '../shared/ui/input'
+import { createInputBox, promptUser } from '../../shared/ui/input'
 
 const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User cancelled entering authentication code')
 

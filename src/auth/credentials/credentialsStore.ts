@@ -4,10 +4,10 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import globals from '../shared/extensionGlobals'
-import { getLogger } from '../shared/logger/logger'
-import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import globals from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger/logger'
+import { asString, CredentialsProvider, CredentialsId } from '../providers/credentials'
+import { CredentialsProviderManager } from '../providers/credentialsProviderManager'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials

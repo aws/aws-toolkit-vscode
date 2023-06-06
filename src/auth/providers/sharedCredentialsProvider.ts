@@ -12,8 +12,8 @@ import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential
 import { fromEnv } from '@aws-sdk/credential-provider-env'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { getMfaTokenFromUser } from '../credentialsCreator'
-import { resolveProviderWithCancel } from '../credentialsUtilities'
+import { getMfaTokenFromUser } from '../credentials/credentialsCreator'
+import { resolveProviderWithCancel } from '../credentials/credentialsUtilities'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { assertHasProps, getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
@@ -29,10 +29,10 @@ import {
     isProfileSection,
     Profile,
     Section,
-} from '../sharedCredentials'
+} from '../credentials/sharedCredentials'
 import { hasScopes, SsoProfile } from '../auth'
 import { builderIdStartUrl } from '../sso/model'
-import { SectionName, SharedCredentialsKeys } from '../types'
+import { SectionName, SharedCredentialsKeys } from '../credentials/types'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',

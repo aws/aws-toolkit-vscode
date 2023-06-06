@@ -15,7 +15,7 @@ import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
 import globals from '../../shared/extensionGlobals'
 import { fromString } from '../../auth/providers/credentials'
-import { mergeAndValidateSections, parseIni } from '../../auth/sharedCredentials'
+import { mergeAndValidateSections, parseIni } from '../../auth/credentials/sharedCredentials'
 import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {

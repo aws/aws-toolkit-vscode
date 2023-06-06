@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
 import { TelemetryService } from './telemetry/telemetryService'
-import { CredentialsStore } from '../auth/credentialsStore'
+import { CredentialsStore } from '../auth/credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
 
