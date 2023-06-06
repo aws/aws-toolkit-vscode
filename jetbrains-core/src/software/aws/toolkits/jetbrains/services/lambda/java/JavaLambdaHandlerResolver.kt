@@ -63,7 +63,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
     }
 
     override fun determineHandler(element: PsiElement): String? =
-        DumbService.getInstance(element.project).computeWithAlternativeResolveEnabled<String, Exception> {
+        DumbService.getInstance(element.project).computeWithAlternativeResolveEnabled<String?, Exception> {
             when (element) {
                 is PsiClass -> findByClass(element)
                 is PsiMethod -> findByMethod(element)

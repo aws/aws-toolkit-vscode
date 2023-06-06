@@ -2,7 +2,6 @@ using JetBrains.Annotations;
 using JetBrains.ProjectModel;
 using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.Modules;
-using JetBrains.RiderTutorials.Utils;
 
 namespace AWS.Psi.Lambda
 {
@@ -19,7 +18,7 @@ namespace AWS.Psi.Lambda
             var containingType = method.GetContainingType();
             if (containingType == null) return "";
 
-            var typeString = containingType.GetFullClrName();
+            var typeString = containingType.GetClrName().FullName;
 
             var methodName = method.ShortName;
 

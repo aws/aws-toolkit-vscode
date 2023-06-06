@@ -7,7 +7,6 @@ using JetBrains.Application.UI.Controls.BulbMenu.Items;
 using JetBrains.Application.UI.Icons.ComposedIcons;
 using JetBrains.ProjectModel;
 using JetBrains.ReSharper.Resources.Shell;
-using JetBrains.RiderTutorials.Utils;
 using JetBrains.TextControl.DocumentMarkup;
 using JetBrains.UI.Icons;
 using JetBrains.UI.RichText;
@@ -88,7 +87,7 @@ namespace AWS.Daemon.RunMarkers
             var containingType = runMarker.Method.GetContainingType();
             if (containingType == null) return "";
 
-            var typeString = containingType.GetFullClrName();
+            var typeString = containingType.GetClrName().FullName;
 
             var methodName = runMarker.Method.ShortName;
 

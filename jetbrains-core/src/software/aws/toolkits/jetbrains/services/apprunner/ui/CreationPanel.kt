@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.ui.intTextField
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.jetbrains.utils.ui.contextualHelp
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
@@ -252,11 +253,9 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
             cell(isFullWidth = true) {
                 // TODO HACK making this flow right means we don't have issues with weird spacing above or
                 // to the left
-                this@row.right {
-                    repoPanel(grow)
-                        .installOnParent { repo.isSelected }
-                        .visibleIf(repo.selected)
-                }
+                repoPanel(grow)
+                    .installOnParent { repo.isSelected }
+                    .visibleIf(repo.selected)
 
                 imagePanel(grow)
                     .installOnParent { ecr.isSelected || ecrPublic.isSelected }

@@ -152,6 +152,51 @@ object IdeVersions {
                 nugetVersion = "2023.1.0"
             )
         ),
+        Profile(
+            name = "2023.2",
+            gateway = ProductProfile(
+                sdkFlavor = IdeFlavor.GW,
+                sdkVersion = "232.6734-EAP-CANDIDATE-SNAPSHOT",
+                plugins = arrayOf("org.jetbrains.plugins.terminal")
+            ),
+            community = ProductProfile(
+                sdkFlavor = IdeFlavor.IC,
+                sdkVersion = "232.6734-EAP-CANDIDATE-SNAPSHOT",
+                plugins = commonPlugins223 + listOf(
+                    "java",
+                    "com.intellij.gradle",
+                    "org.jetbrains.idea.maven",
+                    "PythonCore:232.6734.9",
+                    "Docker:232.6734.4"
+                )
+            ),
+            ultimate = ProductProfile(
+                sdkFlavor = IdeFlavor.IU,
+                sdkVersion = "232.6734-EAP-CANDIDATE-SNAPSHOT",
+                plugins = commonPlugins223 + listOf(
+                    "JavaScript",
+                    // Transitive dependency needed for javascript
+                    // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
+                    "com.intellij.css",
+                    "JavaScriptDebugger",
+                    "com.intellij.database",
+                    "com.jetbrains.codeWithMe",
+                    "Pythonid:232.6734.9",
+                    "org.jetbrains.plugins.go:232.6734.9",
+                    // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
+                    "org.intellij.intelliLang"
+                )
+            ),
+            rider = RiderProfile(
+                sdkVersion = "2023.2-EAP2-SNAPSHOT",
+                plugins = commonPlugins223 + listOf(
+                    "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
+                ),
+                netFrameworkTarget = "net472",
+                rdGenVersion = "2023.2.1",
+                nugetVersion = "2023.2.0-eap02"
+            )
+        ),
 
     ).associateBy { it.name }
 

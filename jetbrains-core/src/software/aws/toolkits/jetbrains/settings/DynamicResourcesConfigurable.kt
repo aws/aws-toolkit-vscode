@@ -82,17 +82,16 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
                     selected.replace(DynamicResourcesSettings.getInstance().selected)
                     updateCheckboxList()
                 }
-            right {
-                cell(isVerticalFlow = true) {
-                    val sizeGroup = "buttons"
-                    button(message("aws.settings.dynamic_resources_configurable.select_all")) {
-                        checklist.toggleAll(true)
-                    }.sizeGroup(sizeGroup)
 
-                    button(message("aws.settings.dynamic_resources_configurable.clear_all")) {
-                        checklist.toggleAll(false)
-                    }.sizeGroup(sizeGroup)
-                }
+            cell(isVerticalFlow = true) {
+                val sizeGroup = "buttons"
+                button(message("aws.settings.dynamic_resources_configurable.select_all")) {
+                    checklist.toggleAll(true)
+                }.sizeGroup(sizeGroup)
+
+                button(message("aws.settings.dynamic_resources_configurable.clear_all")) {
+                    checklist.toggleAll(false)
+                }.sizeGroup(sizeGroup)
             }
         }
     }

@@ -24,11 +24,10 @@ class EnableDisableExecuteCommandWarning(private val project: Project, private v
         panel {
             row {
                 warningIcon(grow)
-                right {
-                    label(message("ecs.execute_command_enable_warning")).constraints(grow).visible(enable)
-                    label(message("ecs.execute_command_disable_warning")).constraints(grow).visible(!enable)
-                }
+                label(message("ecs.execute_command_enable_warning")).constraints(grow).visible(enable)
+                label(message("ecs.execute_command_disable_warning")).constraints(grow).visible(!enable)
             }
+
             row {
                 checkBox(
                     message("ecs.execute_command.production_warning.checkbox_label", serviceName),
@@ -37,6 +36,7 @@ class EnableDisableExecuteCommandWarning(private val project: Project, private v
                 ).withErrorOnApplyIf(message("general.confirm_proceed")) { !it.isSelected }
                     .constraints(grow)
             }
+
             row {
                 checkBox(message("general.notification.action.hide_forever"), { dontDisplayWarning }, { dontDisplayWarning = it })
             }

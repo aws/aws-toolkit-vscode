@@ -14,6 +14,7 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -25,13 +26,15 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class ProfileWatcherTest {
-    @Rule
-    @JvmField
-    val application = ApplicationRule()
+    companion object {
+        @ClassRule
+        @JvmField
+        val disposableRule = DisposableRule()
+    }
 
     @Rule
     @JvmField
-    val disposableRule = DisposableRule()
+    val application = ApplicationRule()
 
     @Rule
     @JvmField

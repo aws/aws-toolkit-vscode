@@ -104,7 +104,7 @@ public class VgoTestUtil {
                                             @NotNull Map<String, VgoDependency> dependencies) {
         String goModPath = modulePath != null ? FileUtil.join(modulePath, VgoUtil.GO_MOD) : VgoUtil.GO_MOD;
         PsiFile file = fixture.addFileToProject(goModPath, "module \"" + importPath + "\"");
-        return VgoCompatShims.newVgoModule(file.getVirtualFile().getParent(), importPath, null, dependencies);
+        return VgoCompatShims.newVgoModule(fixture.getProject(), file.getVirtualFile().getParent(), importPath, null, dependencies);
     }
 
     public static void setupVgoIntegration(@NotNull CodeInsightTestFixture fixture, @NotNull List<VgoModule> modules) {

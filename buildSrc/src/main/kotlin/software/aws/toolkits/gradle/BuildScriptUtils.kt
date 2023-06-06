@@ -39,7 +39,7 @@ fun Project.kotlinTarget(): Provider<String> = withCurrentProfileName {
     }.version
 }
 
-private fun<T : Any> Project.withCurrentProfileName(consumer: (String) -> T): Provider<T> {
+fun<T : Any> Project.withCurrentProfileName(consumer: (String) -> T): Provider<T> {
     val name = IdeVersions.ideProfile(providers).map { it.name }
     return name.map {
         consumer(it)

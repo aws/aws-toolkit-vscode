@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.application.runWriteActionAndWait
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
@@ -19,6 +20,7 @@ import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.util.BuildNumber
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.SystemInfo
@@ -261,7 +263,12 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
 
     runInEdtAndWait {
         projectsManager.waitForReadingCompletion()
-        projectsManager.waitForResolvingCompletion()
+        check(ApplicationInfo.getInstance().build.compareTo(BuildNumber.fromString("232.6734.9")) <= 0) {
+            "FIXME: uncomment waitForResolvingCompletion"
+        }
+        // will be re-added in next EAP
+        // https://github.com/JetBrains/intellij-community/commit/0488a28a89b661c2cbf0706060bee2f7bd367237
+        // projectsManager.waitForResolvingCompletion()
         projectsManager.scheduleImportInTests(poms)
         projectsManager.importProjects()
     }

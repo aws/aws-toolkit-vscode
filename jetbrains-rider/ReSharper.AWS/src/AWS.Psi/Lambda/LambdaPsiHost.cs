@@ -13,9 +13,14 @@ using JetBrains.ReSharper.Psi.Caches;
 using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.Util;
-using JetBrains.RdBackend.Common.Features;
 using JetBrains.RdBackend.Common.Features.ProjectModel.View;
 using JetBrains.Rider.Backend.Platform.Icons;
+
+#if (PROFILE_2022_2 || PROFILE_2022_3 || PROFILE_2023_1) // FIX_WHEN_MIN_IS_232
+using JetBrains.RdBackend.Common.Features;
+#else
+using JetBrains.ReSharper.Feature.Services.Protocol;
+#endif
 
 namespace AWS.Psi.Lambda
 {

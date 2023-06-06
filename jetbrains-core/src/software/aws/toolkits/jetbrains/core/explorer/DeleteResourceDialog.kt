@@ -30,7 +30,7 @@ class DeleteResourceDialog(
         panel {
             row {
                 warningIcon(grow)
-                right { label(message("delete_resource.message", resourceType, resourceName)) }
+                label(message("delete_resource.message", resourceType, resourceName))
             }
             row {
                 deleteResourceConfirmation(grow)
