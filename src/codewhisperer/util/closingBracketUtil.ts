@@ -12,10 +12,16 @@ interface bracketMapType {
     [k: string]: string
 }
 
-const bracketMap: bracketMapType = {
+const closing: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
+}
+
+const openning: bracketMapType = {
+    '(': ')',
+    '[': ']',
+    '{': '}',
 }
 
 export const calculateBracketsLevel = (
@@ -50,11 +56,11 @@ export const calculateBracketsLevel = (
                 idx: i,
                 position: position,
             })
-        } else if (char in bracketMap) {
-            const correspondingBracket = bracketMap[char as keyof bracketMapType]
+        } else if (char in closing) {
+            const correspondingBracket = closing[char as keyof bracketMapType]
             const count = bracketCounts.get(correspondingBracket) || 0
             const newCount = count === 0 ? 0 : count - 1
-            bracketCounts.set(bracketMap[char], newCount)
+            bracketCounts.set(closing[char], newCount)
 
             if (
                 bracketsIndexLevel.length > 0 &&
@@ -69,7 +75,7 @@ export const calculateBracketsLevel = (
                     position: position,
                 })
             }
-        } else if (isRightContext && !(char in bracketMap) && !bracketCounts.has(char) && !/\s/.test(char)) {
+        } else if (isRightContext && !(char in closing) && !bracketCounts.has(char) && !/\s/.test(char)) {
             // we can stop processing right context when we encounter a char that is not a bracket nor white space
             break
         }
@@ -84,6 +90,7 @@ export const calculateBracketsLevel = (
 export const getBracketsToRemove = (
     editor: vscode.TextEditor,
     recommendation: string,
+    leftContext: string,
     rightContext: string,
     end: vscode.Position,
     start: vscode.Position
@@ -102,29 +109,57 @@ export const getBracketsToRemove = (
             continue
         }
 
-        const char = editor.document.getText(new vscode.Range(start.translate(0, -1), start))
-        const originalOffset = editor.document.offsetAt(position2) - recommendation.length
+        // char is the last character in leftContext, aiming to capture case where IDE add the closing parenthesis (), [], {}
+        const char = findFirstNonSpaceChar(leftContext, true)
 
-        const isSameLine =
-            char === bracketMap[char2 as keyof bracketMapType] &&
-            start.line === editor.document.positionAt(originalOffset).line
-        let hasSameIndentation: boolean
+        if (char) {
+            const originalOffset = editor.document.offsetAt(position2) - recommendation.length + 1
 
-        const indent1 = editor.document.getText(
-            new vscode.Range(position1.line, 0, position1.line, position1.character)
-        )
-        const indent2 = editor.document.getText(
-            new vscode.Range(position2.line, 0, position2.line, position2.character)
-        )
+            const isSameLine = !(char in openning)
+                ? false
+                : isPairedParenthesis(char, char2) && start.line === editor.document.positionAt(originalOffset).line
 
-        if (indent1.trim().length === 0 && indent2.trim().length === 0) {
-            hasSameIndentation = indent1.length === indent2.length
-        } else {
-            hasSameIndentation = false
-        }
+            let hasSameIndentation: boolean
+            const indent1 = editor.document.getText(
+                new vscode.Range(position1.line, 0, position1.line, position1.character)
+            )
+            const indent2 = editor.document.getText(
+                new vscode.Range(position2.line, 0, position2.line, position2.character)
+            )
 
-        if (isSameLine || hasSameIndentation) {
-            toBeRemoved.push(idx2)
+            if (indent1.trim().length === 0 && indent2.trim().length === 0) {
+                hasSameIndentation = indent1.length === indent2.length
+            } else {
+                hasSameIndentation = false
+            }
+
+            // v1
+            if (isSameLine && indent2.length !== 0) {
+                toBeRemoved.push(idx2)
+            } else if (hasSameIndentation) {
+                toBeRemoved.push(idx2)
+            }
+
+            // v2
+            // if (isSameLine) {
+            //     // remove the closing paren if and only if we can't find an unmatching opening paren within 1000 characters
+            //     const partialLeftContextStart = editor.document.positionAt(
+            //         Math.max(editor.document.offsetAt(start) - 500, 0)
+            //     )
+            //     const partialLeftContext = editor.document.getText(new vscode.Range(partialLeftContextStart, start))
+            //     const reversedPartialLeftContext = [...partialLeftContext].reverse().join('')
+            //     const res = findFirstUnmatchingOpeningParenthesis(reversedPartialLeftContext)
+
+            //     const res2 = findFirstUnmatchingClosingParenthesis(recommendation)
+            //     if (res && isPairedParenthesis(char2, char) && res2 && char2 === res2.char) {
+            //         // only this case we remove the closing parenthesis
+            //         if (indent2.length !== 0) {
+            //             toBeRemoved.push(idx2)
+            //         }
+            //     }
+            // } else if (hasSameIndentation) {
+            //     toBeRemoved.push(idx2)
+            // }
         }
 
         i++
@@ -174,14 +209,112 @@ export async function handleExtraBrackets(
     startPosition: vscode.Position
 ) {
     const end = editor.document.offsetAt(endPosition)
+    const leftContext = editor.document.getText(
+        new vscode.Range(
+            startPosition,
+            editor.document.positionAt(
+                Math.max(editor.document.offsetAt(startPosition) - CodeWhispererConstants.charactersLimit, 0)
+            )
+        )
+    )
+
     const rightContext = editor.document.getText(
         new vscode.Range(
             editor.document.positionAt(end),
             editor.document.positionAt(end + CodeWhispererConstants.charactersLimit)
         )
     )
-    const bracketsToRemove = getBracketsToRemove(editor, recommendation, rightContext, endPosition, startPosition)
+    const bracketsToRemove = getBracketsToRemove(
+        editor,
+        recommendation,
+        leftContext,
+        rightContext,
+        endPosition,
+        startPosition
+    )
     if (bracketsToRemove.length) {
         await removeBracketsFromRightContext(editor, bracketsToRemove, endPosition)
     }
+}
+
+// TODO: refactor the following 2 to be only one, duplicate code
+function findFirstUnmatchingOpeningParenthesis(str: string): { char: string; index: number } | undefined {
+    const parenStack: string[] = []
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i]
+        if (char in closing) {
+            parenStack.push(char)
+        } else if (char in openning) {
+            if (parenStack.length === 0) {
+                return {
+                    char: char,
+                    index: i,
+                }
+            } else {
+                const top = parenStack[parenStack.length - 1]
+                if (top === openning[char as keyof bracketMapType]) {
+                    parenStack.pop()
+                } else {
+                    // syntax error exists
+                    return undefined
+                }
+            }
+        }
+    }
+
+    return undefined
+}
+
+function findFirstUnmatchingClosingParenthesis(str: string): { char: string; index: number } | undefined {
+    const parenStack: string[] = []
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i]
+        if (char in openning) {
+            parenStack.push(char)
+        } else if (char in closing) {
+            if (parenStack.length === 0) {
+                return {
+                    char: char,
+                    index: i,
+                }
+            } else {
+                const top = parenStack[parenStack.length - 1]
+                if (top === closing[char as keyof bracketMapType]) {
+                    parenStack.pop()
+                } else {
+                    // syntax error exists
+                    return undefined
+                }
+            }
+        }
+    }
+
+    return undefined
+}
+
+function isPairedParenthesis(char1: string, char2: string) {
+    if (char1.length !== 1 || char2.length !== 1) {
+        return false
+    }
+
+    if (char1 === char2) {
+        return false
+    }
+
+    const condition1 = char1 in openning && char2 in closing
+    const condition2 = char1 in closing && char2 in openning
+
+    return condition1 || condition2
+}
+
+function findFirstNonSpaceChar(str: string, reverseSearch: boolean): string | undefined {
+    if (reverseSearch) {
+        str = [...str].reverse().join('')
+    }
+    for (const char of str) {
+        if (char.trim().length > 0) {
+            return char
+        }
+    }
+    return undefined
 }
