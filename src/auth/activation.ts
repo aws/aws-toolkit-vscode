@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
-import { LoginManager } from './loginManager'
+import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'

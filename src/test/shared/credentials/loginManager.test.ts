@@ -6,7 +6,7 @@
 import * as AWS from '@aws-sdk/types'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { LoginManager } from '../../../auth/loginManager'
+import { LoginManager } from '../../../auth/deprecated/loginManager'
 import { CredentialsProvider, CredentialsId } from '../../../auth/providers/credentials'
 import { CredentialsProviderManager } from '../../../auth/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'

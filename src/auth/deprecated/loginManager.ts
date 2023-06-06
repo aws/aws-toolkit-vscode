@@ -3,36 +3,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { AwsContext } from '../shared/awsContext'
-import { getLogger } from '../shared/logger'
-import { CredentialSourceId, CredentialType, Result } from '../shared/telemetry/telemetry'
-import { CredentialsStore } from './credentials/store'
-import { CredentialsSettings, showLoginFailedMessage } from './credentials/utils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { AwsContext } from '../../shared/awsContext'
+import { getLogger } from '../../shared/logger'
+import { CredentialSourceId, CredentialType, Result } from '../../shared/telemetry/telemetry'
+import { CredentialsStore } from '../credentials/store'
+import { CredentialsSettings, showLoginFailedMessage } from '../credentials/utils'
 import {
     asString,
     CredentialsProvider,
     CredentialsId,
     credentialsProviderToTelemetryType,
     fromString,
-} from './providers/credentials'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
-import { showViewLogsMessage } from '../shared/utilities/messages'
-import { isAutomation } from '../shared/vscode/env'
+} from '../providers/credentials'
+import { CredentialsProviderManager } from '../providers/credentialsProviderManager'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { SharedCredentialsProvider } from '../providers/sharedCredentialsProvider'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { isAutomation } from '../../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
-import { ToolkitError } from '../shared/errors'
-import * as localizedText from '../shared/localizedText'
-import { DefaultStsClient } from '../shared/clients/stsClient'
-import { findAsync } from '../shared/utilities/collectionUtils'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { ToolkitError } from '../../shared/errors'
+import * as localizedText from '../../shared/localizedText'
+import { DefaultStsClient } from '../../shared/clients/stsClient'
+import { findAsync } from '../../shared/utilities/collectionUtils'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 /**
  * @deprecated Replaced by `Auth` in `src/credentials/auth.ts`
