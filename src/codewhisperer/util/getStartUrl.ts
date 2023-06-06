@@ -9,7 +9,7 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { codewhispererScopes, createStartUrlPrompter, showRegionPrompter } from '../../credentials/auth'
+import { codewhispererScopes, createStartUrlPrompter, showRegionPrompter } from '../../auth/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export const getStartUrl = async () => {

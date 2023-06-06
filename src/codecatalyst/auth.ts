@@ -15,8 +15,8 @@ import {
     hasScopes,
     createBuilderIdConnection,
     ssoAccountAccessScopes,
-} from '../credentials/auth'
-import { getSecondaryAuth } from '../credentials/secondaryAuth'
+} from '../auth/auth'
+import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
 import { ToolkitError, isAwsError } from '../shared/errors'

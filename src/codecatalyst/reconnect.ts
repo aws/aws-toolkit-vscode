@@ -16,7 +16,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
 import { isDevenvVscode } from './utils'
-import { SsoConnection } from '../credentials/auth'
+import { SsoConnection } from '../auth/auth'
 import { telemetry } from '../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()

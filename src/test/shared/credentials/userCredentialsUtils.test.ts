@@ -11,11 +11,7 @@ import * as sinon from 'sinon'
 /* eslint @typescript-eslint/naming-convention: 0 */
 
 import { Uri } from 'vscode'
-import {
-    getSectionDataOrThrow,
-    loadSharedConfigFiles,
-    mergeAndValidateSections,
-} from '../../../credentials/sharedCredentials'
+import { getSectionDataOrThrow, loadSharedConfigFiles, mergeAndValidateSections } from '../../../auth/sharedCredentials'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'

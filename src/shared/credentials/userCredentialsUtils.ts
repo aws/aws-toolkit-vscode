@@ -9,7 +9,7 @@ import { mkdirp, writeFile } from 'fs-extra'
 import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
-import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
+import { getConfigFilename, getCredentialsFilename } from '../../auth/sharedCredentialsFile'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.

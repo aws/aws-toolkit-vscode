@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { Connection, isBuilderIdConnection } from '../credentials/auth'
+import { Connection, isBuilderIdConnection } from '../auth/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'

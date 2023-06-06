@@ -12,7 +12,7 @@ import {
     isSsoConnection,
     promptForConnection,
     ssoAccountAccessScopes,
-} from '../../credentials/auth'
+} from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
@@ -22,9 +22,9 @@ import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { SharedCredentialsProviderFactory } from '../../credentials/providers/sharedCredentialsProviderFactory'
+import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
-import { getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
+import { getCredentialsFilename } from '../../auth/sharedCredentialsFile'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })

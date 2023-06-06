@@ -4,7 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { LoginManager } from '../credentials/loginManager'
+import { LoginManager } from '../auth/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'

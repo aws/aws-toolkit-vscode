@@ -13,7 +13,7 @@ import {
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
-import { Auth, codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../credentials/auth'
+import { Auth, codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../auth/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'

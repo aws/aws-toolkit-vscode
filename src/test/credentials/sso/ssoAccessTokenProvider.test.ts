@@ -6,19 +6,14 @@
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
+import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { installFakeClock } from '../../testUtil'
-import {
-    getCache,
-    getTokenCacheFile,
-    isDirSafeToDeleteFrom,
-    getRegistrationCacheFile,
-} from '../../../credentials/sso/cache'
+import { getCache, getTokenCacheFile, isDirSafeToDeleteFrom, getRegistrationCacheFile } from '../../../auth/sso/cache'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
-import { OidcClient } from '../../../credentials/sso/clients'
+import { ClientRegistration, SsoToken } from '../../../auth/sso/model'
+import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
     AuthorizationPendingException,

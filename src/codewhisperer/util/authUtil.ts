@@ -15,10 +15,10 @@ import {
     hasScopes,
     ssoAccountAccessScopes,
     isIamConnection,
-} from '../../credentials/auth'
-import { Connection, SsoConnection } from '../../credentials/auth'
+} from '../../auth/auth'
+import { Connection, SsoConnection } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
-import { getSecondaryAuth } from '../../credentials/secondaryAuth'
+import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'

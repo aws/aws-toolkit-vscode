@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Auth, AuthNode, useIamCredentials } from '../credentials/auth'
+import { Auth, AuthNode, useIamCredentials } from '../auth/auth'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getIcon } from '../shared/icons'
 import { getLogger, Logger } from '../shared/logger'

@@ -21,8 +21,8 @@ import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
-import { SsoConnection } from '../../credentials/auth'
-import { TokenProvider } from '../../credentials/sdkV2Compat'
+import { SsoConnection } from '../../auth/auth'
+import { TokenProvider } from '../../auth/sdkV2Compat'
 import { Uri } from 'vscode'
 import {
     GetSourceRepositoryCloneUrlsRequest,

@@ -5,9 +5,9 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { CredentialsStore } from '../../../credentials/credentialsStore'
+import { CredentialsStore } from '../../../auth/credentialsStore'
 import { Credentials } from '@aws-sdk/types'
-import { CredentialsProvider, CredentialsId, asString } from '../../../credentials/providers/credentials'
+import { CredentialsProvider, CredentialsId, asString } from '../../../auth/providers/credentials'
 
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox

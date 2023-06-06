@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-import { CredentialsShim } from '../credentials/loginManager'
+import { CredentialsShim } from '../auth/loginManager'
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
     readonly credentialsId: string

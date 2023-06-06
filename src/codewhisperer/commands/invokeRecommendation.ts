@@ -14,7 +14,7 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
-import { isIamConnection } from '../../credentials/auth'
+import { isIamConnection } from '../../auth/auth'
 
 /**
  * This function is for manual trigger CodeWhisperer
