@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { InlineCompletion } from '../service/inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
@@ -15,7 +14,7 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
-import { isIamConnection } from '../../credentials/auth'
+import { isIamConnection } from '../../auth/connection'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -96,16 +95,6 @@ export async function invokeRecommendation(
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
-        } else {
-            if (
-                !vsCodeState.isCodeWhispererEditing &&
-                !InlineCompletion.instance.isPaginationRunning() &&
-                !InlineCompletion.instance.getIsActive
-            ) {
-                await InlineCompletion.instance.resetInlineStates(editor)
-                InlineCompletion.instance.setCodeWhispererStatusBarLoading()
-                InlineCompletion.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
-            }
         }
     }
 }

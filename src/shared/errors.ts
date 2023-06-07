@@ -9,7 +9,7 @@ import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { hasKey, isNonNullable } from './utilities/tsUtils'
+import { isNonNullable } from './utilities/tsUtils'
 import type * as fs from 'fs'
 import type * as os from 'os'
 
@@ -371,7 +371,7 @@ export function isAwsError(error: unknown): error is AWSError {
     return error instanceof Error && hasCode(error) && hasTime(error)
 }
 
-function hasCode(error: Error): error is typeof error & { code: string } {
+function hasCode<T>(error: T): error is T & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
 }
 
@@ -403,7 +403,7 @@ export function getRequestId(error: unknown): string | undefined {
 export function isFileNotFoundError(err: unknown): boolean {
     if (err instanceof vscode.FileSystemError) {
         return err.code === vscode.FileSystemError.FileNotFound().code
-    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+    } else if (hasCode(err)) {
         return err.code === 'ENOENT'
     }
 
@@ -417,7 +417,7 @@ export function isNoPermissionsError(err: unknown): boolean {
             // The code _should_ be `NoPermissions`, maybe this is a bug?
             (err.code === 'Unknown' && err.message.includes('EACCES: permission denied'))
         )
-    } else if (isNonNullable(err) && typeof err === 'object' && hasKey(err, 'code')) {
+    } else if (hasCode(err)) {
         return err.code === 'EACCES'
     }
 
@@ -493,4 +493,12 @@ export class PermissionsError extends ToolkitError {
 
         this.actual = actual
     }
+}
+
+export function isNetworkError(err?: unknown) {
+    if (!hasCode(err)) {
+        return false
+    }
+
+    return ['ENOTFOUND', 'EAI_AGAIN', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT'].includes(err.code)
 }

@@ -4,14 +4,14 @@
  */
 
 import * as assert from 'assert'
-import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
+import { CredentialsProviderFactory } from '../../../auth/providers/credentialsProviderFactory'
 import {
     CredentialsProvider,
     CredentialsProviderType,
     CredentialsId,
     isEqual,
-} from '../../../credentials/providers/credentials'
-import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
+} from '../../../auth/providers/credentials'
+import { CredentialsProviderManager } from '../../../auth/providers/credentialsProviderManager'
 
 /**
  * This class helps testing by producing placeholder CredentialsProviders

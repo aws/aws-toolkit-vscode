@@ -4,12 +4,12 @@
  */
 
 import * as assert from 'assert'
-import { codewhispererScopes, isSsoConnection } from '../../../credentials/auth'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
 import { captureEventOnce } from '../../testUtil'
+import { codewhispererScopes, isSsoConnection } from '../../../auth/connection'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 

@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { asString, fromString, isEqual } from '../../../credentials/providers/credentials'
+import { asString, fromString, isEqual } from '../../../auth/providers/credentials'
 
 describe('CredentialsProviderId', async function () {
     describe('fromString', async function () {

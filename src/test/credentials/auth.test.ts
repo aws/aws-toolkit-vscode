@@ -5,14 +5,6 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import {
-    AuthNode,
-    Connection,
-    isIamConnection,
-    isSsoConnection,
-    promptForConnection,
-    ssoAccountAccessScopes,
-} from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
@@ -22,9 +14,11 @@ import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { SharedCredentialsProviderFactory } from '../../credentials/providers/sharedCredentialsProviderFactory'
+import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
-import { getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
+import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
+import { Connection, isIamConnection, isSsoConnection, ssoAccountAccessScopes } from '../../auth/connection'
+import { AuthNode, promptForConnection } from '../../auth/utils'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -235,6 +229,16 @@ describe('Auth', function () {
             const err2 = await runExpiredConnectionFlow(conn, /no/i).catch(e => e)
             assert.ok(err2 instanceof ToolkitError)
             assert.strictEqual(err2.cause, err1)
+        })
+
+        it('bubbles up networking issues instead of invalidating the connection', async function () {
+            const expected = new ToolkitError('test', { code: 'ETIMEDOUT' })
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(expected)
+            const actual = await conn.getToken().catch(e => e)
+            assert.ok(actual instanceof ToolkitError)
+            assert.strictEqual(actual.cause, expected)
+            assert.strictEqual(auth.getConnectionState(conn), 'valid')
         })
     })
 

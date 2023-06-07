@@ -51,8 +51,8 @@ import {
 } from './awsSamDebugConfigurationValidator'
 import { getInputTemplatePath, makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
-import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
-import { fromString } from '../../../credentials/providers/credentials'
+import { getCredentialsFromStore } from '../../../auth/credentials/store'
+import { fromString } from '../../../auth/providers/credentials'
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
@@ -65,7 +65,7 @@ import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../erro
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl } from '../../constants'
-import { Auth } from '../../../credentials/auth'
+import { Auth } from '../../../auth/auth'
 
 const localize = nls.loadMessageBundle()
 

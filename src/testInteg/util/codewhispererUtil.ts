@@ -4,7 +4,7 @@
  */
 
 import { isValidCodeWhispererConnection } from '../../codewhisperer/util/authUtil'
-import { Auth } from '../../credentials/auth'
+import { Auth } from '../../auth/auth'
 
 /*
 In order to run codewhisperer integration tests user must:
