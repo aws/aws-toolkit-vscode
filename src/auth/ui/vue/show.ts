@@ -6,8 +6,8 @@
  * for the webview to be shown.
  */
 
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
-import { VueWebview } from '../../webviews/main'
+import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
+import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import {
     CredentialsData,
@@ -15,20 +15,20 @@ import {
     SectionName,
     StaticProfile,
     StaticProfileKeyErrorMessage,
-} from '../credentials/types'
-import { Auth, isBuilderIdConnection, signout, tryAddCredentials } from '../auth'
-import { getCredentialFormatError, getCredentialsErrors } from '../credentials/validation'
-import { profileExists } from '../credentials/sharedCredentials'
-import { getLogger } from '../../shared/logger'
-import { AuthUtil as CodeWhispererAuth } from '../../codewhisperer/util/authUtil'
-import { awsIdSignIn } from '../../codewhisperer/util/showSsoPrompt'
-import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
-import { getStartedCommand } from '../../codecatalyst/explorer'
-import { ToolkitError } from '../../shared/errors'
+} from '../../credentials/types'
+import { Auth, isBuilderIdConnection, signout, tryAddCredentials } from '../../auth'
+import { getCredentialFormatError, getCredentialsErrors } from '../../credentials/validation'
+import { profileExists } from '../../credentials/sharedCredentials'
+import { getLogger } from '../../../shared/logger'
+import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
+import { getStartedCommand } from '../../../codecatalyst/explorer'
+import { ToolkitError } from '../../../shared/errors'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
-    public override source: string = 'src/credentials/vue/index.js'
+    public override source: string = 'src/auth/ui/vue/index.js'
     public readonly onDidConnectionUpdate = new vscode.EventEmitter<undefined>()
 
     private codeCatalystAuth: CodeCatalystAuthenticationProvider

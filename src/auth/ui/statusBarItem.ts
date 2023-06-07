@@ -7,13 +7,13 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
-import { getIdeProperties } from '../shared/extensionUtilities'
-import { DevSettings } from '../shared/settings'
-import { Auth, login } from './auth'
-import { getAllConnectionsInUse, onDidChangeConnections } from './secondaryAuth'
-import { codicon, getIcon } from '../shared/icons'
-import { throttle } from '../shared/utilities/functionUtils'
+import { AwsContext } from '../../shared/awsContext'
+import { getIdeProperties } from '../../shared/extensionUtilities'
+import { DevSettings } from '../../shared/settings'
+import { Auth, login } from '../auth'
+import { getAllConnectionsInUse, onDidChangeConnections } from '../secondaryAuth'
+import { codicon, getIcon } from '../../shared/icons'
+import { throttle } from '../../shared/utilities/functionUtils'
 
 const statusbarPriority = 1
 

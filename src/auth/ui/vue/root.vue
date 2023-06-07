@@ -96,8 +96,8 @@
 import { defineComponent } from 'vue'
 import ServiceItem, { ServiceItemsState, ServiceItemId, ServiceStatus, StaticServiceItemProps } from './serviceItem.vue'
 import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemContent/shared.vue'
-import { WebviewClientFactory } from '../../webviews/client'
 import { AuthWebview } from './show'
+import { WebviewClientFactory } from '../../../webviews/client'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()

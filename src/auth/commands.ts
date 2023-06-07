@@ -5,7 +5,7 @@
 
 import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
 import * as vscode from 'vscode'
-import { showAuthWebview } from './vue/show'
+import { showAuthWebview } from './ui/vue/show'
 
 /**
  * The methods with backend logic for the Auth commands.
