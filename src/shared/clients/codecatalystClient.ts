@@ -21,8 +21,7 @@ import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
-import { SsoConnection } from '../../credentials/auth'
-import { TokenProvider } from '../../credentials/sdkV2Compat'
+import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
 import {
     GetSourceRepositoryCloneUrlsRequest,
@@ -30,6 +29,7 @@ import {
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
+import { SsoConnection } from '../../auth/connection'
 
 interface CodeCatalystConfig {
     readonly region: string

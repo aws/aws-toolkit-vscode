@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { EnvVarsCredentialsProvider } from '../../../credentials/providers/envVarsCredentialsProvider'
+import { EnvVarsCredentialsProvider } from '../../../auth/providers/envVarsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EnvVarsCredentialsProvider', function () {

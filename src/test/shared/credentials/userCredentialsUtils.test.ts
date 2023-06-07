@@ -15,7 +15,7 @@ import {
     getSectionDataOrThrow,
     loadSharedConfigFiles,
     mergeAndValidateSections,
-} from '../../../credentials/sharedCredentials'
+} from '../../../auth/credentials/sharedCredentials'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'

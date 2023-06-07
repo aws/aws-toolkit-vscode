@@ -16,7 +16,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { isSsoConnection } from '../../credentials/auth'
+import { isSsoConnection } from '../../auth/connection'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage

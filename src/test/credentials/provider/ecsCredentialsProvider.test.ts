@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Credentials } from 'aws-sdk'
-import { EcsCredentialsProvider } from '../../../credentials/providers/ecsCredentialsProvider'
+import { EcsCredentialsProvider } from '../../../auth/providers/ecsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EcsCredentialsProvider', function () {

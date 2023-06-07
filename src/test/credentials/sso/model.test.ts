@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { openSsoPortalLink } from '../../../credentials/sso/model'
+import { openSsoPortalLink } from '../../../auth/sso/model'
 import { assertTelemetry } from '../../testUtil'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getOpenExternalStub } from '../../globalSetup.test'
