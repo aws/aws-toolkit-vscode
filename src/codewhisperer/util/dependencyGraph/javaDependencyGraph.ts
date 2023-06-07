@@ -414,13 +414,13 @@ export class JavaDependencyGraph extends DependencyGraph {
         })
         return filteredImport.length > 0
     }
-    
+
     async getSourceDependencies(uri: vscode.Uri, content: string) {
         const imports = await this.readImports(content)
         const dependencies = this.getDependencies(uri, imports)
         return dependencies
     }
-    
+
     /* New function added to fetch package path for a given file. 
     /* It is used for fetching cross-file context. 
     */
@@ -433,7 +433,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         })
         return fileList
     }
-    
+
     private async readImports(content: string) {
         this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
         const regExp = new RegExp(importRegex)

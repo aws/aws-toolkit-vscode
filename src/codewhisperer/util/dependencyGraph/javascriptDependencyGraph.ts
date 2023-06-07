@@ -201,7 +201,7 @@ export class JavascriptDependencyGraph extends DependencyGraph {
     }
 
     async isTestFile(content: string) {
-        // TODO: Implement this 
+        // TODO: Implement this
         return false
     }
 

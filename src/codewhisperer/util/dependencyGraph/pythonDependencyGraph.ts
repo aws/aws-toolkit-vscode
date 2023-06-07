@@ -217,7 +217,7 @@ export class PythonDependencyGraph extends DependencyGraph {
         })
         return filteredImport.length > 0
     }
-    
+
     /* New function added to fetch source dependencies for a given file. 
     /* It is used for fetching cross-file context. 
     */
@@ -226,7 +226,7 @@ export class PythonDependencyGraph extends DependencyGraph {
         const dependencies = this.getDependencies(uri, imports)
         return dependencies
     }
-    
+
     /* New function added to fetch package path for a given file. 
     /* It is used for fetching cross-file context. 
     */

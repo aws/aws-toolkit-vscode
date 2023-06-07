@@ -18,14 +18,14 @@ import { Commands } from '../shared/vscode/commands2'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, formatError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, formatError, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { asString, CredentialsProvider, fromString } from './providers/credentials'
+import { asString, CredentialsId, CredentialsProvider, fromString } from './providers/credentials'
 import { once } from '../shared/utilities/functionUtils'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
@@ -46,8 +46,9 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { join, toStream } from '../shared/utilities/collectionUtils'
 import { getConfigFilename } from './sharedCredentialsFile'
 import { saveProfileToCredentials } from './sharedCredentials'
-import { SectionName, StaticCredentialsProfileKeys } from './types'
+import { SectionName, SharedCredentialsKeys, StaticProfile, StaticProfileKeyErrorMessage } from './types'
 import { throwOnInvalidCredentials } from './sharedCredentialsValidation'
+import { TempCredentialProvider } from './providers/tempCredentialsProvider'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -587,6 +588,54 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
+     * Authenticates the given data and returns error info if it fails.
+     *
+     * @returns undefined if authentication succeeds, otherwise object with error info
+     */
+    public async authenticateData(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
+        const tempId = await this.addTempCredential(data)
+        const tempIdString = asString(tempId)
+        try {
+            await this.reauthenticate({ id: tempIdString })
+        } catch (e) {
+            if (isAwsError(e)) {
+                if (e.code === 'InvalidClientTokenId') {
+                    return { key: SharedCredentialsKeys.AWS_ACCESS_KEY_ID, error: 'Invalid access key' }
+                } else if (e.code === 'SignatureDoesNotMatch') {
+                    return { key: SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY, error: 'Invalid secret key' }
+                }
+            }
+            throw e
+        } finally {
+            await this.removeTempCredential(tempId)
+        }
+        return undefined
+    }
+
+    private async addTempCredential(data: StaticProfile): Promise<CredentialsId> {
+        const tempProvider = new TempCredentialProvider(data)
+        this.iamProfileProvider.addProvider(tempProvider)
+        await this.thrownOnConn(tempProvider.getCredentialsId(), 'not-exists')
+        return tempProvider.getCredentialsId()
+    }
+    private async removeTempCredential(id: CredentialsId) {
+        this.iamProfileProvider.removeProvider(id)
+        await this.thrownOnConn(id, 'exists')
+    }
+
+    private async thrownOnConn(id: CredentialsId, throwOn: 'exists' | 'not-exists') {
+        const idAsString = asString(id)
+        const conns = await this.listConnections() // triggers loading of profile in to store
+        const connExists = conns.some(conn => conn.id === idAsString)
+
+        if (throwOn === 'exists' && connExists) {
+            throw new ToolkitError(`Conn should not exist: ${idAsString}`)
+        } else if (throwOn === 'not-exists' && !connExists) {
+            throw new ToolkitError(`Conn should exist: ${idAsString}`)
+        }
+    }
+
+    /**
      * Attempts to remove all auth state related to the connection.
      *
      * For SSO, this involves an API call to clear server-side state. The call happens
@@ -828,6 +877,13 @@ export class Auth implements AuthService, ConnectionManager {
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch(err => {
+            // Bubble-up networking issues so we don't treat the session as invalid
+            if (isNetworkError(err)) {
+                throw new ToolkitError('Failed to refresh connection due to networking issues', {
+                    cause: err,
+                })
+            }
+
             this.#validationErrors.set(id, err)
         })
 
@@ -1004,7 +1060,7 @@ const switchConnections = Commands.register('aws.auth.switchConnections', (auth:
     }
 })
 
-async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
+export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
     if (conn?.type === 'sso') {
         // TODO: does deleting the connection make sense UX-wise?
         // this makes it disappear from the list of available connections
@@ -1203,16 +1259,33 @@ const addConnection = Commands.register({ id: 'aws.auth.addConnection', telemetr
 
 export async function tryAddCredentials(
     profileName: SectionName,
-    profileData: StaticCredentialsProfileKeys,
+    profileData: StaticProfile,
     tryConnect = true
 ): Promise<boolean> {
+    const auth = Auth.instance
+
+    // sanity checks
     await throwOnInvalidCredentials(profileName, profileData)
+    const authenticationError = await auth.authenticateData(profileData)
+    if (authenticationError) {
+        throw new ToolkitError(`Found error with '${authenticationError.key}':'${authenticationError.error}' `, {
+            code: 'InvalidCredentials',
+        })
+    }
+
     await saveProfileToCredentials(profileName, profileData)
+
     if (tryConnect) {
-        const auth = Auth.instance
-        const conn = await auth.getConnection({ id: profileName })
+        const id = asString({
+            credentialSource: 'profile',
+            credentialTypeId: profileName,
+        })
+        const conn = await auth.getConnection({ id })
+
         if (conn === undefined) {
-            throw new ToolkitError('Failed to get connection from profile', { code: 'MissingConnection' })
+            throw new ToolkitError(`Failed to get connection from profile: ${profileName}`, {
+                code: 'MissingConnection',
+            })
         }
 
         await auth.useConnection(conn)

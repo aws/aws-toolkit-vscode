@@ -184,7 +184,7 @@ export abstract class DependencyGraph {
     abstract getSourceDependencies(uri: vscode.Uri, content: string): Promise<string[]>
 
     abstract getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]>
-    
+
     abstract isTestFile(content: string): Promise<boolean>
 
     abstract generateTruncation(uri: vscode.Uri): Promise<Truncation>

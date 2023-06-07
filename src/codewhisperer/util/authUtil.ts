@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -21,7 +19,6 @@ import {
 import { Connection, SsoConnection } from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../credentials/secondaryAuth'
-import { once } from '../../shared/utilities/functionUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
@@ -47,9 +44,6 @@ export class AuthUtil {
     private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
 
-    private readonly clearAccessToken = once(() =>
-        globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
-    )
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
         'codewhisperer',
@@ -67,9 +61,6 @@ export class AuthUtil {
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
-                if (this.auth.getConnectionState(conn) === 'valid') {
-                    await this.clearAccessToken()
-                }
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
             } else {
                 this.usingEnterpriseSSO = false
@@ -81,6 +72,8 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
+
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
     }
 
@@ -101,21 +94,24 @@ export class AuthUtil {
         return this.conn !== undefined && this.usingEnterpriseSSO
     }
 
+    public isBuilderIdInUse(): boolean {
+        return this.conn !== undefined && isBuilderIdConnection(this.conn)
+    }
+
     public async connectToAwsBuilderId() {
-        const existingConn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-        if (!existingConn) {
-            const newConn = await this.auth.createConnection(awsBuilderIdSsoProfile)
-            await this.secondaryAuth.useNewConnection(newConn)
+        let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
-            return newConn
+        if (!conn) {
+            conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
+        } else if (!isValidCodeWhispererConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
-        if (isValidCodeWhispererConnection(existingConn)) {
-            await this.secondaryAuth.useNewConnection(existingConn)
-            return existingConn
+        if (this.auth.getConnectionState(conn) === 'invalid') {
+            conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.addScopes(existingConn, defaultScopes)
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
@@ -229,9 +225,5 @@ export class AuthUtil {
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
-    }
-
-    public hasAccessToken() {
-        return !!globals.context.globalState.get(CodeWhispererConstants.accessToken)
     }
 }
