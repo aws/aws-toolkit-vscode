@@ -8,7 +8,7 @@ import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
-import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
+import { AuthCommandBackend, AuthCommandDeclarations } from './utils'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 
 export async function initialize(
