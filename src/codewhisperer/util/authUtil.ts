@@ -62,6 +62,9 @@ export class AuthUtil {
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
+                if (!this.isConnectionExpired()) {
+                    vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                }
             } else {
                 this.usingEnterpriseSSO = false
             }
@@ -92,6 +95,11 @@ export class AuthUtil {
 
     public isEnterpriseSsoInUse(): boolean {
         return this.conn !== undefined && this.usingEnterpriseSSO
+    }
+
+    // If there is an active SSO connection
+    public isValidEnterpriseSsoInUse(): boolean {
+        return this.isEnterpriseSsoInUse() && !this.isConnectionExpired()
     }
 
     public isBuilderIdInUse(): boolean {

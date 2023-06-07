@@ -196,4 +196,6 @@ export class DefaultCodeWhispererClient {
     }
 }
 
+export const codeWhispererClient = new DefaultCodeWhispererClient()
+
 export class CognitoCredentialsError extends Error {}

@@ -11,6 +11,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
+import { getSelectedCustomization } from './customizationUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -85,10 +86,12 @@ export function buildListRecommendationRequest(
         }
     }
 
+    const selectedCustomization = getSelectedCustomization()
     if (allowCodeWithReference === undefined) {
         return {
             fileContext: fileContext,
             nextToken: nextToken,
+            customizationArn: selectedCustomization.arn,
         }
     }
     return {
@@ -97,6 +100,7 @@ export function buildListRecommendationRequest(
         referenceTrackerConfiguration: {
             recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
         },
+        customizationArn: selectedCustomization.arn,
     }
 }
 

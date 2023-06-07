@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
-import { toggleCodeSuggestions, get, set, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
+import { toggleCodeSuggestions, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
@@ -19,6 +19,7 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
+import { get, set } from '../../../codewhisperer/util/commonUtil'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable

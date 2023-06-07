@@ -17,6 +17,7 @@ import {
     selectCustomization,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
+import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
 
 export const createEnableCodeSuggestionsNode = () =>
     enableCodeSuggestions.build().asTreeNode({
@@ -89,10 +90,13 @@ export const createFreeTierLimitMetNode = () => {
 }
 
 export const createSelectCustomizationNode = () => {
+    const newCustomizationsAvailable = getNewCustomizationAvailable()
+    const selectedCustomization = getSelectedCustomization()
+    const newText = newCustomizationsAvailable ? 'new!      ' : ''
+
     return selectCustomization.build().asTreeNode({
         label: localize('AWS.explorerNode.selectCustomization.label', 'Select Customization'),
         iconPath: getIcon('vscode-extensions'),
-        // TODO: update description to make it dynamically show the new customizations balloon notification
-        description: localize('AWS.explorerNode.selectCustomization.tooltip', 'new'),
+        description: `${newText}${!selectedCustomization.arn ? '' : selectedCustomization.name}`,
     })
 }

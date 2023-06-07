@@ -144,6 +144,10 @@ export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
+export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
+
+export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
+
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
@@ -255,6 +259,15 @@ export const showScannedFilesMessage = 'Show Scanned Files'
 export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
+
+export const newCustomizationMessageSingle = 'You have access to a new CodeWhisperer customization.'
+
+export const newCustomizationMessageMultiple = 'You have access to new CodeWhisperer customizations.'
+
+export const removedCustomizationMessage =
+    'Your administrator has deactivated the current customization in use. CodeWhisperer is using its base model.'
+
+export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 
 export enum UserGroup {
     Classifier = 'Classifier',

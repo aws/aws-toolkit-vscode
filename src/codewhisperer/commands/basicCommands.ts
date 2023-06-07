@@ -8,7 +8,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
-import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
@@ -18,7 +17,8 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
-import { showCustomizationPrompt } from '../customization/showCustomizationPrompt'
+import { notifyNewCustomizations, showCustomizationPrompt } from '../util/customizationUtil'
+import { get, set } from '../util/commonUtil'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -93,30 +93,14 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const selectCustomization = Commands.declare(
-    'aws.codeWhisperer.selectCustomization',
-    (client: DefaultCodeWhispererClient) => async () => {
-        telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
-        await showCustomizationPrompt(client)
-    }
-)
+export const selectCustomization = Commands.declare('aws.codeWhisperer.selectCustomization', () => async () => {
+    telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
+    showCustomizationPrompt().then()
+})
 
 export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
     await AuthUtil.instance.reauthenticate()
 })
-
-export function get(key: string, context: vscode.Memento): any {
-    return context.get(key)
-}
-
-export async function set(key: string, value: any, context: vscode.Memento): Promise<void> {
-    await context.update(key, value).then(
-        () => {},
-        error => {
-            getLogger().verbose(`Failed to update global state: ${error}`)
-        }
-    )
-}
 
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
@@ -159,5 +143,12 @@ export const refreshStatusBar = Commands.declare(
         } else {
             InlineCompletionService.instance.hideCodeWhispererStatusBar()
         }
+    }
+)
+
+export const notifyNewCustomizationsCmd = Commands.declare(
+    { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
+    () => () => {
+        notifyNewCustomizations().then()
     }
 )
