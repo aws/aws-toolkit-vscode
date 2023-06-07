@@ -5,7 +5,7 @@
 
 import * as AWS from 'aws-sdk'
 import { Token } from 'aws-sdk/lib/token'
-import { Connection } from '../auth'
+import { Connection } from '../connection'
 
 const TokenClass = (AWS as any).Token as typeof Token
 export class TokenProvider extends TokenClass {

@@ -13,7 +13,7 @@ import {
     DevEnvironment,
 } from '../../shared/clients/codecatalystClient'
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
-import { Auth, codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../auth/auth'
+import { Auth } from '../../auth/auth'
 import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
@@ -30,6 +30,7 @@ import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import { getLogger } from '../../shared/logger'
 import { isAwsError } from '../../shared/errors'
+import { codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../auth/connection'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']

@@ -13,13 +13,14 @@ import * as localizedText from '../shared/localizedText'
 import { getLogger } from '../shared/logger'
 import { showQuickPick } from '../shared/ui/pickerPrompter'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
-import { Auth, Connection, SsoConnection, StatefulConnection } from './auth'
+import { Auth } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createExitButton, createHelpButton } from '../shared/ui/buttons'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl } from './sso/model'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { Connection, SsoConnection, StatefulConnection } from './connection'
 
 async function promptUseNewConnection(newConn: Connection, oldConn: Connection, tools: string[], swapNo: boolean) {
     // Multi-select picker would be better ?

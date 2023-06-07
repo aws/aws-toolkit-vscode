@@ -29,9 +29,9 @@ import {
     Profile,
     Section,
 } from '../credentials/sharedCredentials'
-import { hasScopes, SsoProfile } from '../auth'
 import { builderIdStartUrl } from '../sso/model'
 import { SectionName, SharedCredentialsKeys } from '../credentials/types'
+import { SsoProfile, hasScopes } from '../connection'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',

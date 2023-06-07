@@ -5,24 +5,22 @@
 
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
-import {
-    Auth,
-    createBuilderIdProfile,
-    codewhispererScopes,
-    isBuilderIdConnection,
-    createSsoProfile,
-    isSsoConnection,
-    hasScopes,
-    ssoAccountAccessScopes,
-    isIamConnection,
-} from '../../auth/auth'
-import { Connection, SsoConnection } from '../../auth/auth'
+import { Auth, isBuilderIdConnection, isSsoConnection, isIamConnection } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
+import {
+    ssoAccountAccessScopes,
+    codewhispererScopes,
+    createBuilderIdProfile,
+    hasScopes,
+    SsoConnection,
+    createSsoProfile,
+    Connection,
+} from '../../auth/connection'
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)

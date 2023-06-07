@@ -34,7 +34,7 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { SamConfig } from './config'
 import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
-import { Auth, IamConnection } from '../../auth/auth'
+import { Auth } from '../../auth/auth'
 import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { SamCliInfoInvocation } from './cli/samCliInfo'
 import { parse } from 'semver'
@@ -45,6 +45,7 @@ import { samSyncUrl, samInitDocUrl, samUpgradeUrl } from '../constants'
 import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
+import { IamConnection } from '../../auth/connection'
 
 const localize = nls.loadMessageBundle()
 
