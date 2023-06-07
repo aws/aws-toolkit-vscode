@@ -18,17 +18,15 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.ec2.connectToInstance', async (param?: unknown) => {
             console.log("You just ran the aws.ec2.connectToInstance command!")
             
-            const regionPrompter = createRegionPrompter()
-            const selectedRegion = await regionPrompter.prompt()
-            if(isValidResponse(selectedRegion)){
-                const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, selectedRegion.id)
-                const requester = async (request: EC2.DescribeInstancesRequest) => 
-                    client.describeInstances(request).promise() 
-                const collection = extractInstanceIds(pageableToCollection(requester, {}, 'NextToken', 'Reservations'))
+            // const regionPrompter = createRegionPrompter()
+            // const selectedRegion = await regionPrompter.prompt()
+            const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, ctx.regionProvider.guessDefaultRegion())
+            const requester = async (request: EC2.DescribeInstancesRequest) => 
+                client.describeInstances(request).promise() 
+            const collection = extractInstanceIds(pageableToCollection(requester, {}, 'NextToken', 'Reservations'))
 
-                const selection = await selectInstance(collection.filter(instanceId => instanceId !== undefined))
-                console.log(selection)
-            }
+            const selection = await selectInstance(collection.filter(instanceId => instanceId !== undefined))
+            console.log(selection)
         })
     )
 }
