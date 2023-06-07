@@ -30,7 +30,6 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import globals from '../../shared/extensionGlobals'
 import { CodeWhispererSupplementalContext } from '../util/supplementalContext/supplementalContextUtil'
 
 /**
