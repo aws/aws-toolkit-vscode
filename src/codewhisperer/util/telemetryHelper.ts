@@ -97,7 +97,11 @@ export class TelemetryHelper {
         duration: number | undefined,
         lineNumber: number | undefined,
         language: CodewhispererLanguage,
-        reason: string
+        reason: string,
+        codewhispererSupplementalContextIsUtg: boolean,
+        codewhispererSupplementalContextTimeout: boolean,
+        codewhispererSupplementalContextLength: number,
+        codewhispererSupplementalContextLatency: number
     ) {
         const event = {
             codewhispererRequestId: requestId ? requestId : undefined,
@@ -114,6 +118,10 @@ export class TelemetryHelper {
             reason: reason ? reason.substring(0, 200) : undefined,
             credentialStartUrl: this.startUrl,
             codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+            codewhispererSupplementalContextTimeout: codewhispererSupplementalContextTimeout,
+            codewhispererSupplementalContextIsUtg: codewhispererSupplementalContextIsUtg,
+            codewhispererSupplementalContextLatency: codewhispererSupplementalContextLatency,
+            codewhispererSupplementalContextLength: codewhispererSupplementalContextLength,
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
         this.sessionInvocations.push(event)
