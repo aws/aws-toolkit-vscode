@@ -19,7 +19,7 @@ function asQuickpickItem(stringItem: string): DataQuickPickItem<string>[]
 
 function createInstancePrompter(instances: AsyncCollection<string>): QuickPickPrompter<string> {
     const items = instances.map(asQuickpickItem)
-    const prompter = createQuickPick(items)
+    const prompter = createQuickPick(items, {title: "Select EC2 instance by id"})
 
     return prompter
 }
