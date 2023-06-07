@@ -381,6 +381,8 @@ interface ConnectionStateChangeEvent {
     readonly state: ProfileMetadata['connectionState']
 }
 
+export type AuthType = Auth
+
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
     readonly #validationErrors = new Map<Connection['id'], Error>()
