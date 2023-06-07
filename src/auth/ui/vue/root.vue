@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '20px' }">
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
                 <div style="fill: white">
@@ -30,10 +30,19 @@
                 </div>
             </div>
         </div>
+
         <div
             v-if="successfulAuthConnection"
             class="border-common"
-            style="display: inline-flex; flex-direction: row; background-color: #28632b; color: #ffffff; padding: 10px"
+            style="
+                width: fit-content;
+                white-space: nowrap;
+                display: flex;
+                flex-direction: row;
+                background-color: #28632b;
+                color: #ffffff;
+                padding: 10px;
+            "
         >
             <div class="icon icon-lg icon-vscode-check"></div>
             &nbsp; &nbsp;
@@ -290,11 +299,5 @@ export default defineComponent({
 .service-item-list li {
     /* Creates an even separation between all list items*/
     margin-top: 10px;
-}
-
-#right-column {
-    /* This can be deleted, for development purposes */
-    height: 800px;
-    margin: 10px;
 }
 </style>
