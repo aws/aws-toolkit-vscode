@@ -30,7 +30,11 @@ export async function selectInstance(instances: AsyncCollection<string>): Promis
     return isValidResponse(response) ? response : undefined
 }
 
-export function extractInstanceIds(reservations: EC2.ReservationList): string[] {
-    console.log(reservations)
-    return ["1"]
+export function extractInstanceIds(reservations: AsyncCollection<EC2.ReservationList | undefined>): AsyncCollection<string> {
+    return reservations
+        .flatten()
+        .map(instanceList => instanceList?.Instances)
+        .flatten()
+        .map(instance => instance?.InstanceId)
+        .filter(instanceId => instanceId !== undefined)
 } 
