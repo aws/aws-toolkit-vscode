@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Auth, AuthNode, useIamCredentials } from '../auth/auth'
+import { Auth } from '../auth/auth'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getIcon } from '../shared/icons'
 import { getLogger, Logger } from '../shared/logger'
@@ -17,6 +17,7 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { once } from '../shared/utilities/functionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
+import { AuthNode, useIamCredentials } from '../auth/utils'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'

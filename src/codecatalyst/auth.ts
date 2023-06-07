@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { getIdeProperties } from '../shared/extensionUtilities'
-import { Auth, createBuilderIdConnection } from '../auth/auth'
+import { Auth } from '../auth/auth'
 import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
@@ -21,6 +21,7 @@ import {
     Connection,
     isBuilderIdConnection,
 } from '../auth/connection'
+import { createBuilderIdConnection } from '../auth/utils'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should

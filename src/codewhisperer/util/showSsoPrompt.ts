@@ -13,10 +13,10 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { createBuilderIdItem, createIamItem, createSsoItem } from '../../auth/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { isIamConnection } from '../../auth/connection'
+import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
 
 export const showConnectionPrompt = async () => {
     // Skip this prompt on C9 because:

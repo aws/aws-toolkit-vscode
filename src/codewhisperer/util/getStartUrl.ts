@@ -9,9 +9,9 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { AuthUtil } from './authUtil'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/errors'
-import { createStartUrlPrompter, showRegionPrompter } from '../../auth/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { codewhispererScopes } from '../../auth/connection'
+import { createStartUrlPrompter, showRegionPrompter } from '../../auth/utils'
 
 export const getStartUrl = async () => {
     const inputBox = await createStartUrlPrompter('IAM Identity Center', codewhispererScopes)

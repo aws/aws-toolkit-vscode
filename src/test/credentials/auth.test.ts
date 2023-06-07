@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { AuthNode, promptForConnection } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
@@ -19,6 +18,7 @@ import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCre
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, ssoAccountAccessScopes } from '../../auth/connection'
+import { AuthNode, promptForConnection } from '../../auth/utils'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
