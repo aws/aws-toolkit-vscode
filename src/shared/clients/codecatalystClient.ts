@@ -22,7 +22,7 @@ import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { SsoConnection } from '../../auth/auth'
-import { TokenProvider } from '../../auth/sdkV2Compat'
+import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
 import {
     GetSourceRepositoryCloneUrlsRequest,
