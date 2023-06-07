@@ -119,7 +119,7 @@ class CodeWhispererRecommendationManager {
     ): List<DetailContext> {
         val seen = mutableSetOf<String>()
         return recommendations.map {
-            val isDiscardedByUserInput = !it.content().startsWith(userInput)
+            val isDiscardedByUserInput = !it.content().startsWith(userInput) || it.content() == userInput
             if (isDiscardedByUserInput) {
                 return@map DetailContext(requestId, it, it, isDiscarded = true, isTruncatedOnRight = false, rightOverlap = "")
             }
@@ -135,13 +135,13 @@ class CodeWhispererRecommendationManager {
             val truncated = it.toBuilder()
                 .content(truncatedContent)
                 .build()
-            val isDiscardedByUserInputForTruncated = !truncated.content().startsWith(userInput)
+            val isDiscardedByUserInputForTruncated = !truncated.content().startsWith(userInput) || truncated.content() == userInput
             if (isDiscardedByUserInputForTruncated) {
                 return@map DetailContext(requestId, it, truncated, isDiscarded = true, isTruncatedOnRight = true, rightOverlap = overlap)
             }
 
             val reformatted = reformat(requestContext, truncated)
-            val isDiscardedByRightContextTruncationDedupe = truncated.content().isEmpty() || !seen.add(reformatted.content())
+            val isDiscardedByRightContextTruncationDedupe = !seen.add(reformatted.content())
             DetailContext(
                 requestId,
                 it,
