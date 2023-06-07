@@ -840,7 +840,7 @@ export class Auth implements AuthService, ConnectionManager {
             id,
             ...profile,
             state: profile.metadata.connectionState,
-            label: profile.metadata?.label ?? getSsoProfileLabel(profile),
+            label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
         }
     }
@@ -919,7 +919,8 @@ export class Auth implements AuthService, ConnectionManager {
             const timeout = new Timeout(60000)
             this.#invalidCredentialsTimeouts.set(id, timeout)
 
-            const connLabel = profile?.metadata.label ?? (profile?.type === 'sso' ? getSsoProfileLabel(profile) : id)
+            const connLabel =
+                profile?.metadata.label ?? (profile?.type === 'sso' ? this.getSsoProfileLabel(profile) : id)
             const message = localize(
                 'aws.auth.invalidConnection',
                 'Connection "{0}" is invalid or expired, login again?',
@@ -1015,14 +1016,14 @@ export class Auth implements AuthService, ConnectionManager {
 
         return (this.#instance ??= new Auth(new ProfileStore(memento)))
     }
-}
 
-const getSsoProfileLabel = (profile: SsoProfile) => {
-    const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+    private getSsoProfileLabel(profile: SsoProfile) {
+        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
 
-    return profile.startUrl === builderIdStartUrl
-        ? localizedText.builderId()
-        : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
+        return profile.startUrl === builderIdStartUrl
+            ? localizedText.builderId()
+            : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
+    }
 }
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
