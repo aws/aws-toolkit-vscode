@@ -31,6 +31,21 @@
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
+        },
+        {
+            "name": "mynahContext",
+            "type": "string",
+            "description": "Event specific metadata object, serialised as a JSON string"
+        },
+        {
+            "name": "mynahSearchId",
+            "type": "string",
+            "description": "Identifies a unique search interaction"
+        },
+        {
+            "name": "mynahViewId",
+            "type": "string",
+            "description": "Identifies panel in which search form is rendered"
         }
     ],
     "metrics": [
@@ -39,15 +54,21 @@
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
             "metadata": [
-                { "type": "command" },
-                { "type": "duration" },
-                { "type": "result" },
                 {
-                    "type": "reason",
-                    "required": false
+                    "type": "command"
                 },
                 {
                     "type": "debounceCount",
+                    "required": false
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
                     "required": false
                 }
             ]
@@ -60,7 +81,14 @@
         {
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",
-            "metadata": [{ "type": "result" }, { "type": "cli" }]
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "cli"
+                }
+            ]
         },
         {
             "name": "ssm_createDocument",
@@ -174,7 +202,11 @@
         {
             "name": "aws_showExplorerErrorDetails",
             "description": "Called when getting more details about errors thrown by the explorer",
-            "metadata": [{ "type": "result" }]
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         },
         {
             "name": "aws_showRegion",
@@ -187,7 +219,11 @@
         {
             "name": "sam_detect",
             "description": "Called when detecting the location of the SAM CLI",
-            "metadata": [{ "type": "result" }],
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ],
             "passive": true
         },
         {
@@ -218,17 +254,224 @@
             "name": "sam_attachDebugger",
             "description": "Called after trying to attach a debugger to a local sam invoke",
             "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType" },
-                { "type": "runtime" },
-                { "type": "attempts" },
-                { "type": "duration" },
-                { "type": "lambdaArchitecture", "required": false }
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "lambdaPackageType"
+                },
+                {
+                    "type": "runtime"
+                },
+                {
+                    "type": "attempts"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "lambdaArchitecture",
+                    "required": false
+                }
             ]
         },
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "mynah_showResults",
+            "description": "Emitted when search suggestions are rendered",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_submitFeedback",
+            "description": "Emitted when user submits feedback",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updateQueryContext",
+            "description": "Emitted when user updates search query context",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updatePanelState",
+            "description": "Emitted when mynah search panel goes in/out of focus",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updateExtensionState",
+            "description": "Emitted when extension activates/deactivates",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "mynah_updateLiveSearchState",
+            "description": "Emitted when mynah live search state (running, paused or stopped) changes",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_viewNotification",
+            "description": "Emitted when user sees a notification",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_actOnNotification",
+            "description": "Emitted when user interacts with a notification",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_selectAutocompleteSuggestion",
+            "description": "Emitted when user selects a autocomplete suggested query",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_showCodeDetails",
+            "description": "Emitted when user clicks on a code block in search pane",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_showSearchHistory",
+            "description": "Emitted when user clicks on search history button"
+        },
+        {
+            "name": "mynah_search",
+            "description": "Emitted when user performs a search",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_interactWithSuggestion",
+            "description": "Emitted when user interacts with a search suggestion",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_updateErrorState",
+            "description": "Emitted when an error is observed or cleared in the IDE",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_heartbeat",
+            "description": "Emitted when the user is actively using the IDE",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                }
+            ]
+        },
+        {
+            "name": "mynah_clearSearch",
+            "description": "Emitted when user clears the search form",
+            "metadata": [
+                {
+                    "type": "mynahSearchId"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
+        },
+        {
+            "name": "mynah_changeTab",
+            "description": "When user changes the tab",
+            "metadata": [
+                {
+                    "type": "mynahContext"
+                },
+                {
+                    "type": "mynahViewId"
+                }
+            ]
         }
     ]
 }
