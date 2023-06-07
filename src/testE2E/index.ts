@@ -6,5 +6,5 @@
 import { runTests } from '../test/testRunner'
 
 export function run(): Promise<void> {
-    return runTests('src/testE2E', ['src/integrationTest/globalSetup.test.ts'])
+    return runTests('src/testE2E', ['src/testInteg/globalSetup.test.ts'])
 }

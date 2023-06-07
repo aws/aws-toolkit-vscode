@@ -58,7 +58,8 @@
                     "type": "command"
                 },
                 {
-                    "type": "debounceCount"
+                    "type": "debounceCount",
+                    "required": false
                 },
                 {
                     "type": "duration"

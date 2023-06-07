@@ -117,6 +117,30 @@ export class StateMachineGraphCache {
         }
     }
 
+    // Coordinates check for multiple cached files.
+    public async confirmCacheExists(): Promise<boolean> {
+        const cssExists = await this.fileExists(this.cssFilePath)
+        const jsExists = await this.fileExists(this.jsFilePath)
+
+        if (cssExists && jsExists) {
+            return true
+        }
+
+        if (!cssExists) {
+            // Help users setup on disconnected C9/VSCode instances.
+            this.logger.error(
+                `Failed to locate cached State Machine Graph css assets. Expected to find: "${visualizationCssUrl}" at "${this.cssFilePath}"`
+            )
+        }
+        if (!jsExists) {
+            // Help users setup on disconnected C9/VSCode instances.
+            this.logger.error(
+                `Failed to locate cached State Machine Graph js assets. Expected to find: "${visualizationScriptUrl}" at "${this.jsFilePath}"`
+            )
+        }
+        throw new Error('Failed to located cached State Machine Graph assets')
+    }
+
     protected async writeToLocalStorage(destinationPath: string, data: string): Promise<void> {
         const storageFolder = this.dirPath
 

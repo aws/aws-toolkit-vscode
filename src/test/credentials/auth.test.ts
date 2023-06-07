@@ -236,6 +236,16 @@ describe('Auth', function () {
             assert.ok(err2 instanceof ToolkitError)
             assert.strictEqual(err2.cause, err1)
         })
+
+        it('bubbles up networking issues instead of invalidating the connection', async function () {
+            const expected = new ToolkitError('test', { code: 'ETIMEDOUT' })
+            const conn = await auth.createConnection(ssoProfile)
+            auth.getTestTokenProvider(conn)?.getToken.rejects(expected)
+            const actual = await conn.getToken().catch(e => e)
+            assert.ok(actual instanceof ToolkitError)
+            assert.strictEqual(actual.cause, expected)
+            assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        })
     })
 
     describe('Linked Connections', function () {

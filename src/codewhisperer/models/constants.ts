@@ -97,7 +97,7 @@ export const supportedLanguages = [
     'sql',
 ] as const
 
-export type SupportedLanguage = typeof supportedLanguages[number]
+export type SupportedLanguage = (typeof supportedLanguages)[number]
 
 /**
  * Prompt
@@ -144,16 +144,11 @@ export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
-export const accessToken = 'CODEWHISPERER_ACCESS_TOKEN'
-
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
 
 export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html'
-
-export const accessTokenMigrationLearnMoreUri =
-    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer-auth.html'
 
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
@@ -229,16 +224,6 @@ export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, si
 
 export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
 
-export const accessTokenCutOffDate = new Date(2023, 0, 31)
-
-export const accessTokenMigrationWarningMessage = `To continue using CodeWhisperer, you must add an AWS Builder ID or AWS IAM Identity Center connection by January 31, 2023.`
-
-export const accessTokenMigrationErrorMessage = `Your Preview Access Code has expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
-
-export const accessTokenMigrationWarningButtonMessage = `Connect with AWS to Continue`
-
-export const accessTokenMigrationErrorButtonMessage = `Connect with AWS`
-
 export const connectWithAWSBuilderId = `Connect with AWS`
 
 export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
@@ -257,21 +242,7 @@ export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identi
 
 export const connectionExpired = `Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.`
 
-export const accessTokenMigrationLearnMore = `Learn More`
-
 export const DoNotShowAgain = `Don\'t Show Again`
-
-export const accessTokenExpiredDoNotShowAgainKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN'
-
-export const accessTokenExpriedKey = 'CODEWHISPERER_ACCESS_TOKEN_EXPIRED'
-
-export const accessTokenMigrationDoNotShowLastShown =
-    'CODEWHISPERER_ACCESS_TOKEN_MIGRATION_DO_NOT_SHOW_AGAIN_LAST_SHOWN_TIME'
-
-export const accessTokenExpiredDoNotShowLastShown =
-    'CODEWHISPERER_ACCESS_TOKEN_EXPIRED_DO_NOT_SHOW_AGAIN_LAST_SHOWN_TIME'
-
-export const accessTokenMigrationDoNotShowAgainInfo = `You will not receive this notification again. If you would like to continue using CodeWhisperer after January 31, 2023, you can still connect with AWS. [Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisper-setup-general.html).`
 
 export const codeScanLogsOutputChannelId =
     'workbench.action.output.show.extension-output-amazonwebservices.aws-toolkit-vscode-#2-CodeWhisperer Security Scan Logs'
@@ -281,4 +252,12 @@ export const stopScanMessage =
 
 export const showScannedFilesMessage = 'Show Scanned Files'
 
-export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
+export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
+
+export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
+
+export enum UserGroup {
+    Classifier = 'Classifier',
+    CrossFile = 'CrossFile',
+    Control = 'Control',
+}

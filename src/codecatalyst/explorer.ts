@@ -17,7 +17,7 @@ import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 
-const getStartedCommand = Commands.register(
+export const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
     async (authProvider: CodeCatalystAuthenticationProvider) => {
         const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())

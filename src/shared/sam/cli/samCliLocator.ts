@@ -13,7 +13,7 @@ import { SystemUtilities } from '../../systemUtilities'
 import { PerfLog } from '../../logger/logger'
 
 export interface SamCliLocationProvider {
-    getLocation(): Promise<{ path: string; version: string } | undefined>
+    getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined>
 }
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
@@ -29,9 +29,9 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
      * Gets the last-found `sam` location, or searches the system if a working
      * `sam` wasn't previously found and cached.
      */
-    public async getLocation() {
+    public async getLocation(forceSearch?: boolean) {
         const perflog = new PerfLog('samCliLocator: getLocation')
-        const cachedLoc = DefaultSamCliLocationProvider.cachedSamLocation
+        const cachedLoc = forceSearch ? undefined : DefaultSamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
         if (cachedLoc && (await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
@@ -107,7 +107,7 @@ abstract class BaseSamCliLocator {
                         return { path: fullPath, version: validationResult.version }
                     }
                     this.logger.warn(
-                        `samCliLocator: found invalid SAM CLI: (${validationResult.validation}): ${fullPath}`
+                        `samCliLocator: found invalid SAM CLI (${validationResult.validation}): ${fullPath}`
                     )
                 } catch (e) {
                     const err = e as Error

@@ -28,6 +28,11 @@ export function isInlineCompletionEnabled() {
     return semver.gte(vscode.version, '1.68.0') && getInlineSuggestEnabled() && !isCloud9()
 }
 
+// This is the VS Code version that started to have regressions in inline completion API
+export function isVscHavingRegressionInlineCompletionApi() {
+    return semver.gte(vscode.version, '1.78.0') && getInlineSuggestEnabled() && !isCloud9()
+}
+
 export function getFileExt(languageId: string) {
     switch (languageId) {
         case 'java':

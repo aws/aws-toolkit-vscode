@@ -1,5 +1,5 @@
 {
     "all": true,
     "include": ["src/**", "dist/src/**"],
-    "exclude": ["test/**", "integrationTest/**", "testFixtures/**"]
+    "exclude": ["test/**", "testE2E/**", "testLint/**", "testInteg/**", "testFixtures/**"]
 }

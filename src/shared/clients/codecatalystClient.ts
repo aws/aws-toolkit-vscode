@@ -397,6 +397,15 @@ class CodeCatalystClientInternal {
      * Gets a list of all projects for the given CodeCatalyst user.
      */
     public listProjects(request: CodeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+        // Only get projects the user is a member of.
+        request.filters = [
+            ...(request.filters ?? []),
+            {
+                key: 'hasAccessTo',
+                values: ['true'],
+            },
+        ]
+
         const requester = async (request: CodeCatalyst.ListProjectsRequest) =>
             this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
@@ -630,9 +639,10 @@ class CodeCatalystClientInternal {
             return shortname
         }
 
-        function failedStartMsg() {
+        function failedStartMsg(serviceMsg?: string) {
             const lastStatus = statuses[statuses.length - 1]?.status
-            return `Dev Environment failed to start (${lastStatus}): ${getName()}`
+            const serviceMsg_ = serviceMsg ? `${serviceMsg}: ` : ''
+            return `Dev Environment failed to start (${lastStatus}): ${serviceMsg_}${getName()}`
         }
 
         const doLog = (kind: 'debug' | 'error' | 'info', msg: string) => {
@@ -680,17 +690,25 @@ class CodeCatalystClientInternal {
                 const lastStatus = statuses[statuses.length - 1]
                 const elapsed = Date.now() - lastStatus.start
                 const resp = await this.getDevEnvironment(args)
+                const serviceReason = (resp.statusReason ?? '').trim()
                 alias = resp.alias
 
                 if (
-                    lastStatus &&
+                    startAttempts > 2 &&
+                    elapsed > 10000 &&
                     ['STOPPED', 'FAILED'].includes(lastStatus.status) &&
-                    ['STOPPED', 'FAILED'].includes(resp.status) &&
-                    elapsed > 60000 &&
-                    startAttempts > 2
+                    ['STOPPED', 'FAILED'].includes(resp.status)
                 ) {
-                    // If still STOPPED/FAILED after 60+ seconds, don't keep retrying for 1 hour...
-                    throw new ToolkitError(failedStartMsg(), { code: 'FailedDevEnv' })
+                    const fails = statuses.filter(o => o.status === 'FAILED').length
+                    const code = fails === 0 ? 'BadDevEnvState' : 'FailedDevEnv'
+
+                    if (serviceReason !== '') {
+                        // Service gave a status reason like "Compute limit exceeded", show it to the user.
+                        throw new ToolkitError(failedStartMsg(resp.statusReason), { code: code })
+                    }
+
+                    // If still STOPPED/FAILED after 10+ seconds, don't keep retrying for 1 hour...
+                    throw new ToolkitError(failedStartMsg(), { code: code })
                 } else if (['STOPPED', 'FAILED'].includes(resp.status)) {
                     progress.report({
                         message: localize('AWS.CodeCatalyst.devenv.resuming', 'Resuming Dev Environment...'),
@@ -700,9 +718,16 @@ class CodeCatalystClientInternal {
                         await this.startDevEnvironment(args)
                     } catch (e) {
                         const err = e as AWS.AWSError
+                        // - ServiceQuotaExceededException: account billing limit reached
                         // - ValidationException: "… creation has failed, cannot start"
                         // - ConflictException: "Cannot start … because update process is still going on"
                         //   (can happen after "Update Dev Environment")
+                        if (err.code === 'ServiceQuotaExceededException') {
+                            throw new ToolkitError('Dev Environment failed: quota exceeded', {
+                                code: 'ServiceQuotaExceeded',
+                                cause: err,
+                            })
+                        }
                         doLog('info', `devenv not started (${err.code}), waiting`)
                         // Continue retrying...
                     }
@@ -729,23 +754,17 @@ class CodeCatalystClientInternal {
         )
 
         const devenv = await waitTimeout(pollDevEnv, timeout).catch(e => {
-            const err = e as Error
-            const starts = statuses.filter(o => o.status === 'STARTING').length
-            const fails = statuses.filter(o => o.status === 'FAILED').length
-
-            if (!isUserCancelledError(e)) {
-                doLog('error', 'devenv failed to start')
-            } else {
+            if (isUserCancelledError(e)) {
                 doLog('info', 'devenv failed to start (user cancelled)')
-                err.message = failedStartMsg()
-                throw err
+                e.message = failedStartMsg()
+                throw e
+            } else if (e instanceof ToolkitError) {
+                doLog('error', 'devenv failed to start')
+                throw e
             }
 
-            if (starts > 1 && fails === 0) {
-                throw new ToolkitError(failedStartMsg(), { code: 'BadDevEnvState', cause: err })
-            } else if (fails > 0) {
-                throw new ToolkitError(failedStartMsg(), { code: 'FailedDevEnv', cause: err })
-            }
+            doLog('error', 'devenv failed to start')
+            throw new ToolkitError(failedStartMsg(), { code: 'Unknown', cause: e })
         })
 
         if (!devenv) {

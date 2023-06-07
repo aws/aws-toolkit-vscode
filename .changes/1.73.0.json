@@ -1,0 +1,30 @@
+{
+	"date": "2023-05-11",
+	"version": "1.73.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: When a Space has reached quota, trying to connect to a DevEnv waits a long time instead of failing immediately."
+		},
+		{
+			"type": "Feature",
+			"description": "Faster startup and less filesystem usage when the `aws.samcli.enableCodeLenses` setting is disabled"
+		},
+		{
+			"type": "Removal",
+			"description": "Removed legacy setting `aws.sam.enableCodeLenses` (use `aws.samcli.enableCodeLenses` instead)"
+		},
+		{
+			"type": "Removal",
+			"description": "Removed legacy setting `aws.manuallySelectedBuckets` (use `aws.samcli.manuallySelectedBuckets` instead)"
+		},
+		{
+			"type": "Removal",
+			"description": "Removed legacy setting `aws.samcli.lambda.timeout` (use `aws.samcli.lambdaTimeout` instead)"
+		}
+	]
+}

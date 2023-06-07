@@ -32,7 +32,7 @@ phases:
             - 'python3.7 --version'
             - 'python3.8 --version'
             # Dependencies for running vscode.
-            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
             # Print info about sam (version, location, …).
             - 'pip3 show aws-sam-cli'
@@ -68,7 +68,7 @@ phases:
     build:
         commands:
             - npm ci --unsafe-perm
-            - xvfb-run npm run integrationTest
+            - xvfb-run npm run testInteg
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

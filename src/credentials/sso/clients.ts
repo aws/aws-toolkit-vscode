@@ -30,8 +30,9 @@ import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { Client } from '@aws-sdk/smithy-client'
-import { HttpHandlerOptions } from '@aws-sdk/types'
+import { HttpHandlerOptions, SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
+import { StandardRetryStrategy, defaultRetryDecider } from '@aws-sdk/middleware-retry'
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -70,9 +71,22 @@ export class OidcClient {
     }
 
     public static create(region: string) {
+        const updatedRetryDecider = (err: SdkError) => {
+            // Check the default retry conditions
+            if (defaultRetryDecider(err)) {
+                return true
+            }
+
+            // Custom retry rules
+            return err.name === 'InvalidGrantException'
+        }
         const client = new SSOOIDC({
             region,
             endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
+            retryStrategy: new StandardRetryStrategy(
+                () => Promise.resolve(3), // Maximum number of retries
+                { retryDecider: updatedRetryDecider }
+            ),
         })
 
         addLoggingMiddleware(client)

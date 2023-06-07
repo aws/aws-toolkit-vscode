@@ -1,0 +1,18 @@
+{
+	"date": "2023-05-18",
+	"version": "1.74.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: cannot navigate to next or previous code suggestion in VS Code 1.78+"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command allows filtering by Space and Project name"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command now sorts Dev Environments by most recent usage"
+		}
+	]
+}

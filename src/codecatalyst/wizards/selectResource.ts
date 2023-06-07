@@ -53,30 +53,28 @@ function fromDevEnv(env: codecatalyst.DevEnvironment): Omit<DataQuickPickItem<un
     const labelParts = [] as string[]
 
     if (env.status === 'RUNNING') {
-        labelParts.push('$(pass) ')
+        labelParts.push('$(pass)')
     } else {
-        labelParts.push('$(circle-slash) ') // TODO(sijaden): get actual 'stopped' icon
+        labelParts.push('$(circle-slash)') // TODO(sijaden): get actual 'stopped' icon
     }
+
+    labelParts.push(env.alias ? env.alias : env.id)
 
     const repo = env.repositories[0]
+    const branchName = repo?.branchName?.replace('refs/heads/', '')
+    const repoLabel = repo
+        ? branchName
+            ? `${repo.repositoryName}/${branchName}`
+            : repo.repositoryName
+        : '(no repository)'
 
-    if (repo) {
-        const branchName = repo.branchName?.replace('refs/heads/', '')
-        labelParts.push(branchName ? `${repo.repositoryName}/${branchName}` : repo.repositoryName)
-    } else {
-        labelParts.push(`${env.id} (no repository)`)
-    }
-
-    if (env.alias) {
-        labelParts.push(` ${env.alias}`)
-    }
-
-    const lastUsed = `Last used: ${getRelativeDate(env.lastUpdatedTime)}`
+    const statusLabel = env.status === 'RUNNING' ? 'RUNNING - IN USE' : env.status
+    const desc = `${statusLabel} ${getRelativeDate(env.lastUpdatedTime)}`
 
     return {
-        label: labelParts.join(''),
-        description: env.status === 'RUNNING' ? 'RUNNING - IN USE' : env.status,
-        detail: `${env.org.name}/${env.project.name}, ${lastUsed}`,
+        label: labelParts.join(' '),
+        description: desc,
+        detail: `${env.org.name}/${env.project.name}/${repoLabel}`,
     }
 }
 
@@ -90,6 +88,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
     const prompter = createQuickPick(items, {
         buttons: [refresh, ...createCommonButtons(helpUri)],
         ...presentation,
+        matchOnDetail: true,
     })
 
     refresh.onClick = () => {
@@ -154,11 +153,7 @@ export function createDevEnvPrompter(
         placeholder: 'Search for a Dev Environment',
         compare: (a, b) => {
             if (isData(a.data) && isData(b.data)) {
-                if (a.data.status === b.data.status) {
-                    return b.data.lastUpdatedTime.getTime() - a.data.lastUpdatedTime.getTime()
-                }
-
-                return a.data.status === 'RUNNING' ? 1 : b.data.status === 'RUNNING' ? -1 : 0
+                return b.data.lastUpdatedTime.getTime() - a.data.lastUpdatedTime.getTime()
             }
 
             return 0

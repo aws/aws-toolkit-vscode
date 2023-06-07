@@ -140,7 +140,16 @@ export async function activate(context: vscode.ExtensionContext) {
         awsFiletypes.activate()
 
         globals.uriHandler = new UriHandler()
-        context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
+        context.subscriptions.push(
+            vscode.window.registerUriHandler({
+                handleUri: uri =>
+                    telemetry.runRoot(() => {
+                        telemetry.record({ source: 'UriHandler' })
+
+                        return globals.uriHandler.handleUri(uri)
+                    }),
+            })
+        )
 
         const extContext: ExtContext = {
             extensionContext: context,

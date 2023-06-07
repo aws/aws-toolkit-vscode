@@ -30,7 +30,6 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import globals from '../../shared/extensionGlobals'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -147,11 +146,10 @@ export class RecommendationHandler {
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
-            const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
             req = EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
-                accessToken ? undefined : config.isSuggestionsWithCodeReferencesEnabled
+                config.isSuggestionsWithCodeReferencesEnabled
             )
         } else {
             req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
@@ -410,15 +408,6 @@ export class RecommendationHandler {
             return false
         }
         return true
-    }
-
-    moveStartPositionToSkipSpaces(editor: vscode.TextEditor) {
-        const start = this.startPos
-        const prefix = editor.document.getText(new vscode.Range(start, editor.selection.active))
-        // skip space from invocation position
-        if (prefix.length > 0 && prefix.trimStart().length != prefix.length) {
-            this.startPos = start.translate(undefined, prefix.length - prefix.trimStart().length)
-        }
     }
 
     async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {

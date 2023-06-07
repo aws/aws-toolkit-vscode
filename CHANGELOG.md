@@ -1,3 +1,28 @@
+## 1.75.0 2023-05-31
+
+- **Bug Fix** auth: IAM Identity Center connections expire sooner than expected
+- **Bug Fix** CodeWhisperer: user is sometimes required to re-login before token expiration
+- **Bug Fix** Add fallback to local cached files for Step Function Visualizations where host doesn't have internet.
+- **Bug Fix** Update dependency amazon-states-language-service from 1.9->1.10. This fixes  support for Yaml Comments in states machines, ProcessorConfig property & Credentials key.
+- **Bug Fix** CodeWhisperer: Requested operation is not recognized by the service when fetching recommendations
+- **Bug Fix** CodeWhisperer sometimes add extra space at the beginning of suggestion
+- **Feature** CodeWhisperer no longer trigger suggestions on IntelliSense acceptance
+
+## 1.74.0 2023-05-18
+
+- **Bug Fix** CodeWhisperer: cannot navigate to next or previous code suggestion in VS Code 1.78+
+- **Feature** CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command allows filtering by Space and Project name
+- **Feature** CodeCatalyst: `AWS: Open CodeCatalyst Dev Environment` command now sorts Dev Environments by most recent usage
+
+## 1.73.0 2023-05-11
+
+- **Bug Fix** Amazon CodeCatalyst: using CodeCatalyst features without onboarding shows `AccessDeniedException`
+- **Bug Fix** CodeCatalyst: When a Space has reached quota, trying to connect to a DevEnv waits a long time instead of failing immediately.
+- **Feature** Faster startup and less filesystem usage when the `aws.samcli.enableCodeLenses` setting is disabled
+- **Removal** Removed legacy setting `aws.sam.enableCodeLenses` (use `aws.samcli.enableCodeLenses` instead)
+- **Removal** Removed legacy setting `aws.manuallySelectedBuckets` (use `aws.samcli.manuallySelectedBuckets` instead)
+- **Removal** Removed legacy setting `aws.samcli.lambda.timeout` (use `aws.samcli.lambdaTimeout` instead)
+
 ## 1.72.0 2023-05-04
 
 - **Bug Fix** "Open CodeCatalyst Dev Environment" fails on flatpak (steamdeck)

@@ -8,7 +8,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
-import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
@@ -17,7 +16,6 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../credentials/auth'
 
@@ -86,9 +84,6 @@ export class KeyStrokeHandler {
         if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
             return false
         }
-        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) {
-            return false
-        }
         return true
     }
 
@@ -108,11 +103,6 @@ export class KeyStrokeHandler {
                 return
             }
 
-            // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) {
-                return
-            }
-
             // Skip Cloud9 IntelliSense acceptance event
             if (
                 isCloud9() &&
@@ -126,9 +116,6 @@ export class KeyStrokeHandler {
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
-            const isClassifierSupportedLanguage = ClassifierTrigger.instance.isSupportedLanguage(
-                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId)
-            )
 
             switch (changedSource) {
                 case DocumentChangedSource.EnterKey: {
@@ -139,12 +126,8 @@ export class KeyStrokeHandler {
                     triggerType = 'SpecialCharacters'
                     break
                 }
-                case DocumentChangedSource.IntelliSense: {
-                    triggerType = 'IntelliSenseAcceptance'
-                    break
-                }
                 case DocumentChangedSource.RegularKey: {
-                    if (!ClassifierTrigger.instance.isClassifierEnabled() || !isClassifierSupportedLanguage) {
+                    if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
                     } else {
                         triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
@@ -159,7 +142,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                if (isClassifierSupportedLanguage) {
+                if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                     ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
                 }
                 if (changedSource === DocumentChangedSource.SpecialCharsKey) {
@@ -229,17 +212,6 @@ export class KeyStrokeHandler {
                     config,
                     autoTriggerType
                 )
-            } else {
-                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
-                    await InlineCompletion.instance.resetInlineStates(editor)
-                    InlineCompletion.instance.getPaginatedRecommendation(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType
-                    )
-                }
             }
         }
     }
@@ -327,10 +299,6 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
-                // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
-                // multi-words code snippets
-                return DocumentChangedSource.IntelliSense
             } else {
                 return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
@@ -346,7 +314,6 @@ export enum DocumentChangedSource {
     RegularKey = 'RegularKey',
     TabKey = 'TabKey',
     EnterKey = 'EnterKey',
-    IntelliSense = 'IntelliSense',
     Reformatting = 'Reformatting',
     Deletion = 'Deletion',
     Unknown = 'Unknown',
