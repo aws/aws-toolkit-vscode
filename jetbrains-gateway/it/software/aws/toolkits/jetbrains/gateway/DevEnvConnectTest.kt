@@ -40,6 +40,8 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.MockClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -166,6 +168,8 @@ class DevEnvConnectTest : AfterAllCallback {
         // can probably abstract this out as an extension
         // force auth to complete now
         connection = ManagedBearerSsoConnection(SONO_URL, SONO_REGION, listOf("codecatalyst:read_write"))
+        // pin connection to avoid dialog prompt
+        ConnectionPinningManager.getInstance().setPinnedConnection(CodeCatalystConnection.getInstance(), connection)
         (connection.getConnectionSettings().tokenProvider.delegate as BearerTokenProvider).reauthenticate()
 
         (service<JetBrainsClientDownloaderConfigurationProvider>() as TestJetBrainsClientDownloaderConfigurationProvider).apply {
