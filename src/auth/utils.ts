@@ -39,31 +39,8 @@ import {
     isBuilderIdConnection,
     isSsoConnection,
 } from './connection'
-import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
-import { showAuthWebview } from './ui/vue/show'
+import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
-
-/**
- * The methods with backend logic for the Auth commands.
- */
-export class AuthCommandBackend {
-    constructor(private readonly extContext: vscode.ExtensionContext) {}
-
-    public async showConnectionsPage() {
-        await showAuthWebview(this.extContext)
-    }
-}
-
-/**
- * Declared commands related to Authentication in the toolkit.
- */
-export class AuthCommandDeclarations implements CommandDeclarations<AuthCommandBackend> {
-    public readonly declared = {
-        showConnectionsPage: Commands.from(AuthCommandBackend).declareShowConnectionsPage({
-            id: 'aws.auth.showConnectionsPage',
-        }),
-    } as const
-}
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     const resp = await createConnectionPrompter(auth, type).prompt()

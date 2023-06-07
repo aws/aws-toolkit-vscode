@@ -8,8 +8,8 @@ import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
-import { AuthCommandBackend, AuthCommandDeclarations } from './utils'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
