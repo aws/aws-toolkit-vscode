@@ -17,7 +17,7 @@ import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
-import { isIamConnection } from '../../auth/auth'
+import { isIamConnection } from '../../auth/connection'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 

@@ -16,6 +16,11 @@ export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
 export const defaultSsoRegion = 'us-east-1'
 
+export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
+export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
+export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
+    isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
+
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
     return scopes?.every(s => target.scopes?.includes(s))
 }

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
-import { Auth, isBuilderIdConnection, isSsoConnection, isIamConnection } from '../../auth/auth'
+import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
@@ -20,6 +20,9 @@ import {
     SsoConnection,
     createSsoProfile,
     Connection,
+    isIamConnection,
+    isSsoConnection,
+    isBuilderIdConnection,
 } from '../../auth/connection'
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]

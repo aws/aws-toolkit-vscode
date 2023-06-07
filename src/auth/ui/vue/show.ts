@@ -16,7 +16,7 @@ import {
     StaticProfile,
     StaticProfileKeyErrorMessage,
 } from '../../credentials/types'
-import { Auth, isBuilderIdConnection, signout, tryAddCredentials } from '../../auth'
+import { Auth, signout, tryAddCredentials } from '../../auth'
 import { getCredentialFormatError, getCredentialsErrors } from '../../credentials/validation'
 import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
@@ -25,6 +25,7 @@ import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand } from '../../../codecatalyst/explorer'
 import { ToolkitError } from '../../../shared/errors'
+import { isBuilderIdConnection } from '../../connection'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'

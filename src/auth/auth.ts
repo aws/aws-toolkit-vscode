@@ -67,6 +67,8 @@ import {
     createSsoProfile,
     defaultSsoRegion,
     hasScopes,
+    isBuilderIdConnection,
+    isSsoConnection,
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
     ssoAccountAccessScopes,
@@ -866,11 +868,6 @@ export const createIamItem = () =>
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
-
-export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
-export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
-export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
-    isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
     const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { isBuilderIdConnection } from '../auth/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
@@ -16,7 +15,7 @@ import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-import { Connection } from '../auth/connection'
+import { Connection, isBuilderIdConnection } from '../auth/connection'
 
 export const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
