@@ -10,6 +10,12 @@ export async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
+export function intoCollection<T>(arr: T[]): AsyncCollection<T> {
+    return toCollection(async function* () {
+        yield* arr
+    })
+}
+
 export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> {
     return toCollection(async function* () {
         for (let i = 0; i < pages.length - 1; i++) {
