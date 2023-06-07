@@ -1104,6 +1104,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.connectToInstance",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
