@@ -8,7 +8,8 @@ import globals from '../shared/extensionGlobals'
 import { pageableToCollection } from '../shared/utilities/collectionUtils'
 import { extractInstanceIdsFromReservations } from "./utils"
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
-
+import { createEC2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
+import { isValidResponse } from '../shared/wizards/wizard'
 
 export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
     const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, regionCode)
@@ -19,3 +20,12 @@ export async function getInstanceIdsFromRegion(regionCode: string): Promise<Asyn
     return instanceIds
 }
 
+export async function connectToEC2Instance(): Promise<void> {
+    const prompter = createEC2ConnectPrompter()
+            const response = await prompter.prompt()
+
+            if(isValidResponse(response)){
+                const selection = handleEc2ConnectPrompterResponse(response)
+                console.log(selection)
+            }
+}

@@ -5,7 +5,7 @@
 
 import { intoCollection } from '../utilities/collectionUtils'
 import { createQuickPickPrompterTester } from '../shared/ui/testUtils'
-import { EC2ConnectWizard } from '../../ec2/wizard'
+import { EC2ConnectWizard } from '../../ec2/prompter'
 import { WizardTester } from '../shared/wizards/wizardTestUtils'
 
 describe('ec2ConnectWizard', function () {
