@@ -228,8 +228,13 @@ describe('keyStrokeHandler', function () {
         it('should call getPaginatedRecommendation when inline completion is enabled', async function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new KeyStrokeHandler()
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                ' '
+            )
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
-            await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
+            await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config, mockEvent)
             assert.strictEqual(getRecommendationsStub.called, isInlineCompletionEnabled())
         })
     })
