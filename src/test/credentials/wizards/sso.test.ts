@@ -4,7 +4,7 @@
  */
 
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { SsoWizard, SsoWizardState } from '../../../credentials/wizards/sso'
+import { SsoWizard, SsoWizardState } from '../../../auth/wizards/sso'
 
 describe('SSO Wizard', function () {
     let tester: WizardTester<SsoWizardState>

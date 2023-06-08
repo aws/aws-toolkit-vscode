@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { getRegistrationCache, getTokenCache } from '../../../credentials/sso/cache'
+import { getRegistrationCache, getTokenCache } from '../../../auth/sso/cache'
 
 describe('SSO Cache', function () {
     const region = 'dummyRegion'

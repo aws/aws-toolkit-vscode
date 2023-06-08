@@ -40,7 +40,14 @@ const baseConfig = {
     },
     resolve: {
         extensions: ['.ts', '.js'],
-        mainFields: ['main', 'module'],
+        alias: {
+            // Forces webpack to resolve the `main` (cjs) entrypoint
+            //
+            // This is only necessary because of issues with transitive dependencies
+            // `umd-compat-loader` cannot handle ES2018 syntax which is used in later versions of `vscode-json-languageservice`
+            // But, for whatever reason, the ESM output is used if we don't explicitly set `mainFields` under webpack's `resolve`
+            '@aws/fully-qualified-names$': '@aws/fully-qualified-names/node/aws_fully_qualified_names.js',
+        },
     },
     node: {
         __dirname: false, //preserve the default node.js behavior for __dirname

@@ -28,10 +28,11 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
-import { Auth, AuthNode } from '../credentials/auth'
+import { Auth } from '../auth/auth'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
+import { AuthNode } from '../auth/utils'
 import { MynahTreeNode } from '../mynah/triggers/tree-node'
 
 /**
