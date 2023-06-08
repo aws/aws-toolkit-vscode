@@ -22,10 +22,10 @@ export async function getInstanceIdsFromRegion(regionCode: string): Promise<Asyn
 
 export async function connectToEC2Instance(): Promise<void> {
     const prompter = createEC2ConnectPrompter()
-            const response = await prompter.prompt()
+    const response = await prompter.prompt()
 
-            if(isValidResponse(response)){
-                const selection = handleEc2ConnectPrompterResponse(response)
-                console.log(selection)
-            }
+    if(isValidResponse(response)){
+        const selection = handleEc2ConnectPrompterResponse(response)
+        console.log(selection)
+    }
 }
