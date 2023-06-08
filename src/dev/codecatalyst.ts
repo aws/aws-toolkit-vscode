@@ -25,6 +25,9 @@ import { createCommonButtons } from '../shared/ui/buttons'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 
+/**
+ * Progress dialog that does not show until `report()` is called.
+ */
 function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProgress<T> {
     let dispose!: () => void
     let progress: vscode.Progress<T>

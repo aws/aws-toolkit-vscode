@@ -424,7 +424,7 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  * ### Examples
  * #### Pass-through:
  * ```
- * export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
+ * export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}
  *
  * const settings = new CloudWatchLogsSettings()
  * const limit = settings.get('limit', 1000)

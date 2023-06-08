@@ -122,5 +122,24 @@ describe('InputBoxPrompter', function () {
             inputBox.acceptValue('200')
             assert.strictEqual(await result, '200')
         })
+
+        it('passes isFinalInput', async function () {
+            function validateInput(resp: string, isFinalInput?: boolean) {
+                if (!isFinalInput) {
+                    return 'user is typing'
+                }
+                return undefined
+            }
+            testPrompter.setValidation(validateInput)
+            const result = testPrompter.prompt()
+
+            // NOT final input.
+            inputBox.value = 'hello'
+            assert.strictEqual(inputBox.validationMessage, 'user is typing')
+            // Final input (user confirmed / hit Enter).
+            inputBox.acceptValue('hello')
+            assert.strictEqual(inputBox.validationMessage, undefined)
+            assert.strictEqual(await result, 'hello')
+        })
     })
 })
