@@ -10,7 +10,6 @@ import {
     newCustomizationMessageMultiple,
     newCustomizationMessageSingle,
     persistedCustomizationsKey,
-    removedCustomizationMessage,
     selectedCustomizationKey,
 } from '../models/constants'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -33,9 +32,7 @@ export async function notifyNewCustomizations() {
 
     const selectedCustomization = getSelectedCustomization()
     if (!isSelectedCustomizationAvailable(availableCustomizations, selectedCustomization)) {
-        // show notification that selected customization is not available, switching back to base
-        vscode.window.showInformationMessage(removedCustomizationMessage)
-        await setSelectedCustomization(baseCustomization)
+        await switchToBaseCustomizationAndNotify()
     }
 
     const newCustomizations = getNewCustomizations(availableCustomizations)
@@ -43,7 +40,6 @@ export async function notifyNewCustomizations() {
         return
     }
 
-    await setPersistedCustomizations(availableCustomizations)
     await setNewCustomizationAvailable(true)
 
     const select = localize(
@@ -68,8 +64,6 @@ export async function notifyNewCustomizations() {
                 vscode.env.openExternal(vscode.Uri.parse(learnMoreUri))
             }
         })
-    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
 }
 
 export const isSelectedCustomizationAvailable = (available: Customization[], selected: Customization) => {
@@ -103,6 +97,8 @@ export const setSelectedCustomization = async (customization: Customization) => 
     selectedCustomizationObj[AuthUtil.instance.conn.id] = customization
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
+    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
 }
 
 export const getPersistedCustomizations = (): Customization[] => {
@@ -130,11 +126,11 @@ export const getNewCustomizationAvailable = () => {
 
 export const setNewCustomizationAvailable = async (available: boolean) => {
     await set(newCustomizationAvailableKey, available, globals.context.globalState)
+    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 }
 
 export async function showCustomizationPrompt() {
     await setNewCustomizationAvailable(false)
-    vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     await showQuickPick(createCustomizationItems(), {
         title: localize('AWS.codewhisperer.customization.quickPick.title', 'Select a Customization'),
         placeholder: localize(
@@ -158,6 +154,9 @@ export async function showCustomizationPrompt() {
 const createCustomizationItems = async () => {
     const items = []
     const availableCustomizations = await getAvailableCustomizationsList()
+
+    // Order matters
+    const persistedCustomizations = getPersistedCustomizations()
     await setPersistedCustomizations(availableCustomizations)
 
     if (availableCustomizations.length === 0) {
@@ -166,7 +165,6 @@ const createCustomizationItems = async () => {
         return items
     }
 
-    const persistedCustomizations = getPersistedCustomizations()
     const persistedArns = persistedCustomizations.map(c => c.arn)
     items.push(createBaseCustomizationItem())
     items.push(...availableCustomizations.map(c => createCustomizationItem(c, persistedArns)))
@@ -195,8 +193,6 @@ const createBaseCustomizationItem = () => {
         label: label,
         onClick: async () => {
             await setSelectedCustomization(baseCustomization)
-            vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         },
         detail: localize(
             'AWS.codewhisperer.customization.base.description',
@@ -216,9 +212,12 @@ const createCustomizationItem = (customization: Customization, persistedArns: (R
     return {
         label: label,
         onClick: async () => {
+            // If the newly selected customization is same as the old one, do nothing
+            const selectedCustomization = getSelectedCustomization()
+            if (selectedCustomization.arn === customization.arn) {
+                return
+            }
             await setSelectedCustomization(customization)
-            vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-            vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             vscode.window.showInformationMessage(
                 localize(
                     'AWS.codewhisperer.customization.selected.message',
@@ -246,15 +245,26 @@ export const getAvailableCustomizationsList = async () => {
     return items
 }
 
+// show notification that selected customization is not available, switching back to base
+export const switchToBaseCustomizationAndNotify = async () => {
+    await setSelectedCustomization(baseCustomization)
+    vscode.window.showInformationMessage(
+        localize(
+            'AWS.codewhisperer.customization.notification.selected_customization_not_available',
+            'Selected CodeWhisperer customization is not available. Contact your administrator. Your instance of CodeWhisperer is using the foundation model.'
+        )
+    )
+}
+
 const renderDescriptionText = (label: string, isNewCustomization: boolean = false) => {
     const selectedCustomization = getSelectedCustomization()
     let description = ''
     if (isNewCustomization) {
-        description += 'new'
+        description += '   New'
     }
     if (label.includes(selectedCustomization.name ?? '')) {
         // A workaround to align the "Connected" text on the right
-        description += isNewCustomization ? ' '.repeat(127 - label.length) : ' '.repeat(132 - label.length)
+        description += isNewCustomization ? ' '.repeat(124 - label.length) : ' '.repeat(129 - label.length)
     }
     return description
 }

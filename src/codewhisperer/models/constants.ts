@@ -240,6 +240,9 @@ export const throttlingMessage = `Maximum recommendation count reached for this 
 
 export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
+// TODO: align this text with service side
+export const invalidCustomizationMessage = `Invalid Customization`
+
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
@@ -263,9 +266,6 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 export const newCustomizationMessageSingle = 'You have access to a new CodeWhisperer customization.'
 
 export const newCustomizationMessageMultiple = 'You have access to new CodeWhisperer customizations.'
-
-export const removedCustomizationMessage =
-    'Your administrator has deactivated the current customization in use. CodeWhisperer is using its base model.'
 
 export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 
