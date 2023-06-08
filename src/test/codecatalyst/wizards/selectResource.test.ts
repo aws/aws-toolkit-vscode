@@ -6,20 +6,9 @@
 import { instance, when } from 'ts-mockito'
 import { createOrgPrompter, createProjectPrompter } from '../../../codecatalyst/wizards/selectResource'
 import { CodeCatalystOrg, CodeCatalystClient, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
-<<<<<<< HEAD
-import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
-=======
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
->>>>>>> c0046635 (modify import statements and delete test utilities)
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
-
-// TODO: move to test utils
-function intoCollection<T>(arr: T[]): AsyncCollection<T> {
-    return toCollection(async function* () {
-        yield* arr
-    })
-}
 
 describe('Prompts', function () {
     let orgs: CodeCatalystOrg[]
