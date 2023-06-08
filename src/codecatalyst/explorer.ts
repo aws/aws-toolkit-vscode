@@ -17,6 +17,7 @@ import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection, isBuilderIdConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { AuthCommandDeclarations } from '../auth/commands'
 
 export const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
@@ -49,7 +50,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
-            getStartedCommand.build(auth).asTreeNode({
+            AuthCommandDeclarations.instance.declared.showConnectionsPage.build('CODE_CATALYST').asTreeNode({
                 label: 'Start',
                 iconPath: getIcon('vscode-debug-start'),
             }),

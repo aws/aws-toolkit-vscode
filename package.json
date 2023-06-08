@@ -1872,7 +1872,7 @@
             ],
             "aws.auth": [
                 {
-                    "command": "aws.auth.addConnection",
+                    "command": "aws.auth.showConnectionsPage",
                     "group": "0@1"
                 },
                 {
@@ -2022,8 +2022,7 @@
             {
                 "command": "aws.auth.showConnectionsPage",
                 "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%",
-                "enablement": "aws.isDevMode"
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.auth.switchConnections",

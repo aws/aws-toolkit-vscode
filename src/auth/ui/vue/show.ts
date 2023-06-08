@@ -26,11 +26,14 @@ import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand } from '../../../codecatalyst/explorer'
 import { ToolkitError } from '../../../shared/errors'
 import { isBuilderIdConnection } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, addConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
+import { DevSettings } from '../../../shared/settings'
+import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
+import { ServiceItemId } from './types'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -225,7 +228,12 @@ const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-export async function showAuthWebview(ctx: vscode.ExtensionContext): Promise<void> {
+export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToShow?: ServiceItemId): Promise<void> {
+    if (executeFallbackLogic(serviceToShow) !== undefined) {
+        // Fallback logic was executed
+        return
+    }
+
     activePanel ??= new Panel(ctx)
 
     activePanel.server.setupConnectionChangeEmitter()
@@ -245,4 +253,25 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext): Promise<voi
             }),
         ]
     }
+}
+
+/**
+ * This function falls back to the previous non auth webview
+ * logic if we are not in dev mode.
+ *
+ * TODO: Remove this dev mode check once our auth connections webview is fully implemented.
+ * We are currently doing this to fallback to the previous behaviour while still being
+ * able to pre-emptively update parts of the code to call the new functionality once
+ * things are finalized.
+ */
+function executeFallbackLogic(serviceToShow?: ServiceItemId) {
+    if (!DevSettings.instance.isDevMode()) {
+        if (serviceToShow === 'CODE_WHISPERER') {
+            return showSsoSignIn.execute()
+        } else if (serviceToShow === 'CODE_CATALYST') {
+            return getStartedCommand.execute(CodeCatalystAuthenticationProvider.instance!)
+        }
+        return addConnection.execute()
+    }
+    return undefined
 }

@@ -225,43 +225,48 @@ Commands.register('aws.auth.signout', () => {
     return signout(Auth.instance)
 })
 
-const addConnection = Commands.register({ id: 'aws.auth.addConnection', telemetryThrottleMs: false }, async () => {
-    const c9IamItem = createIamItem()
-    c9IamItem.detail =
-        'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
-    const items = isCloud9() ? [createSsoItem(), c9IamItem] : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+export const addConnection = Commands.register(
+    { id: 'aws.auth.addConnection', telemetryThrottleMs: false },
+    async () => {
+        const c9IamItem = createIamItem()
+        c9IamItem.detail =
+            'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+        const items = isCloud9()
+            ? [createSsoItem(), c9IamItem]
+            : [createBuilderIdItem(), createSsoItem(), createIamItem()]
 
-    const resp = await showQuickPick(items, {
-        title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
-        placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
-        buttons: createCommonButtons() as vscode.QuickInputButton[],
-    })
-    if (!isValidResponse(resp)) {
-        telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
-        throw new CancellationError('user')
-    }
+        const resp = await showQuickPick(items, {
+            title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
+            placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
+            buttons: createCommonButtons() as vscode.QuickInputButton[],
+        })
+        if (!isValidResponse(resp)) {
+            telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
+            throw new CancellationError('user')
+        }
 
-    switch (resp) {
-        case 'iam':
-            return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
-        case 'sso': {
-            const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
-            const startUrl = await startUrlPrompter.prompt()
-            if (!isValidResponse(startUrl)) {
-                throw new CancellationError('user')
+        switch (resp) {
+            case 'iam':
+                return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
+            case 'sso': {
+                const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
+                const startUrl = await startUrlPrompter.prompt()
+                if (!isValidResponse(startUrl)) {
+                    throw new CancellationError('user')
+                }
+                telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
+
+                const region = await showRegionPrompter()
+
+                const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
+                return Auth.instance.useConnection(conn)
             }
-            telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
-            const region = await showRegionPrompter()
-
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
-            return Auth.instance.useConnection(conn)
-        }
-        case 'builderId': {
-            return createBuilderIdConnection(Auth.instance)
+            case 'builderId': {
+                return createBuilderIdConnection(Auth.instance)
+            }
         }
     }
-})
+)
 
 export async function tryAddCredentials(
     profileName: SectionName,
