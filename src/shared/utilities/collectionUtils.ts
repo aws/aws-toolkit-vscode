@@ -489,7 +489,6 @@ export async function* joinAll<T>(iterable: AsyncIterable<AsyncIterable<T>>): As
     } while (!iterables.completed)
 }
 
-// TODO: what is the point of this? should it live in src/shared/utilities/collectionUtils.ts ?
 export async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
