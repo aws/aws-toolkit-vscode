@@ -10,7 +10,7 @@ import {
     SchemasDataProvider,
 } from '../../../eventSchemas/providers/schemasDataProvider'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { stub } from '../../utilities/stubber'
 
 describe('schemasDataProvider', function () {

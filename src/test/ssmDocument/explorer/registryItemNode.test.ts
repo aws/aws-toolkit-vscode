@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
 import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { stub } from '../../utilities/stubber'
 

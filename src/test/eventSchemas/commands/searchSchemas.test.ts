@@ -9,7 +9,7 @@ import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 
 import { MockOutputChannel } from '../../mockOutputChannel'
 import {

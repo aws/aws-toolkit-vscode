@@ -6,7 +6,7 @@
 import { Cluster, Container, Service } from '../../ecs/model'
 import { DefaultEcsClient } from '../../shared/clients/ecsClient'
 import { assertChildren, assertTreeItem } from '../shared/treeview/testUtil'
-import { createCollectionFromPages } from '../utilities/collectionUtils'
+import { createCollectionFromPages } from '../../shared/utilities/collectionUtils'
 import { stub } from '../utilities/stubber'
 
 const clusterData = {

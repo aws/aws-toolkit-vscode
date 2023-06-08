@@ -31,7 +31,7 @@ import {
     joinAll,
 } from '../../../shared/utilities/collectionUtils'
 
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 
 describe('CollectionUtils', async function () {
     let sandbox: sinon.SinonSandbox
