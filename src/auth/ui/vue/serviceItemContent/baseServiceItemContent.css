@@ -12,3 +12,9 @@
     /* For testing purposes, before we have content to fill */
     min-height: 600px;
 }
+
+.form-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
