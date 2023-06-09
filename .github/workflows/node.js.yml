@@ -11,7 +11,7 @@ on:
 
 jobs:
     macos:
-        name: macOS nodejs
+        name: test macOS
         runs-on: macos-latest
         strategy:
             matrix:
@@ -53,7 +53,7 @@ jobs:
                   flags: codewhisperer
 
     windows:
-        name: Windows nodejs
+        name: test Windows
         runs-on: windows-2019
         strategy:
             matrix:
@@ -83,7 +83,7 @@ jobs:
                   flags: windows-unittests
 
     lint:
-        name: Ubuntu nodejs Lint
+        name: Lint
         runs-on: ubuntu-latest
         strategy:
             matrix:
