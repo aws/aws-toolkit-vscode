@@ -9,7 +9,7 @@ import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resource
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'

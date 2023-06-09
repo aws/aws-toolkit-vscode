@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
