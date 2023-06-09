@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { openUrl, showExtensionPage } from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { samAboutInstallUrl, vscodeMarketplaceUrl } from '../../constants'
+import { samInstallUrl } from '../../constants'
 import { getIdeProperties } from '../../extensionUtilities'
 import {
     InvalidSamCliError,
@@ -18,6 +18,7 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from './samCliValidator'
+import { VSCODE_EXTENSION_ID } from '../../extensions'
 
 const localize = nls.loadMessageBundle()
 
@@ -28,17 +29,20 @@ export interface SamCliValidationNotificationAction {
 }
 
 const actionGoToSamCli: SamCliValidationNotificationAction = {
-    label: localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI'),
+    label: localize('AWS.samcli.userChoice.visit.install.url', 'Install latest SAM CLI'),
     invoke: async () => {
-        openUrl(samAboutInstallUrl)
+        openUrl(samInstallUrl)
     },
 }
 
 const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
-    label: localize('AWS.samcli.userChoice.update.awstoolkit.url', 'Visit Marketplace'),
+    label: localize(
+        'AWS.samcli.userChoice.update.awstoolkit.url',
+        'Install latest {0} Toolkit',
+        getIdeProperties().company
+    ),
     invoke: async () => {
-        // TODO : Switch to the Extension panel in VS Code instead
-        await vscode.env.openExternal(vscode.Uri.parse(vscodeMarketplaceUrl))
+        showExtensionPage(VSCODE_EXTENSION_ID.awstoolkit)
     },
 }
 
@@ -74,12 +78,11 @@ export async function notifySamCliValidation(samCliValidationError: InvalidSamCl
         return
     }
 
-    const notification: SamCliValidationNotification = makeSamCliValidationNotification(samCliValidationError)
-
+    const notification = getInvalidSamMsg(samCliValidationError)
     await notification.show()
 }
 
-export function makeSamCliValidationNotification(
+export function getInvalidSamMsg(
     samCliValidationError: InvalidSamCliError,
     onCreateNotification: (
         message: string,
@@ -97,14 +100,14 @@ export function makeSamCliValidationNotification(
         )
     } else if (samCliValidationError instanceof InvalidSamCliVersionError) {
         return onCreateNotification(
-            makeVersionValidationNotificationMessage(samCliValidationError.versionValidation),
-            makeVersionValidationActions(samCliValidationError.versionValidation.validation)
+            getInvalidVersionMsg(samCliValidationError.versionValidation),
+            getActions(samCliValidationError.versionValidation.validation)
         )
     } else {
         return onCreateNotification(
             localize(
                 'AWS.samcli.notification.unexpected.validation.issue',
-                'An unexpected issue occured while validating SAM CLI: {0}',
+                'Unexpected error while validating SAM CLI: {0}',
                 samCliValidationError.message
             ),
             []
@@ -112,23 +115,33 @@ export function makeSamCliValidationNotification(
     }
 }
 
-function makeVersionValidationNotificationMessage(validationResult: SamCliVersionValidatorResult): string {
-    const recommendationUpdateToolkit: string = localize(
-        'AWS.samcli.recommend.update.toolkit',
-        'Check the Marketplace for an updated {0} Toolkit.',
-        getIdeProperties().company
+function getInvalidVersionMsg(validationResult: SamCliVersionValidatorResult): string {
+    const win185msg = localize(
+        'AWS.sam.updateSamWindows',
+        'SAM CLI 1.85-1.86 has [known issues](https://github.com/aws/aws-sam-cli/issues/5243) on Windows. Update SAM CLI.'
     )
+    let recommendation: string
 
-    const recommendationUpdateSamCli: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
-
-    const recommendation: string =
-        validationResult.validation === SamCliVersionValidation.VersionTooHigh
-            ? recommendationUpdateToolkit
-            : recommendationUpdateSamCli
+    switch (validationResult.validation) {
+        case SamCliVersionValidation.VersionTooHigh:
+            recommendation = localize('AWS.sam.updateToolkit', 'Update {0} Toolkit.', getIdeProperties().company)
+            break
+        case SamCliVersionValidation.Version185Win:
+            return win185msg
+        case SamCliVersionValidation.VersionNotParseable: {
+            if (process.platform === 'win32') {
+                return win185msg
+            }
+            return localize('AWS.sam.installSam', 'SAM CLI failed to run.')
+        }
+        default:
+            recommendation = localize('AWS.sam.updateSam', 'Update SAM CLI.')
+            break
+    }
 
     return localize(
-        'AWS.samcli.notification.version.invalid',
-        'Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}',
+        'AWS.sam.invalid',
+        'SAM CLI {0} is not in required range ({1} ≤ version < {2}). {3}',
         validationResult.version,
         minSamCliVersion,
         maxSamCliVersionExclusive,
@@ -136,7 +149,7 @@ function makeVersionValidationNotificationMessage(validationResult: SamCliVersio
     )
 }
 
-function makeVersionValidationActions(validation: SamCliVersionValidation): SamCliValidationNotificationAction[] {
+function getActions(validation: SamCliVersionValidation): SamCliValidationNotificationAction[] {
     const actions: SamCliValidationNotificationAction[] = []
 
     if (validation === SamCliVersionValidation.VersionTooHigh) {
