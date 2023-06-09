@@ -38,25 +38,46 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
     private get recentTimeItems(): DataQuickPickItem<number>[] {
         const options: DataQuickPickItem<number>[] = []
+        //appromixate 31 days as month length (better to overshoot)
         options.push({
-            label: 'Any time',
+            label: 'All time',
             data: 0,
         })
         options.push({
-            label: 'Last 1 Minute',
-            data: 1,
+            label: 'Last 15 minutes', 
+            data: 15,
         })
         options.push({
-            label: 'Last 30 Minutes',
-            data: 30,
-        })
-        options.push({
-            label: 'Last 1 Hour',
+            label: 'Last hour', 
             data: 60,
         })
         options.push({
-            label: 'Last 12 Hours',
-            data: 60 * 12,
+            label: 'Last 3 Hours', 
+            data: 60 * 3,
+        })
+        options.push({
+            label: 'Last 24 Hours',
+            data: 60 * 24,
+        })
+        options.push({
+            label: 'Last 3 Days',
+            data: 60 * 24 * 3,
+        })
+        options.push({
+            label: 'Last week',
+            data: 60 * 24 * 7,
+        })
+        options.push({
+            label: 'Last month', 
+            data: 60 * 24 * 31, 
+        })
+        options.push({
+            label: 'Last 3 months', 
+            data: 60 * 24 * 31 * 3,
+        })
+        options.push({
+            label: 'Last year', 
+            data: 60 * 24 * 365,
         })
         return options
     }
