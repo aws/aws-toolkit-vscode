@@ -49,10 +49,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
 
 export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
     const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vsCodeExecutablePath)
-    // Disable sandbox to avoid: "Running as root without --no-sandbox is not supported".
-    // https://github.com/aws/aws-toolkit-vscode/issues/3550
-    // https://crbug.com/638180
-    const cmdArgs = ['--no-sandbox', ...cliArgs, ...args]
+    const cmdArgs = [...cliArgs, ...args]
 
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
@@ -133,11 +130,6 @@ async function setupVSCode(): Promise<string> {
 }
 
 export async function runToolkitTests(suiteName: string, relativeEntryPoint: string) {
-    // Disable sandbox to avoid: "Running as root without --no-sandbox is not supported".
-    // https://github.com/aws/aws-toolkit-vscode/issues/3550
-    // https://crbug.com/638180
-    const noSandboxArgs = ['--no-sandbox', '--disable-gpu-sandbox']
-
     try {
         console.log(`Running ${suiteName} test suite...`)
         const vsCodeExecutablePath = await setupVSCode()
@@ -162,7 +154,7 @@ export async function runToolkitTests(suiteName: string, relativeEntryPoint: str
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
-            launchArgs: [...noSandboxArgs, ...disableExtensions, workspacePath, disableWorkspaceTrust],
+            launchArgs: [...disableExtensions, workspacePath, disableWorkspaceTrust],
             extensionTestsEnv: {
                 ['DEVELOPMENT_PATH']: cwd,
                 ['AWS_TOOLKIT_AUTOMATION']: suiteName,
