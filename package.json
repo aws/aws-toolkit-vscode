@@ -844,7 +844,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.copyLogStreamName",
+                    "command": "aws.copyLogGroupName",
                     "when": "resourceScheme == aws-cwl"
                 },
                 {
@@ -1165,7 +1165,7 @@
             ],
             "editor/title/context": [
                 {
-                    "command": "aws.copyLogStreamName",
+                    "command": "aws.copyLogGroupName",
                     "when": "resourceScheme == aws-cwl",
                     "group": "1_cutcopypaste@1"
                 }
@@ -2777,8 +2777,8 @@
                 }
             },
             {
-                "command": "aws.copyLogStreamName",
-                "title": "%AWS.command.copyLogStreamName%",
+                "command": "aws.copyLogGroupName",
+                "title": "%AWS.command.copyLogGroupName%",
                 "category": "%AWS.title%",
                 "icon": "$(files)",
                 "cloud9": {
