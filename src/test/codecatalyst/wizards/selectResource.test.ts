@@ -6,7 +6,7 @@
 import { instance, when } from 'ts-mockito'
 import { createOrgPrompter, createProjectPrompter } from '../../../codecatalyst/wizards/selectResource'
 import { CodeCatalystOrg, CodeCatalystClient, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
-import { intoCollection } from '../../utilities/collectionUtils'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
 
