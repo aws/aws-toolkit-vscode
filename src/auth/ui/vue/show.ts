@@ -26,7 +26,10 @@ import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand } from '../../../codecatalyst/explorer'
 import { ToolkitError } from '../../../shared/errors'
 import { isBuilderIdConnection } from '../../connection'
-import { tryAddCredentials, signout } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter } from '../../utils'
+import { Region } from '../../../shared/regions/endpoints'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { validateSsoUrl } from '../../sso/validation'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -134,6 +137,59 @@ export class AuthWebview extends VueWebview {
         if (this.codeCatalystAuth.activeConnection) {
             await this.codeCatalystAuth.removeSavedConnection()
         }
+    }
+
+    async getIdentityCenterRegion(): Promise<Region> {
+        return showRegionPrompter()
+    }
+
+    async startIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+        try {
+            await CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+        } catch (e) {
+            // This scenario will most likely be due to failing to connect from user error.
+            // When the sso login process fails (eg: wrong url) they will come back
+            // to the IDE and cancel the 'waiting for browser response'
+            if (CancellationError.isUserCancelled(e)) {
+                return
+            }
+        }
+    }
+
+    isCodeWhispererIdentityCenterConnected(): boolean {
+        return CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()
+    }
+
+    async signoutIdentityCenter(): Promise<void> {
+        const activeConn = CodeWhispererAuth.instance.isEnterpriseSsoInUse()
+            ? CodeWhispererAuth.instance.conn
+            : undefined
+        if (!activeConn) {
+            // At this point CW is not actively using IAM IC,
+            // even if a valid IAM IC profile exists. We only
+            // want to sign out if it being actively used.
+            getLogger().warn('authWebview: Attempted to signout of identity center when it was not being used')
+            return
+        }
+
+        await this.deleteSavedIdentityCenterConns()
+        await signout(Auth.instance, activeConn) // deletes active connection
+    }
+
+    /**
+     * Deletes the saved connection, but it is possible an active one still persists
+     */
+    private async deleteSavedIdentityCenterConns(): Promise<void> {
+        if (CodeWhispererAuth.instance.isEnterpriseSsoInUse()) {
+            await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
+        }
+    }
+
+    getSsoUrlError(url?: string) {
+        if (!url) {
+            return
+        }
+        return validateSsoUrl(Auth.instance, url)
     }
 
     /**

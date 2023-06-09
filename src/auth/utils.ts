@@ -14,7 +14,7 @@ import { codicon, getIcon } from '../shared/icons'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { formatError, ToolkitError, UnknownError } from '../shared/errors'
+import { formatError, ToolkitError } from '../shared/errors'
 import { asString } from './providers/credentials'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
@@ -35,12 +35,12 @@ import {
     createBuilderIdProfile,
     createSsoProfile,
     defaultSsoRegion,
-    hasScopes,
     isBuilderIdConnection,
     isSsoConnection,
 } from './connection'
 import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
+import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     const resp = await createConnectionPrompter(auth, type).prompt()
@@ -138,22 +138,12 @@ export async function createStartUrlPrompter(title: string, requiredScopes?: str
     const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
 
     function validateSsoUrl(url: string) {
-        if (!url.match(/^(http|https):\/\//i)) {
-            return 'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+        const urlFormatError = validateSsoUrlFormat(url)
+        if (urlFormatError) {
+            return urlFormatError
         }
 
-        try {
-            const uri = vscode.Uri.parse(url, true)
-            const isSameAuthority = (a: vscode.Uri, b: vscode.Uri) =>
-                a.authority.toLowerCase() === b.authority.toLowerCase()
-            const oldConn = existingConnections.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
-
-            if (oldConn && (!requiredScopes || hasScopes(oldConn, requiredScopes))) {
-                return 'A connection for this start URL already exists. Sign out before creating a new one.'
-            }
-        } catch (err) {
-            return `URL is malformed: ${UnknownError.cast(err).message}`
-        }
+        return validateIsNewSsoUrl(url, requiredScopes, existingConnections)
     }
 
     return createInputBox({
