@@ -1,10 +1,10 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
-import { EnvVarsCredentialsProvider } from '../../../credentials/providers/envVarsCredentialsProvider'
+import { EnvVarsCredentialsProvider } from '../../../auth/providers/envVarsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EnvVarsCredentialsProvider', function () {

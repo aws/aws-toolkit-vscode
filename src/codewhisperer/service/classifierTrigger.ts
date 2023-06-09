@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -319,7 +319,11 @@ export class ClassifierTrigger {
     }
 
     public isClassifierEnabled() {
-        return globals.context.globalState.get<boolean>(CodeWhispererConstants.isClassifierEnabledKey)
+        const userGroup = globals.context.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
+            CodeWhispererConstants.userGroupKey
+        )
+
+        return userGroup === CodeWhispererConstants.UserGroup.Classifier
     }
 
     public getThreshold() {
