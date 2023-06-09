@@ -13,6 +13,6 @@ describe('eslint', function () {
         const result = runCmd(['./node_modules/.bin/eslint', '-c', '.eslintrc.js', '--ext', '.ts', '.'], {
             throws: false,
         })
-        assert.strictEqual(result.status, 0, result.error)
+        assert.strictEqual(result.status, 0, result.stdout.toString())
     })
 })
