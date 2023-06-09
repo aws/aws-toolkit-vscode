@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { isValidResponse, StepEstimator } from '../../wizards/wizard'
 import { createQuickPick, ExtendedQuickPickOptions, ItemLoadTypes } from '../pickerPrompter'
@@ -37,12 +37,22 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
             this.itemsProvider(this.currentRegion),
             this.dataOptions as ExtendedQuickPickOptions<T | typeof switchRegion>
         )
-
+        
         prompter.quickPick.items = [
+            {
+                label: 'Actions',
+                kind: vscode.QuickPickItemKind.Separator,
+                data: undefined,
+            },
             {
                 label: 'Switch region',
                 data: switchRegion,
                 description: `current region: ${this.currentRegion}`,
+            },
+            {
+                label: 'Log Groups',
+                kind: vscode.QuickPickItemKind.Separator,
+                data: undefined,
             },
             ...prompter.quickPick.items,
         ]
