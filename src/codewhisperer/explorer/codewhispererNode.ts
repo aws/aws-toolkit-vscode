@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -53,10 +53,6 @@ export class CodeWhispererNode implements RootNode {
     }
 
     private getDescription(): string {
-        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-        if (accessToken) {
-            return 'Access Token'
-        }
         if (AuthUtil.instance.isConnectionValid()) {
             return AuthUtil.instance.isEnterpriseSsoInUse()
                 ? 'IAM Identity Center Connected'

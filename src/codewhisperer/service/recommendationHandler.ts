@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -30,7 +30,6 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import globals from '../../shared/extensionGlobals'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -147,11 +146,10 @@ export class RecommendationHandler {
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
-            const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
             req = EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
-                accessToken ? undefined : config.isSuggestionsWithCodeReferencesEnabled
+                config.isSuggestionsWithCodeReferencesEnabled
             )
         } else {
             req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)

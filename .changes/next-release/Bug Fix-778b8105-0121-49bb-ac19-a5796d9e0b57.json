@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Update dependency amazon-states-language-service from 1.9->1.10. This fixes  support for Yaml Comments in states machines, ProcessorConfig property & Credentials key."
-}

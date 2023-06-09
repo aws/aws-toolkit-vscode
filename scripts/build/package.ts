@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -34,21 +34,37 @@ function parseArgs() {
     //   1: /…/src/scripts/build/package.ts
     //   2: foo
 
-    const givenArgs = process.argv.slice(2)
-    const validOptions = ['--debug', '--no-clean']
+    const args: { [key: string]: any } = {
+        /** Produce an unoptimized VSIX. Include git SHA in version string. */
+        debug: false,
+        /** Skips `npm run clean` when building the VSIX. This prevents file watching from breaking. */
+        skipClean: false,
+        feature: '',
+    }
 
-    for (const a of givenArgs) {
+    const givenArgs = process.argv.slice(2)
+    const validOptions = ['--debug', '--no-clean', '--feature']
+    const expectValue = ['--feature']
+
+    for (let i = 0; i < givenArgs.length; i++) {
+        const a = givenArgs[i]
+        const argName = a.replace(/^-+/, '') // "--foo" => "foo"
         if (!validOptions.includes(a)) {
             throw Error(`invalid argument: ${a}`)
         }
+        if (expectValue.includes(a)) {
+            i++
+            const val = givenArgs[i]
+            if (val === undefined) {
+                throw Error(`missing value for arg: ${a}`)
+            }
+            args[argName] = val
+        } else {
+            args[argName] = true
+        }
     }
 
-    return {
-        /** Produce an unoptimized VSIX. Include git SHA in version string. */
-        debug: givenArgs.includes('--debug'),
-        /** Skips `npm run clean` when building the VSIX. This prevents file watching from breaking. */
-        skipClean: givenArgs.includes('--no-clean'),
-    }
+    return args
 }
 
 /**
@@ -73,7 +89,7 @@ function isBeta(): boolean {
  *
  * @returns version-string suffix, for example: "-e6ecd84685a9"
  */
-function getVersionSuffix(): string {
+function getVersionSuffix(feature: string): string {
     if (isRelease()) {
         return ''
     }
@@ -81,7 +97,7 @@ function getVersionSuffix(): string {
     if (!commitId) {
         return ''
     }
-    return `-${commitId}`
+    return `${feature === '' ? '' : `-${feature}`}-${commitId}`
 }
 
 function main() {
@@ -101,7 +117,7 @@ function main() {
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
             const packageJson: typeof manifest = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
-            const versionSuffix = getVersionSuffix()
+            const versionSuffix = getVersionSuffix(args.feature)
             const version = packageJson.version
             // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
             const betaOrDebugVersion = `1.999.0${versionSuffix}`
