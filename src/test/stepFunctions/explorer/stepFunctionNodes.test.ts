@@ -13,7 +13,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import globals from '../../../shared/extensionGlobals'
 import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 import { stub } from '../../utilities/stubber'
