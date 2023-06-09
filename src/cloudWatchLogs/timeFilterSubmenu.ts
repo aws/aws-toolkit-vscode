@@ -56,10 +56,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
             data: 60 * 3,
         })
         options.push({
-            label: 'Last 12 Hours',
-            data: 60 * 12,
-        })
-        options.push({
             label: 'Last 24 Hours',
             data: 60 * 24,
         })
