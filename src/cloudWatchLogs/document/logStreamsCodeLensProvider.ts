@@ -61,7 +61,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
         const cmd: vscode.Command = {
             command: 'aws.loadLogStreamFile',
             arguments: [streamUri, this.registry],
-            title: 'Open this Log Stream...',
+            title: 'View Full Log Stream...',
             tooltip: 'Open the full Log Stream associated with these search results',
         }
         const codeLensLocation = new vscode.Range(idWithLine.lineNum, 0, idWithLine.lineNum, 0)
