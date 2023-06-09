@@ -8,7 +8,7 @@ import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { Settings } from '../shared/settings'
 import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
-import { copyLogGroupName } from './commands/copyLogGroupName'
+import { copyLogResource } from './commands/copyLogResource'
 import { saveCurrentLogDataContent } from './commands/saveCurrentLogDataContent'
 import { viewLogStream } from './commands/viewLogStream'
 import { LogDataCodeLensProvider } from './document/logDataCodeLensProvider'
@@ -64,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             loadAndOpenInitialLogStreamFile(uri, registry)
         )
     )
-    context.subscriptions.push(Commands.register('aws.copyLogGroupName', copyLogGroupName))
+    context.subscriptions.push(Commands.register('aws.copyLogResource', copyLogResource))
     context.subscriptions.push(
         Commands.register(
             'aws.addLogEvents',

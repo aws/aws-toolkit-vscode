@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { copyLogGroupName } from '../../../cloudWatchLogs/commands/copyLogGroupName'
+import { copyLogGroupName } from '../../../cloudWatchLogs/commands/copyLogResource'
 
 describe('copyLogStreamName', async function () {
     beforeEach(async function () {
