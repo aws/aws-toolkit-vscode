@@ -21,7 +21,6 @@ export async function copyLogGroupName(uri?: vscode.Uri): Promise<void> {
             }
         }
         const parsedUri = parseCloudWatchLogsUri(uri)
-        console.log(parsedUri);
         const groupName = parsedUri.logGroupInfo.groupName
 
         if (!groupName) {

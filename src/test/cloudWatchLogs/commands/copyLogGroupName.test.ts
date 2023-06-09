@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { copyLogStreamName } from '../../../cloudWatchLogs/commands/copyLogGroupName'
+import { copyLogGroupName } from '../../../cloudWatchLogs/commands/copyLogGroupName'
 
 describe('copyLogStreamName', async function () {
     beforeEach(async function () {
@@ -25,11 +25,11 @@ describe('copyLogStreamName', async function () {
         }
         const uri = createURIFromArgs(logGroupInfo, {})
 
-        await copyLogStreamName(uri)
+        await copyLogGroupName(uri)
 
-        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.streamName)
-        await copyLogStreamName(vscode.Uri.parse(`notCloudWatch:hahahaha`))
+        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.groupName)
+        await copyLogGroupName(vscode.Uri.parse(`notCloudWatch:hahahaha`))
 
-        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.streamName)
+        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.groupName)
     })
 })
