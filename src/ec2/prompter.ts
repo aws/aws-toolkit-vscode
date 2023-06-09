@@ -4,7 +4,7 @@
  */
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { getInstanceIdsFromRegion } from "./commands";
+import { getInstanceIdsFromRegion } from "./utils";
 import { DataQuickPickItem } from "../shared/ui/pickerPrompter";
 
 type EC2InstanceId = string
