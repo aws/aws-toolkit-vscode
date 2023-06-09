@@ -1,7 +1,11 @@
 <template>
     <div class="service-item-content-container border-common">
-        <div>
+        <div class="form-container">
             <BuilderIdForm :state="builderIdState" @auth-connection-updated="onAuthConnectionUpdated"></BuilderIdForm>
+            <IdentityCenterForm
+                :state="identityCenterState"
+                @auth-connection-updated="onAuthConnectionUpdated"
+            ></IdentityCenterForm>
         </div>
     </div>
 </template>
@@ -9,16 +13,20 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageBuilderId.vue'
+import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 
 export default defineComponent({
     name: 'CodeWhispererContent',
-    components: { BuilderIdForm },
+    components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {
             return authFormsState.BUILDER_ID_CODE_WHISPERER
+        },
+        identityCenterState(): CodeWhispererIdentityCenterState {
+            return authFormsState.IDENTITY_CENTER_CODE_WHISPERER
         },
     },
     methods: {
@@ -31,7 +39,11 @@ export default defineComponent({
 
 export class CodeWhispererContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.BUILDER_ID_CODE_WHISPERER.isAuthConnected()
+        const result = await Promise.all([
+            authFormsState.BUILDER_ID_CODE_WHISPERER.isAuthConnected(),
+            authFormsState.IDENTITY_CENTER_CODE_WHISPERER.isAuthConnected(),
+        ])
+        return result.filter(isConnected => isConnected).length > 0
     }
 }
 </script>
