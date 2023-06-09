@@ -201,7 +201,7 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should start idle trigger timer when inputing non-special characters', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
+            const mockEditor = createMockTextEditor('def addTwo', 'test.rb', 'ruby')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
