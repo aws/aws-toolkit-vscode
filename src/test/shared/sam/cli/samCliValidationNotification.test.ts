@@ -15,20 +15,20 @@ import {
 import {
     SamCliValidationNotification,
     SamCliValidationNotificationAction,
-    makeSamCliValidationNotification,
+    getInvalidSamMsg,
 } from '../../../../shared/sam/cli/samCliValidationNotification'
 
-describe('makeSamCliValidationNotification', async function () {
+describe('getInvalidSamMsg', async function () {
     const fakeSamCliValidationNotification: SamCliValidationNotification = {
         show: () => {
             throw new Error('show is unused')
         },
     }
-    const actionLabelUpdateSamCli = 'Get SAM CLI'
-    const actionLabelUpdateToolkit = 'Visit Marketplace'
+    const actionLabelUpdateSamCli = 'Install latest SAM CLI'
+    const actionLabelUpdateToolkit = 'Install latest AWS Toolkit'
 
     it('handles SamCliNotFoundError', async function () {
-        makeSamCliValidationNotification(
+        getInvalidSamMsg(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
                 assert.ok(message.includes('Cannot find SAM CLI'), `unexpected validation message: ${message}`)
@@ -48,19 +48,19 @@ describe('makeSamCliValidationNotification', async function () {
         {
             situation: 'SAM CLI Version is too low',
             versionValidation: SamCliVersionValidation.VersionTooLow,
-            messageFragment: 'Update your SAM CLI.',
+            messageFragment: 'Update SAM CLI.',
             actionLabel: actionLabelUpdateSamCli,
         },
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
-            messageFragment: 'Check the Marketplace for an updated AWS Toolkit.',
+            messageFragment: 'Update AWS Toolkit.',
             actionLabel: actionLabelUpdateToolkit,
         },
         {
-            situation: 'SAM CLI Version is unparsable',
+            situation: 'SAM CLI failed to run',
             versionValidation: SamCliVersionValidation.VersionNotParseable,
-            messageFragment: 'Update your SAM CLI.',
+            messageFragment: process.platform === 'win32' ? 'known issues' : 'SAM CLI failed to run',
             actionLabel: actionLabelUpdateSamCli,
         },
     ]
@@ -73,13 +73,14 @@ describe('makeSamCliValidationNotification', async function () {
             }
             const error = new InvalidSamCliVersionError(validatorResult)
 
-            makeSamCliValidationNotification(
+            getInvalidSamMsg(
                 error,
                 (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
-                    assert.ok(
-                        message.includes(test.messageFragment) && message.includes(validatorResult.version!),
-                        `unexpected validation message: ${message}`
-                    )
+                    const hasMsg = message.includes(test.messageFragment)
+                    const hasVersion =
+                        test.versionValidation === SamCliVersionValidation.VersionNotParseable ||
+                        message.includes(validatorResult.version!)
+                    assert.ok(hasMsg && hasVersion, `unexpected validation message: ${message}`)
                     assert.strictEqual(actions.length, 1, 'unexpected action count')
                     assert.strictEqual(
                         actions[0].label,
@@ -94,11 +95,11 @@ describe('makeSamCliValidationNotification', async function () {
     })
 
     it('handles Unexpected input', async function () {
-        makeSamCliValidationNotification(
+        getInvalidSamMsg(
             new InvalidSamCliError('different error'),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
                 assert.ok(
-                    message.includes('An unexpected issue') && message.includes('different error'),
+                    message.includes('Unexpected error while') && message.includes('different error'),
                     `unexpected validation message: ${message}`
                 )
                 assert.strictEqual(actions.length, 0, 'unexpected actions found')

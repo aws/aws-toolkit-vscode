@@ -5,13 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { samAboutInstallUrl } from '../../constants'
+import { samInstallUrl } from '../../constants'
 import { telemetry } from '../../telemetry/telemetry'
 import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
-const learnMore = localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI')
+const learnMore = localize('AWS.samcli.userChoice.visit.install.url', 'Install SAM CLI')
 const browseToSamCli = localize('AWS.samcli.userChoice.browse', 'Locate SAM CLI...')
 const settingsUpdated = localize('AWS.samcli.detect.settings.updated', 'Settings updated.')
 
@@ -64,20 +64,20 @@ function notifyUserSamCliNotDetected(SamCliSettings: SamCliSettings): void {
         .showErrorMessage(
             localize(
                 'AWS.samcli.error.notFound',
-                'Cannot find SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.'
+                'Cannot find SAM CLI, which is required to create and debug SAM applications. If you have SAM CLI in a custom location, set the "aws.samcli.location" user setting.'
             ),
             learnMore,
             browseToSamCli
         )
         .then(async userResponse => {
             if (userResponse === learnMore) {
-                await vscode.commands.executeCommand('vscode.open', samAboutInstallUrl)
+                await vscode.commands.executeCommand('vscode.open', samInstallUrl)
             } else if (userResponse === browseToSamCli) {
                 const location: vscode.Uri[] | undefined = await vscode.window.showOpenDialog({
                     canSelectFiles: true,
                     canSelectFolders: false,
                     canSelectMany: false,
-                    openLabel: 'Apply location to Settings',
+                    openLabel: 'Set location in user settings',
                 })
 
                 if (!!location && location.length === 1) {

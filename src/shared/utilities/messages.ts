@@ -14,6 +14,7 @@ import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
+import { openUrl } from './vsCodeUtils'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -71,7 +72,7 @@ export async function showMessageWithUrl(
     const p = showMessageWithItems(message, kind, items)
     return p.then<string | undefined>(selection => {
         if (selection === urlItem) {
-            vscode.env.openExternal(uri)
+            openUrl(uri)
         }
         return selection
     })
