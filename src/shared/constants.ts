@@ -15,12 +15,12 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string =
     'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html'
-export const samAboutInstallUrl = vscode.Uri.parse('https://aws.amazon.com/serverless/sam/')
+export const samInstallUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html'
+)
 export const samUpgradeUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/manage-sam-cli-versions.html#manage-sam-cli-versions-upgrade'
 )
-export const vscodeMarketplaceUrl: string =
-    'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = isCloud9()
