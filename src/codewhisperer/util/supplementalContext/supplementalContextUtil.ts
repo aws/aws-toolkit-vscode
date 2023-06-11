@@ -11,6 +11,7 @@ import * as vscode from 'vscode'
 import * as codewhispererClient from '../../client/codewhisperer'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
+import { getLogger } from '../../../shared/logger/logger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -25,24 +26,18 @@ export interface CodeWhispererSupplementalContext {
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContext> {
+): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
     const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
 
     if (dependencyGraph === undefined) {
         // This is a general check for language support of CW.
         // We perform feature level language filtering later.
-        return {
-            isUtg: false,
-            isProcessTimeout: false,
-            contents: [],
-            contentsLength: 0,
-            latency: 0,
-        }
+        return undefined
     }
 
     const isUtg = await isTestFile(editor, dependencyGraph)
-    let supplementalContextPromise: Promise<codewhispererClient.SupplementalContext[]>
+    let supplementalContextPromise: Promise<codewhispererClient.SupplementalContext[] | undefined>
 
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, dependencyGraph, cancellationToken)
@@ -52,12 +47,16 @@ export async function fetchSupplementalContext(
 
     return supplementalContextPromise
         .then(value => {
-            return {
-                isUtg: isUtg,
-                isProcessTimeout: false,
-                contents: value,
-                contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
-                latency: performance.now() - timesBeforeFetching,
+            if (value) {
+                return {
+                    isUtg: isUtg,
+                    isProcessTimeout: false,
+                    contents: value,
+                    contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
+                    latency: performance.now() - timesBeforeFetching,
+                }
+            } else {
+                return undefined
             }
         })
         .catch(err => {
@@ -70,7 +69,10 @@ export async function fetchSupplementalContext(
                     latency: performance.now() - timesBeforeFetching,
                 }
             } else {
-                throw err
+                getLogger().error(
+                    `Fail to fetch supplemental context for target file ${editor.document.fileName}: ${err}`
+                )
+                return undefined
             }
         })
 }

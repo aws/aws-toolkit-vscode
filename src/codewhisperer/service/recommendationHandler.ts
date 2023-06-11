@@ -53,6 +53,7 @@ export class RecommendationHandler {
     public isGenerateRecommendationInProgress: boolean
     private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
+    private supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
 
     constructor() {
         this.requestId = ''
@@ -148,7 +149,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let errorCode = ''
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
-        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
+        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
@@ -166,6 +167,7 @@ export class RecommendationHandler {
             req = requestObj.request
             supplementalContextMetadata = requestObj.supplementalMetadata
         }
+        this.supplementalContextMetadata = supplementalContextMetadata
 
         try {
             startTime = performance.now()
@@ -283,10 +285,7 @@ export class RecommendationHandler {
                     this.startPos.line,
                     languageContext.language,
                     reason,
-                    supplementalContextMetadata.isUtg,
-                    supplementalContextMetadata.isProcessTimeout,
-                    supplementalContextMetadata.contentsLength,
-                    supplementalContextMetadata.latency
+                    supplementalContextMetadata
                 )
             }
             if (invocationResult === 'Succeeded') {
@@ -320,7 +319,8 @@ export class RecommendationHandler {
                 requestId,
                 sessionId,
                 page,
-                editor.document.languageId
+                editor.document.languageId,
+                supplementalContextMetadata
             )
         }
         if (!this.isCancellationRequested()) {
@@ -360,6 +360,7 @@ export class RecommendationHandler {
         this.sessionId = ''
         this.nextToken = ''
         this.errorMessagePrompt = ''
+        this.supplementalContextMetadata = undefined
     }
 
     /**
@@ -373,7 +374,8 @@ export class RecommendationHandler {
             acceptIndex,
             editor?.document.languageId,
             this.recommendations.length,
-            this.recommendationSuggestionState
+            this.recommendationSuggestionState,
+            this.supplementalContextMetadata
         )
     }
 

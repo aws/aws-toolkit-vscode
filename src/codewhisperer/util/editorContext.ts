@@ -16,6 +16,9 @@ import {
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
+import { CodeWhispererUserGroupSettings } from './userGroupUtil'
+import { isTestFile } from './supplementalContext/codeParsingUtil'
+import { DependencyGraphFactory } from './dependencyGraph/dependencyGraphFactory'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -77,7 +80,7 @@ export async function buildListRecommendationRequest(
     allowCodeWithReference: boolean | undefined = undefined
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -86,13 +89,23 @@ export async function buildListRecommendationRequest(
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
 
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    const suppelmetalMetadata = {
-        isUtg: supplementalContexts.isUtg,
-        isProcessTimeout: supplementalContexts.isProcessTimeout,
-        contentsLength: supplementalContexts.contentsLength,
-        latency: supplementalContexts.latency,
-    }
+    // Send Cross file context to CodeWhisperer service if and only if
+    // (1) User is CrossFile user group
+    // (2) The supplemental context is from Supplemental Context but not UTG(unit test generator)
+    const isUtg = await isTestFile(editor, DependencyGraphFactory.getDependencyGraph(editor.document.languageId))
+    const supplementalContexts: CodeWhispererSupplementalContext | undefined =
+        CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.CrossFile && !isUtg
+            ? await fetchSupplementalContext(editor, tokenSource.token)
+            : undefined
+
+    const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined = supplementalContexts
+        ? {
+              isUtg: supplementalContexts.isUtg,
+              isProcessTimeout: supplementalContexts.isProcessTimeout,
+              contentsLength: supplementalContexts.contentsLength,
+              latency: supplementalContexts.latency,
+          }
+        : undefined
 
     logSupplementalContext(supplementalContexts)
 
@@ -101,7 +114,7 @@ export async function buildListRecommendationRequest(
             request: {
                 fileContext: fileContext,
                 nextToken: nextToken,
-                supplementalContexts: supplementalContexts.contents,
+                supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
             },
             supplementalMetadata: suppelmetalMetadata,
         }
@@ -114,7 +127,7 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContexts.contents,
+            supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
         },
         supplementalMetadata: suppelmetalMetadata,
     }
@@ -122,7 +135,7 @@ export async function buildListRecommendationRequest(
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
     request: codewhispererClient.GenerateRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'>
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -131,11 +144,15 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    const supplemetalMetadata = {
-        isUtg: supplementalContexts.isUtg,
-        isProcessTimeout: supplementalContexts.isProcessTimeout,
-        contentsLength: supplementalContexts.contentsLength,
-        latency: supplementalContexts.latency,
+    let supplemetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+
+    if (supplementalContexts) {
+        supplemetalMetadata = {
+            isUtg: supplementalContexts.isUtg,
+            isProcessTimeout: supplementalContexts.isProcessTimeout,
+            contentsLength: supplementalContexts.contentsLength,
+            latency: supplementalContexts.latency,
+        }
     }
 
     logSupplementalContext(supplementalContexts)
@@ -144,7 +161,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         request: {
             fileContext: fileContext,
             maxResults: CodeWhispererConstants.maxRecommendations,
-            supplementalContexts: supplementalContexts.contents,
+            supplementalContexts: supplementalContexts?.contents ?? [],
         },
         supplementalMetadata: supplemetalMetadata,
     }
@@ -199,7 +216,11 @@ export function getLeftContext(editor: vscode.TextEditor, line: number): string 
     return lineText
 }
 
-function logSupplementalContext(supplementalContext: CodeWhispererSupplementalContext) {
+function logSupplementalContext(supplementalContext: CodeWhispererSupplementalContext | undefined) {
+    if (!supplementalContext) {
+        return
+    }
+
     getLogger().verbose(`
             isUtg: ${supplementalContext.isUtg},
             isProcessTimeout: ${supplementalContext.isProcessTimeout},

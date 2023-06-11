@@ -10,6 +10,9 @@ import { assertTelemetryCurried } from '../../testUtil'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { resetCodeWhispererGlobalVariables, createAcceptedSuggestionEntry } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { extensionVersion } from '../../../shared/vscode/env'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
@@ -80,7 +83,20 @@ describe('codewhispererTracker', function () {
     })
 
     describe('emitTelemetryOnSuggestion', function () {
+        beforeEach(function () {
+            CodeWhispererUserGroupSettings.instance.reset()
+        })
+
+        afterEach(function () {
+            CodeWhispererUserGroupSettings.instance.reset()
+        })
+
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.CrossFile,
+                version: extensionVersion,
+            })
+
             const testStartUrl = 'testStartUrl'
             sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
             const suggestion = createAcceptedSuggestionEntry()
@@ -95,6 +111,7 @@ describe('codewhispererTracker', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'java',
                 credentialStartUrl: testStartUrl,
+                codewhispererUserGroup: 'CrossFile',
             })
         })
     })

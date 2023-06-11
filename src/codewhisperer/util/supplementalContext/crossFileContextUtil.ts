@@ -29,7 +29,7 @@ export async function fetchSupplementalContextForSrc(
     cancellationToken: vscode.CancellationToken
 ) {
     if (crossFileLanguageConfigs.includes(editor.document.languageId) === false) {
-        return []
+        return undefined
     }
 
     // Step 1: Get relevant cross files to refer
@@ -77,7 +77,7 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
     const output: BMDocument[] = performBM25Scoring(chunkContentList, chunkInput.content) as BMDocument[]
     const bestChunks: Chunk[] = []
     //pick Top 3
-    for (let i = 0; i < k; i++) {
+    for (let i = 0; i < Math.min(k, output.length); i++) {
         const chunkIndex = output[i].index
         const chunkReference = chunkReferences[chunkIndex]
         bestChunks.push(chunkReference)
@@ -91,7 +91,7 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
 function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
     const cursorPosition = editor.selection.active
     const startLine = Math.max(cursorPosition.line - 10, 0)
-    const endLine = cursorPosition.line - 1
+    const endLine = Math.max(cursorPosition.line - 1, 0)
     const inputChunkContent = editor.document.getText(
         new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length)
     )

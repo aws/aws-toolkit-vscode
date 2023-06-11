@@ -25,6 +25,7 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 import * as AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const lock = new AsyncLock({ maxPending: 1 })
@@ -488,6 +489,7 @@ export class InlineCompletionService {
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
     }

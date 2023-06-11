@@ -34,7 +34,7 @@ export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
-): Promise<codewhispererClient.SupplementalContext[]> {
+): Promise<codewhispererClient.SupplementalContext[] | undefined> {
     // TODO: Add metrices
     // 1. Total number of calls to fetchSupplementalContextForTest
     // 2. Success count for fetchSourceFileByName (find source file by name)
@@ -47,7 +47,7 @@ export async function fetchSupplementalContextForTest(
         // supported languages.
         // TODO: Add a metrics to see number of calls falling in this bucket.
         // TODO: Either catch this error upstream or here.
-        return []
+        return undefined
     }
 
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
