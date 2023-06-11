@@ -12,15 +12,12 @@ phases:
         run-as: root
         runtime-versions:
             nodejs: 16
-
         commands:
             # Without this, "Unable to locate package libatk1.0-0".
             - '>/dev/null apt-get -yqq update'
             # Dependencies for running vscode.
             - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
-            #
             # Prepare env for unprivileged user.
-            #
             - |
                 mkdir -p ~codebuild-user
                 chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
