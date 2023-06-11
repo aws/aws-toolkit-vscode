@@ -1,11 +1,13 @@
 version: 0.2
 
+# Run unprivileged for most phases (except those marked "run-as: root").
+run-as: codebuild-user
+
 env:
     variables:
         # Implicitly passed by the AWS automation pipeline:
         # VSCODE_TEST_VERSION
         # GITHUB_READONLY_TOKEN
-        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
         NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
@@ -13,6 +15,7 @@ env:
 
 phases:
     install:
+        run-as: root
         runtime-versions:
             nodejs: 16
             dotnet: 6.0
@@ -43,10 +46,9 @@ phases:
             # Prepare env for unprivileged user.
             #
             - |
-                # - adduser --gecos GECOS --disabled-password codebuild-user
-                mkdir ~codebuild-user || true
-                chown -R codebuild-user:codebuild-user ~codebuild-user
-                chown -R codebuild-user:codebuild-user .
+                # adduser --gecos GECOS --disabled-password toolkit-user
+                mkdir -p ~codebuild-user
+                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
                 chmod +x ~codebuild-user
                 ls -ld ~codebuild-user
             # Add user to "docker" group.
@@ -56,12 +58,11 @@ phases:
             - chmod 666 /var/run/docker.sock
 
     pre_build:
-        run-as: codebuild-user
         env:
             variables:
                 HOME: /home/codebuild-user
         commands:
-            # codebuild ignores the env.variables.HOME declaration above...?
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
             - bash buildspec/setup-github-token.sh
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
@@ -89,12 +90,11 @@ phases:
             # - go version
 
     build:
-        run-as: codebuild-user
         env:
             variables:
                 HOME: /home/codebuild-user
         commands:
-            # codebuild ignores the env.variables.HOME declaration above...?
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
             - npm ci
             - xvfb-run npm run testInteg
