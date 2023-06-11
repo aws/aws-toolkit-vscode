@@ -1,11 +1,15 @@
 version: 0.2
 
+# Run unprivileged for most phases (except those marked "run-as: root").
+run-as: codebuild-user
+
 env:
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
 
 phases:
     install:
+        run-as: root
         runtime-versions:
             nodejs: 16
 
@@ -14,9 +18,22 @@ phases:
             - '>/dev/null apt-get -yqq update'
             # Dependencies for running vscode.
             - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
+            #
+            # Prepare env for unprivileged user.
+            #
+            - |
+                mkdir -p ~codebuild-user
+                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
+                chmod +x ~codebuild-user
+                ls -ld ~codebuild-user
 
     pre_build:
+        env:
+            variables:
+                HOME: /home/codebuild-user
         commands:
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
+            - export HOME=/home/codebuild-user
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
             - |
@@ -27,13 +44,16 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
-            - npm ci --unsafe-perm
+            - npm ci
 
     build:
+        env:
+            variables:
+                HOME: /home/codebuild-user
         commands:
-            - mkdir -p /home/codebuild-user
-            - chown -R codebuild-user:codebuild-user /tmp /home/codebuild-user .
-            - su codebuild-user -c "xvfb-run npm test --silent"
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
+            - export HOME=/home/codebuild-user
+            - xvfb-run npm test --silent
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
