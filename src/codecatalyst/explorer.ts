@@ -19,21 +19,6 @@ import { Connection, isBuilderIdConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthCommandDeclarations } from '../auth/commands'
 
-export const getStartedCommand = Commands.register(
-    'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-
-        if (authProvider.auth.getConnectionState(conn) === 'invalid') {
-            conn = await authProvider.auth.reauthenticate(conn)
-        }
-
-        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
-            await authProvider.promptOnboarding()
-        }
-    }
-)
-
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
 })

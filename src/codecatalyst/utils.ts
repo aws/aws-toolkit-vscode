@@ -7,6 +7,8 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
+import { CodeCatalystAuthenticationProvider } from './auth'
+import { Commands } from '../shared/vscode/commands2'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.
@@ -55,3 +57,18 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
 }
+
+export const getStartedCommand = Commands.register(
+    'aws.codecatalyst.getStarted',
+    async (authProvider: CodeCatalystAuthenticationProvider) => {
+        let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+
+        if (authProvider.auth.getConnectionState(conn) === 'invalid') {
+            conn = await authProvider.auth.reauthenticate(conn)
+        }
+
+        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
+            await authProvider.promptOnboarding()
+        }
+    }
+)
