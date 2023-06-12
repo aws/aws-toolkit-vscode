@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,6 +17,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations, showCustomizationPrompt } from '../util/customizationUtil'
 import { get, set } from '../util/commonUtil'
 
@@ -65,7 +66,7 @@ export const showReferenceLog = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 export const showSecurityScan = Commands.declare(
@@ -109,13 +110,12 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
-
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
 })
 
 export const updateReferenceLog = Commands.declare(

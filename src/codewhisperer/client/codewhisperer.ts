@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import { AWSError, Credentials, Service } from 'aws-sdk'
@@ -14,7 +14,7 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { isSsoConnection } from '../../credentials/auth'
+import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')

@@ -1,22 +1,23 @@
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { Auth, Connection, ProfileStore, SsoConnection, SsoProfile } from '../../credentials/auth'
-import { CredentialsProviderManager } from '../../credentials/providers/credentialsProviderManager'
-import { SsoClient } from '../../credentials/sso/clients'
-import { builderIdStartUrl, SsoToken } from '../../credentials/sso/model'
-import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
+import { Auth } from '../../auth/auth'
+import { CredentialsProviderManager } from '../../auth/providers/credentialsProviderManager'
+import { SsoClient } from '../../auth/sso/clients'
+import { builderIdStartUrl, SsoToken } from '../../auth/sso/model'
+import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { FakeMemento } from '../fakeExtensionContext'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
 import globals from '../../shared/extensionGlobals'
-import { fromString } from '../../credentials/providers/credentials'
-import { mergeAndValidateSections, parseIni } from '../../credentials/sharedCredentials'
-import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
+import { fromString } from '../../auth/providers/credentials'
+import { mergeAndValidateSections, parseIni } from '../../auth/credentials/sharedCredentials'
+import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
+import { Connection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {

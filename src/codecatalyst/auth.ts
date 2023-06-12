@@ -1,27 +1,27 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { getIdeProperties } from '../shared/extensionUtilities'
-import {
-    Auth,
-    isBuilderIdConnection,
-    Connection,
-    SsoConnection,
-    codecatalystScopes,
-    hasScopes,
-    createBuilderIdConnection,
-    ssoAccountAccessScopes,
-} from '../credentials/auth'
-import { getSecondaryAuth } from '../credentials/secondaryAuth'
+import { Auth } from '../auth/auth'
+import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import * as localizedText from '../shared/localizedText'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import {
+    ssoAccountAccessScopes,
+    codecatalystScopes,
+    SsoConnection,
+    hasScopes,
+    Connection,
+    isBuilderIdConnection,
+} from '../auth/connection'
+import { createBuilderIdConnection } from '../auth/utils'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should

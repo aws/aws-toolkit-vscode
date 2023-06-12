@@ -1,28 +1,29 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
-import {
-    Auth,
-    createBuilderIdProfile,
-    codewhispererScopes,
-    isBuilderIdConnection,
-    createSsoProfile,
-    isSsoConnection,
-    hasScopes,
-    ssoAccountAccessScopes,
-    isIamConnection,
-} from '../../credentials/auth'
-import { Connection, SsoConnection } from '../../credentials/auth'
+import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
-import { getSecondaryAuth } from '../../credentials/secondaryAuth'
+import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
+import {
+    ssoAccountAccessScopes,
+    codewhispererScopes,
+    createBuilderIdProfile,
+    hasScopes,
+    SsoConnection,
+    createSsoProfile,
+    Connection,
+    isIamConnection,
+    isSsoConnection,
+    isBuilderIdConnection,
+} from '../../auth/connection'
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -85,7 +85,7 @@ describe('git-secrets', function () {
         const mySecretAccessKey = `const x = { "aws_secret_access_key": "${keyValue}" }`
         const fileContent = `
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 

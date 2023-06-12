@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,11 +9,11 @@ import * as nls from 'vscode-nls'
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './credentials/activation'
-import { initializeAwsCredentialsStatusBarItem } from './credentials/statusBarItem'
-import { LoginManager } from './credentials/loginManager'
-import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
-import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
+import { initialize as initializeCredentials } from './auth/activation'
+import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
+import { LoginManager } from './auth/deprecated/loginManager'
+import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
+import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -50,11 +50,11 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
-import { CredentialsStore } from './credentials/credentialsStore'
+import { CredentialsStore } from './auth/credentials/store'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
-import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
-import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
-import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
+import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
+import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
@@ -66,7 +66,8 @@ import { isUserCancelledError, resolveErrorMessageToDisplay } from './shared/err
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
-import { Auth } from './credentials/auth'
+import { Auth } from './auth/auth'
+import { openUrl } from './shared/utilities/vsCodeUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -177,15 +178,15 @@ export async function activate(context: vscode.ExtensionContext) {
             ),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
+                openUrl(vscode.Uri.parse(documentationUrl))
                 telemetry.aws_help.emit()
             }),
             Commands.register('aws.github', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(githubUrl))
+                openUrl(vscode.Uri.parse(githubUrl))
                 telemetry.aws_showExtensionSource.emit()
             }),
             Commands.register('aws.createIssueOnGitHub', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
+                openUrl(vscode.Uri.parse(githubCreateIssueUrl))
                 telemetry.aws_reportPluginIssue.emit()
             }),
             Commands.register('aws.quickStart', async () => {

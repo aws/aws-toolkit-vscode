@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { asString, CredentialsId } from '../credentials/providers/credentials'
+import { asString, CredentialsId } from '../auth/providers/credentials'
 import * as extensionConstants from './constants'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import * as localizedText from './localizedText'
@@ -16,14 +16,15 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { PromptSettings } from './settings'
 import { isNonNullable } from './utilities/tsUtils'
-import { CreateProfileWizard } from '../credentials/wizards/createProfile'
-import { staticCredentialsTemplate } from '../credentials/wizards/templates'
-import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
-import { Auth } from '../credentials/auth'
+import { CreateProfileWizard } from '../auth/wizards/createProfile'
+import { staticCredentialsTemplate } from '../auth/wizards/templates'
+import { SharedCredentialsProvider } from '../auth/providers/sharedCredentialsProvider'
+import { Auth } from '../auth/auth'
 import { CancellationError } from './utilities/timeoutUtils'
 import { ToolkitError } from './errors'
-import { loadSharedCredentialsProfiles } from '../credentials/sharedCredentials'
-import { SharedCredentialsKeys } from '../credentials/types'
+import { loadSharedCredentialsProfiles } from '../auth/credentials/sharedCredentials'
+import { SharedCredentialsKeys } from '../auth/credentials/types'
+import { openUrl } from './utilities/vsCodeUtils'
 
 /**
  * @deprecated
@@ -165,7 +166,7 @@ export class AwsContextCommands {
         } else if (userResponse === localizedText.no) {
             PromptSettings.instance.disablePrompt('createCredentialsProfile')
         } else if (userResponse === localizedText.help) {
-            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+            openUrl(vscode.Uri.parse(credentialHelpUrl))
             return await this.promptCredentialsSetup()
         }
 
@@ -201,7 +202,7 @@ export class AwsContextCommands {
         )
 
         if (response && response === localizedText.viewDocs) {
-            await vscode.env.openExternal(vscode.Uri.parse(extensionConstants.aboutCredentialsFileUrl))
+            await openUrl(vscode.Uri.parse(extensionConstants.aboutCredentialsFileUrl))
         }
     }
 }

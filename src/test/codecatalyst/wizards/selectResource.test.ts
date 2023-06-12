@@ -1,21 +1,14 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { instance, when } from 'ts-mockito'
 import { createOrgPrompter, createProjectPrompter } from '../../../codecatalyst/wizards/selectResource'
 import { CodeCatalystOrg, CodeCatalystClient, CodeCatalystProject } from '../../../shared/clients/codecatalystClient'
-import { AsyncCollection, toCollection } from '../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { mock } from '../../utilities/mockito'
-
-// TODO: move to test utils
-function intoCollection<T>(arr: T[]): AsyncCollection<T> {
-    return toCollection(async function* () {
-        yield* arr
-    })
-}
 
 describe('Prompts', function () {
     let orgs: CodeCatalystOrg[]

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -49,6 +49,7 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { codeWhispererClient as client } from './client/codewhisperer'
 import { notifyNewCustomizations } from './util/customizationUtil'
 
@@ -94,7 +95,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -109,7 +110,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,6 +12,7 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { Service } from './model'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(runCommandInContainer, openTaskInTerminal)
@@ -29,7 +30,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }),
         Commands.register('aws.ecs.viewDocumentation', async () => {
-            vscode.env.openExternal(vscode.Uri.parse(ecsDocumentationUrl))
+            openUrl(vscode.Uri.parse(ecsDocumentationUrl))
         })
     )
 }

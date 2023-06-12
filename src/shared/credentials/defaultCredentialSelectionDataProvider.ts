@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,8 +15,8 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { asString } from '../../credentials/providers/credentials'
-import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
+import { asString } from '../../auth/providers/credentials'
+import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'

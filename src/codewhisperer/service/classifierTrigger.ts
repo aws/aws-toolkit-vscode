@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -332,23 +332,24 @@ export class ClassifierTrigger {
 
     public shouldInvokeClassifier(language: string) {
         const mappedLanguage = runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(language)
-        return this.isClassifierEnabled() && this.isSupportedLanguage(mappedLanguage)
+        return this.isSupportedLanguage(mappedLanguage)
     }
 
     public recordClassifierResultForManualTrigger(editor: vscode.TextEditor) {
         if (this.shouldInvokeClassifier(editor.document.languageId)) {
-            this.shouldTriggerFromClassifier(undefined, editor, undefined)
+            this.shouldTriggerFromClassifier(undefined, editor, undefined, true)
         }
     }
 
     public recordClassifierResultForAutoTrigger(
-        event: vscode.TextDocumentChangeEvent,
         editor: vscode.TextEditor,
-        triggerType: CodewhispererAutomatedTriggerType
+        triggerType?: CodewhispererAutomatedTriggerType,
+        event?: vscode.TextDocumentChangeEvent
     ) {
-        if (triggerType !== 'Classifier') {
-            this.shouldTriggerFromClassifier(event, editor, triggerType)
+        if (!triggerType) {
+            return
         }
+        this.shouldTriggerFromClassifier(event, editor, triggerType, true)
     }
 
     public isSupportedLanguage(language?: CodewhispererLanguage) {
@@ -361,7 +362,8 @@ export class ClassifierTrigger {
     public shouldTriggerFromClassifier(
         event: vscode.TextDocumentChangeEvent | undefined,
         editor: vscode.TextEditor,
-        autoTriggerType: string | undefined
+        autoTriggerType: string | undefined,
+        shouldRecordResult: boolean = false
     ): boolean {
         const fileContext = extractContextForCodeWhisperer(editor)
         const osPlatform = this.normalizeOsName(os.platform(), os.version())
@@ -382,8 +384,10 @@ export class ClassifierTrigger {
         const threshold = this.getThreshold()
 
         const shouldTrigger = classifierResult > threshold
-        TelemetryHelper.instance.setClassifierResult(classifierResult)
-        TelemetryHelper.instance.setClassifierThreshold(threshold)
+        if (shouldRecordResult) {
+            TelemetryHelper.instance.setClassifierResult(classifierResult)
+            TelemetryHelper.instance.setClassifierThreshold(threshold)
+        }
         return shouldTrigger
     }
 

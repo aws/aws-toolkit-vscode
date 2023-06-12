@@ -163,6 +163,17 @@ You can find the coverage report at `./coverage/index.html` after running the te
 -   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
 -   Generate a report with `npm run report`
 
+### Prerelease artifacts
+
+-   CI automatically publishes GitHub [prereleases](https://github.com/aws/aws-toolkit-vscode/releases)
+    for `master` and `feature/x` branches, including `.vsix` artifacts which can
+    be used to test the latest build for that branch. Each prerelease and its
+    artifact are continually updated from the HEAD of its branch.
+-   PR artifacts: each pull request is processed by an AWS CodeBuild job which
+    runs all tests and provides the build result via the _Details_ link as shown
+    below.
+    -   <img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
+
 ### CodeCatalyst Blueprints
 
 You can find documentation to create VSCode IDE settings for CodeCatalyst blueprints at [docs/vscode-config.md](./docs/vscode-config.md).
@@ -215,13 +226,6 @@ artifact that will outlive most code.
 Prefix the subject with `type(topic):` ([conventional
 commits](https://www.conventionalcommits.org/) format): this again helps humans
 (and scripts) scan and omit ranges of the history at a glance.
-
-### CI artifact
-
-Each commit and pull request is processed by an automated system which runs
-all tests and provides the build result via the _Details_ link as shown below.
-
-<img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
 
 ## Tooling
 
