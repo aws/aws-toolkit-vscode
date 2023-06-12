@@ -42,6 +42,7 @@ import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
 import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
@@ -251,7 +252,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -291,7 +292,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                            openUrl(vscode.Uri.parse(samDeployDocUrl))
                         }
                     },
                 })
@@ -335,7 +336,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                         if (button === vscode.QuickInputButtons.Back) {
                             resolve(undefined)
                         } else if (button === this.helpButton) {
-                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                            openUrl(vscode.Uri.parse(samDeployDocUrl))
                         }
                     },
                 })
@@ -384,7 +385,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -454,7 +455,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 } else if (button === createBucket) {
                     resolve([{ label: CREATE_NEW_BUCKET }])
                 } else if (button === enterBucket) {
@@ -510,7 +511,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 } else if (bucketProps.buttonHandler) {
                     bucketProps.buttonHandler(button, inputBox, resolve, reject)
                 }
@@ -554,7 +555,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })
@@ -607,7 +608,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    openUrl(vscode.Uri.parse(samDeployDocUrl))
                 }
             },
         })

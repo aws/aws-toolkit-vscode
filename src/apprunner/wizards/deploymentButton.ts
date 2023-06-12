@@ -11,6 +11,7 @@ import { apprunnerPricingUrl } from '../../shared/constants'
 import { PromptSettings } from '../../shared/settings'
 import { getIcon } from '../../shared/icons'
 import { dontShow } from '../../shared/localizedText'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -41,7 +42,7 @@ async function showDeploymentCostNotification(): Promise<void> {
 
         vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {
             if (button === viewPricing) {
-                vscode.env.openExternal(pricingUri)
+                openUrl(pricingUri)
                 await showDeploymentCostNotification()
             } else if (button === dontShow) {
                 settings.disablePrompt('apprunnerNotifyPricing')
