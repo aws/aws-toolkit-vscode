@@ -55,7 +55,7 @@ class SsmCommandLineFactory(
             }
     }
 
-    private inner class ProxyCommand(
+    inner class ProxyCommand(
         val exePath: String,
         val ssmPayload: String? = null,
         val environment: Map<String, String> = emptyMap()
@@ -72,7 +72,7 @@ class SsmCommandLineFactory(
         val args = ssmPayload?.let { listOf(it, region.id, "StartSession") }
     }
 
-    private fun generateProxyCommand(): ProxyCommand {
+    fun generateProxyCommand(): ProxyCommand {
         val ssmPluginJson = """
             {
             "streamUrl":"${sessionParameters.streamUrl}", 

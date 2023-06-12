@@ -5,10 +5,10 @@ package software.aws.toolkits.jetbrains.gateway
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceOrNull
+import com.intellij.openapi.util.Disposer
 import com.intellij.remoteDev.downloader.JetBrainsClientDownloaderConfigurationProvider
 import com.intellij.remoteDev.downloader.TestJetBrainsClientDownloaderConfigurationProvider
 import com.intellij.remoteDev.hostStatus.UnattendedHostStatus
@@ -20,7 +20,6 @@ import com.jetbrains.gateway.api.ConnectionRequestor
 import com.jetbrains.gateway.api.GatewayConnectionHandle
 import com.jetbrains.rd.util.lifetime.isNotAlive
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -47,6 +46,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.tools.MockToolManagerRule
 import software.aws.toolkits.jetbrains.core.tools.ToolManager
+import software.aws.toolkits.jetbrains.gateway.connection.IDE_BACKEND_DIR
 import software.aws.toolkits.jetbrains.gateway.connection.StdOutResult
 import software.aws.toolkits.jetbrains.gateway.connection.ThinClientTrackerService
 import software.aws.toolkits.jetbrains.gateway.connection.caws.CawsCommandExecutor
@@ -168,6 +168,7 @@ class DevEnvConnectTest : AfterAllCallback {
         // can probably abstract this out as an extension
         // force auth to complete now
         connection = ManagedBearerSsoConnection(SONO_URL, SONO_REGION, listOf("codecatalyst:read_write"))
+        Disposer.register(disposable, connection)
         // pin connection to avoid dialog prompt
         ConnectionPinningManager.getInstance().setPinnedConnection(CodeCatalystConnection.getInstance(), connection)
         (connection.getConnectionSettings().tokenProvider.delegate as BearerTokenProvider).reauthenticate()
@@ -184,9 +185,6 @@ class DevEnvConnectTest : AfterAllCallback {
     @TestFactory
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     fun `test connect to devenv`(): Iterator<DynamicTest> = sequence<DynamicTest> {
-        // having issues running on 222, technically works on 223, but cleanup fails
-        assumeTrue(ApplicationInfo.getInstance().build.baselineVersion >= 231)
-
         connectionHandle = runBlocking {
             CawsConnectionProvider().connect(
                 mapOf(
@@ -198,9 +196,21 @@ class DevEnvConnectTest : AfterAllCallback {
             )
         } ?: error("null connection handle")
 
+        yield(test(::`wait for environment ready`))
+
+        // inject token to backend launcher script to enable the host status endpoint
+        println(
+            ssmFactory.executeSshCommand {
+                it.addToRemoteCommand(
+                    """
+                    grep -q "CWM_HOST_STATUS_OVER_HTTP_TOKEN" $IDE_BACKEND_DIR/bin/remote-dev-server.sh || sed -i.bak '2iexport CWM_HOST_STATUS_OVER_HTTP_TOKEN=$hostToken' $IDE_BACKEND_DIR/bin/remote-dev-server.sh
+                    """.trimIndent()
+                )
+            }
+        )
+
         yieldAll(
             listOf(
-                test(::`wait for environment ready`),
                 test(::`poll for bootstrap script availability`),
                 test(::`wait for backend start`),
                 test(::`wait for backend connect`)
@@ -266,12 +276,16 @@ class DevEnvConnectTest : AfterAllCallback {
     fun `wait for backend connect`() = runBlocking {
         waitUntil(
             succeedOn = { status ->
-                status.projects?.any { it.users.size > 1 } == true
+                status?.projects?.any { it.users.size > 1 } == true
             },
             failOn = { connectionHandle.lifetime.isNotAlive },
             maxDuration = Duration.ofMinutes(5),
             call = {
-                UnattendedHostStatus.fromJson(HttpRequests.request(endpoint).readString())
+                // can potentially have a socket reset which will lead to a very confusing error that's hard to debug
+                // due to the Gateway connection executor continuing to run
+                tryOrNull {
+                    UnattendedHostStatus.fromJson(HttpRequests.request(endpoint).readString())
+                }
             }
         )
 

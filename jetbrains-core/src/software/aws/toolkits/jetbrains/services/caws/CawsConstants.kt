@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.caws
 
 object CawsConstants {
     const val CAWS_ENV_PROJECT_DIR = "/projects"
+    const val CAWS_ENV_IDE_BACKEND_DIR = "/aws/mde/ide-runtimes/jetbrains/runtime/"
     const val CAWS_ENV_AUTH_TOKEN_VAR = "__MDE_ENV_API_AUTHORIZATION_TOKEN"
     const val CAWS_ENV_ORG_NAME_VAR = "__DEV_ENVIRONMENT_ORGANIZATION_NAME"
     const val CAWS_ENV_PROJECT_NAME_VAR = "__DEV_ENVIRONMENT_PROJECT_NAME"
