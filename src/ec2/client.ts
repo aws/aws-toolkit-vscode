@@ -61,7 +61,7 @@ export class Ec2ConnectClient {
         })
     }
 
-    public async getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
+    public async getInstanceIds(): Promise<AsyncCollection<string>> {
         const client = await this.createEc2SdkClient()
         return getInstanceIdsFromClient(client)
     }
