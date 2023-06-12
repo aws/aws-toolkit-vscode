@@ -18,6 +18,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -64,7 +65,7 @@ export const showReferenceLog = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 export const showSecurityScan = Commands.declare(
@@ -116,13 +117,12 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
-
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
 
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
 })
 
 export const updateReferenceLog = Commands.declare(
