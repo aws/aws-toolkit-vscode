@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { EC2, SSM } from "aws-sdk";
+import { AWSError, EC2, SSM } from "aws-sdk";
 import globals from "../shared/extensionGlobals";
 import { Session } from 'aws-sdk/clients/ssm'
 import { Ec2Selection, getInstanceIdsFromClient } from "./utils";
@@ -12,6 +12,8 @@ import { isCloud9 } from "../shared/extensionUtilities";
 import { withoutShellIntegration } from "../ecs/commands";
 import { ToolkitError } from '../shared/errors';
 import { AsyncCollection } from '../shared/utilities/asyncCollection';
+import { getLogger } from '../shared/logger';
+import { PromiseResult } from 'aws-sdk/lib/request';
 
 export class Ec2ConnectClient {
     public constructor(readonly regionCode: string) {
@@ -26,11 +28,22 @@ export class Ec2ConnectClient {
         return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
-    private handleStartSessionError(err: AWS.AWSError) {
+    private handleStartSessionError(err: AWS.AWSError): void {
         console.log(err)
     }
 
-    private async openTerminal(session: Session, selection: Ec2Selection) {
+    private async terminateSession(session: Session): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>>{
+        const sessionId = session.SessionId!
+        const ssmClient = await this.createSsmSdkClient()
+        const termination = await ssmClient.terminateSession({ SessionId: sessionId})
+            .promise() 
+            .catch(err => {
+                getLogger().warn(`ec2: failed to terminate session "${sessionId}": %s`, err)
+            })
+        return termination
+    }
+
+    private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, "StartSession"]
 
@@ -40,6 +53,13 @@ export class Ec2ConnectClient {
                     name: selection.region + "/" +selection.instanceId,
                     shellPath: ssmPlugin, 
                     shellArgs: shellArgs
+                })
+
+                const listener = vscode.window.onDidCloseTerminal(terminal => {
+                    if (terminal.processId === Ec2Terminal.processId) {
+                        vscode.Disposable.from(listener, {dispose: () => this.terminateSession(session)})
+                            .dispose()
+                    }
                 })
 
                 Ec2Terminal.show()
@@ -56,7 +76,7 @@ export class Ec2ConnectClient {
                 this.handleStartSessionError(err)
             } else {
                 console.log("no error!")
-                this.openTerminal(data, selection)
+                this.openSessionInTerminal(data, selection)
             }
         })
     }
