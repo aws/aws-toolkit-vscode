@@ -233,6 +233,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext): Promise<voi
     const webview = await activePanel!.show({
         title: `Add Connection to ${getIdeProperties().company}`,
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
+        retainContextWhenHidden: true,
     })
 
     if (!subscriptions) {
