@@ -18,7 +18,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
             // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
             uri = vscode.window.activeTextEditor?.document.uri
             if (!uri) {
-                throw new Error("Attempt to copy resource name for Uri that doesn't exist.")
+                throw new Error("no active text editor, or undefined URI")
             }
         } 
         const parsedUri = parseCloudWatchLogsUri(uri)
