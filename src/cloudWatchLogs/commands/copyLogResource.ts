@@ -32,7 +32,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
         vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
-                'Not a Cloudwatch Log group: {0}',
+                'Invalid Cloudwatch Log stream or group: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )
         )
