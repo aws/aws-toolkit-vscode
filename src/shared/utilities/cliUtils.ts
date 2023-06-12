@@ -21,6 +21,7 @@ import { showMessageWithCancel } from './messages'
 import { DevSettings } from '../settings'
 import { telemetry } from '../telemetry/telemetry'
 import { Result, ToolId } from '../telemetry/telemetry'
+import { openUrl } from './vsCodeUtils'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -100,7 +101,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
 
         if (selection !== install) {
             if (selection === manualInstall) {
-                vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
+                openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
             throw new CancellationError('user')
         }
@@ -146,7 +147,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             )
             .then(button => {
                 if (button === manualInstall) {
-                    vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
+                    openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
             })
 

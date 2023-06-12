@@ -9,7 +9,7 @@ import * as mime from 'mime-types'
 import * as S3 from '../shared/clients/s3Client'
 import { getLogger } from '../shared/logger'
 import { showConfirmationMessage } from '../shared/utilities/messages'
-import { localize } from '../shared/utilities/vsCodeUtils'
+import { localize, openUrl } from '../shared/utilities/vsCodeUtils'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
@@ -352,7 +352,7 @@ export class S3FileViewerManager {
             }
 
             if (selection === help) {
-                return vscode.env.openExternal(vscode.Uri.parse(s3FileViewerHelpUrl, true))
+                return openUrl(vscode.Uri.parse(s3FileViewerHelpUrl, true))
             }
         })
     }

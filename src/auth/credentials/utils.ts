@@ -16,6 +16,7 @@ import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { Profile } from './sharedCredentials'
 import { createInputBox, promptUser } from '../../shared/ui/input'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 const credentialsTimeout = 300000 // 5 minutes
 const credentialsProgressDelay = 1000
@@ -45,7 +46,7 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
         buttons
     ).then((selection: string | undefined) => {
         if (selection === getHelp) {
-            vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
+            openUrl(vscode.Uri.parse(authHelpUrl))
         }
         if (selection === editCreds) {
             vscode.commands.executeCommand('aws.credentials.edit')

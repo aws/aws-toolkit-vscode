@@ -25,6 +25,7 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
 import { launchConfigDocUrl } from '../constants'
+import { openUrl } from '../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -119,7 +120,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
             showViewLogsMessage(makeFailedWriteMessage('launch.json'), 'error', [helpText]).then(async buttonText => {
                 if (buttonText === helpText) {
-                    vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
+                    openUrl(vscode.Uri.parse(launchConfigDocUrl))
                 }
             })
         }

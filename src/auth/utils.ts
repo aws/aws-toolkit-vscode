@@ -41,6 +41,7 @@ import {
 import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
     const resp = await createConnectionPrompter(auth, type).prompt()
@@ -215,7 +216,7 @@ export async function showRegionPrompter(
 }
 
 Commands.register('aws.auth.help', async () => {
-    vscode.env.openExternal(vscode.Uri.parse(authHelpUrl))
+    openUrl(vscode.Uri.parse(authHelpUrl))
     telemetry.aws_help.emit()
 })
 

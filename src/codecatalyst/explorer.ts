@@ -16,6 +16,7 @@ import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection, isBuilderIdConnection } from '../auth/connection'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
@@ -28,7 +29,7 @@ export const getStartedCommand = Commands.register(
 )
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
-    return vscode.env.openExternal(docsUrl)
+    return openUrl(docsUrl)
 })
 
 // Only used in rare cases on C9
