@@ -5,13 +5,13 @@
 
 import * as os from 'os'
 import * as vscode from 'vscode'
-import globals from '../../shared/extensionGlobals'
 import { CodewhispererLanguage, CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ProgrammingLanguage } from '../client/codewhispereruserclient'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 interface normalizedCoefficients {
     readonly cursor: number
@@ -318,12 +318,8 @@ export class ClassifierTrigger {
         this.lastInvocationLineNumber = lineNumber
     }
 
-    public isClassifierEnabled() {
-        const userGroup = globals.context.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
-            CodeWhispererConstants.userGroupKey
-        )
-
-        return userGroup === CodeWhispererConstants.UserGroup.Classifier
+    public isClassifierEnabled(): boolean {
+        return CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.Classifier
     }
 
     public getThreshold() {
