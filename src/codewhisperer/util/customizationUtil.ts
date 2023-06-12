@@ -21,6 +21,8 @@ import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter
 import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
+import { isAwsError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
 
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
     const persistedCustomizations = getPersistedCustomizations()
@@ -28,7 +30,20 @@ export const getNewCustomizations = (availableCustomizations: Customization[]) =
 }
 
 export async function notifyNewCustomizations() {
-    const availableCustomizations = await getAvailableCustomizationsList()
+    let availableCustomizations: Customization[] = []
+    try {
+        availableCustomizations = await getAvailableCustomizationsList()
+        AuthUtil.instance.isCustomizationFeatureEnabled = true
+    } catch (error) {
+        // TODO: figure out the contract that service has
+        if (isAwsError(error) && error.code === 'AccessDeniedException') {
+            // TODO: fix the log to make it not revealing the details
+            getLogger().debug(`User does not have access to the customization feature`)
+            AuthUtil.instance.isCustomizationFeatureEnabled = false
+            await setSelectedCustomization(baseCustomization)
+            return
+        }
+    }
 
     const selectedCustomization = getSelectedCustomization()
     if (!isSelectedCustomizationAvailable(availableCustomizations, selectedCustomization)) {

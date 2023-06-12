@@ -241,7 +241,7 @@ export const throttlingMessage = `Maximum recommendation count reached for this 
 export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
 // TODO: align this text with service side
-export const invalidCustomizationMessage = `Invalid Customization`
+export const invalidCustomizationMessage = `You are not authorized to access`
 
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 

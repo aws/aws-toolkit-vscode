@@ -84,7 +84,7 @@ export class CodeWhispererNode implements RootNode {
             if (isCloud9()) {
                 return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
-                if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                if (AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled) {
                     return [
                         createAutoSuggestionsNode(autoTriggerEnabled),
                         createSecurityScanNode(),
