@@ -137,7 +137,7 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
 })
 
 // VSC is logging args to the PTY host log file if shell integration is enabled :(
-async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
+export async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
     const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
 
     try {
