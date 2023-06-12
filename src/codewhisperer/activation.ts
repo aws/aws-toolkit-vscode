@@ -48,6 +48,7 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -96,7 +97,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -111,7 +112,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }

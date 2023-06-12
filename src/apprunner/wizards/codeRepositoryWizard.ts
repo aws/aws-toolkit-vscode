@@ -22,6 +22,7 @@ import {
     apprunnerCreateServiceDocsUrl,
 } from '../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -149,7 +150,7 @@ export function createConnectionPrompter(client: AppRunnerClient) {
         detail: 'Click for documentation on creating a new GitHub connection for App Runner',
         data: {} as any,
         invalidSelection: true,
-        onClick: () => vscode.env.openExternal(vscode.Uri.parse(apprunnerConnectionHelpUrl)),
+        onClick: () => openUrl(vscode.Uri.parse(apprunnerConnectionHelpUrl)),
     }
 
     const errorItem = {

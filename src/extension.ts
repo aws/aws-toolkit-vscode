@@ -68,6 +68,7 @@ import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
+import { openUrl } from './shared/utilities/vsCodeUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -178,15 +179,15 @@ export async function activate(context: vscode.ExtensionContext) {
             ),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
+                openUrl(vscode.Uri.parse(documentationUrl))
                 telemetry.aws_help.emit()
             }),
             Commands.register('aws.github', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(githubUrl))
+                openUrl(vscode.Uri.parse(githubUrl))
                 telemetry.aws_showExtensionSource.emit()
             }),
             Commands.register('aws.createIssueOnGitHub', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
+                openUrl(vscode.Uri.parse(githubCreateIssueUrl))
                 telemetry.aws_reportPluginIssue.emit()
             }),
             Commands.register('aws.quickStart', async () => {
