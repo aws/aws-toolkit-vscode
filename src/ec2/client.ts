@@ -10,10 +10,11 @@ import { Ec2Selection, getInstanceIdsFromClient } from "./utils";
 import { getOrInstallCli } from "../shared/utilities/cliUtils";
 import { isCloud9 } from "../shared/extensionUtilities";
 import { withoutShellIntegration } from "../ecs/commands";
-import { ToolkitError } from '../shared/errors';
+import { ToolkitError, errorCode } from '../shared/errors';
 import { AsyncCollection } from '../shared/utilities/asyncCollection';
 import { getLogger } from '../shared/logger';
 import { PromiseResult } from 'aws-sdk/lib/request';
+import { createHelpButton } from '../shared/ui/buttons'
 
 export class Ec2ConnectClient {
     public constructor(readonly regionCode: string) {
@@ -28,8 +29,11 @@ export class Ec2ConnectClient {
         return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
-    private handleStartSessionError(err: AWS.AWSError): void {
-        console.log(err)
+    private async handleStartSessionError(err: AWS.AWSError): Promise<void> {
+        const failureMessage = "SSM: Failed to start session with target instance. Common reasons include: \n 1. SSM Agent not installed on instance. \n 2. The required IAM instance profile isn't attached to the instance.  \n 3. Session manager setup is incomplete."
+        const result = await vscode.window.showErrorMessage(failureMessage)
+
+        throw new ToolkitError('Start Session Failed. ')
     }
 
     private async terminateSession(session: Session): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>>{
@@ -73,7 +77,7 @@ export class Ec2ConnectClient {
         const ssmClient = await this.createSsmSdkClient()
         ssmClient.startSession({Target: selection.instanceId}, async (err, data) => {
             if(err) {
-                this.handleStartSessionError(err)
+                await this.handleStartSessionError(err)
             } else {
                 console.log("no error!")
                 this.openSessionInTerminal(data, selection)
