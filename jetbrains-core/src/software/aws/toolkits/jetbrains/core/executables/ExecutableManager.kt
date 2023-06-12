@@ -12,11 +12,13 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.io.lastModified
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -190,6 +192,18 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
         try {
             (type as? Validatable)?.validate(path)
             determineVersion(type, path, autoResolved)
+        } catch (e: IllegalStateException) {
+            val errorMessage = if (SystemInfo.isWindows && type is SamExecutable) {
+                message("sam.cli.version.upgrade.required.windows") + "\n" + e.asString
+            } else {
+                message("aws.settings.executables.executable_invalid", type.displayName, e.asString)
+            }
+            ExecutableInstance.InvalidExecutable(
+                path,
+                null,
+                autoResolved,
+                errorMessage
+            )
         } catch (e: Exception) {
             val message = message("aws.settings.executables.executable_invalid", type.displayName, e.asString)
             LOG.warn(e) { message }
