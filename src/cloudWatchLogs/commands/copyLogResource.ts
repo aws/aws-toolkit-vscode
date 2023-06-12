@@ -25,7 +25,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
         const resourceName = isLogStreamUri(uri) ? parsedUri.logGroupInfo.streamName : parsedUri.logGroupInfo.groupName
 
         if (!resourceName) {
-            throw new Error(`Unable to copy log resource name for Uri that doesn\'t have resource. Attempted copy on ${uri}`)
+            throw new Error(`Failed to copy log resource name for URI (missing stream or group?): ${uri}`)
         }
         await copyToClipboard(resourceName)
     } catch (e) {
