@@ -51,6 +51,8 @@ export const lineBreak = '\n'
 
 export const lineBreakWin = '\r\n'
 
+export const supplementalContextTimeoutInMs = 50
+
 /**
  * Ux of recommendations
  */
@@ -261,3 +263,7 @@ export enum UserGroup {
     CrossFile = 'CrossFile',
     Control = 'Control',
 }
+
+export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
+
+export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
