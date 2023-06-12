@@ -22,12 +22,7 @@ export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
             }
         } 
         const parsedUri = parseCloudWatchLogsUri(uri)
-        let resourceName
-        if(isLogStreamUri(uri)){
-            resourceName = parsedUri.logGroupInfo.streamName
-        } else {
-            resourceName = parsedUri.logGroupInfo.groupName
-        }
+        const resourceName = isLogStreamUri(uri) ? parsedUri.logGroupInfo.streamName : parsedUri.logGroupInfo.groupName
 
         if (!resourceName) {
             throw new Error(`Unable to copy log resource name for Uri that doesn\'t have resource. Attempted copy on ${uri}`)
