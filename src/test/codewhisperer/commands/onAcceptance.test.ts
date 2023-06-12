@@ -13,6 +13,10 @@ import { assertTelemetryCurried } from '../../testUtil'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import globals from '../../../shared/extensionGlobals'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { extensionVersion } from '../../../shared/vscode/env'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -22,6 +26,7 @@ describe('onAcceptance', function () {
 
         afterEach(function () {
             sinon.restore()
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should enqueue an event object to tracker', async function () {
@@ -68,6 +73,11 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.Control,
+                version: extensionVersion,
+            })
+
             const testStartUrl = 'testStartUrl'
             sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
@@ -107,6 +117,7 @@ describe('onAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererUserGroup: 'Control',
             })
         })
     })
