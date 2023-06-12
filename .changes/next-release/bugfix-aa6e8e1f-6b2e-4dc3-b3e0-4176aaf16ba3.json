@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Always use AWS smile logo to reduce confusion if users are on the 'New UI' (#3636)"
+}

@@ -301,7 +301,7 @@ with what features/services are supported.
 
         <toolWindow id="aws.toolkit.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerFactory"
-                    icon="AwsIcons.Logos.AWS"/>
+                    icon="AwsIcons.Logos.AWS_SMILE_SMALL"/>
 
         <toolWindow id="aws.cloudformation" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
                     factoryClass="software.aws.toolkits.jetbrains.services.cloudformation.toolwindow.CloudFormationToolWindowFactory" icon="AwsIcons.Logos.CLOUD_FORMATION_TOOL"/>
