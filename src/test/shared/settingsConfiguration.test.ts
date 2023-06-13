@@ -253,6 +253,30 @@ describe('DevSetting', function () {
         assert.deepStrictEqual(sut.get('endpoints', {}), {})
         assert.deepStrictEqual(sut.activeSettings, {})
     })
+
+    describe('isDevMode()', function () {
+        it('returns true if forceDevMode is true', async function () {
+            await settings.update('aws.dev.forceDevMode', true)
+            assert.strictEqual(sut.isDevMode(), true)
+        })
+        it('returns false if forceDevMode is false', async function () {
+            await settings.update('aws.dev.forceDevMode', false)
+            assert.strictEqual(sut.isDevMode(), false)
+        })
+        it('returns false if forceDevMode is not defined at all', async function () {
+            assert.strictEqual(sut.isDevMode(), false)
+        })
+
+        it('returns true if forceDevMode is not defined at all but active dev setting exists', async function () {
+            await settings.update(`aws.dev.${testSetting}`, true).then(() => sut.get(testSetting, false))
+            assert.strictEqual(sut.isDevMode(), true)
+        })
+        it('returns false if forceDevMode false even with other active dev setting', async function () {
+            await settings.update('aws.dev.forceDevMode', false)
+            await settings.update(`aws.dev.${testSetting}`, true).then(() => sut.get(testSetting, false))
+            assert.strictEqual(sut.isDevMode(), false)
+        })
+    })
 })
 
 describe('PromptSetting', function () {
