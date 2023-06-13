@@ -10,7 +10,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { extractInstanceIdsFromReservations } from "./utils"
 import { selectInstance } from './prompter'
 
-export async function attemptConnection(defaultRegion: string): Promise<void> {
+export async function tryConnect(defaultRegion: string): Promise<void> {
     const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, defaultRegion)
             const requester = async (request: EC2.DescribeInstancesRequest) => 
                 client.describeInstances(request).promise() 
