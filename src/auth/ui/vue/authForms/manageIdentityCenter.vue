@@ -42,6 +42,10 @@
                 <div class="form-section">
                     <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
                 </div>
+
+                <div class="form-section">
+                    <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
+                </div>
             </div>
         </div>
     </div>
@@ -85,6 +89,7 @@ export default defineComponent({
             stage: 'START' as IdentityCenterStage,
 
             canShowAll: false,
+            authName: this.state.name,
         }
     },
 
@@ -122,6 +127,9 @@ export default defineComponent({
 
             this.canSubmit = await this.state.canSubmit()
         },
+        showView() {
+            this.state.showView()
+        },
     },
     watch: {
         'data.startUrl'(value: string) {
@@ -151,8 +159,10 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     }
 
     abstract get id(): AuthFormId
+    abstract get name(): string
     protected abstract _startIdentityCenterSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
+    abstract showView(): Promise<void>
 
     setValue(key: IdentityCenterKey, value: string) {
         this._data[key] = value
@@ -202,6 +212,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'IDENTITY_CENTER_CODE_WHISPERER'
     }
 
+    override get name(): string {
+        return 'CodeWhisperer'
+    }
+
     protected override async _startIdentityCenterSetup(): Promise<void> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startIdentityCenterSetup(data.startUrl, data.region)
@@ -209,6 +223,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 
     override async isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererIdentityCenterConnected()
+    }
+
+    override async showView(): Promise<void> {
+        client.showCodeWhispererNode()
     }
 }
 </script>
