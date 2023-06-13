@@ -22,11 +22,13 @@ describe('iamClient', function () {
             EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'denied' }],
         }
         const organizationsDenyPermissionsResponse = {
-            EvaluationResults: [{
-                EvalActionName: 'example:permission',
-                EvalDecision: 'implicitDeny',
-                OrganizationsDecisionDetail: { "AllowedByOrganizations": false },
-            }],
+            EvaluationResults: [
+                {
+                    EvalActionName: 'example:permission',
+                    EvalDecision: 'implicitDeny',
+                    OrganizationsDecisionDetail: { AllowedByOrganizations: false },
+                },
+            ],
         }
 
         afterEach(function () {
