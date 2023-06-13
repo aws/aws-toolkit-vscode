@@ -29,6 +29,7 @@ export class Ec2ConnectClient {
     }
 
     private async handleStartSessionError(err: AWS.AWSError): Promise<void> {
+        console.log(err);
         const failureMessage = "SSM: Failed to start session with target instance. Common reasons include: \n 1. SSM Agent not installed on instance. \n 2. The required IAM instance profile isn't attached to the instance.  \n 3. Session manager setup is incomplete."
         await vscode.window.showErrorMessage(failureMessage)
 
