@@ -78,7 +78,7 @@ import ServiceItem, { ServiceItemsState, ServiceStatus, StaticServiceItemProps }
 import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemContent/shared.vue'
 import { AuthWebview } from './show'
 import { WebviewClientFactory } from '../../../webviews/client'
-import { ServiceItemId } from './backend/types'
+import { ServiceItemId } from './types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()

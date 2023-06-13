@@ -6,7 +6,7 @@ import { AuthStatus } from '../authForms/shared.vue'
 import CodeWhispererContent, { CodeWhispererContentState } from './codeWhispererContent.vue'
 import CodeCatalystContent, { CodeCatalystContentState } from './codeCatalystContent.vue'
 import { DefinedComponent } from '../../../../webviews/types'
-import { ServiceItemId } from '../backend/types'
+import { ServiceItemId } from '../types'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
