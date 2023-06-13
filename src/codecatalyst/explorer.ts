@@ -21,7 +21,12 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 export const getStartedCommand = Commands.register(
     'aws.codecatalyst.getStarted',
     async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+        let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+
+        if (authProvider.auth.getConnectionState(conn) === 'invalid') {
+            conn = await authProvider.auth.reauthenticate(conn)
+        }
+
         if (!(await authProvider.isConnectionOnboarded(conn, true))) {
             await authProvider.promptOnboarding()
         }

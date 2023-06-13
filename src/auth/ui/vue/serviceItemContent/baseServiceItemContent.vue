@@ -4,8 +4,8 @@
 
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import { ServiceItemId } from '../serviceItem.vue'
 import { AuthStatus } from '../authForms/shared.vue'
+import { ServiceItemId } from '../types'
 
 export default defineComponent({
     name: 'BaseServiceItemContent',
