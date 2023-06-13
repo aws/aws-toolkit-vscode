@@ -198,6 +198,10 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await auth.restore()
 
+    if (auth.isConnectionExpired()) {
+        auth.showReauthenticatePrompt()
+    }
+
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(
             vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
