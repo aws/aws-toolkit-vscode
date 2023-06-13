@@ -19,8 +19,6 @@ import kotlinx.coroutines.launch
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import software.aws.toolkits.jetbrains.core.coroutines.applicationCoroutineScope
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
@@ -247,7 +245,7 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
                 previousOneOther +
                 CodeWhispererClassifierConstants.intercept
 
-        val shouldTrigger = sigmoid(resultBeforeSigmoid) > getThreshold(language)
+        val shouldTrigger = sigmoid(resultBeforeSigmoid) > getThreshold()
         return ClassifierResult(shouldTrigger, sigmoid(resultBeforeSigmoid))
     }
 
@@ -255,16 +253,10 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
 
     companion object {
         private const val triggerThreshold: Double = 0.4
-        private const val expTriggerThreshold: Double = 0.35
 
         fun getInstance(): CodeWhispererAutoTriggerService = service()
 
-        fun getThreshold(language: CodeWhispererProgrammingLanguage): Double =
-            if (language is CodeWhispererJava && CodeWhispererUserGroupSettings.getInstance().isExpThreshold()) {
-                expTriggerThreshold
-            } else {
-                triggerThreshold
-            }
+        fun getThreshold(): Double = triggerThreshold
 
         fun sigmoid(x: Double): Double = 1 / (1 + exp(-x))
     }
