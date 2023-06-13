@@ -1,0 +1,29 @@
+{
+  "date" : "2023-06-13",
+  "version" : "1.69",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer improves auto-suggestions for python csharp typescript and javascript"
+  }, {
+    "type" : "feature",
+    "description" : "Removed 10 secs delay when connecting to Dev environments of Small Instance Size"
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve file context fetching logic"
+  }, {
+    "type" : "bugfix",
+    "description" : "Inlay not supported exception in injected editor"
+  }, {
+    "type" : "bugfix",
+    "description" : "fix right context merging not accounting userinput, which result in cases CodeWhisperer still show recommendation where user already type the content of recommendation out thus no character is being inserted by CodeWhisperer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Add error notification to upgrade SAM CLI v1.85-1.86.1 if on windows"
+  }, {
+    "type" : "bugfix",
+    "description" : "Always use AWS smile logo to reduce confusion if users are on the 'New UI' (#3636)"
+  }, {
+    "type" : "removal",
+    "description" : "Remove support for Gateway 2022.2 and 2022.3."
+  } ]
+}

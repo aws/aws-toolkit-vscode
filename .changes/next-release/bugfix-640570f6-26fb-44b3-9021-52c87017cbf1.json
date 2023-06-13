@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "fix right context merging not accounting userinput, which result in cases CodeWhisperer still show recommendation where user already type the content of recommendation out thus no character is being inserted by CodeWhisperer"
-}

@@ -1,3 +1,15 @@
+# _1.68_ (2023-05-30)
+- **(Feature)** CodeWhisperer supports application wide connections
+- **(Feature)** CodeWhisperer improves auto-suggestions for java
+- **(Bug Fix)** Fix threading issue preventing SAM Applications from opening in Rider 2023.1
+- **(Bug Fix)** Fix issue reconnecting to CodeWhisperer using an Identity Center directory outside of us-east-1 ([#3662](https://github.com/aws/aws-toolkit-jetbrains/issues/3662))
+- **(Bug Fix)** Fix 'null' is not a connection when authenticating to CodeWhisperer
+- **(Bug Fix)** CodeWhisperer: user is sometimes required to re-login before token expiration
+- **(Bug Fix)** Fix issue where the "Do not ask again" option is not respected when switching connections on CodeWhisperer/CodeCatalyst
+- **(Deprecation)** An upcoming release will remove support for JetBrains Gateway version 2022.2 and version 2022.3
+- **(Removal)** Remove support for Aurora MySQL v1 ([#3356](https://github.com/aws/aws-toolkit-jetbrains/issues/3356))
+- **(Removal)** Removed support for 2022.1.x IDEs
+
 # _1.67_ (2023-04-27)
 - **(Feature)** Using the least permissive set of scopes for features during BuilderID/SSO login. Using the same connection for multiple features will request additional scopes to be used.
 - **(Feature)** Add support for Lambda Runtime Java17

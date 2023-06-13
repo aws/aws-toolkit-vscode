@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Removed 10 secs delay when connecting to Dev environments of Small Instance Size"
-}

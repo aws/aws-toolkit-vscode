@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Add error notification to upgrade SAM CLI v1.85-1.86.1 if on windows"
-}
