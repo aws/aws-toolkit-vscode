@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Inlay not supported exception in injected editor"
+}

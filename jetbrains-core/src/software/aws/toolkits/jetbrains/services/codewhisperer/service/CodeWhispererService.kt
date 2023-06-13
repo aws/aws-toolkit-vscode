@@ -71,6 +71,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
+import software.aws.toolkits.jetbrains.utils.isInjectedText
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
@@ -100,6 +101,8 @@ class CodeWhispererService {
             }
             return
         }
+        val isInjectedFile = runReadAction { psiFile.isInjectedText() }
+        if (isInjectedFile) return
 
         val requestContext = try {
             getRequestContext(triggerTypeInfo, editor, project, psiFile, latencyContext)

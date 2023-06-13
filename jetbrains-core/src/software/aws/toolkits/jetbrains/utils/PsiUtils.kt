@@ -10,11 +10,16 @@ import com.intellij.psi.PsiElement
 fun PsiElement.isTestOrInjectedText(): Boolean {
     val project = this.project
     val virtualFile = this.containingFile.virtualFile ?: return false
-    if (virtualFile is VirtualFileWindow) {
+    if (this.isInjectedText() || ProjectRootManager.getInstance(project).fileIndex.isInTestSourceContent(virtualFile)) {
         return true
     }
 
-    if (ProjectRootManager.getInstance(project).fileIndex.isInTestSourceContent(virtualFile)) {
+    return false
+}
+
+fun PsiElement.isInjectedText(): Boolean {
+    val virtualFile = this.containingFile.virtualFile ?: return false
+    if (virtualFile is VirtualFileWindow) {
         return true
     }
 
