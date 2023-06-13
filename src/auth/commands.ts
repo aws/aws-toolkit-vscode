@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
 import { showAuthWebview } from './ui/vue/show'
 import { ServiceItemId, isServiceItemId } from './ui/vue/types'
+import { showConnectionsPageCommand } from './utils'
 
 /**
  * The methods with backend logic for the Auth commands.
@@ -37,7 +38,7 @@ export class AuthCommandDeclarations implements CommandDeclarations<AuthCommandB
 
     public readonly declared = {
         showConnectionsPage: Commands.from(AuthCommandBackend).declareShowConnectionsPage({
-            id: 'aws.auth.showConnectionsPage',
+            id: showConnectionsPageCommand,
         }),
     } as const
 }

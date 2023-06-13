@@ -43,14 +43,19 @@ import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
-export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
+// TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
+export const showConnectionsPageCommand = 'aws.auth.showConnectionsPage'
+
+export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Promise<Connection | void> {
     const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
 
     if (resp === 'addNewConnection') {
-        return addConnection.execute()
+        // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
+        vscode.commands.executeCommand(showConnectionsPageCommand)
+        return undefined
     }
 
     if (resp === 'editCredentials') {
@@ -477,7 +482,7 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return addConnection.execute()
+        return vscode.commands.executeCommand(showConnectionsPageCommand)
     } else {
         return switchConnections.execute(auth)
     }
@@ -511,7 +516,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = addConnection.build().asCommand({ title: 'Add Connection' })
+            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
 
             return item
         }
