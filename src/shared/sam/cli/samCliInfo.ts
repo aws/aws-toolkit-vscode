@@ -26,6 +26,11 @@ export class SamCliInfoInvocation {
             return { version: '' }
         }
 
+        // Special case: fix sam cli "nightly" invalid semver version string.
+        // Example: "1.86.1.dev202306120901"
+        // https://github.com/aws/aws-sam-cli/releases/tag/sam-cli-nightly
+        response.version = response.version.replace(/.dev/, '-dev')
+
         return response
     }
 
