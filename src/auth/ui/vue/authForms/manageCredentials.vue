@@ -3,6 +3,10 @@
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
+            <div class="form-section">
+                <button v-if="isConnected" v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            </div>
+
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
                 <div :class="collapsibleClass"></div>
                 <div>Add another profile</div>
@@ -168,6 +172,9 @@ export default defineComponent({
         },
         editCredentialsFile() {
             client.editCredentialsFile()
+        },
+        showResourceExplorer() {
+            client.showResourceExplorer()
         },
     },
     watch: {

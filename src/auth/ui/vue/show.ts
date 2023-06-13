@@ -149,6 +149,10 @@ export class AuthWebview extends VueWebview {
         }
     }
 
+    async showResourceExplorer(): Promise<void> {
+        vscode.commands.executeCommand('aws.explorer.focus')
+    }
+
     async showCodeWhispererNode(): Promise<void> {
         vscode.commands.executeCommand('aws.developerTools.showCodeWhisperer')
     }
@@ -262,7 +266,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
         // Fallback logic was executed
         return
     }
-    
+
     let wasInitialServiceSet = false
     if (activePanel && serviceToShow) {
         // Webview is already open, so we have to select the service
