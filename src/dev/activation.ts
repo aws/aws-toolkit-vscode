@@ -87,8 +87,7 @@ export function activate(ctx: ExtContext): void {
     const devSettings = DevSettings.instance
 
     async function updateMode() {
-        const enablement = Object.keys(devSettings.activeSettings).length > 0
-        await vscode.commands.executeCommand('setContext', 'aws.isDevMode', enablement)
+        await vscode.commands.executeCommand('setContext', 'aws.isDevMode', devSettings.isDevMode())
     }
 
     ctx.extensionContext.subscriptions.push(
