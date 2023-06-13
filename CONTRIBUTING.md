@@ -238,7 +238,9 @@ generating SDKs, etc.
 The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
-the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
+the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
+
+The setting `aws.dev.forceDevMode` will take precedence over all dev settings and enable dev mode on `"aws.dev.forceDevMode": true` or disable on `"aws.dev.forceDevMode": false`.
 
 ### Logging
 
