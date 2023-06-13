@@ -40,7 +40,7 @@ import { defineComponent } from 'vue'
 import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
-import AuthFormId from '../authForms/types.vue'
+import { AuthFormId } from '../authForms/types'
 
 export default defineComponent({
     name: 'AwsExplorerContent',

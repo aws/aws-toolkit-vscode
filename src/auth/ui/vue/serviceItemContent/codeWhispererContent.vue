@@ -40,7 +40,7 @@ import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageB
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
-import AuthFormId from '../authForms/types.vue'
+import { AuthFormId } from '../authForms/types'
 
 export default defineComponent({
     name: 'CodeWhispererContent',

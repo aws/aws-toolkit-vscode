@@ -53,7 +53,7 @@ import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
-import { AuthFormId } from './types.vue'
+import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
 
 const client = WebviewClientFactory.create<AuthWebview>()

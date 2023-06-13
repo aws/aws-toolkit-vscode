@@ -38,7 +38,7 @@ import BaseAuthForm from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
 import { AuthWebview } from '../show'
-import { AuthFormId } from './types.vue'
+import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 
 const client = WebviewClientFactory.create<AuthWebview>()

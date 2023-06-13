@@ -37,7 +37,7 @@ import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBuilderId.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
-import AuthFormId from '../authForms/types.vue'
+import { AuthFormId } from '../authForms/types'
 
 export default defineComponent({
     name: 'CodeCatalystContent',

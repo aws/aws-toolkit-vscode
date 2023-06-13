@@ -2,7 +2,7 @@
 import { CodeCatalystBuilderIdState, CodeWhispererBuilderIdState } from './manageBuilderId.vue'
 import { CredentialsState } from './manageCredentials.vue'
 import { CodeWhispererIdentityCenterState } from './manageIdentityCenter.vue'
-import AuthFormId from './types.vue'
+import { AuthFormId } from './types'
 
 /**
  * The state instance of all auth forms
