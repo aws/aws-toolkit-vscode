@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { AuthStatus } from './shared.vue'
-import { AuthFormId } from './types.vue'
+import { AuthFormId } from './types'
 
 export default defineComponent({
     emits: ['auth-connection-updated'],
