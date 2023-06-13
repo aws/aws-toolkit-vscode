@@ -30,6 +30,7 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
+import { CodeWhispererSupplementalContext } from '../util/supplementalContext/supplementalContextUtil'
 import { invalidCustomizationMessage } from '../models/constants'
 import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 
@@ -54,6 +55,7 @@ export class RecommendationHandler {
     public isGenerateRecommendationInProgress: boolean
     private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
+    private supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
 
     constructor() {
         this.requestId = ''
@@ -135,6 +137,10 @@ export class RecommendationHandler {
         page: number = 0,
         retry: boolean = false
     ) {
+        if (!editor) {
+            return
+        }
+
         let recommendation: RecommendationsList = []
         let requestId = ''
         let sessionId = ''
@@ -146,17 +152,25 @@ export class RecommendationHandler {
         let nextToken = ''
         let errorCode = ''
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
-            req = EditorContext.buildListRecommendationRequest(
+            const requestObj = await EditorContext.buildListRecommendationRequest(
                 editor as vscode.TextEditor,
                 this.nextToken,
                 config.isSuggestionsWithCodeReferencesEnabled
             )
+
+            req = requestObj.request
+            supplementalContextMetadata = requestObj.supplementalMetadata
         } else {
-            req = EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+            const requestObj = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+
+            req = requestObj.request
+            supplementalContextMetadata = requestObj.supplementalMetadata
         }
+        this.supplementalContextMetadata = supplementalContextMetadata
 
         try {
             startTime = performance.now()
@@ -274,7 +288,8 @@ export class RecommendationHandler {
                     latency,
                     this.startPos.line,
                     languageContext.language,
-                    reason
+                    reason,
+                    supplementalContextMetadata
                 )
             }
             if (invocationResult === 'Succeeded') {
@@ -329,7 +344,8 @@ export class RecommendationHandler {
                 requestId,
                 sessionId,
                 page,
-                editor.document.languageId
+                editor.document.languageId,
+                supplementalContextMetadata
             )
         }
         if (!this.isCancellationRequested()) {
@@ -369,6 +385,7 @@ export class RecommendationHandler {
         this.sessionId = ''
         this.nextToken = ''
         this.errorMessagePrompt = ''
+        this.supplementalContextMetadata = undefined
     }
 
     /**
@@ -382,7 +399,8 @@ export class RecommendationHandler {
             acceptIndex,
             editor?.document.languageId,
             this.recommendations.length,
-            this.recommendationSuggestionState
+            this.recommendationSuggestionState,
+            this.supplementalContextMetadata
         )
     }
 

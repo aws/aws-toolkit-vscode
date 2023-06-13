@@ -19,6 +19,7 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 
+
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
 >
@@ -47,6 +48,9 @@ export type GetCodeScanRequest = Readonly<
 >
 export type ListCodeScanFindingsRequest = Readonly<
     CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
+>
+export type SupplementalContext = Readonly<
+    CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
 >
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>

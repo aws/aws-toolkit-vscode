@@ -1,0 +1,14 @@
+{
+	"date": "2023-06-12",
+	"version": "1.77.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM CLI 1.85-1.86 fails on Windows"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve file context fetching logic"
+		}
+	]
+}

@@ -26,6 +26,7 @@ import { ImportAdderProvider } from './importAdderProvider'
 import * as AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
 import { ClassifierTrigger } from './classifierTrigger'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
 
@@ -499,6 +500,7 @@ export class InlineCompletionService {
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
     }
