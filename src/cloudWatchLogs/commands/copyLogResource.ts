@@ -7,31 +7,32 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { copyToClipboard } from '../../shared/utilities/messages'
 
-export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
+export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
     try {
+
         if (!uri) {
             // No URI = used command palette as entrypoint, attempt to get URI from active editor
             // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
             uri = vscode.window.activeTextEditor?.document.uri
             if (!uri) {
-                throw new Error("Attempt to copy Uri that doesn't exist.")
+                throw new Error("no active text editor, or undefined URI")
             }
-        }
+        } 
         const parsedUri = parseCloudWatchLogsUri(uri)
-        const streamName = parsedUri.logGroupInfo.streamName
+        const resourceName = isLogStreamUri(uri) ? parsedUri.logGroupInfo.streamName : parsedUri.logGroupInfo.groupName
 
-        if (!streamName) {
-            throw new Error(`Unable to copy stream name for Uri that doesn\'t have stream. Attempted copy on ${uri}`)
+        if (!resourceName) {
+            throw new Error(`Failed to copy log resource name for URI (missing stream or group?): ${uri}`)
         }
-        await copyToClipboard(streamName)
+        await copyToClipboard(resourceName)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
                 'AWS.cwl.invalidEditor',
-                'Not a Cloudwatch Log stream: {0}',
+                'Invalid Cloudwatch Log stream or group: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )
         )
